@@ -11,8 +11,6 @@ import { controlsContent } from './controls-content';
 import { DEFAULT_SETUP, type DummyBehavior, type GameMode, type MatchSetup } from './match-setup';
 
 const FIGHT_SCENE = 'fight';
-/** Position of the sound toggle in the main menu, kept selected after toggling. */
-const SOUND_ITEM_INDEX = 4;
 
 const LEVELS: readonly {
   readonly level: CpuLevel;
@@ -49,6 +47,7 @@ export class App {
   ) {}
 
   start(): void {
+    this.game.loop.sleep();
     this.showTitle();
   }
 
@@ -74,26 +73,29 @@ export class App {
       this.setup = { ...this.setup, mode };
       this.chooseFighter(0);
     };
+    const soundItem: MenuItem = {
+      label: `Son : ${this.sfx.isEnabled ? 'oui' : 'non'}`,
+      onSelect: () => {
+        this.sfx.setEnabled(!this.sfx.isEnabled);
+        // Re-shown with the toggle still selected.
+        this.showMainMenu(items.indexOf(soundItem));
+      },
+    };
+    const items: MenuItem[] = [
+      { label: "Contre l'ordinateur", hint: 'Un joueur', onSelect: choose('cpu') },
+      { label: '2 joueurs', hint: 'Sur le même appareil', onSelect: choose('versus') },
+      { label: 'Entraînement', hint: 'Sans chrono, vie infinie', onSelect: choose('training') },
+      {
+        label: 'Commandes',
+        onSelect: () => {
+          this.showControls();
+        },
+      },
+      soundItem,
+    ];
     this.showMenu({
       title: 'NAYOSBEAT',
-      items: [
-        { label: "Contre l'ordinateur", hint: 'Un joueur', onSelect: choose('cpu') },
-        { label: '2 joueurs', hint: 'Sur le même appareil', onSelect: choose('versus') },
-        { label: 'Entraînement', hint: 'Sans chrono, vie infinie', onSelect: choose('training') },
-        {
-          label: 'Commandes',
-          onSelect: () => {
-            this.showControls();
-          },
-        },
-        {
-          label: `Son : ${this.sfx.isEnabled ? 'oui' : 'non'}`,
-          onSelect: () => {
-            this.sfx.setEnabled(!this.sfx.isEnabled);
-            this.showMainMenu(SOUND_ITEM_INDEX);
-          },
-        },
-      ],
+      items,
       onBack: () => {
         this.showTitle();
       },
@@ -226,11 +228,14 @@ export class App {
         this.showResults(winner);
       },
     };
+    // The render loop only runs during fights: menus are plain HTML and need no redraw.
+    this.game.loop.wake();
     this.game.scene.start(FIGHT_SCENE, data);
   }
 
   private stopFight(): void {
     this.game.scene.stop(FIGHT_SCENE);
+    this.game.loop.sleep();
   }
 
   private showPause(): void {

@@ -11,3 +11,8 @@ export const CAMERA_WIDTH_PX = 480;
 export function px(pixels: number): number {
   return Math.round(pixels * SUBPIXELS_PER_PIXEL);
 }
+
+/** Converts sub-pixels back to (possibly fractional) pixels, for display. */
+export function toPx(subpixels: number): number {
+  return subpixels / SUBPIXELS_PER_PIXEL;
+}

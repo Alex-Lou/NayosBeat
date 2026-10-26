@@ -1,6 +1,6 @@
 import type Phaser from 'phaser';
 import type { MatchConfig } from '../core/config';
-import { SUBPIXELS_PER_PIXEL } from '../core/constants';
+import { toPx } from '../core/constants';
 import { projectileBox } from '../core/projectiles';
 import type { ProjectileState } from '../core/state';
 
@@ -33,8 +33,4 @@ export class ProjectileView {
         .setSize(toPx(box.width), toPx(box.height));
     });
   }
-}
-
-function toPx(subpixels: number): number {
-  return subpixels / SUBPIXELS_PER_PIXEL;
 }

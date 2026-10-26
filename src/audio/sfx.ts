@@ -100,7 +100,12 @@ export class Sfx {
       this.master.connect(this.context.destination);
       this.noiseBuffer = createNoise(this.context);
     }
-    if (this.context.state === 'suspended') void this.context.resume();
+    // `suspended` before the first gesture; `interrupted` on iOS after a call or a lock.
+    if (this.context.state !== 'running') {
+      this.context.resume().catch(() => {
+        // Still locked: the next user gesture will try again.
+      });
+    }
   }
 
   setEnabled(enabled: boolean): void {

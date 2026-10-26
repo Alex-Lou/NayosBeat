@@ -1,13 +1,19 @@
+import { isPressed, PadButton } from './gamepad';
+
 const PAUSE_KEYS: ReadonlySet<string> = new Set(['Escape', 'KeyP']);
-const START_BUTTON = 9;
+/** Matches the CSS rule showing the "rotate your phone" hint over the game. */
+const PORTRAIT_PHONE = '(orientation: portrait) and (pointer: coarse)';
 
 /**
  * Pause requests during a fight: Escape or P, a gamepad's Start button, the on-screen pause
- * button, or the page being hidden (tab switch, phone locked).
+ * button, or the game becoming unplayable for a moment (tab hidden, window left, phone
+ * locked or turned to portrait).
  */
 export class PauseInput {
   private requested = false;
   private readonly button: HTMLButtonElement;
+  private readonly portrait: MediaQueryList;
+  /** Starts as "held" so a Start press that opened the fight does not pause it at once. */
   private startHeld = true;
 
   constructor(parent: HTMLElement) {
@@ -19,13 +25,19 @@ export class PauseInput {
     this.button.addEventListener('click', this.request);
     parent.appendChild(this.button);
 
+    this.portrait = window.matchMedia(PORTRAIT_PHONE);
+    this.portrait.addEventListener('change', this.onOrientationChange);
     window.addEventListener('keydown', this.onKeyDown);
+    window.addEventListener('blur', this.request);
     document.addEventListener('visibilitychange', this.onVisibilityChange);
   }
 
-  /** Returns true once per pause request. Call once per frame. */
-  consume(): boolean {
-    this.pollStartButton();
+  /** Returns true once per pause request. Call once per frame with the connected gamepads. */
+  consume(pads: readonly Gamepad[]): boolean {
+    const startHeld = pads.some((pad) => isPressed(pad, PadButton.Start));
+    if (startHeld && !this.startHeld) this.request();
+    this.startHeld = startHeld;
+
     const requested = this.requested;
     this.requested = false;
     return requested;
@@ -41,7 +53,9 @@ export class PauseInput {
   }
 
   dispose(): void {
+    this.portrait.removeEventListener('change', this.onOrientationChange);
     window.removeEventListener('keydown', this.onKeyDown);
+    window.removeEventListener('blur', this.request);
     document.removeEventListener('visibilitychange', this.onVisibilityChange);
     this.button.remove();
   }
@@ -60,13 +74,7 @@ export class PauseInput {
     if (document.hidden) this.request();
   };
 
-  /** Edge-triggered; starts as "held" so a Start press that opened the fight is ignored. */
-  private pollStartButton(): void {
-    if (typeof navigator.getGamepads !== 'function') return;
-    const held = navigator
-      .getGamepads()
-      .some((pad) => pad?.connected === true && pad.buttons[START_BUTTON]?.pressed === true);
-    if (held && !this.startHeld) this.request();
-    this.startHeld = held;
-  }
+  private readonly onOrientationChange = (event: MediaQueryListEvent): void => {
+    if (event.matches) this.request();
+  };
 }

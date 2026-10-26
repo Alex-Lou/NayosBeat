@@ -2,7 +2,7 @@ import type Phaser from 'phaser';
 import type { WorldBox } from '../core/boxes';
 import { activeMove, hitboxInWorld, hurtboxInWorld } from '../core/combat';
 import type { FighterTemplate } from '../core/config';
-import { SUBPIXELS_PER_PIXEL } from '../core/constants';
+import { toPx } from '../core/constants';
 import { pushboxOf } from '../core/fighter';
 import type { FighterState } from '../core/state';
 
@@ -86,8 +86,4 @@ export class FighterView {
       .setPosition(toPx(box.left), this.groundY - toPx(box.bottom))
       .setSize(toPx(box.width), toPx(box.height));
   }
-}
-
-function toPx(subpixels: number): number {
-  return subpixels / SUBPIXELS_PER_PIXEL;
 }

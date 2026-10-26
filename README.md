@@ -11,7 +11,7 @@ Plan de production : [docs/PLAN.md](docs/PLAN.md).
 
 Sensations : étincelles d'impact, tremblement de l'écran sur les gros coups, ralenti et flash sur le KO, sons générés en direct (Web Audio, aucun fichier). Le son se coupe depuis le menu principal (réglage mémorisé sur l'appareil).
 
-Pause : Échap / P, Start à la manette, bouton « II » en tactile. Le jeu se met aussi en pause quand l'onglet est caché ou le téléphone verrouillé.
+Pause : Échap / P, Start à la manette, bouton « II » en tactile. Le jeu se met aussi en pause quand l'onglet est caché, la fenêtre quittée, ou le téléphone verrouillé ou tourné en portrait. À la reprise, les touches utilisées dans le menu n'agissent pas sur le combat.
 
 ## Jouer en ligne
 
@@ -92,5 +92,12 @@ tests/      Tests Vitest, même arborescence que src/
 ```
 
 Dépendances à sens unique : `app` → `ui`, `render` ; `render` → `ai`, `input`, `loop`, `data`, `core` ; `ai` → `core` ; `data` → `core` ; `core` ne dépend de rien.
+
+## Qualité et sécurité
+
+- TypeScript strict et ESLint avec règles typées (`strictTypeChecked`) ; `core/` et `ai/` interdits d'accès au moteur, au DOM, à l'horloge et au hasard non reproductible.
+- Données des combattants et du stage validées au démarrage (entiers, plages d'images, cohérence des coups).
+- Build publié avec une Content-Security-Policy stricte (tout depuis la même origine, aucun script ni style en ligne).
+- CI à permissions minimales, actions épinglées par SHA, `npm audit` bloquant, mises à jour hebdomadaires par Dependabot.
 
 Police : [Press Start 2P](https://fonts.google.com/specimen/Press+Start+2P) (licence SIL OFL 1.1), embarquée via `@fontsource/press-start-2p`.

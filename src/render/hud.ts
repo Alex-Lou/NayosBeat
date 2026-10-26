@@ -43,6 +43,8 @@ export class Hud {
   /** Training only: hits and damage of player 1's last combo on the dummy. */
   private readonly trainingInfo: Phaser.GameObjects.Text | undefined;
   private dummyHealthBefore = 0;
+  /** Round wins currently painted; -1 forces the first paint. */
+  private shownWins: readonly [number, number] = [-1, -1];
   private dummyComboBefore = 0;
   private comboStartHealth = 0;
 
@@ -141,12 +143,17 @@ export class Hud {
     if (bar.width !== width) bar.setSize(width, BAR_HEIGHT);
   }
 
+  /** Repaints round markers only when the score changes. */
   private setPips(round: RoundState): void {
-    for (const player of [0, 1] as const) {
-      this.pips[player].forEach((pip, index) => {
-        pip.setFillStyle(index < round.wins[player] ? COLORS.pipWon : COLORS.pipEmpty);
+    const [winsA, winsB] = round.wins;
+    if (winsA === this.shownWins[0] && winsB === this.shownWins[1]) return;
+    this.shownWins = [winsA, winsB];
+    this.pips.forEach((pips, player) => {
+      const wins = round.wins[player] ?? 0;
+      pips.forEach((pip, index) => {
+        pip.setFillStyle(index < wins ? COLORS.pipWon : COLORS.pipEmpty);
       });
-    }
+    });
   }
 
   private createBar(scene: Phaser.Scene, x: number, player: 0 | 1): Phaser.GameObjects.Rectangle {

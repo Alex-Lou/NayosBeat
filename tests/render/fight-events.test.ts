@@ -12,7 +12,9 @@ function eventsOf(start: GameState, ticks: [number, number][]): FightEvent[] {
   let state = start;
   for (const inputs of ticks) {
     const next = step(state, inputs, MIRROR_MATCH);
-    events.push(...detectEvents(state, next, MIRROR_MATCH));
+    const tickEvents: FightEvent[] = [];
+    detectEvents(state, next, MIRROR_MATCH, tickEvents);
+    events.push(...tickEvents);
     state = next;
   }
   return events;

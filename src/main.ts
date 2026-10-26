@@ -1,4 +1,5 @@
 import '@fontsource/press-start-2p/latin.css';
+import './styles.css';
 import Phaser from 'phaser';
 import { App } from './app/app';
 import { Sfx } from './audio/sfx';
@@ -63,4 +64,14 @@ async function start(): Promise<void> {
   else game.events.once(Phaser.Core.Events.READY, startApp);
 }
 
-void start();
+/** A failure at startup must not leave a silent blank page. */
+function showStartupError(error: unknown): void {
+  console.error(error);
+  const message = document.createElement('div');
+  message.className = 'menu';
+  message.textContent =
+    "Le jeu n'a pas pu démarrer sur ce navigateur. Essaie de recharger la page, ou un navigateur récent.";
+  document.getElementById('ui')?.appendChild(message);
+}
+
+start().catch(showStartupError);

@@ -1,3 +1,5 @@
+import { connectedGamepads } from '../input/gamepad';
+
 /** Title screen: any key, click, tap or gamepad button continues. */
 export class TitleScreen {
   private readonly root: HTMLDivElement;
@@ -39,11 +41,13 @@ export class TitleScreen {
     this.onStart();
   };
 
+  /**
+   * Browsers do not count gamepad presses as user gestures: starting with a gamepad works,
+   * but sound and fullscreen wait for the first key, click or touch.
+   */
   private readonly pollGamepads = (): void => {
     if (this.done) return;
-    const pressed =
-      typeof navigator.getGamepads === 'function' &&
-      navigator.getGamepads().some((pad) => pad?.buttons.some((b) => b.pressed));
+    const pressed = connectedGamepads().some((pad) => pad.buttons.some((button) => button.pressed));
     if (pressed) this.start();
     else this.frameRequest = requestAnimationFrame(this.pollGamepads);
   };

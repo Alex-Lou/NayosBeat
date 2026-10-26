@@ -24,8 +24,17 @@ const CONTACT_OFFSET_X = px(12);
 const CONTACT_HEIGHT_STANDING = px(50);
 const CONTACT_HEIGHT_CROUCHING = px(28);
 
-export function detectEvents(prev: GameState, next: GameState, config: MatchConfig): FightEvent[] {
-  const events: FightEvent[] = [];
+/**
+ * Fills `events` (cleared first) with what happened between two states. The caller reuses the
+ * same array every tick, so a quiet tick allocates nothing.
+ */
+export function detectEvents(
+  prev: GameState,
+  next: GameState,
+  config: MatchConfig,
+  events: FightEvent[],
+): void {
+  events.length = 0;
 
   for (const player of [0, 1] as const) {
     const before = prev.fighters[player];
@@ -53,7 +62,6 @@ export function detectEvents(prev: GameState, next: GameState, config: MatchConf
   if (next.round.phase !== prev.round.phase || next.round.number !== prev.round.number) {
     events.push({ type: 'phase', phase: next.round.phase });
   }
-  return events;
 }
 
 /** A new block, including a second block while still in blockstun (its frame counter restarts). */

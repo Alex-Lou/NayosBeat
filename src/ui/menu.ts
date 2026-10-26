@@ -23,6 +23,14 @@ export interface MenuOptions {
 
 export type MenuFeedback = 'move' | 'confirm' | 'back';
 
+import {
+  connectedGamepads,
+  isPressed,
+  PadButton,
+  STICK_THRESHOLD,
+  stickAxis,
+} from '../input/gamepad';
+
 type MenuAction = 'up' | 'down' | 'confirm' | 'back';
 
 /** Physical key positions: W/S are Z/S on AZERTY. */
@@ -44,7 +52,12 @@ const PAD_UP = 1;
 const PAD_DOWN = 2;
 const PAD_CONFIRM = 4;
 const PAD_BACK = 8;
-const STICK_THRESHOLD = 0.5;
+const PAD_ACTIONS: readonly (readonly [number, MenuAction])[] = [
+  [PAD_UP, 'up'],
+  [PAD_DOWN, 'down'],
+  [PAD_CONFIRM, 'confirm'],
+  [PAD_BACK, 'back'],
+];
 
 /**
  * A vertical list of choices, driven by keyboard, gamepad, mouse or touch.
@@ -116,12 +129,13 @@ export class Menu {
     const pad = readPad();
     const pressed = pad & ~this.previousPad;
     this.previousPad = pad;
-    if (pressed & PAD_UP) this.handle('up');
-    if (pressed & PAD_DOWN) this.handle('down');
-    if (pressed & PAD_CONFIRM) this.handle('confirm');
-    if (pressed & PAD_BACK) this.handle('back');
-    // A confirm/back may have disposed this menu; only keep polling while it is shown.
-    if (this.root.isConnected) this.frameRequest = requestAnimationFrame(this.pollGamepads);
+    for (const [bit, action] of PAD_ACTIONS) {
+      if (!(pressed & bit)) continue;
+      this.handle(action);
+      // A confirm or back may have closed this menu: the rest of the press is not for it.
+      if (!this.root.isConnected) return;
+    }
+    this.frameRequest = requestAnimationFrame(this.pollGamepads);
   };
 
   private handle(action: MenuAction): void {
@@ -160,16 +174,13 @@ export class Menu {
 
 /** Menu-relevant buttons held on any gamepad (standard mapping), as a bitmask. */
 function readPad(): number {
-  if (typeof navigator.getGamepads !== 'function') return 0;
   let bits = 0;
-  for (const pad of navigator.getGamepads()) {
-    if (!pad?.connected) continue;
-    const held = (index: number): boolean => pad.buttons[index]?.pressed ?? false;
-    const stickY = pad.axes[1] ?? 0;
-    if (held(12) || stickY < -STICK_THRESHOLD) bits |= PAD_UP;
-    if (held(13) || stickY > STICK_THRESHOLD) bits |= PAD_DOWN;
-    if (held(0) || held(9)) bits |= PAD_CONFIRM;
-    if (held(1)) bits |= PAD_BACK;
+  for (const pad of connectedGamepads()) {
+    const stickY = stickAxis(pad, 1);
+    if (isPressed(pad, PadButton.DpadUp) || stickY < -STICK_THRESHOLD) bits |= PAD_UP;
+    if (isPressed(pad, PadButton.DpadDown) || stickY > STICK_THRESHOLD) bits |= PAD_DOWN;
+    if (isPressed(pad, PadButton.South) || isPressed(pad, PadButton.Start)) bits |= PAD_CONFIRM;
+    if (isPressed(pad, PadButton.East)) bits |= PAD_BACK;
   }
   return bits;
 }

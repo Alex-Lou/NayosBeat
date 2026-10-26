@@ -1,5 +1,5 @@
 import type { MatchConfig, MoveData } from '../core/config';
-import { SUBPIXELS_PER_PIXEL } from '../core/constants';
+import { toPx } from '../core/constants';
 import { Input, type InputBits } from '../core/input';
 import { isActiveFrame } from '../core/moves';
 import type { FighterAction, FighterState, GameState } from '../core/state';
@@ -135,7 +135,7 @@ class Decider {
     this.seed = cpu.seed;
     this.toward = opponent.x > me.x ? Input.Right : Input.Left;
     this.away = opponent.x > me.x ? Input.Left : Input.Right;
-    this.distance = Math.abs(opponent.x - me.x) / SUBPIXELS_PER_PIXEL;
+    this.distance = toPx(Math.abs(opponent.x - me.x));
   }
 
   decide(): { cpu: CpuState; input: InputBits } {
@@ -273,7 +273,7 @@ function incomingProjectile(state: GameState, player: 0 | 1): boolean {
     (p) =>
       p.owner !== player &&
       (p.facing === 1) === me.x > p.x &&
-      Math.abs(p.x - me.x) / SUBPIXELS_PER_PIXEL < PROJECTILE_ALERT_RANGE,
+      toPx(Math.abs(p.x - me.x)) < PROJECTILE_ALERT_RANGE,
   );
 }
 
@@ -287,7 +287,7 @@ function guardInput(me: FighterState, opponent: FighterState, move: MoveData | n
 /** How far in front of the attacker a move reaches, in pixels. */
 function reach(move: MoveData): number {
   const box = move.hitbox ?? move.projectile?.hitbox;
-  return box ? (box.x + box.width) / SUBPIXELS_PER_PIXEL : 0;
+  return box ? toPx(box.x + box.width) : 0;
 }
 
 function repeat(input: InputBits, count: number): InputBits[] {

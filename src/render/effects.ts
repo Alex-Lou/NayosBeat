@@ -1,5 +1,5 @@
 import type Phaser from 'phaser';
-import { SUBPIXELS_PER_PIXEL } from '../core/constants';
+import { toPx } from '../core/constants';
 import { VIEW_SIZE } from './view';
 
 /** Every spark comes from this fixed pool: nothing is created or destroyed during a fight. */
@@ -39,6 +39,9 @@ export class Effects {
   private shakeAmplitude = 0;
   private flashFrames = 0;
   private flashDuration = 1;
+  /** Whole-pixel camera offset for the current frame (keeps pixel art crisp). */
+  private offsetX = 0;
+  private offsetY = 0;
 
   constructor(
     scene: Phaser.Scene,
@@ -61,8 +64,8 @@ export class Effects {
 
   /** Spawns sparks at a point in stage coordinates (sub-pixels, y up from the ground). */
   burst(x: number, y: number, style: BurstStyle): void {
-    const screenX = x / SUBPIXELS_PER_PIXEL;
-    const screenY = this.groundY - y / SUBPIXELS_PER_PIXEL;
+    const screenX = toPx(x);
+    const screenY = this.groundY - toPx(y);
     for (let i = 0; i < style.count; i++) {
       // The oldest spark is recycled when the pool is full.
       const spark = this.sparks[this.nextSpark];
@@ -110,16 +113,29 @@ export class Effects {
 
     if (this.shakeFrames > 0) this.shakeFrames -= 1;
     if (this.shakeFrames === 0) this.shakeAmplitude = 0;
+    this.updateShakeOffset();
 
     if (this.flashFrames > 0) this.flashFrames -= 1;
     this.flashOverlay.setAlpha((this.flashFrames / this.flashDuration) * 0.7);
   }
 
-  /** Whole-pixel camera offset for the current frame (keeps pixel art crisp). */
-  shakeOffset(): { x: number; y: number } {
-    if (this.shakeFrames === 0) return { x: 0, y: 0 };
+  get shakeX(): number {
+    return this.offsetX;
+  }
+
+  get shakeY(): number {
+    return this.offsetY;
+  }
+
+  /** Alternates sides every frame, by whole pixels. */
+  private updateShakeOffset(): void {
+    if (this.shakeFrames === 0) {
+      this.offsetX = 0;
+      this.offsetY = 0;
+      return;
+    }
     const direction = this.shakeFrames % 2 === 0 ? 1 : -1;
-    const amount = Math.max(1, Math.round(this.shakeAmplitude));
-    return { x: direction * amount, y: (this.shakeFrames % 3) - 1 };
+    this.offsetX = direction * Math.max(1, Math.round(this.shakeAmplitude));
+    this.offsetY = (this.shakeFrames % 3) - 1;
   }
 }
