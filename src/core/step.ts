@@ -5,6 +5,7 @@ import type { InputBits } from './input';
 import { followCamera, resolvePositions } from './positions';
 import { findProjectileHit, updateProjectiles, type ProjectileHit } from './projectiles';
 import { updateRound } from './round';
+import { applyTrainingRules } from './training';
 import type { FighterState, GameState } from './state';
 
 /**
@@ -67,7 +68,7 @@ export function step(
         projectileOnB?.move.hitstop ?? 0,
       );
 
-  return updateRound(
+  const next = applyTrainingRules(
     {
       frame: state.frame + 1,
       cameraX: followCamera(nextA, nextB, config.stage),
@@ -78,6 +79,7 @@ export function step(
     },
     config,
   );
+  return updateRound(next, config);
 }
 
 /**

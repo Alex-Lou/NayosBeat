@@ -1,9 +1,9 @@
 import Phaser from 'phaser';
 import type { MatchConfig } from '../core/config';
 import { TICK_RATE } from '../core/constants';
-import { INTRO_FRAMES, ROUNDS_TO_WIN } from '../core/rules';
+import { INTRO_FRAMES, MATCH_END_FRAMES, ROUNDS_TO_WIN } from '../core/rules';
 import { matchWinner } from '../core/round';
-import type { GameState, RoundState } from '../core/state';
+import type { FighterState, GameState, RoundState } from '../core/state';
 import { VIEW_SIZE } from './view';
 
 const MARGIN = 8;
@@ -22,8 +22,11 @@ const COLORS = {
   pipWon: 0xf0c94a,
 } as const;
 
+/** Pixel font designed on an 8 px grid: sizes are kept to multiples of 8 to stay crisp. */
+export const PIXEL_FONT = '"Press Start 2P", monospace';
+
 const TEXT_STYLE: Phaser.Types.GameObjects.Text.TextStyle = {
-  fontFamily: 'monospace',
+  fontFamily: PIXEL_FONT,
   color: '#ffffff',
   stroke: '#000000',
   strokeThickness: 3,
@@ -37,6 +40,11 @@ export class Hud {
   private readonly announcer: Phaser.GameObjects.Text;
   /** Combo counters, each on the side of the player landing the combo. */
   private readonly combos: [Phaser.GameObjects.Text, Phaser.GameObjects.Text];
+  /** Training only: hits and damage of player 1's last combo on the dummy. */
+  private readonly trainingInfo: Phaser.GameObjects.Text | undefined;
+  private dummyHealthBefore = 0;
+  private dummyComboBefore = 0;
+  private comboStartHealth = 0;
 
   constructor(
     scene: Phaser.Scene,
@@ -58,17 +66,24 @@ export class Hud {
     );
 
     this.timer = this.fixed(
-      scene.add.text(width / 2, BAR_TOP - 3, '', { ...TEXT_STYLE, fontSize: '16px' }),
+      scene.add.text(width / 2, BAR_TOP - 2, '', { ...TEXT_STYLE, fontSize: '16px' }),
     ).setOrigin(0.5, 0);
     this.announcer = this.fixed(
-      scene.add.text(width / 2, VIEW_SIZE.height / 2 - 30, '', { ...TEXT_STYLE, fontSize: '24px' }),
+      scene.add.text(width / 2, VIEW_SIZE.height / 2 - 40, '', { ...TEXT_STYLE, fontSize: '24px' }),
     ).setOrigin(0.5);
 
-    const comboStyle = { ...TEXT_STYLE, fontSize: '14px', color: '#f0c94a' };
+    const comboStyle = { ...TEXT_STYLE, fontSize: '8px', color: '#f0c94a', strokeThickness: 2 };
     this.combos = [
       this.fixed(scene.add.text(leftX, COMBO_Y, '', comboStyle)),
       this.fixed(scene.add.text(rightX + BAR_WIDTH, COMBO_Y, '', comboStyle).setOrigin(1, 0)),
     ];
+    this.trainingInfo = config.training
+      ? this.fixed(
+          scene.add
+            .text(width / 2, VIEW_SIZE.height - 12, '', { ...comboStyle, color: '#ffffff' })
+            .setOrigin(0.5, 1),
+        )
+      : undefined;
   }
 
   update(state: GameState): void {
@@ -79,14 +94,30 @@ export class Hud {
     // A player's combo is counted on the opponent taking the hits.
     setTextIfChanged(this.combos[0], comboText(b.comboCount));
     setTextIfChanged(this.combos[1], comboText(a.comboCount));
-    setTextIfChanged(this.timer, String(Math.ceil(state.round.timer / TICK_RATE)));
+    const seconds = Math.ceil(state.round.timer / TICK_RATE);
+    setTextIfChanged(this.timer, this.config.training ? '--' : String(seconds));
+    if (this.trainingInfo) this.updateTrainingInfo(this.trainingInfo, b);
     setTextIfChanged(this.announcer, this.announcement(state.round));
+  }
+
+  /** Keeps the last combo's result on screen until the next one starts. */
+  private updateTrainingInfo(info: Phaser.GameObjects.Text, dummy: FighterState): void {
+    if (dummy.comboCount > 0 && this.dummyComboBefore === 0) {
+      this.comboStartHealth = this.dummyHealthBefore;
+    }
+    if (dummy.comboCount > 0) {
+      const damage = this.comboStartHealth - dummy.health;
+      const hits = dummy.comboCount > 1 ? `${dummy.comboCount} coups` : '1 coup';
+      setTextIfChanged(info, `Combo : ${hits} · ${damage} dégâts`);
+    }
+    this.dummyHealthBefore = dummy.health;
+    this.dummyComboBefore = dummy.comboCount;
   }
 
   private announcement(round: RoundState): string {
     switch (round.phase) {
       case 'intro':
-        return round.phaseFrame < INTRO_FRAMES / 2 ? `ROUND ${round.number}` : 'FIGHT !';
+        return round.phaseFrame < INTRO_FRAMES / 2 ? `ROUND ${round.number}` : 'COMBAT !';
       case 'fight':
         return '';
       case 'roundEnd': {
@@ -96,7 +127,8 @@ export class Hud {
         return result.winner === null ? 'DOUBLE K.O.' : 'K.O.';
       }
       case 'matchEnd': {
-        const winner = matchWinner(round);
+        // Once the results screen shows, it announces the winner instead.
+        const winner = round.phaseFrame < MATCH_END_FRAMES ? matchWinner(round) : null;
         return winner === null ? '' : `${this.config.fighters[winner].name} GAGNE`;
       }
     }
@@ -160,7 +192,7 @@ function comboText(hits: number): string {
 }
 
 function smallText(): Phaser.Types.GameObjects.Text.TextStyle {
-  return { ...TEXT_STYLE, fontSize: '10px', strokeThickness: 2 };
+  return { ...TEXT_STYLE, fontSize: '8px', strokeThickness: 2 };
 }
 
 /** Re-rendering a text texture is costly: only do it when the content changes. */

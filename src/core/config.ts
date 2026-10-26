@@ -113,4 +113,6 @@ export interface StageConfig {
 export interface MatchConfig {
   readonly stage: StageConfig;
   readonly fighters: readonly [FighterTemplate, FighterTemplate];
+  /** Training mode: no timer, no KO, health refills between combos. */
+  readonly training?: boolean;
 }

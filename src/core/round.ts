@@ -1,5 +1,5 @@
 import type { MatchConfig } from './config';
-import { INTRO_FRAMES, MATCH_END_FRAMES, ROUND_END_FRAMES, ROUNDS_TO_WIN } from './rules';
+import { INTRO_FRAMES, ROUND_END_FRAMES, ROUNDS_TO_WIN } from './rules';
 import {
   createRound,
   type FighterState,
@@ -8,7 +8,10 @@ import {
   type RoundState,
 } from './state';
 
-/** Advances the round flow: intro → fight → round end → next round or match end → new match. */
+/**
+ * Advances the round flow: intro → fight → round end → next round, or match end.
+ * The match end phase lasts until the application starts something else.
+ */
 export function updateRound(state: GameState, config: MatchConfig): GameState {
   const round = state.round;
 
@@ -19,6 +22,7 @@ export function updateRound(state: GameState, config: MatchConfig): GameState {
         : nextPhaseFrame(state);
 
     case 'fight': {
+      if (config.training) return nextPhaseFrame(state);
       const timer = Math.max(0, round.timer - 1);
       const result = roundResult(state.fighters, timer, config);
       if (!result) return withRound(state, { ...round, timer, phaseFrame: round.phaseFrame + 1 });
@@ -40,9 +44,7 @@ export function updateRound(state: GameState, config: MatchConfig): GameState {
       return createRound(config, state.frame, round.number + 1, round.wins);
 
     case 'matchEnd':
-      return round.phaseFrame + 1 < MATCH_END_FRAMES
-        ? nextPhaseFrame(state)
-        : createRound(config, state.frame, 1, [0, 0]);
+      return nextPhaseFrame(state);
   }
 }
 

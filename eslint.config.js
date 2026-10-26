@@ -10,19 +10,22 @@ export default tseslint.config(
     languageOptions: { globals: globals.browser },
   },
   {
-    // The simulation core must stay pure and deterministic (see docs/PLAN.md §2.3):
+    // The simulation core and the CPU must stay pure and deterministic (docs/PLAN.md §2.3):
     // no engine, no DOM, no wall clock, no unseeded randomness.
-    files: ['src/core/**/*.ts'],
+    files: ['src/core/**/*.ts', 'src/ai/**/*.ts'],
     languageOptions: { globals: {} },
     rules: {
       'no-restricted-imports': [
         'error',
         {
           patterns: [
-            { group: ['phaser', 'phaser/*'], message: 'core/ must not depend on the engine.' },
+            {
+              group: ['phaser', 'phaser/*'],
+              message: 'core/ and ai/ must not depend on the engine.',
+            },
             {
               group: ['**/render/**', '**/loop/**', '**/input/**'],
-              message: 'core/ must not depend on outer layers.',
+              message: 'core/ and ai/ must not depend on outer layers.',
             },
           ],
         },
@@ -30,7 +33,7 @@ export default tseslint.config(
       'no-restricted-properties': [
         'error',
         { object: 'Math', property: 'random', message: 'Use the seeded RNG from GameState.' },
-        { object: 'Date', property: 'now', message: 'core/ must not read the wall clock.' },
+        { object: 'Date', property: 'now', message: 'core/ and ai/ must not read the wall clock.' },
       ],
       'no-restricted-globals': ['error', 'performance', 'window', 'document'],
     },

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Input } from '../../src/core/input';
-import { updateRound } from '../../src/core/round';
+import { matchWinner, updateRound } from '../../src/core/round';
 import {
   INTRO_FRAMES,
   MATCH_END_FRAMES,
@@ -75,7 +75,7 @@ describe('round flow', () => {
     expect(next.fighters[0].health).toBe(MATCH.fighters[0].maxHealth);
   });
 
-  it('ends the match at the required number of wins, then starts a new one', () => {
+  it('ends the match at the required number of wins and stays there', () => {
     const matchPoint = {
       ...fightState(),
       round: { ...fightState().round, wins: [ROUNDS_TO_WIN - 1, 0] as const },
@@ -83,8 +83,9 @@ describe('round flow', () => {
     const ended = advance(updateRound(withHealth(matchPoint, 500, 0), MATCH), ROUND_END_FRAMES);
     expect(ended.round.phase).toBe('matchEnd');
     expect(ended.round.wins).toEqual([ROUNDS_TO_WIN, 0]);
+    expect(matchWinner(ended.round)).toBe(0);
 
-    const fresh = advance(ended, MATCH_END_FRAMES);
-    expect(fresh.round).toEqual(createInitialState(MATCH).round);
+    // The application decides what comes next (results screen): no automatic restart.
+    expect(advance(ended, MATCH_END_FRAMES * 10).round.phase).toBe('matchEnd');
   });
 });

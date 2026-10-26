@@ -1,0 +1,253 @@
+import type Phaser from 'phaser';
+import type { CpuLevel } from '../ai/cpu';
+import { ROSTER, templateOf, type FighterId } from '../data/roster';
+import type { FightScene, FightSceneData } from '../render/fight-scene';
+import { requestLandscapeFullscreen } from '../render/fullscreen';
+import { isTouchDevice } from '../input/touch-controls';
+import { Menu, type MenuItem } from '../ui/menu';
+import { TitleScreen } from '../ui/title-screen';
+import { controlsContent } from './controls-content';
+import { DEFAULT_SETUP, type DummyBehavior, type GameMode, type MatchSetup } from './match-setup';
+
+const FIGHT_SCENE = 'fight';
+
+const LEVELS: readonly {
+  readonly level: CpuLevel;
+  readonly label: string;
+  readonly hint: string;
+}[] = [
+  { level: 'easy', label: 'Facile', hint: 'Pour découvrir' },
+  { level: 'normal', label: 'Normal', hint: 'Pare et contre-attaque' },
+  { level: 'hard', label: 'Difficile', hint: 'Réagit vite, enchaîne' },
+];
+
+const DUMMIES: readonly {
+  readonly dummy: DummyBehavior;
+  readonly label: string;
+  readonly hint: string;
+}[] = [
+  { dummy: 'dummyStand', label: 'Immobile', hint: 'Idéal pour les enchaînements' },
+  { dummy: 'dummyBlock', label: 'Pare tout', hint: 'Pour tester la pression' },
+  { dummy: 'normal', label: 'Ordinateur', hint: 'Se défend et attaque' },
+];
+
+/**
+ * Screen flow: title → main menu → fighter selection → fight → results, with pause.
+ * Owns the current screen and the match setup; the fight itself runs in the Phaser scene.
+ */
+export class App {
+  private screen: { dispose(): void } | undefined;
+  private setup: MatchSetup = DEFAULT_SETUP;
+
+  constructor(
+    private readonly root: HTMLElement,
+    private readonly game: Phaser.Game,
+  ) {}
+
+  start(): void {
+    this.showTitle();
+  }
+
+  private show(screen: { dispose(): void }): void {
+    this.screen?.dispose();
+    this.screen = screen;
+  }
+
+  private showTitle(): void {
+    this.show(
+      new TitleScreen(this.root, () => {
+        // The first user gesture is the only moment a mobile browser allows fullscreen.
+        if (isTouchDevice()) requestLandscapeFullscreen();
+        this.showMainMenu();
+      }),
+    );
+  }
+
+  private showMainMenu(): void {
+    const choose = (mode: GameMode) => () => {
+      this.setup = { ...this.setup, mode };
+      this.chooseFighter(0);
+    };
+    this.showMenu({
+      title: 'NAYOSBEAT',
+      items: [
+        { label: "Contre l'ordinateur", hint: 'Un joueur', onSelect: choose('cpu') },
+        { label: '2 joueurs', hint: 'Sur le même appareil', onSelect: choose('versus') },
+        { label: 'Entraînement', hint: 'Sans chrono, vie infinie', onSelect: choose('training') },
+        { label: 'Commandes', onSelect: () => this.showControls() },
+      ],
+      onBack: () => this.showTitle(),
+    });
+  }
+
+  private showControls(): void {
+    this.showMenu({
+      title: 'Commandes',
+      content: controlsContent(),
+      items: [{ label: 'Retour', onSelect: () => this.showMainMenu() }],
+      onBack: () => this.showMainMenu(),
+    });
+  }
+
+  private chooseFighter(player: 0 | 1): void {
+    const { mode } = this.setup;
+    const title =
+      player === 0
+        ? mode === 'versus'
+          ? 'Joueur 1'
+          : 'Ton combattant'
+        : mode === 'versus'
+          ? 'Joueur 2'
+          : mode === 'cpu'
+            ? 'Adversaire'
+            : 'Mannequin';
+
+    const pick = (id: FighterId) => () => {
+      const fighters: [FighterId, FighterId] = [...this.setup.fighters];
+      fighters[player] = id;
+      this.setup = { ...this.setup, fighters };
+      this.afterFighterChosen(player);
+    };
+    const items: MenuItem[] = ROSTER.map((entry) => ({
+      label: entry.template.name,
+      hint: entry.description,
+      onSelect: pick(entry.id),
+    }));
+    if (player === 1 && mode !== 'versus') {
+      items.push({ label: 'Aléatoire', onSelect: () => pick(randomFighter())() });
+    }
+
+    this.showMenu({
+      title,
+      subtitle: 'Choisis un combattant',
+      items,
+      onBack: () => (player === 0 ? this.showMainMenu() : this.chooseFighter(0)),
+    });
+  }
+
+  private afterFighterChosen(player: 0 | 1): void {
+    if (player === 0) return this.chooseFighter(1);
+    if (this.setup.mode === 'cpu') return this.chooseLevel();
+    if (this.setup.mode === 'training') return this.chooseDummy();
+    this.startFight();
+  }
+
+  private chooseLevel(): void {
+    this.showMenu({
+      title: 'Difficulté',
+      items: LEVELS.map(({ level, label, hint }) => ({
+        label,
+        hint,
+        onSelect: () => {
+          this.setup = { ...this.setup, cpuLevel: level };
+          this.startFight();
+        },
+      })),
+      onBack: () => this.chooseFighter(1),
+    });
+  }
+
+  private chooseDummy(): void {
+    this.showMenu({
+      title: 'Mannequin',
+      items: DUMMIES.map(({ dummy, label, hint }) => ({
+        label,
+        hint,
+        onSelect: () => {
+          this.setup = { ...this.setup, dummy };
+          this.startFight();
+        },
+      })),
+      onBack: () => this.chooseFighter(1),
+    });
+  }
+
+  private startFight(): void {
+    this.screen?.dispose();
+    this.screen = undefined;
+    const data: FightSceneData = {
+      setup: this.setup,
+      onPause: () => this.showPause(),
+      onMatchEnd: (winner) => this.showResults(winner),
+    };
+    this.game.scene.start(FIGHT_SCENE, data);
+  }
+
+  private stopFight(): void {
+    this.game.scene.stop(FIGHT_SCENE);
+  }
+
+  private showPause(): void {
+    const fight = this.game.scene.getScene(FIGHT_SCENE) as FightScene;
+    const resume = () => {
+      this.screen?.dispose();
+      this.screen = undefined;
+      fight.resumeMatch();
+    };
+    this.showMenu({
+      title: 'Pause',
+      overlay: true,
+      items: [
+        { label: 'Reprendre', onSelect: resume },
+        { label: 'Recommencer', onSelect: () => this.startFight() },
+        { label: 'Commandes', onSelect: () => this.showPauseControls() },
+        { label: 'Quitter', hint: 'Retour au menu principal', onSelect: () => this.quitToMenu() },
+      ],
+      onBack: resume,
+    });
+  }
+
+  private showPauseControls(): void {
+    this.showMenu({
+      title: 'Commandes',
+      overlay: true,
+      content: controlsContent(),
+      items: [{ label: 'Retour', onSelect: () => this.showPause() }],
+      onBack: () => this.showPause(),
+    });
+  }
+
+  private showResults(winner: 0 | 1 | null): void {
+    const name = winner === null ? null : templateOf(this.setup.fighters[winner]).name;
+    const title = name === null ? 'Égalité' : `${name} gagne !`;
+    const subtitle =
+      this.setup.mode === 'cpu'
+        ? winner === 0
+          ? "Victoire contre l'ordinateur"
+          : "L'ordinateur l'emporte"
+        : winner === null
+          ? undefined
+          : `Victoire du joueur ${winner + 1}`;
+
+    this.showMenu({
+      title,
+      ...(subtitle ? { subtitle } : {}),
+      overlay: true,
+      items: [
+        { label: 'Revanche', onSelect: () => this.startFight() },
+        { label: 'Changer de combattants', onSelect: () => this.backToSelection() },
+        { label: 'Menu principal', onSelect: () => this.quitToMenu() },
+      ],
+    });
+  }
+
+  private backToSelection(): void {
+    this.stopFight();
+    this.chooseFighter(0);
+  }
+
+  private quitToMenu(): void {
+    this.stopFight();
+    this.showMainMenu();
+  }
+
+  private showMenu(options: ConstructorParameters<typeof Menu>[1]): void {
+    this.show(new Menu(this.root, options));
+  }
+}
+
+function randomFighter(): FighterId {
+  const entry = ROSTER[Math.floor(Math.random() * ROSTER.length)] ?? ROSTER[0];
+  if (!entry) throw new Error('The roster is empty');
+  return entry.id;
+}

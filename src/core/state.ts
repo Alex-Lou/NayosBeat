@@ -122,7 +122,8 @@ export function createRound(
       number: roundNumber,
       wins,
       timer: ROUND_TIME,
-      phase: 'intro',
+      // Training starts right away: there is no round to announce.
+      phase: config.training ? 'fight' : 'intro',
       phaseFrame: 0,
       result: null,
     },

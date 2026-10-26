@@ -7,7 +7,8 @@ export const ROUNDS_TO_WIN = 2;
 
 export const INTRO_FRAMES = 90;
 export const ROUND_END_FRAMES = 150;
-export const MATCH_END_FRAMES = 240;
+/** Delay before the results screen, so the final KO can be seen. */
+export const MATCH_END_FRAMES = 120;
 
 /** An attack pressed while busy is remembered this long, then started as soon as possible. */
 export const INPUT_BUFFER_FRAMES = 5;
@@ -34,3 +35,6 @@ export const COMBO_SCALING_FLOOR = 50;
 /** Separation speed when both players throw each other on the same tick. */
 export const THROW_TECH_PUSHBACK = px(4);
 export const THROW_TECH_STUN = 12;
+
+/** Training mode: health refills once the dummy has been left alone this long. */
+export const TRAINING_REFILL_FRAMES = 60;

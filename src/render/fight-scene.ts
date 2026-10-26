@@ -1,11 +1,15 @@
 import Phaser from 'phaser';
+import { cpuStep, createCpu, type CpuState } from '../ai/cpu';
+import { matchConfigOf, player2Behavior, type MatchSetup } from '../app/match-setup';
 import type { MatchConfig } from '../core/config';
 import { SUBPIXELS_PER_PIXEL, TICK_RATE } from '../core/constants';
-import { createInitialState, type FighterState } from '../core/state';
+import type { InputBits } from '../core/input';
+import { matchWinner } from '../core/round';
+import { MATCH_END_FRAMES } from '../core/rules';
+import { createInitialState, type FighterState, type GameState } from '../core/state';
 import { step } from '../core/step';
 import { assertValidTemplates } from '../core/validate';
-import { POLYVALENT, RUSHDOWN } from '../data/fighters';
-import { TRAINING_STAGE } from '../data/stages';
+import { PauseInput } from '../input/pause-input';
 import { PlayerInputs } from '../input/player-inputs';
 import { isTouchDevice, TouchControls } from '../input/touch-controls';
 import { FixedTimestep } from '../loop/fixed-timestep';
@@ -33,27 +37,51 @@ const COLORS = {
   player2: 0x4a8fd9,
 } as const;
 
-const MATCH: MatchConfig = {
-  stage: TRAINING_STAGE,
-  fighters: [POLYVALENT, RUSHDOWN],
-};
-assertValidTemplates(MATCH.fighters);
+export interface FightSceneData {
+  readonly setup: MatchSetup;
+  readonly onPause: () => void;
+  /** Called once, a moment after the final KO, with the winner's index. */
+  readonly onMatchEnd: (winner: 0 | 1 | null) => void;
+}
 
 /**
  * Runs the simulation at a fixed tick rate and displays it.
- * It only reads the core state: game rules live in `core/`.
+ * It only reads the core state: game rules live in `core/`, CPU decisions in `ai/`.
  */
 export class FightScene extends Phaser.Scene {
-  private state = createInitialState(MATCH);
-  private readonly timestep = new FixedTimestep(1000 / TICK_RATE, MAX_TICKS_PER_FRAME);
+  private sceneData!: FightSceneData;
+  private config!: MatchConfig;
+  private state!: GameState;
+  private timestep!: FixedTimestep;
+  /** Player 2's CPU, unless a human plays it. */
+  private cpu: CpuState | undefined;
+  private paused = false;
+  private matchEndReported = false;
+
   private inputs: PlayerInputs | undefined;
+  private pauseInput: PauseInput | undefined;
   private fighterViews: [FighterView, FighterView] | undefined;
   private hud: Hud | undefined;
   private projectileView: ProjectileView | undefined;
   private debugOverlay: DebugOverlay | undefined;
+  /** Reused every tick to avoid allocating. */
+  private readonly tickInputs: [InputBits, InputBits] = [0, 0];
 
   constructor() {
     super('fight');
+  }
+
+  /** Called on every (re)start: resets everything that belongs to one match. */
+  init(data: FightSceneData): void {
+    this.sceneData = data;
+    this.config = matchConfigOf(data.setup);
+    assertValidTemplates(this.config.fighters);
+    this.state = createInitialState(this.config);
+    this.timestep = new FixedTimestep(1000 / TICK_RATE, MAX_TICKS_PER_FRAME);
+    const behavior = player2Behavior(data.setup);
+    this.cpu = behavior === 'human' ? undefined : createCpu(1, behavior, Date.now() | 0);
+    this.paused = false;
+    this.matchEndReported = false;
   }
 
   create(): void {
@@ -63,30 +91,43 @@ export class FightScene extends Phaser.Scene {
       new FighterView(this, COLORS.player1, GROUND_Y, debug),
       new FighterView(this, COLORS.player2, GROUND_Y, debug),
     ];
-    this.projectileView = new ProjectileView(this, MATCH, GROUND_Y);
-    this.hud = new Hud(this, MATCH);
+    this.projectileView = new ProjectileView(this, this.config, GROUND_Y);
+    this.hud = new Hud(this, this.config);
 
     const touch = isTouchDevice()
       ? new TouchControls(document.body, requestLandscapeFullscreen)
       : undefined;
     this.inputs = new PlayerInputs(window, touch);
-
+    this.pauseInput = new PauseInput(document.body);
     if (debug) this.debugOverlay = new DebugOverlay(document.body);
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.dispose, this);
     this.syncViews();
   }
 
+  /** Resumes after the pause menu. The paused time is not simulated. */
+  resumeMatch(): void {
+    this.pauseInput?.reset();
+    this.paused = false;
+  }
+
   override update(_time: number, deltaMs: number): void {
-    if (!this.inputs) return;
+    if (!this.inputs || this.paused) return;
+    if (this.pauseInput?.consume()) {
+      this.paused = true;
+      this.sceneData.onPause();
+      return;
+    }
 
     const ticks = this.timestep.advance(deltaMs);
     const startMs = this.debugOverlay ? performance.now() : 0;
 
     // Devices are sampled once per display frame and held for every tick of that frame.
-    const inputs = this.inputs.read();
+    const [player1, player2] = this.inputs.read();
     for (let i = 0; i < ticks; i++) {
-      this.state = step(this.state, inputs, MATCH);
+      this.tickInputs[0] = player1;
+      this.tickInputs[1] = this.cpu ? this.cpuInput(this.cpu) : player2;
+      this.state = step(this.state, this.tickInputs, this.config);
     }
 
     this.debugOverlay?.record(
@@ -94,13 +135,28 @@ export class FightScene extends Phaser.Scene {
       this.describeState,
     );
     this.syncViews();
+    this.reportMatchEnd();
+  }
+
+  private cpuInput(cpu: CpuState): InputBits {
+    const decision = cpuStep(cpu, this.state, this.config);
+    this.cpu = decision.cpu;
+    return decision.input;
+  }
+
+  private reportMatchEnd(): void {
+    const round = this.state.round;
+    if (this.matchEndReported || round.phase !== 'matchEnd') return;
+    if (round.phaseFrame < MATCH_END_FRAMES) return;
+    this.matchEndReported = true;
+    this.sceneData.onMatchEnd(matchWinner(round));
   }
 
   private syncViews(): void {
     const [viewA, viewB] = this.fighterViews ?? [];
     const [a, b] = this.state.fighters;
-    viewA?.update(a, MATCH.fighters[0]);
-    viewB?.update(b, MATCH.fighters[1]);
+    viewA?.update(a, this.config.fighters[0]);
+    viewB?.update(b, this.config.fighters[1]);
     this.projectileView?.update(this.state.projectiles);
     this.hud?.update(this.state);
 
@@ -111,6 +167,8 @@ export class FightScene extends Phaser.Scene {
   private dispose(): void {
     this.inputs?.dispose();
     this.inputs = undefined;
+    this.pauseInput?.dispose();
+    this.pauseInput = undefined;
     this.debugOverlay?.destroy();
     this.debugOverlay = undefined;
   }
@@ -126,7 +184,7 @@ export class FightScene extends Phaser.Scene {
 
   /** Static grey-box stage; the 1 px screen border makes scaling artifacts easy to spot. */
   private drawStage(): void {
-    const stageWidth = MATCH.stage.width / SUBPIXELS_PER_PIXEL;
+    const stageWidth = this.config.stage.width / SUBPIXELS_PER_PIXEL;
     this.cameras.main.setBackgroundColor(COLORS.background);
 
     const ground = this.add.graphics();

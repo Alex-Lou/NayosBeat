@@ -3,6 +3,14 @@
 Jeu de combat 2D en pixel art, jouable sur PC et mobile (navigateur).
 Plan de production : [docs/PLAN.md](docs/PLAN.md).
 
+## Modes de jeu
+
+- **Contre l'ordinateur** : 3 niveaux (Facile, Normal, Difficile). L'IA réagit avec un délai humain, pare, contre les sauts et enchaîne.
+- **2 joueurs** : sur le même appareil (clavier partagé, ou deux manettes).
+- **Entraînement** : sans chrono ni KO, vie rechargée, mannequin immobile, qui pare tout ou piloté par l'ordinateur ; affichage des dégâts du dernier combo.
+
+Pause : Échap / P, Start à la manette, bouton « II » en tactile. Le jeu se met aussi en pause quand l'onglet est caché ou le téléphone verrouillé.
+
 ## Démarrer
 
 Prérequis : Node.js 22+.
@@ -65,6 +73,9 @@ Ajouter `?debug` à l'URL affiche l'overlay de debug et les hurtbox (toujours ac
 ```
 src/
   core/     Simulation pure et déterministe (aucun import Phaser/DOM, vérifié par ESLint)
+  ai/       Ordinateur et mannequins, purs et déterministes eux aussi (graine aléatoire)
+  app/      Enchaînement des écrans et configuration d'un match
+  ui/       Menus et écran titre (HTML par-dessus le jeu)
   data/     Stats des combattants et des stages (données statiques)
   input/    Clavier, manette, tactile → un masque d'inputs par joueur
   loop/     Pas de temps fixe : convertit les frames d'affichage en ticks de simulation
@@ -73,4 +84,6 @@ src/
 tests/      Tests Vitest, même arborescence que src/
 ```
 
-Dépendances à sens unique : `render` → `input`, `loop`, `data`, `core` ; `data` → `core` ; `core` ne dépend de rien.
+Dépendances à sens unique : `app` → `ui`, `render` ; `render` → `ai`, `input`, `loop`, `data`, `core` ; `ai` → `core` ; `data` → `core` ; `core` ne dépend de rien.
+
+Police : [Press Start 2P](https://fonts.google.com/specimen/Press+Start+2P) (licence SIL OFL 1.1), embarquée via `@fontsource/press-start-2p`.
