@@ -13,6 +13,10 @@ Sensations : étincelles d'impact, tremblement de l'écran sur les gros coups, r
 
 Pause : Échap / P, Start à la manette, bouton « II » en tactile. Le jeu se met aussi en pause quand l'onglet est caché ou le téléphone verrouillé.
 
+## Jouer en ligne
+
+Chaque mise à jour de `main` est publiée sur GitHub Pages : **https://alex-lou.github.io/NayosBeat/** (PC et mobile, rien à installer).
+
 ## Démarrer
 
 Prérequis : Node.js 22+.
