@@ -14,12 +14,12 @@ export const ROSTER: readonly RosterEntry[] = [
   {
     id: 'polyvalent',
     template: POLYVALENT,
-    description: 'Equilibré · onde de choc · uppercut',
+    description: 'Boxeur-DJ · portée · onde sonore · uppercut',
   },
   {
     id: 'rushdown',
     template: RUSHDOWN,
-    description: 'Rapide et agressif · ruée · moins de vie',
+    description: 'B-girl rapide et agressive · ruée · moins de vie',
   },
 ];
 

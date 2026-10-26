@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
+import { NAYO_CLIPS } from '../../src/art/nayo/clips';
 import { NAYO_SHEETS, type NayoSheet } from '../../src/art/nayo/sheets';
 import { ANCHOR, CELL_SIZE } from '../../src/art/types';
+import type { MoveId } from '../../src/core/config';
+import { toPx } from '../../src/core/constants';
+import { POLYVALENT } from '../../src/data/fighters';
 import { crc32, encodeIndexedPng } from '../../tools/sprites/png';
 import { drawSheet } from '../../tools/sprites/sheet';
 
@@ -31,9 +35,18 @@ describe('PNG encoder', () => {
 describe('Nayo strips', () => {
   const sheets = Object.keys(NAYO_SHEETS) as NayoSheet[];
 
+  const drawn = new Map<NayoSheet, ReturnType<typeof drawSheet>>();
+  const sheetCanvas = (sheet: NayoSheet): ReturnType<typeof drawSheet> => {
+    const cached = drawn.get(sheet);
+    if (cached) return cached;
+    const canvas = drawSheet(sheet);
+    drawn.set(sheet, canvas);
+    return canvas;
+  };
+
   /** Opaque rows and columns of one cell, relative to the cell. */
   function extent(sheet: NayoSheet, frame: number) {
-    const canvas = drawSheet(sheet);
+    const canvas = sheetCanvas(sheet);
     let top = CELL_SIZE;
     let bottom = -1;
     let left = CELL_SIZE;
@@ -50,14 +63,17 @@ describe('Nayo strips', () => {
     return { top, bottom, left, right };
   }
 
-  it.each(sheets)('%s: every frame stays inside its cell, away from the edges', (sheet) => {
-    for (let frame = 0; frame < NAYO_SHEETS[sheet].frames; frame++) {
-      const { top, bottom, left, right } = extent(sheet, frame);
-      expect(bottom, `frame ${frame} is empty`).toBeGreaterThan(0);
-      expect(Math.min(top, left, CELL_SIZE - 1 - right)).toBeGreaterThanOrEqual(2);
-      expect(bottom).toBeLessThanOrEqual(ANCHOR.y + 1);
-    }
-  });
+  it.each(sheets.filter((sheet) => sheet !== 'projectile'))(
+    '%s: every frame stays inside its cell, away from the edges',
+    (sheet) => {
+      for (let frame = 0; frame < NAYO_SHEETS[sheet].frames; frame++) {
+        const { top, bottom, left, right } = extent(sheet, frame);
+        expect(bottom, `frame ${frame} is empty`).toBeGreaterThan(0);
+        expect(Math.min(top, left, CELL_SIZE - 1 - right)).toBeGreaterThanOrEqual(2);
+        expect(bottom).toBeLessThanOrEqual(ANCHOR.y + 1);
+      }
+    },
+  );
 
   it.each(['idle', 'walkForward', 'walkBack', 'crouch'] as const)(
     '%s: feet stand on the ground line in every frame',
@@ -78,5 +94,75 @@ describe('Nayo strips', () => {
     const { top, bottom } = extent('idle', 0);
     expect(bottom - top + 1).toBeGreaterThanOrEqual(74);
     expect(bottom - top + 1).toBeLessThanOrEqual(86);
+  });
+
+  /**
+   * What you see is what hits: on every active frame of a move, the drawing reaches the far
+   * edge of the hitbox (within REACH_SLACK px short, REACH_OVERSHOOT px past), inside the
+   * hitbox's band. Horizontal strikes are measured forward, the uppercut upward.
+   */
+  const REACH_SLACK = 6;
+  const REACH_OVERSHOOT = 8;
+  const STRIKES = [
+    'standLight',
+    'standHeavy',
+    'crouchLight',
+    'crouchHeavy',
+    'jumpLight',
+    'jumpHeavy',
+    'specialForward',
+    'specialAntiAir',
+    'throw',
+  ] as const satisfies readonly MoveId[];
+
+  function activeFrames(move: (typeof STRIKES)[number]): number[] {
+    const { startup, active } = POLYVALENT.moves[move];
+    const clip = NAYO_CLIPS[move];
+    const frames: number[] = [];
+    let tick = 0;
+    clip.ticks.forEach((ticks, index) => {
+      if (tick < startup + active && tick + ticks > startup) frames.push(clip.frames[index] ?? -1);
+      tick += ticks;
+    });
+    return frames;
+  }
+
+  /** Farthest opaque pixel toward the opponent (or upward) within a band, in character px. */
+  function reach(sheet: NayoSheet, frame: number, band: { from: number; to: number }, up: boolean) {
+    const canvas = sheetCanvas(sheet);
+    let best = -Infinity;
+    for (let row = 0; row < CELL_SIZE; row++) {
+      for (let column = 0; column < CELL_SIZE; column++) {
+        if (canvas.pixels[row * canvas.width + frame * CELL_SIZE + column] === 0) continue;
+        const x = column + 1 - ANCHOR.x;
+        const y = ANCHOR.y - row;
+        const across = up ? x : y;
+        if (across < band.from || across > band.to) continue;
+        best = Math.max(best, up ? y : x);
+      }
+    }
+    return best;
+  }
+
+  it.each(STRIKES)('%s: the active frames reach the hitbox, no farther', (move) => {
+    const hitbox = POLYVALENT.moves[move].hitbox;
+    if (!hitbox) throw new Error(`${move} has no hitbox`);
+    const [x, y, width, height] = [hitbox.x, hitbox.y, hitbox.width, hitbox.height].map(toPx);
+    const up = move === 'specialAntiAir';
+    const band = up
+      ? { from: x ?? 0, to: (x ?? 0) + (width ?? 0) }
+      : { from: y ?? 0, to: (y ?? 0) + (height ?? 0) };
+    const edge = up ? (y ?? 0) + (height ?? 0) : (x ?? 0) + (width ?? 0);
+    const frames = activeFrames(move);
+    expect(frames.length).toBeGreaterThan(0);
+    for (const frame of frames) {
+      const reached = reach(move, frame, band, up);
+      expect(reached, `frame ${frame} reaches ${reached}, edge ${edge}`).toBeGreaterThanOrEqual(
+        edge - REACH_SLACK,
+      );
+      expect(reached, `frame ${frame} reaches ${reached}, edge ${edge}`).toBeLessThanOrEqual(
+        edge + REACH_OVERSHOOT,
+      );
+    }
   });
 });

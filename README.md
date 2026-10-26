@@ -47,7 +47,7 @@ Les touches de P2 suivent la position physique : `.` et `/` sont les deux touche
 
 | Coup | Simplifié | Classique |
 |---|---|---|
-| Spécial neutre (Polyvalent : onde de choc, Rushdown : ruée) | S | ↓ ↘ → + L ou H |
+| Spécial neutre (Nayo : onde sonore, Riff : ruée) | S | ↓ ↘ → + L ou H |
 | Spécial avant (coup de pied fendu / saut de l'ange) | → + S | — |
 | Anti-air invincible (uppercut / genou montant) | ↓ + S | → ↓ ↘ + L ou H |
 
@@ -55,11 +55,11 @@ Les coups légers s'enchaînent sur un autre coup ou un spécial quand ils touch
 
 Ajouter `?debug` à l'URL affiche l'overlay de debug et les hurtbox (toujours actif en dev).
 
-Ajouter `?art` affiche les sprites de Nayo (Polyvalent) en cours de dessin : attente, marche, accroupi et sauts pour l'instant. Sans cette option, les combattants restent en boîtes grises.
+Nayo est dessiné (sprites générés par `npm run sprites`, provisoires en attendant les planches définitives) ; Riff reste en boîte grise jusqu'à ses propres sprites. Dans un match miroir, le joueur 2 porte la seconde tenue (bomber bordeaux).
 
 ## Combat
 
-- Deux modèles de combattants : **Polyvalent** (portée, 1000 PV) et **Rushdown** (vitesse, 900 PV).
+- Univers **Sound Clash** : **Nayo**, boxeur-DJ (gabarit Polyvalent : portée, 1000 PV) et **Riff**, b-girl (gabarit Rushdown : vitesse, 900 PV).
 - 10 coups chacun (6 normaux, 3 spéciaux, 1 chope), décrits comme données dans `src/data/fighters.ts`.
 - Coups bas à parer accroupi, coups sautés à parer debout, chope imparable (mais deux chopes simultanées s'annulent). Hitstop, pushback, chute au sol si touché en l'air ou balayé.
 - Rounds de 99 s, 2 rounds gagnants, nouveau match automatique.

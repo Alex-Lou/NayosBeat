@@ -59,7 +59,7 @@ const GAMEPAD: HelpSection = {
   ],
 };
 
-/** "Onde de choc / Ruée": the same move for every fighter of the roster. */
+/** "Onde sonore / Ruée": the same move for every fighter of the roster. */
 function moveNames(pick: (moves: FighterTemplate['moves']) => { readonly name: string }): string {
   return ROSTER.map((entry) => pick(entry.template.moves).name).join(' / ');
 }

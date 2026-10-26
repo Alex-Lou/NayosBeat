@@ -21,6 +21,11 @@ export interface ShapeOptions {
   readonly edge?: boolean;
   /** One tone only (small accents that shading would turn into noise). */
   readonly flat?: boolean;
+  /**
+   * Leaves the pixels out of the silhouette (motion trails): no outline around them, and
+   * shapes drawn later do not edge against them.
+   */
+  readonly ghost?: boolean;
 }
 
 /** Light comes from the top and the front (the character faces right; y points down). */
@@ -85,7 +90,7 @@ export class PixelCanvas {
     for (let i = 0; i < covered.length; i += 2) {
       const index = covered[i] ?? 0;
       this.pixels[index] = covered[i + 1] ?? 0;
-      this.owner[index] = rampId;
+      if (options.ghost !== true) this.owner[index] = rampId;
     }
   }
 

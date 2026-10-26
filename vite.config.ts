@@ -40,6 +40,9 @@ export default defineConfig({
   build: {
     // Phaser alone is ~1.4 MB minified (~360 kB gzip): warn only beyond that.
     chunkSizeWarningLimit: 1500,
+    // Sprite strips stay separate files: a fight loads only its fighters' strips (and the second
+    // colorway only in a mirror match), and the browser caches them, instead of base64 in the JS.
+    assetsInlineLimit: 0,
   },
   test: {
     include: ['tests/**/*.test.ts'],

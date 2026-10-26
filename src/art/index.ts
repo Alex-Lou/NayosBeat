@@ -1,12 +1,14 @@
 import type { FighterId } from '../data/roster';
-import { NAYO } from './nayo';
+import { NAYO, NAYO_ALT } from './nayo';
 import type { FighterArt } from './types';
 
-/** Sprites of each fighter that has some; the others are drawn as grey boxes. */
-const ART_BY_FIGHTER: Partial<Record<FighterId, FighterArt>> = {
-  polyvalent: NAYO,
+export type Colorway = 'main' | 'alt';
+
+/** Sprites of each fighter that has some, per colorway; the others are drawn as grey boxes. */
+const ART_BY_FIGHTER: Partial<Record<FighterId, Readonly<Record<Colorway, FighterArt>>>> = {
+  polyvalent: { main: NAYO, alt: NAYO_ALT },
 };
 
-export function artOf(fighter: FighterId): FighterArt | undefined {
-  return ART_BY_FIGHTER[fighter];
+export function artOf(fighter: FighterId, colorway: Colorway = 'main'): FighterArt | undefined {
+  return ART_BY_FIGHTER[fighter]?.[colorway];
 }

@@ -4,7 +4,7 @@ import { validateArt } from '../../src/art/validate';
 import { POLYVALENT } from '../../src/data/fighters';
 
 describe('Nayo art', () => {
-  it('matches the frame data of the Polyvalent template', () => {
+  it('matches the frame data of its template (Polyvalent)', () => {
     expect(validateArt(NAYO, POLYVALENT)).toEqual([]);
   });
 

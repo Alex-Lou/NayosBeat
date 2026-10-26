@@ -10,7 +10,12 @@ import { TICK_RATE, toPx } from '../core/constants';
 import type { InputBits } from '../core/input';
 import { matchWinner } from '../core/round';
 import { MATCH_END_FRAMES } from '../core/rules';
-import { createInitialState, type FighterState, type GameState } from '../core/state';
+import {
+  createInitialState,
+  type FighterState,
+  type GameState,
+  type RoundState,
+} from '../core/state';
 import { step } from '../core/step';
 import { assertValidMatch } from '../core/validate';
 import { connectedGamepads } from '../input/gamepad';
@@ -53,14 +58,9 @@ export interface FightSceneData {
   readonly onMatchEnd: (winner: 0 | 1 | null) => void;
 }
 
-/** Fighters' sprites show only with `?art` while the first character is being drawn. */
-function isArtPreviewEnabled(): boolean {
-  return new URLSearchParams(window.location.search).has('art');
-}
-
 /** A fighter on screen: sprites when it has art, a grey box otherwise. */
 interface FighterDisplay {
-  update(fighter: FighterState, template: FighterTemplate): void;
+  update(fighter: FighterState, template: FighterTemplate, round: RoundState): void;
 }
 
 /** Everything that exists only while the scene runs, created in `create`, freed on shutdown. */
@@ -105,9 +105,9 @@ export class FightScene extends Phaser.Scene {
     this.config = matchConfigOf(data.setup);
     assertValidMatch(this.config);
     this.state = createInitialState(this.config);
-    const preview = isArtPreviewEnabled();
+    // In a mirror match, player 2 wears the second colorway.
     const [first, second] = data.setup.fighters;
-    this.arts = preview ? [artOf(first), artOf(second)] : [undefined, undefined];
+    this.arts = [artOf(first), artOf(second, first === second ? 'alt' : 'main')];
     for (const player of [0, 1] as const) {
       const art = this.arts[player];
       if (art) assertValidArt(art, this.config.fighters[player]);
@@ -137,7 +137,7 @@ export class FightScene extends Phaser.Scene {
         this.fighterDisplay(0, COLORS.player1, debug),
         this.fighterDisplay(1, COLORS.player2, debug),
       ],
-      projectileView: new ProjectileView(this, this.config, GROUND_Y),
+      projectileView: new ProjectileView(this, this.config, GROUND_Y, this.arts),
       feedback: new FightFeedback(this, GROUND_Y, this.sceneData.sfx),
       hud: new Hud(this, this.config),
       debugOverlay: debug ? new DebugOverlay(document.body) : undefined,
@@ -152,7 +152,7 @@ export class FightScene extends Phaser.Scene {
   private fighterDisplay(player: 0 | 1, color: number, debug: boolean): FighterDisplay {
     const art = this.arts[player];
     return art
-      ? new SpriteFighterView(this, art, GROUND_Y, debug)
+      ? new SpriteFighterView(this, art, player, GROUND_Y, debug)
       : new FighterView(this, color, GROUND_Y, debug);
   }
 
@@ -220,9 +220,9 @@ export class FightScene extends Phaser.Scene {
   private syncViews(runtime: Runtime): void {
     const [viewA, viewB] = runtime.fighterViews;
     const [a, b] = this.state.fighters;
-    viewA.update(a, this.config.fighters[0]);
-    viewB.update(b, this.config.fighters[1]);
-    runtime.projectileView.update(this.state.projectiles);
+    viewA.update(a, this.config.fighters[0], this.state.round);
+    viewB.update(b, this.config.fighters[1], this.state.round);
+    runtime.projectileView.update(this.state.projectiles, this.state.frame);
     runtime.hud.update(this.state);
 
     const cameraLeft = Math.round(toPx(this.state.cameraX) - VIEW_SIZE.width / 2);

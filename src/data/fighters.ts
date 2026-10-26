@@ -10,9 +10,9 @@ function box(x: number, y: number, width: number, height: number): Box {
 const LIGHT_CANCELS: readonly MoveKind[] = ['normal', 'special'];
 const HEAVY_CANCELS: readonly MoveKind[] = ['special'];
 
-/** Balanced all-rounder: good range, a projectile and a reliable anti-air. */
+/** Balanced all-rounder: good range, a projectile and a reliable anti-air. Played by Nayo. */
 export const POLYVALENT: FighterTemplate = {
-  name: 'Polyvalent',
+  name: 'Nayo',
   maxHealth: 1000,
   walkForwardSpeed: px(1.2),
   walkBackSpeed: px(1),
@@ -119,7 +119,7 @@ export const POLYVALENT: FighterTemplate = {
       hitbox: box(2, -4, 34, 22),
     },
     special: {
-      name: 'Onde de choc',
+      name: 'Onde sonore',
       kind: 'special',
       startup: 12,
       active: 1,
@@ -181,9 +181,9 @@ export const POLYVALENT: FighterTemplate = {
   },
 };
 
-/** Fast and close-range: quicker moves, a rushing punch, an overhead, less health. */
+/** Fast and close-range: quicker moves, a rushing punch, an overhead, less health. Played by Riff. */
 export const RUSHDOWN: FighterTemplate = {
-  name: 'Rushdown',
+  name: 'Riff',
   maxHealth: 900,
   walkForwardSpeed: px(1.6),
   walkBackSpeed: px(1.2),

@@ -21,6 +21,9 @@ export function validateArt(art: FighterArt, template: FighterTemplate): string[
   for (const id of [...STATE_CLIP_IDS, ...MOVE_IDS]) {
     for (const problem of clipProblems(art.clips[id], art)) check(false, `clip ${id}: ${problem}`);
   }
+  if (art.projectile) {
+    for (const problem of clipProblems(art.projectile, art)) check(false, `projectile: ${problem}`);
+  }
 
   const expected: [string, Clip, number][] = [
     ['preJump', art.clips.preJump, template.preJumpFrames],

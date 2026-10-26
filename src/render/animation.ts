@@ -1,8 +1,37 @@
 import type { Clip, ClipId } from '../art/types';
-import type { FighterState } from '../core/state';
+import { ROUND_END_FRAMES } from '../core/rules';
+import type { FighterState, RoundState } from '../core/state';
 
-/** Which clip shows a fighter's current state. */
-export function clipIdOf(fighter: FighterState): ClipId {
+/**
+ * Which clip shows a fighter: a round pose while the round is not being fought (entrance,
+ * winner, loser on time), otherwise the clip of its current action.
+ */
+export function clipIdOf(fighter: FighterState, player: 0 | 1, round: RoundState): ClipId {
+  if (round.phase === 'intro') return 'intro';
+  const over = round.phase === 'roundEnd' || round.phase === 'matchEnd';
+  // Only once standing still: a fighter still recovering, or knocked out, keeps its animation.
+  if (over && round.result && fighter.action === 'idle') {
+    if (round.result.winner === player) return 'victory';
+    if (round.result.reason === 'timeout') return 'timeOver';
+  }
+  return actionClipOf(fighter);
+}
+
+/** Ticks since a clip started: round poses follow the round clock, the rest the action's. */
+export function clipTickOf(clip: ClipId, fighter: FighterState, round: RoundState): number {
+  switch (clip) {
+    case 'intro':
+      return round.phaseFrame;
+    case 'victory':
+    case 'timeOver':
+      // The match end follows the round end: keep counting so the pose does not restart.
+      return round.phaseFrame + (round.phase === 'matchEnd' ? ROUND_END_FRAMES : 0);
+    default:
+      return fighter.actionFrame;
+  }
+}
+
+function actionClipOf(fighter: FighterState): ClipId {
   switch (fighter.action) {
     case 'idle':
     case 'walkForward':

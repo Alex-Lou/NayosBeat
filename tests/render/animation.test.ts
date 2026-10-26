@@ -1,7 +1,22 @@
 import { describe, expect, it } from 'vitest';
 import type { Clip } from '../../src/art/types';
-import { clipFrameAt, clipIdOf } from '../../src/render/animation';
+import type { FighterState, RoundState } from '../../src/core/state';
+import { clipFrameAt, clipIdOf as clipIdIn, clipTickOf } from '../../src/render/animation';
 import { makeFighter } from '../core/helpers';
+
+const FIGHTING: RoundState = {
+  number: 1,
+  wins: [0, 0],
+  timer: 5000,
+  phase: 'fight',
+  phaseFrame: 30,
+  result: null,
+};
+
+/** Clip of player 1 during the fight. */
+function clipIdOf(fighter: FighterState) {
+  return clipIdIn(fighter, 0, FIGHTING);
+}
 
 describe('clipIdOf', () => {
   it('shows each state with its own clip', () => {
@@ -25,6 +40,54 @@ describe('clipIdOf', () => {
   it('uses the crouching variants of hit and block reactions', () => {
     expect(clipIdOf(makeFighter({ action: 'hitstun', crouching: true }))).toBe('hitCrouch');
     expect(clipIdOf(makeFighter({ action: 'blockstun', crouching: false }))).toBe('blockStand');
+  });
+});
+
+describe('round poses', () => {
+  const idle = makeFighter({ action: 'idle', actionFrame: 400 });
+
+  it('shows the entrance during the intro, on the round clock', () => {
+    const intro: RoundState = { ...FIGHTING, phase: 'intro', phaseFrame: 12 };
+    expect(clipIdIn(idle, 1, intro)).toBe('intro');
+    expect(clipTickOf('intro', idle, intro)).toBe(12);
+  });
+
+  it('shows the winner celebrating and the loser on time out of breath', () => {
+    const roundEnd: RoundState = {
+      ...FIGHTING,
+      phase: 'roundEnd',
+      phaseFrame: 20,
+      result: { winner: 0, reason: 'timeout' },
+    };
+    expect(clipIdIn(idle, 0, roundEnd)).toBe('victory');
+    expect(clipIdIn(idle, 1, roundEnd)).toBe('timeOver');
+  });
+
+  it('leaves a knocked-out or still-moving fighter in its own animation', () => {
+    const roundEnd: RoundState = {
+      ...FIGHTING,
+      phase: 'roundEnd',
+      result: { winner: 0, reason: 'ko' },
+    };
+    expect(clipIdIn(makeFighter({ action: 'ko' }), 1, roundEnd)).toBe('ko');
+    expect(clipIdIn(idle, 1, roundEnd)).toBe('idle');
+    const recovering = makeFighter({ action: 'attack', move: 'standHeavy' });
+    expect(clipIdIn(recovering, 0, roundEnd)).toBe('standHeavy');
+  });
+
+  it('keeps the victory pose running from the round end into the match end', () => {
+    const roundEnd: RoundState = {
+      ...FIGHTING,
+      phase: 'roundEnd',
+      phaseFrame: 149,
+      result: { winner: 0, reason: 'ko' },
+    };
+    const matchEnd: RoundState = { ...roundEnd, phase: 'matchEnd', phaseFrame: 0 };
+    expect(clipTickOf('victory', idle, matchEnd)).toBe(clipTickOf('victory', idle, roundEnd) + 1);
+  });
+
+  it('follows the action clock for everything else', () => {
+    expect(clipTickOf('idle', idle, FIGHTING)).toBe(400);
   });
 });
 

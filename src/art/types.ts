@@ -43,6 +43,10 @@ export const STATE_CLIP_IDS = [
   'airHit',
   'knockdown',
   'ko',
+  // Round poses: entrance, winner, loser on time.
+  'intro',
+  'victory',
+  'timeOver',
 ] as const;
 
 export type StateClipId = (typeof STATE_CLIP_IDS)[number];
@@ -55,4 +59,6 @@ export interface FighterArt {
   readonly clips: Readonly<Record<ClipId, Clip>>;
   /** Image URL of every strip, by sheet name. */
   readonly urls: Readonly<Record<string, string>>;
+  /** The flying projectile of a fighter that has one, played on the match clock. */
+  readonly projectile?: Clip;
 }
