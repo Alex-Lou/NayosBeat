@@ -15,17 +15,24 @@ export interface Box extends BoxSize {
   readonly y: number;
 }
 
-export type MoveId =
-  | 'standLight'
-  | 'standHeavy'
-  | 'crouchLight'
-  | 'crouchHeavy'
-  | 'jumpLight'
-  | 'jumpHeavy'
-  | 'special'
-  | 'specialForward'
-  | 'specialAntiAir'
-  | 'throw';
+/** Every move a fighter must define: validation checks them all. */
+export const MOVE_IDS = [
+  'standLight',
+  'standHeavy',
+  'crouchLight',
+  'crouchHeavy',
+  'jumpLight',
+  'jumpHeavy',
+  'special',
+  'specialForward',
+  'specialAntiAir',
+  'throw',
+] as const;
+
+export type MoveId = (typeof MOVE_IDS)[number];
+
+/** Moves performed in the air (a projectile there would never be fired). */
+export const AIR_MOVE_IDS: readonly MoveId[] = ['jumpLight', 'jumpHeavy'];
 
 /** Decides what a move can cancel into, and how it is blocked (throws cannot be). */
 export type MoveKind = 'normal' | 'special' | 'throw';

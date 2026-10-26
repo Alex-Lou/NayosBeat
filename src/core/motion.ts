@@ -11,34 +11,42 @@ const QUARTER_CIRCLE_FORWARD: readonly Step[] = ['down', 'downForward', 'forward
 const DRAGON_PUNCH: readonly Step[] = ['forward', 'down', 'downForward'];
 
 /**
- * Recognizes a motion in the direction history (oldest first). The dragon punch is checked
- * first because its input usually ends with a quarter-circle-like shape.
+ * Recognizes a motion in the direction history (oldest first). When both motions can be read,
+ * the one completed most recently wins: walking forward then ↓↘→ is a quarter circle, not a
+ * dragon punch, even though the walk provides the dragon punch's first step.
  */
 export function detectMotion(history: readonly InputBits[], facing: Facing): Motion | null {
-  if (matches(history, facing, DRAGON_PUNCH)) return 'dragonPunch';
-  if (matches(history, facing, QUARTER_CIRCLE_FORWARD)) return 'quarterCircleForward';
-  return null;
+  const dragonPunch = completedAt(history, facing, DRAGON_PUNCH);
+  const quarterCircle = completedAt(history, facing, QUARTER_CIRCLE_FORWARD);
+  if (dragonPunch === null && quarterCircle === null) return null;
+  if (quarterCircle === null) return 'dragonPunch';
+  if (dragonPunch === null) return 'quarterCircleForward';
+  return dragonPunch >= quarterCircle ? 'dragonPunch' : 'quarterCircleForward';
 }
 
 /**
- * True if the steps appear in order (other inputs may come in between)
- * and the last step was held during the last `MOTION_END_FRAMES` ticks.
+ * Index in the history where the motion was completed, or null. The steps must appear in
+ * order (other inputs may come in between) and the last one must have been held during the
+ * last `MOTION_END_FRAMES` ticks.
  */
-function matches(
+function completedAt(
   history: readonly InputBits[],
   facing: Facing,
   sequence: readonly Step[],
-): boolean {
+): number | null {
   let expected = sequence.length - 1;
+  let lastStepIndex: number | null = null;
   for (let i = history.length - 1; i >= 0; i--) {
     const bits = history[i];
     if (bits === undefined || stepOf(bits, facing) !== sequence[expected]) continue;
-    const isLastStep = expected === sequence.length - 1;
-    if (isLastStep && history.length - 1 - i >= MOTION_END_FRAMES) return false;
+    if (lastStepIndex === null) {
+      if (history.length - 1 - i >= MOTION_END_FRAMES) return null;
+      lastStepIndex = i;
+    }
     expected--;
-    if (expected < 0) return true;
+    if (expected < 0) return lastStepIndex;
   }
-  return false;
+  return null;
 }
 
 function stepOf(bits: InputBits, facing: Facing): Step | null {

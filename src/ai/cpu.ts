@@ -49,12 +49,12 @@ const PROFILES: Readonly<Record<CpuLevel, Profile>> = {
   },
 };
 
-const NEUTRAL_ACTIONS: ReadonlySet<FighterAction> = new Set([
+/** States in which the CPU makes decisions: it can act on its next input. */
+const DECISION_ACTIONS: ReadonlySet<FighterAction> = new Set([
   'idle',
   'walkForward',
   'walkBack',
   'crouch',
-  'blockstun',
 ]);
 
 /** Distances in pixels deciding the CPU's game plan. */
@@ -100,6 +100,15 @@ export function cpuStep(
     return { cpu, input: danger ? guardInput(me, liveOpponent, move) : 0 };
   }
   if (state.round.phase !== 'fight') return { cpu: { ...cpu, plan: [], seen: [] }, input: 0 };
+  // The game is frozen on impact: keep holding the current input, do not use up the plan.
+  if (state.hitstop > 0) return { cpu, input: cpu.plan[0] ?? 0 };
+  // While blocking, keep blocking: dropping the guard mid-string would be a free hit.
+  if (me.action === 'blockstun') {
+    return {
+      cpu,
+      input: guardInput(me, liveOpponent, opponentMove(liveOpponent, opponentTemplate)),
+    };
+  }
 
   const profile = PROFILES[cpu.behavior];
   const seen = [...cpu.seen, liveOpponent].slice(-(profile.reactionFrames + 1));
@@ -138,7 +147,7 @@ class Decider {
       return this.withPlan(followUp, { cancelHandled: true });
     }
     const cancelHandled = me.action === 'attack' ? this.cpu.cancelHandled : false;
-    if (!NEUTRAL_ACTIONS.has(me.action)) return this.withPlan(this.cpu.plan, { cancelHandled });
+    if (!DECISION_ACTIONS.has(me.action)) return this.withPlan(this.cpu.plan, { cancelHandled });
 
     // Threats get one decision each: anti-air, block, or take the risk.
     const threat = this.threat();
@@ -154,7 +163,9 @@ class Decider {
 
   private threat(): 'air' | 'strike' | 'projectile' | null {
     const opponent = this.opponent;
-    const approaching = opponent.vx > 0 === this.me.x > opponent.x || opponent.vx === 0;
+    const movingRight = opponent.vx > 0;
+    const meOnTheRight = this.me.x > opponent.x;
+    const approaching = opponent.vx === 0 || movingRight === meOnTheRight;
     if (opponent.y > 0 && approaching && this.distance < ANTI_AIR_RANGE) return 'air';
 
     const move = opponentMove(opponent, this.opponentTemplate());
@@ -181,6 +192,7 @@ class Decider {
   private offense(): InputBits[] {
     const { toward, away } = this;
     const aggression = this.profile.aggression;
+    // The CPU zones with Special alone, which performs the `special` move.
     const hasProjectile =
       this.config.fighters[this.cpu.player].moves.special.projectile !== undefined;
 

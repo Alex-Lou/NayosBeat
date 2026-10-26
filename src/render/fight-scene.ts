@@ -9,7 +9,7 @@ import { matchWinner } from '../core/round';
 import { MATCH_END_FRAMES } from '../core/rules';
 import { createInitialState, type FighterState, type GameState } from '../core/state';
 import { step } from '../core/step';
-import { assertValidTemplates } from '../core/validate';
+import { assertValidMatch } from '../core/validate';
 import { PauseInput } from '../input/pause-input';
 import { PlayerInputs } from '../input/player-inputs';
 import { isTouchDevice, TouchControls } from '../input/touch-controls';
@@ -85,7 +85,7 @@ export class FightScene extends Phaser.Scene {
   init(data: FightSceneData): void {
     this.sceneData = data;
     this.config = matchConfigOf(data.setup);
-    assertValidTemplates(this.config.fighters);
+    assertValidMatch(this.config);
     this.state = createInitialState(this.config);
     this.timestep = new FixedTimestep(1000 / TICK_RATE, MAX_TICKS_PER_FRAME);
     const behavior = player2Behavior(data.setup);

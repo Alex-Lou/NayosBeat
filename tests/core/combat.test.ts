@@ -126,6 +126,7 @@ describe('exchanges in a match', () => {
       bufferFrames: 0,
       bufferedInput: 0,
       bufferedMotion: null,
+      bufferedFacing: f.facing,
     });
     expect(frozen.fighters.map(withoutInputs)).toEqual(hit.fighters.map(withoutInputs));
   });

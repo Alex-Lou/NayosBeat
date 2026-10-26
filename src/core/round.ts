@@ -29,7 +29,7 @@ export function updateRound(state: GameState, config: MatchConfig): GameState {
       return withRound(state, {
         ...round,
         timer,
-        wins: result.winner === null ? round.wins : addWin(round.wins, result.winner),
+        wins: addWin(round.wins, result.winner),
         phase: 'roundEnd',
         phaseFrame: 0,
         result,
@@ -48,11 +48,12 @@ export function updateRound(state: GameState, config: MatchConfig): GameState {
   }
 }
 
-/** Index of the match winner, once the match is over. */
+/** Index of the match winner once the match is over; null for a drawn match. */
 export function matchWinner(round: RoundState): 0 | 1 | null {
-  if (round.wins[0] >= ROUNDS_TO_WIN) return 0;
-  if (round.wins[1] >= ROUNDS_TO_WIN) return 1;
-  return null;
+  const first = round.wins[0] >= ROUNDS_TO_WIN;
+  const second = round.wins[1] >= ROUNDS_TO_WIN;
+  if (first === second) return null;
+  return first ? 0 : 1;
 }
 
 /** KO ends the round at once; at time out, the higher remaining health ratio wins. */
@@ -74,7 +75,9 @@ function roundResult(
   return { winner, reason: 'timeout' };
 }
 
-function addWin(wins: readonly [number, number], winner: 0 | 1): readonly [number, number] {
+/** A drawn round counts for both players, so a match always ends. */
+function addWin(wins: readonly [number, number], winner: 0 | 1 | null): readonly [number, number] {
+  if (winner === null) return [wins[0] + 1, wins[1] + 1];
   return winner === 0 ? [wins[0] + 1, wins[1]] : [wins[0], wins[1] + 1];
 }
 

@@ -36,6 +36,7 @@ export function run(
 }
 
 export function makeFighter(overrides: Partial<FighterState> = {}): FighterState {
+  const facing = overrides.facing ?? 1;
   return {
     x: px(400),
     y: 0,
@@ -54,6 +55,7 @@ export function makeFighter(overrides: Partial<FighterState> = {}): FighterState
     bufferFrames: 0,
     bufferedInput: 0,
     bufferedMotion: null,
+    bufferedFacing: facing,
     directionHistory: [],
     comboCount: 0,
     ...overrides,

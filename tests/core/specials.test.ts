@@ -34,9 +34,15 @@ describe('detectMotion', () => {
     expect(detectMotion([Down, Down | Right, Right], -1)).toBeNull();
   });
 
-  it('recognizes a dragon punch, in priority', () => {
+  it('recognizes a dragon punch', () => {
     expect(detectMotion([Right, Down, Down | Right], 1)).toBe('dragonPunch');
-    expect(detectMotion([Right, Down, Down | Right, Right], 1)).toBe('dragonPunch');
+    expect(detectMotion([Right, Down, Down | Right, Down | Right], 1)).toBe('dragonPunch');
+  });
+
+  it('prefers the motion completed most recently', () => {
+    // Walking forward, then a quarter circle: the walk must not turn it into a dragon punch.
+    const walkThenFireball = [Right, Right, Right, Right, 0, Down, Down | Right, Right];
+    expect(detectMotion(walkThenFireball, 1)).toBe('quarterCircleForward');
   });
 
   it('tolerates noise between steps', () => {

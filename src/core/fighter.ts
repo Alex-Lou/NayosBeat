@@ -1,6 +1,7 @@
 import type { BoxSize, FighterTemplate, MoveData, MoveId } from './config';
 import { cleanSocd, DIRECTIONS, has, Input, type InputBits } from './input';
 import { detectMotion } from './motion';
+import { signed } from './numbers';
 import { airMove, groundMove, isCrouchingMove, moveDuration } from './moves';
 import {
   DIRECTION_HISTORY_FRAMES,
@@ -37,7 +38,8 @@ export function updateFighter(
     case 'airHit':
       return airborne(nextFrame(f), template);
     case 'ko':
-      return f.y > 0 ? airborne(nextFrame(f), template) : slide(nextFrame(f));
+      // A KO by a knockdown move launches the fighter even from the ground.
+      return f.y > 0 || f.vy > 0 ? airborne(nextFrame(f), template) : slide(nextFrame(f));
     case 'landing':
       return f.actionFrame + 1 >= template.landingFrames
         ? actOnGround(f, template, opponentX)
@@ -51,8 +53,16 @@ export function updateFighter(
         ? advance(nextFrame(f), move)
         : actOnGround(f, template, opponentX);
     }
-    case 'hitstun':
     case 'blockstun':
+      // The guard can switch between high and low while blocking a string of hits.
+      return f.stunFrames > 0
+        ? {
+            ...slide(nextFrame(f)),
+            stunFrames: f.stunFrames - 1,
+            crouching: has(f.input, Input.Down),
+          }
+        : actOnGround(f, template, opponentX);
+    case 'hitstun':
     case 'knockdown':
       return f.stunFrames > 0
         ? { ...slide(nextFrame(f)), stunFrames: f.stunFrames - 1 }
@@ -87,6 +97,7 @@ export function readInput(
       bufferFrames: INPUT_BUFFER_FRAMES,
       bufferedInput: input,
       bufferedMotion: detectMotion(directionHistory, fighter.facing),
+      bufferedFacing: fighter.facing,
     };
   }
   if (!ageBuffer || fighter.bufferFrames === 0) return withInput;
@@ -131,7 +142,12 @@ function cancelMove(
   }
   if (!fighter.moveConnected || !move.cancelInto) return null;
 
-  const next = groundMove(button, fighter.bufferedInput, fighter.bufferedMotion, fighter.facing);
+  const next = groundMove(
+    button,
+    fighter.bufferedInput,
+    fighter.bufferedMotion,
+    fighter.bufferedFacing,
+  );
   return move.cancelInto.includes(template.moves[next].kind) ? next : null;
 }
 
@@ -150,7 +166,7 @@ function advance(fighter: FighterState, move: MoveData): FighterState {
   const moving =
     range !== undefined && fighter.actionFrame >= range.from && fighter.actionFrame < range.to;
   if (!moving) return fighter.vx === 0 ? fighter : { ...fighter, vx: 0 };
-  const vx = fighter.facing * range.speed;
+  const vx = signed(fighter.facing, range.speed);
   return { ...fighter, vx, x: fighter.x + vx };
 }
 
@@ -171,7 +187,7 @@ function actOnGround(
   const crouching = has(input, Input.Down) && !has(input, Input.Up);
 
   if (f.bufferedAttack) {
-    const move = groundMove(f.bufferedAttack, f.bufferedInput, f.bufferedMotion, f.facing);
+    const move = groundMove(f.bufferedAttack, f.bufferedInput, f.bufferedMotion, f.bufferedFacing);
     return startGroundMove(f, move, template);
   }
   if (has(input, Input.Up) || has(input, Input.Jump)) {
@@ -187,7 +203,7 @@ function actOnGround(
   }
 
   const forward = direction === f.facing;
-  const vx = direction * (forward ? template.walkForwardSpeed : template.walkBackSpeed);
+  const vx = signed(direction, forward ? template.walkForwardSpeed : template.walkBackSpeed);
   return {
     ...continueOrEnter(f, forward ? 'walkForward' : 'walkBack'),
     crouching: false,
@@ -210,7 +226,7 @@ function startAttack(fighter: FighterState, action: FighterAction, move: MoveId)
 function takeOff(fighter: FighterState, template: FighterTemplate): FighterState {
   const direction = horizontalDirection(fighter.input);
   const forward = direction === fighter.facing;
-  const vx = direction * (forward ? template.jumpForwardSpeed : template.jumpBackSpeed);
+  const vx = signed(direction, forward ? template.jumpForwardSpeed : template.jumpBackSpeed);
   return airborne({ ...enter(fighter, 'air'), vx, vy: template.jumpVelocity }, template);
 }
 
@@ -236,8 +252,7 @@ function airborne(fighter: FighterState, template: FighterTemplate): FighterStat
 function slide(fighter: FighterState): FighterState {
   if (fighter.vx === 0) return fighter;
   const speed = Math.max(0, Math.abs(fighter.vx) - PUSHBACK_FRICTION);
-  // Avoids -0, which would make otherwise identical states compare as different.
-  const vx = speed === 0 ? 0 : Math.sign(fighter.vx) * speed;
+  const vx = signed(fighter.vx > 0 ? 1 : -1, speed);
   return { ...fighter, x: fighter.x + fighter.vx, vx };
 }
 

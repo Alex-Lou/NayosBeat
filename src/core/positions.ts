@@ -36,9 +36,12 @@ export function resolvePositions(
   let xB = clamp(b.fighter.x, rangeB);
 
   // Corner pushback: when a wall stops a fighter sliding from a hit, the opponent is pushed
-  // away instead, so pressure cannot be kept up forever in the corner.
-  if (isSliding(a.fighter)) xB = clamp(xB + (xA - a.fighter.x), rangeB);
-  if (isSliding(b.fighter)) xA = clamp(xA + (xB - b.fighter.x), rangeA);
+  // away instead, so pressure cannot be kept up forever in the corner. Both wall stops are
+  // measured before either push is applied, so the result does not depend on player order.
+  const wallStopA = isSliding(a.fighter) ? xA - a.fighter.x : 0;
+  const wallStopB = isSliding(b.fighter) ? xB - b.fighter.x : 0;
+  xA = clamp(xA + wallStopB, rangeA);
+  xB = clamp(xB + wallStopA, rangeB);
 
   const overlap = horizontalOverlap(a, xA, b, xB);
   if (overlap > 0) {

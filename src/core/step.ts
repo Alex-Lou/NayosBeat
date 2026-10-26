@@ -45,17 +45,21 @@ export function step(
   );
 
   const projectiles = updateProjectiles(state.projectiles, [a, b], state.cameraX, config);
-  const strikeByA = findHit(a, templateA, b, templateB);
-  const strikeByB = findHit(b, templateB, a, templateA);
-  const projectileOnA = strikeByB ? null : findProjectileHit(projectiles, 0, a, config);
-  const projectileOnB = strikeByA ? null : findProjectileHit(projectiles, 1, b, config);
+  // Once the round is decided, attacks still play out but can no longer change the result.
+  const strikeByA = fighting ? findHit(a, templateA, b, templateB) : null;
+  const strikeByB = fighting ? findHit(b, templateB, a, templateA) : null;
+  const projectileOnA =
+    fighting && !strikeByB ? findProjectileHit(projectiles, 0, a, config) : null;
+  const projectileOnB =
+    fighting && !strikeByA ? findProjectileHit(projectiles, 1, b, config) : null;
+  const minHealth = config.training ? 1 : 0;
 
   const throwTech = strikeByA?.kind === 'throw' && strikeByB?.kind === 'throw';
   const [nextA, nextB] = throwTech
     ? [techThrow(a, b.x), techThrow(b, a.x)]
     : [
-        resolveExchange(a, b.x, strikeByB, strikeByA, projectileOnA),
-        resolveExchange(b, a.x, strikeByA, strikeByB, projectileOnB),
+        resolveExchange(a, b.x, strikeByB, strikeByA, projectileOnA, minHealth),
+        resolveExchange(b, a.x, strikeByA, strikeByB, projectileOnB, minHealth),
       ];
 
   const spent = [projectileOnA?.projectile, projectileOnB?.projectile];
@@ -92,12 +96,13 @@ function resolveExchange(
   strikeTaken: MoveData | null,
   strikeLanded: MoveData | null,
   projectileTaken: ProjectileHit | null,
+  minHealth: number,
 ): FighterState {
-  if (strikeTaken) return applyHit(fighter, opponentX, strikeTaken);
+  if (strikeTaken) return applyHit(fighter, opponentX, strikeTaken, minHealth);
   if (projectileTaken) {
     const { projectile, move } = projectileTaken;
     // The hit comes from behind the projectile, i.e. from the side of whoever fired it.
-    return applyHit(fighter, projectile.x - projectile.facing, move);
+    return applyHit(fighter, projectile.x - projectile.facing, move, minHealth);
   }
   if (strikeLanded) return { ...fighter, moveConnected: true };
   return fighter;

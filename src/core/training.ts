@@ -3,7 +3,7 @@ import { TRAINING_REFILL_FRAMES } from './rules';
 import type { FighterAction, FighterState, GameState } from './state';
 
 /** States in which a fighter is left alone and can be healed. */
-const NEUTRAL_ACTIONS: ReadonlySet<FighterAction> = new Set([
+const RESTING_ACTIONS: ReadonlySet<FighterAction> = new Set([
   'idle',
   'walkForward',
   'walkBack',
@@ -11,8 +11,8 @@ const NEUTRAL_ACTIONS: ReadonlySet<FighterAction> = new Set([
 ]);
 
 /**
- * Training mode rules, applied after each tick: nobody can be KO'd, and health is restored
- * once a fighter has been back in a neutral state for a moment.
+ * Training mode rule, applied after each tick: health is restored once a fighter has been
+ * resting for a moment. (Nobody can be KO'd either: see `applyHit`'s minimum health.)
  */
 export function applyTrainingRules(state: GameState, config: MatchConfig): GameState {
   if (!config.training) return state;
@@ -28,7 +28,6 @@ export function applyTrainingRules(state: GameState, config: MatchConfig): GameS
 
 function trainingHealth(fighter: FighterState, maxHealth: number): FighterState {
   const rested =
-    NEUTRAL_ACTIONS.has(fighter.action) && fighter.actionFrame >= TRAINING_REFILL_FRAMES;
-  const health = rested ? maxHealth : Math.max(1, fighter.health);
-  return health === fighter.health ? fighter : { ...fighter, health };
+    RESTING_ACTIONS.has(fighter.action) && fighter.actionFrame >= TRAINING_REFILL_FRAMES;
+  return rested && fighter.health !== maxHealth ? { ...fighter, health: maxHealth } : fighter;
 }

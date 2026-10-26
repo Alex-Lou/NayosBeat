@@ -2,6 +2,7 @@ import { intersects, toWorld, type WorldBox } from './boxes';
 import type { Box, FighterTemplate, Guard, MoveData } from './config';
 import { has, Input } from './input';
 import { isActiveFrame, isInvincible } from './moves';
+import { signed } from './numbers';
 import {
   AIR_HIT_LIFT,
   COMBO_SCALING_FLOOR,
@@ -76,10 +77,16 @@ export function findHit(
 /**
  * Resolves a connected move on the defender: block, hit, knockdown, or KO.
  * `attackerX` is where the hit comes from (the attacker, or a projectile's back).
+ * Health never drops below `minHealth`: 1 in training, where nobody can be KO'd.
  */
-export function applyHit(defender: FighterState, attackerX: number, move: MoveData): FighterState {
+export function applyHit(
+  defender: FighterState,
+  attackerX: number,
+  move: MoveData,
+  minHealth = 0,
+): FighterState {
   const attackerOnRight = isOnRight(attackerX, defender);
-  const vx = (attackerOnRight ? -1 : 1) * move.pushback;
+  const vx = signed(attackerOnRight ? -1 : 1, move.pushback);
   const interrupted = {
     ...defender,
     actionFrame: 0,
@@ -99,7 +106,7 @@ export function applyHit(defender: FighterState, attackerX: number, move: MoveDa
   }
 
   const comboCount = defender.action === 'hitstun' ? defender.comboCount + 1 : 1;
-  const health = Math.max(0, defender.health - scaledDamage(move.damage, comboCount));
+  const health = Math.max(minHealth, defender.health - scaledDamage(move.damage, comboCount));
   const airborne = defender.y > 0;
   if (health === 0) {
     const vy = airborne || move.knockdown ? AIR_HIT_LIFT : 0;
@@ -128,7 +135,7 @@ export function techThrow(fighter: FighterState, opponentX: number): FighterStat
     move: null,
     moveConnected: false,
     stunFrames: THROW_TECH_STUN,
-    vx: away * THROW_TECH_PUSHBACK,
+    vx: signed(away, THROW_TECH_PUSHBACK),
   };
 }
 

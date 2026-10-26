@@ -1,7 +1,8 @@
 import { intersects, toWorld, type WorldBox } from './boxes';
 import { canBeHit, hurtboxInWorld } from './combat';
-import type { MatchConfig, MoveData } from './config';
+import type { MatchConfig, MoveData, ProjectileData } from './config';
 import { CAMERA_WIDTH_PX, px } from './constants';
+import { signed } from './numbers';
 import type { FighterState, ProjectileState } from './state';
 
 /** Projectiles disappear once this far past the screen edge. */
@@ -17,10 +18,15 @@ export function projectileData(projectile: ProjectileState, config: MatchConfig)
   return config.fighters[projectile.owner].moves[projectile.move];
 }
 
+/** The projectile description of the move that fired it (guaranteed by data validation). */
+function projectileSpec(projectile: ProjectileState, config: MatchConfig): ProjectileData {
+  const spec = projectileData(projectile, config).projectile;
+  if (!spec) throw new Error(`Move ${projectile.move} has no projectile`);
+  return spec;
+}
+
 export function projectileBox(projectile: ProjectileState, config: MatchConfig): WorldBox {
-  const hitbox = projectileData(projectile, config).projectile?.hitbox;
-  if (!hitbox) throw new Error(`Move ${projectile.move} has no projectile`);
-  return toWorld(hitbox, projectile.x, 0, projectile.facing);
+  return toWorld(projectileSpec(projectile, config).hitbox, projectile.x, 0, projectile.facing);
 }
 
 /**
@@ -38,8 +44,7 @@ export function updateProjectiles(
 
   const result: ProjectileState[] = [];
   for (const projectile of projectiles) {
-    const speed = projectileData(projectile, config).projectile?.speed ?? 0;
-    const x = projectile.x + projectile.facing * speed;
+    const x = projectile.x + signed(projectile.facing, projectileSpec(projectile, config).speed);
     if (x >= minX && x <= maxX) result.push({ ...projectile, x });
   }
 
@@ -52,7 +57,7 @@ export function updateProjectiles(
     result.push({
       owner,
       move: fighter.move,
-      x: fighter.x + fighter.facing * move.projectile.spawnX,
+      x: fighter.x + signed(fighter.facing, move.projectile.spawnX),
       facing: fighter.facing,
     });
   }

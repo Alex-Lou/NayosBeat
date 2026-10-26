@@ -49,9 +49,13 @@ export interface FighterState {
   /** Attack pressed while busy, started as soon as the fighter can act. */
   readonly bufferedAttack: AttackButton | null;
   readonly bufferFrames: number;
-  /** Direction held and motion completed when the buffered button was pressed. */
+  /**
+   * Direction held, motion completed and side faced when the buffered button was pressed:
+   * the move is read as the player meant it, even after a cross-up turned them around.
+   */
   readonly bufferedInput: InputBits;
   readonly bufferedMotion: Motion | null;
+  readonly bufferedFacing: Facing;
   /** Directions held on the last ticks (oldest first), to recognize motions such as ↓↘→. */
   readonly directionHistory: readonly InputBits[];
   /** Consecutive hits taken without being able to act: drives the combo counter and scaling. */
@@ -154,6 +158,7 @@ function createFighter(x: number, facing: Facing, template: FighterTemplate): Fi
     bufferFrames: 0,
     bufferedInput: 0,
     bufferedMotion: null,
+    bufferedFacing: facing,
     directionHistory: [],
     comboCount: 0,
   };

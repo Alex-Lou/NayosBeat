@@ -53,10 +53,20 @@ describe('round flow', () => {
     expect(state.round.wins).toEqual([0, 1]);
   });
 
-  it('gives no win on a double KO', () => {
+  it('gives the round to both players on a double KO, so a match always ends', () => {
     const state = updateRound(withHealth(fightState(), 0, 0), MATCH);
     expect(state.round.result).toEqual({ winner: null, reason: 'ko' });
-    expect(state.round.wins).toEqual([0, 0]);
+    expect(state.round.wins).toEqual([1, 1]);
+  });
+
+  it('ends in a drawn match when both players reach the winning score together', () => {
+    const tied = {
+      ...fightState(),
+      round: { ...fightState().round, wins: [ROUNDS_TO_WIN - 1, ROUNDS_TO_WIN - 1] as const },
+    };
+    const ended = advance(updateRound(withHealth(tied, 0, 0), MATCH), ROUND_END_FRAMES);
+    expect(ended.round.phase).toBe('matchEnd');
+    expect(matchWinner(ended.round)).toBeNull();
   });
 
   it('decides a time out on remaining health ratio', () => {
