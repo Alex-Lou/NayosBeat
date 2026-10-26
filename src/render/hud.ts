@@ -1,0 +1,153 @@
+import Phaser from 'phaser';
+import type { MatchConfig } from '../core/config';
+import { TICK_RATE } from '../core/constants';
+import { INTRO_FRAMES, ROUNDS_TO_WIN } from '../core/rules';
+import { matchWinner } from '../core/round';
+import type { GameState, RoundState } from '../core/state';
+import { VIEW_SIZE } from './view';
+
+const MARGIN = 8;
+const BAR_TOP = 8;
+const BAR_HEIGHT = 8;
+const BAR_WIDTH = 180;
+const PIP_SIZE = 5;
+const PIP_GAP = 3;
+
+const COLORS = {
+  barBackground: 0x2a1a1a,
+  barFill: 0xf0c94a,
+  barBorder: 0xffffff,
+  pipEmpty: 0x444455,
+  pipWon: 0xf0c94a,
+} as const;
+
+const TEXT_STYLE: Phaser.Types.GameObjects.Text.TextStyle = {
+  fontFamily: 'monospace',
+  color: '#ffffff',
+  stroke: '#000000',
+  strokeThickness: 3,
+};
+
+/** Health bars, timer, round wins and announcements. Fixed on screen, above the stage. */
+export class Hud {
+  private readonly bars: [Phaser.GameObjects.Rectangle, Phaser.GameObjects.Rectangle];
+  private readonly pips: [Phaser.GameObjects.Rectangle[], Phaser.GameObjects.Rectangle[]];
+  private readonly timer: Phaser.GameObjects.Text;
+  private readonly announcer: Phaser.GameObjects.Text;
+
+  constructor(
+    scene: Phaser.Scene,
+    private readonly config: MatchConfig,
+  ) {
+    const { width } = VIEW_SIZE;
+    const leftX = MARGIN;
+    const rightX = width - MARGIN - BAR_WIDTH;
+
+    this.bars = [this.createBar(scene, leftX, 0), this.createBar(scene, rightX, 1)];
+    this.pips = [this.createPips(scene, leftX + BAR_WIDTH, -1), this.createPips(scene, rightX, 1)];
+
+    const nameY = BAR_TOP + BAR_HEIGHT + 2;
+    this.fixed(scene.add.text(leftX, nameY, config.fighters[0].name, smallText()));
+    this.fixed(
+      scene.add
+        .text(rightX + BAR_WIDTH, nameY, config.fighters[1].name, smallText())
+        .setOrigin(1, 0),
+    );
+
+    this.timer = this.fixed(
+      scene.add.text(width / 2, BAR_TOP - 3, '', { ...TEXT_STYLE, fontSize: '16px' }),
+    ).setOrigin(0.5, 0);
+    this.announcer = this.fixed(
+      scene.add.text(width / 2, VIEW_SIZE.height / 2 - 30, '', { ...TEXT_STYLE, fontSize: '24px' }),
+    ).setOrigin(0.5);
+  }
+
+  update(state: GameState): void {
+    const [a, b] = state.fighters;
+    this.setBar(0, a.health / this.config.fighters[0].maxHealth);
+    this.setBar(1, b.health / this.config.fighters[1].maxHealth);
+    this.setPips(state.round);
+    setTextIfChanged(this.timer, String(Math.ceil(state.round.timer / TICK_RATE)));
+    setTextIfChanged(this.announcer, this.announcement(state.round));
+  }
+
+  private announcement(round: RoundState): string {
+    switch (round.phase) {
+      case 'intro':
+        return round.phaseFrame < INTRO_FRAMES / 2 ? `ROUND ${round.number}` : 'FIGHT !';
+      case 'fight':
+        return '';
+      case 'roundEnd': {
+        const result = round.result;
+        if (!result) return '';
+        if (result.reason === 'timeout') return result.winner === null ? 'ÉGALITÉ' : 'TEMPS !';
+        return result.winner === null ? 'DOUBLE K.O.' : 'K.O.';
+      }
+      case 'matchEnd': {
+        const winner = matchWinner(round);
+        return winner === null ? '' : `${this.config.fighters[winner].name} GAGNE`;
+      }
+    }
+  }
+
+  /** Health drains toward the outer edge of the screen, as in classic fighting games. */
+  private setBar(player: 0 | 1, ratio: number): void {
+    const bar = this.bars[player];
+    const width = Math.round(BAR_WIDTH * Math.max(0, ratio));
+    if (bar.width !== width) bar.setSize(width, BAR_HEIGHT);
+  }
+
+  private setPips(round: RoundState): void {
+    for (const player of [0, 1] as const) {
+      this.pips[player].forEach((pip, index) => {
+        pip.setFillStyle(index < round.wins[player] ? COLORS.pipWon : COLORS.pipEmpty);
+      });
+    }
+  }
+
+  private createBar(scene: Phaser.Scene, x: number, player: 0 | 1): Phaser.GameObjects.Rectangle {
+    this.fixed(
+      scene.add
+        .rectangle(x, BAR_TOP, BAR_WIDTH, BAR_HEIGHT, COLORS.barBackground)
+        .setStrokeStyle(1, COLORS.barBorder)
+        .setOrigin(0, 0),
+    );
+    const anchorX = player === 0 ? x : x + BAR_WIDTH;
+    return this.fixed(
+      scene.add
+        .rectangle(anchorX, BAR_TOP, BAR_WIDTH, BAR_HEIGHT, COLORS.barFill)
+        .setOrigin(player === 0 ? 0 : 1, 0),
+    );
+  }
+
+  /** Round win markers, laid out from the bar's inner end toward the timer. */
+  private createPips(
+    scene: Phaser.Scene,
+    innerX: number,
+    direction: 1 | -1,
+  ): Phaser.GameObjects.Rectangle[] {
+    const y = BAR_TOP + BAR_HEIGHT + 4;
+    return Array.from({ length: ROUNDS_TO_WIN }, (_, index) => {
+      const offset = (index + 1) * (PIP_SIZE + PIP_GAP);
+      const x = direction === -1 ? innerX - offset : innerX + offset - PIP_SIZE;
+      return this.fixed(
+        scene.add.rectangle(x, y, PIP_SIZE, PIP_SIZE, COLORS.pipEmpty).setOrigin(0, 0),
+      );
+    });
+  }
+
+  private fixed<T extends Phaser.GameObjects.Rectangle | Phaser.GameObjects.Text>(object: T): T {
+    object.setScrollFactor(0);
+    object.setDepth(10);
+    return object;
+  }
+}
+
+function smallText(): Phaser.Types.GameObjects.Text.TextStyle {
+  return { ...TEXT_STYLE, fontSize: '10px', strokeThickness: 2 };
+}
+
+/** Re-rendering a text texture is costly: only do it when the content changes. */
+function setTextIfChanged(text: Phaser.GameObjects.Text, value: string): void {
+  if (text.text !== value) text.setText(value);
+}

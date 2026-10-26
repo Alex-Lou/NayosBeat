@@ -10,6 +10,8 @@ export const PLAYER1_KEYS: KeyBindings = {
   KeyA: Input.Left,
   KeyD: Input.Right,
   Space: Input.Jump,
+  KeyJ: Input.Light,
+  KeyK: Input.Heavy,
 };
 
 export const PLAYER2_KEYS: KeyBindings = {
@@ -17,6 +19,11 @@ export const PLAYER2_KEYS: KeyBindings = {
   ArrowDown: Input.Down,
   ArrowLeft: Input.Left,
   ArrowRight: Input.Right,
+  Numpad1: Input.Light,
+  Numpad2: Input.Heavy,
+  // Laptops without a numeric keypad: the two keys left of right Shift.
+  Period: Input.Light,
+  Slash: Input.Heavy,
 };
 
 export function bitsFromKeys(pressed: ReadonlySet<string>, bindings: KeyBindings): InputBits {
@@ -25,9 +32,15 @@ export function bitsFromKeys(pressed: ReadonlySet<string>, bindings: KeyBindings
   return bits;
 }
 
-/** Tracks held keys. Only bound keys are captured, so browser shortcuts keep working. */
+/**
+ * Tracks held keys. Only bound keys are captured, so browser shortcuts keep working.
+ * A key pressed and released between two reads still counts as held for one read,
+ * so very quick taps are never lost.
+ */
 export class KeyboardInput {
-  private readonly pressed = new Set<string>();
+  private readonly held = new Set<string>();
+  /** Keys pressed since the last `endFrame`, even if already released. */
+  private readonly tapped = new Set<string>();
   private readonly boundCodes: ReadonlySet<string>;
 
   constructor(
@@ -42,30 +55,39 @@ export class KeyboardInput {
 
   read(player: number): InputBits {
     const bindings = this.bindings[player];
-    return bindings ? bitsFromKeys(this.pressed, bindings) : 0;
+    if (!bindings) return 0;
+    return bitsFromKeys(this.held, bindings) | bitsFromKeys(this.tapped, bindings);
+  }
+
+  /** Call once all players have been read for the current frame. */
+  endFrame(): void {
+    this.tapped.clear();
   }
 
   dispose(): void {
     this.target.removeEventListener('keydown', this.onKeyDown);
     this.target.removeEventListener('keyup', this.onKeyUp);
     this.target.removeEventListener('blur', this.onBlur);
-    this.pressed.clear();
+    this.held.clear();
+    this.tapped.clear();
   }
 
   private readonly onKeyDown = (event: KeyboardEvent): void => {
     if (!this.boundCodes.has(event.code)) return;
     event.preventDefault();
-    this.pressed.add(event.code);
+    this.held.add(event.code);
+    this.tapped.add(event.code);
   };
 
   private readonly onKeyUp = (event: KeyboardEvent): void => {
     if (!this.boundCodes.has(event.code)) return;
     event.preventDefault();
-    this.pressed.delete(event.code);
+    this.held.delete(event.code);
   };
 
   /** Key-up events are lost when the window loses focus: release everything. */
   private readonly onBlur = (): void => {
-    this.pressed.clear();
+    this.held.clear();
+    this.tapped.clear();
   };
 }

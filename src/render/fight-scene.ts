@@ -3,7 +3,8 @@ import type { MatchConfig } from '../core/config';
 import { SUBPIXELS_PER_PIXEL, TICK_RATE } from '../core/constants';
 import { createInitialState, type FighterState } from '../core/state';
 import { step } from '../core/step';
-import { GREYBOX_FIGHTER } from '../data/fighters';
+import { assertValidTemplates } from '../core/validate';
+import { POLYVALENT, RUSHDOWN } from '../data/fighters';
 import { TRAINING_STAGE } from '../data/stages';
 import { PlayerInputs } from '../input/player-inputs';
 import { isTouchDevice, TouchControls } from '../input/touch-controls';
@@ -11,6 +12,7 @@ import { FixedTimestep } from '../loop/fixed-timestep';
 import { DebugOverlay, isDebugEnabled } from './debug-overlay';
 import { FighterView } from './fighter-view';
 import { requestLandscapeFullscreen } from './fullscreen';
+import { Hud } from './hud';
 import { VIEW_SIZE } from './view';
 
 /** Caps the catch-up after a long stall (~83 ms of simulation at 60 Hz). */
@@ -32,8 +34,9 @@ const COLORS = {
 
 const MATCH: MatchConfig = {
   stage: TRAINING_STAGE,
-  fighters: [GREYBOX_FIGHTER, GREYBOX_FIGHTER],
+  fighters: [POLYVALENT, RUSHDOWN],
 };
+assertValidTemplates(MATCH.fighters);
 
 /**
  * Runs the simulation at a fixed tick rate and displays it.
@@ -44,6 +47,7 @@ export class FightScene extends Phaser.Scene {
   private readonly timestep = new FixedTimestep(1000 / TICK_RATE, MAX_TICKS_PER_FRAME);
   private inputs: PlayerInputs | undefined;
   private fighterViews: [FighterView, FighterView] | undefined;
+  private hud: Hud | undefined;
   private debugOverlay: DebugOverlay | undefined;
 
   constructor() {
@@ -51,18 +55,20 @@ export class FightScene extends Phaser.Scene {
   }
 
   create(): void {
+    const debug = isDebugEnabled();
     this.drawStage();
     this.fighterViews = [
-      new FighterView(this, COLORS.player1, GROUND_Y),
-      new FighterView(this, COLORS.player2, GROUND_Y),
+      new FighterView(this, COLORS.player1, GROUND_Y, debug),
+      new FighterView(this, COLORS.player2, GROUND_Y, debug),
     ];
+    this.hud = new Hud(this, MATCH);
 
     const touch = isTouchDevice()
       ? new TouchControls(document.body, requestLandscapeFullscreen)
       : undefined;
     this.inputs = new PlayerInputs(window, touch);
 
-    if (isDebugEnabled()) this.debugOverlay = new DebugOverlay(document.body);
+    if (debug) this.debugOverlay = new DebugOverlay(document.body);
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.dispose, this);
     this.syncViews();
@@ -92,6 +98,7 @@ export class FightScene extends Phaser.Scene {
     const [a, b] = this.state.fighters;
     viewA?.update(a, MATCH.fighters[0]);
     viewB?.update(b, MATCH.fighters[1]);
+    this.hud?.update(this.state);
 
     const cameraLeft = this.state.cameraX / SUBPIXELS_PER_PIXEL - VIEW_SIZE.width / 2;
     this.cameras.main.setScroll(Math.round(cameraLeft), 0);
@@ -107,7 +114,7 @@ export class FightScene extends Phaser.Scene {
   private readonly describeState = (): string => {
     const [a, b] = this.state.fighters;
     return [
-      `frame  ${this.state.frame}`,
+      `frame  ${this.state.frame}  ${this.state.round.phase}  hitstop=${this.state.hitstop}`,
       `P1     ${describeFighter(a)}`,
       `P2     ${describeFighter(b)}`,
     ].join('\n');
@@ -135,5 +142,6 @@ export class FightScene extends Phaser.Scene {
 function describeFighter(fighter: FighterState): string {
   const x = Math.round(fighter.x / SUBPIXELS_PER_PIXEL);
   const y = Math.round(fighter.y / SUBPIXELS_PER_PIXEL);
-  return `${fighter.action}[${fighter.actionFrame}] x=${x} y=${y} ${fighter.facing > 0 ? '→' : '←'}`;
+  const move = fighter.move ? ` ${fighter.move}` : '';
+  return `${fighter.action}${move}[${fighter.actionFrame}] hp=${fighter.health} x=${x} y=${y}`;
 }

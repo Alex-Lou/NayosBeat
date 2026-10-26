@@ -79,10 +79,8 @@
       }
       .touch-button {
         position: absolute;
-        right: calc(24px + env(safe-area-inset-right));
-        bottom: calc(24px + env(safe-area-inset-bottom));
-        width: 72px;
-        height: 72px;
+        width: 64px;
+        height: 64px;
         border-radius: 50%;
         display: flex;
         align-items: center;
@@ -91,6 +89,18 @@
         color: rgba(255, 255, 255, 0.8);
         background: rgba(255, 255, 255, 0.15);
         border: 2px solid rgba(255, 255, 255, 0.35);
+      }
+      .touch-jump {
+        right: calc(20px + env(safe-area-inset-right));
+        bottom: calc(20px + env(safe-area-inset-bottom));
+      }
+      .touch-light {
+        right: calc(96px + env(safe-area-inset-right));
+        bottom: calc(52px + env(safe-area-inset-bottom));
+      }
+      .touch-heavy {
+        right: calc(32px + env(safe-area-inset-right));
+        bottom: calc(100px + env(safe-area-inset-bottom));
       }
       .rotate-hint {
         display: none;

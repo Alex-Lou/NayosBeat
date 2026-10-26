@@ -11,6 +11,8 @@ const STICK_DEADZONE = 0.5;
 /** Button indices of the W3C "standard" mapping (Xbox / PlayStation layouts). */
 const Button = {
   South: 0,
+  West: 2,
+  North: 3,
   DpadUp: 12,
   DpadDown: 13,
   DpadLeft: 14,
@@ -28,6 +30,8 @@ export function bitsFromGamepad(pad: GamepadSnapshot): InputBits {
   if (pressed(Button.DpadLeft) || stickX < -STICK_DEADZONE) bits |= Input.Left;
   if (pressed(Button.DpadRight) || stickX > STICK_DEADZONE) bits |= Input.Right;
   if (pressed(Button.South)) bits |= Input.Jump;
+  if (pressed(Button.West)) bits |= Input.Light;
+  if (pressed(Button.North)) bits |= Input.Heavy;
   return bits;
 }
 

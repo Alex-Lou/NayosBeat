@@ -10,6 +10,8 @@ export const Input = {
   Left: 1 << 2,
   Right: 1 << 3,
   Jump: 1 << 4,
+  Light: 1 << 5,
+  Heavy: 1 << 6,
 } as const;
 
 export function has(bits: InputBits, flag: number): boolean {

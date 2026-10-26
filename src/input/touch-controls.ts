@@ -7,6 +7,12 @@ const KNOB_TRAVEL_PX = 36;
 /** sin(22.5°): splits the circle into 8 equal 45° direction sectors. */
 const SECTOR_THRESHOLD = Math.sin(Math.PI / 8);
 
+const BUTTONS = [
+  { label: 'L', flag: Input.Light, className: 'touch-light' },
+  { label: 'H', flag: Input.Heavy, className: 'touch-heavy' },
+  { label: 'SAUT', flag: Input.Jump, className: 'touch-jump' },
+] as const;
+
 /** Converts a stick offset (screen coordinates, y pointing down) into direction flags. */
 export function bitsFromStick(dx: number, dy: number, deadzone: number): InputBits {
   const length = Math.hypot(dx, dy);
@@ -28,7 +34,7 @@ export function isTouchDevice(): boolean {
 
 /**
  * On-screen controls for player 1: a floating stick on the left half of the screen
- * (it appears under the thumb) and a jump button on the right. Multi-touch capable.
+ * (it appears under the thumb) and action buttons on the right. Multi-touch capable.
  */
 export class TouchControls {
   private readonly root: HTMLDivElement;
@@ -39,23 +45,22 @@ export class TouchControls {
   private stickOriginX = 0;
   private stickOriginY = 0;
   private stickBits: InputBits = 0;
-  private jumpPointer: number | null = null;
+  /** Button flag held by each active pointer. */
+  private readonly buttonPointers = new Map<number, number>();
+  /** Buttons pressed since the last read, so a tap shorter than a frame is not lost. */
+  private tappedBits: InputBits = 0;
 
   /** @param onFirstTouch Called once, from inside a user gesture (e.g. to go fullscreen). */
   constructor(
     parent: HTMLElement,
     private onFirstTouch: (() => void) | undefined,
   ) {
-    this.root = createElement('div', 'touch-controls');
-    const stickZone = createElement('div', 'touch-stick-zone');
-    this.stickBase = createElement('div', 'touch-stick-base');
-    this.stickKnob = createElement('div', 'touch-stick-knob');
-    const jumpButton = createElement('div', 'touch-button');
-    jumpButton.textContent = 'SAUT';
-
+    this.root = createDiv('touch-controls');
+    const stickZone = createDiv('touch-stick-zone');
+    this.stickBase = createDiv('touch-stick-base');
+    this.stickKnob = createDiv('touch-stick-knob');
     this.stickBase.appendChild(this.stickKnob);
-    this.root.append(stickZone, this.stickBase, jumpButton);
-    parent.appendChild(this.root);
+    this.root.append(stickZone, this.stickBase);
 
     this.root.addEventListener('contextmenu', (e) => e.preventDefault());
     this.root.addEventListener('pointerdown', this.notifyFirstTouch);
@@ -66,19 +71,31 @@ export class TouchControls {
     stickZone.addEventListener('pointercancel', this.onStickUp);
     stickZone.addEventListener('lostpointercapture', this.onStickUp);
 
-    jumpButton.addEventListener('pointerdown', this.onJumpDown);
-    jumpButton.addEventListener('pointerup', this.onJumpUp);
-    jumpButton.addEventListener('pointercancel', this.onJumpUp);
-    jumpButton.addEventListener('lostpointercapture', this.onJumpUp);
+    for (const { label, flag, className } of BUTTONS) {
+      const button = createDiv(`touch-button ${className}`);
+      button.textContent = label;
+      button.addEventListener('pointerdown', (event) => this.onButtonDown(event, flag));
+      button.addEventListener('pointerup', this.onButtonUp);
+      button.addEventListener('pointercancel', this.onButtonUp);
+      button.addEventListener('lostpointercapture', this.onButtonUp);
+      this.root.appendChild(button);
+    }
+
+    parent.appendChild(this.root);
   }
 
+  /** Call once per frame. */
   read(): InputBits {
-    return this.stickBits | (this.jumpPointer !== null ? Input.Jump : 0);
+    let bits = this.stickBits | this.tappedBits;
+    for (const flag of this.buttonPointers.values()) bits |= flag;
+    this.tappedBits = 0;
+    return bits;
   }
 
   /** Removing the elements also drops every listener attached to them. */
   dispose(): void {
     this.root.remove();
+    this.buttonPointers.clear();
   }
 
   private readonly notifyFirstTouch = (): void => {
@@ -112,13 +129,14 @@ export class TouchControls {
     this.stickBase.classList.remove('active');
   };
 
-  private readonly onJumpDown = (event: PointerEvent): void => {
+  private onButtonDown(event: PointerEvent, flag: number): void {
     (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
-    this.jumpPointer = event.pointerId;
-  };
+    this.buttonPointers.set(event.pointerId, flag);
+    this.tappedBits |= flag;
+  }
 
-  private readonly onJumpUp = (event: PointerEvent): void => {
-    if (event.pointerId === this.jumpPointer) this.jumpPointer = null;
+  private readonly onButtonUp = (event: PointerEvent): void => {
+    this.buttonPointers.delete(event.pointerId);
   };
 
   private moveKnob(dx: number, dy: number): void {
@@ -128,8 +146,8 @@ export class TouchControls {
   }
 }
 
-function createElement(tag: 'div', className: string): HTMLDivElement {
-  const element = document.createElement(tag);
+function createDiv(className: string): HTMLDivElement {
+  const element = document.createElement('div');
   element.className = className;
   return element;
 }

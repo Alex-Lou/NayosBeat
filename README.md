@@ -19,10 +19,22 @@ npm run dev        # serveur local, accessible aussi depuis un téléphone sur l
 | Déplacements | WASD (ZQSD en AZERTY) | Flèches | Croix / stick gauche | Joystick flottant, moitié gauche |
 | Saut | W / Espace | ↑ | A / ✕ | Bouton SAUT |
 | Accroupi | S | ↓ | Bas | Joystick vers le bas |
+| Coup léger | J | Pavé 1 ou `.` | X / □ | Bouton L |
+| Coup lourd | K | Pavé 2 ou `/` | Y / △ | Bouton H |
+| Garde | Maintenir arrière (accroupi pour les coups bas) | | | |
 
 Les manettes sont attribuées dans l'ordre de connexion (1re → joueur 1, 2e → joueur 2).
 
-Ajouter `?debug` à l'URL affiche l'overlay de debug en production (toujours actif en dev).
+Les touches de P2 suivent la position physique : `.` et `/` sont les deux touches à gauche du Maj droit (`:` et `!` en AZERTY).
+
+Ajouter `?debug` à l'URL affiche l'overlay de debug et les hurtbox (toujours actif en dev).
+
+## Combat
+
+- Deux modèles de combattants : **Polyvalent** (portée, 1000 PV) et **Rushdown** (vitesse, 900 PV).
+- 6 coups chacun (léger/lourd debout, accroupi, sauté), décrits comme données dans `src/data/fighters.ts`.
+- Coups bas à parer accroupi, coups sautés à parer debout. Hitstop, pushback, chute au sol si touché en l'air.
+- Rounds de 99 s, 2 rounds gagnants, nouveau match automatique.
 
 ## Scripts
 

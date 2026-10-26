@@ -1,12 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import { Input } from '../../src/core/input';
 import { bitsFromGamepad, type GamepadSnapshot } from '../../src/input/gamepad';
-import { bitsFromKeys, PLAYER1_KEYS, PLAYER2_KEYS } from '../../src/input/keyboard';
+import { bitsFromKeys, KeyboardInput, PLAYER1_KEYS, PLAYER2_KEYS } from '../../src/input/keyboard';
 import { bitsFromStick } from '../../src/input/touch-controls';
 
 describe('bitsFromKeys', () => {
   it('maps held keys to input flags', () => {
     expect(bitsFromKeys(new Set(['KeyD', 'Space']), PLAYER1_KEYS)).toBe(Input.Right | Input.Jump);
+  });
+
+  it('maps attack buttons for both players, with a laptop fallback for player 2', () => {
+    expect(bitsFromKeys(new Set(['KeyJ', 'KeyK']), PLAYER1_KEYS)).toBe(Input.Light | Input.Heavy);
+    expect(bitsFromKeys(new Set(['Numpad1']), PLAYER2_KEYS)).toBe(Input.Light);
+    expect(bitsFromKeys(new Set(['Slash']), PLAYER2_KEYS)).toBe(Input.Heavy);
   });
 
   it("ignores the other player's keys", () => {
@@ -20,9 +26,54 @@ function pad(pressedButtons: number[] = [], axes: number[] = [0, 0]): GamepadSna
   return { buttons, axes };
 }
 
+describe('KeyboardInput', () => {
+  function key(type: 'keydown' | 'keyup', code: string): Event {
+    return Object.assign(new Event(type, { cancelable: true }), { code });
+  }
+
+  function setup() {
+    const target = new EventTarget();
+    const keyboard = new KeyboardInput(target as unknown as Window, [PLAYER1_KEYS, PLAYER2_KEYS]);
+    return { target, keyboard };
+  }
+
+  it('reports held keys until released', () => {
+    const { target, keyboard } = setup();
+    target.dispatchEvent(key('keydown', 'KeyD'));
+    keyboard.endFrame();
+    expect(keyboard.read(0)).toBe(Input.Right);
+    target.dispatchEvent(key('keyup', 'KeyD'));
+    expect(keyboard.read(0)).toBe(0);
+  });
+
+  it('keeps a tap shorter than a frame for one read', () => {
+    const { target, keyboard } = setup();
+    target.dispatchEvent(key('keydown', 'KeyJ'));
+    target.dispatchEvent(key('keyup', 'KeyJ'));
+    expect(keyboard.read(0)).toBe(Input.Light);
+    keyboard.endFrame();
+    expect(keyboard.read(0)).toBe(0);
+  });
+
+  it('captures only bound keys and stops listening once disposed', () => {
+    const { target, keyboard } = setup();
+    const unbound = key('keydown', 'F5');
+    target.dispatchEvent(unbound);
+    expect(unbound.defaultPrevented).toBe(false);
+
+    keyboard.dispose();
+    target.dispatchEvent(key('keydown', 'KeyD'));
+    expect(keyboard.read(0)).toBe(0);
+  });
+});
+
 describe('bitsFromGamepad', () => {
   it('reads the d-pad and the south button', () => {
     expect(bitsFromGamepad(pad([12, 15, 0]))).toBe(Input.Up | Input.Right | Input.Jump);
+  });
+
+  it('reads the attack buttons', () => {
+    expect(bitsFromGamepad(pad([2, 3]))).toBe(Input.Light | Input.Heavy);
   });
 
   it('reads the left stick beyond the deadzone only', () => {

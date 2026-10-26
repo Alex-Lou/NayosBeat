@@ -22,6 +22,7 @@ export class PlayerInputs {
   read(): readonly [InputBits, InputBits] {
     this.current[0] = this.keyboard.read(0) | readGamepad(0) | (this.touch?.read() ?? 0);
     this.current[1] = this.keyboard.read(1) | readGamepad(1);
+    this.keyboard.endFrame();
     return this.current;
   }
 

@@ -35,6 +35,11 @@ export function resolvePositions(
   let xA = clamp(a.fighter.x, rangeA);
   let xB = clamp(b.fighter.x, rangeB);
 
+  // Corner pushback: when a wall stops a fighter sliding from a hit, the opponent is pushed
+  // away instead, so pressure cannot be kept up forever in the corner.
+  if (isSliding(a.fighter)) xB = clamp(xB + (xA - a.fighter.x), rangeB);
+  if (isSliding(b.fighter)) xA = clamp(xA + (xB - b.fighter.x), rangeA);
+
   const overlap = horizontalOverlap(a, xA, b, xB);
   if (overlap > 0) {
     const aIsLeft = isLeftOf(a.fighter, xA, b.fighter, xB);
@@ -60,6 +65,10 @@ export function resolvePositions(
 export function followCamera(a: FighterState, b: FighterState, stage: StageConfig): number {
   const midpoint = Math.trunc((a.x + b.x) / 2);
   return clamp(midpoint, { min: HALF_CAMERA_WIDTH, max: stage.width - HALF_CAMERA_WIDTH });
+}
+
+function isSliding(fighter: FighterState): boolean {
+  return (fighter.action === 'hitstun' || fighter.action === 'blockstun') && fighter.vx !== 0;
 }
 
 function horizontalOverlap(a: Body, xA: number, b: Body, xB: number): number {
