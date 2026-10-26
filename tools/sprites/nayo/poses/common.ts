@@ -54,19 +54,22 @@ export function tween(
 // Reference poses
 
 /**
- * The guard, a "Philly shell": lead shoulder rolled up to the chin, lead arm low across the
- * body, rear fist by the jaw, weight on the back leg. Classy, and compact enough that two
- * fighters at point blank only touch.
+ * The guard: Tazz's own high guard (Zen-Tazzer's defense and powerkick frames). A wide, springy
+ * stance, the lead knee over the toes, the rear heel up on the ball of the foot; the torso leans
+ * toward the opponent, one line from the rear foot through the hips to the head. Gloves high:
+ * the far one up by the cheek, the near one under the chin, elbows tucked on the ribs; he looks
+ * over them. Head angle 17, under head.ts's 20, so the face is the one drawn, never turned.
+ * Compact: at point blank two fighters touch gloves, nothing above the shins overlaps.
  */
 export const GUARD: Pose = {
-  hip: at(-3.2, 37.2),
-  torso: -2,
-  head: 10,
-  shrug: 3.4,
-  nearFoot: planted(5.6),
-  farFoot: planted(-13.5),
-  nearFist: at(7.5, 43),
-  farFist: at(7.5, 62),
+  hip: at(-6.6, 36.5),
+  torso: 15,
+  head: 2,
+  shrug: 1,
+  nearFoot: planted(6.35, -2),
+  farFoot: planted(-22, -15),
+  nearFist: at(8.6, 54.2),
+  farFist: at(10.3, 62.3),
   bends: { nearElbow: 'down', farElbow: 'down' },
 };
 

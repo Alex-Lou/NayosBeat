@@ -23,6 +23,19 @@ function onToes(flatX: number, angle: number): Foot {
 }
 
 const REAR_HEEL = -30;
+/** Where the rear foot sits in the crouch: drawn in under the hips from the guard's wide stance. */
+const REAR_X = -13.5;
+
+/** From the guard's rear foot (t = 0) to the crouch's, on its toes (t = 1). */
+function rearFoot(t: number): Foot {
+  const to = onToes(REAR_X, REAR_HEEL * t);
+  const from = GUARD.farFoot;
+  return {
+    x: mix(from.x, to.x, t),
+    y: mix(from.y, to.y, t),
+    angle: mix(from.angle ?? 0, to.angle ?? 0, t),
+  };
+}
 
 /** The crouching shell at rest, but for the hands (placed around the head, see guarded). */
 const SEAT: Pose = {
@@ -31,7 +44,7 @@ const SEAT: Pose = {
   head: -4,
   shrug: 4.2,
   nearFoot: GUARD.nearFoot,
-  farFoot: onToes(GUARD.farFoot.x, REAR_HEEL),
+  farFoot: onToes(REAR_X, REAR_HEEL),
   nearFist: GUARD.nearFist,
   farFist: GUARD.farFist,
 };
@@ -76,7 +89,7 @@ function between(p: Progress): Pose {
       torso: mix(GUARD.torso, SEAT.torso, p.torso),
       head: mix(GUARD.head, SEAT.head, p.head),
       shrug: mix(GUARD.shrug ?? 0, SEAT.shrug ?? 0, p.torso),
-      farFoot: onToes(GUARD.farFoot.x, REAR_HEEL * p.heel),
+      farFoot: rearFoot(p.heel),
     },
     at(FROM_GUARD.lead.x * (1 - p.lead), FROM_GUARD.lead.y * (1 - p.lead)),
     at(FROM_GUARD.rear.x * (1 - p.rear), FROM_GUARD.rear.y * (1 - p.rear)),
