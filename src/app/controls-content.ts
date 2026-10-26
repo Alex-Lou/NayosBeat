@@ -41,7 +41,7 @@ const KEYBOARD: HelpSection = {
     ['K', 'Coup lourd : fort mais lent'],
     ['L', 'Coup spécial'],
     ['J + K', "Chope : saisir l'adversaire de près"],
-    ['Échap, P', 'Pause'],
+    ['Echap, P', 'Pause'],
     ['Joueur 2', 'Flèches, et pavé 1 / 2 / 3 (ou : ! ù) pour léger, lourd, spécial'],
   ],
 };

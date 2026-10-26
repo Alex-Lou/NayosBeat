@@ -99,8 +99,9 @@ export class Menu {
       return button;
     });
     panel.appendChild(list);
+    // "Echap" without accent: the pixel font has no capital É.
     panel.appendChild(
-      element('p', 'menu-help', '↑↓ choisir · Entrée / A valider · Échap / B retour'),
+      element('p', 'menu-help', '↑↓ choisir · Entrée / A valider · Echap / B retour'),
     );
     this.root.appendChild(panel);
     parent.appendChild(this.root);
