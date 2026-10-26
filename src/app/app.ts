@@ -80,7 +80,12 @@ export class App {
         { label: "Contre l'ordinateur", hint: 'Un joueur', onSelect: choose('cpu') },
         { label: '2 joueurs', hint: 'Sur le même appareil', onSelect: choose('versus') },
         { label: 'Entraînement', hint: 'Sans chrono, vie infinie', onSelect: choose('training') },
-        { label: 'Commandes', onSelect: () => this.showControls() },
+        {
+          label: 'Commandes',
+          onSelect: () => {
+            this.showControls();
+          },
+        },
         {
           label: `Son : ${this.sfx.isEnabled ? 'oui' : 'non'}`,
           onSelect: () => {
@@ -89,7 +94,9 @@ export class App {
           },
         },
       ],
-      onBack: () => this.showTitle(),
+      onBack: () => {
+        this.showTitle();
+      },
       initialIndex,
     });
   }
@@ -98,8 +105,17 @@ export class App {
     this.showMenu({
       title: 'Commandes',
       content: controlsContent(),
-      items: [{ label: 'Retour', onSelect: () => this.showMainMenu() }],
-      onBack: () => this.showMainMenu(),
+      items: [
+        {
+          label: 'Retour',
+          onSelect: () => {
+            this.showMainMenu();
+          },
+        },
+      ],
+      onBack: () => {
+        this.showMainMenu();
+      },
     });
   }
 
@@ -128,21 +144,38 @@ export class App {
       onSelect: pick(entry.id),
     }));
     if (player === 1 && mode !== 'versus') {
-      items.push({ label: 'Aléatoire', onSelect: () => pick(randomFighter())() });
+      items.push({
+        label: 'Aléatoire',
+        onSelect: () => {
+          pick(randomFighter())();
+        },
+      });
     }
 
     this.showMenu({
       title,
       subtitle: 'Choisis un combattant',
       items,
-      onBack: () => (player === 0 ? this.showMainMenu() : this.chooseFighter(0)),
+      onBack: () => {
+        if (player === 0) this.showMainMenu();
+        else this.chooseFighter(0);
+      },
     });
   }
 
   private afterFighterChosen(player: 0 | 1): void {
-    if (player === 0) return this.chooseFighter(1);
-    if (this.setup.mode === 'cpu') return this.chooseLevel();
-    if (this.setup.mode === 'training') return this.chooseDummy();
+    if (player === 0) {
+      this.chooseFighter(1);
+      return;
+    }
+    if (this.setup.mode === 'cpu') {
+      this.chooseLevel();
+      return;
+    }
+    if (this.setup.mode === 'training') {
+      this.chooseDummy();
+      return;
+    }
     this.startFight();
   }
 
@@ -157,7 +190,9 @@ export class App {
           this.startFight();
         },
       })),
-      onBack: () => this.chooseFighter(1),
+      onBack: () => {
+        this.chooseFighter(1);
+      },
     });
   }
 
@@ -172,7 +207,9 @@ export class App {
           this.startFight();
         },
       })),
-      onBack: () => this.chooseFighter(1),
+      onBack: () => {
+        this.chooseFighter(1);
+      },
     });
   }
 
@@ -182,8 +219,12 @@ export class App {
     const data: FightSceneData = {
       setup: this.setup,
       sfx: this.sfx,
-      onPause: () => this.showPause(),
-      onMatchEnd: (winner) => this.showResults(winner),
+      onPause: () => {
+        this.showPause();
+      },
+      onMatchEnd: (winner) => {
+        this.showResults(winner);
+      },
     };
     this.game.scene.start(FIGHT_SCENE, data);
   }
@@ -204,9 +245,25 @@ export class App {
       overlay: true,
       items: [
         { label: 'Reprendre', onSelect: resume },
-        { label: 'Recommencer', onSelect: () => this.startFight() },
-        { label: 'Commandes', onSelect: () => this.showPauseControls() },
-        { label: 'Quitter', hint: 'Retour au menu principal', onSelect: () => this.quitToMenu() },
+        {
+          label: 'Recommencer',
+          onSelect: () => {
+            this.startFight();
+          },
+        },
+        {
+          label: 'Commandes',
+          onSelect: () => {
+            this.showPauseControls();
+          },
+        },
+        {
+          label: 'Quitter',
+          hint: 'Retour au menu principal',
+          onSelect: () => {
+            this.quitToMenu();
+          },
+        },
       ],
       onBack: resume,
     });
@@ -217,8 +274,17 @@ export class App {
       title: 'Commandes',
       overlay: true,
       content: controlsContent(),
-      items: [{ label: 'Retour', onSelect: () => this.showPause() }],
-      onBack: () => this.showPause(),
+      items: [
+        {
+          label: 'Retour',
+          onSelect: () => {
+            this.showPause();
+          },
+        },
+      ],
+      onBack: () => {
+        this.showPause();
+      },
     });
   }
 
@@ -239,9 +305,24 @@ export class App {
       ...(subtitle ? { subtitle } : {}),
       overlay: true,
       items: [
-        { label: 'Revanche', onSelect: () => this.startFight() },
-        { label: 'Changer de combattants', onSelect: () => this.backToSelection() },
-        { label: 'Menu principal', onSelect: () => this.quitToMenu() },
+        {
+          label: 'Revanche',
+          onSelect: () => {
+            this.startFight();
+          },
+        },
+        {
+          label: 'Changer de combattants',
+          onSelect: () => {
+            this.backToSelection();
+          },
+        },
+        {
+          label: 'Menu principal',
+          onSelect: () => {
+            this.quitToMenu();
+          },
+        },
       ],
     });
   }

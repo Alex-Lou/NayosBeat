@@ -24,6 +24,8 @@ describe('fighter templates', () => {
       moves: { ...POLYVALENT.moves, standLight: { ...POLYVALENT.moves.standLight, active: 0 } },
     };
     expect(validateTemplate(broken)).toHaveLength(2);
-    expect(() => assertValidTemplates([broken])).toThrow(/standLight\.active/);
+    expect(() => {
+      assertValidTemplates([broken]);
+    }).toThrow(/standLight\.active/);
   });
 });

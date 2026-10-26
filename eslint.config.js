@@ -5,9 +5,24 @@ import tseslint from 'typescript-eslint';
 export default tseslint.config(
   { ignores: ['dist/', 'coverage/'] },
   js.configs.recommended,
-  ...tseslint.configs.strict,
+  // Type-aware rules: floating promises, always-true conditions, unsafe `any` flows...
+  ...tseslint.configs.strictTypeChecked,
   {
-    languageOptions: { globals: globals.browser },
+    languageOptions: {
+      globals: globals.browser,
+      parserOptions: { projectService: true, tsconfigRootDir: import.meta.dirname },
+    },
+  },
+  {
+    rules: {
+      // Numbers in template strings are harmless and common in this code base.
+      '@typescript-eslint/restrict-template-expressions': ['error', { allowNumber: true }],
+    },
+  },
+  {
+    // The config file itself is plain JavaScript, outside the TypeScript project.
+    files: ['eslint.config.js'],
+    ...tseslint.configs.disableTypeChecked,
   },
   {
     // The simulation core and the CPU must stay pure and deterministic (docs/PLAN.md §2.3):

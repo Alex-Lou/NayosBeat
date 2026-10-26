@@ -7,7 +7,7 @@ import { detectMotion } from '../../src/core/motion';
 import { moveDuration } from '../../src/core/moves';
 import type { GameState } from '../../src/core/state';
 import { POLYVALENT as P, RUSHDOWN as R } from '../../src/data/fighters';
-import { facingOff, makeFighter, MIRROR_MATCH, run } from './helpers';
+import { facingOff, makeFighter, MIRROR_MATCH, repeat, run } from './helpers';
 
 const { Up, Down, Left, Right, Light, Heavy, Special } = Input;
 const OPPONENT_X = px(500);
@@ -22,7 +22,7 @@ function script(state: GameState, ticks: [number, number][]): GameState {
   return ticks.reduce((current, inputs) => run(1, inputs, current, MIRROR_MATCH), state);
 }
 
-const idle = (ticks: number): [number, number][] => Array(ticks).fill([0, 0]);
+const idle = (ticks: number): [number, number][] => repeat<[number, number]>([0, 0], ticks);
 
 describe('detectMotion', () => {
   it('recognizes a quarter circle forward', () => {
@@ -65,7 +65,7 @@ describe('special moves', () => {
   it('makes the anti-air invincible during its first frames only', () => {
     const uppercut = play([Down | Special]);
     expect(canBeHit(uppercut, P)).toBe(false);
-    const late = play(Array(P.moves.specialAntiAir.invincible?.to ?? 0).fill(0), uppercut);
+    const late = play(repeat(0, P.moves.specialAntiAir.invincible?.to ?? 0), uppercut);
     expect(canBeHit(late, P)).toBe(true);
   });
 
@@ -99,7 +99,7 @@ describe('projectiles', () => {
 
   it('can be blocked', () => {
     const start = facingOff(120, MIRROR_MATCH);
-    const after = script(start, [[Special, Right], ...Array(60).fill([0, Right])]);
+    const after = script(start, [[Special, Right], ...repeat<[number, number]>([0, Right], 60)]);
     expect(after.fighters[1].health).toBe(P.maxHealth);
     expect(after.projectiles).toHaveLength(0);
   });
@@ -134,7 +134,10 @@ describe('throws', () => {
 
   it('throws a nearby opponent, even when blocking, and knocks them down', () => {
     const start = facingOff(30, MIRROR_MATCH);
-    const after = script(start, [[Light | Heavy, Right], ...Array(10).fill([0, Right])]);
+    const after = script(start, [
+      [Light | Heavy, Right],
+      ...repeat<[number, number]>([0, Right], 10),
+    ]);
     const [, thrown] = after.fighters;
     expect(thrown.health).toBe(P.maxHealth - THROW.damage);
     expect(['airHit', 'knockdown']).toContain(thrown.action);

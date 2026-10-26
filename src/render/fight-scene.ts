@@ -113,7 +113,9 @@ export class FightScene extends Phaser.Scene {
     this.pauseInput = new PauseInput(document.body);
     if (debug) this.debugOverlay = new DebugOverlay(document.body);
 
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.dispose, this);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.dispose();
+    });
     this.syncViews();
   }
 

@@ -65,7 +65,9 @@ export class TouchControls {
     this.stickBase.appendChild(this.stickKnob);
     this.root.append(stickZone, this.stickBase);
 
-    this.root.addEventListener('contextmenu', (e) => e.preventDefault());
+    this.root.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+    });
     this.root.addEventListener('pointerdown', this.notifyFirstTouch);
 
     stickZone.addEventListener('pointerdown', this.onStickDown);
@@ -77,7 +79,9 @@ export class TouchControls {
     for (const { label, flag, className } of BUTTONS) {
       const button = createDiv(`touch-button ${className}`);
       button.textContent = label;
-      button.addEventListener('pointerdown', (event) => this.onButtonDown(event, flag));
+      button.addEventListener('pointerdown', (event) => {
+        this.onButtonDown(event, flag);
+      });
       button.addEventListener('pointerup', this.onButtonUp);
       button.addEventListener('pointercancel', this.onButtonUp);
       button.addEventListener('lostpointercapture', this.onButtonUp);

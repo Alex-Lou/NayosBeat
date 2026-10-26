@@ -56,7 +56,9 @@ async function start(): Promise<void> {
     window.removeEventListener('resize', onResize);
   });
 
-  const startApp = (): void => new App(uiRoot(), game, new Sfx()).start();
+  const startApp = (): void => {
+    new App(uiRoot(), game, new Sfx()).start();
+  };
   if (game.isRunning) startApp();
   else game.events.once(Phaser.Core.Events.READY, startApp);
 }

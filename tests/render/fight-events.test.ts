@@ -4,7 +4,7 @@ import type { GameState } from '../../src/core/state';
 import { step } from '../../src/core/step';
 import { POLYVALENT as P } from '../../src/data/fighters';
 import { detectEvents, type FightEvent } from '../../src/render/fight-events';
-import { facingOff, MIRROR_MATCH } from '../core/helpers';
+import { facingOff, MIRROR_MATCH, repeat } from '../core/helpers';
 
 /** Plays scripted ticks and collects every event detected along the way. */
 function eventsOf(start: GameState, ticks: [number, number][]): FightEvent[] {
@@ -18,7 +18,7 @@ function eventsOf(start: GameState, ticks: [number, number][]): FightEvent[] {
   return events;
 }
 
-const idle = (ticks: number): [number, number][] => Array(ticks).fill([0, 0]);
+const idle = (ticks: number): [number, number][] => repeat<[number, number]>([0, 0], ticks);
 const types = (events: FightEvent[]) => events.map((e) => e.type);
 
 describe('detectEvents', () => {
@@ -31,7 +31,7 @@ describe('detectEvents', () => {
   it('reports a single block even though the game freezes on impact', () => {
     const events = eventsOf(facingOff(30, MIRROR_MATCH), [
       [Input.Heavy, Input.Right],
-      ...Array(30).fill([0, Input.Right]),
+      ...repeat<[number, number]>([0, Input.Right], 30),
     ]);
     expect(types(events).filter((t) => t === 'block')).toHaveLength(1);
   });
@@ -48,7 +48,7 @@ describe('detectEvents', () => {
     expect(types(fireball)).toContain('projectile');
 
     const jump = eventsOf(facingOff(200, MIRROR_MATCH), [
-      ...Array(6).fill([Input.Up, 0]),
+      ...repeat<[number, number]>([Input.Up, 0], 6),
       ...idle(50),
     ]);
     expect(types(jump)).toEqual(['jump', 'land']);

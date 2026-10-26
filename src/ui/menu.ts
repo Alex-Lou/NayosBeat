@@ -75,7 +75,9 @@ export class Menu {
       button.type = 'button';
       button.tabIndex = -1;
       if (item.hint) button.appendChild(element('span', 'menu-hint', item.hint));
-      button.addEventListener('pointerenter', () => this.select(index));
+      button.addEventListener('pointerenter', () => {
+        this.select(index);
+      });
       button.addEventListener('click', () => {
         this.options.feedback?.('confirm');
         this.activate(index);

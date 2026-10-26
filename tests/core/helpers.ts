@@ -77,3 +77,8 @@ export function facingOff(
     ],
   };
 }
+
+/** `count` copies of `value`, typed (unlike `Array(n).fill`, which yields `any[]`). */
+export function repeat<T>(value: T, count: number): T[] {
+  return Array.from({ length: count }, () => value);
+}

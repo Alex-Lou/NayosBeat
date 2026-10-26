@@ -1,5 +1,7 @@
-/** Locks the orientation; missing from TypeScript's DOM types and unsupported on iOS. */
-type LockableOrientation = ScreenOrientation & { lock?: (orientation: string) => Promise<void> };
+/** `lock` is typed as always present, but iOS Safari does not implement it. */
+type LockableOrientation = Omit<ScreenOrientation, 'lock'> & {
+  lock?: (orientation: 'landscape') => Promise<void>;
+};
 
 /**
  * Best effort: goes fullscreen and locks landscape where the browser allows it
