@@ -12,6 +12,7 @@ const BAR_HEIGHT = 8;
 const BAR_WIDTH = 180;
 const PIP_SIZE = 5;
 const PIP_GAP = 3;
+const COMBO_Y = 44;
 
 const COLORS = {
   barBackground: 0x2a1a1a,
@@ -34,6 +35,8 @@ export class Hud {
   private readonly pips: [Phaser.GameObjects.Rectangle[], Phaser.GameObjects.Rectangle[]];
   private readonly timer: Phaser.GameObjects.Text;
   private readonly announcer: Phaser.GameObjects.Text;
+  /** Combo counters, each on the side of the player landing the combo. */
+  private readonly combos: [Phaser.GameObjects.Text, Phaser.GameObjects.Text];
 
   constructor(
     scene: Phaser.Scene,
@@ -60,6 +63,12 @@ export class Hud {
     this.announcer = this.fixed(
       scene.add.text(width / 2, VIEW_SIZE.height / 2 - 30, '', { ...TEXT_STYLE, fontSize: '24px' }),
     ).setOrigin(0.5);
+
+    const comboStyle = { ...TEXT_STYLE, fontSize: '14px', color: '#f0c94a' };
+    this.combos = [
+      this.fixed(scene.add.text(leftX, COMBO_Y, '', comboStyle)),
+      this.fixed(scene.add.text(rightX + BAR_WIDTH, COMBO_Y, '', comboStyle).setOrigin(1, 0)),
+    ];
   }
 
   update(state: GameState): void {
@@ -67,6 +76,9 @@ export class Hud {
     this.setBar(0, a.health / this.config.fighters[0].maxHealth);
     this.setBar(1, b.health / this.config.fighters[1].maxHealth);
     this.setPips(state.round);
+    // A player's combo is counted on the opponent taking the hits.
+    setTextIfChanged(this.combos[0], comboText(b.comboCount));
+    setTextIfChanged(this.combos[1], comboText(a.comboCount));
     setTextIfChanged(this.timer, String(Math.ceil(state.round.timer / TICK_RATE)));
     setTextIfChanged(this.announcer, this.announcement(state.round));
   }
@@ -141,6 +153,10 @@ export class Hud {
     object.setDepth(10);
     return object;
   }
+}
+
+function comboText(hits: number): string {
+  return hits >= 2 ? `${hits} COUPS` : '';
 }
 
 function smallText(): Phaser.Types.GameObjects.Text.TextStyle {

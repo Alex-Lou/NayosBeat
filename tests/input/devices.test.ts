@@ -15,6 +15,12 @@ describe('bitsFromKeys', () => {
     expect(bitsFromKeys(new Set(['Slash']), PLAYER2_KEYS)).toBe(Input.Heavy);
   });
 
+  it('maps the special button for both players', () => {
+    expect(bitsFromKeys(new Set(['KeyL']), PLAYER1_KEYS)).toBe(Input.Special);
+    expect(bitsFromKeys(new Set(['Numpad3']), PLAYER2_KEYS)).toBe(Input.Special);
+    expect(bitsFromKeys(new Set(['Quote']), PLAYER2_KEYS)).toBe(Input.Special);
+  });
+
   it("ignores the other player's keys", () => {
     expect(bitsFromKeys(new Set(['ArrowLeft']), PLAYER1_KEYS)).toBe(0);
     expect(bitsFromKeys(new Set(['ArrowLeft']), PLAYER2_KEYS)).toBe(Input.Left);
@@ -74,6 +80,11 @@ describe('bitsFromGamepad', () => {
 
   it('reads the attack buttons', () => {
     expect(bitsFromGamepad(pad([2, 3]))).toBe(Input.Light | Input.Heavy);
+  });
+
+  it('reads special on east and a throw shortcut on the right bumper', () => {
+    expect(bitsFromGamepad(pad([1]))).toBe(Input.Special);
+    expect(bitsFromGamepad(pad([5]))).toBe(Input.Light | Input.Heavy);
   });
 
   it('reads the left stick beyond the deadzone only', () => {

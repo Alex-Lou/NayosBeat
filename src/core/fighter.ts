@@ -1,7 +1,13 @@
-import type { BoxSize, FighterTemplate, MoveId } from './config';
-import { cleanSocd, has, Input, type InputBits } from './input';
-import { airMove, groundMove, moveDuration } from './moves';
-import { INPUT_BUFFER_FRAMES, PUSHBACK_FRICTION } from './rules';
+import type { BoxSize, FighterTemplate, MoveData, MoveId } from './config';
+import { cleanSocd, DIRECTIONS, has, Input, type InputBits } from './input';
+import { detectMotion } from './motion';
+import { airMove, groundMove, isCrouchingMove, moveDuration } from './moves';
+import {
+  DIRECTION_HISTORY_FRAMES,
+  INPUT_BUFFER_FRAMES,
+  PUSHBACK_FRICTION,
+  THROW_CONVERSION_FRAMES,
+} from './rules';
 import type { AttackButton, Facing, FighterAction, FighterState } from './state';
 
 /**
@@ -21,10 +27,12 @@ export function updateFighter(
   switch (f.action) {
     case 'preJump':
       return f.actionFrame + 1 >= template.preJumpFrames ? takeOff(f, template) : nextFrame(f);
-    case 'air':
-      return f.bufferedAttack
-        ? airborne(startAttack(f, 'airAttack', airMove(f.bufferedAttack)), template)
+    case 'air': {
+      const move = f.bufferedAttack ? airMove(f.bufferedAttack) : null;
+      return move
+        ? airborne(startAttack(f, 'airAttack', move), template)
         : airborne(nextFrame(f), template);
+    }
     case 'airAttack':
     case 'airHit':
       return airborne(nextFrame(f), template);
@@ -34,10 +42,15 @@ export function updateFighter(
       return f.actionFrame + 1 >= template.landingFrames
         ? actOnGround(f, template, opponentX)
         : nextFrame(f);
-    case 'attack':
-      return f.move && f.actionFrame + 1 < moveDuration(template.moves[f.move])
-        ? nextFrame(f)
+    case 'attack': {
+      const move = f.move ? template.moves[f.move] : null;
+      if (!move) return actOnGround(f, template, opponentX);
+      const cancel = cancelMove(f, move, template);
+      if (cancel) return startGroundMove(f, cancel, template);
+      return f.actionFrame + 1 < moveDuration(move)
+        ? advance(nextFrame(f), move)
         : actOnGround(f, template, opponentX);
+    }
     case 'hitstun':
     case 'blockstun':
     case 'knockdown':
@@ -59,17 +72,28 @@ export function readInput(
   ageBuffer: boolean,
 ): FighterState {
   const input = cleanSocd(rawInput);
-  const pressed = input & ~fighter.input;
-  const button = pressedAttack(pressed);
+  const history = fighter.directionHistory;
+  const directionHistory = [
+    ...(history.length >= DIRECTION_HISTORY_FRAMES ? history.slice(1) : history),
+    input & DIRECTIONS,
+  ];
+  const withInput = { ...fighter, input, directionHistory };
+
+  const button = pressedButton(input & ~fighter.input, input);
   if (button) {
-    return { ...fighter, input, bufferedAttack: button, bufferFrames: INPUT_BUFFER_FRAMES };
+    return {
+      ...withInput,
+      bufferedAttack: button,
+      bufferFrames: INPUT_BUFFER_FRAMES,
+      bufferedInput: input,
+      bufferedMotion: detectMotion(directionHistory, fighter.facing),
+    };
   }
-  if (!ageBuffer || fighter.bufferFrames === 0) return { ...fighter, input };
+  if (!ageBuffer || fighter.bufferFrames === 0) return withInput;
 
   const bufferFrames = fighter.bufferFrames - 1;
   return {
-    ...fighter,
-    input,
+    ...withInput,
     bufferFrames,
     bufferedAttack: bufferFrames > 0 ? fighter.bufferedAttack : null,
   };
@@ -79,10 +103,55 @@ export function pushboxOf(fighter: FighterState, template: FighterTemplate): Box
   return fighter.crouching ? template.crouchingPushbox : template.standingPushbox;
 }
 
-function pressedAttack(pressed: InputBits): AttackButton | null {
+/** Light + heavy held together, one of them just pressed, is a throw. */
+function pressedButton(pressed: InputBits, held: InputBits): AttackButton | null {
+  const attackPressed = has(pressed, Input.Light) || has(pressed, Input.Heavy);
+  if (attackPressed && has(held, Input.Light) && has(held, Input.Heavy)) return 'throw';
+  if (has(pressed, Input.Special)) return 'special';
   if (has(pressed, Input.Heavy)) return 'heavy';
   if (has(pressed, Input.Light)) return 'light';
   return null;
+}
+
+/**
+ * The move that interrupts the current one, if any: a normal turned into a throw when the
+ * second button came a little late, or a cancel allowed once the move has connected.
+ */
+function cancelMove(
+  fighter: FighterState,
+  move: MoveData,
+  template: FighterTemplate,
+): MoveId | null {
+  const button = fighter.bufferedAttack;
+  if (!button) return null;
+
+  if (button === 'throw') {
+    const early = fighter.actionFrame < THROW_CONVERSION_FRAMES && !fighter.moveConnected;
+    return early && move.kind === 'normal' ? 'throw' : null;
+  }
+  if (!fighter.moveConnected || !move.cancelInto) return null;
+
+  const next = groundMove(button, fighter.bufferedInput, fighter.bufferedMotion, fighter.facing);
+  return move.cancelInto.includes(template.moves[next].kind) ? next : null;
+}
+
+function startGroundMove(
+  fighter: FighterState,
+  moveId: MoveId,
+  template: FighterTemplate,
+): FighterState {
+  const started = { ...startAttack(fighter, 'attack', moveId), crouching: isCrouchingMove(moveId) };
+  return advance(started, template.moves[moveId]);
+}
+
+/** Moves a fighter forward during the frames where its move travels. */
+function advance(fighter: FighterState, move: MoveData): FighterState {
+  const range = move.advance;
+  const moving =
+    range !== undefined && fighter.actionFrame >= range.from && fighter.actionFrame < range.to;
+  if (!moving) return fighter.vx === 0 ? fighter : { ...fighter, vx: 0 };
+  const vx = fighter.facing * range.speed;
+  return { ...fighter, vx, x: fighter.x + vx };
 }
 
 /** Neutral grounded state: the only place where the player chooses what to do next. */
@@ -91,13 +160,19 @@ function actOnGround(
   template: FighterTemplate,
   opponentX: number,
 ): FighterState {
-  const f: FighterState = { ...fighter, facing: faceOpponent(fighter, opponentX), move: null };
+  const f: FighterState = {
+    ...fighter,
+    facing: faceOpponent(fighter, opponentX),
+    move: null,
+    comboCount: 0,
+    vx: 0,
+  };
   const input = f.input;
   const crouching = has(input, Input.Down) && !has(input, Input.Up);
 
   if (f.bufferedAttack) {
-    const attack = startAttack(f, 'attack', groundMove(f.bufferedAttack, crouching));
-    return { ...attack, crouching, vx: 0 };
+    const move = groundMove(f.bufferedAttack, f.bufferedInput, f.bufferedMotion, f.facing);
+    return startGroundMove(f, move, template);
   }
   if (has(input, Input.Up) || has(input, Input.Jump)) {
     return { ...enter(f, 'preJump'), crouching: false, vx: 0 };

@@ -38,7 +38,34 @@ export function validateTemplate(template: FighterTemplate): string[] {
     expect(isTicks(move.blockstun, 0), `${id}.blockstun must be an integer >= 0`);
     expect(isTicks(move.hitstop, 0), `${id}.hitstop must be an integer >= 0`);
     expect(isTicks(move.pushback, 0), `${id}.pushback must be an integer >= 0`);
-    expect(isPositiveBox(move.hitbox), `${id}.hitbox must have a positive integer size`);
+    expect(move.name.length > 0, `${id}.name must not be empty`);
+    expect(
+      (move.hitbox === undefined) !== (move.projectile === undefined),
+      `${id} must have either a hitbox or a projectile`,
+    );
+    if (move.hitbox) {
+      expect(isPositiveBox(move.hitbox), `${id}.hitbox must have a positive integer size`);
+    }
+    if (move.projectile) {
+      expect(isTicks(move.projectile.speed, 1), `${id}.projectile.speed must be >= 1`);
+      expect(
+        isPositiveBox(move.projectile.hitbox),
+        `${id}.projectile.hitbox must have a positive integer size`,
+      );
+    }
+    for (const [label, range] of [
+      ['advance', move.advance],
+      ['invincible', move.invincible],
+    ] as const) {
+      if (!range) continue;
+      expect(
+        isTicks(range.from, 0) && isTicks(range.to, range.from + 1),
+        `${id}.${label} must be a non-empty frame range`,
+      );
+    }
+    if (move.advance) {
+      expect(isTicks(move.advance.speed, 1), `${id}.advance.speed must be >= 1`);
+    }
   }
   return errors;
 }

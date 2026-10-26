@@ -13,7 +13,7 @@ describe('fighter templates', () => {
     expect(RUSHDOWN.maxHealth).toBeLessThan(POLYVALENT.maxHealth);
     expect(RUSHDOWN.moves.standLight.startup).toBeLessThan(POLYVALENT.moves.standLight.startup);
     const reach = (t: typeof POLYVALENT) =>
-      t.moves.standHeavy.hitbox.x + t.moves.standHeavy.hitbox.width;
+      (t.moves.standHeavy.hitbox?.x ?? 0) + (t.moves.standHeavy.hitbox?.width ?? 0);
     expect(reach(RUSHDOWN)).toBeLessThan(reach(POLYVALENT));
   });
 

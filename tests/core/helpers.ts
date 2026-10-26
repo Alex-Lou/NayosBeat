@@ -52,6 +52,10 @@ export function makeFighter(overrides: Partial<FighterState> = {}): FighterState
     input: 0,
     bufferedAttack: null,
     bufferFrames: 0,
+    bufferedInput: 0,
+    bufferedMotion: null,
+    directionHistory: [],
+    comboCount: 0,
     ...overrides,
   };
 }

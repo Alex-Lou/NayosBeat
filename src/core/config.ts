@@ -16,12 +16,42 @@ export interface Box extends BoxSize {
 }
 
 export type MoveId =
-  'standLight' | 'standHeavy' | 'crouchLight' | 'crouchHeavy' | 'jumpLight' | 'jumpHeavy';
+  | 'standLight'
+  | 'standHeavy'
+  | 'crouchLight'
+  | 'crouchHeavy'
+  | 'jumpLight'
+  | 'jumpHeavy'
+  | 'special'
+  | 'specialForward'
+  | 'specialAntiAir'
+  | 'throw';
+
+/** Decides what a move can cancel into, and how it is blocked (throws cannot be). */
+export type MoveKind = 'normal' | 'special' | 'throw';
 
 /** How a move must be blocked: low = crouching, overhead = standing, mid = either. */
 export type Guard = 'mid' | 'low' | 'overhead';
 
+/** A range of action frames: `from` included, `to` excluded. */
+export interface FrameRange {
+  readonly from: number;
+  readonly to: number;
+}
+
+export interface ProjectileData {
+  /** Horizontal speed, in sub-pixels per tick. */
+  readonly speed: number;
+  /** Spawn distance in front of the fighter. */
+  readonly spawnX: number;
+  /** Relative to the projectile's position (a point on the ground line). */
+  readonly hitbox: Box;
+}
+
 export interface MoveData {
+  /** Display name, shown in training mode. */
+  readonly name: string;
+  readonly kind: MoveKind;
   /** Ticks before the first active tick. */
   readonly startup: number;
   /** Ticks during which the hitbox can hit. */
@@ -36,7 +66,18 @@ export interface MoveData {
   /** Initial slide speed given to the defender (it then slows down with friction). */
   readonly pushback: number;
   readonly guard: Guard;
-  readonly hitbox: Box;
+  /** Strike hitbox. Absent for projectile moves: the projectile carries its own. */
+  readonly hitbox?: Box;
+  /** Spawned on the first active tick. */
+  readonly projectile?: ProjectileData;
+  /** Move kinds this move can be cancelled into, once it has hit or been blocked. */
+  readonly cancelInto?: readonly MoveKind[];
+  /** Forward movement during part of the move. */
+  readonly advance?: FrameRange & { readonly speed: number };
+  /** Frames during which strikes, projectiles and throws whiff. */
+  readonly invincible?: FrameRange;
+  /** Sends the defender to the ground on hit, even when standing. */
+  readonly knockdown?: boolean;
 }
 
 /** Everything that defines a playable character. */

@@ -17,3 +17,20 @@ export const PUSHBACK_FRICTION = px(0.25);
 
 /** Upward speed given to a fighter hit in the air. */
 export const AIR_HIT_LIFT = px(3);
+
+/** Ticks of input history kept to recognize motions. */
+export const DIRECTION_HISTORY_FRAMES = 16;
+
+/** A motion counts if it was completed this recently, and performed within the history. */
+export const MOTION_END_FRAMES = 4;
+
+/** A normal can still turn into a throw this long after it started (light + heavy pressed late). */
+export const THROW_CONVERSION_FRAMES = 3;
+
+/** Damage of each extra hit in a combo drops by this percentage, down to the floor below. */
+export const COMBO_SCALING_STEP = 10;
+export const COMBO_SCALING_FLOOR = 50;
+
+/** Separation speed when both players throw each other on the same tick. */
+export const THROW_TECH_PUSHBACK = px(4);
+export const THROW_TECH_STUN = 12;

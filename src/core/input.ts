@@ -12,7 +12,10 @@ export const Input = {
   Jump: 1 << 4,
   Light: 1 << 5,
   Heavy: 1 << 6,
+  Special: 1 << 7,
 } as const;
+
+export const DIRECTIONS = Input.Up | Input.Down | Input.Left | Input.Right;
 
 export function has(bits: InputBits, flag: number): boolean {
   return (bits & flag) !== 0;

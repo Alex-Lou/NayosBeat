@@ -11,6 +11,9 @@ const BUTTONS = [
   { label: 'L', flag: Input.Light, className: 'touch-light' },
   { label: 'H', flag: Input.Heavy, className: 'touch-heavy' },
   { label: 'SAUT', flag: Input.Jump, className: 'touch-jump' },
+  { label: 'S', flag: Input.Special, className: 'touch-special' },
+  // Throw shortcut: light + heavy on a single button.
+  { label: 'CHOPE', flag: Input.Light | Input.Heavy, className: 'touch-throw' },
 ] as const;
 
 /** Converts a stick offset (screen coordinates, y pointing down) into direction flags. */

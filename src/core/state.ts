@@ -1,5 +1,6 @@
 import type { FighterTemplate, MatchConfig, MoveId } from './config';
 import type { InputBits } from './input';
+import type { Motion } from './motion';
 import { ROUND_TIME } from './rules';
 
 export type Facing = 1 | -1;
@@ -20,7 +21,8 @@ export type FighterAction =
   | 'knockdown'
   | 'ko';
 
-export type AttackButton = 'light' | 'heavy';
+/** Throw = light + heavy together. */
+export type AttackButton = 'light' | 'heavy' | 'special' | 'throw';
 
 export interface FighterState {
   /** Horizontal center, in sub-pixels from the stage's left edge. */
@@ -47,6 +49,21 @@ export interface FighterState {
   /** Attack pressed while busy, started as soon as the fighter can act. */
   readonly bufferedAttack: AttackButton | null;
   readonly bufferFrames: number;
+  /** Direction held and motion completed when the buffered button was pressed. */
+  readonly bufferedInput: InputBits;
+  readonly bufferedMotion: Motion | null;
+  /** Directions held on the last ticks (oldest first), to recognize motions such as ↓↘→. */
+  readonly directionHistory: readonly InputBits[];
+  /** Consecutive hits taken without being able to act: drives the combo counter and scaling. */
+  readonly comboCount: number;
+}
+
+export interface ProjectileState {
+  readonly owner: 0 | 1;
+  /** The move that fired it: its frame data applies on hit. */
+  readonly move: MoveId;
+  readonly x: number;
+  readonly facing: Facing;
 }
 
 export type RoundPhase = 'intro' | 'fight' | 'roundEnd' | 'matchEnd';
@@ -80,6 +97,7 @@ export interface GameState {
   readonly hitstop: number;
   readonly round: RoundState;
   readonly fighters: readonly [FighterState, FighterState];
+  readonly projectiles: readonly ProjectileState[];
 }
 
 export function createInitialState(config: MatchConfig): GameState {
@@ -112,6 +130,7 @@ export function createRound(
       createFighter(center - halfDistance, 1, templateA),
       createFighter(center + halfDistance, -1, templateB),
     ],
+    projectiles: [],
   };
 }
 
@@ -132,5 +151,9 @@ function createFighter(x: number, facing: Facing, template: FighterTemplate): Fi
     input: 0,
     bufferedAttack: null,
     bufferFrames: 0,
+    bufferedInput: 0,
+    bufferedMotion: null,
+    directionHistory: [],
+    comboCount: 0,
   };
 }

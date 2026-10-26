@@ -54,7 +54,7 @@ export class FighterView {
 
     const move = activeMove(fighter, template);
     this.hitbox.setVisible(move !== null);
-    if (move) this.place(this.hitbox, hitboxInWorld(fighter, move));
+    if (move?.hitbox) this.place(this.hitbox, hitboxInWorld(fighter, move.hitbox));
     if (this.hurtbox) this.outline(this.hurtbox, hurtboxInWorld(fighter, template));
   }
 

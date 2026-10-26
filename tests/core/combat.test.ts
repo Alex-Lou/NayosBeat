@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { applyHit, findHit } from '../../src/core/combat';
 import { px } from '../../src/core/constants';
 import { Input } from '../../src/core/input';
+import type { FighterState } from '../../src/core/state';
 import { POLYVALENT as T } from '../../src/data/fighters';
 import { facingOff, makeFighter, MIRROR_MATCH, run } from './helpers';
 
@@ -117,9 +118,16 @@ describe('exchanges in a match', () => {
   it('freezes both fighters during hitstop', () => {
     const hit = run(LIGHT.startup + 1, [Input.Light, 0], facingOff(30, MIRROR_MATCH), MIRROR_MATCH);
     const frozen = run(LIGHT.hitstop - 1, [0, 0], hit, MIRROR_MATCH);
-    expect(frozen.fighters).toEqual(
-      hit.fighters.map((f) => ({ ...f, input: 0, bufferedAttack: null, bufferFrames: 0 })),
-    );
+    const withoutInputs = (f: FighterState) => ({
+      ...f,
+      input: 0,
+      directionHistory: [],
+      bufferedAttack: null,
+      bufferFrames: 0,
+      bufferedInput: 0,
+      bufferedMotion: null,
+    });
+    expect(frozen.fighters.map(withoutInputs)).toEqual(hit.fighters.map(withoutInputs));
   });
 
   it('trades when both attacks connect on the same tick', () => {

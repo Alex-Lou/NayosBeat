@@ -12,6 +12,7 @@ export const PLAYER1_KEYS: KeyBindings = {
   Space: Input.Jump,
   KeyJ: Input.Light,
   KeyK: Input.Heavy,
+  KeyL: Input.Special,
 };
 
 export const PLAYER2_KEYS: KeyBindings = {
@@ -21,9 +22,11 @@ export const PLAYER2_KEYS: KeyBindings = {
   ArrowRight: Input.Right,
   Numpad1: Input.Light,
   Numpad2: Input.Heavy,
-  // Laptops without a numeric keypad: the two keys left of right Shift.
+  Numpad3: Input.Special,
+  // Laptops without a numeric keypad: the keys left of and above right Shift.
   Period: Input.Light,
   Slash: Input.Heavy,
+  Quote: Input.Special,
 };
 
 export function bitsFromKeys(pressed: ReadonlySet<string>, bindings: KeyBindings): InputBits {

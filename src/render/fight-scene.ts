@@ -13,6 +13,7 @@ import { DebugOverlay, isDebugEnabled } from './debug-overlay';
 import { FighterView } from './fighter-view';
 import { requestLandscapeFullscreen } from './fullscreen';
 import { Hud } from './hud';
+import { ProjectileView } from './projectile-view';
 import { VIEW_SIZE } from './view';
 
 /** Caps the catch-up after a long stall (~83 ms of simulation at 60 Hz). */
@@ -48,6 +49,7 @@ export class FightScene extends Phaser.Scene {
   private inputs: PlayerInputs | undefined;
   private fighterViews: [FighterView, FighterView] | undefined;
   private hud: Hud | undefined;
+  private projectileView: ProjectileView | undefined;
   private debugOverlay: DebugOverlay | undefined;
 
   constructor() {
@@ -61,6 +63,7 @@ export class FightScene extends Phaser.Scene {
       new FighterView(this, COLORS.player1, GROUND_Y, debug),
       new FighterView(this, COLORS.player2, GROUND_Y, debug),
     ];
+    this.projectileView = new ProjectileView(this, MATCH, GROUND_Y);
     this.hud = new Hud(this, MATCH);
 
     const touch = isTouchDevice()
@@ -98,6 +101,7 @@ export class FightScene extends Phaser.Scene {
     const [a, b] = this.state.fighters;
     viewA?.update(a, MATCH.fighters[0]);
     viewB?.update(b, MATCH.fighters[1]);
+    this.projectileView?.update(this.state.projectiles);
     this.hud?.update(this.state);
 
     const cameraLeft = this.state.cameraX / SUBPIXELS_PER_PIXEL - VIEW_SIZE.width / 2;

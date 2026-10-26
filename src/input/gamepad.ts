@@ -11,8 +11,10 @@ const STICK_DEADZONE = 0.5;
 /** Button indices of the W3C "standard" mapping (Xbox / PlayStation layouts). */
 const Button = {
   South: 0,
+  East: 1,
   West: 2,
   North: 3,
+  RightBumper: 5,
   DpadUp: 12,
   DpadDown: 13,
   DpadLeft: 14,
@@ -32,6 +34,9 @@ export function bitsFromGamepad(pad: GamepadSnapshot): InputBits {
   if (pressed(Button.South)) bits |= Input.Jump;
   if (pressed(Button.West)) bits |= Input.Light;
   if (pressed(Button.North)) bits |= Input.Heavy;
+  if (pressed(Button.East)) bits |= Input.Special;
+  // Throw shortcut: light + heavy on a single button.
+  if (pressed(Button.RightBumper)) bits |= Input.Light | Input.Heavy;
   return bits;
 }
 

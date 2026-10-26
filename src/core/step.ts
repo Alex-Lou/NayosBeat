@@ -1,15 +1,16 @@
-import { applyHit, findHit } from './combat';
+import { applyHit, findHit, techThrow } from './combat';
 import type { MatchConfig, MoveData } from './config';
 import { pushboxOf, readInput, updateFighter } from './fighter';
 import type { InputBits } from './input';
 import { followCamera, resolvePositions } from './positions';
+import { findProjectileHit, updateProjectiles, type ProjectileHit } from './projectiles';
 import { updateRound } from './round';
 import type { FighterState, GameState } from './state';
 
 /**
  * Advances the simulation by exactly one tick. Pure: same input, same output.
- * Both fighters are updated from the previous state, and both hits are detected before
- * either is applied, so neither player is favored by processing order (hits can trade).
+ * Both fighters are updated from the previous state, and every hit is detected before any
+ * is applied, so neither player is favored by processing order (hits can trade).
  */
 export function step(
   state: GameState,
@@ -42,31 +43,60 @@ export function step(
     config.stage,
   );
 
-  const hitByA = findHit(a, templateA, b, templateB);
-  const hitByB = findHit(b, templateB, a, templateA);
-  const nextA = resolveExchange(a, b.x, hitByB, hitByA);
-  const nextB = resolveExchange(b, a.x, hitByA, hitByB);
+  const projectiles = updateProjectiles(state.projectiles, [a, b], state.cameraX, config);
+  const strikeByA = findHit(a, templateA, b, templateB);
+  const strikeByB = findHit(b, templateB, a, templateA);
+  const projectileOnA = strikeByB ? null : findProjectileHit(projectiles, 0, a, config);
+  const projectileOnB = strikeByA ? null : findProjectileHit(projectiles, 1, b, config);
+
+  const throwTech = strikeByA?.kind === 'throw' && strikeByB?.kind === 'throw';
+  const [nextA, nextB] = throwTech
+    ? [techThrow(a, b.x), techThrow(b, a.x)]
+    : [
+        resolveExchange(a, b.x, strikeByB, strikeByA, projectileOnA),
+        resolveExchange(b, a.x, strikeByA, strikeByB, projectileOnB),
+      ];
+
+  const spent = [projectileOnA?.projectile, projectileOnB?.projectile];
+  const hitstop = throwTech
+    ? 0
+    : Math.max(
+        strikeByA?.hitstop ?? 0,
+        strikeByB?.hitstop ?? 0,
+        projectileOnA?.move.hitstop ?? 0,
+        projectileOnB?.move.hitstop ?? 0,
+      );
 
   return updateRound(
     {
       frame: state.frame + 1,
       cameraX: followCamera(nextA, nextB, config.stage),
-      hitstop: Math.max(hitByA?.hitstop ?? 0, hitByB?.hitstop ?? 0),
+      hitstop,
       round: state.round,
       fighters: [nextA, nextB],
+      projectiles: projectiles.filter((p) => !spent.includes(p)),
     },
     config,
   );
 }
 
-/** Applies the hit a fighter took, or marks the move it landed so it cannot hit twice. */
+/**
+ * Applies the strike or projectile a fighter took, or marks the move it landed so it
+ * cannot hit twice (and can now be cancelled).
+ */
 function resolveExchange(
   fighter: FighterState,
   opponentX: number,
-  taken: MoveData | null,
-  landed: MoveData | null,
+  strikeTaken: MoveData | null,
+  strikeLanded: MoveData | null,
+  projectileTaken: ProjectileHit | null,
 ): FighterState {
-  if (taken) return applyHit(fighter, opponentX, taken);
-  if (landed) return { ...fighter, moveConnected: true };
+  if (strikeTaken) return applyHit(fighter, opponentX, strikeTaken);
+  if (projectileTaken) {
+    const { projectile, move } = projectileTaken;
+    // The hit comes from behind the projectile, i.e. from the side of whoever fired it.
+    return applyHit(fighter, projectile.x - projectile.facing, move);
+  }
+  if (strikeLanded) return { ...fighter, moveConnected: true };
   return fighter;
 }
