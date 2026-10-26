@@ -147,15 +147,18 @@ export class FightScene extends Phaser.Scene {
     const ticks = this.timestep.advance(deltaMs * runtime.feedback.timeScale());
     const startMs = runtime.debugOverlay ? performance.now() : 0;
 
-    // Devices are sampled once per display frame and held for every tick of that frame.
-    const [player1, player2] = runtime.inputs.read(pads);
-    for (let i = 0; i < ticks; i++) {
-      this.tickInputs[0] = player1;
-      this.tickInputs[1] = this.cpu ? this.cpuInput(this.cpu) : player2;
-      const previous = this.state;
-      this.state = step(previous, this.tickInputs, this.config);
-      detectEvents(previous, this.state, this.config, this.tickEvents);
-      for (const event of this.tickEvents) runtime.feedback.react(event);
+    // Devices are sampled once per display frame and held for every tick of that frame. Above
+    // 60 Hz some frames run no tick: reading then would drop a quick tap no tick ever sees.
+    if (ticks > 0) {
+      const [player1, player2] = runtime.inputs.read(pads);
+      for (let i = 0; i < ticks; i++) {
+        this.tickInputs[0] = player1;
+        this.tickInputs[1] = this.cpu ? this.cpuInput(this.cpu) : player2;
+        const previous = this.state;
+        this.state = step(previous, this.tickInputs, this.config);
+        detectEvents(previous, this.state, this.config, this.tickEvents);
+        for (const event of this.tickEvents) runtime.feedback.react(event);
+      }
     }
     runtime.feedback.update();
 

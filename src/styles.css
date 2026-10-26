@@ -149,6 +149,8 @@ body {
 .menu-panel {
   width: min(560px, 100%);
   max-height: 100%;
+  /* Centers like the flex alignment, but a panel taller than the screen still scrolls from its top. */
+  margin: auto;
   text-align: center;
 }
 .menu-title {
@@ -223,26 +225,35 @@ body {
     visibility: hidden;
   }
 }
-.controls table {
-  width: 100%;
-  margin: 0 0 12px;
-  border-collapse: collapse;
-  font-size: 8px;
-  line-height: 1.6;
+/* The help needs more room than a list of choices: one column per section when it fits. */
+.menu-panel:has(.controls) {
+  width: min(880px, 100%);
+}
+.controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 6px 20px;
   text-align: left;
 }
-.controls th,
-.controls td {
-  padding: 4px 6px;
-  border-bottom: 1px solid #2a2a44;
-}
-.controls th {
+.controls h2 {
+  margin: 0 0 4px;
+  font-size: 10px;
   color: #f0c94a;
 }
-.controls-note {
-  margin: 0;
+.controls table {
+  width: 100%;
+  border-collapse: collapse;
   font-size: 8px;
-  color: #aab;
+  line-height: 1.4;
+}
+.controls td {
+  padding: 2px 4px;
+  vertical-align: top;
+  border-bottom: 1px solid #2a2a44;
+}
+.controls td:first-child {
+  white-space: nowrap;
+  color: #f0c94a;
 }
 .rotate-hint {
   display: none;

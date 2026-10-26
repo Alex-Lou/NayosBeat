@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { Input } from '../../src/core/input';
 import { bitsFromGamepad, type GamepadSnapshot } from '../../src/input/gamepad';
 import { bitsFromKeys, KeyboardInput, PLAYER1_KEYS, PLAYER2_KEYS } from '../../src/input/keyboard';
-import { bitsFromStick } from '../../src/input/touch-controls';
+import { bitsFromStick, followFinger } from '../../src/input/touch-controls';
 
 describe('bitsFromKeys', () => {
   it('maps held keys to input flags', () => {
@@ -124,5 +124,31 @@ describe('bitsFromStick', () => {
     const [x25, y25] = angle(25);
     expect(bitsFromStick(x20 ?? 0, y20 ?? 0, DEADZONE)).toBe(Input.Right);
     expect(bitsFromStick(x25 ?? 0, y25 ?? 0, DEADZONE)).toBe(Input.Right | Input.Down);
+  });
+});
+
+describe('followFinger', () => {
+  const RADIUS = 36;
+  const DEADZONE = 12;
+
+  it('keeps the center while the finger stays within the radius', () => {
+    const origin = { x: 100, y: 100 };
+    expect(followFinger(origin, { x: 130, y: 110 }, RADIUS)).toBe(origin);
+  });
+
+  it('drags the center to stay exactly one radius behind the finger', () => {
+    expect(followFinger({ x: 100, y: 100 }, { x: 200, y: 100 }, RADIUS)).toEqual({
+      x: 164,
+      y: 100,
+    });
+  });
+
+  it('turns a long drift forward into a short move back', () => {
+    // Thumb lands at x=100, slides 100 px forward, then comes back 50 px.
+    let origin = { x: 100, y: 100 };
+    origin = followFinger(origin, { x: 200, y: 100 }, RADIUS);
+    const back = { x: 150, y: 100 };
+    origin = followFinger(origin, back, RADIUS);
+    expect(bitsFromStick(back.x - origin.x, back.y - origin.y, DEADZONE)).toBe(Input.Left);
   });
 });
