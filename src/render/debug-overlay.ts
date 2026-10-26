@@ -8,8 +8,6 @@ export interface FrameSample {
   readonly ticks: number;
   /** Time spent running those ticks. */
   readonly tickTimeMs: number;
-  /** Current simulation frame number. */
-  readonly simFrame: number;
 }
 
 export function isDebugEnabled(): boolean {
@@ -31,7 +29,8 @@ export class DebugOverlay {
     parent.appendChild(this.element);
   }
 
-  record(sample: FrameSample): void {
+  /** @param describeState Only called when the text is refreshed, to avoid building strings every frame. */
+  record(sample: FrameSample, describeState: () => string): void {
     this.elapsedMs += sample.frameMs;
     this.frames += 1;
     this.ticks += sample.ticks;
@@ -39,7 +38,7 @@ export class DebugOverlay {
     this.maxTickTimeMs = Math.max(this.maxTickTimeMs, sample.tickTimeMs);
 
     if (this.elapsedMs >= REFRESH_INTERVAL_MS) {
-      this.render(sample.simFrame);
+      this.render(describeState());
       this.reset();
     }
   }
@@ -48,14 +47,14 @@ export class DebugOverlay {
     this.element.remove();
   }
 
-  private render(simFrame: number): void {
+  private render(stateDescription: string): void {
     const perSecond = 1000 / this.elapsedMs;
     const avgTickMs = this.ticks > 0 ? this.tickTimeMs / this.ticks : 0;
     this.element.textContent = [
       `fps    ${(this.frames * perSecond).toFixed(0)}`,
       `ticks  ${(this.ticks * perSecond).toFixed(0)}/s`,
       `tick   ${avgTickMs.toFixed(3)} ms (max ${this.maxTickTimeMs.toFixed(3)})`,
-      `frame  ${simFrame}`,
+      stateDescription,
     ].join('\n');
   }
 

@@ -1,0 +1,91 @@
+import type { BoxSize, StageConfig } from './config';
+import { CAMERA_WIDTH_PX, px } from './constants';
+import type { FighterState } from './state';
+
+const HALF_CAMERA_WIDTH = Math.trunc(px(CAMERA_WIDTH_PX) / 2);
+
+interface Body {
+  readonly fighter: FighterState;
+  readonly box: BoxSize;
+}
+
+interface Range {
+  readonly min: number;
+  readonly max: number;
+}
+
+/**
+ * Keeps both fighters inside the stage and the camera (screen edges act as walls),
+ * then pushes them apart so their pushboxes never overlap.
+ * Uses the camera of the previous tick so the result does not depend on processing order.
+ */
+export function resolvePositions(
+  a: Body,
+  b: Body,
+  cameraX: number,
+  stage: StageConfig,
+): [FighterState, FighterState] {
+  const walls: Range = {
+    min: Math.max(0, cameraX - HALF_CAMERA_WIDTH),
+    max: Math.min(stage.width, cameraX + HALF_CAMERA_WIDTH),
+  };
+  const rangeA = centerRange(walls, a.box);
+  const rangeB = centerRange(walls, b.box);
+
+  let xA = clamp(a.fighter.x, rangeA);
+  let xB = clamp(b.fighter.x, rangeB);
+
+  const overlap = horizontalOverlap(a, xA, b, xB);
+  if (overlap > 0) {
+    const aIsLeft = isLeftOf(a.fighter, xA, b.fighter, xB);
+    const sign = aIsLeft ? -1 : 1;
+    const pushA = Math.trunc(overlap / 2);
+    const pushB = overlap - pushA;
+    xA += sign * pushA;
+    xB -= sign * pushB;
+
+    // If a wall stops one fighter, the other one takes the rest of the push.
+    const blockedA = clamp(xA, rangeA) - xA;
+    xA += blockedA;
+    xB += blockedA;
+    const blockedB = clamp(xB, rangeB) - xB;
+    xB += blockedB;
+    xA = clamp(xA + blockedB, rangeA);
+  }
+
+  return [withX(a.fighter, xA), withX(b.fighter, xB)];
+}
+
+/** The camera follows the midpoint of the fighters without leaving the stage. */
+export function followCamera(a: FighterState, b: FighterState, stage: StageConfig): number {
+  const midpoint = Math.trunc((a.x + b.x) / 2);
+  return clamp(midpoint, { min: HALF_CAMERA_WIDTH, max: stage.width - HALF_CAMERA_WIDTH });
+}
+
+function horizontalOverlap(a: Body, xA: number, b: Body, xB: number): number {
+  const verticalOverlap =
+    a.fighter.y < b.fighter.y + b.box.height && b.fighter.y < a.fighter.y + a.box.height;
+  if (!verticalOverlap) return 0;
+  const minDistance = Math.trunc((a.box.width + b.box.width) / 2);
+  return minDistance - Math.abs(xA - xB);
+}
+
+/** Ties are broken by facing, then by player order, so the result is always deterministic. */
+function isLeftOf(a: FighterState, xA: number, b: FighterState, xB: number): boolean {
+  if (xA !== xB) return xA < xB;
+  if (a.facing !== b.facing) return a.facing === 1;
+  return true;
+}
+
+function centerRange(walls: Range, box: BoxSize): Range {
+  const half = Math.trunc(box.width / 2);
+  return { min: walls.min + half, max: walls.max - half };
+}
+
+function clamp(value: number, range: Range): number {
+  return Math.min(range.max, Math.max(range.min, value));
+}
+
+function withX(fighter: FighterState, x: number): FighterState {
+  return x === fighter.x ? fighter : { ...fighter, x };
+}

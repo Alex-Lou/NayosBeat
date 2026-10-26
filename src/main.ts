@@ -19,6 +19,8 @@ const game = new Phaser.Game({
   pixelArt: true,
   // Centering is done in CSS; Phaser only sizes the canvas.
   scale: { mode: Phaser.Scale.NONE, zoom: currentZoom() },
+  // Devices are read by `input/`; Phaser's own listeners would only duplicate the work.
+  input: { keyboard: false, mouse: false, touch: false, gamepad: false },
   scene: [FightScene],
 });
 

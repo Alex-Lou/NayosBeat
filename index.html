@@ -38,11 +38,83 @@
         color: #9f9;
         background: rgba(0, 0, 0, 0.6);
         pointer-events: none;
+        z-index: 2;
+      }
+      .touch-controls {
+        position: fixed;
+        inset: 0;
+        z-index: 1;
+        -webkit-touch-callout: none;
+      }
+      .touch-stick-zone {
+        position: absolute;
+        inset: 0 50% 0 0;
+      }
+      .touch-stick-base {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 96px;
+        height: 96px;
+        margin: -48px 0 0 -48px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.12);
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        box-sizing: border-box;
+        pointer-events: none;
+        visibility: hidden;
+      }
+      .touch-stick-base.active {
+        visibility: visible;
+      }
+      .touch-stick-knob {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 44px;
+        height: 44px;
+        margin: -22px 0 0 -22px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.45);
+      }
+      .touch-button {
+        position: absolute;
+        right: calc(24px + env(safe-area-inset-right));
+        bottom: calc(24px + env(safe-area-inset-bottom));
+        width: 72px;
+        height: 72px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font: bold 12px sans-serif;
+        color: rgba(255, 255, 255, 0.8);
+        background: rgba(255, 255, 255, 0.15);
+        border: 2px solid rgba(255, 255, 255, 0.35);
+      }
+      .rotate-hint {
+        display: none;
+      }
+      @media (orientation: portrait) and (pointer: coarse) {
+        .rotate-hint {
+          position: fixed;
+          inset: 0;
+          z-index: 3;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 24px;
+          text-align: center;
+          font: 18px sans-serif;
+          color: #fff;
+          background: #000;
+        }
       }
     </style>
   </head>
   <body>
     <div id="game"></div>
+    <div class="rotate-hint">Tourne ton téléphone en mode paysage</div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
