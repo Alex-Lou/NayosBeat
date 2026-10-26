@@ -11,16 +11,26 @@ interface InstallPromptEvent extends Event {
 }
 
 let installPrompt: InstallPromptEvent | undefined;
+const listeners = new Set<() => void>();
 
-/** Keeps the browser's install prompt for later instead of letting it show its own banner. */
+/**
+ * Keeps the browser's install prompt for the menu. The browser may still offer its own banner
+ * too (the prompt is not held back): the player can install either way.
+ */
 export function watchInstallPrompt(): void {
   window.addEventListener('beforeinstallprompt', (event) => {
-    event.preventDefault();
     installPrompt = event as InstallPromptEvent;
+    for (const listener of listeners) listener();
   });
   window.addEventListener('appinstalled', () => {
     installPrompt = undefined;
+    for (const listener of listeners) listener();
   });
+}
+
+/** Calls `listener` whenever installing becomes possible, or done. */
+export function onInstallChange(listener: () => void): void {
+  listeners.add(listener);
 }
 
 /** How this browser can install the game, if it is not installed yet. */

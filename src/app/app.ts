@@ -8,7 +8,7 @@ import { isTouchDevice } from '../input/touch-controls';
 import { Menu, type MenuFeedback, type MenuItem, type MenuOptions } from '../ui/menu';
 import { TitleScreen } from '../ui/title-screen';
 import { controlsContent } from './controls-content';
-import { installMethod, promptInstall } from './install';
+import { installMethod, onInstallChange, promptInstall } from './install';
 import { DEFAULT_SETUP, type DummyBehavior, type GameMode, type MatchSetup } from './match-setup';
 
 const FIGHT_SCENE = 'fight';
@@ -40,6 +40,8 @@ const DUMMIES: readonly {
 export class App {
   private screen: { dispose(): void } | undefined;
   private setup: MatchSetup = DEFAULT_SETUP;
+  /** The main menu is on screen (it is redrawn when installing becomes possible). */
+  private onMainMenu = false;
 
   constructor(
     private readonly root: HTMLElement,
@@ -49,10 +51,15 @@ export class App {
 
   start(): void {
     this.game.loop.sleep();
+    // The browser tells late (after the page loaded) that the game can be installed.
+    onInstallChange(() => {
+      if (this.onMainMenu) this.showMainMenu();
+    });
     this.showTitle();
   }
 
   private show(screen: { dispose(): void }): void {
+    this.onMainMenu = false;
     this.screen?.dispose();
     this.screen = screen;
   }
@@ -120,6 +127,7 @@ export class App {
       },
       initialIndex,
     });
+    this.onMainMenu = true;
   }
 
   private showControls(): void {
