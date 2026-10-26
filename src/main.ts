@@ -1,6 +1,7 @@
 import '@fontsource/press-start-2p/latin.css';
 import Phaser from 'phaser';
 import { App } from './app/app';
+import { Sfx } from './audio/sfx';
 import { FightScene } from './render/fight-scene';
 import { computeZoom } from './render/pixel-scaling';
 import { VIEW_SIZE } from './render/view';
@@ -55,7 +56,7 @@ async function start(): Promise<void> {
     window.removeEventListener('resize', onResize);
   });
 
-  const startApp = (): void => new App(uiRoot(), game).start();
+  const startApp = (): void => new App(uiRoot(), game, new Sfx()).start();
   if (game.isRunning) startApp();
   else game.events.once(Phaser.Core.Events.READY, startApp);
 }

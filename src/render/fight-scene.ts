@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { cpuStep, createCpu, type CpuState } from '../ai/cpu';
+import type { Sfx } from '../audio/sfx';
 import { matchConfigOf, player2Behavior, type MatchSetup } from '../app/match-setup';
 import type { MatchConfig } from '../core/config';
 import { SUBPIXELS_PER_PIXEL, TICK_RATE } from '../core/constants';
@@ -14,6 +15,8 @@ import { PlayerInputs } from '../input/player-inputs';
 import { isTouchDevice, TouchControls } from '../input/touch-controls';
 import { FixedTimestep } from '../loop/fixed-timestep';
 import { DebugOverlay, isDebugEnabled } from './debug-overlay';
+import { BURSTS, Effects } from './effects';
+import { detectEvents, HEAVY_HIT_DAMAGE, type FightEvent } from './fight-events';
 import { FighterView } from './fighter-view';
 import { requestLandscapeFullscreen } from './fullscreen';
 import { Hud } from './hud';
@@ -22,6 +25,10 @@ import { VIEW_SIZE } from './view';
 
 /** Caps the catch-up after a long stall (~83 ms of simulation at 60 Hz). */
 const MAX_TICKS_PER_FRAME = 5;
+
+/** The final blow plays in slow motion for a moment (display only: the simulation is intact). */
+const KO_SLOW_MOTION_FRAMES = 50;
+const KO_SLOW_MOTION_SCALE = 0.35;
 
 const GROUND_HEIGHT = 40;
 const GROUND_Y = VIEW_SIZE.height - GROUND_HEIGHT;
@@ -39,6 +46,7 @@ const COLORS = {
 
 export interface FightSceneData {
   readonly setup: MatchSetup;
+  readonly sfx: Sfx;
   readonly onPause: () => void;
   /** Called once, a moment after the final KO, with the winner's index. */
   readonly onMatchEnd: (winner: 0 | 1 | null) => void;
@@ -57,12 +65,14 @@ export class FightScene extends Phaser.Scene {
   private cpu: CpuState | undefined;
   private paused = false;
   private matchEndReported = false;
+  private slowMotionFrames = 0;
 
   private inputs: PlayerInputs | undefined;
   private pauseInput: PauseInput | undefined;
   private fighterViews: [FighterView, FighterView] | undefined;
   private hud: Hud | undefined;
   private projectileView: ProjectileView | undefined;
+  private effects: Effects | undefined;
   private debugOverlay: DebugOverlay | undefined;
   /** Reused every tick to avoid allocating. */
   private readonly tickInputs: [InputBits, InputBits] = [0, 0];
@@ -82,6 +92,7 @@ export class FightScene extends Phaser.Scene {
     this.cpu = behavior === 'human' ? undefined : createCpu(1, behavior, Date.now() | 0);
     this.paused = false;
     this.matchEndReported = false;
+    this.slowMotionFrames = 0;
   }
 
   create(): void {
@@ -92,6 +103,7 @@ export class FightScene extends Phaser.Scene {
       new FighterView(this, COLORS.player2, GROUND_Y, debug),
     ];
     this.projectileView = new ProjectileView(this, this.config, GROUND_Y);
+    this.effects = new Effects(this, GROUND_Y);
     this.hud = new Hud(this, this.config);
 
     const touch = isTouchDevice()
@@ -119,7 +131,9 @@ export class FightScene extends Phaser.Scene {
       return;
     }
 
-    const ticks = this.timestep.advance(deltaMs);
+    const timeScale = this.slowMotionFrames > 0 ? KO_SLOW_MOTION_SCALE : 1;
+    if (this.slowMotionFrames > 0) this.slowMotionFrames -= 1;
+    const ticks = this.timestep.advance(deltaMs * timeScale);
     const startMs = this.debugOverlay ? performance.now() : 0;
 
     // Devices are sampled once per display frame and held for every tick of that frame.
@@ -127,8 +141,11 @@ export class FightScene extends Phaser.Scene {
     for (let i = 0; i < ticks; i++) {
       this.tickInputs[0] = player1;
       this.tickInputs[1] = this.cpu ? this.cpuInput(this.cpu) : player2;
-      this.state = step(this.state, this.tickInputs, this.config);
+      const previous = this.state;
+      this.state = step(previous, this.tickInputs, this.config);
+      for (const event of detectEvents(previous, this.state, this.config)) this.react(event);
     }
+    this.effects?.update();
 
     this.debugOverlay?.record(
       { frameMs: deltaMs, ticks, tickTimeMs: performance.now() - startMs },
@@ -142,6 +159,48 @@ export class FightScene extends Phaser.Scene {
     const decision = cpuStep(cpu, this.state, this.config);
     this.cpu = decision.cpu;
     return decision.input;
+  }
+
+  /** Sound and visual feedback for one fight event. */
+  private react(event: FightEvent): void {
+    const { sfx } = this.sceneData;
+    const effects = this.effects;
+    switch (event.type) {
+      case 'hit': {
+        const heavy = event.damage >= HEAVY_HIT_DAMAGE;
+        effects?.burst(event.x, event.y, heavy ? BURSTS.heavyHit : BURSTS.lightHit);
+        if (heavy) effects?.shake(8, 2);
+        sfx.play(heavy ? 'heavyHit' : 'lightHit');
+        break;
+      }
+      case 'block':
+        effects?.burst(event.x, event.y, BURSTS.block);
+        sfx.play('block');
+        break;
+      case 'ko':
+        effects?.burst(event.x, event.y, BURSTS.ko);
+        effects?.shake(24, 3);
+        effects?.flash(12);
+        this.slowMotionFrames = KO_SLOW_MOTION_FRAMES;
+        sfx.play('ko');
+        break;
+      case 'attack':
+        sfx.play(event.heavy ? 'heavySwing' : 'swing');
+        break;
+      case 'projectile':
+        sfx.play('projectile');
+        break;
+      case 'jump':
+        sfx.play('jump');
+        break;
+      case 'land':
+        sfx.play('land');
+        break;
+      case 'phase':
+        if (event.phase === 'intro') sfx.play('round');
+        if (event.phase === 'fight') sfx.play('fight');
+        break;
+    }
   }
 
   private reportMatchEnd(): void {
@@ -161,7 +220,8 @@ export class FightScene extends Phaser.Scene {
     this.hud?.update(this.state);
 
     const cameraLeft = this.state.cameraX / SUBPIXELS_PER_PIXEL - VIEW_SIZE.width / 2;
-    this.cameras.main.setScroll(Math.round(cameraLeft), 0);
+    const shake = this.effects?.shakeOffset() ?? { x: 0, y: 0 };
+    this.cameras.main.setScroll(Math.round(cameraLeft) + shake.x, shake.y);
   }
 
   private dispose(): void {

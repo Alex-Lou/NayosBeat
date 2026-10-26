@@ -15,7 +15,13 @@ export interface MenuOptions {
   readonly content?: HTMLElement;
   /** Shown over the fight (translucent) instead of on a plain background. */
   readonly overlay?: boolean;
+  /** Item selected when the menu opens. */
+  readonly initialIndex?: number;
+  /** Called on navigation, e.g. to play a sound. */
+  readonly feedback?: (action: MenuFeedback) => void;
 }
+
+export type MenuFeedback = 'move' | 'confirm' | 'back';
 
 type MenuAction = 'up' | 'down' | 'confirm' | 'back';
 
@@ -70,7 +76,10 @@ export class Menu {
       button.tabIndex = -1;
       if (item.hint) button.appendChild(element('span', 'menu-hint', item.hint));
       button.addEventListener('pointerenter', () => this.select(index));
-      button.addEventListener('click', () => this.activate(index));
+      button.addEventListener('click', () => {
+        this.options.feedback?.('confirm');
+        this.activate(index);
+      });
       list.appendChild(button);
       return button;
     });
@@ -81,7 +90,7 @@ export class Menu {
     this.root.appendChild(panel);
     parent.appendChild(this.root);
 
-    this.select(0);
+    this.select(options.initialIndex ?? 0);
     window.addEventListener('keydown', this.onKeyDown);
     this.frameRequest = requestAnimationFrame(this.pollGamepads);
   }
@@ -117,16 +126,21 @@ export class Menu {
     const count = this.buttons.length;
     switch (action) {
       case 'up':
+        this.options.feedback?.('move');
         this.select((this.selected - 1 + count) % count);
         break;
       case 'down':
+        this.options.feedback?.('move');
         this.select((this.selected + 1) % count);
         break;
       case 'confirm':
+        this.options.feedback?.('confirm');
         this.activate(this.selected);
         break;
       case 'back':
-        this.options.onBack?.();
+        if (!this.options.onBack) break;
+        this.options.feedback?.('back');
+        this.options.onBack();
         break;
     }
   }

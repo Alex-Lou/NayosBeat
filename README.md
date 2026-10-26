@@ -9,6 +9,8 @@ Plan de production : [docs/PLAN.md](docs/PLAN.md).
 - **2 joueurs** : sur le même appareil (clavier partagé, ou deux manettes).
 - **Entraînement** : sans chrono ni KO, vie rechargée, mannequin immobile, qui pare tout ou piloté par l'ordinateur ; affichage des dégâts du dernier combo.
 
+Sensations : étincelles d'impact, tremblement de l'écran sur les gros coups, ralenti et flash sur le KO, sons générés en direct (Web Audio, aucun fichier). Le son se coupe depuis le menu principal (réglage mémorisé sur l'appareil).
+
 Pause : Échap / P, Start à la manette, bouton « II » en tactile. Le jeu se met aussi en pause quand l'onglet est caché ou le téléphone verrouillé.
 
 ## Démarrer
@@ -74,6 +76,7 @@ Ajouter `?debug` à l'URL affiche l'overlay de debug et les hurtbox (toujours ac
 src/
   core/     Simulation pure et déterministe (aucun import Phaser/DOM, vérifié par ESLint)
   ai/       Ordinateur et mannequins, purs et déterministes eux aussi (graine aléatoire)
+  audio/    Effets sonores synthétisés
   app/      Enchaînement des écrans et configuration d'un match
   ui/       Menus et écran titre (HTML par-dessus le jeu)
   data/     Stats des combattants et des stages (données statiques)

@@ -1,15 +1,18 @@
 import type Phaser from 'phaser';
 import type { CpuLevel } from '../ai/cpu';
+import type { Sfx } from '../audio/sfx';
 import { ROSTER, templateOf, type FighterId } from '../data/roster';
 import type { FightScene, FightSceneData } from '../render/fight-scene';
 import { requestLandscapeFullscreen } from '../render/fullscreen';
 import { isTouchDevice } from '../input/touch-controls';
-import { Menu, type MenuItem } from '../ui/menu';
+import { Menu, type MenuFeedback, type MenuItem, type MenuOptions } from '../ui/menu';
 import { TitleScreen } from '../ui/title-screen';
 import { controlsContent } from './controls-content';
 import { DEFAULT_SETUP, type DummyBehavior, type GameMode, type MatchSetup } from './match-setup';
 
 const FIGHT_SCENE = 'fight';
+/** Position of the sound toggle in the main menu, kept selected after toggling. */
+const SOUND_ITEM_INDEX = 4;
 
 const LEVELS: readonly {
   readonly level: CpuLevel;
@@ -42,6 +45,7 @@ export class App {
   constructor(
     private readonly root: HTMLElement,
     private readonly game: Phaser.Game,
+    private readonly sfx: Sfx,
   ) {}
 
   start(): void {
@@ -56,14 +60,16 @@ export class App {
   private showTitle(): void {
     this.show(
       new TitleScreen(this.root, () => {
-        // The first user gesture is the only moment a mobile browser allows fullscreen.
+        // A user gesture: the only moment browsers allow audio and (on mobile) fullscreen.
+        this.sfx.unlock();
+        this.sfx.play('menuConfirm');
         if (isTouchDevice()) requestLandscapeFullscreen();
         this.showMainMenu();
       }),
     );
   }
 
-  private showMainMenu(): void {
+  private showMainMenu(initialIndex = 0): void {
     const choose = (mode: GameMode) => () => {
       this.setup = { ...this.setup, mode };
       this.chooseFighter(0);
@@ -75,8 +81,16 @@ export class App {
         { label: '2 joueurs', hint: 'Sur le même appareil', onSelect: choose('versus') },
         { label: 'Entraînement', hint: 'Sans chrono, vie infinie', onSelect: choose('training') },
         { label: 'Commandes', onSelect: () => this.showControls() },
+        {
+          label: `Son : ${this.sfx.isEnabled ? 'oui' : 'non'}`,
+          onSelect: () => {
+            this.sfx.setEnabled(!this.sfx.isEnabled);
+            this.showMainMenu(SOUND_ITEM_INDEX);
+          },
+        },
       ],
       onBack: () => this.showTitle(),
+      initialIndex,
     });
   }
 
@@ -167,6 +181,7 @@ export class App {
     this.screen = undefined;
     const data: FightSceneData = {
       setup: this.setup,
+      sfx: this.sfx,
       onPause: () => this.showPause(),
       onMatchEnd: (winner) => this.showResults(winner),
     };
@@ -241,9 +256,17 @@ export class App {
     this.showMainMenu();
   }
 
-  private showMenu(options: ConstructorParameters<typeof Menu>[1]): void {
-    this.show(new Menu(this.root, options));
+  private showMenu(options: MenuOptions): void {
+    this.show(new Menu(this.root, { ...options, feedback: this.menuFeedback }));
   }
+
+  private readonly menuFeedback = (action: MenuFeedback): void => {
+    // Every menu action is a user gesture: a good moment to (re)enable audio.
+    this.sfx.unlock();
+    this.sfx.play(
+      action === 'move' ? 'menuMove' : action === 'confirm' ? 'menuConfirm' : 'menuBack',
+    );
+  };
 }
 
 function randomFighter(): FighterId {
