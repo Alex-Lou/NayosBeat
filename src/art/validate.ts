@@ -24,6 +24,9 @@ export function validateArt(art: FighterArt, template: FighterTemplate): string[
   if (art.projectile) {
     for (const problem of clipProblems(art.projectile, art)) check(false, `projectile: ${problem}`);
   }
+  for (const sheet of Object.keys(art.fx ?? {})) {
+    check(art.sheets[sheet] !== undefined, `effects of unknown sheet ${sheet}`);
+  }
 
   const expected: [string, Clip, number][] = [
     ['preJump', art.clips.preJump, template.preJumpFrames],

@@ -20,9 +20,18 @@ export default tseslint.config(
     },
   },
   {
-    // The config file itself is plain JavaScript, outside the TypeScript project.
-    files: ['eslint.config.js'],
+    // Plain JavaScript files, outside the TypeScript project: this config and a Node import hook.
+    files: ['eslint.config.js', 'tools/sprites/ts-imports.js'],
     ...tseslint.configs.disableTypeChecked,
+  },
+  {
+    // The service worker template (plain JavaScript, filled in at build time).
+    files: ['build/sw-template.js'],
+    ...tseslint.configs.disableTypeChecked,
+    languageOptions: {
+      ...tseslint.configs.disableTypeChecked.languageOptions,
+      globals: globals.serviceworker,
+    },
   },
   {
     // The simulation core and the CPU must stay pure and deterministic (docs/PLAN.md §2.3):

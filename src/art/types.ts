@@ -5,15 +5,30 @@
 
 import type { MoveId } from '../core/config';
 
-/** Every frame is a square cell; strips are one row of cells, facing right. */
-export const CELL_SIZE = 128;
+/** Sprite pixels per world pixel: fighters are drawn twice as finely as the stage. */
+export const ART_SCALE = 2;
+/** Every frame is a square cell (in sprite pixels); strips are one row of cells, facing right. */
+export const CELL_SIZE = 256;
 /** Pixel of the cell where the center of the feet stands, in every frame. */
-export const ANCHOR = { x: 64, y: 124 } as const;
+export const ANCHOR = { x: 128, y: 248 } as const;
 
 /** One horizontal strip of `frames` cells. */
 export interface SheetSpec {
   readonly frames: number;
 }
+
+/**
+ * The cells of a strip as saved: cropped to what its frames draw (to spare video memory), with
+ * the pixel that goes on the fighter's position (the feet anchor).
+ */
+export interface Cell {
+  readonly width: number;
+  readonly height: number;
+  readonly anchor: { readonly x: number; readonly y: number };
+}
+
+/** A full, uncropped cell anchored at the feet. */
+export const FULL_CELL: Cell = { width: CELL_SIZE, height: CELL_SIZE, anchor: ANCHOR };
 
 /** A sequence of frames taken from one strip, each shown for a number of simulation ticks. */
 export interface Clip {
@@ -61,4 +76,16 @@ export interface FighterArt {
   readonly urls: Readonly<Record<string, string>>;
   /** The flying projectile of a fighter that has one, played on the match clock. */
   readonly projectile?: Clip;
+  /**
+   * Front effects of some strips (energy, flashes, speed lines), drawn over both fighters:
+   * image URL by strip name, frame i going with frame i of that strip.
+   */
+  readonly fx?: Readonly<Record<string, string>>;
+  /** Cropped cells by strip ('idle') and by strip effects ('fx/idle'); FULL_CELL otherwise. */
+  readonly cells?: Readonly<Record<string, Cell>>;
+}
+
+/** The cells of a strip, `fx/` prefixed for its front effects. */
+export function cellOf(art: FighterArt, strip: string): Cell {
+  return art.cells?.[strip] ?? FULL_CELL;
 }

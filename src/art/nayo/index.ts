@@ -1,4 +1,5 @@
 import type { FighterArt } from '../types';
+import { NAYO_CELLS } from './cells';
 import { NAYO_CLIPS, NAYO_PROJECTILE } from './clips';
 import { NAYO_SHEETS, type NayoSheet } from './sheets';
 
@@ -9,6 +10,17 @@ const MAIN = import.meta.glob<string>('./main/*.png', {
   import: 'default',
 });
 const ALT = import.meta.glob<string>('./alt/*.png', {
+  eager: true,
+  query: '?url',
+  import: 'default',
+});
+/** Front effects of the strips that have some (energy, flashes, speed lines). */
+const MAIN_FX = import.meta.glob<string>('./main/fx/*.png', {
+  eager: true,
+  query: '?url',
+  import: 'default',
+});
+const ALT_FX = import.meta.glob<string>('./alt/fx/*.png', {
   eager: true,
   query: '?url',
   import: 'default',
@@ -24,9 +36,24 @@ function urlsOf(files: Readonly<Record<string, string>>, folder: string): Record
   return urls;
 }
 
-const SHARED = { sheets: NAYO_SHEETS, clips: NAYO_CLIPS, projectile: NAYO_PROJECTILE };
+const SHARED = {
+  sheets: NAYO_SHEETS,
+  clips: NAYO_CLIPS,
+  projectile: NAYO_PROJECTILE,
+  cells: NAYO_CELLS,
+};
 
-/** Black bomber, orange trims. */
-export const NAYO: FighterArt = { key: 'nayo', urls: urlsOf(MAIN, 'main'), ...SHARED };
-/** Burgundy bomber, cyan trims: player 2 in a mirror match. */
-export const NAYO_ALT: FighterArt = { key: 'nayo-alt', urls: urlsOf(ALT, 'alt'), ...SHARED };
+/** Black techwear, cyan neon. */
+export const NAYO: FighterArt = {
+  key: 'nayo',
+  urls: urlsOf(MAIN, 'main'),
+  fx: urlsOf(MAIN_FX, 'main/fx'),
+  ...SHARED,
+};
+/** Light grey techwear, magenta neon: player 2 in a mirror match. */
+export const NAYO_ALT: FighterArt = {
+  key: 'nayo-alt',
+  urls: urlsOf(ALT, 'alt'),
+  fx: urlsOf(ALT_FX, 'alt/fx'),
+  ...SHARED,
+};

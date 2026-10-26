@@ -17,6 +17,16 @@ export function clipIdOf(fighter: FighterState, player: 0 | 1, round: RoundState
   return actionClipOf(fighter);
 }
 
+/**
+ * Which fighter is drawn in front: the one attacking, so its blow reads over the opponent.
+ * When both or neither attack, the order stays as it was: no flicker between the two.
+ */
+export function frontFighter(previous: 0 | 1, a: FighterState, b: FighterState): 0 | 1 {
+  const aAttacks = a.move !== null;
+  if (aAttacks === (b.move !== null)) return previous;
+  return aAttacks ? 0 : 1;
+}
+
 /** Ticks since a clip started: round poses follow the round clock, the rest the action's. */
 export function clipTickOf(clip: ClipId, fighter: FighterState, round: RoundState): number {
   switch (clip) {

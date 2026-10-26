@@ -29,20 +29,20 @@ Entrepôt reconverti en club, la nuit. Mur d'enceintes empilées au fond, néons
 
 ### Nayo — Polyvalent
 
-> Boxeur-DJ, calme et sûr de lui, sourire en coin. Il « mixe » ses combats.
+> Boxeur-DJ, calme et sûr de lui, regard posé. Il « mixe » ses combats.
 
-- **Silhouette** : athlétique, garde de boxeur haute, casque audio orange autour du cou (le détail signature).
-- **Tenue** : bomber noir à finitions côtelées orange (col, poignets, ourlet), t-shirt blanc, jogging gris, bandes blanches aux mains, baskets blanches semelle orange.
-- **Tenue 2** : bomber bordeaux, finitions cyan, semelles cyan ; son énergie sonore devient orange.
-- **Peau** brun chaud ; cheveux noirs courts, twists sur le dessus, dégradé sur les côtés.
+- **Silhouette** : athlétique, garde de boxeur, cheveux noirs en pics désordonnés (style anime), casque audio autour du cou (le détail signature, un design à nous : coque métal brossé, face noire, anneau néon).
+- **Tenue** (techwear noir, néon cyan) : veste tech matelassée courte à col montant, écusson néon carré sur le haut de la manche, t-shirt anthracite, ceinture à boucle métal, pantalon cargo à poche latérale et bande LED, rangers à lacets avec liseré néon, mitaines en cuir (doigts nus).
+- **Tenue 2** : veste gris clair, pantalon gris, rangers blanches ; le néon devient magenta.
+- **Visage et cheveux** : ceux de Tazz, le héros de Zen-Tazzer, repris de ses sprites (visage de trois-quarts, yeux cyan courts au trait de cils épais, cheveux noirs en pics, peau pêche). Expressions sobres : regard ouvert et posé, jamais de sourire gratuit.
 - **Palette principale** :
-  - peau `#2a1712 #7d4a32 #a86a4a #d08f68` ;
-  - cheveux `#0c0a10 #1c1824 #2b2536 #3f3750` ;
-  - bomber `#0b0a12 #1f1c2e #2d2a42 #46425f` ;
-  - orange `#4a1a06 #b5460e #f07a1e #ffb35c` ;
-  - jogging `#121119 #2f2d40 #43415a #5d5b78` ;
-  - blanc `#3d3b4f #9e9cb4 #d9d7e6 #ffffff` ;
-  - énergie cyan `#0d3a4a #1d8fb0 #4fd6ff #d8f8ff`.
+  - peau `#b04a2a #e8844c #fca86a #ffc286` ;
+  - cheveux `#0b0b0e #151519 #202026 #2e2e36` ;
+  - veste `#0d0d10 #18181d #26262d #36363f` ;
+  - cargo `#0e0e11 #19191e #28282f #38383f` ;
+  - néon cyan `#00687e #00b8d0 #2ce8f8 #c8fcff` (tenue 2 : magenta `#7a0e56 #d0288e #ff5cc8 #ffd6f2`) ;
+  - tenue 2, veste `#6e6e82 #9a9aae #c4c4d2 #e4e4ee`.
+- **Effets de coup** (haute définition, propres à Nayo) : croissants d'énergie néon, gerbe de rayons or et orange, onde de choc, étincelles cyan et or.
 
 | Coup (gabarit) | Nom | Mise en scène |
 |---|---|---|
@@ -57,7 +57,7 @@ Entrepôt reconverti en club, la nuit. Mur d'enceintes empilées au fond, néons
 | specialAntiAir | Uppercut | « Le drop » : uppercut montant sur la pointe des pieds |
 | throw | Projection | Saisie au col, pivot, jeté par-dessus l'épaule |
 
-- **Entrée** : se craque les poings, ajuste son casque, sourire en coin, garde.
+- **Entrée** : se craque les poings, ajuste son casque, regard posé, garde.
 - **Victoire** : poing levé, petit rebond en rythme.
 
 ### Riff — Rushdown
@@ -74,6 +74,7 @@ Entrepôt reconverti en club, la nuit. Mur d'enceintes empilées au fond, néons
   - peau `#3a2216 #b0745a #e0a585 #f6cdb0` ;
   - auburn `#2a0f08 #6e2b14 #a5421c #d9672d` ;
   - violet `#2a1240 #5a2b8a #8a4fd1 #c79bff`.
+- **Effets de coup** (haute définition, propres à Riff) : entailles en X violettes (griffures sur les coups lourds), éclats en losange jaunes ; couleurs inversées en tenue 2.
 
 | Coup (gabarit) | Nom | Mise en scène |
 |---|---|---|

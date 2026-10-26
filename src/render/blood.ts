@@ -1,5 +1,6 @@
 import type Phaser from 'phaser';
 import { toPx } from '../core/constants';
+import { DEPTH } from './depth';
 
 /** Arcade-style blood: a few dark-red drops, never gore. Three tones, darkest to lightest. */
 const TONES = [0x7a0f1a, 0xb81d2b, 0xe8384a] as const;
@@ -52,7 +53,7 @@ export class Blood {
     private readonly groundY: number,
   ) {
     this.drops = Array.from({ length: DROP_POOL_SIZE }, () => ({
-      shape: scene.add.rectangle(0, 0, 1, 1, TONES[1]).setDepth(4).setVisible(false),
+      shape: scene.add.rectangle(0, 0, 1, 1, TONES[1]).setDepth(DEPTH.blood).setVisible(false),
       vx: 0,
       vy: 0,
       alive: false,

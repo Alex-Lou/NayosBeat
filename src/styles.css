@@ -4,6 +4,8 @@ html,
 body {
   margin: 0;
   height: 100%;
+  /* The visible height: in landscape, the browser's bars must not hide the top of the game. */
+  height: 100dvh;
   overflow: hidden;
   background: #000;
   touch-action: none;
@@ -12,7 +14,11 @@ body {
 }
 #game {
   position: fixed;
-  inset: 0;
+  /* Inside the visible area and away from notches and rounded corners (viewport-fit=cover). */
+  top: env(safe-area-inset-top, 0px);
+  right: env(safe-area-inset-right, 0px);
+  left: env(safe-area-inset-left, 0px);
+  height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
   display: flex;
   align-items: center;
   justify-content: center;

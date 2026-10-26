@@ -1,16 +1,22 @@
 import type Phaser from 'phaser';
 import type { Sfx } from '../audio/sfx';
 import { BLEEDS, Blood } from './blood';
-import { BURSTS, Effects } from './effects';
+import { Effects } from './effects';
 import { HEAVY_HIT_DAMAGE, type FightEvent } from './fight-events';
+import { HitFx } from './hit-fx';
+import type { HitStyle } from './hit-styles';
 
 /** The final blow plays in slow motion for a moment (display only: the simulation is intact). */
 const KO_SLOW_MOTION_FRAMES = 50;
 const KO_SLOW_MOTION_SCALE = 0.35;
 
-/** Turns fight events into what the player sees and hears: sparks, blood, shake, flash, sounds. */
+/**
+ * Turns fight events into what the player sees and hears: hit effects in the attacker's own
+ * style, blood, shake, flash, sounds.
+ */
 export class FightFeedback {
   private readonly effects: Effects;
+  private readonly hitFx: HitFx;
   private readonly blood: Blood;
   private slowMotionFrames = 0;
 
@@ -18,17 +24,20 @@ export class FightFeedback {
     scene: Phaser.Scene,
     groundY: number,
     private readonly sfx: Sfx,
+    private readonly styles: readonly [HitStyle, HitStyle],
   ) {
-    this.effects = new Effects(scene, groundY);
+    this.effects = new Effects(scene);
+    this.hitFx = new HitFx(scene, groundY);
     this.blood = new Blood(scene, groundY);
   }
 
   react(event: FightEvent): void {
-    const { effects, sfx } = this;
+    const { effects, hitFx, sfx } = this;
     switch (event.type) {
       case 'hit': {
         const heavy = event.damage >= HEAVY_HIT_DAMAGE;
-        effects.burst(event.x, event.y, heavy ? BURSTS.heavyHit : BURSTS.lightHit);
+        const style = this.styles[event.by];
+        hitFx.play(style, heavy ? 'heavy' : 'light', event.x, event.y, event.away);
         if (heavy) {
           effects.shake(8, 2);
           this.blood.bleed(event.x, event.y, event.away, BLEEDS.heavyHit);
@@ -37,17 +46,20 @@ export class FightFeedback {
         break;
       }
       case 'block':
-        effects.burst(event.x, event.y, BURSTS.block);
+        hitFx.play(this.styles[event.by], 'block', event.x, event.y, event.away);
         sfx.play('block');
         break;
-      case 'ko':
-        effects.burst(event.x, event.y, BURSTS.ko);
+      case 'ko': {
+        const style = this.styles[event.by];
+        hitFx.play(style, 'ko', event.x, event.y, event.away);
         this.blood.bleed(event.x, event.y, event.away, BLEEDS.ko);
         effects.shake(24, 3);
-        effects.flash(12);
+        // The final flash takes the winner's color, a light tint of it on the whole screen.
+        effects.flash(12, style.energy);
         this.slowMotionFrames = KO_SLOW_MOTION_FRAMES;
         sfx.play('ko');
         break;
+      }
       case 'attack':
         sfx.play(event.heavy ? 'heavySwing' : 'swing');
         break;
@@ -77,6 +89,7 @@ export class FightFeedback {
   /** Advances visual effects by one display frame. */
   update(): void {
     this.effects.update();
+    this.hitFx.update();
     this.blood.update();
   }
 

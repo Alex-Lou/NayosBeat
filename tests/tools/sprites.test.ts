@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { NAYO_CLIPS } from '../../src/art/nayo/clips';
-import { NAYO_SHEETS, type NayoSheet } from '../../src/art/nayo/sheets';
-import { ANCHOR, CELL_SIZE } from '../../src/art/types';
+import { NAYO_SHEETS } from '../../src/art/nayo/sheets';
+import { ANCHOR, ART_SCALE, CELL_SIZE } from '../../src/art/types';
 import type { MoveId } from '../../src/core/config';
 import { toPx } from '../../src/core/constants';
 import { POLYVALENT } from '../../src/data/fighters';
+import { NAYO_POSES, type PosedSheet } from '../../tools/sprites/nayo/poses/index';
 import { crc32, encodeIndexedPng } from '../../tools/sprites/png';
 import { drawSheet } from '../../tools/sprites/sheet';
 
@@ -33,10 +34,10 @@ describe('PNG encoder', () => {
 });
 
 describe('Nayo strips', () => {
-  const sheets = Object.keys(NAYO_SHEETS) as NayoSheet[];
+  const sheets = Object.keys(NAYO_POSES) as PosedSheet[];
 
-  const drawn = new Map<NayoSheet, ReturnType<typeof drawSheet>>();
-  const sheetCanvas = (sheet: NayoSheet): ReturnType<typeof drawSheet> => {
+  const drawn = new Map<PosedSheet, ReturnType<typeof drawSheet>>();
+  const sheetCanvas = (sheet: PosedSheet): ReturnType<typeof drawSheet> => {
     const cached = drawn.get(sheet);
     if (cached) return cached;
     const canvas = drawSheet(sheet);
@@ -44,8 +45,19 @@ describe('Nayo strips', () => {
     return canvas;
   };
 
-  /** Opaque rows and columns of one cell, relative to the cell. */
-  function extent(sheet: NayoSheet, frame: number) {
+  /** Calls `visit` with every opaque pixel of one cell, in world pixels from the feet anchor. */
+  function eachPixel(sheet: PosedSheet, frame: number, visit: (x: number, y: number) => void) {
+    const canvas = sheetCanvas(sheet);
+    for (let row = 0; row < CELL_SIZE; row++) {
+      for (let column = 0; column < CELL_SIZE; column++) {
+        if (canvas.pixels[row * canvas.width + frame * CELL_SIZE + column] === 0) continue;
+        visit((column + 1 - ANCHOR.x) / ART_SCALE, (ANCHOR.y - row) / ART_SCALE);
+      }
+    }
+  }
+
+  /** Opaque extent of one cell, in cell pixels. */
+  function extent(sheet: PosedSheet, frame: number) {
     const canvas = sheetCanvas(sheet);
     let top = CELL_SIZE;
     let bottom = -1;
@@ -63,37 +75,67 @@ describe('Nayo strips', () => {
     return { top, bottom, left, right };
   }
 
-  it.each(sheets.filter((sheet) => sheet !== 'projectile'))(
-    '%s: every frame stays inside its cell, away from the edges',
-    (sheet) => {
-      for (let frame = 0; frame < NAYO_SHEETS[sheet].frames; frame++) {
-        const { top, bottom, left, right } = extent(sheet, frame);
-        expect(bottom, `frame ${frame} is empty`).toBeGreaterThan(0);
-        expect(Math.min(top, left, CELL_SIZE - 1 - right)).toBeGreaterThanOrEqual(2);
-        expect(bottom).toBeLessThanOrEqual(ANCHOR.y + 1);
-      }
-    },
-  );
+  it.each(sheets)('%s: every frame stays inside its cell, away from the edges', (sheet) => {
+    for (let frame = 0; frame < NAYO_SHEETS[sheet].frames; frame++) {
+      const { top, bottom, left, right } = extent(sheet, frame);
+      expect(bottom, `frame ${frame} is empty`).toBeGreaterThan(0);
+      expect(Math.min(top, left, CELL_SIZE - 1 - right), `frame ${frame}`).toBeGreaterThanOrEqual(
+        4,
+      );
+      expect(bottom, `frame ${frame}`).toBeLessThanOrEqual(ANCHOR.y + 2);
+    }
+  });
 
-  it.each(['idle', 'walkForward', 'walkBack', 'crouch'] as const)(
+  it.each(['idle', 'walkForward', 'walkBack', 'crouch', 'block'] as const)(
     '%s: feet stand on the ground line in every frame',
     (sheet) => {
       for (let frame = 0; frame < NAYO_SHEETS[sheet].frames; frame++) {
-        expect(extent(sheet, frame).bottom, `frame ${frame}`).toBeGreaterThanOrEqual(ANCHOR.y - 1);
+        expect(extent(sheet, frame).bottom, `frame ${frame}`).toBeGreaterThanOrEqual(ANCHOR.y - 2);
       }
     },
   );
 
   it('the crouch is about as tall as the crouching hurtbox (54 px)', () => {
-    const { top, bottom } = extent('crouch', 2);
+    const { top, bottom } = extent('crouch', NAYO_CLIPS.crouch.frames[3] ?? 3);
     // Outline and hair may rise a few pixels above the box, not a whole head.
-    expect(bottom - top + 1).toBeLessThanOrEqual(58);
+    expect((bottom - top + 1) / ART_SCALE).toBeLessThanOrEqual(58);
   });
 
-  it('the standing guard is about as tall as the standing pushbox (80 px)', () => {
+  it('the standing guard is about as tall as the standing hurtbox (84 px)', () => {
     const { top, bottom } = extent('idle', 0);
-    expect(bottom - top + 1).toBeGreaterThanOrEqual(74);
-    expect(bottom - top + 1).toBeLessThanOrEqual(86);
+    const height = (bottom - top + 1) / ART_SCALE;
+    expect(height).toBeGreaterThanOrEqual(76);
+    expect(height).toBeLessThanOrEqual(88);
+  });
+
+  /**
+   * No clinch at point blank: in neutral poses nothing above the shins reaches past the pushbox
+   * (plus 1 px), so two fighters pressed together touch without overlapping. The feet may reach
+   * a little farther, toes touching toes.
+   */
+  const SHIN = 12;
+  const NEUTRAL: readonly { sheet: PosedSheet; frames: readonly number[]; crouching: boolean }[] = [
+    { sheet: 'idle', frames: NAYO_CLIPS.idle.frames, crouching: false },
+    { sheet: 'walkForward', frames: NAYO_CLIPS.walkForward.frames, crouching: false },
+    { sheet: 'walkBack', frames: NAYO_CLIPS.walkBack.frames, crouching: false },
+    { sheet: 'crouch', frames: NAYO_CLIPS.crouch.frames.slice(3), crouching: true },
+    { sheet: 'block', frames: NAYO_CLIPS.blockStand.frames, crouching: false },
+    { sheet: 'block', frames: NAYO_CLIPS.blockCrouch.frames, crouching: true },
+  ];
+
+  it.each(NEUTRAL)('$sheet: stays inside the pushbox (crouching: $crouching)', (neutral) => {
+    const box = neutral.crouching ? POLYVALENT.crouchingPushbox : POLYVALENT.standingPushbox;
+    const half = toPx(box.width) / 2;
+    for (const frame of neutral.frames) {
+      let body = -Infinity;
+      let feet = -Infinity;
+      eachPixel(neutral.sheet, frame, (x, y) => {
+        if (y > SHIN) body = Math.max(body, x);
+        else feet = Math.max(feet, x);
+      });
+      expect(body, `frame ${frame}: body reaches ${body}`).toBeLessThanOrEqual(half + 1);
+      expect(feet, `frame ${frame}: feet reach ${feet}`).toBeLessThanOrEqual(half + 4);
+    }
   });
 
   /**
@@ -127,20 +169,19 @@ describe('Nayo strips', () => {
     return frames;
   }
 
-  /** Farthest opaque pixel toward the opponent (or upward) within a band, in character px. */
-  function reach(sheet: NayoSheet, frame: number, band: { from: number; to: number }, up: boolean) {
-    const canvas = sheetCanvas(sheet);
+  /** Farthest opaque pixel toward the opponent (or upward) within a band, in world pixels. */
+  function reach(
+    sheet: PosedSheet,
+    frame: number,
+    band: { from: number; to: number },
+    up: boolean,
+  ) {
     let best = -Infinity;
-    for (let row = 0; row < CELL_SIZE; row++) {
-      for (let column = 0; column < CELL_SIZE; column++) {
-        if (canvas.pixels[row * canvas.width + frame * CELL_SIZE + column] === 0) continue;
-        const x = column + 1 - ANCHOR.x;
-        const y = ANCHOR.y - row;
-        const across = up ? x : y;
-        if (across < band.from || across > band.to) continue;
-        best = Math.max(best, up ? y : x);
-      }
-    }
+    eachPixel(sheet, frame, (x, y) => {
+      const across = up ? x : y;
+      if (across < band.from || across > band.to) return;
+      best = Math.max(best, up ? y : x);
+    });
     return best;
   }
 

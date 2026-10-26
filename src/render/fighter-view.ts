@@ -5,6 +5,7 @@ import type { FighterTemplate } from '../core/config';
 import { toPx } from '../core/constants';
 import { pushboxOf } from '../core/fighter';
 import type { FighterState } from '../core/state';
+import { DEPTH } from './depth';
 
 const EYE_SIZE = 4;
 const EYE_INSET = 3;
@@ -37,8 +38,16 @@ export class FighterView {
   ) {
     this.body = scene.add.rectangle(0, 0, 1, 1, color).setOrigin(0.5, 1);
     this.eye = scene.add.rectangle(0, 0, EYE_SIZE, EYE_SIZE, COLORS.eye).setOrigin(0.5, 0);
-    this.hitbox = addHitbox(scene);
-    this.hurtbox = showHurtbox ? scene.add.graphics().setDepth(1) : undefined;
+    this.hitbox = addHitbox(scene).setDepth(DEPTH.debug);
+    this.hurtbox = showHurtbox ? scene.add.graphics().setDepth(DEPTH.debug) : undefined;
+    this.setFront(false);
+  }
+
+  /** Draws this fighter over the other one, or under it. */
+  setFront(front: boolean): void {
+    const depth = front ? DEPTH.fighterFront : DEPTH.fighterBack;
+    this.body.setDepth(depth);
+    this.eye.setDepth(depth);
   }
 
   update(fighter: FighterState, template: FighterTemplate): void {

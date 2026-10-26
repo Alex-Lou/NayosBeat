@@ -8,6 +8,7 @@ import { isTouchDevice } from '../input/touch-controls';
 import { Menu, type MenuFeedback, type MenuItem, type MenuOptions } from '../ui/menu';
 import { TitleScreen } from '../ui/title-screen';
 import { controlsContent } from './controls-content';
+import { installMethod, promptInstall } from './install';
 import { DEFAULT_SETUP, type DummyBehavior, type GameMode, type MatchSetup } from './match-setup';
 
 const FIGHT_SCENE = 'fight';
@@ -93,6 +94,24 @@ export class App {
       },
       soundItem,
     ];
+    const install = installMethod();
+    if (install === 'prompt') {
+      items.push({
+        label: 'Installer le jeu',
+        hint: 'Plein écran, hors ligne',
+        onSelect: () => {
+          void promptInstall().then(() => {
+            this.showMainMenu();
+          });
+        },
+      });
+    } else if (install === 'safari') {
+      items.push({
+        label: 'Installer le jeu',
+        hint: 'Partager, puis « Sur l’écran d’accueil »',
+        onSelect: () => undefined,
+      });
+    }
     this.showMenu({
       title: 'NAYOSBEAT',
       items,

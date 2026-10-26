@@ -17,12 +17,11 @@ describe('Nayo art', () => {
   });
 
   it('rejects frames that are not in the strip', () => {
-    const art = {
-      ...NAYO,
-      clips: { ...NAYO.clips, idle: { ...NAYO.clips.idle, frames: [0, 1, 2, 3, 4, 6] } },
-    };
+    const last = NAYO.sheets.idle?.frames ?? 0;
+    const frames = NAYO.clips.idle.frames.map((frame, index) => (index === 0 ? last : frame));
+    const art = { ...NAYO, clips: { ...NAYO.clips, idle: { ...NAYO.clips.idle, frames } } };
     expect(validateArt(art, POLYVALENT)).toEqual([
-      'nayo: clip idle: frames must be indices of sheet idle (0 to 5)',
+      `nayo: clip idle: frames must be indices of sheet idle (0 to ${last - 1})`,
     ]);
   });
 
@@ -32,5 +31,10 @@ describe('Nayo art', () => {
       urls: { ...NAYO.urls, idle: undefined } as unknown as Record<string, string>,
     };
     expect(validateArt(art, POLYVALENT)).toEqual(['nayo: sheet idle has no image URL']);
+  });
+
+  it('rejects effects of a strip that does not exist', () => {
+    const art = { ...NAYO, fx: { ...NAYO.fx, dance: 'dance.png' } };
+    expect(validateArt(art, POLYVALENT)).toEqual(['nayo: effects of unknown sheet dance']);
   });
 });

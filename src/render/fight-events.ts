@@ -6,11 +6,14 @@ import type { FighterState, GameState, RoundPhase } from '../core/state';
  * Things worth a sound or a visual effect, found by comparing two consecutive states.
  * The simulation stays unaware of presentation: nothing here feeds back into the game.
  */
-/** Where a blow landed, and which way it pushes the defender (away from the attacker). */
+/** Where a blow landed, who landed it, and which way it pushes the defender. */
 interface Contact {
   readonly x: number;
   readonly y: number;
+  /** Away from the attacker. */
   readonly away: 1 | -1;
+  /** The attacker: its effects take its colors. */
+  readonly by: 0 | 1;
 }
 
 export type FightEvent =
@@ -46,8 +49,8 @@ export function detectEvents(
   for (const player of [0, 1] as const) {
     const before = prev.fighters[player];
     const after = next.fighters[player];
-    const opponent = next.fighters[player === 0 ? 1 : 0];
-    const contact = contactPoint(after, opponent);
+    const attacker = player === 0 ? 1 : 0;
+    const contact = contactPoint(after, next.fighters[attacker], attacker);
 
     if (after.action === 'ko' && before.action !== 'ko') {
       events.push({ type: 'ko', ...contact });
@@ -81,12 +84,13 @@ function startedNewMove(before: FighterState, after: FighterState): boolean {
   return before.move !== after.move || before.actionFrame > 0;
 }
 
-function contactPoint(defender: FighterState, attacker: FighterState): Contact {
+function contactPoint(defender: FighterState, attacker: FighterState, by: 0 | 1): Contact {
   const toward = attacker.x >= defender.x ? 1 : -1;
   const height = defender.crouching ? CONTACT_HEIGHT_CROUCHING : CONTACT_HEIGHT_STANDING;
   return {
     x: defender.x + toward * CONTACT_OFFSET_X,
     y: defender.y + height,
     away: toward === 1 ? -1 : 1,
+    by,
   };
 }

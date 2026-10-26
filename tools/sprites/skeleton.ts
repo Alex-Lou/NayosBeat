@@ -29,16 +29,76 @@ export interface Bends {
 
 export type Hand = 'fist' | 'open';
 
-export type Face = 'calm' | 'shout' | 'hurt' | 'out' | 'smirk';
+/**
+ * Expressions stay restrained, the character is cool-headed: `focus` while fighting, `effort`
+ * (jaw set) on heavy blows, `kiai` (short shout) only at the peak of a special.
+ */
+export type Face = 'focus' | 'effort' | 'kiai' | 'smirk' | 'cool' | 'hurt' | 'out' | 'tired';
 
-/** Drawn with the body, in character space (not turned by `spin`). */
+/** Which of the fighter's two effect colors: sound (waves, energy) or strike (impacts, trails). */
+export type Tone = 'sound' | 'strike';
+
+/**
+ * Effects of a frame, in character space (not turned by `spin`). Motion trails are drawn
+ * behind the body; every other effect goes on the front layer, over both fighters.
+ */
 export type Effect =
-  /** Motion trail of a fast limb, behind the body: a band through `points`. */
+  /** Motion trail of a fast limb: a band through `points`, tail first, `width` at the limb. */
   | { readonly kind: 'smear'; readonly points: readonly Point[]; readonly width: number }
-  /** Sound energy gathered or released by the hands, in front of the body. */
+  /** Sound energy gathered or released by the hands. */
   | { readonly kind: 'energy'; readonly center: Point; readonly radius: number }
   /** The flying sound wave (projectile), `phase` from 0 to 1 along its loop. */
-  | { readonly kind: 'wave'; readonly center: Point; readonly phase: number };
+  | { readonly kind: 'wave'; readonly center: Point; readonly phase: number }
+  /** A star-shaped flash where a strike snaps out. */
+  | { readonly kind: 'flash'; readonly center: Point; readonly radius: number; readonly tone: Tone }
+  /**
+   * A ring spreading from a point, `progress` from 0 (just born) to 1 (gone); `squash` < 1
+   * flattens it (a shockwave on the floor).
+   */
+  | {
+      readonly kind: 'ring';
+      readonly center: Point;
+      readonly radius: number;
+      readonly progress: number;
+      readonly tone: Tone;
+      readonly squash?: number;
+    }
+  /** Speed lines streaming behind a part moving toward `direction` (degrees, 0 = forward). */
+  | {
+      readonly kind: 'speed';
+      readonly center: Point;
+      readonly length: number;
+      readonly spread: number;
+      readonly direction: number;
+      readonly tone: Tone;
+    }
+  /** A column of sound rising from `base` (the uppercut), `progress` from 0 to 1. */
+  | {
+      readonly kind: 'column';
+      readonly base: Point;
+      readonly height: number;
+      readonly width: number;
+      readonly progress: number;
+    }
+  /**
+   * Shards flying out of an impact along the blow (forward cone), `progress` from 0 to 1.
+   */
+  | {
+      readonly kind: 'shards';
+      readonly center: Point;
+      readonly radius: number;
+      readonly progress: number;
+      readonly tone: Tone;
+    }
+  /** A guard arc facing the attacker (behind the point), `progress` from 0 to 1. */
+  | {
+      readonly kind: 'shield';
+      readonly center: Point;
+      readonly radius: number;
+      readonly progress: number;
+    }
+  /** Dust kicked up from the floor at `x`, `progress` from 0 to 1. */
+  | { readonly kind: 'dust'; readonly x: number; readonly size: number; readonly progress: number };
 
 export interface Pose {
   readonly hip: Point;
@@ -52,31 +112,41 @@ export interface Pose {
   readonly farFist: Point;
   /** Whole-body rotation around the hip in degrees, positive = forward somersault. */
   readonly spin?: number;
+  /** Rolls the lead (near) shoulder up and forward, in pixels: the shoulder roll of the guard. */
+  readonly shrug?: number;
+  /** Shoulders reaching forward with a punch, in pixels: near (lead) and far (rear). */
+  readonly reach?: { readonly near?: number; readonly far?: number };
+  /**
+   * Chest turned toward the viewer (positive, a rear-hand punch opening the chest) or away
+   * (negative), from -1 to 1: the open front of the jacket slides across the torso.
+   */
+  readonly twist?: number;
   /** Defaults: elbows down, knees toward the opponent. */
   readonly bends?: Bends;
   /** Defaults to fists. */
   readonly nearHand?: Hand;
   readonly farHand?: Hand;
-  /** Defaults to calm. */
+  /** Defaults to focus. */
   readonly face?: Face;
   readonly effects?: readonly Effect[];
 }
 
+/** Body measurements in world pixels (the sprites are drawn ART_SCALE times finer). */
 export const BODY = {
-  shoulder: 22,
-  neck: 25,
-  headDistance: 7.5,
-  headRadius: 6.5,
+  shoulder: 21.5,
+  neck: 25.5,
+  headDistance: 7.4,
+  headRadius: 5.6,
   upperArm: 13,
   forearm: 12,
-  thigh: 19,
-  shin: 17,
+  thigh: 19.5,
+  shin: 17.5,
   /** Ankle height above the ground for a flat foot. */
-  ankle: 5,
+  ankle: 4.6,
   /** Half thickness of the shoe. */
-  footRadius: 2.5,
-  foot: 8,
-  heel: 2,
+  footRadius: 2.3,
+  foot: 7,
+  heel: 2.6,
 } as const;
 
 /**
@@ -101,6 +171,10 @@ export interface Skeleton {
   readonly head: Point;
   /** Head orientation in degrees (torso lean + head tilt + spin), for face details. */
   readonly headAngle: number;
+  /** Lead shoulder roll (see Pose.shrug): the jacket's shoulder line rises with it. */
+  readonly shrug: number;
+  /** Chest turn (see Pose.twist). */
+  readonly twist: number;
   readonly near: Side;
   readonly far: Side;
   readonly face: Face;
@@ -129,8 +203,15 @@ export function solve(pose: Pose): Skeleton {
   const neck = add(hip, scale(up, BODY.neck));
   const headAngle = pose.torso + pose.head + (pose.spin ?? 0);
   const tilt = radians(pose.torso + pose.head);
-  const head = add(neck, scale({ x: Math.sin(tilt), y: Math.cos(tilt) }, BODY.headDistance));
+  // The head pivots near the jaw: nods and snaps turn it in place, they don't swing it around.
+  const head = add(
+    add(neck, scale(up, BODY.headDistance - HEAD_PIVOT)),
+    scale({ x: Math.sin(tilt), y: Math.cos(tilt) }, HEAD_PIVOT),
+  );
   const shoulderBase = add(hip, scale(up, BODY.shoulder));
+  const shrug = pose.shrug ?? 0;
+  // The lead shoulder rolls up and forward, toward the chin.
+  const roll = add(scale(up, shrug), scale(front, shrug * 0.45));
 
   const bends = pose.bends ?? {};
   const side = (
@@ -141,7 +222,11 @@ export function solve(pose: Pose): Skeleton {
     knee: Bend,
     hand: Hand,
   ): Side => {
-    const shoulder = add(shoulderBase, scale(front, sign * 1.2));
+    const reach = (sign > 0 ? pose.reach?.near : pose.reach?.far) ?? 0;
+    const shoulder = add(
+      add(shoulderBase, scale(front, sign * 1.2 + reach)),
+      sign > 0 ? roll : ZERO,
+    );
     const arm = twoBone(shoulder, fist, BODY.upperArm, BODY.forearm, PICKS[elbow]);
     const hipJoint = add(hip, scale(front, sign * 1.5));
     const ankle = { x: foot.x, y: foot.y };
@@ -187,7 +272,9 @@ export function solve(pose: Pose): Skeleton {
       bends.farKnee ?? 'front',
       pose.farHand ?? 'fist',
     ),
-    face: pose.face ?? 'calm',
+    shrug,
+    twist: pose.twist ?? 0,
+    face: pose.face ?? 'focus',
     effects: pose.effects ?? [],
   };
   return pose.spin ? spin(skeleton, pose.spin) : skeleton;
@@ -214,8 +301,18 @@ export function blend(a: Pose, b: Pose, t: number): Pose {
     nearFist: point(a.nearFist, b.nearFist),
     farFist: point(a.farFist, b.farFist),
     spin: mix(a.spin ?? 0, b.spin ?? 0),
+    shrug: mix(a.shrug ?? 0, b.shrug ?? 0),
+    twist: mix(a.twist ?? 0, b.twist ?? 0),
+    reach: {
+      near: mix(a.reach?.near ?? 0, b.reach?.near ?? 0),
+      far: mix(a.reach?.far ?? 0, b.reach?.far ?? 0),
+    },
   };
 }
+
+const ZERO: Point = { x: 0, y: 0 };
+/** Distance from the head's center to the point it turns around (near the jaw). */
+const HEAD_PIVOT = 2.4;
 
 type Pick = (a: Point, b: Point) => Point;
 const PICKS: Readonly<Record<Bend, Pick>> = {

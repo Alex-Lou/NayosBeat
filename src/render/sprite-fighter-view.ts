@@ -1,10 +1,11 @@
 import type Phaser from 'phaser';
-import { ANCHOR, CELL_SIZE, type FighterArt } from '../art/types';
+import { ART_SCALE, cellOf, type FighterArt } from '../art/types';
 import { activeMove, hitboxInWorld, hurtboxInWorld } from '../core/combat';
 import type { FighterTemplate } from '../core/config';
 import { toPx } from '../core/constants';
 import type { FighterState, RoundState } from '../core/state';
 import { clipFrameAt, clipIdOf, clipTickOf } from './animation';
+import { DEPTH } from './depth';
 import { addHitbox, outlineBox, placeBox } from './fighter-view';
 
 const SHADOW_WIDTH = 36;
@@ -13,16 +14,37 @@ const SHADOW_ALPHA = 0.35;
 /** Jump height (px) at which the shadow has shrunk to half its size. */
 const SHADOW_HALF_HEIGHT = 120;
 
-export function textureKey(art: FighterArt, sheet: string): string {
-  return `${art.key}/${sheet}`;
+/** A fighter's strips: its body, or the front effects drawn over both fighters. */
+export type Layer = 'body' | 'fx';
+
+/** Name of a strip's image: the strip itself, or `fx/` and the strip for its front effects. */
+export function stripName(sheet: string, layer: Layer = 'body'): string {
+  return layer === 'fx' ? `fx/${sheet}` : sheet;
 }
 
-/** Loads every strip of `art` that is not already in the texture cache. */
+export function textureKey(art: FighterArt, sheet: string, layer: Layer = 'body'): string {
+  return `${art.key}/${stripName(sheet, layer)}`;
+}
+
+/** Loads every strip of `art`, effects included, that is not already in the texture cache. */
 export function loadArt(scene: Phaser.Scene, art: FighterArt): void {
-  for (const [sheet, url] of Object.entries(art.urls)) {
-    const key = textureKey(art, sheet);
+  const strips: [string, string, Layer][] = [
+    ...Object.entries(art.urls).map(([sheet, url]): [string, string, Layer] => [
+      sheet,
+      url,
+      'body',
+    ]),
+    ...Object.entries(art.fx ?? {}).map(([sheet, url]): [string, string, Layer] => [
+      sheet,
+      url,
+      'fx',
+    ]),
+  ];
+  for (const [sheet, url, layer] of strips) {
+    const key = textureKey(art, sheet, layer);
     if (scene.textures.exists(key)) continue;
-    scene.load.spritesheet(key, url, { frameWidth: CELL_SIZE, frameHeight: CELL_SIZE });
+    const cell = cellOf(art, stripName(sheet, layer));
+    scene.load.spritesheet(key, url, { frameWidth: cell.width, frameHeight: cell.height });
   }
 }
 
@@ -38,39 +60,54 @@ export class AnchoredSprite {
   constructor(
     scene: Phaser.Scene,
     private readonly art: FighterArt,
+    private readonly layer: Layer = 'body',
   ) {
-    this.keys = Object.fromEntries(
-      Object.keys(art.urls).map((sheet) => [sheet, textureKey(art, sheet)]),
-    );
-    const first = art.clips.idle;
+    const sheets = Object.keys(layer === 'fx' ? (art.fx ?? {}) : art.urls);
+    this.keys = Object.fromEntries(sheets.map((sheet) => [sheet, textureKey(art, sheet, layer)]));
+    const first = sheets[0] ?? art.clips.idle.sheet;
     this.sprite = scene.add
-      .sprite(0, 0, textureKey(art, first.sheet), first.frames[0])
-      .setOrigin(ANCHOR.x / CELL_SIZE, ANCHOR.y / CELL_SIZE);
+      .sprite(0, 0, textureKey(art, first, layer), 0)
+      // Positions are in world pixels; each sprite pixel is 1 / ART_SCALE of one.
+      .setScale(1 / ART_SCALE);
+    this.anchorOn(first);
   }
 
   show(sheet: string, frame: number, x: number, y: number, flip: boolean): void {
-    const key = this.keys[sheet] ?? textureKey(this.art, sheet);
+    const key = this.keys[sheet] ?? textureKey(this.art, sheet, this.layer);
     if (key !== this.shownKey || frame !== this.shownFrame) {
       this.sprite.setTexture(key, frame);
+      if (key !== this.shownKey) this.anchorOn(sheet);
       this.shownKey = key;
       this.shownFrame = frame;
     }
     this.sprite.setPosition(x, y).setFlipX(flip).setVisible(true);
   }
 
+  /** Each strip is cropped differently: its anchor sets the sprite's origin. */
+  private anchorOn(sheet: string): void {
+    const cell = cellOf(this.art, stripName(sheet, this.layer));
+    this.sprite.setOrigin(cell.anchor.x / cell.width, cell.anchor.y / cell.height);
+  }
+
   hide(): void {
     this.sprite.setVisible(false);
+  }
+
+  setDepth(depth: number): this {
+    this.sprite.setDepth(depth);
+    return this;
   }
 }
 
 /**
  * A fighter drawn with its sprites. The frame comes from the simulation state alone (action,
- * frame counter, move, round), so the animation always matches the frame data. Boxes show in
- * debug.
+ * frame counter, move, round), so the animation always matches the frame data. The strips that
+ * have front effects play them in step, over both fighters. Boxes show in debug.
  */
 export class SpriteFighterView {
   private readonly shadow: Phaser.GameObjects.Ellipse;
   private readonly body: AnchoredSprite;
+  private readonly effects: AnchoredSprite | undefined;
   private readonly hitbox: Phaser.GameObjects.Rectangle | undefined;
   private readonly hurtbox: Phaser.GameObjects.Graphics | undefined;
 
@@ -89,9 +126,18 @@ export class SpriteFighterView {
       0x000000,
       SHADOW_ALPHA,
     );
-    this.body = new AnchoredSprite(scene, art);
-    this.hitbox = showBoxes ? addHitbox(scene) : undefined;
-    this.hurtbox = showBoxes ? scene.add.graphics().setDepth(1) : undefined;
+    this.body = new AnchoredSprite(scene, art).setDepth(DEPTH.fighterBack);
+    this.effects = art.fx
+      ? new AnchoredSprite(scene, art, 'fx').setDepth(DEPTH.effects)
+      : undefined;
+    this.effects?.hide();
+    this.hitbox = showBoxes ? addHitbox(scene).setDepth(DEPTH.debug) : undefined;
+    this.hurtbox = showBoxes ? scene.add.graphics().setDepth(DEPTH.debug) : undefined;
+  }
+
+  /** Draws this fighter over the other one, or under it. */
+  setFront(front: boolean): void {
+    this.body.setDepth(front ? DEPTH.fighterFront : DEPTH.fighterBack);
   }
 
   update(fighter: FighterState, template: FighterTemplate, round: RoundState): void {
@@ -101,7 +147,15 @@ export class SpriteFighterView {
 
     const x = toPx(fighter.x);
     const height = toPx(fighter.y);
-    this.body.show(clip.sheet, frame, x, this.groundY - height, fighter.facing < 0);
+    const flip = fighter.facing < 0;
+    this.body.show(clip.sheet, frame, x, this.groundY - height, flip);
+    if (this.effects) {
+      if (this.art.fx?.[clip.sheet] !== undefined) {
+        this.effects.show(clip.sheet, frame, x, this.groundY - height, flip);
+      } else {
+        this.effects.hide();
+      }
+    }
     const shrink = SHADOW_HALF_HEIGHT / (SHADOW_HALF_HEIGHT + height);
     this.shadow.setPosition(x, this.groundY).setScale(shrink);
 

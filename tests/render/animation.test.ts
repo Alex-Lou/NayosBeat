@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { Clip } from '../../src/art/types';
 import type { FighterState, RoundState } from '../../src/core/state';
-import { clipFrameAt, clipIdOf as clipIdIn, clipTickOf } from '../../src/render/animation';
+import {
+  clipFrameAt,
+  clipIdOf as clipIdIn,
+  clipTickOf,
+  frontFighter,
+} from '../../src/render/animation';
 import { makeFighter } from '../core/helpers';
 
 const FIGHTING: RoundState = {
@@ -115,5 +120,20 @@ describe('clipFrameAt', () => {
     const idle: Clip = { sheet: 's', frames: [0, 1], ticks: [2, 2], loopFrom: 0 };
     const shown = Array.from({ length: 9 }, (_, tick) => clipFrameAt(idle, tick));
     expect(shown).toEqual([0, 0, 1, 1, 0, 0, 1, 1, 0]);
+  });
+});
+
+describe('frontFighter', () => {
+  const idle = makeFighter({ action: 'idle' });
+  const jab = makeFighter({ action: 'attack', move: 'standLight' });
+
+  it('draws the attacker in front of the other fighter', () => {
+    expect(frontFighter(1, jab, idle)).toBe(0);
+    expect(frontFighter(0, idle, jab)).toBe(1);
+  });
+
+  it('keeps the order while both or neither attack', () => {
+    expect(frontFighter(1, idle, idle)).toBe(1);
+    expect(frontFighter(0, jab, jab)).toBe(0);
   });
 });

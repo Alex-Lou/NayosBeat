@@ -5,6 +5,7 @@ import { toPx } from '../core/constants';
 import { projectileBox } from '../core/projectiles';
 import type { ProjectileState } from '../core/state';
 import { clipFrameAt } from './animation';
+import { DEPTH } from './depth';
 import { AnchoredSprite } from './sprite-fighter-view';
 
 const COLOR = 0xffb347;
@@ -27,11 +28,15 @@ export class ProjectileView {
     private readonly arts: readonly [FighterArt | undefined, FighterArt | undefined],
   ) {
     const rectangle = (): Phaser.GameObjects.Rectangle =>
-      scene.add.rectangle(0, 0, 1, 1, COLOR).setOrigin(0, 1).setVisible(false);
+      scene.add
+        .rectangle(0, 0, 1, 1, COLOR)
+        .setOrigin(0, 1)
+        .setDepth(DEPTH.effects)
+        .setVisible(false);
     this.rectangles = [rectangle(), rectangle()];
     const sprite = (art: FighterArt | undefined): AnchoredSprite | undefined => {
       if (!art?.projectile) return undefined;
-      const view = new AnchoredSprite(scene, art);
+      const view = new AnchoredSprite(scene, art).setDepth(DEPTH.effects);
       view.hide();
       return view;
     };

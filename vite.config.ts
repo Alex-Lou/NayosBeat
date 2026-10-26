@@ -1,5 +1,6 @@
 import type { Plugin } from 'vite';
 import { defineConfig } from 'vitest/config';
+import { serviceWorker } from './build/service-worker';
 
 /**
  * Content-Security-Policy of the published game. Everything is served from the game's own
@@ -36,7 +37,8 @@ function contentSecurityPolicy(): Plugin {
 export default defineConfig({
   // Relative asset paths: the build works from any sub-path (static hosting, Tauri).
   base: './',
-  plugins: [contentSecurityPolicy()],
+  // The installed game (PWA) plays offline: see build/service-worker.ts.
+  plugins: [contentSecurityPolicy(), serviceWorker()],
   build: {
     // Phaser alone is ~1.4 MB minified (~360 kB gzip): warn only beyond that.
     chunkSizeWarningLimit: 1500,

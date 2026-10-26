@@ -23,10 +23,13 @@ import { PauseInput } from '../input/pause-input';
 import { PlayerInputs } from '../input/player-inputs';
 import { isTouchDevice, TouchControls } from '../input/touch-controls';
 import { FixedTimestep } from '../loop/fixed-timestep';
+import { frontFighter } from './animation';
+import { frameFight, MAX_CLOSE_UP } from './camera-framing';
 import { DebugOverlay, isDebugEnabled } from './debug-overlay';
 import { detectEvents, type FightEvent } from './fight-events';
 import { FightFeedback } from './fight-feedback';
 import { FighterView } from './fighter-view';
+import { hitStyleOf, type HitStyle } from './hit-styles';
 import { requestLandscapeFullscreen } from './fullscreen';
 import { Hud } from './hud';
 import { ProjectileView } from './projectile-view';
@@ -61,6 +64,7 @@ export interface FightSceneData {
 /** A fighter on screen: sprites when it has art, a grey box otherwise. */
 interface FighterDisplay {
   update(fighter: FighterState, template: FighterTemplate, round: RoundState): void;
+  setFront(front: boolean): void;
 }
 
 /** Everything that exists only while the scene runs, created in `create`, freed on shutdown. */
@@ -87,8 +91,13 @@ export class FightScene extends Phaser.Scene {
   /** Player 2's CPU, unless a human plays it. */
   private cpu: CpuState | undefined;
   private arts: readonly [FighterArt | undefined, FighterArt | undefined] = [undefined, undefined];
+  private styles!: readonly [HitStyle, HitStyle];
   private paused = false;
   private matchEndReported = false;
+  /** The fighter drawn over the other one. */
+  private front: 0 | 1 = 0;
+  /** Current close-up of the fight camera (see frameFight). */
+  private closeUp = MAX_CLOSE_UP;
   private runtime: Runtime | undefined;
 
   /** Reused every tick to avoid allocating. */
@@ -107,7 +116,9 @@ export class FightScene extends Phaser.Scene {
     this.state = createInitialState(this.config);
     // In a mirror match, player 2 wears the second colorway.
     const [first, second] = data.setup.fighters;
-    this.arts = [artOf(first), artOf(second, first === second ? 'alt' : 'main')];
+    const colorway = first === second ? 'alt' : 'main';
+    this.arts = [artOf(first), artOf(second, colorway)];
+    this.styles = [hitStyleOf(first), hitStyleOf(second, colorway)];
     for (const player of [0, 1] as const) {
       const art = this.arts[player];
       if (art) assertValidArt(art, this.config.fighters[player]);
@@ -117,6 +128,8 @@ export class FightScene extends Phaser.Scene {
     this.cpu = behavior === 'human' ? undefined : createCpu(1, behavior, Date.now() | 0);
     this.paused = false;
     this.matchEndReported = false;
+    this.front = 0;
+    this.closeUp = MAX_CLOSE_UP;
   }
 
   preload(): void {
@@ -125,6 +138,9 @@ export class FightScene extends Phaser.Scene {
 
   create(): void {
     const debug = isDebugEnabled();
+    // Everything is placed in world pixels; the canvas is finer (see renderScaleFor). With the
+    // origin at the top left, the scroll stays the world x of the screen's left edge.
+    this.cameras.main.setZoom(this.scale.width / VIEW_SIZE.width).setOrigin(0, 0);
     this.drawStage();
     const touch = isTouchDevice()
       ? new TouchControls(document.body, requestLandscapeFullscreen)
@@ -138,7 +154,7 @@ export class FightScene extends Phaser.Scene {
         this.fighterDisplay(1, COLORS.player2, debug),
       ],
       projectileView: new ProjectileView(this, this.config, GROUND_Y, this.arts),
-      feedback: new FightFeedback(this, GROUND_Y, this.sceneData.sfx),
+      feedback: new FightFeedback(this, GROUND_Y, this.sceneData.sfx, this.styles),
       hud: new Hud(this, this.config),
       debugOverlay: debug ? new DebugOverlay(document.body) : undefined,
     };
@@ -146,7 +162,25 @@ export class FightScene extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.dispose();
     });
+    this.addScreenCamera();
     this.syncViews(this.runtime);
+  }
+
+  /**
+   * The main camera frames the fight and zooms (see frameFight); what is fixed on screen (HUD,
+   * border, flash: scroll factor 0) is drawn by a second camera that never zooms. Every object
+   * exists from here on (pools), so each is given to its camera once.
+   */
+  private addScreenCamera(): void {
+    const main = this.cameras.main;
+    const screen = this.cameras
+      .add(0, 0, this.scale.width, this.scale.height)
+      .setZoom(this.scale.width / VIEW_SIZE.width)
+      .setOrigin(0, 0);
+    for (const object of this.children.list) {
+      const fixed = (object as { scrollFactorX?: number }).scrollFactorX === 0;
+      (fixed ? main : screen).ignore(object);
+    }
   }
 
   private fighterDisplay(player: 0 | 1, color: number, debug: boolean): FighterDisplay {
@@ -220,13 +254,28 @@ export class FightScene extends Phaser.Scene {
   private syncViews(runtime: Runtime): void {
     const [viewA, viewB] = runtime.fighterViews;
     const [a, b] = this.state.fighters;
+    this.front = frontFighter(this.front, a, b);
+    viewA.setFront(this.front === 0);
+    viewB.setFront(this.front === 1);
     viewA.update(a, this.config.fighters[0], this.state.round);
     viewB.update(b, this.config.fighters[1], this.state.round);
     runtime.projectileView.update(this.state.projectiles, this.state.frame);
     runtime.hud.update(this.state);
 
-    const cameraLeft = Math.round(toPx(this.state.cameraX) - VIEW_SIZE.width / 2);
-    this.cameras.main.setScroll(cameraLeft + runtime.feedback.shakeX, runtime.feedback.shakeY);
+    const framing = frameFight({
+      xs: [
+        ...this.state.fighters.map((fighter) => toPx(fighter.x)),
+        ...this.state.projectiles.map((projectile) => toPx(projectile.x)),
+      ],
+      highestFeet: Math.max(...this.state.fighters.map((fighter) => toPx(fighter.y))),
+      viewLeft: toPx(this.state.cameraX) - VIEW_SIZE.width / 2,
+      groundY: GROUND_Y,
+      closeUp: this.closeUp,
+    });
+    this.closeUp = framing.closeUp;
+    this.cameras.main
+      .setZoom((this.scale.width / VIEW_SIZE.width) * framing.closeUp)
+      .setScroll(framing.left + runtime.feedback.shakeX, framing.top + runtime.feedback.shakeY);
   }
 
   /** DOM elements and listeners live outside Phaser: they must be released explicitly. */

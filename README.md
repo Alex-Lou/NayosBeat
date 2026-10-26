@@ -55,7 +55,7 @@ Les coups légers s'enchaînent sur un autre coup ou un spécial quand ils touch
 
 Ajouter `?debug` à l'URL affiche l'overlay de debug et les hurtbox (toujours actif en dev).
 
-Nayo est dessiné (sprites générés par `npm run sprites`, provisoires en attendant les planches définitives) ; Riff reste en boîte grise jusqu'à ses propres sprites. Dans un match miroir, le joueur 2 porte la seconde tenue (bomber bordeaux).
+Nayo est dessiné (sprites générés par `npm run sprites`, provisoires en attendant les planches définitives) ; Riff reste en boîte grise jusqu'à ses propres sprites. Dans un match miroir, le joueur 2 porte la seconde tenue (techwear gris clair, néon magenta).
 
 ## Combat
 

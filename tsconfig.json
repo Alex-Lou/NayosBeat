@@ -16,5 +16,5 @@
     "noEmit": true,
     "allowImportingTsExtensions": true
   },
-  "include": ["src", "tests", "tools", "vite.config.ts", "eslint.config.js"]
+  "include": ["src", "tests", "tools", "build", "vite.config.ts", "eslint.config.js"]
 }

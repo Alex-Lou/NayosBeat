@@ -38,6 +38,13 @@ describe('detectEvents', () => {
     expect(left.find((e) => e.type === 'hit')).toMatchObject({ away: -1 });
   });
 
+  it('tells who landed the blow, so its effects take that fighter colors', () => {
+    const first = eventsOf(facingOff(30, MIRROR_MATCH), [[Input.Light, 0], ...idle(30)]);
+    expect(first.find((e) => e.type === 'hit')).toMatchObject({ by: 0 });
+    const second = eventsOf(facingOff(30, MIRROR_MATCH), [[0, Input.Light], ...idle(30)]);
+    expect(second.find((e) => e.type === 'hit')).toMatchObject({ by: 1 });
+  });
+
   it('reports a single block even though the game freezes on impact', () => {
     const events = eventsOf(facingOff(30, MIRROR_MATCH), [
       [Input.Heavy, Input.Right],
