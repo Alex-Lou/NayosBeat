@@ -1,8 +1,11 @@
 import Phaser from 'phaser';
 import { cpuStep, createCpu, type CpuState } from '../ai/cpu';
+import { artOf } from '../art';
+import type { FighterArt } from '../art/types';
+import { assertValidArt } from '../art/validate';
 import type { Sfx } from '../audio/sfx';
 import { matchConfigOf, player2Behavior, type MatchSetup } from '../app/match-setup';
-import type { MatchConfig } from '../core/config';
+import type { FighterTemplate, MatchConfig } from '../core/config';
 import { TICK_RATE, toPx } from '../core/constants';
 import type { InputBits } from '../core/input';
 import { matchWinner } from '../core/round';
@@ -22,6 +25,7 @@ import { FighterView } from './fighter-view';
 import { requestLandscapeFullscreen } from './fullscreen';
 import { Hud } from './hud';
 import { ProjectileView } from './projectile-view';
+import { loadArt, SpriteFighterView } from './sprite-fighter-view';
 import { VIEW_SIZE } from './view';
 
 /** Caps the catch-up after a long stall (~83 ms of simulation at 60 Hz). */
@@ -49,11 +53,21 @@ export interface FightSceneData {
   readonly onMatchEnd: (winner: 0 | 1 | null) => void;
 }
 
+/** Fighters' sprites show only with `?art` while the first character is being drawn. */
+function isArtPreviewEnabled(): boolean {
+  return new URLSearchParams(window.location.search).has('art');
+}
+
+/** A fighter on screen: sprites when it has art, a grey box otherwise. */
+interface FighterDisplay {
+  update(fighter: FighterState, template: FighterTemplate): void;
+}
+
 /** Everything that exists only while the scene runs, created in `create`, freed on shutdown. */
 interface Runtime {
   readonly inputs: PlayerInputs;
   readonly pauseInput: PauseInput;
-  readonly fighterViews: readonly [FighterView, FighterView];
+  readonly fighterViews: readonly [FighterDisplay, FighterDisplay];
   readonly projectileView: ProjectileView;
   readonly feedback: FightFeedback;
   readonly hud: Hud;
@@ -72,6 +86,7 @@ export class FightScene extends Phaser.Scene {
   private timestep!: FixedTimestep;
   /** Player 2's CPU, unless a human plays it. */
   private cpu: CpuState | undefined;
+  private arts: readonly [FighterArt | undefined, FighterArt | undefined] = [undefined, undefined];
   private paused = false;
   private matchEndReported = false;
   private runtime: Runtime | undefined;
@@ -90,11 +105,22 @@ export class FightScene extends Phaser.Scene {
     this.config = matchConfigOf(data.setup);
     assertValidMatch(this.config);
     this.state = createInitialState(this.config);
+    const preview = isArtPreviewEnabled();
+    const [first, second] = data.setup.fighters;
+    this.arts = preview ? [artOf(first), artOf(second)] : [undefined, undefined];
+    for (const player of [0, 1] as const) {
+      const art = this.arts[player];
+      if (art) assertValidArt(art, this.config.fighters[player]);
+    }
     this.timestep = new FixedTimestep(1000 / TICK_RATE, MAX_TICKS_PER_FRAME);
     const behavior = player2Behavior(data.setup);
     this.cpu = behavior === 'human' ? undefined : createCpu(1, behavior, Date.now() | 0);
     this.paused = false;
     this.matchEndReported = false;
+  }
+
+  preload(): void {
+    for (const art of this.arts) if (art) loadArt(this, art);
   }
 
   create(): void {
@@ -108,8 +134,8 @@ export class FightScene extends Phaser.Scene {
       inputs: new PlayerInputs(window, touch, connectedGamepads()),
       pauseInput: new PauseInput(document.body),
       fighterViews: [
-        new FighterView(this, COLORS.player1, GROUND_Y, debug),
-        new FighterView(this, COLORS.player2, GROUND_Y, debug),
+        this.fighterDisplay(0, COLORS.player1, debug),
+        this.fighterDisplay(1, COLORS.player2, debug),
       ],
       projectileView: new ProjectileView(this, this.config, GROUND_Y),
       feedback: new FightFeedback(this, GROUND_Y, this.sceneData.sfx),
@@ -121,6 +147,13 @@ export class FightScene extends Phaser.Scene {
       this.dispose();
     });
     this.syncViews(this.runtime);
+  }
+
+  private fighterDisplay(player: 0 | 1, color: number, debug: boolean): FighterDisplay {
+    const art = this.arts[player];
+    return art
+      ? new SpriteFighterView(this, art, GROUND_Y, debug)
+      : new FighterView(this, color, GROUND_Y, debug);
   }
 
   /** Resumes after the pause menu. The paused time is not simulated. */

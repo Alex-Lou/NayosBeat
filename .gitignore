@@ -3,3 +3,6 @@ dist/
 coverage/
 *.log
 .DS_Store
+
+# Enlarged sprite previews written by `npm run sprites`.
+tools/sprites/preview/

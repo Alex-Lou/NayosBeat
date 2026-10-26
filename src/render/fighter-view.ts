@@ -37,7 +37,7 @@ export class FighterView {
   ) {
     this.body = scene.add.rectangle(0, 0, 1, 1, color).setOrigin(0.5, 1);
     this.eye = scene.add.rectangle(0, 0, EYE_SIZE, EYE_SIZE, COLORS.eye).setOrigin(0.5, 0);
-    this.hitbox = scene.add.rectangle(0, 0, 1, 1, COLORS.hitbox, 0.7).setOrigin(0, 1);
+    this.hitbox = addHitbox(scene);
     this.hurtbox = showHurtbox ? scene.add.graphics().setDepth(1) : undefined;
   }
 
@@ -54,8 +54,8 @@ export class FighterView {
 
     const move = activeMove(fighter, template);
     this.hitbox.setVisible(move !== null);
-    if (move?.hitbox) this.place(this.hitbox, hitboxInWorld(fighter, move.hitbox));
-    if (this.hurtbox) this.outline(this.hurtbox, hurtboxInWorld(fighter, template));
+    if (move?.hitbox) placeBox(this.hitbox, hitboxInWorld(fighter, move.hitbox), this.groundY);
+    if (this.hurtbox) outlineBox(this.hurtbox, hurtboxInWorld(fighter, template), this.groundY);
   }
 
   private bodyColor(fighter: FighterState): number {
@@ -72,18 +72,33 @@ export class FighterView {
         return this.color;
     }
   }
+}
 
-  private outline(graphics: Phaser.GameObjects.Graphics, box: WorldBox): void {
-    const top = this.groundY - toPx(box.bottom + box.height);
-    graphics
-      .clear()
-      .lineStyle(1, COLORS.hurtbox, 0.8)
-      .strokeRect(toPx(box.left) + 0.5, top + 0.5, toPx(box.width) - 1, toPx(box.height) - 1);
-  }
+/** The translucent red rectangle showing an active hitbox. */
+export function addHitbox(scene: Phaser.Scene): Phaser.GameObjects.Rectangle {
+  return scene.add.rectangle(0, 0, 1, 1, COLORS.hitbox, 0.7).setOrigin(0, 1);
+}
 
-  private place(rectangle: Phaser.GameObjects.Rectangle, box: WorldBox): void {
-    rectangle
-      .setPosition(toPx(box.left), this.groundY - toPx(box.bottom))
-      .setSize(toPx(box.width), toPx(box.height));
-  }
+/** Draws the outline of a world box (hurtbox) for the debug view. */
+export function outlineBox(
+  graphics: Phaser.GameObjects.Graphics,
+  box: WorldBox,
+  groundY: number,
+): void {
+  const top = groundY - toPx(box.bottom + box.height);
+  graphics
+    .clear()
+    .lineStyle(1, COLORS.hurtbox, 0.8)
+    .strokeRect(toPx(box.left) + 0.5, top + 0.5, toPx(box.width) - 1, toPx(box.height) - 1);
+}
+
+/** Moves and resizes a bottom-left-anchored rectangle onto a world box. */
+export function placeBox(
+  rectangle: Phaser.GameObjects.Rectangle,
+  box: WorldBox,
+  groundY: number,
+): void {
+  rectangle
+    .setPosition(toPx(box.left), groundY - toPx(box.bottom))
+    .setSize(toPx(box.width), toPx(box.height));
 }

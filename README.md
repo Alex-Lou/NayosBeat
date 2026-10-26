@@ -55,6 +55,8 @@ Les coups légers s'enchaînent sur un autre coup ou un spécial quand ils touch
 
 Ajouter `?debug` à l'URL affiche l'overlay de debug et les hurtbox (toujours actif en dev).
 
+Ajouter `?art` affiche les sprites de Nayo (Polyvalent) en cours de dessin : attente, marche, accroupi et sauts pour l'instant. Sans cette option, les combattants restent en boîtes grises.
+
 ## Combat
 
 - Deux modèles de combattants : **Polyvalent** (portée, 1000 PV) et **Rushdown** (vitesse, 900 PV).
@@ -73,6 +75,7 @@ Ajouter `?debug` à l'URL affiche l'overlay de debug et les hurtbox (toujours ac
 | `npm run lint` | ESLint |
 | `npm run typecheck` | TypeScript |
 | `npm run format` | Prettier |
+| `npm run sprites` | Redessine les planches de sprites (`tools/sprites` → `src/art`) |
 
 ## Architecture
 
@@ -80,6 +83,7 @@ Ajouter `?debug` à l'URL affiche l'overlay de debug et les hurtbox (toujours ac
 src/
   core/     Simulation pure et déterministe (aucun import Phaser/DOM, vérifié par ESLint)
   ai/       Ordinateur et mannequins, purs et déterministes eux aussi (graine aléatoire)
+  art/      Sprites : planches PNG et tables d'animation, vérifiées contre la frame data
   audio/    Effets sonores synthétisés
   app/      Enchaînement des écrans et configuration d'un match
   ui/       Menus et écran titre (HTML par-dessus le jeu)
@@ -89,9 +93,10 @@ src/
   render/   Phaser : affichage, mise à l'échelle pixel-perfect, overlay de debug
   main.ts   Point d'entrée
 tests/      Tests Vitest, même arborescence que src/
+tools/      Générateur de sprites (Node, sans dépendance)
 ```
 
-Dépendances à sens unique : `app` → `ui`, `render` ; `render` → `ai`, `input`, `loop`, `data`, `core` ; `ai` → `core` ; `data` → `core` ; `core` ne dépend de rien.
+Dépendances à sens unique : `app` → `ui`, `render` ; `render` → `art`, `ai`, `input`, `loop`, `data`, `core` ; `art` → `data`, `core` ; `ai` → `core` ; `data` → `core` ; `core` ne dépend de rien.
 
 ## Qualité et sécurité
 
