@@ -81,8 +81,9 @@ export function drawNayo(
   drawLeg(ctx, skeleton.far, 'far');
   canvas.ellipse(at(skeleton.hip), 5.4 * S, 4.6 * S, 0, PANTS, { group: 'hips' });
   drawLeg(ctx, skeleton.near, 'near');
-  drawTorso(ctx);
+  // The neck goes behind the jacket: a rolled shoulder must cover it, not show skin over it.
   drawNeck(ctx);
+  drawTorso(ctx);
   drawCollar(ctx);
   drawHeadphoneBand(ctx);
   drawHead(ctx);
