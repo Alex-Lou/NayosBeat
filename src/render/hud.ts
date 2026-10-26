@@ -4,6 +4,8 @@ import { TICK_RATE } from '../core/constants';
 import { INTRO_FRAMES, MATCH_END_FRAMES, ROUNDS_TO_WIN } from '../core/rules';
 import { matchWinner } from '../core/round';
 import type { FighterState, GameState, RoundState } from '../core/state';
+import { ComboCounter } from './combo-counter';
+import type { HitStyle } from './hit-styles';
 import { VIEW_SIZE } from './view';
 
 const MARGIN = 8;
@@ -12,7 +14,7 @@ const BAR_HEIGHT = 8;
 const BAR_WIDTH = 180;
 const PIP_SIZE = 5;
 const PIP_GAP = 3;
-const COMBO_Y = 44;
+const COMBO_Y = 34;
 
 const COLORS = {
   barBackground: 0x2a1a1a,
@@ -39,7 +41,7 @@ export class Hud {
   private readonly timer: Phaser.GameObjects.Text;
   private readonly announcer: Phaser.GameObjects.Text;
   /** Combo counters, each on the side of the player landing the combo. */
-  private readonly combos: [Phaser.GameObjects.Text, Phaser.GameObjects.Text];
+  private readonly combos: [ComboCounter, ComboCounter];
   /** Training only: hits and damage of player 1's last combo on the dummy. */
   private readonly trainingInfo: Phaser.GameObjects.Text | undefined;
   private dummyHealthBefore = 0;
@@ -51,6 +53,7 @@ export class Hud {
   constructor(
     scene: Phaser.Scene,
     private readonly config: MatchConfig,
+    styles: readonly [HitStyle, HitStyle],
   ) {
     const { width } = VIEW_SIZE;
     const leftX = MARGIN;
@@ -74,16 +77,15 @@ export class Hud {
       scene.add.text(width / 2, VIEW_SIZE.height / 2 - 40, '', { ...TEXT_STYLE, fontSize: '24px' }),
     ).setOrigin(0.5);
 
-    const comboStyle = { ...TEXT_STYLE, fontSize: '8px', color: '#f0c94a', strokeThickness: 2 };
+    const [first, second] = config.fighters;
     this.combos = [
-      this.fixed(scene.add.text(leftX, COMBO_Y, '', comboStyle)),
-      this.fixed(scene.add.text(rightX + BAR_WIDTH, COMBO_Y, '', comboStyle).setOrigin(1, 0)),
+      new ComboCounter(scene, leftX, COMBO_Y, 1, styles[0], TEXT_STYLE, second.maxHealth),
+      new ComboCounter(scene, width - MARGIN, COMBO_Y, -1, styles[1], TEXT_STYLE, first.maxHealth),
     ];
+    for (const combo of this.combos) for (const text of combo.objects) this.fixed(text);
     this.trainingInfo = config.training
       ? this.fixed(
-          scene.add
-            .text(width / 2, VIEW_SIZE.height - 12, '', { ...comboStyle, color: '#ffffff' })
-            .setOrigin(0.5, 1),
+          scene.add.text(width / 2, VIEW_SIZE.height - 12, '', smallText()).setOrigin(0.5, 1),
         )
       : undefined;
   }
@@ -94,8 +96,8 @@ export class Hud {
     this.setBar(1, b.health / this.config.fighters[1].maxHealth);
     this.setPips(state.round);
     // A player's combo is counted on the opponent taking the hits.
-    setTextIfChanged(this.combos[0], comboText(b.comboCount));
-    setTextIfChanged(this.combos[1], comboText(a.comboCount));
+    this.combos[0].update(b);
+    this.combos[1].update(a);
     const seconds = Math.ceil(state.round.timer / TICK_RATE);
     setTextIfChanged(this.timer, this.config.training ? '--' : String(seconds));
     if (this.trainingInfo) this.updateTrainingInfo(this.trainingInfo, b);
@@ -192,10 +194,6 @@ export class Hud {
     object.setDepth(10);
     return object;
   }
-}
-
-function comboText(hits: number): string {
-  return hits >= 2 ? `${hits} COUPS` : '';
 }
 
 function smallText(): Phaser.Types.GameObjects.Text.TextStyle {

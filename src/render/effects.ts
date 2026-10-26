@@ -5,6 +5,7 @@ import { VIEW_SIZE } from './view';
 export class Effects {
   private readonly flashOverlay: Phaser.GameObjects.Rectangle;
   private shakeFrames = 0;
+  private shakeDuration = 1;
   private shakeAmplitude = 0;
   private flashFrames = 0;
   private flashDuration = 1;
@@ -25,6 +26,7 @@ export class Effects {
     // A stronger shake is never cut short by a weaker one.
     if (amplitude >= this.shakeAmplitude || this.shakeFrames === 0) {
       this.shakeFrames = frames;
+      this.shakeDuration = frames;
       this.shakeAmplitude = amplitude;
     }
   }
@@ -53,7 +55,7 @@ export class Effects {
     return this.offsetY;
   }
 
-  /** Alternates sides every frame, by whole pixels. */
+  /** Alternates sides every frame, by whole pixels, strongest at the impact and dying out. */
   private updateShakeOffset(): void {
     if (this.shakeFrames === 0) {
       this.offsetX = 0;
@@ -61,7 +63,8 @@ export class Effects {
       return;
     }
     const direction = this.shakeFrames % 2 === 0 ? 1 : -1;
-    this.offsetX = direction * Math.max(1, Math.round(this.shakeAmplitude));
-    this.offsetY = (this.shakeFrames % 3) - 1;
+    const strength = this.shakeAmplitude * (this.shakeFrames / this.shakeDuration);
+    this.offsetX = direction * Math.max(1, Math.round(strength));
+    this.offsetY = Math.round(((this.shakeFrames % 3) - 1) * Math.max(1, strength / 2));
   }
 }

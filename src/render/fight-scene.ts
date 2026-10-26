@@ -155,7 +155,7 @@ export class FightScene extends Phaser.Scene {
       ],
       projectileView: new ProjectileView(this, this.config, GROUND_Y, this.arts),
       feedback: new FightFeedback(this, GROUND_Y, this.sceneData.sfx, this.styles),
-      hud: new Hud(this, this.config),
+      hud: new Hud(this, this.config, this.styles),
       debugOverlay: debug ? new DebugOverlay(document.body) : undefined,
     };
 

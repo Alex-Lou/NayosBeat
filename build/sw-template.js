@@ -33,9 +33,9 @@ self.addEventListener('fetch', (event) => {
   if (request.mode === 'navigate') {
     // Network first, so a new deployment shows up at once; offline, the cached page.
     event.respondWith(
-      fetch(request).catch(() =>
-        caches.match('./index.html').then((page) => page ?? Response.error()),
-      ),
+      fetch(request)
+        .then(followed)
+        .catch(() => caches.match('./index.html').then((page) => page ?? Response.error())),
     );
     return;
   }
@@ -54,3 +54,19 @@ self.addEventListener('fetch', (event) => {
     ),
   );
 });
+
+/**
+ * A page reached through a redirect (the address without its final slash, say) cannot answer
+ * a navigation as is: browsers refuse it and the installed game would not open. A copy can.
+ */
+function followed(response) {
+  if (!response.redirected) return response;
+  return response.blob().then(
+    (body) =>
+      new Response(body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: response.headers,
+      }),
+  );
+}
