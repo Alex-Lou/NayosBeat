@@ -14,7 +14,7 @@ export const ROSTER: readonly RosterEntry[] = [
   {
     id: 'polyvalent',
     template: POLYVALENT,
-    description: 'Équilibré · onde de choc · uppercut',
+    description: 'Equilibré · onde de choc · uppercut',
   },
   {
     id: 'rushdown',

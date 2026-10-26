@@ -125,7 +125,7 @@ export class Hud {
       case 'roundEnd': {
         const result = round.result;
         if (!result) return '';
-        if (result.reason === 'timeout') return result.winner === null ? 'ÉGALITÉ' : 'TEMPS !';
+        if (result.reason === 'timeout') return result.winner === null ? 'EGALITE' : 'TEMPS !';
         return result.winner === null ? 'DOUBLE K.O.' : 'K.O.';
       }
       case 'matchEnd': {

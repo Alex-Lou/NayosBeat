@@ -295,7 +295,7 @@ export class App {
 
   private showResults(winner: 0 | 1 | null): void {
     const name = winner === null ? null : templateOf(this.setup.fighters[winner]).name;
-    const title = name === null ? 'Égalité' : `${name} gagne !`;
+    const title = name === null ? 'Egalité' : `${name} gagne !`;
     const subtitle =
       this.setup.mode === 'cpu'
         ? winner === 0
