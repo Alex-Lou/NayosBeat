@@ -6,10 +6,17 @@ import type { FighterState, GameState, RoundPhase } from '../core/state';
  * Things worth a sound or a visual effect, found by comparing two consecutive states.
  * The simulation stays unaware of presentation: nothing here feeds back into the game.
  */
+/** Where a blow landed, and which way it pushes the defender (away from the attacker). */
+interface Contact {
+  readonly x: number;
+  readonly y: number;
+  readonly away: 1 | -1;
+}
+
 export type FightEvent =
-  | { readonly type: 'hit'; readonly x: number; readonly y: number; readonly damage: number }
-  | { readonly type: 'block'; readonly x: number; readonly y: number }
-  | { readonly type: 'ko'; readonly x: number; readonly y: number }
+  | ({ readonly type: 'hit'; readonly damage: number } & Contact)
+  | ({ readonly type: 'block' } & Contact)
+  | ({ readonly type: 'ko' } & Contact)
   | { readonly type: 'attack'; readonly heavy: boolean }
   | { readonly type: 'projectile' }
   | { readonly type: 'jump' }
@@ -74,8 +81,12 @@ function startedNewMove(before: FighterState, after: FighterState): boolean {
   return before.move !== after.move || before.actionFrame > 0;
 }
 
-function contactPoint(defender: FighterState, attacker: FighterState): { x: number; y: number } {
+function contactPoint(defender: FighterState, attacker: FighterState): Contact {
   const toward = attacker.x >= defender.x ? 1 : -1;
   const height = defender.crouching ? CONTACT_HEIGHT_CROUCHING : CONTACT_HEIGHT_STANDING;
-  return { x: defender.x + toward * CONTACT_OFFSET_X, y: defender.y + height };
+  return {
+    x: defender.x + toward * CONTACT_OFFSET_X,
+    y: defender.y + height,
+    away: toward === 1 ? -1 : 1,
+  };
 }

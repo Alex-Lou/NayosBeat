@@ -30,6 +30,14 @@ describe('detectEvents', () => {
     expect(events[1]).toMatchObject({ type: 'hit', damage: P.moves.standLight.damage });
   });
 
+  it('tells which way a blow pushes the defender: away from the attacker', () => {
+    // Player 1 stands on the left: its jab pushes player 2 to the right, and back.
+    const right = eventsOf(facingOff(30, MIRROR_MATCH), [[Input.Light, 0], ...idle(30)]);
+    expect(right.find((e) => e.type === 'hit')).toMatchObject({ away: 1 });
+    const left = eventsOf(facingOff(30, MIRROR_MATCH), [[0, Input.Light], ...idle(30)]);
+    expect(left.find((e) => e.type === 'hit')).toMatchObject({ away: -1 });
+  });
+
   it('reports a single block even though the game freezes on impact', () => {
     const events = eventsOf(facingOff(30, MIRROR_MATCH), [
       [Input.Heavy, Input.Right],

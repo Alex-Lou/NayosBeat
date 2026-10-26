@@ -1,5 +1,6 @@
 import type Phaser from 'phaser';
 import type { Sfx } from '../audio/sfx';
+import { BLEEDS, Blood } from './blood';
 import { BURSTS, Effects } from './effects';
 import { HEAVY_HIT_DAMAGE, type FightEvent } from './fight-events';
 
@@ -7,9 +8,10 @@ import { HEAVY_HIT_DAMAGE, type FightEvent } from './fight-events';
 const KO_SLOW_MOTION_FRAMES = 50;
 const KO_SLOW_MOTION_SCALE = 0.35;
 
-/** Turns fight events into what the player sees and hears: sparks, shake, flash, sounds. */
+/** Turns fight events into what the player sees and hears: sparks, blood, shake, flash, sounds. */
 export class FightFeedback {
   private readonly effects: Effects;
+  private readonly blood: Blood;
   private slowMotionFrames = 0;
 
   constructor(
@@ -18,6 +20,7 @@ export class FightFeedback {
     private readonly sfx: Sfx,
   ) {
     this.effects = new Effects(scene, groundY);
+    this.blood = new Blood(scene, groundY);
   }
 
   react(event: FightEvent): void {
@@ -26,7 +29,10 @@ export class FightFeedback {
       case 'hit': {
         const heavy = event.damage >= HEAVY_HIT_DAMAGE;
         effects.burst(event.x, event.y, heavy ? BURSTS.heavyHit : BURSTS.lightHit);
-        if (heavy) effects.shake(8, 2);
+        if (heavy) {
+          effects.shake(8, 2);
+          this.blood.bleed(event.x, event.y, event.away, BLEEDS.heavyHit);
+        }
         sfx.play(heavy ? 'heavyHit' : 'lightHit');
         break;
       }
@@ -36,6 +42,7 @@ export class FightFeedback {
         break;
       case 'ko':
         effects.burst(event.x, event.y, BURSTS.ko);
+        this.blood.bleed(event.x, event.y, event.away, BLEEDS.ko);
         effects.shake(24, 3);
         effects.flash(12);
         this.slowMotionFrames = KO_SLOW_MOTION_FRAMES;
@@ -70,6 +77,7 @@ export class FightFeedback {
   /** Advances visual effects by one display frame. */
   update(): void {
     this.effects.update();
+    this.blood.update();
   }
 
   get shakeX(): number {

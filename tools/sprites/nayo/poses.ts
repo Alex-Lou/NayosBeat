@@ -393,32 +393,35 @@ const STAND_LIGHT: readonly Pose[] = [
   { ...blend(GUARD, JAB_OUT, 0.15), effects: [] },
 ];
 
-/** Crochet (standHeavy): stepping rear hook. Hitbox 10..54 x 44..62: the fist reaches ~51. */
+/**
+ * Crochet (standHeavy): stepping lead hook, on the camera side. Hitbox 10..54 x 44..62: the fist
+ * reaches ~50 with a 10 px step (the drawing steps in place: the fighter itself does not move).
+ */
 const HOOK_OUT: Pose = {
-  hip: at(14, 37),
+  hip: at(10, 37),
   torso: 22,
   head: 10,
-  nearFoot: planted(28),
-  farFoot: planted(-2, -20),
-  nearFist: at(22, 52),
-  farFist: at(48, 56),
+  nearFoot: planted(24),
+  farFoot: planted(-6, -20),
+  nearFist: at(48, 56),
+  farFist: at(20, 62),
   face: 'shout',
-  effects: [smear(7, [16, 60], [26, 62], [37, 60.5], [44, 57.5])],
+  effects: [smear(7, [12, 60], [24, 63], [35, 61.5], [43, 58])],
 };
 
 const STAND_HEAVY: readonly Pose[] = [
-  // Wind-up: shoulders turn, rear fist pulled back.
-  { ...GUARD, hip: at(-2, 38), torso: 2, farFist: at(2, 60), nearFist: at(18, 64) },
-  { ...GUARD, hip: at(-3, 37), torso: -4, head: 8, farFist: at(-4, 58), nearFist: at(19, 63) },
+  // Wind-up: shoulders turn away, lead fist drawn back and low.
+  { ...GUARD, hip: at(-2, 38), torso: 2, nearFist: at(8, 58), farFist: at(10, 63) },
+  { ...GUARD, hip: at(-3, 37), torso: -4, head: 8, nearFist: at(2, 56), farFist: at(9, 63) },
   // Swing starts with the step.
   {
     ...blend(GUARD, HOOK_OUT, 0.5),
-    farFist: at(24, 62),
-    effects: [smear(5, [6, 58], [14, 61], [21, 62])],
+    nearFist: at(24, 63),
+    effects: [smear(5, [2, 58], [10, 62], [19, 63])],
   },
   HOOK_OUT,
   // Follow-through across the body.
-  { ...HOOK_OUT, hip: at(13, 36), torso: 26, farFist: at(38, 48), effects: [], face: 'calm' },
+  { ...HOOK_OUT, hip: at(9, 36), torso: 26, nearFist: at(36, 50), effects: [], face: 'calm' },
   { ...blend(HOOK_OUT, GUARD, 0.5), effects: [], face: 'calm' },
   { ...blend(HOOK_OUT, GUARD, 0.85), effects: [], face: 'calm' },
 ];
