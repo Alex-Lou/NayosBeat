@@ -1,8 +1,10 @@
 import '@fontsource/press-start-2p/latin.css';
+import '@fontsource/bangers/latin-400.css';
 import './styles.css';
 import Phaser from 'phaser';
 import { App } from './app/app';
 import { watchInstallPrompt } from './app/install';
+import { registerServiceWorker } from './app/service-worker';
 import { Sfx } from './audio/sfx';
 import { isTouchDevice } from './input/touch-controls';
 import { FightScene } from './render/fight-scene';
@@ -37,12 +39,18 @@ function uiRoot(): HTMLElement {
   return root;
 }
 
-/** Canvas text is rendered once: the pixel font must be loaded before the first fight. */
+/**
+ * Canvas text is rendered once: the fonts must be loaded before the first fight (the pixel
+ * font of the HUD, the comic lettering of the blows' words).
+ */
 async function loadFonts(): Promise<void> {
   try {
-    await document.fonts.load('8px "Press Start 2P"');
+    await Promise.all([
+      document.fonts.load('8px "Press Start 2P"'),
+      document.fonts.load('16px Bangers'),
+    ]);
   } catch {
-    // The fallback monospace font is used instead; the game stays playable.
+    // Fallback fonts are used instead; the game stays playable.
   }
 }
 
@@ -78,20 +86,24 @@ async function start(): Promise<void> {
   });
 
   const startApp = (): void => {
+    // The game has started: the boot screen (index.html, public/boot.js) is no longer needed.
+    document.getElementById('boot')?.remove();
     new App(uiRoot(), game, new Sfx()).start();
   };
   if (game.isRunning) startApp();
   else game.events.once(Phaser.Core.Events.READY, startApp);
 }
 
-/** A failure at startup must not leave a silent blank page. */
+/** A failure at startup must not leave a silent blank page: the boot screen tells it. */
 function showStartupError(error: unknown): void {
   console.error(error);
-  const message = document.createElement('div');
-  message.className = 'menu';
-  message.textContent =
-    "Le jeu n'a pas pu démarrer sur ce navigateur. Essaie de recharger la page, ou un navigateur récent.";
-  document.getElementById('ui')?.appendChild(message);
+  const status = document.getElementById('boot-status');
+  if (status) {
+    status.textContent =
+      "Le jeu n'a pas pu démarrer sur ce navigateur. Essaie de le réparer, ou un navigateur récent.";
+  }
+  const repair = document.getElementById('boot-repair');
+  if (repair) repair.hidden = false;
 }
 
 start().catch(showStartupError);
@@ -99,7 +111,5 @@ watchInstallPrompt();
 
 // The installed game (PWA) plays offline; the service worker exists only in production builds.
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').catch(() => undefined);
-  });
+  window.addEventListener('load', registerServiceWorker);
 }

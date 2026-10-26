@@ -25,6 +25,11 @@ export default tseslint.config(
     ...tseslint.configs.disableTypeChecked,
   },
   {
+    // The startup guard (plain JavaScript, loaded before the game's code).
+    files: ['public/boot.js'],
+    ...tseslint.configs.disableTypeChecked,
+  },
+  {
     // The service worker template (plain JavaScript, filled in at build time).
     files: ['build/sw-template.js'],
     ...tseslint.configs.disableTypeChecked,

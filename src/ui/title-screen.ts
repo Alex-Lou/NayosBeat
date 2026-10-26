@@ -19,7 +19,10 @@ export class TitleScreen {
     const prompt = document.createElement('p');
     prompt.className = 'title-prompt';
     prompt.textContent = 'Appuie sur une touche';
-    this.root.append(title, prompt);
+    const version = document.createElement('p');
+    version.className = 'title-version';
+    version.textContent = `Version du ${buildDate()}`;
+    this.root.append(title, prompt, version);
     parent.appendChild(this.root);
 
     window.addEventListener('keydown', this.start);
@@ -51,4 +54,10 @@ export class TitleScreen {
     if (pressed) this.start();
     else this.frameRequest = requestAnimationFrame(this.pollGamepads);
   };
+}
+
+/** The build's date and time, in the player's time zone ("26/10/2026 23:41"). */
+function buildDate(): string {
+  const date = new Date(__BUILD_DATE__);
+  return `${date.toLocaleDateString('fr-FR')} ${date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
 }
