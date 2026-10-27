@@ -14,6 +14,7 @@ import { NAYO_SHEETS, type NayoSheet } from '../../src/art/nayo/sheets.ts';
 import { ANCHOR, ART_SCALE, CELL_SIZE } from '../../src/art/types.ts';
 import { CORE_MOVE_IDS } from '../../src/core/move-data.ts';
 import { NAYO } from '../../src/data/fighters/nayo.ts';
+import { activeFrames, isV2Sheet, NAYO_V2_STRIPS } from './nayo/combat-v2.ts';
 import { paletteOf, type Colorway } from './nayo/look.ts';
 import { encodeIndexedPng, type Rgba } from './png.ts';
 import { drawSheet } from './sheet.ts';
@@ -26,11 +27,27 @@ const GUIDE: Rgba = { r: 0x6a, g: 0x3a, b: 0x3a, a: 255 };
 const HITBOX: Rgba = { r: 0xff, g: 0x3b, b: 0x3b, a: 255 };
 const SEPARATOR: Rgba = { r: 0x2a, g: 0x2a, b: 0x44, a: 255 };
 
-/** Hitbox of the move a strip plays, in cell pixels, on each of its active frames. */
+/**
+ * Hitbox of the move a strip plays, in cell pixels, on each of its active frames: from the spec
+ * for a combat v2 strike, not played yet (tools/sprites/nayo/combat-v2.ts).
+ */
 function hitboxes(
   sheet: NayoSheet,
 ): Map<number, { left: number; right: number; top: number; bottom: number }> {
   const boxes = new Map<number, { left: number; right: number; top: number; bottom: number }>();
+  if (isV2Sheet(sheet)) {
+    const { ticks, strike } = NAYO_V2_STRIPS[sheet];
+    if (!ticks || !strike) return boxes;
+    for (const frame of activeFrames(ticks, strike)) {
+      boxes.set(frame, {
+        left: ANCHOR.x + strike.x[0] * ART_SCALE,
+        right: ANCHOR.x + strike.x[1] * ART_SCALE,
+        top: ANCHOR.y - strike.y[1] * ART_SCALE,
+        bottom: ANCHOR.y - strike.y[0] * ART_SCALE,
+      });
+    }
+    return boxes;
+  }
   // The move whose clip plays this strip, if any (the grab plays the "throw" strip).
   const id = CORE_MOVE_IDS.find((move) => NAYO_CLIPS[move].sheet === sheet);
   if (!id) return boxes;

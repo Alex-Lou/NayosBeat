@@ -1,11 +1,11 @@
 import type Phaser from 'phaser';
-import { cellOf, type FighterArt } from '../art/types';
+import type { FighterArt } from '../art/types';
 import { activeMove } from '../core/combat';
 import type { FighterTemplate } from '../core/config';
 import { toPx } from '../core/constants';
 import { isActiveFrame } from '../core/moves';
 import type { FighterState, RoundState } from '../core/state';
-import { AnchoredSprite, stripName, textureKey, type Layer } from './anchored-sprite';
+import { AnchoredSprite } from './anchored-sprite';
 import { clipFrameAt, clipIdOf, clipTickOf } from './animation';
 import { DashTrail } from './dash-trail';
 import { DEPTH } from './depth';
@@ -16,28 +16,6 @@ const SHADOW_HEIGHT = 6;
 const SHADOW_ALPHA = 0.35;
 /** Jump height (px) at which the shadow has shrunk to half its size. */
 const SHADOW_HALF_HEIGHT = 120;
-
-/** Loads every strip of `art`, effects included, that is not already in the texture cache. */
-export function loadArt(scene: Phaser.Scene, art: FighterArt): void {
-  const strips: [string, string, Layer][] = [
-    ...Object.entries(art.urls).map(([sheet, url]): [string, string, Layer] => [
-      sheet,
-      url,
-      'body',
-    ]),
-    ...Object.entries(art.fx ?? {}).map(([sheet, url]): [string, string, Layer] => [
-      sheet,
-      url,
-      'fx',
-    ]),
-  ];
-  for (const [sheet, url, layer] of strips) {
-    const key = textureKey(art, sheet, layer);
-    if (scene.textures.exists(key)) continue;
-    const cell = cellOf(art, stripName(sheet, layer));
-    scene.load.spritesheet(key, url, { frameWidth: cell.width, frameHeight: cell.height });
-  }
-}
 
 /**
  * A fighter drawn with its sprites. The frame comes from the simulation state alone (action,

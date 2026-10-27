@@ -35,7 +35,8 @@ import { hitStyleOf, type HitStyle } from './hit-styles';
 import { requestLandscapeFullscreen } from './fullscreen';
 import { Hud } from './hud';
 import { ProjectileView } from './projectile-view';
-import { loadArt, SpriteFighterView } from './sprite-fighter-view';
+import { loadArt } from './art-textures';
+import { SpriteFighterView } from './sprite-fighter-view';
 import { VIEW_SIZE } from './view';
 
 /** Caps the catch-up after a long stall (~83 ms of simulation at 60 Hz). */

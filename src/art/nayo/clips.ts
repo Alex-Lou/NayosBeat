@@ -53,10 +53,9 @@ export const NAYO_CLIPS: Readonly<Record<ClipId, NayoClip>> = {
   specialForward: play('specialForward', [3, 3, 3, 2, 4, 4, 5, 5, 4]), // active: frame 4
   specialAntiAir: play('specialAntiAir', [3, 3, 5, 4, 4, 4, 4, 4, 4, 4]), // active: frames 1-2
   grab: play('throw', [3, 2, 4, 4, 5, 5, 4]), // active: frame 1
-  // Placeholders until the dash strips of the art track are in: one step of the walk, timed on
-  // the dash (set off, glide, landing) so the frame data and the clip already agree.
-  dashForward: { sheet: 'walkForward', frames: [0, 1, 2, 3, 4, 5], ticks: [1, 4, 4, 3, 3, 3] },
-  dashBack: { sheet: 'walkBack', frames: [0, 1, 2, 3, 4, 5], ticks: [1, 4, 4, 4, 4, 5] },
+  // Pas chassé and Retrait: set off, glide, landing (the game moves him, the poses stay put).
+  dashForward: play('dashForward', [1, 4, 4, 3, 3, 3]),
+  dashBack: play('dashBack', [1, 4, 4, 4, 4, 5]),
 
   // Round poses, played on the round clock: the entrance fills the 90-tick intro.
   intro: play('intro', [10, 8, 8, 8, 10, 8, 8, 10, 10, 10]),

@@ -1,0 +1,36 @@
+import type Phaser from 'phaser';
+import { cellOf, playedSheets, type FighterArt } from '../art/types';
+
+/** A fighter's strips: its body, or the front effects drawn over both fighters. */
+export type Layer = 'body' | 'fx';
+
+/** Name of a strip's image: the strip itself, or `fx/` and the strip for its front effects. */
+export function stripName(sheet: string, layer: Layer = 'body'): string {
+  return layer === 'fx' ? `fx/${sheet}` : sheet;
+}
+
+export function textureKey(art: FighterArt, sheet: string, layer: Layer = 'body'): string {
+  return `${art.key}/${stripName(sheet, layer)}`;
+}
+
+/** Image URL of each strip of one layer that a clip plays, by sheet (the others never show). */
+export function playedUrls(art: FighterArt, layer: Layer): [sheet: string, url: string][] {
+  const played = playedSheets(art);
+  const urls = layer === 'fx' ? (art.fx ?? {}) : art.urls;
+  return Object.entries(urls).filter(([sheet]) => played.has(sheet));
+}
+
+/**
+ * Loads every strip of `art` that a clip plays, effects included, that is not already in the
+ * texture cache.
+ */
+export function loadArt(scene: Phaser.Scene, art: FighterArt): void {
+  for (const layer of ['body', 'fx'] as const) {
+    for (const [sheet, url] of playedUrls(art, layer)) {
+      const key = textureKey(art, sheet, layer);
+      if (scene.textures.exists(key)) continue;
+      const cell = cellOf(art, stripName(sheet, layer));
+      scene.load.spritesheet(key, url, { frameWidth: cell.width, frameHeight: cell.height });
+    }
+  }
+}
