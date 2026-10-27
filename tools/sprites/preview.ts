@@ -1,22 +1,28 @@
 /**
  * Renders strips to look at while drawing them: on the stage background, with the ground line,
  * the pushbox edges (dashed) and, on the active frames of an attack, its hitbox (red frame).
- * Writes tools/sprites/preview/<sheet>.png (not committed).
+ * Writes tools/sprites/preview/<sheet>.png, tools/sprites/preview/riff/<sheet>.png for Riff
+ * (not committed).
  *
- *   node tools/sprites/preview.ts idle standHeavy      # main colorway
- *   node tools/sprites/preview.ts --alt idle           # second colorway
- *   node tools/sprites/preview.ts --all
+ *   npm run sprites:preview -- idle standHeavy          # Nayo, main colorway
+ *   npm run sprites:preview -- --alt idle               # second colorway
+ *   npm run sprites:preview -- --riff idle              # Riff (also: riff/idle)
+ *   npm run sprites:preview -- --all                    # every strip (with --riff: hers)
  */
 
 import { mkdir, writeFile } from 'node:fs/promises';
 import { NAYO_CLIPS } from '../../src/art/nayo/clips.ts';
-import { NAYO_SHEETS, type NayoSheet } from '../../src/art/nayo/sheets.ts';
 import { ANCHOR, ART_SCALE, CELL_SIZE } from '../../src/art/types.ts';
 import { MOVE_IDS, type MoveId } from '../../src/core/config.ts';
+import { toPx } from '../../src/core/constants.ts';
 import { POLYVALENT } from '../../src/data/fighters.ts';
-import { paletteOf, type Colorway } from './nayo/look.ts';
+import type { Fighter, Strike } from './fighter.ts';
+import { NAYO } from './nayo/index.ts';
+import type { Colorway } from './palette.ts';
 import { encodeIndexedPng, type Rgba } from './png.ts';
-import { drawSheet } from './sheet.ts';
+import { RIFF } from './riff/index.ts';
+import { PUSHBOX_HALF, RIFF_STRIKES } from './riff/strips.ts';
+import { drawStrip } from './sheet.ts';
 
 const PREVIEW = new URL('./preview/', import.meta.url);
 const ZOOM = 2;
@@ -26,36 +32,76 @@ const GUIDE: Rgba = { r: 0x6a, g: 0x3a, b: 0x3a, a: 255 };
 const HITBOX: Rgba = { r: 0xff, g: 0x3b, b: 0x3b, a: 255 };
 const SEPARATOR: Rgba = { r: 0x2a, g: 0x2a, b: 0x44, a: 255 };
 
-/** Hitbox of the move a strip plays, in cell pixels, on each of its active frames. */
-function hitboxes(
-  sheet: NayoSheet,
-): Map<number, { left: number; right: number; top: number; bottom: number }> {
-  const boxes = new Map<number, { left: number; right: number; top: number; bottom: number }>();
-  if (!(MOVE_IDS as readonly string[]).includes(sheet)) return boxes;
-  const move = POLYVALENT.moves[sheet as MoveId];
-  const box = move.hitbox;
-  if (!box) return boxes;
-  const clip = NAYO_CLIPS[sheet as MoveId];
-  let tick = 0;
-  clip.ticks.forEach((ticks, index) => {
-    const active = tick < move.startup + move.active && tick + ticks > move.startup;
-    tick += ticks;
-    const frame = clip.frames[index];
-    if (!active || frame === undefined) return;
-    const px = (sub: number): number => (sub / 100) * ART_SCALE;
-    boxes.set(frame, {
-      left: ANCHOR.x + px(box.x),
-      right: ANCHOR.x + px(box.x + box.width),
-      top: ANCHOR.y - px(box.y + box.height),
-      bottom: ANCHOR.y - px(box.y),
+/** What the preview draws over a fighter's strips. */
+interface Guides {
+  /** Half width of the standing pushbox, in world pixels. */
+  readonly pushboxHalf: number;
+  /** The hitbox of a strip's attack (world pixels) and its active frames. */
+  readonly strike: (sheet: string) => Strike | undefined;
+}
+
+/** Nayo's moves are the Polyvalent ones (src/data/fighters.ts), played by his clips. */
+const NAYO_GUIDES: Guides = {
+  pushboxHalf: toPx(POLYVALENT.standingPushbox.width) / 2,
+  strike: (sheet) => {
+    if (!(MOVE_IDS as readonly string[]).includes(sheet)) return undefined;
+    const move = POLYVALENT.moves[sheet as MoveId];
+    const box = move.hitbox;
+    if (!box) return undefined;
+    const clip = NAYO_CLIPS[sheet as MoveId];
+    const frames: number[] = [];
+    let tick = 0;
+    clip.ticks.forEach((ticks, index) => {
+      const active = tick < move.startup + move.active && tick + ticks > move.startup;
+      tick += ticks;
+      const frame = clip.frames[index];
+      if (active && frame !== undefined) frames.push(frame);
     });
-  });
+    return {
+      frames,
+      box: { x: toPx(box.x), y: toPx(box.y), width: toPx(box.width), height: toPx(box.height) },
+    };
+  },
+};
+
+/** Riff's are the combat v2 ones (docs/combat-v2.md §10.2, see riff/strips.ts). */
+const RIFF_GUIDES: Guides = {
+  pushboxHalf: PUSHBOX_HALF,
+  strike: (sheet) => (RIFF_STRIKES as Readonly<Record<string, Strike | undefined>>)[sheet],
+};
+
+interface Box {
+  readonly left: number;
+  readonly right: number;
+  readonly top: number;
+  readonly bottom: number;
+}
+
+/** Hitbox of the move a strip plays, in cell pixels, on each of its active frames. */
+function hitboxes(guides: Guides, sheet: string): Map<number, Box> {
+  const boxes = new Map<number, Box>();
+  const strike = guides.strike(sheet);
+  if (!strike) return boxes;
+  const { box } = strike;
+  for (const frame of strike.frames) {
+    boxes.set(frame, {
+      left: ANCHOR.x + box.x * ART_SCALE,
+      right: ANCHOR.x + (box.x + box.width) * ART_SCALE,
+      top: ANCHOR.y - (box.y + box.height) * ART_SCALE,
+      bottom: ANCHOR.y - box.y * ART_SCALE,
+    });
+  }
   return boxes;
 }
 
-async function render(sheet: NayoSheet, colorway: Colorway): Promise<void> {
-  const canvas = drawSheet(sheet);
-  const palette = [...paletteOf(colorway)];
+async function render(
+  fighter: Fighter,
+  guides: Guides,
+  sheet: string,
+  colorway: Colorway,
+): Promise<void> {
+  const canvas = drawStrip(fighter, sheet);
+  const palette = [...fighter.paletteOf(colorway)];
   const slot = (color: Rgba): number => palette.push(color) - 1;
   const background = slot(BACKGROUND);
   const ground = slot(GROUND);
@@ -63,8 +109,8 @@ async function render(sheet: NayoSheet, colorway: Colorway): Promise<void> {
   const hitbox = slot(HITBOX);
   const separator = slot(SEPARATOR);
 
-  const halfPushbox = (POLYVALENT.standingPushbox.width / 200) * ART_SCALE;
-  const boxes = hitboxes(sheet);
+  const halfPushbox = guides.pushboxHalf * ART_SCALE;
+  const boxes = hitboxes(guides, sheet);
   const pixels = new Uint8Array(canvas.width * canvas.height);
   for (let y = 0; y < canvas.height; y++) {
     for (let x = 0; x < canvas.width; x++) {
@@ -95,22 +141,46 @@ async function render(sheet: NayoSheet, colorway: Colorway): Promise<void> {
       pixels[index] = color;
     }
   }
-  const name = colorway === 'main' ? sheet : `${sheet}-alt`;
+  const folder = fighter === NAYO ? '' : `${fighter.name}/`;
+  const name = `${folder}${colorway === 'main' ? sheet : `${sheet}-alt`}`;
+  await mkdir(new URL(folder, PREVIEW), { recursive: true });
   await writeFile(
     new URL(`${name}.png`, PREVIEW),
     await encodeIndexedPng(canvas.width, canvas.height, pixels, palette, ZOOM),
   );
-  console.log(`tools/sprites/preview/${name}.png (${NAYO_SHEETS[sheet].frames} frames)`);
+  console.log(`tools/sprites/preview/${name}.png (${canvas.width / CELL_SIZE} frames)`);
 }
 
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
   const colorway: Colorway = args.includes('--alt') ? 'alt' : 'main';
-  const all = Object.keys(NAYO_SHEETS) as NayoSheet[];
-  const sheets = args.includes('--all') ? all : all.filter((sheet) => args.includes(sheet));
-  if (sheets.length === 0) throw new Error(`Name at least one strip: ${all.join(', ')}`);
-  await mkdir(PREVIEW, { recursive: true });
-  for (const sheet of sheets) await render(sheet, colorway);
+  const riffOnly = args.includes('--riff');
+  const names = args.filter((arg) => !arg.startsWith('--'));
+  const jobs: { fighter: Fighter; guides: Guides; sheet: string }[] = [];
+  const add = (fighter: Fighter, guides: Guides, sheets: readonly string[]): void => {
+    for (const sheet of sheets) {
+      if (!(sheet in fighter.sheets)) {
+        const all = Object.keys(fighter.sheets).join(', ');
+        throw new Error(`${fighter.name} has no strip ${sheet}: ${all}`);
+      }
+      jobs.push({ fighter, guides, sheet });
+    }
+  };
+  const riffNames = names.filter((name) => name.startsWith('riff/')).map((name) => name.slice(5));
+  const plain = names.filter((name) => !name.startsWith('riff/'));
+  const all = args.includes('--all');
+  if (riffOnly) {
+    add(RIFF, RIFF_GUIDES, all ? Object.keys(RIFF.sheets) : [...plain, ...riffNames]);
+  } else {
+    add(NAYO, NAYO_GUIDES, all ? Object.keys(NAYO.sheets) : plain);
+    add(RIFF, RIFF_GUIDES, riffNames);
+  }
+  if (jobs.length === 0) {
+    throw new Error(
+      `Name at least one strip: ${Object.keys(NAYO.sheets).join(', ')}; Riff's with --riff`,
+    );
+  }
+  for (const { fighter, guides, sheet } of jobs) await render(fighter, guides, sheet, colorway);
 }
 
 await main();

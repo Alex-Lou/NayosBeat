@@ -5,13 +5,7 @@
  */
 
 import type { Face } from '../skeleton.ts';
-
-/** Rows written over the head from (x, y); '?' keeps the head's pixel. Same legend as head.ts. */
-interface Patch {
-  readonly x: number;
-  readonly y: number;
-  readonly rows: readonly string[];
-}
+import { patched, type Patch } from '../stamp.ts';
 
 /** The brow and the eye: columns 18 to 23, rows 17 to 21 of the head. */
 function eye(rows: readonly [string, string, string, string, string]): Patch {
@@ -55,20 +49,7 @@ const EXPRESSIONS: Readonly<Record<Face, readonly Patch[]>> = {
   ],
 };
 
-/** The head's rows with the expression of `face` written over them. */
+/** The head's rows with the expression of `face` written over them (same legend as head.ts). */
 export function expressionOf(head: readonly string[], face: Face): readonly string[] {
-  const patches = EXPRESSIONS[face];
-  if (patches.length === 0) return head;
-  const rows = head.map((row) => Array.from({ length: row.length }, (_, x) => row.charAt(x)));
-  for (const { x, y, rows: patch } of patches) {
-    patch.forEach((line, dy) => {
-      const row = rows[y + dy];
-      if (!row) return;
-      for (let dx = 0; dx < line.length; dx++) {
-        const char = line.charAt(dx);
-        if (char !== '?') row[x + dx] = char;
-      }
-    });
-  }
-  return rows.map((row) => row.join(''));
+  return patched(head, EXPRESSIONS[face]);
 }

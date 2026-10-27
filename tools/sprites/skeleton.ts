@@ -131,7 +131,37 @@ export interface Pose {
   readonly effects?: readonly Effect[];
 }
 
-/** Body measurements in world pixels (the sprites are drawn ART_SCALE times finer). */
+/**
+ * Body measurements of a fighter in world pixels (the sprites are drawn ART_SCALE times finer):
+ * every character has their own proportions, the skeleton solves any of them.
+ */
+export interface Body {
+  /** Height of the shoulders above the hip, along the spine. */
+  readonly shoulder: number;
+  /** Height of the base of the neck above the hip, along the spine. */
+  readonly neck: number;
+  /** From the base of the neck to the middle of the skull. */
+  readonly headDistance: number;
+  readonly headRadius: number;
+  /** Distance from the head's center to the point it turns around (near the jaw). */
+  readonly headPivot: number;
+  /** How far each shoulder and each hip joint sits from the spine, across the torso. */
+  readonly shoulderSpread: number;
+  readonly hipSpread: number;
+  readonly upperArm: number;
+  readonly forearm: number;
+  readonly thigh: number;
+  readonly shin: number;
+  /** Ankle height above the ground for a flat foot. */
+  readonly ankle: number;
+  /** Half thickness of the shoe. */
+  readonly footRadius: number;
+  /** From the ankle to the toe, and back to the heel. */
+  readonly foot: number;
+  readonly heel: number;
+}
+
+/** Nayo's measurements, the default of every function that takes a body. */
 export const BODY = {
   shoulder: 21.5,
   neck: 25.5,
@@ -147,18 +177,21 @@ export const BODY = {
   footRadius: 2.3,
   foot: 7,
   heel: 2.6,
-} as const;
+  headPivot: 2.4,
+  shoulderSpread: 1.2,
+  hipSpread: 1.5,
+} as const satisfies Body;
 
 /**
  * A foot planted at `x` with its lowest point exactly on the ground: a raised heel (negative
  * angle) or raised toes lift the ankle so the shoe never sinks below the floor.
  */
-export function planted(x: number, angle = 0): Foot {
+export function planted(x: number, angle = 0, body: Body = BODY): Foot {
   const a = radians(angle);
-  const sole = BODY.ankle - BODY.footRadius;
+  const sole = body.ankle - body.footRadius;
   // Lowest point of the shoe below the ankle: the sole line, then whichever end dips more.
-  const dip = sole * Math.cos(a) + Math.max(-BODY.foot * Math.sin(a), BODY.heel * Math.sin(a), 0);
-  return { x, y: dip + BODY.footRadius, angle };
+  const dip = sole * Math.cos(a) + Math.max(-body.foot * Math.sin(a), body.heel * Math.sin(a), 0);
+  return { x, y: dip + body.footRadius, angle };
 }
 
 export interface Skeleton {
@@ -195,20 +228,20 @@ export interface Side {
   readonly hand: Hand;
 }
 
-export function solve(pose: Pose): Skeleton {
+export function solve(pose: Pose, body: Body = BODY): Skeleton {
   const lean = radians(pose.torso);
   const up = { x: Math.sin(lean), y: Math.cos(lean) };
   const front = { x: up.y, y: -up.x };
   const { hip } = pose;
-  const neck = add(hip, scale(up, BODY.neck));
+  const neck = add(hip, scale(up, body.neck));
   const headAngle = pose.torso + pose.head + (pose.spin ?? 0);
   const tilt = radians(pose.torso + pose.head);
   // The head pivots near the jaw: nods and snaps turn it in place, they don't swing it around.
   const head = add(
-    add(neck, scale(up, BODY.headDistance - HEAD_PIVOT)),
-    scale({ x: Math.sin(tilt), y: Math.cos(tilt) }, HEAD_PIVOT),
+    add(neck, scale(up, body.headDistance - body.headPivot)),
+    scale({ x: Math.sin(tilt), y: Math.cos(tilt) }, body.headPivot),
   );
-  const shoulderBase = add(hip, scale(up, BODY.shoulder));
+  const shoulderBase = add(hip, scale(up, body.shoulder));
   const shrug = pose.shrug ?? 0;
   // The lead shoulder rolls up and forward, toward the chin.
   const roll = add(scale(up, shrug), scale(front, shrug * 0.45));
@@ -224,17 +257,17 @@ export function solve(pose: Pose): Skeleton {
   ): Side => {
     const reach = (sign > 0 ? pose.reach?.near : pose.reach?.far) ?? 0;
     const shoulder = add(
-      add(shoulderBase, scale(front, sign * 1.2 + reach)),
+      add(shoulderBase, scale(front, sign * body.shoulderSpread + reach)),
       sign > 0 ? roll : ZERO,
     );
-    const arm = twoBone(shoulder, fist, BODY.upperArm, BODY.forearm, PICKS[elbow]);
-    const hipJoint = add(hip, scale(front, sign * 1.5));
+    const arm = twoBone(shoulder, fist, body.upperArm, body.forearm, PICKS[elbow]);
+    const hipJoint = add(hip, scale(front, sign * body.hipSpread));
     const ankle = { x: foot.x, y: foot.y };
-    const leg = twoBone(hipJoint, ankle, BODY.thigh, BODY.shin, PICKS[knee]);
+    const leg = twoBone(hipJoint, ankle, body.thigh, body.shin, PICKS[knee]);
     const footAngle = radians(foot.angle ?? 0);
     const along = { x: Math.cos(footAngle), y: Math.sin(footAngle) };
     // Center line of the shoe, below the ankle, across the foot's own "down".
-    const sole = add(leg.end, scale({ x: along.y, y: -along.x }, BODY.ankle - BODY.footRadius));
+    const sole = add(leg.end, scale({ x: along.y, y: -along.x }, body.ankle - body.footRadius));
     return {
       shoulder,
       elbow: arm.joint,
@@ -243,8 +276,8 @@ export function solve(pose: Pose): Skeleton {
       hip: hipJoint,
       knee: leg.joint,
       ankle: leg.end,
-      heel: sub(sole, scale(along, BODY.heel)),
-      toe: add(sole, scale(along, BODY.foot)),
+      heel: sub(sole, scale(along, body.heel)),
+      toe: add(sole, scale(along, body.foot)),
       hand,
     };
   };
@@ -311,8 +344,6 @@ export function blend(a: Pose, b: Pose, t: number): Pose {
 }
 
 const ZERO: Point = { x: 0, y: 0 };
-/** Distance from the head's center to the point it turns around (near the jaw). */
-const HEAD_PIVOT = 2.4;
 
 type Pick = (a: Point, b: Point) => Point;
 const PICKS: Readonly<Record<Bend, Pick>> = {

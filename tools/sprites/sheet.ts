@@ -1,30 +1,31 @@
-import { NAYO_CLIPS } from '../../src/art/nayo/clips.ts';
-import { NAYO_SHEETS, type NayoSheet } from '../../src/art/nayo/sheets.ts';
+import type { NayoSheet } from '../../src/art/nayo/sheets.ts';
 import { CELL_SIZE } from '../../src/art/types.ts';
-import { drawNayo, STILL, type Motion } from './nayo/look.ts';
-import { NAYO_POSES, NAYO_PROJECTILE, type PosedSheet } from './nayo/poses/index.ts';
-import { drawEffect, inkAt } from './nayo/vfx.ts';
-import { PixelCanvas } from './raster.ts';
+import { STILL, type Fighter, type Motion, type Spring } from './fighter.ts';
+import { NAYO } from './nayo/index.ts';
+import type { PosedSheet } from './nayo/poses/index.ts';
+import { PixelCanvas, type Point } from './raster.ts';
 import { solve, type Pose } from './skeleton.ts';
+import { drawEffect, inkAt } from './vfx.ts';
 
 /**
- * Draws one strip, one cell per frame, shaded and outlined as a whole. The pixels hold palette
- * slots: the same strip is saved once per colorway, with that colorway's palette.
+ * Draws one strip of a fighter, one cell per frame, shaded and outlined as a whole. The pixels
+ * hold palette slots: the same strip is saved once per colorway, with that colorway's palette.
  */
-export function drawSheet(sheet: NayoSheet): PixelCanvas {
-  const frames = NAYO_SHEETS[sheet].frames;
+export function drawStrip(fighter: Fighter, sheet: string): PixelCanvas {
+  const frames = framesOf(fighter, sheet);
   const canvas = new PixelCanvas(CELL_SIZE * frames, CELL_SIZE);
-  if (sheet === 'projectile') {
-    expectFrames(sheet, NAYO_PROJECTILE.length, frames);
-    NAYO_PROJECTILE.forEach((effect, frame) => {
-      drawEffect(inkAt(canvas, frame * CELL_SIZE), effect);
+  const effects = fighter.effectsOnly?.(sheet);
+  if (effects) {
+    expectFrames(sheet, effects.length, frames);
+    effects.forEach((effect, frame) => {
+      drawEffect(inkAt(canvas, frame * CELL_SIZE, fighter.fx), effect);
     });
   } else {
-    const poses = NAYO_POSES[sheet];
+    const poses = posesOf(fighter, sheet);
     expectFrames(sheet, poses.length, frames);
-    const motions = motionsOf(sheet, poses);
+    const motions = motionsOf(fighter, sheet, poses);
     poses.forEach((pose, frame) => {
-      drawNayo(canvas, solve(pose), frame * CELL_SIZE, motions[frame] ?? STILL);
+      fighter.draw(canvas, solve(pose, fighter.body), frame * CELL_SIZE, motions[frame] ?? STILL);
     });
   }
   canvas.finish();
@@ -35,28 +36,51 @@ export function drawSheet(sheet: NayoSheet): PixelCanvas {
  * The front effects of a strip (all but the motion trails, which are drawn behind the body),
  * or undefined when it has none.
  */
-export function drawEffectsSheet(sheet: PosedSheet): PixelCanvas | undefined {
-  const poses = NAYO_POSES[sheet];
+export function drawStripEffects(fighter: Fighter, sheet: string): PixelCanvas | undefined {
+  if (fighter.effectsOnly?.(sheet)) return undefined;
+  const poses = posesOf(fighter, sheet);
   const front = poses.map((pose) =>
     (pose.effects ?? []).filter((effect) => effect.kind !== 'smear'),
   );
   if (front.every((effects) => effects.length === 0)) return undefined;
   const canvas = new PixelCanvas(CELL_SIZE * poses.length, CELL_SIZE);
   front.forEach((effects, frame) => {
-    const ink = inkAt(canvas, frame * CELL_SIZE);
+    const ink = inkAt(canvas, frame * CELL_SIZE, fighter.fx);
     for (const effect of effects) drawEffect(ink, effect);
   });
   canvas.finish();
   return canvas;
 }
 
+/** One of Nayo's strips (see drawStrip). */
+export function drawSheet(sheet: NayoSheet): PixelCanvas {
+  return drawStrip(NAYO, sheet);
+}
+
+/** The front effects of one of Nayo's strips (see drawStripEffects). */
+export function drawEffectsSheet(sheet: PosedSheet): PixelCanvas | undefined {
+  return drawStripEffects(NAYO, sheet);
+}
+
+function framesOf(fighter: Fighter, sheet: string): number {
+  const spec = fighter.sheets[sheet];
+  if (!spec) throw new Error(`${fighter.name} has no strip ${sheet}`);
+  return spec.frames;
+}
+
+function posesOf(fighter: Fighter, sheet: string): readonly Pose[] {
+  const poses = fighter.poses(sheet);
+  if (!poses) throw new Error(`${fighter.name}: no poses for ${sheet}`);
+  return poses;
+}
+
 /**
  * How fast the upper body moves at each frame, in world pixels per tick, smoothed with the
  * frame before: what hangs (chain, cable, hem) lags behind it. Looping strips wrap around.
  */
-function motionsOf(sheet: NayoSheet, poses: readonly Pose[]): Motion[] {
-  const { ticks, loops } = timingOf(sheet, poses.length);
-  const necks = poses.map((pose) => solve(pose).neck);
+function motionsOf(fighter: Fighter, sheet: string, poses: readonly Pose[]): Motion[] {
+  const { ticks, loops } = fighter.timing(sheet);
+  const necks = poses.map((pose) => solve(pose, fighter.body).neck);
   const raw = necks.map((neck, frame): Motion => {
     const previousFrame = frame > 0 ? frame - 1 : loops ? poses.length - 1 : -1;
     const previous = necks[previousFrame];
@@ -64,26 +88,59 @@ function motionsOf(sheet: NayoSheet, poses: readonly Pose[]): Motion[] {
     const duration = ticks[previousFrame] ?? 3;
     return { vx: (neck.x - previous.x) / duration, vy: (neck.y - previous.y) / duration };
   });
+  const springs = fighter.springs ?? [];
+  const hangs = springs.map((spring) => swingOf(spring, necks, ticks, loops));
   return raw.map((motion, frame) => {
     const before = raw[frame > 0 ? frame - 1 : loops ? raw.length - 1 : frame] ?? STILL;
-    return { vx: motion.vx * 0.65 + before.vx * 0.35, vy: motion.vy * 0.65 + before.vy * 0.35 };
+    const smoothed = {
+      vx: motion.vx * 0.65 + before.vx * 0.35,
+      vy: motion.vy * 0.65 + before.vy * 0.35,
+    };
+    if (springs.length === 0) return smoothed;
+    return { ...smoothed, hang: hangs.map((hang) => hang[frame] ?? { x: 0, y: 0 }) };
   });
 }
 
-/** Ticks per frame of a strip, from the clips that play it. */
-function timingOf(sheet: NayoSheet, frames: number): { ticks: number[]; loops: boolean } {
-  const ticks = Array.from({ length: frames }, () => 3);
-  let loops = false;
-  for (const clip of Object.values(NAYO_CLIPS)) {
-    if (clip.sheet !== sheet) continue;
-    clip.frames.forEach((frame, index) => {
-      ticks[frame] = clip.ticks[index] ?? 3;
+/** Loops a looping strip is played through before its swing is read: it settles into a cycle. */
+const SETTLE_LOOPS = 6;
+
+/**
+ * A spring hanging from the neck over a strip, tick by tick: the neck glides from each frame's
+ * position to the next one's while the frame is shown, the hanging tip is pulled toward it and
+ * slowed by the air. Returns, for each frame, how far the tip is from the neck (as it is when
+ * the frame comes on screen). A looping strip is played until the swing repeats itself, so its
+ * last frame flows into its first; any other starts at rest.
+ */
+function swingOf(
+  spring: Spring,
+  necks: readonly Point[],
+  ticks: readonly number[],
+  loops: boolean,
+): Point[] {
+  const first = necks[0] ?? { x: 0, y: 0 };
+  let tip = { ...first };
+  let velocity = { x: 0, y: 0 };
+  const offsets: Point[] = [];
+  const rounds = loops ? SETTLE_LOOPS : 1;
+  for (let round = 0; round < rounds; round++) {
+    necks.forEach((neck, frame) => {
+      if (round === rounds - 1) offsets[frame] = { x: tip.x - neck.x, y: tip.y - neck.y };
+      const next = necks[frame + 1] ?? (loops ? first : neck);
+      const duration = Math.max(1, ticks[frame] ?? 3);
+      for (let tick = 1; tick <= duration; tick++) {
+        const t = tick / duration;
+        const anchor = { x: neck.x + (next.x - neck.x) * t, y: neck.y + (next.y - neck.y) * t };
+        velocity = {
+          x: velocity.x * (1 - spring.damping) - spring.stiffness * (tip.x - anchor.x),
+          y: velocity.y * (1 - spring.damping) - spring.stiffness * (tip.y - anchor.y),
+        };
+        tip = { x: tip.x + velocity.x, y: tip.y + velocity.y };
+      }
     });
-    if (clip.loopFrom !== undefined) loops = true;
   }
-  return { ticks, loops };
+  return offsets;
 }
 
-function expectFrames(sheet: NayoSheet, drawn: number, frames: number): void {
+function expectFrames(sheet: string, drawn: number, frames: number): void {
   if (drawn !== frames) throw new Error(`${sheet}: ${drawn} frames drawn for a strip of ${frames}`);
 }

@@ -1,0 +1,67 @@
+/**
+ * What the shared pipeline (sheet.ts, generate.ts, preview.ts) needs to know of a fighter: their
+ * strips and poses, their body, how a frame is drawn, how long each frame lasts, their colors.
+ * Each character's generator (tools/sprites/<name>/) exports one.
+ */
+
+import type { SheetSpec } from '../../src/art/types.ts';
+import type { Colorway } from './palette.ts';
+import type { Rgba } from './png.ts';
+import type { PixelCanvas, Point } from './raster.ts';
+import type { Body, Effect, Pose, Skeleton } from './skeleton.ts';
+import type { EffectStyle } from './vfx.ts';
+
+/** Body motion at a frame, in world pixels per tick (x toward the opponent, y up). */
+export interface Motion {
+  readonly vx: number;
+  readonly vy: number;
+  /**
+   * Where each of the fighter's hanging springs (`Fighter.springs`) has swung to, relative to
+   * where it hangs at rest, in world pixels: a braid's tip lagging behind the body.
+   */
+  readonly hang?: readonly Point[];
+}
+
+export const STILL: Motion = { vx: 0, vy: 0 };
+
+/**
+ * A part hanging from the neck (a braid), simulated tick by tick as a damped spring: it lags
+ * behind the body, overshoots and settles. `stiffness` and `damping` are per tick.
+ */
+export interface Spring {
+  readonly stiffness: number;
+  readonly damping: number;
+}
+
+/** A strike's hitbox in world pixels (x toward the opponent, y up), and the frames it is on. */
+export interface Strike {
+  readonly frames: readonly number[];
+  readonly box: {
+    readonly x: number;
+    readonly y: number;
+    readonly width: number;
+    readonly height: number;
+  };
+}
+
+export interface Fighter {
+  /** Folder of the assets (src/art/<name>/) and prefix of the generated names. */
+  readonly name: string;
+  readonly sheets: Readonly<Record<string, SheetSpec>>;
+  readonly body: Body;
+  /** Poses of a strip, one per frame; undefined for a strip of effects only (a projectile). */
+  readonly poses: (sheet: string) => readonly Pose[] | undefined;
+  /** Effects of a strip drawn without a body (a projectile), one per frame. */
+  readonly effectsOnly?: (sheet: string) => readonly Effect[] | undefined;
+  /** Ticks of every frame of a strip, and whether it loops. */
+  readonly timing: (sheet: string) => {
+    readonly ticks: readonly number[];
+    readonly loops: boolean;
+  };
+  /** Hanging parts simulated over a strip (see Motion.hang). */
+  readonly springs?: readonly Spring[];
+  /** Draws the fighter in the cell whose left edge is `cellX`. */
+  readonly draw: (canvas: PixelCanvas, skeleton: Skeleton, cellX: number, motion: Motion) => void;
+  readonly fx: EffectStyle;
+  readonly paletteOf: (colorway: Colorway) => readonly Rgba[];
+}

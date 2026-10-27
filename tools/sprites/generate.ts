@@ -1,21 +1,24 @@
 /**
- * Draws Nayo's sprite strips into src/art/nayo/<colorway>/ (game assets), their front effects
- * into src/art/nayo/<colorway>/fx/, the size and anchor of their cropped cells into
- * src/art/nayo/cells.ts, enlarged copies into tools/sprites/preview/ (to look at, not
- * committed), and the installed game's icons into public/icons/. Run with `npm run sprites`.
+ * Draws every fighter's sprite strips into src/art/<fighter>/<colorway>/ (game assets), their
+ * front effects into src/art/<fighter>/<colorway>/fx/, the size and anchor of their cropped
+ * cells into src/art/<fighter>/cells.ts, enlarged copies into tools/sprites/preview/ (to look at,
+ * not committed), and the installed game's icons into public/icons/. Run with `npm run sprites`;
+ * `npm run sprites -- riff` draws one fighter only (Nayo's run also draws the icons).
  */
 
 import { mkdir, rm, writeFile } from 'node:fs/promises';
-import { NAYO_SHEETS, type NayoSheet } from '../../src/art/nayo/sheets.ts';
 import { ANCHOR, CELL_SIZE, type Cell } from '../../src/art/types.ts';
-import { paletteOf, type Colorway } from './nayo/look.ts';
-import { NAYO_POSES, type PosedSheet } from './nayo/poses/index.ts';
+import type { Fighter } from './fighter.ts';
 import { drawIcons } from './icons.ts';
+import { NAYO } from './nayo/index.ts';
+import type { Colorway } from './palette.ts';
 import { encodeIndexedPng } from './png.ts';
 import type { PixelCanvas } from './raster.ts';
-import { drawEffectsSheet, drawSheet } from './sheet.ts';
+import { RIFF } from './riff/index.ts';
+import { drawStrip, drawStripEffects } from './sheet.ts';
 
-const ASSETS = new URL('../../src/art/nayo/', import.meta.url);
+const FIGHTERS: readonly Fighter[] = [NAYO, RIFF];
+const ART = new URL('../../src/art/', import.meta.url);
 const PREVIEW = new URL('./preview/', import.meta.url);
 const PREVIEW_SCALE = 2;
 const COLORWAYS: readonly Colorway[] = ['main', 'alt'];
@@ -69,21 +72,27 @@ function crop(canvas: PixelCanvas, anchor: Cell['anchor']): { image: Image; cell
   };
 }
 
-async function save(image: Image, file: string): Promise<void> {
+/** Nayo's previews stay where they always were; the other fighters' go in their own folder. */
+function previewOf(fighter: Fighter): URL {
+  return fighter === NAYO ? PREVIEW : new URL(`${fighter.name}/`, PREVIEW);
+}
+
+async function save(fighter: Fighter, image: Image, file: string): Promise<void> {
   const { width, height, pixels } = image;
+  const assets = new URL(`${fighter.name}/`, ART);
   for (const colorway of COLORWAYS) {
-    const palette = paletteOf(colorway);
+    const palette = fighter.paletteOf(colorway);
     const path = `${colorway}/${file}`;
-    await writeFile(new URL(path, ASSETS), await encodeIndexedPng(width, height, pixels, palette));
+    await writeFile(new URL(path, assets), await encodeIndexedPng(width, height, pixels, palette));
     await writeFile(
-      new URL(path, PREVIEW),
+      new URL(path, previewOf(fighter)),
       await encodeIndexedPng(width, height, pixels, palette, PREVIEW_SCALE),
     );
   }
 }
 
 /** The cells as a TypeScript module, formatted the way Prettier would. */
-function cellsModule(cells: ReadonlyMap<string, Cell>): string {
+function cellsModule(fighter: Fighter, cells: ReadonlyMap<string, Cell>): string {
   const lines = [...cells].map(([name, { width, height, anchor }]) => {
     const key = /^\w+$/.test(name) ? name : `'${name}'`;
     return `  ${key}: { width: ${width}, height: ${height}, anchor: { x: ${anchor.x}, y: ${anchor.y} } },`;
@@ -93,39 +102,53 @@ function cellsModule(cells: ReadonlyMap<string, Cell>): string {
     "import type { Cell } from '../types';",
     '',
     '/** Cropped cells of each strip (and of its front effects, `fx/`), with their anchor. */',
-    'export const NAYO_CELLS: Readonly<Record<string, Cell>> = {',
+    `export const ${fighter.name.toUpperCase()}_CELLS: Readonly<Record<string, Cell>> = {`,
     ...lines,
     '};',
     '',
   ].join('\n');
 }
 
-async function main(): Promise<void> {
+async function generate(fighter: Fighter): Promise<void> {
+  const assets = new URL(`${fighter.name}/`, ART);
   for (const colorway of COLORWAYS) {
     // Effects are rewritten from scratch: a strip that lost its effects must not keep old ones.
-    await rm(new URL(`${colorway}/fx/`, ASSETS), { recursive: true, force: true });
-    for (const root of [ASSETS, PREVIEW]) {
+    await rm(new URL(`${colorway}/fx/`, assets), { recursive: true, force: true });
+    for (const root of [assets, previewOf(fighter)]) {
       await mkdir(new URL(`${colorway}/fx/`, root), { recursive: true });
     }
   }
   const cells = new Map<string, Cell>();
-  for (const sheet of Object.keys(NAYO_SHEETS) as NayoSheet[]) {
-    const body = crop(drawSheet(sheet), ANCHOR);
-    await save(body.image, `${sheet}.png`);
+  for (const [sheet, { frames }] of Object.entries(fighter.sheets)) {
+    const body = crop(drawStrip(fighter, sheet), ANCHOR);
+    await save(fighter, body.image, `${sheet}.png`);
     cells.set(sheet, body.cell);
-    const drawn = sheet in NAYO_POSES ? drawEffectsSheet(sheet as PosedSheet) : undefined;
+    const drawn = drawStripEffects(fighter, sheet);
     if (drawn) {
       const effects = crop(drawn, ANCHOR);
-      await save(effects.image, `fx/${sheet}.png`);
+      await save(fighter, effects.image, `fx/${sheet}.png`);
       cells.set(`fx/${sheet}`, effects.cell);
     }
     const { width, height } = body.cell;
-    console.log(
-      `${sheet}: ${NAYO_SHEETS[sheet].frames} x ${width}x${height}${drawn ? ' + fx' : ''}`,
+    console.log(`${fighter.name} ${sheet}: ${frames} x ${width}x${height}${drawn ? ' + fx' : ''}`);
+  }
+  await writeFile(
+    new URL('cells.ts', assets),
+    new TextEncoder().encode(cellsModule(fighter, cells)),
+  );
+}
+
+async function main(): Promise<void> {
+  const names = process.argv.slice(2);
+  const unknown = names.filter((name) => !FIGHTERS.some((fighter) => fighter.name === name));
+  if (unknown.length > 0) {
+    throw new Error(
+      `Unknown fighter ${unknown.join(', ')}: ${FIGHTERS.map((f) => f.name).join(', ')}`,
     );
   }
-  await writeFile(new URL('cells.ts', ASSETS), new TextEncoder().encode(cellsModule(cells)));
-  await drawIcons();
+  const chosen = names.length === 0 ? FIGHTERS : FIGHTERS.filter((f) => names.includes(f.name));
+  for (const fighter of chosen) await generate(fighter);
+  if (chosen.includes(NAYO)) await drawIcons();
 }
 
 await main();

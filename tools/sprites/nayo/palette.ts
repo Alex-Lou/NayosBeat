@@ -4,21 +4,10 @@
  * strips are drawn once and saved twice: the second colorway only swaps the palette.
  */
 
-import type { Rgba } from '../png.ts';
-import type { Material } from '../raster.ts';
+import { definePalette, type DetailColor, type MaterialTones } from '../palette.ts';
+import type { EffectStyle } from '../vfx.ts';
 
-export type Colorway = 'main' | 'alt';
-
-/** Darkest to lightest, then the gloss and the back-light tone. */
-type Tones = readonly [
-  outline: string,
-  deep: string,
-  shadow: string,
-  base: string,
-  light: string,
-  gloss: string,
-  rim: string,
-];
+export { farOf, matteOf, noGloss, type Colorway } from '../palette.ts';
 
 /** Materials in slot order; each one owns 7 consecutive palette slots. */
 const MATERIALS = {
@@ -67,7 +56,7 @@ const MATERIALS = {
   plastic: {
     main: ['#030304', '#0b0b0e', '#16161b', '#24242b', '#3a3a44', '#7a7a88', '#4e5a70'],
   },
-} as const satisfies Record<string, { readonly main: Tones; readonly alt?: Tones }>;
+} as const satisfies Record<string, MaterialTones>;
 
 export type MaterialName = keyof typeof MATERIALS;
 
@@ -111,77 +100,17 @@ const DETAILS = {
   sandLight: { main: '#e6d8c2' },
   /** The dark smoky heart of a heavy hit spark (Tazz's hit VFX), on both colorways. */
   strikeSmoke: { main: '#3a3246' },
-} as const satisfies Record<string, { readonly main: string; readonly alt?: string }>;
+} as const satisfies Record<string, DetailColor>;
 
 export type DetailName = keyof typeof DETAILS;
 
-const TONES_PER_MATERIAL = 7;
-const MATERIAL_NAMES = Object.keys(MATERIALS) as MaterialName[];
-const DETAIL_NAMES = Object.keys(DETAILS) as DetailName[];
-const FIRST_DETAIL = 1 + MATERIAL_NAMES.length * TONES_PER_MATERIAL;
-
-function slotsOf(first: number): Material {
-  return {
-    outline: first,
-    deep: first + 1,
-    shadow: first + 2,
-    base: first + 3,
-    light: first + 4,
-    gloss: first + 5,
-    rim: first + 6,
-  };
-}
+const PALETTE = definePalette(MATERIALS, DETAILS);
 
 /** Palette slots of every material (slot 0 is transparent). */
-export const MATERIAL: Readonly<Record<MaterialName, Material>> = Object.fromEntries(
-  MATERIAL_NAMES.map((name, index) => [name, slotsOf(1 + index * TONES_PER_MATERIAL)]),
-) as Record<MaterialName, Material>;
-
+export const MATERIAL = PALETTE.material;
 /** Palette slot of every detail color. */
-export const DETAIL: Readonly<Record<DetailName, number>> = Object.fromEntries(
-  DETAIL_NAMES.map((name, index) => [name, FIRST_DETAIL + index]),
-) as Record<DetailName, number>;
+export const DETAIL = PALETTE.detail;
+export const paletteOf = PALETTE.paletteOf;
 
-export function paletteOf(colorway: Colorway): readonly Rgba[] {
-  const colors: string[] = ['#00000000'];
-  for (const name of MATERIAL_NAMES) {
-    const tones: { readonly main: Tones; readonly alt?: Tones } = MATERIALS[name];
-    colors.push(...(colorway === 'alt' && tones.alt ? tones.alt : tones.main));
-  }
-  for (const name of DETAIL_NAMES) {
-    const detail: { readonly main: string; readonly alt?: string } = DETAILS[name];
-    colors.push(colorway === 'alt' && detail.alt ? detail.alt : detail.main);
-  }
-  return colors.map(hexToRgba);
-}
-
-/**
- * The same material a step darker, without gloss nor back light, for the limbs on the far side
- * of the body: depth reads at a glance, and the near limbs stand out.
- */
-export function farOf(material: Material): Material {
-  return {
-    outline: material.outline,
-    deep: material.deep,
-    shadow: material.deep,
-    base: material.shadow,
-    light: material.base,
-  };
-}
-
-/** Matte version of a material: no gloss, no back light (small parts, knits). */
-export function matteOf(material: Material): Material {
-  return {
-    outline: material.outline,
-    deep: material.deep,
-    shadow: material.shadow,
-    base: material.base,
-    light: material.light,
-  };
-}
-
-function hexToRgba(hex: string): Rgba {
-  const value = Number.parseInt(hex.slice(1, 7), 16);
-  const alpha = hex.length === 9 ? Number.parseInt(hex.slice(7, 9), 16) : 255;
-  return { r: (value >> 16) & 255, g: (value >> 8) & 255, b: value & 255, a: alpha };
-}
+/** Nayo's effects: cyan sound (magenta on the second colorway), gold strikes, beige dust. */
+export const EFFECTS: EffectStyle = { slots: DETAIL, sparkle: 'cross' };

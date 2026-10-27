@@ -1,19 +1,19 @@
 /**
- * Nayo's effects, in Tazz's language (Zen-Tazzer): energy that streaks, splashes and breaks off
- * into sparkles. Two colors: sound (motion trails, energy, waves, rings, speed lines, the
- * uppercut's column: the neon color, swapped by the second colorway) and strike (impact
- * flashes: gold and orange). Effects are drawn in exact palette slots, never shaded nor
- * outlined: crisp 1 px streaks and spiky shapes in a few tones, a translucent glow at their
- * edge, and loose sparkle pixels. The hottest tone (near white) is kept to a few pixels: the
- * effects read as colored light, not as white blobs. The scatter is seeded by the effect's own
- * world parameters, so a strip always draws the same and an effect that lasts several frames
- * keeps its breaks and sparkles in place.
+ * The fighters' effects, in Tazz's language (Zen-Tazzer): energy that streaks, splashes and
+ * breaks off into sparkles. Two colors, read from the fighter's palette (`EffectStyle`): sound
+ * (motion trails, energy, waves, rings, speed lines, the uppercut's column: Nayo's cyan neon,
+ * Riff's violet) and strike (impact flashes: Nayo's gold, Riff's yellow), swapped or recolored by
+ * each second colorway. Effects are drawn in exact palette slots, never shaded nor outlined:
+ * crisp 1 px streaks and spiky shapes in a few tones, a translucent glow at their edge, and
+ * loose sparkle pixels ("+" crosses, or Riff's diamonds). The hottest tone (near white) is kept
+ * to a few pixels: the effects read as colored light, not as white blobs. The scatter is seeded
+ * by the effect's own world parameters, so a strip always draws the same and an effect that
+ * lasts several frames keeps its breaks and sparkles in place.
  */
 
-import { ANCHOR, ART_SCALE, CELL_SIZE } from '../../../src/art/types.ts';
-import type { Bounds, PixelCanvas, Point } from '../raster.ts';
-import type { Effect, Tone } from '../skeleton.ts';
-import { DETAIL } from './palette.ts';
+import { ANCHOR, ART_SCALE, CELL_SIZE } from '../../src/art/types.ts';
+import type { Bounds, PixelCanvas, Point } from './raster.ts';
+import type { Effect, Tone } from './skeleton.ts';
 
 const S = ART_SCALE;
 
@@ -40,52 +40,77 @@ type Tones = readonly [
   smoke: number,
 ];
 
-const TONES: Readonly<Record<Tone, Tones>> = {
-  sound: [
-    DETAIL.soundGlow,
-    DETAIL.soundDeep,
-    DETAIL.sound,
-    DETAIL.soundLight,
-    DETAIL.soundCore,
-    DETAIL.soundDeep,
-  ],
-  strike: [
-    DETAIL.strikeGlow,
-    DETAIL.strikeDeep,
-    DETAIL.strike,
-    DETAIL.strikeLight,
-    DETAIL.strikeCore,
-    DETAIL.strikeSmoke,
-  ],
-};
-/** Motion trails: the sound color over the trail's own, fainter glow. */
-const TRAIL: Tones = [
-  DETAIL.trailFaint,
-  DETAIL.soundDeep,
-  DETAIL.sound,
-  DETAIL.soundLight,
-  DETAIL.soundCore,
-  DETAIL.soundDeep,
-];
-/** Floor dust: beige, lit on top; the glow rank is a grey fleck of grit. */
-const DUST: Tones = [
-  DETAIL.dustLight,
-  DETAIL.sandDeep,
-  DETAIL.sand,
-  DETAIL.sandLight,
-  DETAIL.sandLight,
-  DETAIL.sandDeep,
-];
+/** Palette slots every fighter's palette names the same way, for its effects. */
+export type EffectSlot =
+  | 'soundDeep'
+  | 'sound'
+  | 'soundLight'
+  | 'soundCore'
+  | 'soundGlow'
+  | 'strikeDeep'
+  | 'strike'
+  | 'strikeLight'
+  | 'strikeCore'
+  | 'strikeGlow'
+  | 'strikeSmoke'
+  | 'trail'
+  | 'trailFaint'
+  | 'dustLight'
+  | 'sandDeep'
+  | 'sand'
+  | 'sandLight';
+
+/** How a fighter's effects look: their palette slots, and the shape of the loose sparkles. */
+export interface EffectStyle {
+  readonly slots: Readonly<Record<EffectSlot, number>>;
+  /** "+" crosses (Nayo's) or hollow diamonds (Riff's, her cap logo and chest print). */
+  readonly sparkle: 'cross' | 'diamond';
+}
+
+interface ToneSet {
+  readonly sound: Tones;
+  readonly strike: Tones;
+  /** Motion trails: the sound color over the trail's own, fainter glow. */
+  readonly trail: Tones;
+  /** Floor dust: beige, lit on top; the glow rank is a grey fleck of grit. */
+  readonly dust: Tones;
+}
+
+const TONE_SETS = new WeakMap<EffectStyle, ToneSet>();
+
+/** The rank-to-slot tables of a fighter's effects. */
+function tonesOf(style: EffectStyle): ToneSet {
+  const cached = TONE_SETS.get(style);
+  if (cached) return cached;
+  const fx = style.slots;
+  const set: ToneSet = {
+    sound: [fx.soundGlow, fx.soundDeep, fx.sound, fx.soundLight, fx.soundCore, fx.soundDeep],
+    strike: [
+      fx.strikeGlow,
+      fx.strikeDeep,
+      fx.strike,
+      fx.strikeLight,
+      fx.strikeCore,
+      fx.strikeSmoke,
+    ],
+    trail: [fx.trailFaint, fx.soundDeep, fx.sound, fx.soundLight, fx.soundCore, fx.soundDeep],
+    dust: [fx.dustLight, fx.sandDeep, fx.sand, fx.sandLight, fx.sandLight, fx.sandDeep],
+  };
+  TONE_SETS.set(style, set);
+  return set;
+}
 
 /** Where to draw: the canvas, and the world point (character space) to cell pixel mapping. */
 export interface Ink {
   readonly canvas: PixelCanvas;
   readonly at: (p: Point) => Point;
+  /** The fighter's effect colors and sparkles. */
+  readonly fx: EffectStyle;
 }
 
 /** Ink for the cell whose left edge is `cellX`, anchored at the feet. */
-export function inkAt(canvas: PixelCanvas, cellX: number): Ink {
-  return { canvas, at: (p) => ({ x: cellX + ANCHOR.x + p.x * S, y: ANCHOR.y - p.y * S }) };
+export function inkAt(canvas: PixelCanvas, cellX: number, fx: EffectStyle): Ink {
+  return { canvas, fx, at: (p) => ({ x: cellX + ANCHOR.x + p.x * S, y: ANCHOR.y - p.y * S }) };
 }
 
 /** Draws a front effect (anything but a motion trail, which goes behind the body). */
@@ -109,7 +134,7 @@ export function drawEffect(ink: Ink, effect: Effect): void {
         effect.center,
         effect.radius,
         effect.progress,
-        TONES[effect.tone],
+        tonesOf(ink.fx)[effect.tone],
         effect.squash ?? 1,
       );
       return;
@@ -120,7 +145,7 @@ export function drawEffect(ink: Ink, effect: Effect): void {
       drawColumn(ink, effect.base, effect.height, effect.width, effect.progress);
       return;
     case 'shards':
-      drawShards(ink, effect.center, effect.radius, effect.progress, TONES[effect.tone]);
+      drawShards(ink, effect.center, effect.radius, effect.progress, tonesOf(ink.fx)[effect.tone]);
       return;
     case 'shield':
       drawShield(ink, effect.center, effect.radius, effect.progress);
@@ -150,7 +175,7 @@ export function drawSmear(ink: Ink, worldPoints: readonly Point[], width: number
   const limb = worldPoints[worldPoints.length - 1];
   const end = curve.samples[curve.samples.length - 1];
   if (!tail || !limb || !end || curve.length < 2) return;
-  const layer = new Layer(ink, TRAIL, ANCHOR.y);
+  const layer = new Layer(ink, tonesOf(ink.fx).trail, ANCHOR.y);
   const random = randomFrom(tail.x, tail.y, limb.x, limb.y, width);
   // How fast the limb went: its path's length in world pixels, over one frame.
   const power = clamp01((curve.length / S - 14) / 30);
@@ -324,7 +349,7 @@ function drawFlash(ink: Ink, center: Point, radius: number, tone: Tone): void {
 
 /** A light hit: a small, sharp 5-spike tick, one sparkle cross, a few loose pixels. */
 function drawTick(ink: Ink, c: Point, r: number, random: () => number): void {
-  const layer = new Layer(ink, TONES.strike);
+  const layer = new Layer(ink, tonesOf(ink.fx).strike);
   const shape: readonly (readonly [angle: number, length: number, width: number])[] = [
     [0, 1.5, 0.4],
     [0.95, 1.2, 0.36],
@@ -356,7 +381,7 @@ function drawTick(ink: Ink, c: Point, r: number, random: () => number): void {
  * teardrop shards.
  */
 function drawSpark(ink: Ink, c: Point, r: number, random: () => number, big: boolean): void {
-  const layer = new Layer(ink, TONES.strike);
+  const layer = new Layer(ink, tonesOf(ink.fx).strike);
   const count = big ? 12 : 10;
   const spacing = (2 * Math.PI) / count;
   const spikes = Array.from({ length: count }, (_, i) => {
@@ -391,7 +416,7 @@ function drawSpark(ink: Ink, c: Point, r: number, random: () => number, big: boo
  * shooting between its spikes. Drawn first, so the gold covers it.
  */
 function drawSoundRing(ink: Ink, c: Point, r: number, random: () => number): void {
-  const layer = new Layer(ink, TONES.sound);
+  const layer = new Layer(ink, tonesOf(ink.fx).sound);
   const outer = r * 1.22;
   const thickness = 2.5;
   const gaps = Array.from({ length: 4 }, (_, i) => ((i + 0.3 + random() * 0.4) / 4) * 2 * Math.PI);
@@ -429,7 +454,7 @@ function drawSoundRing(ink: Ink, c: Point, r: number, random: () => number): voi
  * rim, spray lines and sparkles flying out of it.
  */
 function drawSplash(ink: Ink, c: Point, r: number, random: () => number): void {
-  const layer = new Layer(ink, TONES.sound);
+  const layer = new Layer(ink, tonesOf(ink.fx).sound);
   const count = 18;
   const spacing = (2 * Math.PI) / count;
   // Wedges of mixed lengths, long and short in turn, ragged: a splash, not a snowflake.
@@ -473,7 +498,7 @@ function drawSplash(ink: Ink, c: Point, r: number, random: () => number): void {
 function drawEnergy(ink: Ink, center: Point, radius: number): void {
   const c = pixelCenter(ink.at(center));
   const r = radius * S;
-  const layer = new Layer(ink, TONES.sound);
+  const layer = new Layer(ink, tonesOf(ink.fx).sound);
   const random = randomFrom(center.x, center.y, radius);
   // Stubby bumps around the ball, and a few thin crackles shooting farther out.
   const spikes = Array.from({ length: 10 }, (_, i) => {
@@ -540,7 +565,7 @@ function drawShards(ink: Ink, center: Point, radius: number, progress: number, t
  */
 function drawWave(ink: Ink, center: Point, phase: number): void {
   const c = ink.at(center);
-  const layer = new Layer(ink, TONES.sound);
+  const layer = new Layer(ink, tonesOf(ink.fx).sound);
   // The same tail and sparkles in every frame: only the phase moves them.
   const random = randomFrom(center.x, center.y);
   const first = 6.5;
@@ -727,7 +752,7 @@ function drawRing(
  */
 function drawShield(ink: Ink, center: Point, radius: number, progress: number): void {
   const c = ink.at(center);
-  const layer = new Layer(ink, TONES.sound);
+  const layer = new Layer(ink, tonesOf(ink.fx).sound);
   const outer = radius * S * (0.75 + 0.35 * progress);
   const fade = progress < 0.3 ? 0 : progress < 0.65 ? 1 : 2;
   const crescents = [0, 1, 2].map((index) => ({
@@ -767,7 +792,7 @@ function drawShield(ink: Ink, center: Point, radius: number, progress: number): 
  * edges, and one breaks into dotted pixels.
  */
 function drawSpeed(ink: Ink, effect: Extract<Effect, { kind: 'speed' }>): void {
-  const layer = new Layer(ink, TONES[effect.tone]);
+  const layer = new Layer(ink, tonesOf(ink.fx)[effect.tone]);
   const angle = (effect.direction * Math.PI) / 180;
   const back = { x: -Math.cos(angle), y: -Math.sin(angle) };
   const across = { x: -back.y, y: back.x };
@@ -839,7 +864,7 @@ function drawColumn(ink: Ink, base: Point, height: number, width: number, progre
   const bottom = ink.at(base);
   const top = height * S * (0.4 + 0.6 * progress);
   const half = (width * S) / 2;
-  const layer = new Layer(ink, TONES.sound);
+  const layer = new Layer(ink, tonesOf(ink.fx).sound);
   const random = randomFrom(base.x, base.y);
   const widthAt = (rise: number): number => half * (1 - 0.18 * Math.min(1, rise / top));
   const dim = progress > 0.8 ? 2 : progress > 0.55 ? 1 : 0;
@@ -972,7 +997,7 @@ function spray(
  * low and wide along the floor. Specks, never solid balls: it reads as dust, not as pebbles.
  */
 function drawDust(ink: Ink, x: number, size: number, progress: number): void {
-  const layer = new Layer(ink, DUST);
+  const layer = new Layer(ink, tonesOf(ink.fx).dust);
   // The same specks from frame to frame: only how far they flew changes.
   const random = randomFrom(Math.round(x * 4), size);
   const spread = 0.7 + progress * 0.9;
@@ -1037,11 +1062,14 @@ class Layer {
   private readonly left: number;
   private readonly right: number;
   private readonly bottom: number;
+  /** Shape of the loose sparkles (see `cross`). */
+  readonly sparkle: EffectStyle['sparkle'];
 
   /** `bottom` is the lowest row drawn: motion trails stop at the floor line. */
   constructor(ink: Ink, tones: Tones, bottom = CELL_SIZE - 1) {
     const cell = ink.at({ x: 0, y: 0 }).x - ANCHOR.x;
     this.ink = ink;
+    this.sparkle = ink.fx.sparkle;
     this.tones = tones;
     this.left = cell + EDGE;
     this.right = cell + CELL_SIZE - 1 - EDGE;
@@ -1304,8 +1332,26 @@ function drop(layer: Layer, points: readonly Point[], width: number, bright: Ran
   });
 }
 
-/** A sparkle cross "+": a hot center and four arms `arm` px long, dimmer at their tips. */
+/**
+ * A sparkle cross "+": a hot center and four arms `arm` px long, dimmer at their tips. In the
+ * diamond style, a hollow diamond one pixel wider, its four points dimmer, around a hot center.
+ */
 function cross(layer: Layer, x: number, y: number, arm: number, rank: Rank): void {
+  if (layer.sparkle === 'diamond') {
+    const radius = arm + 1;
+    layer.plot(x, y, arm > 1 ? CORE : rank);
+    for (let i = 0; i < radius * 4; i++) {
+      // Walk the diamond's rim: (radius, 0), then toward (0, radius), and so on.
+      const quarter = Math.floor(i / radius);
+      const step = i % radius;
+      const u = radius - step;
+      const v = step;
+      const [dx, dy] =
+        quarter === 0 ? [u, v] : quarter === 1 ? [-v, u] : quarter === 2 ? [-u, -v] : [v, -u];
+      layer.plot(x + dx, y + dy, step === 0 ? lower(rank) : rank);
+    }
+    return;
+  }
   layer.plot(x, y, arm > 1 ? CORE : rank);
   for (let i = 1; i <= arm; i++) {
     const tone = i === arm ? lower(rank) : rank;
