@@ -278,6 +278,15 @@ body {
 .menu-panel:has(.controls) {
   width: min(880px, 100%);
 }
+/* Its pages are chosen like tabs: one row, wrapping, so the page itself keeps the room. */
+.menu-panel:has(.controls) .menu-items {
+  flex-flow: row wrap;
+}
+.menu-panel:has(.controls) .menu-item {
+  width: auto;
+  flex: 1 1 auto;
+  text-align: center;
+}
 .controls {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));

@@ -1,7 +1,10 @@
-/** Help content for the "Commandes" screen, adapted to the devices in use. */
+/**
+ * Help content for the "Commandes" screen, in pages: the controls of the devices in use, the
+ * basics, then one page per fighter with every move (docs/combat-v2.md §17).
+ */
 
-import type { FighterTemplate } from '../core/config';
-import { ROSTER } from '../data/roster';
+import { BASICS, MOVE_ORDER, MOVE_TEXTS } from '../data/move-texts';
+import { ROSTER, type FighterId, type RosterEntry } from '../data/roster';
 import { connectedGamepads } from '../input/gamepad';
 import { isTouchDevice } from '../input/touch-controls';
 
@@ -14,6 +17,13 @@ export interface ControlDevices {
 export interface HelpSection {
   readonly title: string;
   readonly rows: readonly (readonly [string, string])[];
+}
+
+/** One page of the screen; a fighter's page tells whose it is. */
+export interface HelpPage {
+  readonly title: string;
+  readonly sections: readonly HelpSection[];
+  readonly fighter?: FighterId;
 }
 
 const TOUCH: HelpSection = {
@@ -39,9 +49,9 @@ const KEYBOARD: HelpSection = {
     ['Z Q S D', 'Se déplacer (W A S D en QWERTY)'],
     ['Z, Espace', 'Sauter'],
     ['S', "S'accroupir"],
-    ['J', 'Coup léger : rapide'],
-    ['K', 'Coup lourd : fort mais lent'],
-    ['L', 'Coup spécial'],
+    ['J', 'Coup léger (L) : rapide'],
+    ['K', 'Coup lourd (H) : fort mais lent'],
+    ['L', 'Coup spécial (S)'],
     ['I, J + K', "Prise : saisir et projeter l'adversaire de près"],
     ['Maj gauche', 'Dash ; avec arrière : bond en retrait'],
     ['2 fois avant', 'Dash aussi (2 fois arrière : bond en retrait)'],
@@ -58,58 +68,49 @@ const GAMEPAD: HelpSection = {
   rows: [
     ['Flèches, stick', 'Se déplacer'],
     ['A (Croix)', 'Sauter'],
-    ['X (Carré)', 'Coup léger : rapide'],
-    ['Y (Triangle)', 'Coup lourd : fort mais lent'],
-    ['B (Rond)', 'Coup spécial'],
+    ['X (Carré)', 'Coup léger (L) : rapide'],
+    ['Y (Triangle)', 'Coup lourd (H) : fort mais lent'],
+    ['B (Rond)', 'Coup spécial (S)'],
     ['RB (R1), X + Y', "Prise : saisir et projeter l'adversaire de près"],
     ['LB (L1)', 'Dash ; avec arrière : bond en retrait. Deux fois avant ou arrière aussi'],
     ['Start', 'Pause'],
   ],
 };
 
-/** "Onde sonore / Ruée": the same move for every fighter of the roster. */
-function moveNames(pick: (moves: FighterTemplate['moves']) => { readonly name: string }): string {
-  return ROSTER.map((entry) => pick(entry.template.moves).name).join(' / ');
-}
-
-/** What every fighter can do, whatever the device ("Les bases"). */
-function basicsSection(): HelpSection {
-  return {
-    title: 'Les bases',
-    rows: [
-      [
-        'Parer',
-        "Maintiens arrière (loin de l'adversaire) : accroupi contre les coups bas, debout contre les sauts",
-      ],
-      [
-        'DASH',
-        "Ou deux fois avant : un bond rapide vers l'adversaire. Avec arrière (ou deux fois arrière), un bond en retrait qui fait rater les prises, mais pas les coups",
-      ],
-      ['Spécial seul', moveNames((m) => m.special)],
-      ['Avant + spécial', moveNames((m) => m.specialForward)],
-      ['Bas + spécial', `${moveNames((m) => m.specialAntiAir)} : invincible, contre les sauts`],
-      ['Enchaîner', "Un léger qui touche s'enchaîne sur un coup ou un spécial"],
-      [
-        'PRISE',
-        "Ou L + H, de tout près : imparable ; deux prises simultanées s'annulent. On ne peut pas saisir quelqu'un qui sort d'un coup reçu ou paré",
-      ],
-    ],
-  };
-}
-
-/** Shows only the devices in use: touch on phones, keyboard otherwise, gamepad if one is on. */
-export function helpSections(devices: ControlDevices): HelpSection[] {
+/** The devices in use: touch on phones, keyboard otherwise, gamepad if one is on. */
+function devicePage(devices: ControlDevices): HelpPage {
   const sections = [devices.touch ? TOUCH : KEYBOARD];
   if (devices.gamepad) sections.push(GAMEPAD);
-  sections.push(basicsSection());
-  return sections;
+  return { title: 'Commandes', sections };
 }
 
-export function controlsContent(): HTMLElement {
-  const devices = { touch: isTouchDevice(), gamepad: connectedGamepads().length > 0 };
+/** Every move of a fighter: how to do it, its name (from its data), what it is for. */
+function fighterPage({ id, template }: RosterEntry): HelpPage {
+  const texts = MOVE_TEXTS[id];
+  const rows = MOVE_ORDER.map((move): readonly [string, string] => {
+    const { input, text } = texts.moves[move];
+    return [input, `${template.moves[move].name} : ${text}`];
+  });
+  return { title: template.name, sections: [{ title: texts.title, rows }], fighter: id };
+}
+
+/** The pages of the screen, in order: devices, « Les bases », then each fighter. */
+export function helpPages(devices: ControlDevices): HelpPage[] {
+  return [
+    devicePage(devices),
+    { title: 'Les bases', sections: [{ title: 'Les bases', rows: BASICS }] },
+    ...ROSTER.map(fighterPage),
+  ];
+}
+
+export function currentDevices(): ControlDevices {
+  return { touch: isTouchDevice(), gamepad: connectedGamepads().length > 0 };
+}
+
+export function controlsContent(page: HelpPage): HTMLElement {
   const container = document.createElement('div');
   container.className = 'controls';
-  for (const section of helpSections(devices)) container.appendChild(sectionElement(section));
+  for (const section of page.sections) container.appendChild(sectionElement(section));
   return container;
 }
 

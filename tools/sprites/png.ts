@@ -1,4 +1,4 @@
-/** Minimal PNG encoder for palette images: no dependency, deflate from the platform. */
+/** Minimal PNG codec for palette images: no dependency, deflate from the platform. */
 
 export interface Rgba {
   readonly r: number;
@@ -74,13 +74,66 @@ function chunk(type: string, data: Uint8Array): Uint8Array {
   return out;
 }
 
+/** An indexed PNG as read back: one palette index per pixel, and the palette's opacity. */
+export interface IndexedImage {
+  readonly width: number;
+  readonly height: number;
+  readonly pixels: Uint8Array;
+  /** Alpha of each palette slot (opaque when the file has no transparency). */
+  readonly alpha: readonly number[];
+}
+
+/**
+ * Decodes an 8-bit indexed PNG, the kind `encodeIndexedPng` writes (the game's strips): enough
+ * for the tools that measure what the strips draw, not a general decoder.
+ */
+export async function decodeIndexedPng(png: Uint8Array): Promise<IndexedImage> {
+  const view = new DataView(png.buffer, png.byteOffset, png.byteLength);
+  let width = 0;
+  let height = 0;
+  let alpha: number[] = [];
+  const data: Uint8Array[] = [];
+  for (let offset = SIGNATURE.length; offset < png.length;) {
+    const length = view.getUint32(offset);
+    const type = new TextDecoder().decode(png.subarray(offset + 4, offset + 8));
+    const body = png.subarray(offset + 8, offset + 8 + length);
+    if (type === 'IHDR') {
+      width = view.getUint32(offset + 8);
+      height = view.getUint32(offset + 12);
+      if (body[8] !== 8 || body[9] !== COLOR_TYPE_INDEXED) {
+        throw new Error('Only 8-bit indexed PNGs are supported');
+      }
+    } else if (type === 'PLTE') {
+      alpha = Array.from({ length: length / 3 }, () => 255);
+    } else if (type === 'tRNS') {
+      body.forEach((value, slot) => (alpha[slot] = value));
+    } else if (type === 'IDAT') {
+      data.push(body);
+    }
+    offset += 12 + length;
+  }
+  const raw = await inflate(concat(data));
+  const pixels = new Uint8Array(width * height);
+  for (let y = 0; y < height; y++) {
+    const row = y * (width + 1);
+    if (raw[row] !== 0) throw new Error('Only unfiltered rows are supported');
+    pixels.set(raw.subarray(row + 1, row + 1 + width), y * width);
+  }
+  return { width, height, pixels, alpha };
+}
+
 /** zlib stream (what PNG expects), compressed by the runtime. */
 async function deflate(bytes: Uint8Array<ArrayBuffer>): Promise<Uint8Array> {
   const stream = new Blob([bytes]).stream().pipeThrough(new CompressionStream('deflate'));
   return new Uint8Array(await new Response(stream).arrayBuffer());
 }
 
-function concat(parts: readonly Uint8Array[]): Uint8Array {
+async function inflate(bytes: Uint8Array<ArrayBuffer>): Promise<Uint8Array> {
+  const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate'));
+  return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+
+function concat(parts: readonly Uint8Array[]): Uint8Array<ArrayBuffer> {
   const out = new Uint8Array(parts.reduce((sum, part) => sum + part.length, 0));
   let offset = 0;
   for (const part of parts) {

@@ -25,6 +25,7 @@ import { PlayerInputs } from '../input/player-inputs';
 import { isTouchDevice, TouchControls } from '../input/touch-controls';
 import { FixedTimestep } from '../loop/fixed-timestep';
 import { frontFighter } from './animation';
+import { BoxOverlay } from './box-overlay';
 import { frameFight, MAX_CLOSE_UP, type FramingInput } from './camera-framing';
 import { DebugOverlay, describeGame, isDebugEnabled } from './debug-overlay';
 import { detectEvents, type FightEvent } from './fight-events';
@@ -34,6 +35,7 @@ import { drawGreyboxStage, GROUND_Y } from './greybox-stage';
 import { hitStyleOf, type HitStyle } from './hit-styles';
 import { requestLandscapeFullscreen } from './fullscreen';
 import { Hud } from './hud';
+import { MoveCaption } from './move-caption';
 import { ProjectileView } from './projectile-view';
 import { loadArt } from './art-textures';
 import { SpriteFighterView } from './sprite-fighter-view';
@@ -69,7 +71,11 @@ interface Runtime {
   readonly projectileView: ProjectileView;
   readonly feedback: FightFeedback;
   readonly hud: Hud;
+  /** Training only: the name of each move as it starts. */
+  readonly caption: MoveCaption | undefined;
+  /** Debug only: the statistics, and every box. */
   readonly debugOverlay: DebugOverlay | undefined;
+  readonly boxOverlay: BoxOverlay | undefined;
 }
 
 /**
@@ -165,8 +171,8 @@ export class FightScene extends Phaser.Scene {
       inputs: new PlayerInputs(window, touch, connectedGamepads()),
       pauseInput: new PauseInput(document.body),
       fighterViews: [
-        this.fighterDisplay(0, COLORS.player1, debug),
-        this.fighterDisplay(1, COLORS.player2, debug),
+        this.fighterDisplay(0, COLORS.player1),
+        this.fighterDisplay(1, COLORS.player2),
       ],
       projectileView: new ProjectileView(this, this.config, GROUND_Y, this.arts),
       // Touch is player 1's: its phone vibrates when player 1 is grabbed or hit hard.
@@ -178,7 +184,9 @@ export class FightScene extends Phaser.Scene {
         touch ? vibrate : undefined,
       ),
       hud: new Hud(this, this.config),
+      caption: this.config.training ? new MoveCaption(this, this.config, GROUND_Y) : undefined,
       debugOverlay: debug ? new DebugOverlay(document.body) : undefined,
+      boxOverlay: debug ? new BoxOverlay(this, this.config, GROUND_Y) : undefined,
     };
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
@@ -205,11 +213,11 @@ export class FightScene extends Phaser.Scene {
     }
   }
 
-  private fighterDisplay(player: 0 | 1, color: number, debug: boolean): FighterDisplay {
+  private fighterDisplay(player: 0 | 1, color: number): FighterDisplay {
     const art = this.arts[player];
     return art
-      ? new SpriteFighterView(this, art, player, GROUND_Y, this.styles[player].energy, debug)
-      : new FighterView(this, color, GROUND_Y, debug);
+      ? new SpriteFighterView(this, art, player, GROUND_Y, this.styles[player].energy)
+      : new FighterView(this, color, GROUND_Y);
   }
 
   /** Resumes after the pause menu. The paused time is not simulated. */
@@ -249,7 +257,10 @@ export class FightScene extends Phaser.Scene {
         detectEvents(previous, this.state, this.config, this.tickEvents);
         const viewLeft = toPx(this.state.cameraX) - VIEW_SIZE.width / 2;
         runtime.feedback.beginTick();
-        for (const event of this.tickEvents) runtime.feedback.react(event, viewLeft);
+        for (const event of this.tickEvents) {
+          runtime.feedback.react(event, viewLeft);
+          runtime.caption?.react(event, this.state.frame);
+        }
       }
     }
     runtime.feedback.update(visualFrames);
@@ -287,6 +298,8 @@ export class FightScene extends Phaser.Scene {
     viewB.update(b, this.config.fighters[1], this.state.round);
     runtime.projectileView.update(this.state.projectiles, this.state.frame);
     runtime.hud.update(this.state);
+    runtime.caption?.update(this.state);
+    runtime.boxOverlay?.update(this.state);
 
     const xs = this.framedXs;
     const projectiles = this.state.projectiles;

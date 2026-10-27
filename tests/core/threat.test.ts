@@ -25,7 +25,8 @@ describe('threat reach', () => {
   });
 
   it('reaches where a projectile appears', () => {
-    expect(threatReach(NAYO.moves.special)).toBe(px(24 - 8 + 16));
+    // The Vinyle's box (−10..10 px) appears 24 px ahead: its front edge 34 px ahead (§10.1).
+    expect(threatReach(NAYO.moves.special)).toBe(px(24 + 10));
   });
 });
 

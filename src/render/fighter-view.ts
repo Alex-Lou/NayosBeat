@@ -1,69 +1,92 @@
 import type Phaser from 'phaser';
-import { toWorld, type WorldBox } from '../core/boxes';
-import { activeMove, hurtboxesOf } from '../core/combat';
-import type { Box, BoxSize, FighterTemplate } from '../core/config';
+import { leftEdge } from '../core/boxes';
+import { hurtboxesOf } from '../core/combat';
+import type { FighterTemplate } from '../core/config';
 import { toPx } from '../core/constants';
 import type { FighterState } from '../core/state';
 import { DEPTH } from './depth';
 
-const EYE_SIZE = 4;
-const EYE_INSET = 3;
+/** The "foot" that shows which way a grey box faces, in world pixels. */
+const FOOT_WIDTH = 6;
+const FOOT_HEIGHT = 4;
 
 const COLORS = {
-  eye: 0xffffff,
+  foot: 0xe8e8f0,
   hit: 0xffffff,
   block: 0x8a8aa0,
   down: 0x5a5a6e,
-  hitbox: 0xff3b3b,
-  hurtbox: 0x3bff6b,
 } as const;
 
 /**
- * Grey-box display of a fighter: its pushbox (tinted by state), an "eye" showing which way
- * it faces, and its active hitbox. Hurtboxes are outlined in debug mode.
+ * Grey-box display of a fighter without art (docs/combat-v2.md §9.6): exactly its hurtboxes,
+ * so what is drawn is what can be hit, tinted by state, and a 6 × 4 px "foot" on the ground at
+ * its front edge, toward the side it faces. Lying down, its body on the floor. Its hitbox shows
+ * in the debug view only (BoxOverlay). Two rectangles at most (a body has one or two bands),
+ * created up front, moved every frame: nothing is allocated.
  */
 export class FighterView {
-  private readonly body: Phaser.GameObjects.Rectangle;
-  private readonly eye: Phaser.GameObjects.Rectangle;
-  private readonly hitbox: Phaser.GameObjects.Rectangle;
-  /** Graphics, not a stroked Rectangle: Phaser 4 strokes resized rectangles incorrectly. */
-  private readonly hurtbox: Phaser.GameObjects.Graphics | undefined;
+  private readonly bands: readonly [Phaser.GameObjects.Rectangle, Phaser.GameObjects.Rectangle];
+  private readonly foot: Phaser.GameObjects.Rectangle;
 
   constructor(
     scene: Phaser.Scene,
     private readonly color: number,
     private readonly groundY: number,
-    showHurtbox: boolean,
   ) {
-    this.body = scene.add.rectangle(0, 0, 1, 1, color).setOrigin(0.5, 1);
-    this.eye = scene.add.rectangle(0, 0, EYE_SIZE, EYE_SIZE, COLORS.eye).setOrigin(0.5, 0);
-    this.hitbox = addHitbox(scene).setDepth(DEPTH.debug);
-    this.hurtbox = showHurtbox ? scene.add.graphics().setDepth(DEPTH.debug) : undefined;
+    const band = (): Phaser.GameObjects.Rectangle =>
+      scene.add.rectangle(0, 0, 1, 1, color).setOrigin(0, 1);
+    this.bands = [band(), band()];
+    this.foot = scene.add.rectangle(0, 0, FOOT_WIDTH, FOOT_HEIGHT, COLORS.foot).setOrigin(0, 1);
     this.setFront(false);
   }
 
   /** Draws this fighter over the other one, or under it. */
   setFront(front: boolean): void {
     const depth = front ? DEPTH.fighterFront : DEPTH.fighterBack;
-    this.body.setDepth(depth);
-    this.eye.setDepth(depth);
+    for (const band of this.bands) band.setDepth(depth);
+    this.foot.setDepth(depth);
   }
 
   update(fighter: FighterState, template: FighterTemplate): void {
-    const box = silhouetteOf(fighter, template);
-    const width = toPx(box.width);
-    const height = toPx(box.height);
-    const x = toPx(fighter.x);
-    const feetY = this.groundY - toPx(fighter.y);
+    const color = this.bodyColor(fighter);
+    const { x, y, facing } = fighter;
+    if (fighter.action === 'knockdown') {
+      // Down, nothing can hit it: the body lies on the floor, its lying pushbox.
+      const { width, height } = template.lyingPushbox;
+      this.place(0, x - width / 2, y, width, height, color);
+      this.bands[1].setVisible(false);
+      this.foot.setVisible(false);
+      return;
+    }
+    const boxes = hurtboxesOf(fighter, template);
+    for (let index = 0; index < this.bands.length; index++) {
+      const box = boxes[index];
+      if (box) this.place(index, leftEdge(box, x, facing), y + box.y, box.width, box.height, color);
+      else this.bands[index]?.setVisible(false);
+    }
+    // On the floor of the first box (the legs), inside its front edge: the foot reaches no
+    // farther than the body can be hit.
+    const legs = boxes[0];
+    if (!legs) return;
+    const front = x + facing * (legs.x + legs.width);
+    const left = toPx(front) - (facing === 1 ? FOOT_WIDTH : 0);
+    this.foot.setPosition(left, this.groundY - toPx(y + legs.y)).setVisible(true);
+  }
 
-    this.body.setPosition(x, feetY).setSize(width, height).setFillStyle(this.bodyColor(fighter));
-    const eyeOffset = width / 2 - EYE_INSET - EYE_SIZE / 2;
-    this.eye.setPosition(x + fighter.facing * eyeOffset, feetY - height + EYE_INSET);
-
-    const move = activeMove(fighter, template);
-    this.hitbox.setVisible(move !== null);
-    if (move?.hitbox) placeBox(this.hitbox, hitboxOf(fighter, move.hitbox), this.groundY);
-    if (this.hurtbox) outlineHurtboxes(this.hurtbox, fighter, template, this.groundY);
+  /** Band `index` on a box in stage sub-pixels (left, bottom, size). */
+  private place(
+    index: number,
+    left: number,
+    bottom: number,
+    width: number,
+    height: number,
+    color: number,
+  ): void {
+    this.bands[index]
+      ?.setPosition(toPx(left), this.groundY - toPx(bottom))
+      .setSize(toPx(width), toPx(height))
+      .setFillStyle(color)
+      .setVisible(true);
   }
 
   private bodyColor(fighter: FighterState): number {
@@ -81,49 +104,4 @@ export class FighterView {
         return this.color;
     }
   }
-}
-
-/**
- * The grey box's body: its pushbox on the ground, the standing one in the air (the air pushbox,
- * raised and slimmer, is a collision body, not the fighter's outline).
- */
-function silhouetteOf(fighter: FighterState, template: FighterTemplate): BoxSize {
-  if (fighter.action === 'knockdown') return template.lyingPushbox;
-  return fighter.crouching ? template.crouchingPushbox : template.standingPushbox;
-}
-
-/** The translucent red rectangle showing an active hitbox. */
-export function addHitbox(scene: Phaser.Scene): Phaser.GameObjects.Rectangle {
-  return scene.add.rectangle(0, 0, 1, 1, COLORS.hitbox, 0.7).setOrigin(0, 1);
-}
-
-/** The fighter's hitbox, placed in the stage. */
-export function hitboxOf(fighter: FighterState, hitbox: Box): WorldBox {
-  return toWorld(hitbox, fighter.x, fighter.y, fighter.facing);
-}
-
-/** Draws the outlines of the fighter's hurtboxes for the debug view. */
-export function outlineHurtboxes(
-  graphics: Phaser.GameObjects.Graphics,
-  fighter: FighterState,
-  template: FighterTemplate,
-  groundY: number,
-): void {
-  graphics.clear().lineStyle(1, COLORS.hurtbox, 0.8);
-  for (const hurtbox of hurtboxesOf(fighter, template)) {
-    const box = toWorld(hurtbox, fighter.x, fighter.y, fighter.facing);
-    const top = groundY - toPx(box.bottom + box.height);
-    graphics.strokeRect(toPx(box.left) + 0.5, top + 0.5, toPx(box.width) - 1, toPx(box.height) - 1);
-  }
-}
-
-/** Moves and resizes a bottom-left-anchored rectangle onto a world box. */
-export function placeBox(
-  rectangle: Phaser.GameObjects.Rectangle,
-  box: WorldBox,
-  groundY: number,
-): void {
-  rectangle
-    .setPosition(toPx(box.left), groundY - toPx(box.bottom))
-    .setSize(toPx(box.width), toPx(box.height));
 }

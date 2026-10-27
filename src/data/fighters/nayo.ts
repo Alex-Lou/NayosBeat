@@ -21,9 +21,13 @@ export const NAYO: FighterTemplate = {
   crouchingPushbox: { width: px(32), height: px(50) },
   airPushbox: { width: px(24), height: px(44), lift: px(30) },
   lyingPushbox: { width: px(28), height: px(20) },
-  standingHurtboxes: [box(-16, 0, 32, 84)],
-  crouchingHurtboxes: [box(-18, 0, 36, 54)],
-  airHurtboxes: [box(-16, 4, 32, 68)],
+  // Calibrated on the drawing (`npm run measure-boxes`, docs/combat-v2.md §9.2): the front edge
+  // at the farthest the body reaches (toes and gloves, 15 px standing), the back at the rear
+  // foot, the top at the hair. In the air the knees tuck 4 px ahead of the chest: legs and torso
+  // get a box each.
+  standingHurtboxes: [box(-27, 0, 40.5, 78.5)],
+  crouchingHurtboxes: [box(-18.5, 0, 32.5, 57)],
+  airHurtboxes: [box(-22, 4, 43, 40), box(-11, 44, 29, 42.5)],
   moves: {
     standLight: {
       name: 'Direct',
@@ -52,7 +56,7 @@ export const NAYO: FighterTemplate = {
       hitstop: 12,
       pushback: px(3.5),
       guard: 'mid',
-      hitbox: box(10, 44, 44, 18),
+      hitbox: box(10, 44, 42, 18),
       cancelInto: HEAVY_CANCELS,
     },
     crouchLight: {
@@ -82,7 +86,7 @@ export const NAYO: FighterTemplate = {
       hitstop: 11,
       pushback: px(3.5),
       guard: 'low',
-      hitbox: box(12, 2, 40, 12),
+      hitbox: box(12, 2, 39, 12),
       knockdown: true,
     },
     jumpLight: {
@@ -97,7 +101,7 @@ export const NAYO: FighterTemplate = {
       hitstop: 8,
       pushback: px(2),
       guard: 'overhead',
-      hitbox: box(4, 10, 26, 16),
+      hitbox: box(4, 10, 24, 16),
     },
     jumpHeavy: {
       name: 'Coup de pied sauté',
@@ -114,7 +118,7 @@ export const NAYO: FighterTemplate = {
       hitbox: box(2, -4, 34, 22),
     },
     special: {
-      name: 'Onde sonore',
+      name: 'Vinyle',
       kind: 'special',
       startup: 12,
       active: 1,
@@ -125,10 +129,10 @@ export const NAYO: FighterTemplate = {
       hitstop: 8,
       pushback: px(3),
       guard: 'mid',
-      projectile: { speed: px(3), spawnX: px(24), hitbox: box(-8, 36, 16, 14) },
+      projectile: { speed: px(3.5), spawnX: px(24), hitbox: box(-10, 32, 20, 20) },
     },
     specialForward: {
-      name: 'Coup de pied fendu',
+      name: 'Pied fendu',
       kind: 'special',
       startup: 11,
       active: 4,
@@ -154,7 +158,7 @@ export const NAYO: FighterTemplate = {
       hitstop: 13,
       pushback: px(3),
       guard: 'mid',
-      hitbox: box(4, 30, 26, 70),
+      hitbox: box(4, 30, 20, 70),
       invincible: { from: 0, to: 7 },
       knockdown: true,
     },

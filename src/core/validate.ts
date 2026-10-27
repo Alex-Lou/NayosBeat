@@ -3,6 +3,9 @@ import { CAMERA_WIDTH_PX, px } from './constants';
 import { AIR_MOVE_IDS, CORE_MOVE_IDS, MOVEMENT_MOVE_IDS, type FrameRange } from './move-data';
 import { moveDuration } from './moves';
 
+/** A body drawn in bands: legs and torso at most (docs/combat-v2.md §9.2). */
+const MAX_HURTBOXES = 2;
+
 /**
  * Checks match data for authoring mistakes. Returns the list of problems (empty when valid)
  * so every mistake is reported at once. Everything the simulation relies on is checked here:
@@ -41,8 +44,12 @@ export function validateTemplate(template: FighterTemplate): string[] {
   expect(isInteger(template.airPushbox.lift, 0), 'airPushbox.lift must be an integer >= 0');
   for (const name of ['standingHurtboxes', 'crouchingHurtboxes', 'airHurtboxes'] as const) {
     const boxes = template[name];
-    expect(boxes.length > 0, `${name} must have at least one box`);
+    expect(
+      boxes.length > 0 && boxes.length <= MAX_HURTBOXES,
+      `${name} must have one or ${MAX_HURTBOXES} boxes`,
+    );
     expect(boxes.every(isValidBox), `${name} must have integer offsets and a positive size`);
+    expect(isStacked(boxes), `${name} must be stacked without a gap between them`);
   }
 
   for (const id of CORE_MOVE_IDS) {
@@ -154,6 +161,15 @@ function isPositiveSize(box: BoxSize): boolean {
 
 function isValidBox(box: Box): boolean {
   return Number.isInteger(box.x) && Number.isInteger(box.y) && isPositiveSize(box);
+}
+
+/** Each box, from the lowest up, starts at or below the top of the one under it. */
+function isStacked(boxes: readonly Box[]): boolean {
+  const sorted = [...boxes].sort((a, b) => a.y - b.y);
+  return sorted.every((box, index) => {
+    const below = sorted[index - 1];
+    return !below || box.y <= below.y + below.height;
+  });
 }
 
 function isRangeWithin(range: FrameRange, duration: number): boolean {

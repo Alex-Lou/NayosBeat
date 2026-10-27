@@ -38,12 +38,13 @@ describe('contacts', () => {
     const start = facingOff(30, MIRROR_MATCH);
     const contacts = contactsOf(start, [[Light, 0], ...idle(20)]);
     expect(contacts).toHaveLength(1);
-    // The jab (10 to 40 px in front, 46 to 58 px high) meets the body 14 px in front.
+    // The jab (10 to 40 px in front, 46 to 58 px high) meets the body 13.5 px in front of a
+    // fighter 30 px away (its hurtbox calibrated on the drawing, §9.2): 16.5 to 40 px.
     expect(contacts[0]).toEqual({
       by: 0,
       kind: 'hit',
       move: 'standLight',
-      x: start.fighters[0].x + px(27),
+      x: start.fighters[0].x + px(28.25),
       y: px(52),
       damage: P.moves.standLight.damage,
     });
@@ -60,7 +61,8 @@ describe('contacts', () => {
   it("place a projectile's contact on the projectile's box", () => {
     const contacts = contactsOf(facingOff(200, MIRROR_MATCH), [[Special, 0], ...idle(90)]);
     expect(contacts).toEqual([
-      expect.objectContaining({ by: 0, kind: 'hit', move: 'special', y: px(43) }),
+      // The Vinyle's box spans 32 to 52 px high (§10.1).
+      expect.objectContaining({ by: 0, kind: 'hit', move: 'special', y: px(42) }),
     ]);
   });
 

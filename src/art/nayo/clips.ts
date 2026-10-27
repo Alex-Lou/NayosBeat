@@ -49,7 +49,7 @@ export const NAYO_CLIPS: Readonly<Record<ClipId, NayoClip>> = {
   crouchHeavy: play('crouchHeavy', [3, 3, 3, 3, 4, 4, 4, 4, 4]), // active: frame 3
   jumpLight: play('jumpLight', [2, 2, 6, 3, 3]), // active: frame 2
   jumpHeavy: play('jumpHeavy', [3, 4, 5, 3, 3, 4]), // active: frame 2
-  special: play('special', [3, 3, 3, 3, 8, 6, 5, 5, 5]), // the wave leaves on frame 4
+  special: play('special', [3, 3, 3, 3, 8, 6, 5, 5, 5]), // the Vinyle leaves on frame 4
   specialForward: play('specialForward', [3, 3, 3, 2, 4, 4, 5, 5, 4]), // active: frame 4
   specialAntiAir: play('specialAntiAir', [3, 3, 5, 4, 4, 4, 4, 4, 4, 4]), // active: frames 1-2
   grab: play('throw', [3, 2, 4, 4, 5, 5, 4]), // active: frame 1
@@ -63,5 +63,10 @@ export const NAYO_CLIPS: Readonly<Record<ClipId, NayoClip>> = {
   timeOver: play('timeOver', [10, 10, 10, 10], 0),
 };
 
-/** The sound wave in flight, looping on the match clock. */
+/**
+ * The Vinyle in flight, looping on the match clock. Still the sound wave's strip, placed over
+ * the Vinyle's hitbox (tools/sprites/nayo/poses/projectile.ts).
+ * TODO(art): the disc of docs/combat-v2.md §11.2 (8 frames of 2 ticks: a 20 px light disc,
+ * grooves, label, afterimages) replaces it, with NAYO_SHEETS.projectile at 8 frames.
+ */
 export const NAYO_PROJECTILE: NayoClip = play('projectile', [2, 2, 2, 2, 2, 2], 0);

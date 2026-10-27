@@ -7,7 +7,7 @@ import { requestLandscapeFullscreen } from '../render/fullscreen';
 import { isTouchDevice } from '../input/touch-controls';
 import { Menu, type MenuFeedback, type MenuItem, type MenuOptions } from '../ui/menu';
 import { TitleScreen } from '../ui/title-screen';
-import { controlsContent } from './controls-content';
+import { controlsContent, currentDevices, helpPages } from './controls-content';
 import { installMethod, onInstallChange, promptInstall } from './install';
 import { DEFAULT_SETUP, type DummyBehavior, type GameMode, type MatchSetup } from './match-setup';
 
@@ -104,7 +104,7 @@ export class App {
       {
         label: 'Commandes',
         onSelect: () => {
-          this.showControls();
+          this.showControls(0, false);
         },
       },
       soundItem,
@@ -138,21 +138,34 @@ export class App {
     this.onMainMenu = true;
   }
 
-  private showControls(): void {
+  /**
+   * The "Commandes" screen on page `index` (devices, « Les bases », a page per fighter), its
+   * pages as the choices. Over the fight from the pause menu (`paused`), back to it.
+   */
+  private showControls(index: number, paused: boolean): void {
+    const pages = helpPages(currentDevices());
+    const page = pages[index] ?? pages[0];
+    if (!page) return;
+    const back = () => {
+      if (paused) this.showPause();
+      else this.showMainMenu();
+    };
     this.showMenu({
       title: 'Commandes',
-      content: controlsContent(),
+      subtitle: page.title,
+      overlay: paused,
+      content: controlsContent(page),
       items: [
-        {
-          label: 'Retour',
+        ...pages.map((other, at) => ({
+          label: other.title,
           onSelect: () => {
-            this.showMainMenu();
+            this.showControls(at, paused);
           },
-        },
+        })),
+        { label: 'Retour', onSelect: back },
       ],
-      onBack: () => {
-        this.showMainMenu();
-      },
+      onBack: back,
+      initialIndex: pages.indexOf(page),
     });
   }
 
@@ -293,8 +306,11 @@ export class App {
         },
         {
           label: 'Commandes',
+          // Opens on the page of player 1's fighter: the moves they are playing with.
           onSelect: () => {
-            this.showPauseControls();
+            const pages = helpPages(currentDevices());
+            const own = pages.findIndex((page) => page.fighter === this.setup.fighters[0]);
+            this.showControls(Math.max(0, own), true);
           },
         },
         {
@@ -306,25 +322,6 @@ export class App {
         },
       ],
       onBack: resume,
-    });
-  }
-
-  private showPauseControls(): void {
-    this.showMenu({
-      title: 'Commandes',
-      overlay: true,
-      content: controlsContent(),
-      items: [
-        {
-          label: 'Retour',
-          onSelect: () => {
-            this.showPause();
-          },
-        },
-      ],
-      onBack: () => {
-        this.showPause();
-      },
     });
   }
 

@@ -1,5 +1,5 @@
 {
-  "description": "Blocking high and low: mids blocked either way, lows blocked crouching only, overheads standing only, a blocked wave.",
+  "description": "Blocking high and low: mids blocked either way, lows blocked crouching only, overheads standing only, a blocked Vinyle.",
   "fighters": ["nayo", "riff"],
   "inputs": [
     [90, "", ""],
@@ -52,5 +52,5 @@
     [35, "down+left", ""],
     [30, "", ""]
   ],
-  "hash": "3dd59100"
+  "hash": "740e37dc"
 }

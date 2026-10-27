@@ -21,9 +21,11 @@ export const RIFF: FighterTemplate = {
   crouchingPushbox: { width: px(30), height: px(46) },
   airPushbox: { width: px(22), height: px(40), lift: px(26) },
   lyingPushbox: { width: px(26), height: px(20) },
-  standingHurtboxes: [box(-15, 0, 30, 78)],
-  crouchingHurtboxes: [box(-17, 0, 34, 50)],
-  airHurtboxes: [box(-15, 4, 30, 62)],
+  // Her body as the art brief draws it (docs/combat-v2.md §9.2), until her strips can be
+  // measured: the grey box shows exactly these.
+  standingHurtboxes: [box(-15, 0, 27, 76)],
+  crouchingHurtboxes: [box(-16, 0, 29, 50)],
+  airHurtboxes: [box(-14, 4, 26, 60)],
   moves: {
     standLight: {
       name: 'Jab',

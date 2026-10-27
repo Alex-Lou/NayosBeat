@@ -68,6 +68,7 @@ export function overlapMiddleY(box: Box, y: number, other: Box, otherY: number):
   return Math.trunc((from + to) / 2);
 }
 
-function leftEdge(box: Box, x: number, facing: Facing): number {
+/** Left edge in the stage of a fighter-relative box placed at `x`, facing `facing`. */
+export function leftEdge(box: Box, x: number, facing: Facing): number {
   return facing === 1 ? x + box.x : x - box.x - box.width;
 }

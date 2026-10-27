@@ -48,8 +48,13 @@ export const AIR_HIT_LIFT = px(3);
 /** Ticks of input history kept to recognize motions. */
 export const DIRECTION_HISTORY_FRAMES = 16;
 
-/** A motion counts if it was completed this recently, and performed within the history. */
-export const MOTION_END_FRAMES = 4;
+/**
+ * A motion (↓↘→, →↓↘) counts when it is fresh: performed within the last MOTION_SPAN_FRAMES
+ * ticks, its last step entered (not merely held) within the last MOTION_END_FRAMES. A thumb
+ * sliding from the crouch into a walk does not throw a special a moment later.
+ */
+export const MOTION_SPAN_FRAMES = 12;
+export const MOTION_END_FRAMES = 6;
 
 /** A normal can still turn into a throw this long after it started (light + heavy pressed late). */
 export const THROW_CONVERSION_FRAMES = 3;

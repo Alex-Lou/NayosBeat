@@ -1,5 +1,5 @@
 {
-  "description": "The three specials of both fighters, from the button and from the motions: the wave fired and landing, the uppercut beating a jump-in.",
+  "description": "The three specials of both fighters, from the button and from the motions: the Vinyle fired and landing, the uppercut beating a jump-in.",
   "fighters": ["nayo", "riff"],
   "inputs": [
     [90, "", ""],
@@ -43,9 +43,9 @@
     [6, "", "up+left"],
     [15, "", ""],
     [1, "", "heavy"],
-    [2, "", ""],
+    [1, "", ""],
     [1, "down+special", ""],
     [108, "", ""]
   ],
-  "hash": "6b9da314"
+  "hash": "fc7611f2"
 }

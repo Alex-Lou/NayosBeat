@@ -24,7 +24,9 @@ export function isThrowInvincible(move: MoveData, actionFrame: number): boolean 
 /**
  * Ground move for a command, from the direction held and the motion completed when it was
  * pressed (a buffered press keeps what the player meant, even if they let go since).
- * Null for the jump, which is a state of its own and not a move.
+ * Null for the jump, which is a state of its own and not a move. A fresh motion comes first,
+ * for the special button too (docs/combat-v2.md §2.8): ↓↘→ + S ends holding forward, and still
+ * throws the special, not the forward special.
  */
 export function groundMove(
   command: Command,
@@ -35,13 +37,13 @@ export function groundMove(
   if (command === 'grab') return 'grab';
   if (command === 'dash') return 'dashForward';
   if (command === 'backdash') return 'dashBack';
-  if (command === 'special') return specialFromDirection(input, facing);
-  if (command !== 'light' && command !== 'heavy') return null;
+  if (command !== 'light' && command !== 'heavy' && command !== 'special') return null;
 
-  // Classic motions turn a light or heavy press into a special.
+  // Classic motions turn any attack button into a special.
   if (motion === 'dragonPunch') return 'specialAntiAir';
   if (motion === 'quarterCircleForward') return 'special';
 
+  if (command === 'special') return specialFromDirection(input, facing);
   if (has(input, Input.Down)) return command === 'light' ? 'crouchLight' : 'crouchHeavy';
   return command === 'light' ? 'standLight' : 'standHeavy';
 }

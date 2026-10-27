@@ -143,6 +143,26 @@ describe('detectEvents', () => {
     expect(second).toEqual([{ type: 'dash', x: start.fighters[1].x, toward: -1 }]);
   });
 
+  it('tells a low blow, hit or blocked, from the others: it lands at the feet', () => {
+    const hit = (input: number, guard = 0) =>
+      eventsOf(facingOff(30, MIRROR_MATCH), [
+        [input, guard],
+        ...repeat<[number, number]>([0, guard], 20),
+      ]).find((e) => e.type === 'hit' || e.type === 'block');
+    expect(hit(Input.Down | Input.Light)).toMatchObject({ type: 'hit', low: true });
+    expect(hit(Input.Down | Input.Heavy)).toMatchObject({ type: 'hit', low: true });
+    expect(hit(Input.Down | Input.Light, Input.Down | Input.Right)).toMatchObject({
+      type: 'block',
+      low: true,
+    });
+    expect(hit(Input.Light)).toMatchObject({ type: 'hit', low: false });
+  });
+
+  it('tells who starts which move', () => {
+    const attacks = eventsOf(facingOff(200, MIRROR_MATCH), [[0, Input.Heavy], ...idle(5)]);
+    expect(attacks).toEqual([{ type: 'attack', heavy: true, by: 1, move: 'standHeavy' }]);
+  });
+
   it('tells a grab from a strike', () => {
     const grab = eventsOf(facingOff(30, MIRROR_MATCH), [[Input.Grab, 0], ...idle(20)]);
     expect(grab.find((e) => e.type === 'hit')).toMatchObject({ grab: true });
@@ -152,7 +172,7 @@ describe('detectEvents', () => {
 });
 
 describe('vibrationFor', () => {
-  const blow = { x: 0, y: 0, away: 1, by: 1 } as const;
+  const blow = { x: 0, y: 0, away: 1, by: 1, low: false } as const;
 
   it("shakes the phone of a player grabbed, or hit hard, and only that player's", () => {
     const grabbed: FightEvent = { type: 'hit', ...blow, damage: 110, heavy: true, grab: true };

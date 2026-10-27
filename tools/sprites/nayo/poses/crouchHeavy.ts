@@ -122,19 +122,19 @@ const SWING: Pose = leadGuard({
 /** Contact: the leg long along the floor, the foot hooked, the trail sweeping in low. */
 const SWEEP: Pose = leadGuard({
   ...REST,
-  hip: at(2.5, 13),
+  hip: at(4, 12.6),
   torso: 51,
   head: -36,
   shrug: 3.2,
   twist: 0.35,
-  nearFoot: { x: 39.3, y: 6.4, angle: 22 },
+  nearFoot: { x: 42.5, y: 6, angle: 22 },
   farFoot: SPLIT,
   farFist: PALM,
   farHand: 'open',
   bends: { nearKnee: 'up', farKnee: 'down', farElbow: 'back' },
   face: 'effort',
   effects: [
-    smear(6, [4, 7.4], [13, 4.6], [24, 3.9], [34, 4.4], [43, 6.6]),
+    smear(5, [4, 7.4], [13, 4.6], [24, 3.9], [34, 4.4], [43, 6.6]),
     { kind: 'flash', center: at(47.8, 5.5), radius: 4.5, tone: 'strike' },
     dust(43, 4, 0.15),
     dust(PALM.x, 3, 0.4),
@@ -149,11 +149,11 @@ const SWEEP: Pose = leadGuard({
 const HOLD: Pose = leadGuard(
   {
     ...SWEEP,
-    hip: at(2.7, 12.8),
+    hip: at(4.2, 12.4),
     torso: 52,
     head: -37,
     twist: 0.45,
-    nearFoot: { x: 39, y: 6.3, angle: 18 },
+    nearFoot: { x: 42.2, y: 5.9, angle: 18 },
     effects: [dust(44, 5, 0.45), dust(PALM.x, 3, 0.65), dust(-35, 3, 0.7)],
   },
   8.8,

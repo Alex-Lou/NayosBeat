@@ -1,9 +1,9 @@
 import Phaser from 'phaser';
 import type { MatchConfig } from '../core/config';
 import { TICK_RATE } from '../core/constants';
-import { INTRO_FRAMES, MATCH_END_FRAMES, ROUNDS_TO_WIN } from '../core/rules';
-import { matchWinner } from '../core/round';
+import { ROUNDS_TO_WIN } from '../core/rules';
 import type { FighterState, GameState, RoundState } from '../core/state';
+import { announcementOf, comboText, NO_TIMER } from './hud-text';
 import { VIEW_SIZE } from './view';
 
 const MARGIN = 8;
@@ -44,12 +44,14 @@ export class Hud {
   private shownWins: readonly [number, number] = [-1, -1];
   private dummyComboBefore = 0;
   private comboStartHealth = 0;
+  private readonly names: readonly [string, string];
 
   constructor(
     scene: Phaser.Scene,
     private readonly config: MatchConfig,
   ) {
     const { width } = VIEW_SIZE;
+    this.names = [config.fighters[0].name, config.fighters[1].name];
     const leftX = MARGIN;
     const rightX = width - MARGIN - BAR_WIDTH;
 
@@ -84,9 +86,9 @@ export class Hud {
     this.setBar(1, b.health / this.config.fighters[1].maxHealth);
     this.setPips(state.round);
     const seconds = Math.ceil(state.round.timer / TICK_RATE);
-    setTextIfChanged(this.timer, this.config.training ? '--' : String(seconds));
+    setTextIfChanged(this.timer, this.config.training ? NO_TIMER : String(seconds));
     if (this.trainingInfo) this.updateTrainingInfo(this.trainingInfo, b);
-    setTextIfChanged(this.announcer, this.announcement(state.round));
+    setTextIfChanged(this.announcer, announcementOf(state.round, this.names));
   }
 
   /** Keeps the last combo's result on screen until the next one starts. */
@@ -97,32 +99,10 @@ export class Hud {
       this.comboStartHealth = this.dummyHealthBefore;
     }
     if (dummy.comboCount > 0) {
-      const damage = this.comboStartHealth - dummy.health;
-      const hits = dummy.comboCount > 1 ? `${dummy.comboCount} coups` : '1 coup';
-      setTextIfChanged(info, `Combo : ${hits} · ${damage} dégâts`);
+      setTextIfChanged(info, comboText(dummy.comboCount, this.comboStartHealth - dummy.health));
     }
     this.dummyHealthBefore = dummy.health;
     this.dummyComboBefore = dummy.comboCount;
-  }
-
-  private announcement(round: RoundState): string {
-    switch (round.phase) {
-      case 'intro':
-        return round.phaseFrame < INTRO_FRAMES / 2 ? `ROUND ${round.number}` : 'COMBAT !';
-      case 'fight':
-        return '';
-      case 'roundEnd': {
-        const result = round.result;
-        if (!result) return '';
-        if (result.reason === 'timeout') return result.winner === null ? 'EGALITE' : 'TEMPS !';
-        return result.winner === null ? 'DOUBLE K.O.' : 'K.O.';
-      }
-      case 'matchEnd': {
-        // Once the results screen shows, it announces the winner instead.
-        const winner = round.phaseFrame < MATCH_END_FRAMES ? matchWinner(round) : null;
-        return winner === null ? '' : `${this.config.fighters[winner].name} GAGNE`;
-      }
-    }
   }
 
   /** Health drains toward the outer edge of the screen, as in classic fighting games. */

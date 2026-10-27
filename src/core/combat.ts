@@ -195,7 +195,7 @@ export function scaledDamage(damage: number, comboCount: number): number {
  * Grabs only take a grounded fighter that is not reeling, nor just out of a stun (the throw
  * protection), nor in the grab-proof frames of a backdash.
  */
-function canBeGrabbed(fighter: FighterState, template: FighterTemplate): boolean {
+export function canBeGrabbed(fighter: FighterState, template: FighterTemplate): boolean {
   if (fighter.y !== 0 || fighter.throwImmuneFrames > 0) return false;
   if (GRAB_IMMUNE_ACTIONS.has(fighter.action)) return false;
   return !(fighter.move && isThrowInvincible(template.moves[fighter.move], fighter.actionFrame));

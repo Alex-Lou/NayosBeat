@@ -5,6 +5,7 @@ import { updateFighter } from '../../src/core/fighter';
 import { Input } from '../../src/core/input';
 import { detectMotion } from '../../src/core/motion';
 import { moveDuration } from '../../src/core/moves';
+import { MOTION_END_FRAMES, MOTION_SPAN_FRAMES } from '../../src/core/rules';
 import type { GameState } from '../../src/core/state';
 import { NAYO as P } from '../../src/data/fighters/nayo';
 import { RIFF as R } from '../../src/data/fighters/riff';
@@ -53,7 +54,55 @@ describe('detectMotion', () => {
   });
 
   it('ignores a motion finished too long ago', () => {
-    expect(detectMotion([Down, Down | Right, Right, 0, 0, 0, 0, 0], 1)).toBeNull();
+    // §2.7: the last step entered within the last 6 ticks (MOTION_END_FRAMES, was 4 held).
+    const done = [Down, Down | Right, Right];
+    expect(detectMotion([...done, ...repeat(0, MOTION_END_FRAMES - 1)], 1)).toBe(
+      'quarterCircleForward',
+    );
+    expect(detectMotion([...done, ...repeat(0, MOTION_END_FRAMES)], 1)).toBeNull();
+  });
+});
+
+describe('fresh motions (§2.7)', () => {
+  it('counts the last step from when it was entered, not while it is held', () => {
+    const walked = (ticks: number) => [Down, Down | Right, ...repeat(Right, ticks)];
+    expect(detectMotion(walked(MOTION_END_FRAMES), 1)).toBe('quarterCircleForward');
+    expect(detectMotion(walked(MOTION_END_FRAMES + 1), 1)).toBeNull();
+  });
+
+  it('wants the whole motion within 12 ticks', () => {
+    const slow = (ticks: number) => [Down, ...repeat(Down | Right, ticks), Right];
+    // The first step 11 ticks before the last one: 12 ticks in all.
+    expect(detectMotion(slow(MOTION_SPAN_FRAMES - 2), 1)).toBe('quarterCircleForward');
+    expect(detectMotion(slow(MOTION_SPAN_FRAMES - 1), 1)).toBeNull();
+  });
+
+  it('throws the Vinyle on ↓↘→ + S, though forward is held', () => {
+    expect(play([Down, Down | Right, Right | Special]).move).toBe('special');
+    expect(play([Down, Down | Right, Right, Right | Special]).move).toBe('special');
+  });
+
+  it('reads →↓↘ + S as the anti-air', () => {
+    expect(play([Right, Down, Down | Right | Special]).move).toBe('specialAntiAir');
+  });
+
+  it('gives the forward special after crouching then walking forward 13 ticks', () => {
+    const walk = [...repeat(Down, 10), Down | Right, ...repeat(Right, 13)];
+    expect(play([...walk, Right | Special]).move).toBe('specialForward');
+  });
+
+  it('gives a light, not a special, when walking forward out of a low guard', () => {
+    const walk = [...repeat(Down | Left, 10), Down, Down | Right, ...repeat(Right, 10)];
+    expect(play([...walk, Right | Light]).move).toBe('standLight');
+    expect(play([...walk, Right | Heavy]).move).toBe('standHeavy');
+  });
+
+  it('reads the motion through the buffer, as it was when pressed', () => {
+    const busy = play([Heavy]);
+    const motion = [Down, Down | Right, Right | Special, 0, 0];
+    let fighter = play(repeat(0, moveDuration(P.moves.standHeavy) - 4), busy);
+    fighter = play(motion, fighter);
+    expect(fighter.move).toBe('special');
   });
 });
 
@@ -94,7 +143,8 @@ describe('projectiles', () => {
     const fired = script(start, [[Special, 0], ...idle(FIREBALL.startup)]);
     expect(fired.projectiles).toHaveLength(1);
     const later = script(fired, idle(10));
-    expect(later.projectiles[0]?.x).toBe((fired.projectiles[0]?.x ?? 0) + 10 * px(3));
+    // The Vinyle flies at 3.5 px per tick (§10.1).
+    expect(later.projectiles[0]?.x).toBe((fired.projectiles[0]?.x ?? 0) + 10 * px(3.5));
   });
 
   it('hits the opponent and disappears', () => {

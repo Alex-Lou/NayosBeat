@@ -1,4 +1,5 @@
 import type { MatchConfig } from '../core/config';
+import type { MoveId } from '../core/move-data';
 import type { Contact, FighterState, GameState, RoundPhase } from '../core/state';
 
 /**
@@ -13,6 +14,8 @@ interface Impact {
   readonly away: 1 | -1;
   /** The attacker: its effects take its colors. */
   readonly by: 0 | 1;
+  /** A low blow (blocked crouching): it lands at the feet, skimming the floor. */
+  readonly low: boolean;
 }
 
 /** A blow that went through the guard: `grab` when it was one (the victim's pad shakes). */
@@ -24,7 +27,13 @@ export type FightEvent =
   | ({ readonly type: 'hit'; readonly damage: number; readonly heavy: boolean } & Blow)
   | ({ readonly type: 'block' } & Impact)
   | ({ readonly type: 'ko' } & Blow)
-  | { readonly type: 'attack'; readonly heavy: boolean }
+  /** `by` starts `move` (not a dash: see below). */
+  | {
+      readonly type: 'attack';
+      readonly heavy: boolean;
+      readonly by: 0 | 1;
+      readonly move: MoveId;
+    }
   /** A dash sets off from `x` (stage sub-pixels), toward `toward` (1: right). */
   | { readonly type: 'dash'; readonly x: number; readonly toward: 1 | -1 }
   | { readonly type: 'projectile' }
@@ -74,7 +83,8 @@ export function detectEvents(
         const toward = back === (after.facing === 1) ? -1 : 1;
         events.push({ type: 'dash', x: after.x, toward });
       } else {
-        events.push({ type: 'attack', heavy: move.damage >= HEAVY_HIT_DAMAGE });
+        const heavy = move.damage >= HEAVY_HIT_DAMAGE;
+        events.push({ type: 'attack', heavy, by: player, move: after.move });
       }
     }
     if (after.action === 'air' && before.action === 'preJump') events.push({ type: 'jump' });
@@ -100,14 +110,15 @@ function contactOn(contacts: readonly Contact[], defender: 0 | 1): Contact | und
 function contactEvent(contact: Contact, next: GameState, config: MatchConfig): FightEvent {
   const attacker = next.fighters[contact.by];
   const defender = next.fighters[contact.by === 0 ? 1 : 0];
+  const move = config.fighters[contact.by].moves[contact.move];
   const impact: Impact = {
     x: contact.x,
     y: contact.y,
     away: attacker.x >= defender.x ? -1 : 1,
     by: contact.by,
+    low: move.guard === 'low',
   };
   if (contact.kind === 'block') return { type: 'block', ...impact };
-  const move = config.fighters[contact.by].moves[contact.move];
   const grab = move.kind === 'grab';
   if (defender.health === 0) return { type: 'ko', ...impact, grab };
   const heavy = move.damage >= HEAVY_HIT_DAMAGE;

@@ -1,5 +1,5 @@
 import { has, Input, type InputBits } from './input';
-import { MOTION_END_FRAMES } from './rules';
+import { MOTION_END_FRAMES, MOTION_SPAN_FRAMES } from './rules';
 import type { Facing } from './state';
 
 /** Classic special-move motions, relative to the direction the fighter faces. */
@@ -25,28 +25,37 @@ export function detectMotion(history: readonly InputBits[], facing: Facing): Mot
 }
 
 /**
- * Index in the history where the motion was completed, or null. The steps must appear in
- * order (other inputs may come in between) and the last one must have been held during the
- * last `MOTION_END_FRAMES` ticks.
+ * Index in the history where the motion was completed (where its last step was entered), or
+ * null. The steps must appear in order (other inputs may come in between), and the motion must
+ * be fresh (docs/combat-v2.md §2.7): its last step entered, not merely held, within the last
+ * `MOTION_END_FRAMES` ticks, and its first step within the last `MOTION_SPAN_FRAMES`. Crouching,
+ * then walking forward a while before pressing, is a walk, not a quarter circle.
  */
 function completedAt(
   history: readonly InputBits[],
   facing: Facing,
   sequence: readonly Step[],
 ): number | null {
-  let expected = sequence.length - 1;
-  let lastStepIndex: number | null = null;
-  for (let i = history.length - 1; i >= 0; i--) {
-    const bits = history[i];
-    if (bits === undefined || stepOf(bits, facing) !== sequence[expected]) continue;
-    if (lastStepIndex === null) {
-      if (history.length - 1 - i >= MOTION_END_FRAMES) return null;
-      lastStepIndex = i;
-    }
+  const last = history.length - 1;
+  const final = sequence.length - 1;
+  // Back from the present to the last step, then to the tick it was entered on.
+  let entered = last;
+  while (entered >= 0 && stepAt(history, entered, facing) !== sequence[final]) entered--;
+  while (entered > 0 && stepAt(history, entered - 1, facing) === sequence[final]) entered--;
+  if (entered < 0 || last - entered >= MOTION_END_FRAMES) return null;
+
+  let expected = final - 1;
+  for (let i = entered - 1; i >= 0 && last - i < MOTION_SPAN_FRAMES; i--) {
+    if (stepAt(history, i, facing) !== sequence[expected]) continue;
     expected--;
-    if (expected < 0) return lastStepIndex;
+    if (expected < 0) return entered;
   }
   return null;
+}
+
+function stepAt(history: readonly InputBits[], index: number, facing: Facing): Step | null {
+  const bits = history[index];
+  return bits === undefined ? null : stepOf(bits, facing);
 }
 
 function stepOf(bits: InputBits, facing: Facing): Step | null {

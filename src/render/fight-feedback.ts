@@ -3,6 +3,7 @@ import type { Sfx } from '../audio/sfx';
 import { BLEEDS, Blood } from './blood';
 import { Dust } from './dust';
 import { Effects } from './effects';
+import { Graze } from './graze';
 import { vibrationFor, type FightEvent } from './fight-events';
 import { HitFx } from './hit-fx';
 import type { HitStyle } from './hit-styles';
@@ -15,13 +16,16 @@ const KO_SLOW_MOTION_SCALE = 0.35;
 /**
  * Turns fight events into what the player sees, hears and feels: hit effects in the attacker's
  * own style, comic words with the running tally of hits, blood, dust, shake, flash, sounds, and
- * player 1's vibrations (`vibrate`, given only where a device can).
+ * player 1's vibrations (`vibrate`, given only where a device can). A low blow lands at the
+ * feet (docs/combat-v2.md §9.3): a grazing spark skims the floor and dust flies, without blood,
+ * which stays for heavy blows higher up.
  */
 export class FightFeedback {
   private readonly effects: Effects;
   private readonly hitFx: HitFx;
   private readonly blood: Blood;
   private readonly dust: Dust;
+  private readonly graze: Graze;
   private readonly words: Onomatopoeia;
   private slowMotionFrames = 0;
 
@@ -36,6 +40,7 @@ export class FightFeedback {
     this.hitFx = new HitFx(scene, groundY);
     this.blood = new Blood(scene, groundY);
     this.dust = new Dust(scene, groundY);
+    this.graze = new Graze(scene, groundY);
     this.words = new Onomatopoeia(scene, groundY, styles);
   }
 
@@ -57,22 +62,26 @@ export class FightFeedback {
         const style = this.styles[event.by];
         hitFx.play(style, heavy ? 'heavy' : 'light', event.x, event.y, event.away);
         this.words.blow(heavy ? 'heavy' : 'light', event, viewLeft);
+        if (event.low) this.lowBlow(style, event);
         if (heavy) {
           effects.shake(10, 3);
-          this.blood.bleed(event.x, event.y, event.away, BLEEDS.heavyHit);
+          if (!event.low) this.blood.bleed(event.x, event.y, event.away, BLEEDS.heavyHit);
         }
         sfx.play(heavy ? 'heavyHit' : 'lightHit');
         break;
       }
       case 'block':
         hitFx.play(this.styles[event.by], 'block', event.x, event.y, event.away);
+        // A low blow blocked still kicks up the dust it scrapes.
+        if (event.low) this.dust.kick(event.x, event.away);
         sfx.play('block');
         break;
       case 'ko': {
         const style = this.styles[event.by];
         hitFx.play(style, 'ko', event.x, event.y, event.away);
         this.words.blow('ko', event, viewLeft);
-        this.blood.bleed(event.x, event.y, event.away, BLEEDS.ko);
+        if (event.low) this.lowBlow(style, event);
+        else this.blood.bleed(event.x, event.y, event.away, BLEEDS.ko);
         // The final blow shakes the screen hard, then dies out over about 0.7 s.
         effects.shake(42, 6);
         // The final flash takes the winner's color, a light tint of it on the whole screen.
@@ -107,6 +116,12 @@ export class FightFeedback {
     }
   }
 
+  /** A blow landed at the feet: the spark skims the floor, the dust flies. */
+  private lowBlow(style: HitStyle, event: { x: number; y: number; away: 1 | -1 }): void {
+    this.graze.play(style, event.x, event.y, event.away);
+    this.dust.kick(event.x, event.away);
+  }
+
   /** How fast game time runs (slower right after a KO). */
   timeScale(): number {
     return this.slowMotionFrames > 0 ? KO_SLOW_MOTION_SCALE : 1;
@@ -122,6 +137,7 @@ export class FightFeedback {
       this.hitFx.update();
       this.blood.update();
       this.dust.update();
+      this.graze.update();
       this.words.update();
     }
     this.slowMotionFrames = Math.max(0, this.slowMotionFrames - frames);

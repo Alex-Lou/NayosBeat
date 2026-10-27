@@ -1,0 +1,85 @@
+import { describe, expect, it } from 'vitest';
+import type { RoundState } from '../../src/core/state';
+import { ROSTER } from '../../src/data/roster';
+import { announcementOf, comboText, NO_TIMER } from '../../src/render/hud-text';
+import { wordFor, type BlowKind } from '../../src/render/onomatopoeia';
+import { glyphsOf } from './font-glyphs';
+
+/**
+ * Canvas text is drawn once, in its font, without a fallback that would show (docs/combat-v2.md
+ * §7.9): every string the HUD can write uses only letters Press Start 2P has, and no capital
+ * accented one (its 8 px cell leaves no room above the capital: the accent is lost), every
+ * comic word only letters Bangers has. The subsets the game loads (main.ts), read from their
+ * files.
+ */
+
+const FONTS = new URL('../../node_modules/@fontsource/', import.meta.url);
+const PIXEL = new URL('press-start-2p/files/press-start-2p-latin-400-normal.woff', FONTS);
+const COMIC = new URL('bangers/files/bangers-latin-400-normal.woff', FONTS);
+
+function missing(glyphs: ReadonlySet<number>, texts: readonly string[]): string[] {
+  return texts.filter((text) =>
+    Array.from(text).some((char) => !glyphs.has(char.codePointAt(0) ?? 0)),
+  );
+}
+
+/** Capital letters with an accent, "É" and the like: written "E" on the HUD ("EGALITE"). */
+const CAPITAL_ACCENTED = /[\u00c0-\u00d6\u00d8-\u00de\u0152]/u;
+
+const round = (overrides: Partial<RoundState>): RoundState => ({
+  number: 1,
+  wins: [0, 0],
+  timer: 0,
+  phase: 'fight',
+  phaseFrame: 0,
+  result: null,
+  ...overrides,
+});
+
+/** Every string the HUD and the training captions can show. */
+function hudTexts(): string[] {
+  const names = [ROSTER[0]?.template.name ?? '', ROSTER[1]?.template.name ?? ''] as const;
+  const rounds: RoundState[] = [
+    round({ phase: 'intro', number: 3 }),
+    round({ phase: 'intro', phaseFrame: 80 }),
+    ...([0, 1, null] as const).flatMap((winner) =>
+      (['ko', 'timeout'] as const).map((reason) =>
+        round({ phase: 'roundEnd', result: { winner, reason } }),
+      ),
+    ),
+    round({ phase: 'matchEnd', wins: [2, 0], result: { winner: 0, reason: 'ko' } }),
+    round({ phase: 'matchEnd', wins: [1, 2], result: { winner: 1, reason: 'ko' } }),
+  ];
+  return [
+    ...rounds.map((state) => announcementOf(state, names)),
+    NO_TIMER,
+    '0123456789',
+    comboText(1, 30),
+    comboText(12, 345),
+    ...ROSTER.flatMap(({ template }) => [
+      template.name,
+      ...Object.values(template.moves).map((move) => move.name),
+    ]),
+  ];
+}
+
+describe('glyphs', () => {
+  it('of every HUD string and move name are in the pixel font', async () => {
+    const texts = hudTexts();
+    expect(texts).toContain('EGALITE');
+    expect(missing(await glyphsOf(PIXEL), texts)).toEqual([]);
+  });
+
+  it('of the HUD have no capital accented letter', () => {
+    expect(hudTexts().filter((text) => CAPITAL_ACCENTED.test(text))).toEqual([]);
+    expect(CAPITAL_ACCENTED.test('ÉGALITÉ')).toBe(true);
+  });
+
+  it('of every comic word, and its tally, are in the comic font', async () => {
+    const kinds: BlowKind[] = ['light', 'heavy', 'ko'];
+    const words = kinds.flatMap((kind) =>
+      Array.from({ length: 8 }, (_, count) => `${wordFor(kind, count + 1)} !`),
+    );
+    expect(missing(await glyphsOf(COMIC), [...words, 'x0123456789'])).toEqual([]);
+  });
+});

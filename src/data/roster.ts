@@ -7,7 +7,7 @@ export type FighterId = 'nayo' | 'riff';
 export interface RosterEntry {
   readonly id: FighterId;
   readonly template: FighterTemplate;
-  /** One-line summary shown on the character select screen. */
+  /** One-line summary shown on the character select screen (docs/combat-v2.md §17.3). */
   readonly description: string;
 }
 
@@ -15,12 +15,13 @@ export const ROSTER: readonly RosterEntry[] = [
   {
     id: 'nayo',
     template: NAYO,
-    description: 'Boxeur-DJ · portée · onde sonore · uppercut',
+    description: 'Boxeur-DJ posé · portée · Vinyle · Uppercut invincible',
   },
   {
     id: 'riff',
     template: RIFF,
-    description: 'B-girl rapide et agressive · ruée · moins de vie',
+    // The punk of Zen-Tazzer: her moves change with combat v2 (phase 3), not her attitude.
+    description: 'Punk de rue qui breake et cogne · vitesse · dash · moins de vie',
   },
 ];
 

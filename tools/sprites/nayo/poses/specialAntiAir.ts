@@ -228,7 +228,7 @@ export const POSES: readonly Pose[] = [
     effects: [
       // The fist's path from the hip up the front of the body (behind the body, so only what
       // sticks out of the silhouette shows).
-      smear(5, [-3, 31], [6, 44], [13, 62], [16, 78], [15.5, 88]),
+      smear(4, [7, 50], [11, 64], [13, 77], [13.5, 88]),
       column(0, 82, 10, 0.2),
       floorRing(0.45),
       dust(6, 3.6, 0.5),
@@ -239,7 +239,7 @@ export const POSES: readonly Pose[] = [
   {
     ...PEAK,
     effects: [
-      smear(6, [0, 37], [9, 52], [15, 70], [15, 85], [12, 93]),
+      smear(4, [8, 56], [11, 70], [11.5, 84], [11, 93]),
       column(0, 98, 11, 0.45),
       // The shockwave fades out whole, a little tighter, before it can break into hooks.
       floorRing(0.7, 22, 2),
