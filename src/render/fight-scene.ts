@@ -186,7 +186,7 @@ export class FightScene extends Phaser.Scene {
       hud: new Hud(this, this.config),
       holdRing: new HoldRing(this, GROUND_Y, [this.styles[0].energy, this.styles[1].energy]),
       caption: this.config.training ? new MoveCaption(this, this.config, GROUND_Y) : undefined,
-      holdPrompt: this.config.training ? new HoldPrompt(this, GROUND_Y) : undefined,
+      holdPrompt: this.config.training ? new HoldPrompt(this, this.config, GROUND_Y) : undefined,
       debugOverlay: debug ? new DebugOverlay(document.body) : undefined,
       boxOverlay: debug ? new BoxOverlay(this, this.config, GROUND_Y) : undefined,
     };

@@ -1,20 +1,26 @@
 import type Phaser from 'phaser';
+import type { MatchConfig } from '../core/config';
 import { toPx } from '../core/constants';
 import type { GameState } from '../core/state';
 import { MAX_CLOSE_UP } from './camera-framing';
 import { DEPTH } from './depth';
 import { PIXEL_FONT } from './hud';
+import { pendingHold } from './hold-ring';
 import { HOLD_PROMPT } from './hud-text';
 import { VIEW_SIZE } from './view';
 
 const ARROW_AT = HOLD_PROMPT.indexOf('   ') + 1;
-/** Under the holder's feet, on the floor, in world pixels. */
-const BELOW = 6;
+/**
+ * Above the holder's head, over its move's name (move-caption.ts), in world pixels: the floor
+ * keeps the training line and, on a phone, the thumbs' buttons.
+ */
+const OVER_HEAD = 24;
 const MARGIN = 4;
 
 /**
- * Training only: while a hold lasts, the reminder under the holder, kept inside the view; its
- * arrow points to the holder's back. Two texts written once, then only moved and shown.
+ * Training only: while a hold waits on the holder's choice, the reminder over the holder, kept
+ * inside the view; its arrow points to the holder's back. Two texts written once, then only
+ * moved and shown.
  */
 export class HoldPrompt {
   private readonly text: Phaser.GameObjects.Text;
@@ -22,6 +28,7 @@ export class HoldPrompt {
 
   constructor(
     scene: Phaser.Scene,
+    private readonly config: MatchConfig,
     private readonly groundY: number,
   ) {
     // Drawn at the fight camera's finest zoom, so the pixel font stays sharp.
@@ -44,7 +51,7 @@ export class HoldPrompt {
   }
 
   update(state: GameState): void {
-    const { hold } = state;
+    const hold = pendingHold(state);
     if (!hold) {
       if (this.text.visible) {
         this.text.setVisible(false);
@@ -60,7 +67,8 @@ export class HoldPrompt {
       Math.max(centered, viewLeft + MARGIN),
       viewLeft + VIEW_SIZE.width - MARGIN - width,
     );
-    const top = this.groundY + BELOW;
+    const head = toPx(holder.y + this.config.fighters[hold.holder].standingPushbox.height);
+    const top = Math.round(this.groundY - head - OVER_HEAD - height);
     // A fixed-width font: the arrow sits on its own character.
     const cell = width / HOLD_PROMPT.length;
     this.text.setPosition(Math.round(left), top).setVisible(true);

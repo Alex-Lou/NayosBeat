@@ -110,6 +110,25 @@ describe('the clinch (§4.2.6)', () => {
     expect(choiceOf(grabbed(), Light, 0, input)).toBe('pummel');
   });
 
+  it('keeps a choice pressed early in a knee, played when the knee ends', () => {
+    let knee = step(atHoldTick(grabbed(), 12), [Light, 0], NAYO_MIRROR);
+    expect(knee.fighters[0].move).toBe('pummel');
+    knee = step(step(knee, [0, 0], NAYO_MIRROR), [0, 0], NAYO_MIRROR);
+    for (const [press, next] of [
+      [Light, 'pummel'],
+      [Left | Heavy, 'throwBack'],
+    ] as const) {
+      let state = step(knee, [press, 0], NAYO_MIRROR);
+      for (let tick = 0; tick < 40 && state.fighters[0].move === 'pummel'; tick++) {
+        state = step(state, [0, 0], NAYO_MIRROR);
+      }
+      for (let tick = 0; tick < 3 && state.fighters[0].move === null; tick++) {
+        state = step(state, [0, 0], NAYO_MIRROR);
+      }
+      expect(state.fighters[0].move, `after ${next}`).toBe(next);
+    }
+  });
+
   it('plays the last real choice: L, then H, throws forward', () => {
     expect(choiceOf(atHoldTick(grabbed(), 3), Light, 0, Heavy)).toBe('throwForward');
   });

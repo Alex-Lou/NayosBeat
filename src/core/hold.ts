@@ -122,7 +122,8 @@ export function startHold(
 }
 
 /**
- * One tick of the hold, in order: inputs (the holder's choice is kept through the clinch), the
+ * One tick of the hold, in order: inputs (the holder's choice is kept through the clinch and a
+ * pummel), the
  * break at the round's end, the tech in the clinch, the struggle, the holder's move and the
  * held fighter's loop, the placement (the throw backward switches sides), then what lands: a
  * pummel, or the release of a throw, which ends the hold.
@@ -138,7 +139,11 @@ export function updateHold(
   const before = state.fighters[heldIndex];
   const t = hold.frame;
   const clinch = t < GRAB_TECH_FRAMES;
-  const read = readFighter(state.fighters[hold.holder], inputs[hold.holder], !clinch, before.x);
+  // The holder's choice waits through the clinch and through a move under way: L or ← + H
+  // pressed early in a knee plays when the knee ends, not lost to the buffer's 6 ticks.
+  const holderBefore = state.fighters[hold.holder];
+  const waits = clinch || holderBefore.move !== null;
+  const read = readFighter(holderBefore, inputs[hold.holder], !waits, before.x);
   const victim = readInput(before, inputs[heldIndex], true, read.x);
 
   // Time out: the hold breaks like a tech, without damage (§4.2).

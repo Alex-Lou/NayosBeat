@@ -2,7 +2,7 @@ import type Phaser from 'phaser';
 import { toPx } from '../core/constants';
 import { GRAB_TECH_FRAMES, HOLD_LIMIT_FRAMES } from '../core/rules';
 import { sideOf } from '../core/side';
-import type { GameState } from '../core/state';
+import type { GameState, HoldState } from '../core/state';
 import { DEPTH } from './depth';
 
 /** Around the held fighter's body, in world pixels: its center this high above the feet. */
@@ -23,6 +23,18 @@ const POP_TICKS = 6;
  * the same on both sides of the stage.
  */
 const TOP = -90;
+
+/**
+ * The hold while it waits on the holder (the ring's time, the training reminder): once a throw
+ * is under way the choice is made, and the held fighter is drawn on the move, away from where
+ * the ring would circle.
+ */
+export function pendingHold(state: GameState): HoldState | null {
+  const { hold } = state;
+  if (!hold) return null;
+  const { move } = state.fighters[hold.holder];
+  return move === 'throwForward' || move === 'throwBack' ? null : hold;
+}
 
 /**
  * The ring of a hold (docs/combat-v2.md §4.5), behind the pair, around the held fighter: in the
@@ -57,7 +69,7 @@ export class HoldRing {
   }
 
   update(state: GameState): void {
-    const { hold } = state;
+    const hold = pendingHold(state);
     if (!hold) {
       if (this.ring.visible) this.hide();
       return;

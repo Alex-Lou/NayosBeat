@@ -2,8 +2,10 @@ import type Phaser from 'phaser';
 import { describe, expect, it } from 'vitest';
 import { HOLD_LIMIT_FRAMES } from '../../src/core/rules';
 import type { GameState } from '../../src/core/state';
-import { HoldRing } from '../../src/render/hold-ring';
-import { atHoldTick, grabbed } from '../core/hold-helpers';
+import { HoldRing, pendingHold } from '../../src/render/hold-ring';
+import { Input } from '../../src/core/input';
+import { step } from '../../src/core/step';
+import { atHoldTick, grabbed, NAYO_MIRROR } from '../core/hold-helpers';
 
 /** An engine arc standing in for the real one: it records how it was last drawn. */
 class FakeArc {
@@ -81,5 +83,21 @@ describe('the hold ring (docs/combat-v2.md §4.5)', () => {
     const left = ringOn();
     left.ring.update(heldOnTheLeft(halfway));
     expect(left.arcs[1]).toMatchObject({ endAngle: -90 - 180, anticlockwise: true });
+  });
+
+  it('goes once a throw is under way, the choice made: it would circle empty space', () => {
+    const at12 = atHoldTick(grabbed(), 12);
+    expect(pendingHold(at12)).not.toBeNull();
+    const knee = step(at12, [Input.Light, 0], NAYO_MIRROR);
+    expect(pendingHold(knee)).not.toBeNull();
+    const throwing = step(at12, [Input.Left | Input.Heavy, 0], NAYO_MIRROR);
+    expect(throwing.fighters[0].move).toBe('throwBack');
+    expect(throwing.hold).not.toBeNull();
+    expect(pendingHold(throwing)).toBeNull();
+
+    const { ring, arcs } = ringOn();
+    ring.update(at12);
+    ring.update(throwing);
+    expect(arcs.map((arc) => arc.visible)).toEqual([false, false]);
   });
 });
