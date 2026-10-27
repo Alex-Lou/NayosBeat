@@ -4,7 +4,7 @@ import { moveDuration } from '../../src/core/moves';
 import { validateTemplate } from '../../src/core/validate';
 import { NAYO } from '../../src/data/fighters/nayo';
 import { RIFF } from '../../src/data/fighters/riff';
-import { advance, box, dash } from '../../src/data/fighters/shared';
+import { advance, box, dash, glide, leapArc } from '../../src/data/fighters/shared';
 
 describe('fighter authoring helpers', () => {
   it('writes boxes in pixels, stored in sub-pixels', () => {
@@ -38,6 +38,32 @@ describe('fighter authoring helpers', () => {
     expect(move).toMatchObject({ kind: 'movement', startup: 1, active: 3, recovery: 2, damage: 0 });
     expect(move.motion?.dx).toEqual([0, -500, -300, -100, 0, 0]);
     expect(move.hitbox).toBeUndefined();
+  });
+
+  it("draws the Saut de l'ange's leap as §10.2 lists it, frame by frame", () => {
+    const heights = leapArc(34, { from: 3, to: 20, apexPx: 34 });
+    expect(heights).toHaveLength(34);
+    // Pinned to the sub-pixel: a replay (and the future rollback) needs the same data everywhere.
+    const leap = heights.slice(3, 20);
+    expect(leap).toEqual([
+      590, 1163, 1700, 2185, 2605, 2944, 3195, 3348, 3400, 3348, 3195, 2944, 2605, 2185, 1700, 1163,
+      590,
+    ]);
+    // The spec's heights (f3 → f19), rounded to a tenth of a pixel from the exact sine.
+    const spec = [5.9, 11.6, 17, 21.9, 26.1, 29.4, 31.9, 33.5, 34];
+    [...spec, ...spec.slice(0, -1).reverse()].forEach((heightPx, i) => {
+      expect(Math.abs((leap[i] ?? 0) - px(heightPx)), `f${i + 3}`).toBeLessThanOrEqual(5);
+    });
+    expect([...heights.slice(0, 3), ...heights.slice(20)].every((y) => y === 0)).toBe(true);
+  });
+
+  it('eases the Glissade as §10.2 lists it, 64 px to the sub-pixel', () => {
+    const { dx } = glide(34, { from: 1, to: 18, distancePx: 64 });
+    expect(dx.slice(1, 18).map((step) => step / 100)).toEqual([
+      7.31, 6.86, 6.43, 5.97, 5.54, 5.09, 4.65, 4.21, 3.77, 3.32, 2.88, 2.43, 2, 1.55, 1.1, 0.67,
+      0.22,
+    ]);
+    expect(dx.reduce((total, step) => total + step, 0)).toBe(px(64));
   });
 
   it('rejects a posture without hurtboxes', () => {

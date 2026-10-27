@@ -301,6 +301,8 @@ Le backdash fait rater une prise (c'est la défense contre la Prise) mais perd c
 | Nayo | 28 × 80 | 32 × 50 | 24 × 44, de 30 à 74 px au-dessus des pieds | 28 × 20 |
 | Riff | 26 × 74 | 30 × 46 | 22 × 40, de 26 à 66 px | 26 × 20 |
 
+La pushbox aérienne est celle des sauts. Un coup au sol qui quitte le sol (le Saut de l'ange, §5.5) garde sa pushbox debout, portée à sa hauteur : il pousse l'adversaire accroupi qu'il vise au lieu de s'enfoncer en lui puis d'en être chassé d'un bloc à l'impact.
+
 Au relevé, la pushbox debout revient ; si le sauteur la chevauche encore, la séparation se fait selon x : de vrais cross-ups ambigus au réveil.
 
 **Cross-ups simulés** (saut avant, adversaire immobile, loin des murs ; « derrière » = le sauteur finit de l'autre côté) :

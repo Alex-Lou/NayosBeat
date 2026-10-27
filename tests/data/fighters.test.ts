@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import type { FighterTemplate } from '../../src/core/config';
+import type { MoveData, MoveId } from '../../src/core/move-data';
 import { px } from '../../src/core/constants';
 import { assertValidMatch, validateStage, validateTemplate } from '../../src/core/validate';
 import { TRAINING_STAGE } from '../../src/data/stages';
 import { MATCH } from '../core/helpers';
 import { NAYO } from '../../src/data/fighters/nayo';
 import { RIFF } from '../../src/data/fighters/riff';
+import { box } from '../../src/data/fighters/shared';
 
 /** A jump attack firing the fireball: valid types, invalid data. */
 function withProjectileOnJumpLight(): FighterTemplate {
@@ -19,6 +21,25 @@ function withProjectileOnJumpLight(): FighterTemplate {
     ...NAYO,
     moves: { ...NAYO.moves, jumpLight: { ...jumpLight, pushback, guard, projectile } },
   };
+}
+
+/** `template` with `id` changed by `change`. */
+function withMove(
+  template: FighterTemplate,
+  id: MoveId,
+  change: (move: MoveData) => Partial<MoveData>,
+): FighterTemplate {
+  const move = template.moves[id];
+  if (!move) throw new Error(`${template.name} has no ${id}`);
+  return { ...template, moves: { ...template.moves, [id]: { ...move, ...change(move) } } };
+}
+
+/** Riff's Saut de l'ange with its heights changed by `change`. */
+function withLeap(change: (heights: number[]) => number[]): FighterTemplate {
+  return withMove(RIFF, 'specialForward', ({ motion }) => {
+    if (!motion?.y) throw new Error("The Saut de l'ange must leave the ground");
+    return { motion: { ...motion, y: change([...motion.y]) } };
+  });
 }
 
 describe('fighter templates', () => {
@@ -71,6 +92,54 @@ describe('fighter templates', () => {
     ];
     for (const [label, template] of cases) {
       expect(validateTemplate(template), label).not.toEqual([]);
+    }
+  });
+
+  it('rejects moves v2 data the simulation cannot handle, each by its own rule', () => {
+    const slide = box(-20, 0, 40, 26);
+    const cases: [string, FighterTemplate, RegExp][] = [
+      ['leap one frame short', withLeap((y) => y.slice(1)), /specialForward\.motion\.y must have/],
+      ['leap below the floor', withLeap((y) => y.map((h) => -h)), /specialForward\.motion\.y must/],
+      ['leap a fractional height', withLeap((y) => y.map((h) => h + 0.5)), /motion\.y must have/],
+      [
+        'leap ending in the air',
+        withLeap((y) => [...y.slice(0, -1), px(1)]),
+        /specialForward\.motion\.y must be back on the ground/,
+      ],
+      [
+        'slide body past the move',
+        withMove(RIFF, 'special', () => ({
+          hurtboxes: [{ frames: { from: 2, to: 99 }, boxes: [slide] }],
+        })),
+        /special\.hurtboxes must fit within the move/,
+      ],
+      [
+        'slide without a body',
+        withMove(RIFF, 'special', () => ({
+          hurtboxes: [{ frames: { from: 2, to: 21 }, boxes: [] }],
+        })),
+        /special\.hurtboxes must have one or 2 valid boxes/,
+      ],
+      [
+        'slide with three boxes',
+        withMove(RIFF, 'special', () => ({
+          hurtboxes: [{ frames: { from: 2, to: 21 }, boxes: [slide, slide, slide] }],
+        })),
+        /special\.hurtboxes must have one or 2 valid boxes/,
+      ],
+      [
+        'special chaining',
+        withMove(NAYO, 'special', () => ({ chain: 'chainLight' })),
+        /special: only a normal chains/,
+      ],
+      [
+        'direction move as a special',
+        withMove(NAYO, 'forwardLight', () => ({ kind: 'special' })),
+        /forwardLight: the direction normals and the chain are normals/,
+      ],
+    ];
+    for (const [label, template, rule] of cases) {
+      expect(validateTemplate(template).join('\n'), label).toMatch(rule);
     }
   });
 

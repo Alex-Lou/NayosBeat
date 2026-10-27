@@ -103,6 +103,21 @@ describe("Saut de l'ange (§5.5)", () => {
     expect(contactsBy(states, 1)).toEqual([]);
   });
 
+  it('keeps her body against a crouching guard: pushes it, never sinks in then pops out', () => {
+    const motion = RIFF.moves.specialForward.motion;
+    if (!motion) throw new Error("The Saut de l'ange must move");
+    const stride = Math.max(...motion.dx.map(Math.abs));
+    for (const distance of [28, 35, 45, 50]) {
+      const states = exchange(distance, () => Left | Down, leap, 40);
+      const impact = states.findIndex((state) => state.contacts.some((c) => c.by === 1));
+      // The overhead still lands on its first active frame.
+      expect(states[impact]?.fighters[1].actionFrame, `${distance} px`).toBe(16);
+      const gaps = states.slice(0, impact + 1).map((s) => s.fighters[1].x - s.fighters[0].x);
+      const jumps = gaps.slice(1).map((gap, tick) => Math.abs(gap - (gaps[tick] ?? gap)));
+      expect(Math.max(...jumps), `${distance} px`).toBeLessThanOrEqual(stride);
+    }
+  });
+
   it('cannot be grabbed while in the air', () => {
     const states = exchange(200, () => 0, leap);
     states.slice(3, 20).forEach((state, frame) => {

@@ -1,14 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import type { MatchConfig } from '../../src/core/config';
-import { Input, type InputBits } from '../../src/core/input';
-import type { GameState } from '../../src/core/state';
+import { DIRECTIONS, Input, type InputBits } from '../../src/core/input';
+import { moveDuration } from '../../src/core/moves';
+import type { Contact, GameState } from '../../src/core/state';
+import { NAYO } from '../../src/data/fighters/nayo';
 import { RIFF } from '../../src/data/fighters/riff';
 import { TRAINING_STAGE } from '../../src/data/stages';
 import { expectMirrored, MIRROR_MATCH, type TickInputs } from './helpers';
 
-const { Up, Down, Left, Right, Light, Heavy, Grab, Dash } = Input;
+const { Up, Down, Left, Right, Light, Heavy, Special, Grab, Dash } = Input;
 
 const RIFF_MIRROR: MatchConfig = { stage: TRAINING_STAGE, fighters: [RIFF, RIFF] };
+const NAYO_VS_RIFF: MatchConfig = { stage: TRAINING_STAGE, fighters: [NAYO, RIFF] };
+const RIFF_VS_NAYO: MatchConfig = { stage: TRAINING_STAGE, fighters: [RIFF, NAYO] };
 
 /** `ticks` ticks of inputs, each pair given by `inputs(tick)`. */
 function script(ticks: number, inputs: (tick: number) => TickInputs): TickInputs[] {
@@ -18,6 +22,20 @@ function script(ticks: number, inputs: (tick: number) => TickInputs): TickInputs
 /** `button` pressed on the ticks listed, nothing otherwise. */
 function on(ticks: readonly number[], button: InputBits, tick: number): InputBits {
   return ticks.includes(tick) ? button : 0;
+}
+
+/**
+ * `input` pressed again every other tick from `from` (its direction held between), the way a
+ * player keeps a combo going; nothing before.
+ */
+function mash(input: InputBits, from: number, tick: number): InputBits {
+  if (tick < from) return 0;
+  return (tick - from) % 2 === 0 ? input : input & DIRECTIONS;
+}
+
+/** Every contact player `by` made. */
+function contactsBy(states: readonly GameState[], by: 0 | 1): Contact[] {
+  return states.flatMap((state) => state.contacts.filter((contact) => contact.by === by));
 }
 
 /** Whether player `player` performed `move` at some point. */
@@ -102,5 +120,90 @@ describe('P1/P2 symmetry of the movement v2 (§14.7)', () => {
     );
     expect(performed(states, 0, 'grab')).toBe(true);
     expect(states.at(-1)?.fighters[1].health).toBe(MIRROR_MATCH.fighters[1].maxHealth);
+  });
+});
+
+/**
+ * Each new mechanic of the moves v2 (docs/combat-v2.md §7, §5.5), played as written and in a
+ * mirror (§14.7): the direction moves read the side faced, the moves' own hurtboxes and the
+ * leap's height are placed by it, the juggle, the chip and the reactions land the same.
+ */
+describe('P1/P2 symmetry of the moves v2 (§14.7)', () => {
+  it('L, L, L: the chain into its finisher', () => {
+    const states = expectMirrored(
+      script(60, (tick) => [tick < 30 ? mash(Light, 0, tick) : 0, 0]),
+      MIRROR_MATCH,
+      30,
+    );
+    expect(performed(states, 0, 'lightFinisher')).toBe(true);
+  });
+
+  it('← + H launches, the Uppercut juggles', () => {
+    const states = expectMirrored(
+      script(90, (tick) => [tick === 0 ? Left | Heavy : mash(Down | Special, 1, tick), 0]),
+      NAYO_VS_RIFF,
+      30,
+    );
+    expect(states.some((state) => state.fighters[1].juggle > 0)).toBe(true);
+    expect(contactsBy(states, 0).map((contact) => contact.move)).toEqual([
+      'backHeavy',
+      'specialAntiAir',
+    ]);
+  });
+
+  it('Glissade: under the Vinyle along her low body, then a PUNITION that trips', () => {
+    const states = expectMirrored(
+      script(80, (tick) => [on([0], Special, tick), on([12], Special, tick)]),
+      NAYO_VS_RIFF,
+      110,
+    );
+    expect(contactsBy(states, 0)).toEqual([]);
+    expect(contactsBy(states, 1)).toMatchObject([{ move: 'special', counter: 'punish' }]);
+    expect(states.some((state) => state.fighters[0].reaction === 'trip')).toBe(true);
+  });
+
+  it("Saut de l'ange: over the Balayage, then onto Nayo recovering", () => {
+    const states = expectMirrored(
+      script(80, (tick) => [on([4], Down | Heavy, tick), on([0], Left | Special, tick)]),
+      NAYO_VS_RIFF,
+      60,
+    );
+    expect(contactsBy(states, 0)).toEqual([]);
+    expect(contactsBy(states, 1)).toMatchObject([{ move: 'specialForward', kind: 'hit' }]);
+  });
+
+  it('Genou montant: invincible to a jump-in', () => {
+    const states = expectMirrored(
+      script(70, (tick) => [
+        on([16], Down | Special, tick),
+        tick < 6 ? Up | Left : on([10], Heavy, tick),
+      ]),
+      RIFF_MIRROR,
+      80,
+    );
+    expect(contactsBy(states, 0)).toMatchObject([{ move: 'specialAntiAir', counter: 'counter' }]);
+    expect(contactsBy(states, 1)).toEqual([]);
+  });
+
+  it('chip: a blocked Pied fendu takes 11', () => {
+    const states = expectMirrored(
+      script(60, (tick) => [on([0], Right | Special, tick), Right]),
+      NAYO_VS_RIFF,
+      50,
+    );
+    expect(contactsBy(states, 0)).toMatchObject([{ kind: 'block', damage: 11 }]);
+  });
+
+  it('a light never cancels into a normal that steps in: ↓L, then → + L waits', () => {
+    const states = expectMirrored(
+      script(60, (tick) => [tick === 0 ? Down | Light : mash(Right | Light, 1, tick), 0]),
+      RIFF_VS_NAYO,
+      36,
+    );
+    const toprock = states.findIndex((state) => state.fighters[0].move === 'forwardLight');
+    expect(states[toprock - 1]?.fighters[0]).toMatchObject({
+      move: 'crouchLight',
+      actionFrame: moveDuration(RIFF.moves.crouchLight) - 1,
+    });
   });
 });
