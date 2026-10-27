@@ -36,7 +36,7 @@ npm run dev        # serveur local, accessible aussi depuis un téléphone sur l
 | Coup léger | J | Pavé 1 ou `.` | X / □ | Bouton L |
 | Coup lourd | K | Pavé 2 ou `/` | Y / △ | Bouton H |
 | Spécial | L | Pavé 3 ou `'` | B / ○ | Bouton S |
-| Prise | J + K | Léger + lourd | X + Y ou RB / R1 | Bouton CHOPE |
+| Prise | J + K | Léger + lourd | X + Y ou RB / R1 | Bouton PRISE |
 | Garde | Maintenir arrière (accroupi pour les coups bas) | | | |
 
 Les manettes sont attribuées dans l'ordre de connexion (1re → joueur 1, 2e → joueur 2).
@@ -47,22 +47,24 @@ Les touches de P2 suivent la position physique : `.` et `/` sont les deux touche
 
 | Coup | Simplifié | Classique |
 |---|---|---|
-| Spécial neutre (Nayo : onde sonore, Riff : ruée) | S | ↓ ↘ → + L ou H |
-| Spécial avant (coup de pied fendu / saut de l'ange) | → + S | — |
-| Anti-air invincible (uppercut / genou montant) | ↓ + S | → ↓ ↘ + L ou H |
+| Spécial neutre (Nayo : Vinyle, Riff : Ruée) | S | ↓ ↘ → + L, H ou S |
+| Spécial avant (Pied fendu / Saut de l'ange) | → + S | — |
+| Anti-air invincible (Uppercut / Genou montant) | ↓ + S | → ↓ ↘ + L, H ou S |
+
+Une manip compte si elle est fraîche : faite en 12 tics au plus, sa dernière direction prise dans les 6 derniers tics (s'accroupir puis marcher avant un moment, puis S, donne le spécial avant). L'écran « Commandes » a une page « Les bases » et une page par personnage, avec chaque coup ; en entraînement, le nom du coup s'affiche au-dessus du personnage.
 
 Les coups légers s'enchaînent sur un autre coup ou un spécial quand ils touchent (ou sont parés), les coups lourds sur un spécial. Les dégâts baissent de 10 % par coup du combo (50 % minimum).
 
-Ajouter `?debug` à l'URL affiche l'overlay de debug et les hurtbox (toujours actif en dev).
+Ajouter `?debug` à l'URL affiche l'overlay de debug et toutes les boîtes (toujours actif en dev) : pushbox en bleu, hurtbox en vert (blanches pendant une invincibilité, jaunes quand les prises ratent), hitbox actives en rouge.
 
-Nayo est dessiné (sprites générés par `npm run sprites`, provisoires en attendant les planches définitives) ; Riff reste en boîte grise jusqu'à ses propres sprites. Dans un match miroir, le joueur 2 porte la seconde tenue (techwear gris clair, néon magenta).
+Nayo est dessiné (sprites générés par `npm run sprites`, provisoires en attendant les planches définitives) ; ses hurtbox sont calées sur le dessin (`npm run measure-boxes`). Riff reste en boîte grise jusqu'à ses propres sprites : la boîte dessine exactement sa hurtbox, avec un « pied » du côté où elle regarde. Dans un match miroir, le joueur 2 porte la seconde tenue (techwear gris clair, néon magenta).
 
 ## Combat
 
-- Univers **Sound Clash** : **Nayo**, boxeur-DJ (polyvalent : portée, 1000 PV) et **Riff**, b-girl (rushdown : vitesse, 900 PV).
+- Univers **Sound Clash** : **Nayo**, boxeur-DJ (polyvalent : portée, 1000 PV) et **Riff**, punk de rue qui breake et cogne (rushdown : vitesse, 900 PV).
 - 10 coups chacun (6 normaux, 3 spéciaux, 1 prise), décrits comme données dans `src/data/fighters/` (un fichier par personnage, les aides communes dans `shared.ts`).
 - Coups bas à parer accroupi, coups sautés à parer debout, prise imparable (mais deux prises simultanées s'annulent). Hitstop, pushback, chute au sol si touché en l'air ou balayé.
-- Le cœur dit où les coups touchent (`GameState.contacts`, centre du recouvrement des boîtes) : les étincelles et les sons en partent.
+- Le cœur dit où les coups touchent (`GameState.contacts`, centre du recouvrement des boîtes) : les étincelles et les sons en partent. Un coup bas frappe au tibia : étincelle rasante et poussière, sans sang.
 - La refonte du combat (v2) suit `docs/combat-v2.md`.
 - Rounds de 99 s, 2 rounds gagnants, nouveau match automatique.
 
@@ -78,6 +80,7 @@ Nayo est dessiné (sprites générés par `npm run sprites`, provisoires en atte
 | `npm run typecheck` | TypeScript |
 | `npm run format` | Prettier |
 | `npm run sprites` | Redessine les planches de sprites (`tools/sprites` → `src/art`) |
+| `npm run measure-boxes` | Mesure le dessin de Nayo bande par bande (4 px) contre ses hurtbox |
 | `npm run bench` | Banc de perfs de la simulation (100 000 tics CPU contre CPU) |
 | `npm run replays:update` | Réenregistre les hashs des replays dorés (`tests/core/replays`), seulement quand le jeu doit changer |
 

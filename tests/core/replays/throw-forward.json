@@ -1,0 +1,18 @@
+{
+  "description": "Throws forward (§4.3): Nayo chooses the Renvoi in the clinch, sent at once out of it; Riff her Ciseaux with the special button; both knockdowns to the wake-up.",
+  "fighters": ["nayo", "riff"],
+  "inputs": [
+    [90, "", ""],
+    [39, "right", "left"],
+    [1, "grab", ""],
+    [10, "", ""],
+    [1, "heavy", ""],
+    [92, "", ""],
+    [13, "right", "left"],
+    [1, "", "grab"],
+    [20, "", ""],
+    [1, "", "special"],
+    [105, "", ""]
+  ],
+  "hash": "15f2913b"
+}

@@ -1,6 +1,6 @@
 import type { FighterTemplate, MatchConfig } from './config';
 import type { MoveData } from './move-data';
-import { isActiveFrame } from './moves';
+import { isActiveFrame, moveOf } from './moves';
 import { PROJECTILE_THREAT_RANGE, THREAT_MARGIN } from './rules';
 import type { FighterState, ProjectileState } from './state';
 
@@ -32,7 +32,7 @@ export function threatReach(move: MoveData): number {
  */
 export function upcomingMove(attacker: FighterState, template: FighterTemplate): MoveData | null {
   if (!attacker.move) return null;
-  const move = template.moves[attacker.move];
+  const move = moveOf(template, attacker.move);
   if (move.kind === 'movement') return null;
   const upcoming = attacker.actionFrame < move.startup || isActiveFrame(move, attacker.actionFrame);
   return upcoming ? move : null;

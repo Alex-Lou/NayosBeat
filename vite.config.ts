@@ -44,6 +44,11 @@ export default defineConfig({
   build: {
     // Phaser alone is ~1.4 MB minified (~360 kB gzip): warn only beyond that.
     chunkSizeWarningLimit: 1500,
+    // Phaser in a chunk of its own: an update of the game leaves it untouched, so browsers and
+    // the offline cache keep it, and the game's own code stays small.
+    rolldownOptions: {
+      output: { codeSplitting: { groups: [{ name: 'phaser', test: /node_modules[\\/]phaser/ }] } },
+    },
     // Sprite strips stay separate files: a fight loads only its fighters' strips (and the second
     // colorway only in a mirror match), and the browser caches them, instead of base64 in the JS.
     assetsInlineLimit: 0,

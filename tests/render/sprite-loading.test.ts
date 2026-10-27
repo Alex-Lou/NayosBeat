@@ -1,10 +1,11 @@
 import type Phaser from 'phaser';
 import { describe, expect, it } from 'vitest';
 import { NAYO } from '../../src/art/nayo';
+import type { FighterArt } from '../../src/art/types';
 import { loadArt } from '../../src/render/art-textures';
 
 /** Texture keys that `loadArt` asks the scene to load, nothing being in the cache yet. */
-function loadedKeys(): string[] {
+function loadedKeys(art: FighterArt = NAYO): string[] {
   const keys: string[] = [];
   const scene = {
     textures: { exists: () => false },
@@ -14,7 +15,7 @@ function loadedKeys(): string[] {
       },
     },
   } as unknown as Phaser.Scene;
-  loadArt(scene, NAYO);
+  loadArt(scene, art);
   return keys;
 }
 
@@ -29,12 +30,17 @@ describe('loadArt', () => {
   });
 
   it('leaves out the strips drawn ahead of their gameplay, that no clip plays', () => {
+    // Every strip of Nayo is played since the combat v2's phase 3: one drawn ahead stands in.
+    const ahead: FighterArt = {
+      ...NAYO,
+      sheets: { ...NAYO.sheets, ahead: { frames: 2 } },
+      urls: { ...NAYO.urls, ahead: 'ahead.png' },
+      fx: { ...NAYO.fx, ahead: 'fx/ahead.png' },
+    };
     const played = new Set([...Object.values(NAYO.clips).map((clip) => clip.sheet), 'projectile']);
-    const unplayed = Object.keys(NAYO.urls).filter((sheet) => !played.has(sheet));
-    // The combat v2 strips not wired yet; the dashes are played since the phase 1.3.
-    expect(unplayed.length).toBeGreaterThan(0);
-    expect(unplayed).not.toContain('dashForward');
-    const keys = loadedKeys();
+    const unplayed = Object.keys(ahead.urls).filter((sheet) => !played.has(sheet));
+    expect(unplayed).toEqual(['ahead']);
+    const keys = loadedKeys(ahead);
     for (const sheet of unplayed) {
       expect(keys).not.toContain(`nayo/${sheet}`);
       expect(keys).not.toContain(`nayo/fx/${sheet}`);

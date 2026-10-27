@@ -73,11 +73,17 @@ export class DebugOverlay {
 /** The state in a few lines, for the overlay (built only when its text is refreshed). */
 export function describeGame(state: GameState): string {
   const [a, b] = state.fighters;
-  return [
+  const lines = [
     `frame  ${state.frame}  ${state.round.phase}  hitstop=${state.hitstop}`,
     `P1     ${describeFighter(a)}`,
     `P2     ${describeFighter(b)}`,
-  ].join('\n');
+  ];
+  const { hold } = state;
+  if (hold) {
+    const tech = hold.techable ? '' : ' PUNITION';
+    lines.push(`hold   P${hold.holder + 1} t=${hold.frame}/${hold.limit} x${hold.pummels}${tech}`);
+  }
+  return lines.join('\n');
 }
 
 function describeFighter(fighter: FighterState): string {

@@ -14,12 +14,11 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { NAYO_CLIPS } from '../../src/art/nayo/clips.ts';
 import { ANCHOR, ART_SCALE, CELL_SIZE } from '../../src/art/types.ts';
 import { toPx } from '../../src/core/constants.ts';
-import { CORE_MOVE_IDS } from '../../src/core/move-data.ts';
+import { MOVE_IDS } from '../../src/core/move-data.ts';
 import { NAYO as NAYO_TEMPLATE } from '../../src/data/fighters/nayo.ts';
 import type { Fighter, Strike } from './fighter.ts';
 import { NAYO } from './nayo/index.ts';
 import type { Colorway } from './palette.ts';
-import { activeFrames, isV2Sheet, NAYO_V2_STRIPS } from './nayo/combat-v2.ts';
 import { encodeIndexedPng, type Rgba } from './png.ts';
 import { RIFF } from './riff/index.ts';
 import { PUSHBOX_HALF, RIFF_STRIKES } from './riff/strips.ts';
@@ -45,23 +44,11 @@ interface Guides {
 const NAYO_GUIDES: Guides = {
   pushboxHalf: toPx(NAYO_TEMPLATE.standingPushbox.width) / 2,
   strike: (sheet) => {
-    // A combat v2 strike that no clip plays yet: its frame data and box come from the spec.
-    if (isV2Sheet(sheet)) {
-      const { ticks, strike } = NAYO_V2_STRIPS[sheet];
-      if (!ticks || !strike) return undefined;
-      const [left, right] = strike.x;
-      const [bottom, top] = strike.y;
-      return {
-        frames: activeFrames(ticks, strike),
-        box: { x: left, y: bottom, width: right - left, height: top - bottom },
-      };
-    }
-    // The move whose clip plays this strip, if any (the grab plays the "throw" strip).
-    const id = CORE_MOVE_IDS.find((move) => NAYO_CLIPS[move].sheet === sheet);
-    if (!id) return undefined;
-    const move = NAYO_TEMPLATE.moves[id];
-    const box = move.hitbox;
-    if (!box) return undefined;
+    // The move whose clip plays this strip, if any.
+    const id = MOVE_IDS.find((move) => NAYO_CLIPS[move].sheet === sheet);
+    const move = id && NAYO_TEMPLATE.moves[id];
+    const box = move?.hitbox;
+    if (!id || !move || !box) return undefined;
     const clip = NAYO_CLIPS[id];
     const frames: number[] = [];
     let tick = 0;

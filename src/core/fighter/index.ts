@@ -47,6 +47,7 @@ export function updateFighter(
       return updateMove(f, template) ?? actOnGround(f, template, opponentX, threatened);
     case 'blockstun':
     case 'hitstun':
+    case 'tech':
     case 'knockdown': {
       const stunned = updateStun(f);
       if (stunned) return stunned;
@@ -61,7 +62,10 @@ export function updateFighter(
 
 /** The fighter's body for collisions: raised and slimmer in the air, flat when lying down. */
 export function pushboxOf(fighter: FighterState, template: FighterTemplate): Pushbox {
-  if (fighter.y > 0) return template.airPushbox;
+  // The raised air body lets a jump pass over a crouching opponent (cross-ups, D7). A ground
+  // move that leaves the ground (the Saut de l'ange) keeps its body, carried at its height: it
+  // would otherwise sink into the crouching opponent it targets, then be shoved out on impact.
+  if (fighter.y > 0 && fighter.action !== 'attack') return template.airPushbox;
   if (fighter.action === 'knockdown') return template.lyingPushbox;
   return fighter.crouching ? template.crouchingPushbox : template.standingPushbox;
 }

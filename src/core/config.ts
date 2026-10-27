@@ -1,6 +1,6 @@
 /** Static match data, passed to the simulation. Distances in sub-pixels, durations in ticks. */
 
-import type { MoveData, MoveId } from './move-data';
+import type { CoreMoveId, MoveData, OptionalMoveId } from './move-data';
 
 export interface BoxSize {
   readonly width: number;
@@ -50,8 +50,12 @@ export interface FighterTemplate {
   readonly standingHurtboxes: readonly Box[];
   readonly crouchingHurtboxes: readonly Box[];
   readonly airHurtboxes: readonly Box[];
-  readonly moves: Readonly<Record<MoveId, MoveData>>;
+  /** Every core move, and the optional ones the fighter has (see `moveOf`). */
+  readonly moves: FighterMoves;
 }
+
+export type FighterMoves = Readonly<Record<CoreMoveId, MoveData>> &
+  Readonly<Partial<Record<OptionalMoveId, MoveData>>>;
 
 export interface StageConfig {
   readonly width: number;

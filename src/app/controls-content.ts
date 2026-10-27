@@ -1,7 +1,10 @@
-/** Help content for the "Commandes" screen, adapted to the devices in use. */
+/**
+ * Help content for the "Commandes" screen, in pages: the controls of the devices in use, the
+ * basics, then one page per fighter with every move (docs/combat-v2.md §17).
+ */
 
-import type { FighterTemplate } from '../core/config';
-import { ROSTER } from '../data/roster';
+import { BASICS, MOVE_ORDER, MOVE_TEXTS } from '../data/move-texts';
+import { ROSTER, type FighterId, type RosterEntry } from '../data/roster';
 import { connectedGamepads } from '../input/gamepad';
 import { isTouchDevice } from '../input/touch-controls';
 
@@ -16,6 +19,13 @@ export interface HelpSection {
   readonly rows: readonly (readonly [string, string])[];
 }
 
+/** One page of the screen; a fighter's page tells whose it is. */
+export interface HelpPage {
+  readonly title: string;
+  readonly sections: readonly HelpSection[];
+  readonly fighter?: FighterId;
+}
+
 const TOUCH: HelpSection = {
   // The pixel font has no capital É: "Écran" would show as "écran".
   title: 'Tactile',
@@ -27,7 +37,7 @@ const TOUCH: HelpSection = {
     ['SAUT', 'Sauter'],
     ['DASH', "Bond vers l'adversaire ; joystick en arrière + DASH : bond en retrait"],
     ['2 fois avant', 'Joystick, en repassant au centre : dash aussi (2 fois arrière : retrait)'],
-    ['PRISE', "Saisir et projeter l'adversaire de près"],
+    ['PRISE', "Saisir l'adversaire de près, puis le frapper ou le lancer"],
     ['II', 'Pause'],
   ],
 };
@@ -39,10 +49,10 @@ const KEYBOARD: HelpSection = {
     ['Z Q S D', 'Se déplacer (W A S D en QWERTY)'],
     ['Z, Espace', 'Sauter'],
     ['S', "S'accroupir"],
-    ['J', 'Coup léger : rapide'],
-    ['K', 'Coup lourd : fort mais lent'],
-    ['L', 'Coup spécial'],
-    ['I, J + K', "Prise : saisir et projeter l'adversaire de près"],
+    ['J', 'Coup léger (L) : rapide'],
+    ['K', 'Coup lourd (H) : fort mais lent'],
+    ['L', 'Coup spécial (S)'],
+    ['I, J + K', "Prise : saisir l'adversaire de près, puis le frapper ou le lancer"],
     ['Maj gauche', 'Dash ; avec arrière : bond en retrait'],
     ['2 fois avant', 'Dash aussi (2 fois arrière : bond en retrait)'],
     ['Echap, P', 'Pause'],
@@ -58,58 +68,52 @@ const GAMEPAD: HelpSection = {
   rows: [
     ['Flèches, stick', 'Se déplacer'],
     ['A (Croix)', 'Sauter'],
-    ['X (Carré)', 'Coup léger : rapide'],
-    ['Y (Triangle)', 'Coup lourd : fort mais lent'],
-    ['B (Rond)', 'Coup spécial'],
-    ['RB (R1), X + Y', "Prise : saisir et projeter l'adversaire de près"],
+    ['X (Carré)', 'Coup léger (L) : rapide'],
+    ['Y (Triangle)', 'Coup lourd (H) : fort mais lent'],
+    ['B (Rond)', 'Coup spécial (S)'],
+    ['RB (R1), X + Y', "Prise : saisir l'adversaire de près, puis le frapper ou le lancer"],
     ['LB (L1)', 'Dash ; avec arrière : bond en retrait. Deux fois avant ou arrière aussi'],
     ['Start', 'Pause'],
   ],
 };
 
-/** "Onde sonore / Ruée": the same move for every fighter of the roster. */
-function moveNames(pick: (moves: FighterTemplate['moves']) => { readonly name: string }): string {
-  return ROSTER.map((entry) => pick(entry.template.moves).name).join(' / ');
-}
-
-/** What every fighter can do, whatever the device ("Les bases"). */
-function basicsSection(): HelpSection {
-  return {
-    title: 'Les bases',
-    rows: [
-      [
-        'Parer',
-        "Maintiens arrière (loin de l'adversaire) : accroupi contre les coups bas, debout contre les sauts",
-      ],
-      [
-        'DASH',
-        "Ou deux fois avant : un bond rapide vers l'adversaire. Avec arrière (ou deux fois arrière), un bond en retrait qui fait rater les prises, mais pas les coups",
-      ],
-      ['Spécial seul', moveNames((m) => m.special)],
-      ['Avant + spécial', moveNames((m) => m.specialForward)],
-      ['Bas + spécial', `${moveNames((m) => m.specialAntiAir)} : invincible, contre les sauts`],
-      ['Enchaîner', "Un léger qui touche s'enchaîne sur un coup ou un spécial"],
-      [
-        'PRISE',
-        "Ou L + H, de tout près : imparable ; deux prises simultanées s'annulent. On ne peut pas saisir quelqu'un qui sort d'un coup reçu ou paré",
-      ],
-    ],
-  };
-}
-
-/** Shows only the devices in use: touch on phones, keyboard otherwise, gamepad if one is on. */
-export function helpSections(devices: ControlDevices): HelpSection[] {
+/** The devices in use: touch on phones, keyboard otherwise, gamepad if one is on. */
+function devicePage(devices: ControlDevices): HelpPage {
   const sections = [devices.touch ? TOUCH : KEYBOARD];
   if (devices.gamepad) sections.push(GAMEPAD);
-  sections.push(basicsSection());
-  return sections;
+  return { title: 'Commandes', sections };
 }
 
-export function controlsContent(): HTMLElement {
-  const devices = { touch: isTouchDevice(), gamepad: connectedGamepads().length > 0 };
+/** Every move of a fighter: how to do it, its name (from its data), what it is for. */
+function fighterPage({ id, template }: RosterEntry): HelpPage {
+  const texts = MOVE_TEXTS[id];
+  const rows: (readonly [string, string])[] = [];
+  for (const id of MOVE_ORDER) {
+    // The optional moves it has: a fighter without one plays its standing normal instead.
+    const move = template.moves[id];
+    const help = texts.moves[id];
+    if (move && help) rows.push([help.input, `${move.name} : ${help.text}`]);
+  }
+  return { title: template.name, sections: [{ title: texts.title, rows }], fighter: id };
+}
+
+/** The pages of the screen, in order: devices, « Les bases », then each fighter. */
+export function helpPages(devices: ControlDevices): HelpPage[] {
+  return [
+    devicePage(devices),
+    { title: 'Les bases', sections: [{ title: 'Les bases', rows: BASICS }] },
+    ...ROSTER.map(fighterPage),
+  ];
+}
+
+export function currentDevices(): ControlDevices {
+  return { touch: isTouchDevice(), gamepad: connectedGamepads().length > 0 };
+}
+
+export function controlsContent(page: HelpPage): HTMLElement {
   const container = document.createElement('div');
   container.className = 'controls';
-  for (const section of helpSections(devices)) container.appendChild(sectionElement(section));
+  for (const section of page.sections) container.appendChild(sectionElement(section));
   return container;
 }
 
@@ -120,9 +124,65 @@ function sectionElement({ title, rows }: HelpSection): HTMLElement {
   const table = document.createElement('table');
   for (const [control, effect] of rows) {
     const tr = table.insertRow();
-    tr.insertCell().textContent = control;
-    tr.insertCell().textContent = effect;
+    fillWithArrows(tr.insertCell(), control);
+    fillWithArrows(tr.insertCell(), effect);
   }
   section.append(heading, table);
   return section;
+}
+
+/** A direction written as an arrow: how far its ↑ turns, and what it says aloud. */
+export interface Arrow {
+  readonly turn: number;
+  readonly label: string;
+}
+
+/**
+ * The directions the help writes as arrows ("→" is toward the opponent). The pixel font only
+ * has ↑ and ↓, and the browser's fallback draws the others tiny: each arrow is the font's ↑,
+ * turned by steps of 45°.
+ */
+const ARROWS: Readonly<Record<string, Arrow>> = {
+  '↑': { turn: 0, label: 'haut' },
+  '↗': { turn: 45, label: 'haut-avant' },
+  '→': { turn: 90, label: 'avant' },
+  '↘': { turn: 135, label: 'bas-avant' },
+  '↓': { turn: 180, label: 'bas' },
+  '↙': { turn: 225, label: 'bas-arrière' },
+  '←': { turn: 270, label: 'arrière' },
+  '↖': { turn: 315, label: 'haut-arrière' },
+};
+
+/** A help text cut into plain text and arrows, in order. */
+export function withArrows(text: string): (string | Arrow)[] {
+  const parts: (string | Arrow)[] = [];
+  let plain = '';
+  for (const char of text) {
+    const arrow = ARROWS[char];
+    if (!arrow) {
+      plain += char;
+      continue;
+    }
+    if (plain) parts.push(plain);
+    plain = '';
+    parts.push(arrow);
+  }
+  if (plain) parts.push(plain);
+  return parts;
+}
+
+function fillWithArrows(cell: HTMLElement, text: string): void {
+  for (const part of withArrows(text)) {
+    if (typeof part === 'string') {
+      cell.append(part);
+      continue;
+    }
+    const arrow = document.createElement('span');
+    arrow.className = 'arrow';
+    arrow.dataset['turn'] = String(part.turn);
+    arrow.setAttribute('role', 'img');
+    arrow.setAttribute('aria-label', part.label);
+    arrow.textContent = '↑';
+    cell.append(arrow);
+  }
 }

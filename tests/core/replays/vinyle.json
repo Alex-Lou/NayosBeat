@@ -1,0 +1,16 @@
+{
+  "description": "The Vinyle (§5.4): flying at 3.5 px a tick, it hits a standing Riff at chest height, is blocked crouching (it hits crouching fighters too), then a jump carries Riff over it.",
+  "fighters": ["nayo", "riff"],
+  "inputs": [
+    [90, "", ""],
+    [1, "special", ""],
+    [90, "", ""],
+    [1, "special", "right"],
+    [90, "", "down+right"],
+    [1, "special", ""],
+    [45, "", ""],
+    [6, "", "up"],
+    [80, "", ""]
+  ],
+  "hash": "c713f46f"
+}

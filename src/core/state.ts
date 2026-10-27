@@ -23,7 +23,20 @@ export type FighterAction =
   | 'blockstun'
   | 'airHit'
   | 'knockdown'
-  | 'ko';
+  | 'ko'
+  /** Holding the grabbed opponent (see `hold.ts`): its `move` is the pummel or throw played. */
+  | 'holding'
+  /** Grabbed and held: it can only break free (in the clinch) or struggle. */
+  | 'held'
+  /** Broke free of a grab, or grabbed on the same tick as the opponent: pushed apart, reeling. */
+  | 'tech';
+
+/**
+ * How the last blow taken shook the fighter (docs/combat-v2.md §9.4), read from where it landed:
+ * the head snapped back, folded at the belly, a leg buckling; crouching; swept off the legs;
+ * sent flying; thrown. The presentation picks its animation from it, the core never reads it.
+ */
+export type Reaction = 'high' | 'mid' | 'low' | 'crouch' | 'trip' | 'launch' | 'thrown';
 
 export interface FighterState {
   /** Horizontal center, in sub-pixels from the stage's left edge. */
@@ -70,6 +83,14 @@ export interface FighterState {
   readonly throwImmuneFrames: number;
   /** Consecutive hits taken without being able to act: drives the combo counter and scaling. */
   readonly comboCount: number;
+  /** Launched by a launcher (docs/combat-v2.md §7.6): one more blow can hit it in the air. */
+  readonly juggle: 0 | 1;
+  /** The last blow taken: how it shook the fighter (null: blocked, or none yet). */
+  readonly reaction: Reaction | null;
+  /** That blow's stun was long (hitstun of 18 ticks or more): the full reaction plays. */
+  readonly reactionHeavy: boolean;
+  /** The whole hit or block stun it gave, so the reaction ends with it. */
+  readonly stunTotal: number;
 }
 
 export interface ProjectileState {
@@ -80,14 +101,21 @@ export interface ProjectileState {
   readonly facing: Facing;
 }
 
+/** CONTRE or PUNITION: the same bonus, two words to learn to punish (§7.4). */
+export type CounterHit = 'counter' | 'punish';
+
 /**
  * Something that touched on a tick: a strike or a projectile, hit or blocked. The simulation
  * knows where its boxes met, so the presentation never has to work it out.
  */
 export interface Contact {
-  /** The attacker. */
+  /** The attacker; for a tech, the player who broke free (both, on a same-tick tech). */
   readonly by: 0 | 1;
-  readonly kind: 'hit' | 'block';
+  /**
+   * A strike or projectile hit or blocked; a grab that catches; a tech; a pummel or throw on
+   * the held opponent (its release).
+   */
+  readonly kind: 'hit' | 'block' | 'grab' | 'tech' | 'pummel' | 'throw';
   readonly move: MoveId;
   /**
    * Middle of the overlap between what struck (the attacker's hitbox, or its projectile's) and
@@ -95,8 +123,35 @@ export interface Contact {
    */
   readonly x: number;
   readonly y: number;
-  /** Health taken: none when blocked, nor on a training dummy at its 1 HP floor. */
+  /**
+   * Health taken: a special blocked chips some (never the last point), a normal blocked none,
+   * nor a hit on a training dummy at its 1 HP floor.
+   */
   readonly damage: number;
+  /**
+   * A blow caught the defender attacking (CONTRE: starting up or out) or recovering (PUNITION:
+   * after its active frames), docs/combat-v2.md §7.4; a grab caught a fighter recovering, which
+   * cannot break free (PUNITION).
+   */
+  readonly counter: CounterHit | null;
+}
+
+/**
+ * A grab that caught (docs/combat-v2.md §4): who holds whom, for how long it has lasted and can
+ * last, and what the holder did with it. Time makes the rules (the clinch, the limit), not
+ * counters; `pummels` only tells the CPU and the HUD how many blows landed.
+ */
+export interface HoldState {
+  /** The holder; the other fighter is held. */
+  readonly holder: 0 | 1;
+  /** Ticks of the hold played, from 0 on the first tick after the grab's freeze. */
+  readonly frame: number;
+  /** When the holder throws forward if it has not thrown yet: shortened by the struggle. */
+  readonly limit: number;
+  /** False on a PUNITION: the grab caught a fighter recovering, it cannot break free. */
+  readonly techable: boolean;
+  /** Pummels landed so far. */
+  readonly pummels: number;
 }
 
 /** Shared by every tick where nothing touches, so a quiet tick allocates no list. */
@@ -138,6 +193,8 @@ export interface GameState {
   readonly projectiles: readonly ProjectileState[];
   /** What touched on the tick that produced this state (at most one per fighter). */
   readonly contacts: readonly Contact[];
+  /** The grab holding a fighter, if any. */
+  readonly hold: HoldState | null;
 }
 
 export function createInitialState(config: MatchConfig): GameState {
@@ -173,6 +230,8 @@ export function createRound(
     ],
     projectiles: NO_PROJECTILES,
     contacts: EMPTY_CONTACTS,
+    // A new round always starts free: a hold never outlives its round.
+    hold: null,
   };
 }
 
@@ -202,5 +261,9 @@ function createFighter(x: number, facing: Facing, template: FighterTemplate): Fi
     tapReleased: false,
     throwImmuneFrames: 0,
     comboCount: 0,
+    juggle: 0,
+    reaction: null,
+    reactionHeavy: false,
+    stunTotal: 0,
   };
 }

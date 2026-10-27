@@ -6,7 +6,8 @@
     [40, "right", "left"],
     [1, "left", "heavy"],
     [30, "left", ""],
-    [45, "", ""],
+    [35, "", ""],
+    [10, "", "left"],
     [1, "down+left", "down+heavy"],
     [40, "down+left", ""],
     [20, "left", ""],
@@ -17,5 +18,5 @@
     [1, "left", "special"],
     [130, "left", ""]
   ],
-  "hash": "2c60cce8"
+  "hash": "f0906354"
 }

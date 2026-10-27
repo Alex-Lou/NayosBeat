@@ -65,6 +65,10 @@ export function makeFighter(overrides: Partial<FighterState> = {}): FighterState
     tapReleased: false,
     throwImmuneFrames: 0,
     comboCount: 0,
+    juggle: 0,
+    reaction: null,
+    reactionHeavy: false,
+    stunTotal: 0,
     ...overrides,
   };
 }
@@ -133,9 +137,9 @@ export function mirroredInput(input: InputBits): InputBits {
 /**
  * Plays `script` from `facingOff(distancePx, config, overrides)`, then its mirror image (players
  * swapped, left and right exchanged), and expects every tick of one to be the reflection of the
- * other: x ↦ stage width − x, the other facing, the same height, action, move, frame and health.
- * Returns the states of the script as written, for the mechanic's own checks. `config` has the
- * same template on both sides.
+ * other: x ↦ stage width − x, the other facing, the same height, action, move, frame, health,
+ * stun, juggle and reaction. The mirror swaps the templates too, so a mixed match-up mirrors.
+ * Returns the states of the script as written, for the mechanic's own checks.
  */
 export function expectMirrored(
   script: readonly TickInputs[],
@@ -149,11 +153,12 @@ export function expectMirrored(
     ...(o.x === undefined ? {} : { x: width - o.x }),
     ...(o.facing === undefined ? {} : { facing: o.facing === 1 ? -1 : 1 }),
   });
+  const swapped: MatchConfig = { ...config, fighters: [config.fighters[1], config.fighters[0]] };
   const played = playScript(script, config, facingOff(distancePx, config, overrides));
   const mirror = playScript(
     script.map(([a, b]) => [mirroredInput(b), mirroredInput(a)] as const),
-    config,
-    facingOff(distancePx, config, [mirrored(overrides[1]), mirrored(overrides[0])]),
+    swapped,
+    facingOff(distancePx, swapped, [mirrored(overrides[1]), mirrored(overrides[0])]),
   );
   const pose = (f: FighterState, reflected: boolean) => [
     reflected ? width - f.x : f.x,
@@ -163,6 +168,9 @@ export function expectMirrored(
     f.move,
     f.actionFrame,
     f.health,
+    f.stunFrames,
+    f.juggle,
+    f.reaction,
   ];
   const rows = (states: GameState[], reflected: boolean) =>
     states.map((state, tick) => {

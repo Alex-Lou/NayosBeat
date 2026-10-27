@@ -205,7 +205,7 @@ Trois champs d'état : `tapDirection` (−1, 0 ou 1, en coordonnées du stage), 
 | →↓↘ + L, H ou S | `specialAntiAir` |
 
 - **Aucune autre manip** (pas de QCB, de demi-cercle, de charge ni de 360). **Aucun bonus de dégâts.**
-- **Règle de manip fraîche** (`motion.ts`) : la 1re étape a lieu au plus `MOTION_SPAN_FRAMES` = 12 tics avant l'appui, et la **dernière étape a été entrée** (pas seulement tenue) au plus `MOTION_END_FRAMES` = 6 tics avant l'appui (au lieu de « tenue dans les 4 derniers tics »).
+- **Règle de manip fraîche** (`motion.ts`) : la 1re étape a lieu dans les `MOTION_SPAN_FRAMES` = 12 derniers tics, et la **dernière étape a été entrée** (pas seulement tenue) dans les `MOTION_END_FRAMES` = 6 derniers tics (le tic de l'appui compte dans chaque fenêtre, comme pour le buffer) (au lieu de « tenue dans les 4 derniers tics »).
   - Un vrai ↓↘→ + S sort le Vinyle.
   - S'accroupir, marcher en avant un instant, puis appuyer S donne le spécial avant, comme le joueur tactile le veut.
   - La même règle protège L et H : marcher après une garde basse puis appuyer L ne sort plus un Vinyle par accident.
@@ -300,6 +300,8 @@ Le backdash fait rater une prise (c'est la défense contre la Prise) mais perd c
 |---|---|---|---|---|
 | Nayo | 28 × 80 | 32 × 50 | 24 × 44, de 30 à 74 px au-dessus des pieds | 28 × 20 |
 | Riff | 26 × 74 | 30 × 46 | 22 × 40, de 26 à 66 px | 26 × 20 |
+
+La pushbox aérienne est celle des sauts. Un coup au sol qui quitte le sol (le Saut de l'ange, §5.5) garde sa pushbox debout, portée à sa hauteur : il pousse l'adversaire accroupi qu'il vise au lieu de s'enfoncer en lui puis d'en être chassé d'un bloc à l'impact.
 
 Au relevé, la pushbox debout revient ; si le sauteur la chevauche encore, la séparation se fait selon x : de vrais cross-ups ambigus au réveil.
 
@@ -402,7 +404,7 @@ PRISE ──► tentative (démarrage 5, actif 3, très courte portée)
 6. **Dégagement** : PRISE (ou L + H) pendant t0–t11 (`GRAB_TECH_FRAMES` = 12, soit 200 ms), ou une Prise déjà dans le buffer. 200 ms se jouent à l'anticipation pour la plupart des joueurs, au réflexe pour les meilleurs ; la vibration et l'anneau (§4.5) aident.
 7. **PUNITION** : une prise qui saisit un adversaire **en récupération** (fin d'attaque après ses frames actives, atterrissage, fin de dash ou de backdash, prise ratée) **ne se dégage pas**. Tampon « PUNITION ! ».
 8. **Se débattre** : à partir de t12, chaque nouvel appui de bouton de la victime (L, H, S, PRISE, SAUT, DASH ; pas les directions) retire 3 tics à la limite (`STRUGGLE_FRAMES`), plancher 36 (`HOLD_MIN_FRAMES`). On ne s'échappe pas : on écourte le tabassage et on peut priver l'attaquant du choix de lancer.
-9. **Tabasser** : un coup de tabassage ne part que s'il finit avant la limite du moment. Un tabassage ou un lancer commencé va toujours au bout. Le temps fait la limite, pas un compteur : **2 coups de genou au plus pour Nayo, 3 coups de tête pour Riff** sans lutte.
+9. **Tabasser** : un coup de tabassage ne part que s'il finit avant la limite du moment. Un tabassage ou un lancer commencé va toujours au bout. Le temps fait la limite, pas un compteur : **2 coups de genou au plus pour Nayo, 3 coups de tête pour Riff** sans lutte. Le choix de l'attaquant, mémorisé pour t12, ne s'efface que par un autre choix (L, H, S, PRISE) : un saut ou un dash n'ont pas de coup dans une prise, et un stick tactile qui glisse vers ↖ sur ← + H ne le perd pas.
 10. **Dégâts fixes** pour le tabassage et les lancers : pas de scaling, pas de bonus de CONTRE ni de DROP. Ils comptent comme des coups dans le compteur de combo.
 11. **Coins** : si la victime sortirait d'un mur, toute la paire est décalée (l'attaquant recule d'autant). Le lancer derrière depuis le coin **met l'adversaire au coin**.
 12. **Fin de round pendant une prise** (temps écoulé) : la prise se rompt comme un dégagement, sans dégâts. Un KO par tabassage ou par lancer termine le round normalement. En entraînement, pas de recharge de vie pendant une prise.
@@ -416,10 +418,10 @@ Les coups de prise sont des `MoveData` joués par l'attaquant pendant `holding`.
 | `grab` (tentative) | 5 / 3 / 20 (28), hitbox 6..30 / 20..60 | 5 / 3 / 19 (27), hitbox 6..28 / 20..56 |
 | `pummel` | **Coup de genou** : 6 / 1 / 9 (16), **15** fixes, hitstop 6 | **Coup de tête** : 4 / 1 / 7 (12), **10** fixes, hitstop 5 |
 | `throwForward` | **Renvoi** (pousse et direct qui l'envoie) : lâcher f10, 10 / 1 / 25 (36), **100**. Levée 3,5, vx 3,5 : retombe à ≈ 72 px de Nayo. **KD +28** | **Ciseaux** (ciseau de jambes, l'adversaire tombe tout près) : lâcher f10, 10 / 1 / 21 (32), **85**. Levée 3, vx 2 : retombe à ≈ 49 px. **KD +30** |
-| `throwBack` | **Projection d'épaule** (au col, pivot, par-dessus l'épaule : l'animation actuelle du `throw`) : côté changé f8, lâcher f14, 14 / 1 / 27 (42), **90**. Levée 3,5, vx 3 : ≈ 66 px derrière. **KD +26** | **Roulade** (monkey flip) : côté changé f8, lâcher f14, 14 / 1 / 25 (40), **80**. Levée 3,5, vx 3 : ≈ 66 px derrière. **KD +28** |
+| `throwBack` | **Projection d'épaule** (au col, pivot, par-dessus l'épaule) : côté changé f6, lâcher f14, 14 / 1 / 27 (42), **90**. Levée 3,5, vx 3 : ≈ 66 px derrière. **KD +26** | **Roulade** (monkey flip) : côté changé f6, lâcher f14, 14 / 1 / 25 (40), **80**. Levée 3,5, vx 3 : ≈ 66 px derrière. **KD +28** |
 | Dégagement | les deux : 14 tics d'étourdissement, recul 4 px/tic | idem |
 
-Avantage d'un lancer = `L + 40 − récupération` (L = 4·levée − 1). Après un Renvoi, Nayo a le temps d'un dash (18) et d'un coup placé ; Riff, après des Ciseaux, est à 49 px avec +30 : elle peut approcher et tenter un cross-up au réveil.
+Arrêt sur image au lâcher : 10 tics pour les quatre lancers (6 pour le genou, 5 pour le coup de tête). Le côté change au tic 6, premier tic de l'élan par-dessus la tête, là où le dessin passe derrière (décision prise avec l'art de Nayo : au tic 8, la victime serait dessinée deux tics du mauvais côté). Avantage d'un lancer = `L + 40 − récupération` (L = 4·levée − 1). Après un Renvoi, Nayo a le temps d'un dash (18) et d'un coup placé ; Riff, après des Ciseaux, est à 49 px avec +30 : elle peut approcher et tenter un cross-up au réveil.
 
 ### 4.4 Tabasser ou lancer : une vraie décision
 
@@ -434,8 +436,8 @@ Pour mémoire, la Projection actuelle fait 110 / 100 sans aucune option. Une vic
 
 ### 4.5 Affichage, son et haptique
 
-- **Anneau de prise** autour de la victime : il se vide jusqu'à la limite ; chaque appui de la victime le fait sauter. Pendant t0–t11, l'anneau clignote (au plus 3 fois par seconde) en blanc : c'est le moment de se dégager.
-- **Tampons** (images générées, voir §7.8) : « DÉGAGEMENT ! », « PUNITION ! », « CONTRE ! ».
+- **Anneau de prise** autour de la victime : il se vide jusqu'à la limite, en partant du haut, du côté de l'attaquant (sa moitié proche, cachée derrière l'attaquant, se vide d'abord ; la moitié que voit la victime, en dernier, de la même façon des deux côtés de l'écran) ; chaque appui de la victime le fait sauter. Pendant t0–t11, l'anneau clignote (au plus 3 fois par seconde) en blanc : c'est le moment de se dégager.
+- **Tampons** : « DÉGAGEMENT ! », « PUNITION ! » (phase 2, en lettrage BD : la police Bangers a les capitales accentuées, le test des glyphes le vérifie), « CONTRE ! » (phase 3, voir §7.9).
 - **Entraînement** : rappel sous l'attaquant, « L frapper · H lancer · ← H derrière ».
 - **Sons** : saisie (cuir et tissu), genou ou tête (sourd), lancer (souffle puis impact au sol), dégagement (deux claques).
 - **Vibration** de 30 ms côté victime (tactile Android).
@@ -583,6 +585,8 @@ Règle de casting : les **mêmes directions** pour les mêmes rôles (§5.1), se
 
 Seuls les coups de type `movement` peuvent s'annuler en Prise (règle de validation). Aucun coup ne s'annule en Prise.
 
+Une annulation sur contact en normal ne donne jamais un coup qui avance (Jab chassé, Toprock) : chaque pas reprendrait la distance du recul, et ↓L, → + L, ↓L… tournerait sans fin. Le dash de Riff, qui n'a rien touché, s'annule en n'importe quel normal.
+
 ### 7.2 Chaîne L, L, L
 
 `chain` est une donnée du coup (`chain: 'chainLight'`), lue dans l'annulation : L appuyé pendant un coup qui a `chain` et qui a touché ou été gardé donne ce coup. Aucun compteur d'état. **Garantie** : L, L, L passe à toute distance où le premier L touche, debout comme accroupi, pour les deux personnages, si chaque appui tombe assez tôt pour garder le combo (test). Pour cela, le deuxième coup avance de 10 px et repousse peu (1,5 px/tic), et le coup final avance de 10 à 12 px.
@@ -635,7 +639,7 @@ Tabassage et lancers : dégâts fixes, sans scaling ni bonus. Il n'y a **aucun**
 | Riff | Dash (annulé à f8) → Jab → Coude → Genou montant | 25 + 63 + 76 = **164**, KD |
 | Riff | ←H (lance) → Genou montant (jongle) | 55 + 85 = **140**, KD |
 | Riff | Talon **en CONTRE** ⇢ Jab → Revers → Swipe | 72 + 22 + 24 + 31 = **149**, KD |
-| Riff | Ciseau aérien **en cross-up** → ↓L → ↓L → Glissade | 25 + 18 + 16 + 49 = **108**, KD |
+| Riff | Ciseau aérien **en cross-up** (sur un Nayo accroupi) → ↓L → ↓L → Glissade | 25 + 18 + 16 + 49 = **108**, KD |
 | Riff | Prise, 3 coups de tête, Ciseaux | **115** |
 
 Soit 9 à 22 % de la vie adverse : un combo compte, une erreur ne tue pas.
@@ -794,7 +798,7 @@ Colonnes : **S/A/R** = démarrage / actif / récupération (total). **Dg** = dé
 | forwardLight | → + L | Jab chassé | 7/3/10 (20) | 35 | 15/11 | 8 | 2,5 | mid | 10..42 / 46..58 | +14 px f0–6 | +3/−1 | 69 | spécial |
 | standHeavy | H | Crochet | 8/4/16 (28) | 80 | 20/14 | 12 | 3,5 | mid | **10..52** / 44..62 | — | +1/−5 | 65 | spécial |
 | forwardHeavy | → + H | Overhand | 19/3/15 (37) | 70 | 18/13 | 12 | 3 | **overhead** | 12..40 / 36..72 | +8 px f6–13 | +1/−4 (CONTRE +5) | 61 | — |
-| backHeavy | ← + H | Remontant | 7/4/17 (28) | 65 | lance (5, juggle)/14 | 11 | 3 | mid | 4..30 / 56..104 | — | lance / −6 | 43 (rate l'accroupi) | spécial |
+| backHeavy | ← + H | Remontant | 7/4/17 (28) | 65 | lance (5, juggle)/14 | 11 | 3 | mid | 4..30 / **58**..104 | — | lance / −6 | 43 (rate l'accroupi) | spécial |
 | crouchLight | ↓ + L | Coup bas | 4/2/8 (14) | 25 | 12/8 | 7 | 2,5 | low | 12..38 / 4..14 | — | +3/−1 | 51 | normal, spécial |
 | crouchHeavy | ↓ + H | Balayage | 9/3/20 (32) | 70 | KD trip (2)/14 | 11 | 3,5 | low | **12..51** / 2..14 | — | KD +25 / −8 | 64 | — |
 | jumpLight | air L | Genou sauté | 4/6/6 | 30 | 14/10 | 8 | 2 | overhead | **4..28** / 10..26 | — | — | 41 | — |
@@ -811,9 +815,9 @@ Colonnes : **S/A/R** = démarrage / actif / récupération (total). **Dg** = dé
 | chainLight | L après Jab | Revers | 5/3/10 (18) | 30 | 16/11 | 8 | 1,5 | mid | 8..38 / 44..58 | +10 px f0–4 | +4/−1 | 61 | spécial ; chain → lightFinisher |
 | lightFinisher | L après Revers | Swipe | 7/3/18 (28) | 45 | KD (2,5)/11 | 10 | 4 | mid | 8..42 / 30..56 | +10 px f0–6 | KD +29 / −9 | 65 | — |
 | forwardLight | → + L | Toprock | 8/2/10 (20) | 30 | 15/12 | 8 | 2,5 | mid | 8..32 / 44..58 | +20 px f0–7 | +4/**+1** | 65 | normal, spécial |
-| standHeavy | H | Coup de coude | 6/3/14 (23) | 70 | 19/13 | 11 | 3 | mid | 9..43 / 40..58 | — | +3/−3 | 56 | spécial |
-| forwardHeavy | → + H | Talon | 17/3/14 (34) | 60 | 17/12 | 11 | 3 | **overhead** | 8..34 / 34..70 | +15 px f4–13 | +1/−4 (CONTRE +5) | 62 | — |
-| backHeavy | ← + H | Retourné | 6/5/15 (26) | 55 | lance (5, juggle)/13 | 10 | 3 | mid | **−12..22** / 56..100 | — | lance / −6 | 35 (rate l'accroupi) | spécial |
+| standHeavy | H | Coup de coude | 6/3/14 (23) | 70 | 19/13 | 11 | **2** | mid | 9..43 / 40..58 | — | +3/−3 | 56 | spécial |
+| forwardHeavy | → + H | Talon | 17/3/14 (34) | 60 | 17/12 | 11 | **2,5** | **overhead** | 8..34 / 34..70 | +15 px f4–13 | +1/−4 (CONTRE +5) | 62 | — |
+| backHeavy | ← + H | Retourné | 6/5/15 (26) | 55 | lance (5, juggle)/13 | 10 | 3 | mid | **−12..22** / **58**..100 | — | lance / −6 | 35 (rate l'accroupi) | spécial |
 | crouchLight | ↓ + L | Coup bas | 3/2/7 (12) | 20 | 12/8 | 6 | 2 | low | 10..32 / 4..14 | — | +4/0 | 45 | normal, spécial |
 | crouchHeavy | ↓ + H | Windmill | 7/3/18 (28) | 65 | KD trip (2)/13 | 10 | 3 | low | 10..44 / 2..14 | — | KD +27 / −7 | 57 | — |
 | jumpLight | air L | **Ciseau aérien** | 3/6/5 | 25 | 13/9 | 7 | 2 | overhead | **−14..26** / 6..24 | — | — | 39, et derrière | — |
@@ -835,7 +839,7 @@ Voir §4.3 (prise, tabassage, lancers) et §3.2–3.3 (dash, backdash). Récapit
 | `grab` | 5/3/20 (28), 6..30 / 20..60, portée 43 | 5/3/19 (27), 6..28 / 20..56, portée 41 |
 | `pummel` | 6/1/9 (16), 15 fixes | 4/1/7 (12), 10 fixes |
 | `throwForward` | 10/1/25 (36), 100, KD (3,5 ; vx 3,5) +28 | 10/1/21 (32), 85, KD (3 ; vx 2) +30 |
-| `throwBack` | 14/1/27 (42), 90, côté f8, KD (3,5 ; vx 3) +26 | 14/1/25 (40), 80, côté f8, KD (3,5 ; vx 3) +28 |
+| `throwBack` | 14/1/27 (42), 90, côté f6, KD (3,5 ; vx 3) +26 | 14/1/25 (40), 80, côté f6, KD (3,5 ; vx 3) +28 |
 | `dashForward` | 18, 56 px f1–14 | 16, 64 px f1–12, annulable f8 (normal, Prise, élan 50 %) |
 | `dashBack` | 22, 44 px f1–16, anti-prise f0–11 | 20, 48 px f1–14, anti-prise f0–10 |
 
@@ -854,11 +858,11 @@ Rappels du pipeline : 1 px de sprite = ½ px monde, cellule de 256, ancre en (12
 | Planche | Images | Tics | Rôle |
 |---|---|---|---|
 | `hitHigh` / `hitMid` / `hitLow` | 5 / 5 / 5 | léger (hitstun < 18) : images 0, 1, 4 ; lourd : 0 à 4 ; dernière image calée sur la fin du stun (`endFrames: 1`) | tête rejetée / plié au ventre / jambe touchée qui plie, saut sur un pied. Remplacent `hitStand` |
-| `hitCrouch` | 3 | existante | accroupi |
+| `hitCrouch` | 3 | 3, 4, puis tenue | accroupi (les images accroupies de l'ancienne planche `hit`) |
 | `trip` | 4 | 2, 2, 2, puis tenue (vol de 7 tics) | jambes fauchées, chute sur le dos ; enchaîne sur `knockdown` |
-| `knockdown` / `getup` | 6 / 5 | 3, 3, 4, 6, 6, 8 (30) puis 2 × 5 (10) = 40 | découpage de l'actuel `knockdown` (9 images) + 2 nouvelles |
-| `held` | 2 | 4, 4 en boucle ; l'image 1 rejoue « encaisse » à chaque tabassage | victime tenue qui lutte |
-| `thrownBack` | 4 | synchronisée sur le lancer : image = ⌊frame de l'attaquant × 4 / lâcher⌋ | soulevée et retournée par-dessus l'épaule (arc dessiné dans la cellule) |
+| `knockdown` / `getup` | 4 / 5 | 3, 3, 4, 20 (30) puis 2 × 5 (10) = 40 | découpage de l'ancien `knockdown` (9 images) : la chute et le sol, puis le relevé |
+| `held` | 2 | 4, 4 en boucle, l'image 1 d'abord ; elle rejoue « encaisse » dès le tic d'impact de chaque tabassage, tenue pendant son arrêt sur image | victime tenue qui lutte |
+| `thrownBack` | 4 | 3, 3, 4, 4 : image pour image avec le `throwBack` jusqu'au lâcher (tic 14), derrière l'attaquant dès le tic 6. Pendant le vol, la dernière image reste dessinée là où il a été lâché (seule la hauteur suit la pushbox), puis `airHit` 2 et 3 à sa vraie place aux deux derniers tics (clip `thrownFall`), puis la chute : aucun saut à la passation | soulevée et retournée par-dessus l'épaule (arc dessiné dans la cellule) |
 | `tech` | 4 | 3, 3, 4, 4 (14 = étourdissement du dégagement) | mains écartées, recul |
 | `guard` | — | dernière image de `blockStand` / `blockCrouch` (la garde installée, pas l'impact), tenue | garde de proximité (aucune nouvelle image) |
 | `blockStand` / `blockCrouch` | — | existantes ; dernière image calée sur la fin du blockstun | — |
@@ -878,7 +882,7 @@ Rappels du pipeline : 1 px de sprite = ½ px monde, cellule de 256, ancre en (12
 | `hold` | 2 | 6, 6 en boucle | — | — | tient au col |
 | `pummel` (Coup de genou) | 4 | 3, 3, **1**, 9 (16) | impact image 2 = tic 6 | — | genou au ventre |
 | `throwForward` (Renvoi) | 8 | 3, 3, 4, **1**, 6, 6, 6, 7 (36) | lâcher image 3 = tic 10 | — | pousse, direct qui envoie |
-| `throwBack` (Projection d'épaule) | 9 | 3, 3, 4, 4, **1**, 6, 7, 7, 7 (42) | lâcher image 4 = tic 14 ; côté changé au tic 8 | — | l'actuel `throw` (7 images) re-timé + 2 images |
+| `throwBack` (Projection d'épaule) | 9 | 3, 3, 4, 4, **1**, 6, 7, 7, 7 (42) | lâcher image 4 = tic 14 ; côté changé au tic 6 | — | les poings rejoignent le cou de `thrownBack` à chaque tic (test de la paire) |
 | `held`, `thrownBack`, `tech`, `hitHigh`, `hitMid`, `hitLow`, `trip`, `getup` | voir 11.1 | | | | |
 
 **Planches retouchées** : `jump` (images 1–4 : 6, 8, 8, 10 = 32 tics en l'air), `jumpForward` (3, 4, 4, 4, 4, 5, 4, 4 = 32), `walkForward` / `walkBack` (foulée recalée sur 36 et 28,8 px), `specialAntiAir` (poing qui atteint 22 à 24 px), `special` (geste de lancer du vinyle, même timing 3, 3, 3, 3, 8, 6, 5, 5, 5 = 41, le disque part à l'image 4), `projectile` (6 → **8 images**, 2 tics chacune en boucle : disque de 20 px, sillons, étiquette, rémanences), `standHeavy` (bras jusqu'à 51–53 px).
@@ -919,7 +923,7 @@ Total Nayo : environ **115 images nouvelles**, plus les retouches.
 | `hold` | 2 | 6, 6 en boucle | — | — | — |
 | `pummel` (Coup de tête) | 4 | 2, 2, **1**, 7 (12) | impact tic 4 | — | — |
 | `throwForward` (Ciseaux) | 7 | 3, 3, 4, **1**, 7, 7, 7 (32) | lâcher tic 10 | — | ciseau de jambes, chute tout près |
-| `throwBack` (Roulade) | 8 | 3, 3, 4, 4, **1**, 8, 8, 9 (40) | côté changé tic 8, lâcher tic 14 | — | monkey flip |
+| `throwBack` (Roulade) | 8 | 3, 3, 4, 4, **1**, 8, 8, 9 (40) | côté changé tic 6, lâcher tic 14 | — | monkey flip |
 
 Riff : 43 planches, environ **265 images**. C'est le poste le plus lourd : il démarre **en parallèle dès la phase 1**, dans des fichiers séparés, sans attendre le gameplay (la boîte grise honnête suffit pour jouer).
 
@@ -1140,7 +1144,7 @@ export interface StageConfig {
 }
 
 // core/state.ts (ajouts)
-export type FighterAction = /* … existants … */ | 'guard' | 'holding' | 'held';
+export type FighterAction = /* … existants … */ | 'guard' | 'holding' | 'held' | 'tech';
 export type Reaction = 'high' | 'mid' | 'low' | 'crouch' | 'trip' | 'launch' | 'thrown';
 export interface FighterState {
   /* … existants ; bufferedAttack devient bufferedCommand … */

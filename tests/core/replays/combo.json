@@ -1,5 +1,5 @@
 {
-  "description": "Combos with cancels and damage scaling: low, low, heavy into the flying kick for Nayo; jab into the rush for Riff.",
+  "description": "Combos with cancels and damage scaling: low, low, heavy into the flying kick for Nayo; jab and Coup bas into the Glissade for Riff; the flying kick knocks down.",
   "fighters": ["nayo", "riff"],
   "inputs": [
     [90, "", ""],
@@ -19,11 +19,11 @@
     [10, "", "down"],
     [1, "", "special"],
     [46, "", ""],
-    [2, "right", "left"],
+    [8, "right", "left"],
     [1, "light", ""],
     [5, "", ""],
     [1, "down+special", ""],
     [104, "", ""]
   ],
-  "hash": "bdf465f7"
+  "hash": "c43932bc"
 }

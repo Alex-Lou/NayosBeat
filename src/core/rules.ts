@@ -48,8 +48,13 @@ export const AIR_HIT_LIFT = px(3);
 /** Ticks of input history kept to recognize motions. */
 export const DIRECTION_HISTORY_FRAMES = 16;
 
-/** A motion counts if it was completed this recently, and performed within the history. */
-export const MOTION_END_FRAMES = 4;
+/**
+ * A motion (↓↘→, →↓↘) counts when it is fresh: performed within the last MOTION_SPAN_FRAMES
+ * ticks, its last step entered (not merely held) within the last MOTION_END_FRAMES. A thumb
+ * sliding from the crouch into a walk does not throw a special a moment later.
+ */
+export const MOTION_SPAN_FRAMES = 12;
+export const MOTION_END_FRAMES = 6;
 
 /** A normal can still turn into a throw this long after it started (light + heavy pressed late). */
 export const THROW_CONVERSION_FRAMES = 3;
@@ -58,9 +63,42 @@ export const THROW_CONVERSION_FRAMES = 3;
 export const COMBO_SCALING_STEP = 10;
 export const COMBO_SCALING_FLOOR = 50;
 
-/** Separation speed when both players throw each other on the same tick. */
+/**
+ * A blow on a fighter attacking (CONTRE) or recovering (PUNITION) hurts this much more, stuns
+ * longer (unless it knocks down) and freezes the game longer: reading the opponent pays, and
+ * only a combo's first hit can be one (the rest land on a fighter in hitstun).
+ */
+export const COUNTER_DAMAGE_PERCENT = 20;
+export const COUNTER_HITSTUN = 4;
+export const COUNTER_HITSTOP = 3;
+
+/** A special blocked still takes this share of its damage (the chip), never the last point. */
+export const SPECIAL_CHIP_PERCENT = 15;
+
+/** A hitstun this long plays the whole reaction; a shorter one, its quick version. */
+export const HEAVY_REACTION_HITSTUN = 18;
+
+/**
+ * A tech (both players grabbing on the same tick, or the held one breaking free): nobody is
+ * thrown, both are pushed apart at this speed and reel for THROW_TECH_STUN ticks (the `tech`
+ * strip).
+ */
 export const THROW_TECH_PUSHBACK = px(4);
-export const THROW_TECH_STUN = 12;
+export const THROW_TECH_STUN = 14;
+
+/** The freeze when a grab catches (docs/combat-v2.md §4.1): the victim's phone vibrates. */
+export const GRAB_HITSTOP = 6;
+/**
+ * The clinch: on the first ticks of a hold (200 ms), the held player breaks free with the grab
+ * button; the holder's choice waits for the end of it.
+ */
+export const GRAB_TECH_FRAMES = 12;
+/** How long a hold lasts at most, then the holder throws forward if it chose nothing. */
+export const HOLD_LIMIT_FRAMES = 56;
+/** Struggling shortens the hold down to this: a throw chosen at once is never cut short. */
+export const HOLD_MIN_FRAMES = 36;
+/** Each button the held player presses after the clinch takes this off the hold's limit. */
+export const STRUGGLE_FRAMES = 3;
 
 /** Training mode: health refills once the dummy has been left alone this long. */
 export const TRAINING_REFILL_FRAMES = 60;

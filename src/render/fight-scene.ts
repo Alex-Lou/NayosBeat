@@ -5,17 +5,12 @@ import type { FighterArt } from '../art/types';
 import { assertValidArt } from '../art/validate';
 import type { Sfx } from '../audio/sfx';
 import { matchConfigOf, player2Behavior, type MatchSetup } from '../app/match-setup';
-import type { FighterTemplate, MatchConfig } from '../core/config';
+import type { MatchConfig } from '../core/config';
 import { TICK_RATE, toPx } from '../core/constants';
 import type { InputBits } from '../core/input';
 import { matchWinner } from '../core/round';
 import { MATCH_END_FRAMES } from '../core/rules';
-import {
-  createInitialState,
-  type FighterState,
-  type GameState,
-  type RoundState,
-} from '../core/state';
+import { createInitialState, type GameState } from '../core/state';
 import { step } from '../core/step';
 import { assertValidMatch } from '../core/validate';
 import { connectedGamepads } from '../input/gamepad';
@@ -25,6 +20,7 @@ import { PlayerInputs } from '../input/player-inputs';
 import { isTouchDevice, TouchControls } from '../input/touch-controls';
 import { FixedTimestep } from '../loop/fixed-timestep';
 import { frontFighter } from './animation';
+import { BoxOverlay } from './box-overlay';
 import { frameFight, MAX_CLOSE_UP, type FramingInput } from './camera-framing';
 import { DebugOverlay, describeGame, isDebugEnabled } from './debug-overlay';
 import { detectEvents, type FightEvent } from './fight-events';
@@ -33,7 +29,10 @@ import { FighterView } from './fighter-view';
 import { drawGreyboxStage, GROUND_Y } from './greybox-stage';
 import { hitStyleOf, type HitStyle } from './hit-styles';
 import { requestLandscapeFullscreen } from './fullscreen';
+import { HoldPrompt } from './hold-prompt';
+import { HoldRing } from './hold-ring';
 import { Hud } from './hud';
+import { MoveCaption } from './move-caption';
 import { ProjectileView } from './projectile-view';
 import { loadArt } from './art-textures';
 import { SpriteFighterView } from './sprite-fighter-view';
@@ -57,7 +56,7 @@ type Mutable<T> = { -readonly [K in keyof T]: T[K] };
 
 /** A fighter on screen: sprites when it has art, a grey box otherwise. */
 interface FighterDisplay {
-  update(fighter: FighterState, template: FighterTemplate, round: RoundState): void;
+  update(state: GameState): void;
   setFront(front: boolean): void;
 }
 
@@ -69,7 +68,14 @@ interface Runtime {
   readonly projectileView: ProjectileView;
   readonly feedback: FightFeedback;
   readonly hud: Hud;
+  /** The time a hold has left, around the fighter held. */
+  readonly holdRing: HoldRing;
+  /** Training only: the name of each move as it starts, the buttons of a hold. */
+  readonly caption: MoveCaption | undefined;
+  readonly holdPrompt: HoldPrompt | undefined;
+  /** Debug only: the statistics, and every box. */
   readonly debugOverlay: DebugOverlay | undefined;
+  readonly boxOverlay: BoxOverlay | undefined;
 }
 
 /**
@@ -165,8 +171,8 @@ export class FightScene extends Phaser.Scene {
       inputs: new PlayerInputs(window, touch, connectedGamepads()),
       pauseInput: new PauseInput(document.body),
       fighterViews: [
-        this.fighterDisplay(0, COLORS.player1, debug),
-        this.fighterDisplay(1, COLORS.player2, debug),
+        this.fighterDisplay(0, COLORS.player1),
+        this.fighterDisplay(1, COLORS.player2),
       ],
       projectileView: new ProjectileView(this, this.config, GROUND_Y, this.arts),
       // Touch is player 1's: its phone vibrates when player 1 is grabbed or hit hard.
@@ -178,7 +184,11 @@ export class FightScene extends Phaser.Scene {
         touch ? vibrate : undefined,
       ),
       hud: new Hud(this, this.config),
+      holdRing: new HoldRing(this, GROUND_Y, [this.styles[0].energy, this.styles[1].energy]),
+      caption: this.config.training ? new MoveCaption(this, this.config, GROUND_Y) : undefined,
+      holdPrompt: this.config.training ? new HoldPrompt(this, this.config, GROUND_Y) : undefined,
       debugOverlay: debug ? new DebugOverlay(document.body) : undefined,
+      boxOverlay: debug ? new BoxOverlay(this, this.config, GROUND_Y) : undefined,
     };
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
@@ -205,11 +215,11 @@ export class FightScene extends Phaser.Scene {
     }
   }
 
-  private fighterDisplay(player: 0 | 1, color: number, debug: boolean): FighterDisplay {
+  private fighterDisplay(player: 0 | 1, color: number): FighterDisplay {
     const art = this.arts[player];
     return art
-      ? new SpriteFighterView(this, art, player, GROUND_Y, this.styles[player].energy, debug)
-      : new FighterView(this, color, GROUND_Y, debug);
+      ? new SpriteFighterView(this, art, player, GROUND_Y, this.styles[player].energy, this.config)
+      : new FighterView(this, color, GROUND_Y, player, this.config.fighters[player]);
   }
 
   /** Resumes after the pause menu. The paused time is not simulated. */
@@ -249,7 +259,10 @@ export class FightScene extends Phaser.Scene {
         detectEvents(previous, this.state, this.config, this.tickEvents);
         const viewLeft = toPx(this.state.cameraX) - VIEW_SIZE.width / 2;
         runtime.feedback.beginTick();
-        for (const event of this.tickEvents) runtime.feedback.react(event, viewLeft);
+        for (const event of this.tickEvents) {
+          runtime.feedback.react(event, viewLeft);
+          runtime.caption?.react(event, this.state.frame);
+        }
       }
     }
     runtime.feedback.update(visualFrames);
@@ -283,10 +296,14 @@ export class FightScene extends Phaser.Scene {
     this.front = frontFighter(this.front, a, b);
     viewA.setFront(this.front === 0);
     viewB.setFront(this.front === 1);
-    viewA.update(a, this.config.fighters[0], this.state.round);
-    viewB.update(b, this.config.fighters[1], this.state.round);
+    viewA.update(this.state);
+    viewB.update(this.state);
     runtime.projectileView.update(this.state.projectiles, this.state.frame);
     runtime.hud.update(this.state);
+    runtime.holdRing.update(this.state);
+    runtime.caption?.update(this.state);
+    runtime.holdPrompt?.update(this.state);
+    runtime.boxOverlay?.update(this.state);
 
     const xs = this.framedXs;
     const projectiles = this.state.projectiles;

@@ -25,7 +25,8 @@ describe('threat reach', () => {
   });
 
   it('reaches where a projectile appears', () => {
-    expect(threatReach(NAYO.moves.special)).toBe(px(24 - 8 + 16));
+    // The Vinyle's box (−10..10 px) appears 24 px ahead: its front edge 34 px ahead (§10.1).
+    expect(threatReach(NAYO.moves.special)).toBe(px(24 + 10));
   });
 });
 
@@ -125,7 +126,11 @@ describe('proximity guard (§3.6)', () => {
   });
 
   it('can be grabbed, like standing still', () => {
-    const grabber = makeFighter({ action: 'attack', move: 'grab', actionFrame: 3 });
+    const grabber = makeFighter({
+      action: 'attack',
+      move: 'grab',
+      actionFrame: NAYO.moves.grab.startup,
+    });
     const guarding = makeFighter({ x: px(420), facing: -1, action: 'guard', input: Right });
     expect(findHit(grabber, NAYO, guarding, NAYO)).not.toBeNull();
   });
@@ -146,6 +151,7 @@ describe('proximity guard (§3.6)', () => {
       guarded ||= state.fighters[0].action === 'guard';
     }
     expect(guarded).toBe(true);
-    expect(state.fighters[0].health).toBeLessThan(NAYO.maxHealth);
+    // Caught in its guard: held (combat v2 §4.2, where the grab used to throw at once).
+    expect(state.fighters[0].action).toBe('held');
   });
 });

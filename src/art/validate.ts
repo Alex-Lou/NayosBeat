@@ -1,6 +1,7 @@
 import type { FighterTemplate } from '../core/config';
-import { CORE_MOVE_IDS } from '../core/move-data';
+import { MOVE_IDS, type MoveData, type MoveId } from '../core/move-data';
 import { moveDuration } from '../core/moves';
+import { THROW_TECH_STUN } from '../core/rules';
 import { STATE_CLIP_IDS, type Clip, type FighterArt } from './types';
 
 /**
@@ -19,8 +20,19 @@ export function validateArt(art: FighterArt, template: FighterTemplate): string[
     check(art.urls[sheet] !== undefined, `sheet ${sheet} has no image URL`);
   }
 
-  for (const id of [...STATE_CLIP_IDS, ...CORE_MOVE_IDS]) {
-    for (const problem of clipProblems(art.clips[id], art)) check(false, `clip ${id}: ${problem}`);
+  // Every state, and every move the fighter has (the art follows the moves that are defined).
+  const moves = MOVE_IDS.flatMap((id): [MoveId, MoveData][] => {
+    const move = template.moves[id];
+    return move ? [[id, move]] : [];
+  });
+  const clips = [...STATE_CLIP_IDS, ...moves.map(([id]) => id)];
+  for (const id of clips) {
+    const clip = art.clips[id];
+    if (!clip) {
+      check(false, `clip ${id} is missing`);
+      continue;
+    }
+    for (const problem of clipProblems(clip, art)) check(false, `clip ${id}: ${problem}`);
   }
   if (art.projectile) {
     for (const problem of clipProblems(art.projectile, art)) check(false, `projectile: ${problem}`);
@@ -29,19 +41,29 @@ export function validateArt(art: FighterArt, template: FighterTemplate): string[
     check(art.sheets[sheet] !== undefined, `effects of unknown sheet ${sheet}`);
   }
 
-  const expected: [string, Clip, number][] = [
+  const expected: [string, Clip | undefined, number][] = [
     ['preJump', art.clips.preJump, template.preJumpFrames],
     ['landing', art.clips.landing, template.landingFrames],
-    ['knockdown', art.clips.knockdown, template.knockdownFrames],
-    ...CORE_MOVE_IDS.map((id): [string, Clip, number] => [
+    // The fall and the floor, then standing up: the whole knockdown.
+    [
+      'knockdown',
+      { ...art.clips.knockdown, ticks: [...art.clips.knockdown.ticks, ...art.clips.getup.ticks] },
+      template.knockdownFrames,
+    ],
+    ['tech', art.clips.tech, THROW_TECH_STUN],
+    // Frame for frame with the thrower, up to the release.
+    ['thrownBack', art.clips.thrownBack, template.moves.throwBack.startup],
+    ...moves.map(([id, move]): [string, Clip | undefined, number] => [
       id,
       art.clips[id],
-      moveDuration(template.moves[id]),
+      moveDuration(move),
     ]),
   ];
   for (const [id, clip, duration] of expected) {
+    if (!clip) continue;
     const total = clipDuration(clip);
-    check(total === duration, `clip ${id} lasts ${total} ticks, its gameplay lasts ${duration}`);
+    const what = id === 'knockdown' ? 'clips knockdown and getup last' : `clip ${id} lasts`;
+    check(total === duration, `${what} ${total} ticks, its gameplay lasts ${duration}`);
   }
   return errors;
 }

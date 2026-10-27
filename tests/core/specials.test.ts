@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { canBeHit, scaledDamage } from '../../src/core/combat';
+import { canBeHit } from '../../src/core/combat';
+import { chipDamage, scaledDamage } from '../../src/core/damage';
 import { px } from '../../src/core/constants';
 import { updateFighter } from '../../src/core/fighter';
 import { Input } from '../../src/core/input';
 import { detectMotion } from '../../src/core/motion';
 import { moveDuration } from '../../src/core/moves';
+import { MOTION_END_FRAMES, MOTION_SPAN_FRAMES } from '../../src/core/rules';
 import type { GameState } from '../../src/core/state';
 import { NAYO as P } from '../../src/data/fighters/nayo';
 import { RIFF as R } from '../../src/data/fighters/riff';
@@ -53,7 +55,56 @@ describe('detectMotion', () => {
   });
 
   it('ignores a motion finished too long ago', () => {
-    expect(detectMotion([Down, Down | Right, Right, 0, 0, 0, 0, 0], 1)).toBeNull();
+    // §2.7: the last step entered within the last 6 ticks (MOTION_END_FRAMES, was 4 held).
+    const done = [Down, Down | Right, Right];
+    expect(detectMotion([...done, ...repeat(0, MOTION_END_FRAMES - 1)], 1)).toBe(
+      'quarterCircleForward',
+    );
+    expect(detectMotion([...done, ...repeat(0, MOTION_END_FRAMES)], 1)).toBeNull();
+  });
+});
+
+describe('fresh motions (§2.7)', () => {
+  it('counts the last step from when it was entered, not while it is held', () => {
+    const walked = (ticks: number) => [Down, Down | Right, ...repeat(Right, ticks)];
+    expect(detectMotion(walked(MOTION_END_FRAMES), 1)).toBe('quarterCircleForward');
+    expect(detectMotion(walked(MOTION_END_FRAMES + 1), 1)).toBeNull();
+  });
+
+  it('wants the whole motion within 12 ticks', () => {
+    const slow = (ticks: number) => [Down, ...repeat(Down | Right, ticks), Right];
+    // The first step 11 ticks before the last one: 12 ticks in all.
+    expect(detectMotion(slow(MOTION_SPAN_FRAMES - 2), 1)).toBe('quarterCircleForward');
+    expect(detectMotion(slow(MOTION_SPAN_FRAMES - 1), 1)).toBeNull();
+  });
+
+  it('throws the Vinyle on ↓↘→ + S, though forward is held', () => {
+    expect(play([Down, Down | Right, Right | Special]).move).toBe('special');
+    expect(play([Down, Down | Right, Right, Right | Special]).move).toBe('special');
+  });
+
+  it('reads →↓↘ + S as the anti-air', () => {
+    expect(play([Right, Down, Down | Right | Special]).move).toBe('specialAntiAir');
+  });
+
+  it('gives the forward special after crouching then walking forward 13 ticks', () => {
+    const walk = [...repeat(Down, 10), Down | Right, ...repeat(Right, 13)];
+    expect(play([...walk, Right | Special]).move).toBe('specialForward');
+  });
+
+  it('gives a normal, not a special, when walking forward out of a low guard', () => {
+    // Forward held: the direction normals of combat v2 (§2.8), → + L and → + H.
+    const walk = [...repeat(Down | Left, 10), Down, Down | Right, ...repeat(Right, 10)];
+    expect(play([...walk, Right | Light]).move).toBe('forwardLight');
+    expect(play([...walk, Right | Heavy]).move).toBe('forwardHeavy');
+  });
+
+  it('reads the motion through the buffer, as it was when pressed', () => {
+    const busy = play([Heavy]);
+    const motion = [Down, Down | Right, Right | Special, 0, 0];
+    let fighter = play(repeat(0, moveDuration(P.moves.standHeavy) - 4), busy);
+    fighter = play(motion, fighter);
+    expect(fighter.move).toBe('special');
   });
 });
 
@@ -94,7 +145,8 @@ describe('projectiles', () => {
     const fired = script(start, [[Special, 0], ...idle(FIREBALL.startup)]);
     expect(fired.projectiles).toHaveLength(1);
     const later = script(fired, idle(10));
-    expect(later.projectiles[0]?.x).toBe((fired.projectiles[0]?.x ?? 0) + 10 * px(3));
+    // The Vinyle flies at 3.5 px per tick (§10.1).
+    expect(later.projectiles[0]?.x).toBe((fired.projectiles[0]?.x ?? 0) + 10 * px(3.5));
   });
 
   it('hits the opponent and disappears', () => {
@@ -104,10 +156,10 @@ describe('projectiles', () => {
     expect(after.fighters[1].health).toBe(P.maxHealth - FIREBALL.damage);
   });
 
-  it('can be blocked', () => {
+  it('can be blocked, which only chips (§7.5)', () => {
     const start = facingOff(120, MIRROR_MATCH);
     const after = script(start, [[Special, Right], ...repeat<[number, number]>([0, Right], 60)]);
-    expect(after.fighters[1].health).toBe(P.maxHealth);
+    expect(after.fighters[1].health).toBe(P.maxHealth - chipDamage(FIREBALL));
     expect(after.projectiles).toHaveLength(0);
   });
 
@@ -139,14 +191,17 @@ describe('throws', () => {
     expect(play([Light, Light | Heavy]).move).toBe('grab');
   });
 
-  it('throws a nearby opponent, even when blocking, and knocks them down', () => {
+  // Combat v2 (§4.1): the grab holds, and throws forward once the hold runs out.
+  it('grabs a nearby opponent, even when blocking, then throws them down', () => {
     const start = facingOff(30, MIRROR_MATCH);
-    const after = script(start, [
+    const caught = script(start, [
       [Light | Heavy, Right],
-      ...repeat<[number, number]>([0, Right], 10),
+      ...repeat<[number, number]>([0, Right], THROW.startup),
     ]);
+    expect(caught.fighters[1].action).toBe('held');
+    const after = script(caught, repeat<[number, number]>([0, Right], 90));
     const [, thrown] = after.fighters;
-    expect(thrown.health).toBe(P.maxHealth - THROW.damage);
+    expect(thrown.health).toBe(P.maxHealth - P.moves.throwForward.damage);
     expect(['airHit', 'knockdown']).toContain(thrown.action);
   });
 
@@ -158,7 +213,7 @@ describe('throws', () => {
 
   it('is teched when both players throw on the same tick', () => {
     const start = facingOff(30, MIRROR_MATCH);
-    const after = script(start, [[Light | Heavy, Light | Heavy], ...idle(5)]);
+    const after = script(start, [[Light | Heavy, Light | Heavy], ...idle(THROW.startup + 5)]);
     expect(after.fighters.map((f) => f.health)).toEqual([P.maxHealth, P.maxHealth]);
     expect(after.fighters[1].x - after.fighters[0].x).toBeGreaterThan(px(30));
   });
@@ -227,7 +282,9 @@ describe('cancels and combos', () => {
     ]);
     const after = script(facingOff(80, MIRROR_MATCH), ticks);
     expect(after.fighters[0].health).toBe(P.maxHealth);
-    expect(after.fighters[1].health).toBe(P.maxHealth - P.moves.specialAntiAir.damage);
+    // It catches the jump attack under way: a CONTRE (§7.4).
+    const counterHit = scaledDamage(P.moves.specialAntiAir.damage, 1, true);
+    expect(after.fighters[1].health).toBe(P.maxHealth - counterHit);
   });
 
   it('loses to the same jump-in when pressed too early', () => {

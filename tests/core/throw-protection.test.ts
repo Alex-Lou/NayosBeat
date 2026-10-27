@@ -10,7 +10,11 @@ import { NAYO } from '../../src/data/fighters/nayo';
 import { facingOff, makeFighter, MIRROR_MATCH, repeat } from './helpers';
 
 /** The grab of a fighter right in front, on its active frame. */
-const GRABBER = makeFighter({ action: 'attack', move: 'grab', actionFrame: 3 });
+const GRABBER = makeFighter({
+  action: 'attack',
+  move: 'grab',
+  actionFrame: NAYO.moves.grab.startup,
+});
 const JAB = makeFighter({ action: 'attack', move: 'standLight', actionFrame: 4 });
 
 /** A defender ending `action` (its last stun tick), then left alone: its state on each tick. */

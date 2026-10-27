@@ -65,7 +65,7 @@ const STRIKE: Pose = guarded(
     farFoot: onToes(-44),
     bends: { ...REST.bends, nearKnee: 'up' },
     effects: [
-      smear(5, [11, 10.5], [19, 10.6], [28, 9.8], [35.5, 8.2]),
+      smear(4, [11, 10.5], [19, 10.6], [27, 9.9], [33.5, 8.5]),
       { kind: 'flash', center: at(37.5, 8), radius: 3.5, tone: 'strike' },
     ],
   },

@@ -35,7 +35,8 @@ export function airborne(fighter: FighterState, template: FighterTemplate): Figh
   const x = fighter.x + fighter.vx;
   if (y > 0) return { ...fighter, x, y, vy };
 
-  const grounded: FighterState = { ...fighter, x, y: 0, vx: 0, vy: 0 };
+  // Down, the juggle a launcher allowed is over.
+  const grounded: FighterState = { ...fighter, x, y: 0, vx: 0, vy: 0, juggle: 0 };
   switch (fighter.action) {
     case 'airHit':
       return { ...enter(grounded, 'knockdown'), stunFrames: template.knockdownFrames };
@@ -44,4 +45,20 @@ export function airborne(fighter: FighterState, template: FighterTemplate): Figh
     default:
       return { ...enter(grounded, 'landing'), move: null };
   }
+}
+
+/**
+ * Ticks a fighter sent flying from the ground at `vy` (a knockdown, a throw) stays in the air:
+ * on the last one it lands. The same integer steps as `airborne`.
+ */
+export function flightTicks(vy: number): number {
+  let speed = vy;
+  let height = 0;
+  let ticks = 0;
+  do {
+    speed -= HIT_GRAVITY;
+    height += speed;
+    ticks++;
+  } while (height > 0);
+  return ticks;
 }

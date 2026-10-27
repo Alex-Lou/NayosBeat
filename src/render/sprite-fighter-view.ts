@@ -1,15 +1,13 @@
 import type Phaser from 'phaser';
-import type { FighterArt } from '../art/types';
-import { activeMove } from '../core/combat';
-import type { FighterTemplate } from '../core/config';
+import { clipOf, type FighterArt } from '../art/types';
+import type { FighterTemplate, MatchConfig } from '../core/config';
 import { toPx } from '../core/constants';
-import { isActiveFrame } from '../core/moves';
-import type { FighterState, RoundState } from '../core/state';
+import { isActiveFrame, moveOf } from '../core/moves';
+import type { FighterState, GameState } from '../core/state';
 import { AnchoredSprite } from './anchored-sprite';
-import { clipFrameAt, clipIdOf, clipTickOf } from './animation';
+import { clipFrameAt, showFighter, type Shown } from './animation';
 import { DashTrail } from './dash-trail';
 import { DEPTH } from './depth';
-import { addHitbox, hitboxOf, outlineHurtboxes, placeBox } from './fighter-view';
 
 const SHADOW_WIDTH = 36;
 const SHADOW_HEIGHT = 6;
@@ -19,17 +17,18 @@ const SHADOW_HALF_HEIGHT = 120;
 
 /**
  * A fighter drawn with its sprites. The frame comes from the simulation state alone (action,
- * frame counter, move, round), so the animation always matches the frame data. The strips that
+ * frame counter, move, round, and the opponent holding or throwing it), so the animation always
+ * matches the frame data. The strips that
  * have front effects play them in step, over both fighters; a dash leaves afterimages in the
- * fighter's energy color (`trailColor`). Boxes show in debug.
+ * fighter's energy color (`trailColor`). Its boxes show in the debug view (BoxOverlay).
  */
 export class SpriteFighterView {
   private readonly shadow: Phaser.GameObjects.Ellipse;
   private readonly body: AnchoredSprite;
   private readonly effects: AnchoredSprite | undefined;
   private readonly trail: DashTrail;
-  private readonly hitbox: Phaser.GameObjects.Rectangle | undefined;
-  private readonly hurtbox: Phaser.GameObjects.Graphics | undefined;
+  /** Reused every frame. */
+  private readonly shown: Shown = { clip: 'idle', tick: 0, x: 0 };
 
   constructor(
     scene: Phaser.Scene,
@@ -37,7 +36,7 @@ export class SpriteFighterView {
     private readonly player: 0 | 1,
     private readonly groundY: number,
     trailColor: number,
-    showBoxes: boolean,
+    private readonly config: MatchConfig,
   ) {
     this.shadow = scene.add.ellipse(
       0,
@@ -53,8 +52,6 @@ export class SpriteFighterView {
       ? new AnchoredSprite(scene, art, 'fx').setDepth(DEPTH.effects)
       : undefined;
     this.effects?.hide();
-    this.hitbox = showBoxes ? addHitbox(scene).setDepth(DEPTH.debug) : undefined;
-    this.hurtbox = showBoxes ? scene.add.graphics().setDepth(DEPTH.debug) : undefined;
   }
 
   /** Draws this fighter over the other one, or under it. */
@@ -62,12 +59,16 @@ export class SpriteFighterView {
     this.body.setDepth(front ? DEPTH.fighterFront : DEPTH.fighterBack);
   }
 
-  update(fighter: FighterState, template: FighterTemplate, round: RoundState): void {
-    const id = clipIdOf(fighter, this.player, round);
-    const clip = this.art.clips[id];
-    const frame = clip.frames[clipFrameAt(clip, clipTickOf(id, fighter, round))] ?? 0;
+  update(state: GameState): void {
+    const fighter = state.fighters[this.player];
+    const template = this.config.fighters[this.player];
+    const round = state.round;
+    const shown = this.shown;
+    showFighter(state, this.player, this.config, this.art, shown);
+    const clip = clipOf(this.art, shown.clip);
+    const frame = clip.frames[clipFrameAt(clip, shown.tick)] ?? 0;
 
-    const x = toPx(fighter.x);
+    const x = toPx(shown.x);
     const height = toPx(fighter.y);
     const flip = fighter.facing < 0;
     this.body.show(clip.sheet, frame, x, this.groundY - height, flip);
@@ -83,18 +84,11 @@ export class SpriteFighterView {
     }
     const shrink = SHADOW_HALF_HEIGHT / (SHADOW_HALF_HEIGHT + height);
     this.shadow.setPosition(x, this.groundY).setScale(shrink);
-
-    if (this.hitbox) {
-      const move = activeMove(fighter, template);
-      this.hitbox.setVisible(move !== null);
-      if (move?.hitbox) placeBox(this.hitbox, hitboxOf(fighter, move.hitbox), this.groundY);
-    }
-    if (this.hurtbox) outlineHurtboxes(this.hurtbox, fighter, template, this.groundY);
   }
 }
 
 /** On a frame of a dash that moves the fighter (the "active" frames of a movement). */
 function isGliding(fighter: FighterState, template: FighterTemplate): boolean {
-  const move = fighter.move ? template.moves[fighter.move] : null;
+  const move = fighter.move ? moveOf(template, fighter.move) : null;
   return move?.kind === 'movement' && isActiveFrame(move, fighter.actionFrame);
 }
