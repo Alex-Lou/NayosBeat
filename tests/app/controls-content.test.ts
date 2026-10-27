@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { helpPages, type ControlDevices } from '../../src/app/controls-content';
+import { helpPages, withArrows, type ControlDevices } from '../../src/app/controls-content';
 import { CORE_MOVE_IDS } from '../../src/core/move-data';
 import { MOVE_ORDER, MOVE_TEXTS } from '../../src/data/move-texts';
 import { ROSTER } from '../../src/data/roster';
@@ -66,5 +66,18 @@ describe('move texts', () => {
         expect(text.text.length, `${id} ${move}`).toBeGreaterThan(20);
       }
     }
+  });
+});
+
+describe('withArrows', () => {
+  it('cuts a help text into plain text and turned arrows, in order', () => {
+    expect(withArrows('↓↘→ + un coup')).toEqual([
+      { turn: 180, label: 'bas' },
+      { turn: 135, label: 'bas-avant' },
+      { turn: 90, label: 'avant' },
+      ' + un coup',
+    ]);
+    expect(withArrows('L → H')).toEqual(['L ', { turn: 90, label: 'avant' }, ' H']);
+    expect(withArrows('Sans flèche')).toEqual(['Sans flèche']);
   });
 });

@@ -313,6 +313,31 @@ body {
   white-space: nowrap;
   color: #f0c94a;
 }
+/* An arrow of the help: the pixel font's ↑, turned (controls-content.ts). */
+.controls .arrow {
+  display: inline-block;
+}
+.controls .arrow[data-turn='45'] {
+  transform: rotate(45deg);
+}
+.controls .arrow[data-turn='90'] {
+  transform: rotate(90deg);
+}
+.controls .arrow[data-turn='135'] {
+  transform: rotate(135deg);
+}
+.controls .arrow[data-turn='180'] {
+  transform: rotate(180deg);
+}
+.controls .arrow[data-turn='225'] {
+  transform: rotate(225deg);
+}
+.controls .arrow[data-turn='270'] {
+  transform: rotate(270deg);
+}
+.controls .arrow[data-turn='315'] {
+  transform: rotate(315deg);
+}
 .rotate-hint {
   display: none;
 }

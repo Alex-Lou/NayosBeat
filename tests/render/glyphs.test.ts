@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { helpPages, withArrows } from '../../src/app/controls-content';
 import type { RoundState } from '../../src/core/state';
 import { ROSTER } from '../../src/data/roster';
 import { announcementOf, comboText, NO_TIMER } from '../../src/render/hud-text';
@@ -73,6 +74,25 @@ describe('glyphs', () => {
   it('of the HUD have no capital accented letter', () => {
     expect(hudTexts().filter((text) => CAPITAL_ACCENTED.test(text))).toEqual([]);
     expect(CAPITAL_ACCENTED.test('ÉGALITÉ')).toBe(true);
+  });
+
+  it('of every help text are in the pixel font, its arrows drawn as a turned ↑', async () => {
+    const devices = [false, true].flatMap((touch) =>
+      [false, true].map((gamepad) => ({ touch, gamepad })),
+    );
+    const texts = devices.flatMap((device) =>
+      helpPages(device).flatMap((page) => [
+        page.title,
+        ...page.sections.flatMap((section) => [section.title, ...section.rows.flat()]),
+      ]),
+    );
+    const shown = texts.map((text) =>
+      withArrows(text)
+        .map((part) => (typeof part === 'string' ? part : '↑'))
+        .join(''),
+    );
+    expect(texts.some((text) => text.includes('↘'))).toBe(true);
+    expect(missing(await glyphsOf(PIXEL), shown)).toEqual([]);
   });
 
   it('of every comic word, and its tally, are in the comic font', async () => {

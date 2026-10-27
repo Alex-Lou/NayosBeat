@@ -205,7 +205,7 @@ Trois champs d'état : `tapDirection` (−1, 0 ou 1, en coordonnées du stage), 
 | →↓↘ + L, H ou S | `specialAntiAir` |
 
 - **Aucune autre manip** (pas de QCB, de demi-cercle, de charge ni de 360). **Aucun bonus de dégâts.**
-- **Règle de manip fraîche** (`motion.ts`) : la 1re étape a lieu au plus `MOTION_SPAN_FRAMES` = 12 tics avant l'appui, et la **dernière étape a été entrée** (pas seulement tenue) au plus `MOTION_END_FRAMES` = 6 tics avant l'appui (au lieu de « tenue dans les 4 derniers tics »).
+- **Règle de manip fraîche** (`motion.ts`) : la 1re étape a lieu dans les `MOTION_SPAN_FRAMES` = 12 derniers tics, et la **dernière étape a été entrée** (pas seulement tenue) dans les `MOTION_END_FRAMES` = 6 derniers tics (le tic de l'appui compte dans chaque fenêtre, comme pour le buffer) (au lieu de « tenue dans les 4 derniers tics »).
   - Un vrai ↓↘→ + S sort le Vinyle.
   - S'accroupir, marcher en avant un instant, puis appuyer S donne le spécial avant, comme le joueur tactile le veut.
   - La même règle protège L et H : marcher après une garde basse puis appuyer L ne sort plus un Vinyle par accident.

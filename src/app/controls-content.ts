@@ -121,9 +121,65 @@ function sectionElement({ title, rows }: HelpSection): HTMLElement {
   const table = document.createElement('table');
   for (const [control, effect] of rows) {
     const tr = table.insertRow();
-    tr.insertCell().textContent = control;
-    tr.insertCell().textContent = effect;
+    fillWithArrows(tr.insertCell(), control);
+    fillWithArrows(tr.insertCell(), effect);
   }
   section.append(heading, table);
   return section;
+}
+
+/** A direction written as an arrow: how far its ↑ turns, and what it says aloud. */
+export interface Arrow {
+  readonly turn: number;
+  readonly label: string;
+}
+
+/**
+ * The directions the help writes as arrows ("→" is toward the opponent). The pixel font only
+ * has ↑ and ↓, and the browser's fallback draws the others tiny: each arrow is the font's ↑,
+ * turned by steps of 45°.
+ */
+const ARROWS: Readonly<Record<string, Arrow>> = {
+  '↑': { turn: 0, label: 'haut' },
+  '↗': { turn: 45, label: 'haut-avant' },
+  '→': { turn: 90, label: 'avant' },
+  '↘': { turn: 135, label: 'bas-avant' },
+  '↓': { turn: 180, label: 'bas' },
+  '↙': { turn: 225, label: 'bas-arrière' },
+  '←': { turn: 270, label: 'arrière' },
+  '↖': { turn: 315, label: 'haut-arrière' },
+};
+
+/** A help text cut into plain text and arrows, in order. */
+export function withArrows(text: string): (string | Arrow)[] {
+  const parts: (string | Arrow)[] = [];
+  let plain = '';
+  for (const char of text) {
+    const arrow = ARROWS[char];
+    if (!arrow) {
+      plain += char;
+      continue;
+    }
+    if (plain) parts.push(plain);
+    plain = '';
+    parts.push(arrow);
+  }
+  if (plain) parts.push(plain);
+  return parts;
+}
+
+function fillWithArrows(cell: HTMLElement, text: string): void {
+  for (const part of withArrows(text)) {
+    if (typeof part === 'string') {
+      cell.append(part);
+      continue;
+    }
+    const arrow = document.createElement('span');
+    arrow.className = 'arrow';
+    arrow.dataset['turn'] = String(part.turn);
+    arrow.setAttribute('role', 'img');
+    arrow.setAttribute('aria-label', part.label);
+    arrow.textContent = '↑';
+    cell.append(arrow);
+  }
 }
