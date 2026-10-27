@@ -338,34 +338,7 @@ function drawHand(ctx: Ctx, side: Side, near: boolean): void {
   );
 
   if (side.hand === 'open') {
-    // An open hand, palm out, fingers loose: the glove over the palm, bare fingers past it.
-    canvas.polygon(
-      [
-        p(0.1, -1.7),
-        p(2.4, -1.9),
-        p(4.4, -1.7),
-        p(5.1, -1.0),
-        p(5.2, 0.6),
-        p(4.2, 1.4),
-        p(2.1, 1.6),
-        p(0, 1.3),
-      ],
-      skin,
-      { group, bevel: 1.2 * S },
-    );
-    canvas.polygon([p(0.1, -1.8), p(2.9, -1.9), p(3.1, 1.5), p(0, 1.4)], glove, {
-      group: `${group}Glove`,
-      bevel: 1.2 * S,
-    });
-    for (const dv of [-0.6, 0.4]) {
-      canvas.decal(
-        [p(3.2, dv - 0.12), p(5.4, dv - 0.12), p(5.4, dv + 0.12), p(3.2, dv + 0.12)],
-        fold,
-        group,
-        { flat: true },
-      );
-    }
-    canvas.capsule(p(0.8, 1.2), p(2.4, 2.4), 0.7 * S, 0.6 * S, skin, { group: `${group}Thumb` });
+    drawOpenHand(ctx, side, glove, skin, fold, group);
     return;
   }
   // A fist, about 8 by 8 sprite pixels: the glove over the back of the hand, the bare fingers
@@ -412,6 +385,52 @@ function drawHand(ctx: Ctx, side: Side, near: boolean): void {
   }
   canvas.capsule(p(2.6, -1.6), p(4.0, -1.2), 0.7 * S, 0.6 * S, skin, { group: `${group}Thumb` });
   if (near) wristStud(ctx, side);
+}
+
+/** How far an open hand bends at the wrist to point its fingers at the opponent (degrees). */
+const WRIST_BEND = 90;
+
+/**
+ * An open hand offered palm up, the fingers pointing at the opponent: the beckon of her taunts
+ * (« come on »). Whatever the forearm does, the hand bends at the wrist toward the opponent, by
+ * up to WRIST_BEND: a forearm raised upright gives a hand flat and level, palm to the sky. Seen
+ * from the side, the leather back of the glove underneath, the bare palm and the fingers on
+ * top, 2 or 3 art pixels of skin past the glove, their tips curling up.
+ */
+function drawOpenHand(
+  ctx: Ctx,
+  side: Side,
+  glove: Material,
+  skin: Material,
+  fold: Material,
+  group: string,
+): void {
+  const { canvas, at } = ctx;
+  const f = side.forearm;
+  const angle = Math.atan2(f.y, f.x);
+  const limit = (WRIST_BEND * Math.PI) / 180;
+  const turned = angle - clamp(angle, -limit, limit);
+  // u along the fingers, n out of the palm (up when the hand lies flat).
+  const u = { x: Math.cos(turned), y: Math.sin(turned) };
+  const n = { x: -u.y, y: u.x };
+  const q = (du: number, dn: number): Point => at(add(side.wrist, add(scale(u, du), scale(n, dn))));
+  // The fingers first, the glove's palm over their roots.
+  canvas.polygon(
+    [q(1.6, -1.3), q(3.8, -1.2), q(4.6, -0.7), q(4.9, 0.1), q(4.6, 0.9), q(3.4, 0.6), q(1.6, 0.8)],
+    skin,
+    { group, bevel: 1.1 * S },
+  );
+  canvas.decal([q(2.9, -0.32), q(4.6, -0.32), q(4.6, -0.08), q(2.9, -0.08)], fold, group, {
+    flat: true,
+  });
+  canvas.polygon(
+    [q(-1.2, -1.6), q(2.7, -1.7), q(3.1, -1.0), q(2.9, 0.2), q(1.2, 0.5), q(-1.2, 0.6)],
+    glove,
+    { group: `${group}Glove`, bevel: 1.2 * S },
+  );
+  // The bare palm in the glove's opening, turned to the sky, and the thumb up beside it.
+  canvas.decal([q(0.6, 0.2), q(2.8, 0.1), q(2.6, 0.7), q(0.8, 0.9)], skin, group);
+  canvas.capsule(q(1.0, 0.8), q(1.7, 1.3), 0.65 * S, 0.55 * S, skin, { group: `${group}Thumb` });
 }
 
 /** The glove's wrist strap: a 1 px silver stud on its middle. */
@@ -580,6 +599,11 @@ const TRIANGLE: readonly string[] = ['ooooooo', 'ovvvvvo', '.ouuuo.', '..out..',
  */
 const LACE: readonly string[] = ['h.x', '.x.', 'x.x'];
 
+/** The ball of the boot's sole, from under the ankle (world pixels): a turned-out foot pivots on it. */
+const BALL = 6;
+/** The length a boot turned out toward the camera keeps on screen. */
+const TURNED_OUT = 0.8;
+
 function drawBoot(ctx: Ctx, side: Side, near: boolean, top: Point): void {
   const { canvas, at } = ctx;
   const leather = near ? BOOT : BOOT_FAR;
@@ -591,7 +615,13 @@ function drawBoot(ctx: Ctx, side: Side, near: boolean, top: Point): void {
   // Origin under the ankle, on the ground: the skeleton's heel-toe line runs through the middle
   // of the shoe, half its thickness above the sole.
   const sole = add(side.heel, add(scale(u, RIFF_BODY.heel), scale(v, -RIFF_BODY.footRadius)));
-  const world = (a: number, b: number): Point => add(sole, add(scale(u, a), scale(v, b)));
+  // A knee turned out over its foot (the plié's rear knee, folded toward the heel) turns the
+  // boot out too, its toe toward the camera: the foot foreshortens about the ball, up to 80 %.
+  const middle = scale(add(side.hip, side.ankle), 0.5);
+  const fold = sub(side.knee, middle);
+  const turn = 1 - (1 - TURNED_OUT) * clamp(-(fold.x * u.x + fold.y * u.y) / 3, 0, 1);
+  const world = (a: number, b: number): Point =>
+    add(sole, add(scale(u, BALL + (a - BALL) * turn), scale(v, b)));
   const p = (a: number, b: number): Point => at(world(a, b));
 
   // The shaft follows the shin from the ankle to the top of the boot; the foot (heel counter,

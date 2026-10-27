@@ -23,8 +23,9 @@ const repeat = (ticks: number, frames: number): number[] => Array<number>(frames
 
 /** Ticks of every frame of every strip (60 per second). */
 export const RIFF_TIMING: Readonly<Record<RiffSheet, Timing>> = {
-  // One heavy beat per loop: the downbeat held (2), the taunt held (5, 6); 48 ticks as in §11.3.
-  idle: loop(6, 5, 7, 5, 5, 9, 7, 4),
+  // One rock per loop: the guard (0), the rise eased (1, 2), the top (3) held (4), the snap down
+  // (5, 3 ticks), the downbeat held (6), the settle (7); 48 ticks as in §11.3.
+  idle: loop(7, 4, 5, 5, 7, 3, 9, 8),
   walkForward: loop(...repeat(2, 10)),
   walkBack: loop(...repeat(2, 10)),
   crouch: loop(2, 2, 2, 8, 8, 8),

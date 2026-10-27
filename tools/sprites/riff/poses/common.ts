@@ -72,6 +72,24 @@ export function onBall(toe: number, angle: number): Foot {
   return planted(toe - Math.sin(a) * sole - Math.cos(a) * RIFF_BODY.foot, angle);
 }
 
+/** How far behind the ankle the back of her boot's sole sits (look.ts's drawBoot). */
+const BOOT_HEEL = 3.7;
+
+/**
+ * A flat planted `foot` with its toes lifted `angle` degrees, rocking back on the heel: the
+ * back corner of the sole stays put on the floor (a tap of the toes never slides the foot).
+ */
+export function onHeel(foot: Foot, angle: number): Foot {
+  if (angle === 0) return foot;
+  const a = (angle * Math.PI) / 180;
+  const corner = foot.x - BOOT_HEEL;
+  return {
+    x: corner + BOOT_HEEL * Math.cos(a) - RIFF_BODY.ankle * Math.sin(a),
+    y: BOOT_HEEL * Math.sin(a) + RIFF_BODY.ankle * Math.cos(a),
+    angle,
+  };
+}
+
 /** The toe tip of a foot (the inverse of onBall): where a heel pop pivots. */
 export function toeOf(foot: Foot): number {
   const a = ((foot.angle ?? 0) * Math.PI) / 180;
@@ -80,29 +98,53 @@ export function toeOf(foot: Foot): number {
 }
 
 /**
- * The guard: a street punk's stance, three quarters to the viewer like the reference (near
- * limbs on the camera side: her rear arm and leg, the lead ones behind the body), leaning into
- * the opponent. A wide stance, the hips low between the feet: the rear foot flat, its knee
- * giving; the lead foot light on its ball, the heel up, the knee bent over it, ready to sweep or
- * to snap the scorpion kick. One line of action from the rear foot up through the hips to the
- * head, pitched forward: the torso leans in 9 degrees, the head turned back by as much so that
- * it stays upright on screen (under head.ts's 20 degrees, the face as drawn), the sideways look
- * on the opponent. The lead fist hangs low and loose in front of the belly, out toward the
- * opponent, the elbow down (Iori's lead hand: she baits, she doesn't cover); the rear hand rests
- * on the hip, the elbow cocked out behind (B. Jenet's taunt), while the rest of her leans in:
- * come on, then. Her guard stands about 74 px tall, 0.94 of Nayo's.
+ * The guard, « la prédatrice »: b-girl plié legs, a street brawler's guard, the punk's face,
+ * three quarters to the viewer like the reference (near limbs on the camera side: her rear arm
+ * and leg, the lead ones behind the body). The legs carry the dance (the sweeps, the windmill,
+ * the scorpion kick, the slide), the arms the street fight (the backfist, the spinning elbow,
+ * the headbutt).
  *
- * The lead knee, the top of the lead boot and the fist stay inside the no-clinch line (x = 14
- * for anything above the shins): the hips sit back of centre by 3 px for it.
+ * The legs: low and springy, the knees opened out in a plié: the rear knee turned out, folding
+ * back over the heel (`nearKnee: 'back'`, its boot turned out toward the camera by look.ts), the
+ * lead one forward over its foot. A run or a walk never opens the knees (a rear knee folding
+ * forward reads as a stride at once). The feet about 30 px apart (0.42 of her height), the
+ * thighs about 40 degrees down: ready to push off, not a rooted horse stance. The hips a little
+ * over the lead leg (0.7 px ahead of the feet's midpoint); the rear foot springy on its ball,
+ * the heel 12 degrees up (the foot that whips the sweeps and the scorpion kick: the idle pumps
+ * that heel a few degrees, the ball never moves), the lead foot flat and planted.
+ *
+ * The body: hunched in, a predator. The torso leans in 19 degrees, the chest still open to the
+ * viewer, the rear shoulder shrugged up into the popped collar, the head on an on-screen tilt of
+ * 9 degrees: under stamp.ts's UPRIGHT_TOLERANCE (20), so the head is the source drawing as is,
+ * chin up, the sideways look on the opponent. The head never rotates on screen below 20 degrees
+ * (and RotSprite past it ruins the face): head motion comes from the torso and the hips.
+ *
+ * The arms: a street brawler's guard, nothing like Nayo's high shell. The lead hand low and
+ * loose, out in front of the belly, the forearm angled about 45 degrees at the opponent, the
+ * knuckles forward, the chin left open (the provocation). The rear arm loaded: the elbow out and
+ * back (the « wing » that sets her silhouette apart), the fist cocked by the ear, about 11 px
+ * behind the face, the knuckles aimed forward: a haymaker, a backfist or a spinning elbow
+ * waiting to go, close enough to the face for her block and grab to start from it. At 1x it
+ * reads « low hand, cocked fist », never a walk, a wave or a fan at a gig. She stands about
+ * 72 px tall, 0.91 of Nayo's 79.
+ *
+ * Every strip that leaves the guard for a stride (walks, dashes, crouch) turns the rear knee from
+ * `back` to `front` through a frame with that leg nearly straight, so the knee never pops.
+ *
+ * The lead knee and the lead fist stay inside the no-clinch line (x = 14 for anything above the
+ * shins): the body reaches 13.5 at the lead fist (its wrist at x = 9.5; at 10.5 it would cross
+ * the line), the knee at about 8; dropping the hips (the idle's downbeat, every crouch on the
+ * way down) bends it further forward.
  */
 export const GUARD: Pose = {
-  hip: at(-6.5, 31.3),
-  torso: 9,
-  head: -8,
-  nearFoot: planted(-16.5, 0),
-  farFoot: onBall(15.2, -14),
-  nearFist: at(-11.5, 36.2),
-  farFist: at(8.8, 43.5),
-  bends: { nearElbow: 'back', farElbow: 'down' },
-  twist: 0.5,
+  hip: at(-6.8, 32),
+  torso: 19,
+  head: -10,
+  shrug: 2.2,
+  nearFoot: onBall(-17.5, -12),
+  farFoot: planted(7.4, 0),
+  nearFist: at(-12, 58),
+  farFist: at(9.5, 46),
+  bends: { nearElbow: 'down', farElbow: 'down', nearKnee: 'back' },
+  twist: 0.45,
 };
