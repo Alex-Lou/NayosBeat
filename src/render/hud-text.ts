@@ -36,3 +36,9 @@ export function announcementOf(round: RoundState, names: readonly [string, strin
 export function comboText(hits: number, damage: number): string {
   return `Combo : ${hits > 1 ? `${hits} coups` : '1 coup'} · ${damage} dégâts`;
 }
+
+/**
+ * The reminder of the hold, in training (docs/combat-v2.md §4.5): what the holder's buttons do.
+ * The pixel font has no ←: a space keeps its place, and its ↑, turned, is drawn there.
+ */
+export const HOLD_PROMPT = 'L frapper · H lancer ·   H derrière';

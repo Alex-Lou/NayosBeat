@@ -6,9 +6,9 @@ import { LEAD_TOE, onToes, REAR_TOE } from './held.ts';
 /**
  * thrownBack (docs/combat-v2.md §4.3, §11.1): 4 frames, each one played with the same frame of
  * the thrower's throwBack up to the release (tick 14): 3, 3, 4, 4 ticks (ticks 0-2, 3-5, 6-9,
- * 10-13). Frames 0 and 1 are drawn in front of the thrower, facing him (centers 27.5 px apart);
- * frames 2 and 3 behind him, 27.5 px back, from their first tick (tick 6, the start of the
- * heave, when the collar goes over his head). He keeps facing the same way (the game turns
+ * 10-13). Frames 0 and 1 are drawn in front of the thrower, facing him (centers 28 px apart,
+ * the bodies touching); frames 2 and 3 behind him, 28 px back, from their first tick (tick 6,
+ * the start of the heave, when the collar goes over his head). He keeps facing the same way (the game turns
  * fighters only on their feet, in neutral), so the thrower is then on his back side, toward -x.
  * The thrower (not drawn) is drawn over him and holds his collar: the neck sits in the
  * thrower's fists on every tick, at (23.5, 51.5), (6.5, 64), (-5, 65) and (-25.5, 25) in the

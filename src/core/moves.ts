@@ -48,6 +48,23 @@ export function groundMove(
   return command === 'light' ? 'standLight' : 'standHeavy';
 }
 
+/**
+ * What the holder does with a command (docs/combat-v2.md §2.8, §4.1), from the direction held
+ * when it was pressed: L pummels; H, S or the grab throw forward, backward with back held. Null
+ * for the rest: a hold has no jump nor dash.
+ */
+export function holdMove(command: Command, input: InputBits, facing: Facing): MoveId | null {
+  if (!isHoldChoice(command)) return null;
+  if (command === 'light') return 'pummel';
+  const back = facing === 1 ? Input.Left : Input.Right;
+  return has(input, back) ? 'throwBack' : 'throwForward';
+}
+
+/** Whether a command chooses a move in the hold: L, H, S or the grab (§2.8). */
+export function isHoldChoice(command: Command | null): boolean {
+  return command === 'light' || command === 'heavy' || command === 'special' || command === 'grab';
+}
+
 /** Air move for a command; there are no air specials, air grabs nor air dashes. */
 export function airMove(command: Command): MoveId | null {
   if (command === 'light') return 'jumpLight';

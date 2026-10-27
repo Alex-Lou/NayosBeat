@@ -14,6 +14,9 @@ export const CORE_MOVE_IDS = [
   'specialForward',
   'specialAntiAir',
   'grab',
+  'pummel',
+  'throwForward',
+  'throwBack',
   'dashForward',
   'dashBack',
 ] as const;
@@ -27,12 +30,16 @@ export const AIR_MOVE_IDS: readonly MoveId[] = ['jumpLight', 'jumpHeavy'];
 /**
  * Decides what a move can cancel into, and how it is blocked (grabs cannot be). A `movement`
  * (dash, backdash) carries the fighter and never strikes: the CPU does not guard against it, and
- * a fighter hit during one is not caught attacking.
+ * a fighter hit during one is not caught attacking. A `throw` is played on a held opponent
+ * (`hold.ts`): no hitbox, it lands on its startup frame, whatever the boxes say.
  */
-export type MoveKind = 'normal' | 'special' | 'grab' | 'movement';
+export type MoveKind = 'normal' | 'special' | 'grab' | 'throw' | 'movement';
 
 /** The moves of kind `movement`, and only they. */
 export const MOVEMENT_MOVE_IDS: readonly MoveId[] = ['dashForward', 'dashBack'];
+
+/** The moves of kind `throw`, and only they: what the holder does with the opponent it holds. */
+export const THROW_MOVE_IDS: readonly MoveId[] = ['pummel', 'throwForward', 'throwBack'];
 
 /** How a move must be blocked: low = crouching, overhead = standing, mid = either. */
 export type Guard = 'mid' | 'low' | 'overhead';
@@ -58,6 +65,15 @@ export interface ProjectileData {
  */
 export interface RootMotion {
   readonly dx: readonly number[];
+}
+
+/**
+ * How a blow sends the defender flying, even from the ground: launched at `vy`, carried at `vx`
+ * (away from the attacker, sub-pixels per tick) until it lands, then down for its knockdown.
+ */
+export interface Knockdown {
+  readonly vx: number;
+  readonly vy: number;
 }
 
 export interface MoveData {
@@ -99,5 +115,10 @@ export interface MoveData {
   /** Frames during which grabs whiff, strikes do not (the backdash). */
   readonly throwInvincible?: FrameRange;
   /** Sends the defender to the ground on hit, even when standing. */
-  readonly knockdown?: boolean;
+  readonly knockdown?: Knockdown;
+  /**
+   * A throw backward: on this frame the held opponent goes over to the holder's back, before the
+   * release (the arc over the shoulder is drawn, the core keeps no path).
+   */
+  readonly sideSwitchFrame?: number;
 }

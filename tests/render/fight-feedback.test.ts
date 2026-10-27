@@ -50,6 +50,12 @@ vi.mock('../../src/render/effects', () => ({
     update = vi.fn();
   },
 }));
+vi.mock('../../src/render/stamps', () => ({
+  Stamps: class {
+    show = vi.fn();
+    update = vi.fn();
+  },
+}));
 vi.mock('../../src/render/onomatopoeia', () => ({
   Onomatopoeia: class {
     blow = vi.fn();
@@ -68,7 +74,7 @@ function feedback(): FightFeedback {
 
 /** A blow landing at `y` px above the ground, low (at the feet) or not. */
 function blow(type: 'hit' | 'ko', low: boolean, heavy = false): FightEvent {
-  const impact = { x: px(200), y: px(low ? 9 : 50), away: 1, by: 0, low, grab: false } as const;
+  const impact = { x: px(200), y: px(low ? 9 : 50), away: 1, by: 0, low, held: false } as const;
   return type === 'hit' ? { type, damage: 25, heavy, ...impact } : { type, ...impact };
 }
 

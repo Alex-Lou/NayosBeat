@@ -35,6 +35,9 @@ export const MOVE_ORDER: readonly MoveId[] = [
   'jumpLight',
   'jumpHeavy',
   'grab',
+  'pummel',
+  'throwForward',
+  'throwBack',
   'dashForward',
   'dashBack',
 ];
@@ -42,6 +45,9 @@ export const MOVE_ORDER: readonly MoveId[] = [
 const SPECIAL = 'S, ou ↓↘→ + un coup';
 const ANTI_AIR = 'Bas + S, ou →↓↘ + un coup';
 const GRAB = 'PRISE, ou L + H';
+const PUMMEL = 'En tenant, L';
+const THROW_FORWARD = 'En tenant, H, S ou PRISE';
+const THROW_BACK = 'En tenant, ← + H, S ou PRISE';
 const DASH = 'DASH, ou 2 fois avant';
 const BACKDASH = 'Arrière + DASH, ou 2 fois arrière';
 
@@ -84,7 +90,19 @@ export const MOVE_TEXTS: Readonly<Record<FighterId, FighterTexts>> = {
       },
       grab: {
         input: GRAB,
-        text: 'De tout près, il saisit et projette, même un adversaire qui pare.',
+        text: "De tout près, il saisit l'adversaire, même s'il pare, et le tient : à toi de choisir la suite. Ratée, la prise le laisse ouvert un moment.",
+      },
+      pummel: {
+        input: PUMMEL,
+        text: "Un coup de genou dans le ventre. Deux au plus avant que la prise lâche ; un seul si l'adversaire se débat.",
+      },
+      throwForward: {
+        input: THROW_FORWARD,
+        text: "Il le repousse et l'envoie au sol d'un direct, loin devant : Nayo retrouve sa distance. C'est aussi le lancer qui part si tu ne choisis rien.",
+      },
+      throwBack: {
+        input: THROW_BACK,
+        text: "Par-dessus l'épaule : l'adversaire tombe derrière lui, dans le coin si Nayo y avait le dos.",
       },
       dashForward: { input: DASH, text: "Un bond vers l'adversaire, qu'il ne peut pas couper." },
       dashBack: {
@@ -131,7 +149,19 @@ export const MOVE_TEXTS: Readonly<Record<FighterId, FighterTexts>> = {
       },
       grab: {
         input: GRAB,
-        text: 'De tout près, elle saisit et projette, même un adversaire qui pare.',
+        text: "De tout près, elle saisit l'adversaire, même s'il pare, et le tient : à toi de choisir la suite. Ratée, la prise la laisse ouverte un moment.",
+      },
+      pummel: {
+        input: PUMMEL,
+        text: "Des coups de tête rapides. Trois au plus avant que la prise lâche ; deux si l'adversaire se débat.",
+      },
+      throwForward: {
+        input: THROW_FORWARD,
+        text: "Un ciseau de jambes : l'adversaire tombe tout près d'elle, de quoi presser son réveil. C'est aussi le lancer qui part si tu ne choisis rien.",
+      },
+      throwBack: {
+        input: THROW_BACK,
+        text: 'Elle roule en arrière et le fait passer par-dessus elle : il tombe derrière elle, dans le coin si elle y avait le dos.',
       },
       dashForward: {
         input: DASH,
@@ -157,7 +187,11 @@ export const BASICS: readonly (readonly [string, string])[] = [
   ],
   [
     'PRISE',
-    "Ou L + H, de tout près : imparable ; deux prises simultanées s'annulent. On ne peut pas saisir quelqu'un qui sort d'un coup reçu ou paré",
+    "Ou L + H, de tout près : tu saisis l'adversaire, même s'il pare. Puis L pour le frapper, H (ou S, ou PRISE) pour le lancer devant, ← + H pour le lancer derrière toi. Si tu ne choisis rien, tu le lances devant. Deux prises en même temps s'annulent",
+  ],
+  [
+    'Si on te saisit',
+    "Appuie tout de suite sur PRISE (ou L + H) pour te dégager ; ensuite, tape sur les boutons pour qu'on te lâche plus vite. Sur une PUNITION (tu finissais un coup, un dash ou une prise ratée), impossible de te dégager",
   ],
   [
     'Enchaîner',

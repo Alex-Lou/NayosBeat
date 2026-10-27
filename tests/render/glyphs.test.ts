@@ -2,8 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { helpPages, withArrows } from '../../src/app/controls-content';
 import type { RoundState } from '../../src/core/state';
 import { ROSTER } from '../../src/data/roster';
-import { announcementOf, comboText, NO_TIMER } from '../../src/render/hud-text';
+import { announcementOf, comboText, HOLD_PROMPT, NO_TIMER } from '../../src/render/hud-text';
 import { wordFor, type BlowKind } from '../../src/render/onomatopoeia';
+import { STAMP_TEXTS } from '../../src/render/stamps';
 import { glyphsOf } from './font-glyphs';
 
 /**
@@ -55,6 +56,9 @@ function hudTexts(): string[] {
     ...rounds.map((state) => announcementOf(state, names)),
     NO_TIMER,
     '0123456789',
+    // The training reminder of a hold, and its arrow (a turned ↑).
+    HOLD_PROMPT,
+    '↑',
     comboText(1, 30),
     comboText(12, 345),
     ...ROSTER.flatMap(({ template }) => [
@@ -95,11 +99,13 @@ describe('glyphs', () => {
     expect(missing(await glyphsOf(PIXEL), shown)).toEqual([]);
   });
 
-  it('of every comic word, and its tally, are in the comic font', async () => {
+  it('of every comic word, its tally and the stamps are in the comic font', async () => {
     const kinds: BlowKind[] = ['light', 'heavy', 'ko'];
     const words = kinds.flatMap((kind) =>
       Array.from({ length: 8 }, (_, count) => `${wordFor(kind, count + 1)} !`),
     );
-    expect(missing(await glyphsOf(COMIC), [...words, 'x0123456789'])).toEqual([]);
+    const stamps = Object.values(STAMP_TEXTS);
+    expect(stamps).toContain('DÉGAGEMENT !');
+    expect(missing(await glyphsOf(COMIC), [...words, ...stamps, 'x0123456789'])).toEqual([]);
   });
 });

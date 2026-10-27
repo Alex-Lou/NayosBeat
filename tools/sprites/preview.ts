@@ -48,7 +48,7 @@ function hitboxes(
     }
     return boxes;
   }
-  // The move whose clip plays this strip, if any (the grab plays the "throw" strip).
+  // The move whose clip plays this strip, if any.
   const id = CORE_MOVE_IDS.find((move) => NAYO_CLIPS[move].sheet === sheet);
   if (!id) return boxes;
   const move = NAYO.moves[id];

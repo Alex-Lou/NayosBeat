@@ -14,6 +14,11 @@ export type SoundName =
   | 'projectile'
   | 'jump'
   | 'land'
+  | 'grab'
+  | 'pummel'
+  | 'throw'
+  | 'fall'
+  | 'tech'
   | 'round'
   | 'fight'
   | 'menuMove'
@@ -37,51 +42,80 @@ interface Noise {
   readonly volume: number;
   /** Low-pass cutoff in Hz: lower sounds duller and heavier. */
   readonly cutoff: number;
+  readonly delay?: number;
 }
 
 /** Each sound is a few short tones and/or noise bursts. */
-const SOUNDS: Readonly<Record<SoundName, { tones?: readonly Tone[]; noise?: Noise }>> = {
-  lightHit: {
-    noise: { duration: 0.06, volume: 0.5, cutoff: 3500 },
-    tones: [{ type: 'square', from: 220, to: 90, duration: 0.06, volume: 0.25 }],
-  },
-  heavyHit: {
-    noise: { duration: 0.14, volume: 0.7, cutoff: 1800 },
-    tones: [{ type: 'square', from: 160, to: 45, duration: 0.14, volume: 0.35 }],
-  },
-  block: {
-    noise: { duration: 0.04, volume: 0.25, cutoff: 6000 },
-    tones: [{ type: 'triangle', from: 900, to: 700, duration: 0.05, volume: 0.25 }],
-  },
-  ko: {
-    noise: { duration: 0.5, volume: 0.8, cutoff: 900 },
-    tones: [
-      { type: 'sawtooth', from: 180, to: 30, duration: 0.6, volume: 0.35 },
-      { type: 'square', from: 440, to: 110, duration: 0.4, volume: 0.15, delay: 0.05 },
-    ],
-  },
-  swing: { noise: { duration: 0.05, volume: 0.12, cutoff: 2500 } },
-  heavySwing: { noise: { duration: 0.09, volume: 0.18, cutoff: 1500 } },
-  // A sole scuffing the floor: duller and longer than a swing.
-  dash: { noise: { duration: 0.08, volume: 0.16, cutoff: 900 } },
-  projectile: {
-    tones: [{ type: 'square', from: 300, to: 900, duration: 0.18, volume: 0.15 }],
-  },
-  jump: { tones: [{ type: 'square', from: 260, to: 520, duration: 0.08, volume: 0.08 }] },
-  land: { noise: { duration: 0.05, volume: 0.15, cutoff: 600 } },
-  round: { tones: [{ type: 'square', from: 523, to: 523, duration: 0.15, volume: 0.15 }] },
-  fight: {
-    tones: [
-      { type: 'square', from: 659, to: 659, duration: 0.1, volume: 0.15 },
-      { type: 'square', from: 880, to: 880, duration: 0.2, volume: 0.15, delay: 0.1 },
-    ],
-  },
-  menuMove: { tones: [{ type: 'square', from: 700, to: 700, duration: 0.03, volume: 0.06 }] },
-  menuConfirm: {
-    tones: [{ type: 'square', from: 600, to: 1200, duration: 0.08, volume: 0.08 }],
-  },
-  menuBack: { tones: [{ type: 'square', from: 500, to: 300, duration: 0.08, volume: 0.08 }] },
-};
+const SOUNDS: Readonly<Record<SoundName, { tones?: readonly Tone[]; noises?: readonly Noise[] }>> =
+  {
+    lightHit: {
+      noises: [{ duration: 0.06, volume: 0.5, cutoff: 3500 }],
+      tones: [{ type: 'square', from: 220, to: 90, duration: 0.06, volume: 0.25 }],
+    },
+    heavyHit: {
+      noises: [{ duration: 0.14, volume: 0.7, cutoff: 1800 }],
+      tones: [{ type: 'square', from: 160, to: 45, duration: 0.14, volume: 0.35 }],
+    },
+    block: {
+      noises: [{ duration: 0.04, volume: 0.25, cutoff: 6000 }],
+      tones: [{ type: 'triangle', from: 900, to: 700, duration: 0.05, volume: 0.25 }],
+    },
+    ko: {
+      noises: [{ duration: 0.5, volume: 0.8, cutoff: 900 }],
+      tones: [
+        { type: 'sawtooth', from: 180, to: 30, duration: 0.6, volume: 0.35 },
+        { type: 'square', from: 440, to: 110, duration: 0.4, volume: 0.15, delay: 0.05 },
+      ],
+    },
+    swing: { noises: [{ duration: 0.05, volume: 0.12, cutoff: 2500 }] },
+    heavySwing: { noises: [{ duration: 0.09, volume: 0.18, cutoff: 1500 }] },
+    // A sole scuffing the floor: duller and longer than a swing.
+    dash: { noises: [{ duration: 0.08, volume: 0.16, cutoff: 900 }] },
+    projectile: {
+      tones: [{ type: 'square', from: 300, to: 900, duration: 0.18, volume: 0.15 }],
+    },
+    jump: { tones: [{ type: 'square', from: 260, to: 520, duration: 0.08, volume: 0.08 }] },
+    land: { noises: [{ duration: 0.05, volume: 0.15, cutoff: 600 }] },
+    // The hold (docs/combat-v2.md §4.5). The grab: leather and cloth, a dull grip.
+    grab: {
+      noises: [{ duration: 0.09, volume: 0.35, cutoff: 1200 }],
+      tones: [{ type: 'triangle', from: 140, to: 90, duration: 0.07, volume: 0.2 }],
+    },
+    // A knee or a headbutt in the hold: muffled, a body blow.
+    pummel: {
+      noises: [{ duration: 0.07, volume: 0.45, cutoff: 700 }],
+      tones: [{ type: 'square', from: 120, to: 55, duration: 0.08, volume: 0.25 }],
+    },
+    // A throw lets go: the rush of air (the fall makes the impact).
+    throw: {
+      noises: [{ duration: 0.22, volume: 0.22, cutoff: 1800 }],
+      tones: [{ type: 'sine', from: 260, to: 520, duration: 0.2, volume: 0.06 }],
+    },
+    // A body hitting the floor on its back.
+    fall: {
+      noises: [{ duration: 0.16, volume: 0.6, cutoff: 500 }],
+      tones: [{ type: 'square', from: 90, to: 40, duration: 0.16, volume: 0.3 }],
+    },
+    // Broken free: two slaps, the hands knocked away.
+    tech: {
+      noises: [
+        { duration: 0.035, volume: 0.45, cutoff: 5000 },
+        { duration: 0.035, volume: 0.4, cutoff: 4200, delay: 0.07 },
+      ],
+    },
+    round: { tones: [{ type: 'square', from: 523, to: 523, duration: 0.15, volume: 0.15 }] },
+    fight: {
+      tones: [
+        { type: 'square', from: 659, to: 659, duration: 0.1, volume: 0.15 },
+        { type: 'square', from: 880, to: 880, duration: 0.2, volume: 0.15, delay: 0.1 },
+      ],
+    },
+    menuMove: { tones: [{ type: 'square', from: 700, to: 700, duration: 0.03, volume: 0.06 }] },
+    menuConfirm: {
+      tones: [{ type: 'square', from: 600, to: 1200, duration: 0.08, volume: 0.08 }],
+    },
+    menuBack: { tones: [{ type: 'square', from: 500, to: 300, duration: 0.08, volume: 0.08 }] },
+  };
 
 export class Sfx {
   private context: AudioContext | undefined;
@@ -122,8 +156,9 @@ export class Sfx {
     const sound = SOUNDS[name];
     const now = context.currentTime;
     for (const tone of sound.tones ?? []) playTone(context, master, tone, now);
-    if (sound.noise && this.noiseBuffer)
-      playNoise(context, master, this.noiseBuffer, sound.noise, now);
+    const buffer = this.noiseBuffer;
+    if (buffer)
+      for (const noise of sound.noises ?? []) playNoise(context, master, buffer, noise, now);
   }
 }
 
@@ -153,14 +188,15 @@ function playNoise(
   const source = context.createBufferSource();
   const filter = context.createBiquadFilter();
   const gain = context.createGain();
+  const start = now + (noise.delay ?? 0);
   source.buffer = buffer;
   filter.type = 'lowpass';
   filter.frequency.value = noise.cutoff;
-  gain.gain.setValueAtTime(noise.volume, now);
-  gain.gain.exponentialRampToValueAtTime(0.0001, now + noise.duration);
+  gain.gain.setValueAtTime(noise.volume, start);
+  gain.gain.exponentialRampToValueAtTime(0.0001, start + noise.duration);
   source.connect(filter).connect(gain).connect(output);
-  source.start(now);
-  source.stop(now + noise.duration);
+  source.start(start);
+  source.stop(start + noise.duration);
 }
 
 /** Half a second of white noise, shared by every noise burst. */

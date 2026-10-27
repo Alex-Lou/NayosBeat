@@ -1,16 +1,16 @@
 {
-  "description": "Throw protection: a grab on the wake-up whiffs, the same grab a moment later lands; the grab button and light + heavy grab alike.",
+  "description": "Throw protection (§3.8): after a throw, a grab out on the first ticks of the wake-up whiffs, the same grab a moment later catches; the grab button and light + heavy grab alike.",
   "fighters": ["nayo", "riff"],
   "inputs": [
     [90, "", ""],
-    [40, "right", "left"],
+    [39, "right", "left"],
     [1, "grab", ""],
-    [27, "", ""],
-    [34, "right", ""],
+    [142, "", ""],
     [1, "light+heavy", ""],
-    [27, "", ""],
+    [28, "", ""],
+    [13, "right", "left"],
     [1, "light+heavy", ""],
-    [80, "", ""]
+    [172, "", ""]
   ],
-  "hash": "9bbfd090"
+  "hash": "eff1d459"
 }

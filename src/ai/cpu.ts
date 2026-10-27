@@ -4,15 +4,14 @@ import { Input, type InputBits } from '../core/input';
 import type { FighterAction, FighterState, GameState } from '../core/state';
 import { strikeThreatens, upcomingMove } from '../core/threat';
 import { guardInput, incomingProjectile } from './defense';
+import { holdInput, type HoldProfile } from './hold-tactics';
 import { nextRandom } from './rng';
 
 export type CpuLevel = 'easy' | 'normal' | 'hard';
 /** Training dummies do not play: they stand still or block everything. */
 export type CpuBehavior = CpuLevel | 'dummyStand' | 'dummyBlock';
 
-interface Profile {
-  /** Ticks between something happening and the CPU reacting to it. */
-  readonly reactionFrames: number;
+interface Profile extends HoldProfile {
   /** Chance to block an attack it sees coming. */
   readonly block: number;
   readonly antiAir: number;
@@ -37,6 +36,9 @@ const PROFILES: Readonly<Record<CpuLevel, Profile>> = {
     aggression: 0.35,
     dash: 0.1,
     backdash: 0.05,
+    tech: 0.1,
+    struggle: 2,
+    pummels: 0,
   },
   normal: {
     reactionFrames: 14,
@@ -47,6 +49,9 @@ const PROFILES: Readonly<Record<CpuLevel, Profile>> = {
     aggression: 0.5,
     dash: 0.25,
     backdash: 0.15,
+    tech: 0.3,
+    struggle: 5,
+    pummels: 1,
   },
   hard: {
     reactionFrames: 8,
@@ -57,6 +62,9 @@ const PROFILES: Readonly<Record<CpuLevel, Profile>> = {
     aggression: 0.65,
     dash: 0.4,
     backdash: 0.25,
+    tech: 0.5,
+    struggle: 8,
+    pummels: Infinity,
   },
 };
 
@@ -114,6 +122,11 @@ export function cpuStep(
   // The game is frozen on impact: keep holding the current input, do not use up the plan.
   if (state.hitstop > 0) return { cpu, input: cpu.plan[0] ?? 0 };
   const profile = PROFILES[cpu.behavior];
+  // In a hold, its own state decides (hold-tactics.ts); the plan starts over afterwards.
+  if (state.hold) {
+    const { input, seed } = holdInput(cpu.player, profile, state, state.hold, config, cpu.seed);
+    return { cpu: { ...cpu, seed, plan: [] }, input };
+  }
   // While blocking, keep blocking: dropping the guard mid-string would be a free hit.
   if (me.action === 'blockstun') {
     const guard = guardInput(me, liveOpponent, upcomingMove(liveOpponent, opponentTemplate));

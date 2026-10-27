@@ -151,6 +151,9 @@ describe('cpu movement', () => {
     expect(used.has('dashForward')).toBe(true);
     expect(used.has('dashBack')).toBe(true);
     expect(used.has('grab')).toBe(true);
+    // Its holds: knees, then a throw.
+    expect(used.has('pummel')).toBe(true);
+    expect(used.has('throwForward') || used.has('throwBack')).toBe(true);
   });
 
   it('backdashes away from the attacker after blocking a cross-up', () => {

@@ -8,6 +8,7 @@ import { vibrationFor, type FightEvent } from './fight-events';
 import { HitFx } from './hit-fx';
 import type { HitStyle } from './hit-styles';
 import { Onomatopoeia } from './onomatopoeia';
+import { Stamps } from './stamps';
 
 /** The final blow plays in slow motion for a moment (display only: the simulation is intact). */
 const KO_SLOW_MOTION_FRAMES = 50;
@@ -15,8 +16,8 @@ const KO_SLOW_MOTION_SCALE = 0.35;
 
 /**
  * Turns fight events into what the player sees, hears and feels: hit effects in the attacker's
- * own style, comic words with the running tally of hits, blood, dust, shake, flash, sounds, and
- * player 1's vibrations (`vibrate`, given only where a device can). A low blow lands at the
+ * own style, comic words with the running tally of hits, the stamps of the hold, blood, dust,
+ * shake, flash, sounds, and player 1's vibrations (`vibrate`, given only where a device can). A low blow lands at the
  * feet (docs/combat-v2.md §9.3): instead of the burst, which would sink through the floor, a
  * grazing spark skims it and dust flies, without blood, which stays for heavy blows higher up.
  * A low KO keeps its burst, the mark of the final blow, lifted above the floor by HitFx.
@@ -28,6 +29,7 @@ export class FightFeedback {
   private readonly dust: Dust;
   private readonly graze: Graze;
   private readonly words: Onomatopoeia;
+  private readonly stamps: Stamps;
   private slowMotionFrames = 0;
 
   constructor(
@@ -43,6 +45,7 @@ export class FightFeedback {
     this.dust = new Dust(scene, groundY);
     this.graze = new Graze(scene, groundY);
     this.words = new Onomatopoeia(scene, groundY, styles);
+    this.stamps = new Stamps(scene, groundY, styles);
   }
 
   /** Call before the events of each simulation tick: blows of the same tick trade fairly. */
@@ -69,7 +72,7 @@ export class FightFeedback {
           effects.shake(10, 3);
           if (!event.low) this.blood.bleed(event.x, event.y, event.away, BLEEDS.heavyHit);
         }
-        sfx.play(heavy ? 'heavyHit' : 'lightHit');
+        sfx.play(event.held ? 'pummel' : heavy ? 'heavyHit' : 'lightHit');
         break;
       }
       case 'block':
@@ -92,6 +95,28 @@ export class FightFeedback {
         sfx.play('ko');
         break;
       }
+      case 'grab':
+        // Caught: the freeze and the victim's vibration say it, a PUNITION is stamped.
+        if (event.punish) this.stamps.show('punish', event, viewLeft);
+        sfx.play('grab');
+        break;
+      case 'tech':
+        // The hands knocked away: a flash where they meet, both pushed apart.
+        hitFx.play(this.styles[event.by], 'block', event.x, event.y, event.away);
+        this.stamps.show('tech', event, viewLeft);
+        sfx.play('tech');
+        break;
+      case 'throw':
+        // Let go: the word and the rush of air now, the impact when the body lands.
+        this.words.blow('heavy', event, viewLeft);
+        effects.shake(6, 2);
+        sfx.play('throw');
+        break;
+      case 'fall':
+        this.dust.kick(event.x, event.away);
+        effects.shake(8, 2);
+        sfx.play('fall');
+        break;
       case 'attack':
         sfx.play(event.heavy ? 'heavySwing' : 'swing');
         break;
@@ -145,6 +170,7 @@ export class FightFeedback {
       this.dust.update();
       this.graze.update();
       this.words.update();
+      this.stamps.update();
     }
     this.slowMotionFrames = Math.max(0, this.slowMotionFrames - frames);
   }

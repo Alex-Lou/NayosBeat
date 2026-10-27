@@ -122,6 +122,7 @@ export const GAME_FIELDS = [
   'fighters',
   'projectiles',
   'contacts',
+  'hold',
 ] as const satisfies readonly (keyof GameState)[];
 
 /** FNV-1a, 32 bits: small, stable, and the same in every JavaScript engine. */

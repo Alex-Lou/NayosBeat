@@ -32,9 +32,7 @@ export function readInput(
     dashCommand(pressed, input, sideOf(fighter, opponentX), tapped) ??
     jumpCommand(pressed);
 
-  const aged =
-    ageBuffer && fighter.bufferFrames > 0 ? fighter.bufferFrames - 1 : fighter.bufferFrames;
-  const bufferFrames = command ? INPUT_BUFFER_FRAMES : aged;
+  const bufferFrames = command ? INPUT_BUFFER_FRAMES : agedBuffer(fighter, ageBuffer);
   return {
     ...fighter,
     input,
@@ -51,6 +49,11 @@ export function readInput(
       : fighter.bufferedMotion,
     bufferedFacing: command ? fighter.facing : fighter.bufferedFacing,
   };
+}
+
+/** The ticks left to the buffered command after this tick, when nothing new is pressed. */
+export function agedBuffer(fighter: FighterState, ageBuffer: boolean): number {
+  return ageBuffer && fighter.bufferFrames > 0 ? fighter.bufferFrames - 1 : fighter.bufferFrames;
 }
 
 /**

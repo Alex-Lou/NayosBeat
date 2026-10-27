@@ -28,7 +28,6 @@ import { POSES as jumpHeavyPoses } from './jumpHeavy.ts';
 import { POSES as specialPoses } from './special.ts';
 import { POSES as specialForwardPoses } from './specialForward.ts';
 import { POSES as specialAntiAirPoses } from './specialAntiAir.ts';
-import { POSES as throwPoses } from './throw.ts';
 import { POSES as introPoses } from './intro.ts';
 import { POSES as victoryPoses } from './victory.ts';
 import { POSES as timeOverPoses } from './timeOver.ts';
@@ -81,7 +80,6 @@ export const NAYO_POSES: Readonly<Record<PosedSheet, readonly Pose[]>> = {
   special: specialPoses,
   specialForward: specialForwardPoses,
   specialAntiAir: specialAntiAirPoses,
-  throw: throwPoses,
   intro: introPoses,
   victory: victoryPoses,
   timeOver: timeOverPoses,

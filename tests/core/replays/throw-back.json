@@ -1,0 +1,17 @@
+{
+  "description": "Throws backward in the corner (§4.2.11): Nayo, his back to the wall, throws Riff over his shoulder into it, the pair stepping out of the wall as she goes behind him; then Riff, cornered in turn, rolls him into the same corner.",
+  "fighters": ["nayo", "riff"],
+  "inputs": [
+    [90, "", ""],
+    [292, "left", "left"],
+    [1, "grab", ""],
+    [20, "", ""],
+    [1, "left+heavy", ""],
+    [86, "", ""],
+    [1, "", "grab"],
+    [20, "", ""],
+    [1, "", "left+grab"],
+    [111, "", ""]
+  ],
+  "hash": "de78b357"
+}

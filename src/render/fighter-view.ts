@@ -3,7 +3,7 @@ import { leftEdge } from '../core/boxes';
 import { hurtboxesOf } from '../core/combat';
 import type { FighterTemplate } from '../core/config';
 import { toPx } from '../core/constants';
-import type { FighterState } from '../core/state';
+import type { FighterState, GameState } from '../core/state';
 import { DEPTH } from './depth';
 
 /** The "foot" that shows which way a grey box faces, in world pixels. */
@@ -32,6 +32,8 @@ export class FighterView {
     scene: Phaser.Scene,
     private readonly color: number,
     private readonly groundY: number,
+    private readonly player: 0 | 1,
+    private readonly template: FighterTemplate,
   ) {
     const band = (): Phaser.GameObjects.Rectangle =>
       scene.add.rectangle(0, 0, 1, 1, color).setOrigin(0, 1);
@@ -47,7 +49,9 @@ export class FighterView {
     this.foot.setDepth(depth);
   }
 
-  update(fighter: FighterState, template: FighterTemplate): void {
+  update(state: GameState): void {
+    const fighter = state.fighters[this.player];
+    const template = this.template;
     const color = this.bodyColor(fighter);
     const { x, y, facing } = fighter;
     if (fighter.action === 'knockdown') {
@@ -93,9 +97,11 @@ export class FighterView {
     switch (fighter.action) {
       case 'hitstun':
       case 'airHit':
+      case 'held':
         return COLORS.hit;
       case 'blockstun':
       case 'guard':
+      case 'tech':
         return COLORS.block;
       case 'knockdown':
       case 'ko':

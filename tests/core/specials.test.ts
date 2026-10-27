@@ -189,14 +189,17 @@ describe('throws', () => {
     expect(play([Light, Light | Heavy]).move).toBe('grab');
   });
 
-  it('throws a nearby opponent, even when blocking, and knocks them down', () => {
+  // Combat v2 (§4.1): the grab holds, and throws forward once the hold runs out.
+  it('grabs a nearby opponent, even when blocking, then throws them down', () => {
     const start = facingOff(30, MIRROR_MATCH);
-    const after = script(start, [
+    const caught = script(start, [
       [Light | Heavy, Right],
-      ...repeat<[number, number]>([0, Right], 10),
+      ...repeat<[number, number]>([0, Right], THROW.startup),
     ]);
+    expect(caught.fighters[1].action).toBe('held');
+    const after = script(caught, repeat<[number, number]>([0, Right], 90));
     const [, thrown] = after.fighters;
-    expect(thrown.health).toBe(P.maxHealth - THROW.damage);
+    expect(thrown.health).toBe(P.maxHealth - P.moves.throwForward.damage);
     expect(['airHit', 'knockdown']).toContain(thrown.action);
   });
 
@@ -208,7 +211,7 @@ describe('throws', () => {
 
   it('is teched when both players throw on the same tick', () => {
     const start = facingOff(30, MIRROR_MATCH);
-    const after = script(start, [[Light | Heavy, Light | Heavy], ...idle(5)]);
+    const after = script(start, [[Light | Heavy, Light | Heavy], ...idle(THROW.startup + 5)]);
     expect(after.fighters.map((f) => f.health)).toEqual([P.maxHealth, P.maxHealth]);
     expect(after.fighters[1].x - after.fighters[0].x).toBeGreaterThan(px(30));
   });
