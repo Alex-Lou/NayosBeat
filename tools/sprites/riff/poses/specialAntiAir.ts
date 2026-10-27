@@ -1,7 +1,265 @@
-import { RIFF_SHEETS } from '../../../../src/art/riff/sheets.ts';
-import { GUARD, hold, type Pose } from './common.ts';
+import type { Point } from '../../raster.ts';
+import { solve, type Effect } from '../../skeleton.ts';
+import { RIFF_BODY } from '../body.ts';
+import { at, GUARD, onBall, smear, toeOf, type Pose } from './common.ts';
 
-/** specialAntiAir: not animated yet, her GUARD on each of its 8 frames. */
-export const ANIMATED: boolean = false;
+export const ANIMATED: boolean = true;
 
-export const POSES: readonly Pose[] = hold(GUARD, RIFF_SHEETS.specialAntiAir.frames);
+/**
+ * specialAntiAir (Genou montant, docs/combat-v2.md §5.5, §10.2, §11.3): 8 frames, 2, 2, 3, 3,
+ * 6, 6, 6, 6 ticks (34), active on frames 2-3 (ticks 4-9), hitbox 4..28 / 30..92 measured
+ * upward; the game carries her 12 px forward over ticks 0-7 and makes her invincible to air
+ * attacks over ticks 0-5.
+ *
+ * Known spec gap (§10.2 against §11's « la hauteur vient du moteur, la pose reste ancrée aux
+ * pieds »): a knee reaching y 92 cannot come from a grounded pose (on her toes the knee tops out
+ * near 57), and §10.2 gives the move no lift, so the leap is drawn inside the cell: the hips at
+ * 73-74 on frames 2-3 and 64 on frame 4 (the guard's: 32), the lowest boot 34, 35 and 26 px off
+ * the floor, the top of the hair at 111. The engine keeps her shadow, her pushbox and her
+ * standing hurtbox (0..76) on the floor meanwhile: a grounded low after tick 5 hits boots drawn
+ * 26 to 35 px up, an air attack over 76 passes through her drawn head. To be settled in the spec,
+ * one of: a lift curve for the move (like the Saut de l'ange's: up from tick 3 to about 34 px
+ * over ticks 4-9, 26 at ticks 10-15, down by tick 16), these poses then dropped onto her feet
+ * by those heights and the hitbox restated from her feet; or a hitbox low enough for a grounded
+ * knee (about 30..60) with a hop of 10 px at most, the trail and the diamonds carrying the
+ * height. Until then the drawing keeps the leap, so the knee honestly reaches the box.
+ *
+ * Her « freeze explosif »: a b-girl hitting a freeze on the beat, in mid-air, with a knee in it.
+ * Out of the guard she sinks for two ticks, then everything goes up at once: the lead leg drives
+ * off the floor, the rear knee rips up through in front of her and she freezes at the top of the
+ * leap, arched back like a bow, the knee at the top of the hitbox, the shin hanging under it,
+ * the lead leg long below, both arms flung back like the tail of the freeze, the head thrown
+ * back on what she hit. Then she hangs a beat and drops hard into her plié. Nothing like Nayo's
+ * uppercut (a fist up the front of the body, a column of sound): her anti-air is the leg, the
+ * arch and a burst of yellow diamonds.
+ *
+ * - 0 (2 ticks): the drop: the hips sink over the lead knee, the rear heel pops off the floor;
+ *   the loaded rear fist and the lead fist hang a beat behind (they stay put while she sinks).
+ * - 1 (2 ticks): the launch: the lead leg stretched long, its toes the last thing on the floor,
+ *   the rear knee driving up through the front, the rear fist ripping down past the hip, the
+ *   lead fist whipping up and out in front of her face (the face stays clear, the arm leads the
+ *   rise); a violet shockwave squashed on the floor, dust, the knee's trail.
+ * - 2 (3 ticks, active): the freeze, kiai: arched back, the knee high in front of the chest (it
+ *   must clear the torso, which the renderer draws over the near thigh), the arms flung back;
+ *   the knee's trail up its path, a yellow spark at the top of the knee, the diamonds bursting.
+ * - 3 (3 ticks, active): the freeze held a hair higher (the follow-through), the jaw set; the
+ *   diamonds fly out.
+ * - 4 (6 ticks): the hang just past the top, 10 px under it: the freeze breaks, the knee drops,
+ *   the legs start to switch for the floor (the rear foot reaching back, the lead leg swinging
+ *   under her), the fists come in. The fall is all ahead of her: it snaps into the next frame.
+ * - 5 (6 ticks): the landing, hard: 40 px down at once, low and wide on the guard's marks, the
+ *   hips 9 px under the guard's, the rear heel up on its ball, the lead fist low, the rear one
+ *   trailing down a beat; dust under both boots and a flat violet ring.
+ * - 6 (6 ticks): the overshoot: the hips over the guard's, the fists a touch high.
+ * - 7 (6 ticks): the guard.
+ *
+ * The head stays the source drawing (under stamp.ts's 20 degrees on screen) and acts with the
+ * torso: thrown back with the arch, so the fringe whips back and falls on the landing.
+ */
+
+const TOE = toeOf(GUARD.nearFoot);
+const LEAD_TOE = toeOf(GUARD.farFoot);
+/** The guard's head angle on screen. */
+const LOOK = GUARD.torso + GUARD.head;
+
+/** Where the cocked rear fist sits from the rear shoulder in the guard. */
+const COCKED = (() => {
+  const shoulder = solve(GUARD, RIFF_BODY).near.shoulder;
+  return at(GUARD.nearFist.x - shoulder.x, GUARD.nearFist.y - shoulder.y);
+})();
+
+/** The loaded rear fist carried by its shoulder, nudged by (dx, dy). */
+function cocked(pose: Pose, dx = 0, dy = 0): Pose {
+  const shoulder = solve(pose, RIFF_BODY).near.shoulder;
+  return { ...pose, nearFist: at(shoulder.x + COCKED.x + dx, shoulder.y + COCKED.y + dy) };
+}
+
+/** A leg by forward kinematics from its hip joint: thigh, shin and foot angles (degrees). */
+type Leg = readonly [thigh: number, shin: number, foot: number];
+
+function ankle(pose: Pose, side: 'near' | 'far', [thigh, shin]: Leg): Point {
+  const joint = solve(pose, RIFF_BODY)[side].hip;
+  const t = (thigh * Math.PI) / 180;
+  const s = (shin * Math.PI) / 180;
+  return at(
+    joint.x + Math.cos(t) * RIFF_BODY.thigh + Math.cos(s) * RIFF_BODY.shin,
+    joint.y + Math.sin(t) * RIFF_BODY.thigh + Math.sin(s) * RIFF_BODY.shin,
+  );
+}
+
+/** The legs of `pose` placed by their angles (the knee bends must match them). */
+function legs(pose: Pose, near: Leg, far: Leg): Pose {
+  return {
+    ...pose,
+    nearFoot: { ...ankle(pose, 'near', near), angle: near[2] },
+    farFoot: { ...ankle(pose, 'far', far), angle: far[2] },
+  };
+}
+
+const dust = (x: number, size: number, progress: number): Effect => ({
+  kind: 'dust',
+  x,
+  size,
+  progress,
+});
+
+/** The yellow spark of the knee's impact. */
+const spark = (center: Point, radius: number): Effect => ({
+  kind: 'flash',
+  center,
+  radius,
+  tone: 'strike',
+});
+
+/** Her yellow diamonds bursting off the knee. */
+const diamonds = (radius: number, progress: number): Effect => ({
+  kind: 'shards',
+  center: at(12, 89),
+  radius,
+  progress,
+  tone: 'strike',
+});
+
+/** The launch's shockwave, squashed flat on the floor under the lead foot. */
+const shockwave = (radius: number, progress: number): Effect => ({
+  kind: 'ring',
+  center: at(6, 2),
+  radius,
+  progress,
+  tone: 'sound',
+  squash: 0.3,
+});
+
+// 0 · The drop (2 ticks).
+const DROP: Pose = cocked(
+  {
+    ...GUARD,
+    hip: at(-6.5, 30),
+    torso: 21.5,
+    head: LOOK - 21.5,
+    shrug: 2.8,
+    nearFoot: onBall(TOE, -22),
+    farFist: at(9.6, 44.6),
+  },
+  0.4,
+  0.6,
+);
+
+// 1 · The launch (2 ticks).
+const LAUNCH: Pose = {
+  ...GUARD,
+  hip: at(-3, 43),
+  torso: 0,
+  head: LOOK,
+  shrug: 3,
+  twist: 0.3,
+  nearFoot: { x: -1, y: 35, angle: -50 },
+  farFoot: onBall(LEAD_TOE + 1.5, -66),
+  nearFist: at(-16, 46),
+  farFist: at(13, 75),
+  bends: { nearKnee: 'front', farKnee: 'front', nearElbow: 'back', farElbow: 'down' },
+  face: 'effort',
+  effects: [
+    smear(4, [-20, 20], [-12, 28], [-3, 40], [5, 52]),
+    shockwave(16, 0.15),
+    dust(12, 4, 0.15),
+  ],
+};
+
+/** The freeze's body: arched back, the head thrown back, the arms flung back. */
+const ARCH: Pose = {
+  ...GUARD,
+  hip: at(1, 73),
+  torso: -30,
+  head: -12 + 30,
+  shrug: 3.4,
+  twist: 0.55,
+  nearFist: at(-22, 64),
+  farFist: at(-30, 96),
+  farHand: 'open',
+  bends: { nearKnee: 'up', farKnee: 'front', nearElbow: 'down', farElbow: 'down' },
+  face: 'kiai',
+};
+
+// 2 · The freeze (3 ticks, active).
+const FREEZE: Pose = {
+  ...legs(ARCH, [50, -95, -70], [-108, -104, -65]),
+  effects: [
+    smear(5, [-10, 46], [-2, 62], [5, 76], [9, 88]),
+    spark(at(16, 95), 5),
+    diamonds(10, 0.2),
+    shockwave(22, 0.45),
+  ],
+};
+
+// 3 · Held a hair higher (3 ticks, active).
+const HELD: Pose = {
+  ...legs(
+    { ...ARCH, hip: at(1, 74), torso: -31, head: 19, face: 'effort' },
+    [52, -93, -70],
+    [-106, -102, -65],
+  ),
+  effects: [diamonds(12, 0.55), shockwave(26, 0.75)],
+};
+
+// 4 · The hang just past the top (6 ticks): the freeze breaks, the knee drops, the legs start
+// to switch for the floor (the rear foot reaching back, the lead leg swinging under her), the
+// fists come in.
+const HANG: Pose = cocked(
+  {
+    ...GUARD,
+    hip: at(-2, 64),
+    torso: 8,
+    head: LOOK - 8,
+    shrug: 2.8,
+    twist: 0.45,
+    nearFoot: { x: -11, y: 40, angle: -45 },
+    farFoot: { x: 5, y: 34, angle: -30 },
+    farFist: at(8, 70),
+    bends: { nearKnee: 'front', farKnee: 'front' },
+    effects: [diamonds(13, 0.9)],
+  },
+  1,
+  4,
+);
+
+// 5 · The landing (6 ticks): hard, low, wide, on the guard's marks; the lead fist low, the rear
+// one trailing down a beat; dust under both boots and a flat ring.
+const LAND: Pose = cocked(
+  {
+    ...GUARD,
+    hip: at(-6, 22.5),
+    torso: 28,
+    head: LOOK - 28,
+    shrug: 2.8,
+    twist: 0.5,
+    nearFoot: onBall(TOE, -30),
+    farFist: at(12, 29),
+    bends: { nearElbow: 'down', farElbow: 'down', nearKnee: 'back' },
+    effects: [
+      dust(12, 4.5, 0.2),
+      dust(-20, 4, 0.2),
+      { kind: 'ring', center: at(-4, 2), radius: 18, progress: 0.2, tone: 'sound', squash: 0.3 },
+    ],
+  },
+  -1,
+  -8,
+);
+
+// 6 · Rising past the guard (6 ticks): the hips over it, the fists a touch high.
+const RISE: Pose = cocked(
+  {
+    ...GUARD,
+    hip: at(-6.7, 33.5),
+    torso: 18,
+    head: LOOK - 18,
+    shrug: 2.6,
+    nearFoot: onBall(TOE, -13),
+    farFist: at(9.8, 48),
+    effects: [dust(12, 4.5, 0.65), dust(-20, 4, 0.65)],
+  },
+  0.2,
+  2,
+);
+
+export const POSES: readonly Pose[] = [DROP, LAUNCH, FREEZE, HELD, HANG, LAND, RISE, GUARD];
