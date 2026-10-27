@@ -12,8 +12,8 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { NAYO_CLIPS } from '../../src/art/nayo/clips.ts';
 import { NAYO_SHEETS, type NayoSheet } from '../../src/art/nayo/sheets.ts';
 import { ANCHOR, ART_SCALE, CELL_SIZE } from '../../src/art/types.ts';
-import { MOVE_IDS, type MoveId } from '../../src/core/config.ts';
-import { POLYVALENT } from '../../src/data/fighters.ts';
+import { CORE_MOVE_IDS } from '../../src/core/move-data.ts';
+import { NAYO } from '../../src/data/fighters/nayo.ts';
 import { activeFrames, isV2Sheet, NAYO_V2_STRIPS } from './nayo/combat-v2.ts';
 import { paletteOf, type Colorway } from './nayo/look.ts';
 import { encodeIndexedPng, type Rgba } from './png.ts';
@@ -48,11 +48,13 @@ function hitboxes(
     }
     return boxes;
   }
-  if (!(MOVE_IDS as readonly string[]).includes(sheet)) return boxes;
-  const move = POLYVALENT.moves[sheet as MoveId];
+  // The move whose clip plays this strip, if any (the grab plays the "throw" strip).
+  const id = CORE_MOVE_IDS.find((move) => NAYO_CLIPS[move].sheet === sheet);
+  if (!id) return boxes;
+  const move = NAYO.moves[id];
   const box = move.hitbox;
   if (!box) return boxes;
-  const clip = NAYO_CLIPS[sheet as MoveId];
+  const clip = NAYO_CLIPS[id];
   let tick = 0;
   clip.ticks.forEach((ticks, index) => {
     const active = tick < move.startup + move.active && tick + ticks > move.startup;
@@ -80,7 +82,7 @@ async function render(sheet: NayoSheet, colorway: Colorway): Promise<void> {
   const hitbox = slot(HITBOX);
   const separator = slot(SEPARATOR);
 
-  const halfPushbox = (POLYVALENT.standingPushbox.width / 200) * ART_SCALE;
+  const halfPushbox = (NAYO.standingPushbox.width / 200) * ART_SCALE;
   const boxes = hitboxes(sheet);
   const pixels = new Uint8Array(canvas.width * canvas.height);
   for (let y = 0; y < canvas.height; y++) {

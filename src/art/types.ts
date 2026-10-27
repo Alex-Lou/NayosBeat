@@ -3,7 +3,7 @@
  * No engine or bundler import here: the sprite generator (tools/sprites) reads it too.
  */
 
-import type { MoveId } from '../core/config';
+import type { MoveId } from '../core/move-data';
 
 /** Sprite pixels per world pixel: fighters are drawn twice as finely as the stage. */
 export const ART_SCALE = 2;

@@ -1,7 +1,7 @@
 /**
  * Nayo's combat v2 strips (docs/combat-v2.md §11.1, §11.2), drawn ahead of their gameplay: no
  * clip plays them yet. Their timing and, for the strikes, their frame data and hitbox (§10.1,
- * §10.3) live here until the combat v2 phases move them into src/data/fighters.ts and
+ * §10.3) live here until the combat v2 phases move them into src/data/fighters/nayo.ts and
  * src/art/nayo/clips.ts. The generator times the hanging parts with these ticks, the preview
  * draws these hitboxes, tests/tools/nayo-v2-sprites.test.ts checks the poses against them.
  */

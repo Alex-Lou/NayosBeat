@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { NAYO_CLIPS } from '../../src/art/nayo/clips';
 import { NAYO_SHEETS } from '../../src/art/nayo/sheets';
 import { ANCHOR, ART_SCALE, CELL_SIZE } from '../../src/art/types';
-import type { MoveId } from '../../src/core/config';
+import type { MoveId } from '../../src/core/move-data';
 import { toPx } from '../../src/core/constants';
-import { POLYVALENT } from '../../src/data/fighters';
+import { NAYO } from '../../src/data/fighters/nayo';
 import { isV2Sheet } from '../../tools/sprites/nayo/combat-v2';
 import { NAYO_POSES, type PosedSheet } from '../../tools/sprites/nayo/poses/index';
 import { crc32, encodeIndexedPng } from '../../tools/sprites/png';
@@ -102,7 +102,7 @@ describe('Nayo strips', () => {
   ];
 
   it.each(NEUTRAL)('$sheet: stays inside the pushbox (crouching: $crouching)', (neutral) => {
-    const box = neutral.crouching ? POLYVALENT.crouchingPushbox : POLYVALENT.standingPushbox;
+    const box = neutral.crouching ? NAYO.crouchingPushbox : NAYO.standingPushbox;
     const half = toPx(box.width) / 2;
     for (const frame of neutral.frames) {
       let body = -Infinity;
@@ -132,11 +132,11 @@ describe('Nayo strips', () => {
     'jumpHeavy',
     'specialForward',
     'specialAntiAir',
-    'throw',
+    'grab',
   ] as const satisfies readonly MoveId[];
 
   function activeFrames(move: (typeof STRIKES)[number]): number[] {
-    const { startup, active } = POLYVALENT.moves[move];
+    const { startup, active } = NAYO.moves[move];
     const clip = NAYO_CLIPS[move];
     const frames: number[] = [];
     let tick = 0;
@@ -148,7 +148,7 @@ describe('Nayo strips', () => {
   }
 
   it.each(STRIKES)('%s: the active frames reach the hitbox, no farther', (move) => {
-    const hitbox = POLYVALENT.moves[move].hitbox;
+    const hitbox = NAYO.moves[move].hitbox;
     if (!hitbox) throw new Error(`${move} has no hitbox`);
     const [x, y, width, height] = [hitbox.x, hitbox.y, hitbox.width, hitbox.height].map(toPx);
     const up = move === 'specialAntiAir';
@@ -159,7 +159,8 @@ describe('Nayo strips', () => {
     const frames = activeFrames(move);
     expect(frames.length).toBeGreaterThan(0);
     for (const frame of frames) {
-      const reached = reach([sheetCanvas(move)], frame, band, up);
+      // The strip the move plays (the grab plays the "throw" strip).
+      const reached = reach([sheetCanvas(NAYO_CLIPS[move].sheet as PosedSheet)], frame, band, up);
       expect(reached, `frame ${frame} reaches ${reached}, edge ${edge}`).toBeGreaterThanOrEqual(
         edge - REACH_SLACK,
       );

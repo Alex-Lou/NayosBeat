@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { helpSections } from '../../src/app/controls-content';
-import { POLYVALENT, RUSHDOWN } from '../../src/data/fighters';
+import { NAYO } from '../../src/data/fighters/nayo';
+import { RIFF } from '../../src/data/fighters/riff';
 
 function titles(devices: { touch: boolean; gamepad: boolean }): string[] {
   return helpSections(devices).map((section) => section.title);
@@ -22,7 +23,7 @@ describe('helpSections', () => {
   it('names the special moves from the fighter data', () => {
     const combat = helpSections({ touch: true, gamepad: false }).at(-1);
     const text = combat?.rows.map((row) => row.join(' ')).join('\n') ?? '';
-    for (const template of [POLYVALENT, RUSHDOWN]) {
+    for (const template of [NAYO, RIFF]) {
       expect(text).toContain(template.moves.special.name);
       expect(text).toContain(template.moves.specialForward.name);
       expect(text).toContain(template.moves.specialAntiAir.name);

@@ -1,8 +1,10 @@
 import '@fontsource/press-start-2p/latin.css';
+import '@fontsource/bangers/latin-400.css';
 import './styles.css';
 import Phaser from 'phaser';
 import { App } from './app/app';
 import { watchInstallPrompt } from './app/install';
+import { registerServiceWorker } from './app/service-worker';
 import { Sfx } from './audio/sfx';
 import { isTouchDevice } from './input/touch-controls';
 import { FightScene } from './render/fight-scene';
@@ -31,18 +33,27 @@ function currentZoom(): number {
   return computeZoom(viewport(), RENDER_SIZE, window.devicePixelRatio);
 }
 
+/** Set once the game has started: the service worker may only reload it on the menus. */
+let app: App | undefined;
+
 function uiRoot(): HTMLElement {
   const root = document.getElementById('ui');
   if (!root) throw new Error('Missing #ui element');
   return root;
 }
 
-/** Canvas text is rendered once: the pixel font must be loaded before the first fight. */
+/**
+ * Canvas text is rendered once: the fonts must be loaded before the first fight (the pixel
+ * font of the HUD, the comic lettering of the blows' words).
+ */
 async function loadFonts(): Promise<void> {
   try {
-    await document.fonts.load('8px "Press Start 2P"');
+    await Promise.all([
+      document.fonts.load('8px "Press Start 2P"'),
+      document.fonts.load('16px Bangers'),
+    ]);
   } catch {
-    // The fallback monospace font is used instead; the game stays playable.
+    // Fallback fonts are used instead; the game stays playable.
   }
 }
 
@@ -56,6 +67,10 @@ async function start(): Promise<void> {
     height: RENDER_SIZE.height,
     // Pixel art kept crisp at any zoom, even fractional (the fight camera closes in smoothly).
     render: { smoothPixelArt: true },
+    // The raw frame time: the fixed timesteps of the fight already bound the catch-up. Phaser's
+    // smoothing clamps it to 60 Hz for 120 frames after every resume, which would run the game
+    // at half speed on a 30 Hz screen.
+    fps: { smoothStep: false },
     // Centering is done in CSS; Phaser only sizes the canvas.
     scale: { mode: Phaser.Scale.NONE, zoom: currentZoom() },
     // Devices are read by `input/`; Phaser's own listeners would only duplicate the work.
@@ -78,20 +93,28 @@ async function start(): Promise<void> {
   });
 
   const startApp = (): void => {
-    new App(uiRoot(), game, new Sfx()).start();
+    // The game has started: the boot screen (index.html, public/boot.js) is no longer needed.
+    document.getElementById('boot')?.remove();
+    app = new App(uiRoot(), game, new Sfx());
+    app.start();
   };
-  if (game.isRunning) startApp();
-  else game.events.once(Phaser.Core.Events.READY, startApp);
+  // Phaser announces READY just before it starts its loop: the app starts right after, so it
+  // can put the loop to sleep on the menus (otherwise the canvas redraws behind them for good).
+  game.events.once(Phaser.Core.Events.READY, () => {
+    queueMicrotask(startApp);
+  });
 }
 
-/** A failure at startup must not leave a silent blank page. */
+/** A failure at startup must not leave a silent blank page: the boot screen tells it. */
 function showStartupError(error: unknown): void {
   console.error(error);
-  const message = document.createElement('div');
-  message.className = 'menu';
-  message.textContent =
-    "Le jeu n'a pas pu démarrer sur ce navigateur. Essaie de recharger la page, ou un navigateur récent.";
-  document.getElementById('ui')?.appendChild(message);
+  const status = document.getElementById('boot-status');
+  if (status) {
+    status.textContent =
+      "Le jeu n'a pas pu démarrer sur ce navigateur. Essaie de le réparer, ou un navigateur récent.";
+  }
+  const repair = document.getElementById('boot-repair');
+  if (repair) repair.hidden = false;
 }
 
 start().catch(showStartupError);
@@ -100,6 +123,6 @@ watchInstallPrompt();
 // The installed game (PWA) plays offline; the service worker exists only in production builds.
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').catch(() => undefined);
+    registerServiceWorker(() => app?.isIdle() ?? true);
   });
 }

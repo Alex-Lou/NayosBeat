@@ -5,7 +5,7 @@ import { Input } from '../../src/core/input';
 import { moveDuration } from '../../src/core/moves';
 import { INPUT_BUFFER_FRAMES } from '../../src/core/rules';
 import type { FighterState } from '../../src/core/state';
-import { POLYVALENT as T } from '../../src/data/fighters';
+import { NAYO as T } from '../../src/data/fighters/nayo';
 import { makeFighter } from './helpers';
 
 const OPPONENT_X = px(500);

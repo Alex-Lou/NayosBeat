@@ -1,6 +1,7 @@
 /**
  * Draw order of the fight, back to front (Phaser depth). The fighter attacking is drawn over
- * the other one; effects and projectiles over both; blood, then sparks; debug boxes on top.
+ * the other one; effects and projectiles over both; blood, then sparks, then the comic words
+ * of the blows; debug boxes on top.
  */
 export const DEPTH = {
   fighterBack: 1,
@@ -8,5 +9,6 @@ export const DEPTH = {
   effects: 3,
   blood: 4,
   sparks: 5,
-  debug: 6,
+  words: 6,
+  debug: 7,
 } as const;

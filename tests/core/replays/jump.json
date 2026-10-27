@@ -1,0 +1,21 @@
+{
+  "description": "Neutral, forward and back jumps with up and the jump button, held up, and a jump onto the opponent.",
+  "fighters": ["nayo", "riff"],
+  "inputs": [
+    [90, "", ""],
+    [2, "up", "jump"],
+    [42, "", ""],
+    [6, "up+right", "up+left"],
+    [38, "", ""],
+    [6, "up+left", "jump+right"],
+    [38, "", ""],
+    [120, "jump", ""],
+    [10, "", ""],
+    [65, "right", ""],
+    [6, "up+right", ""],
+    [38, "", ""],
+    [6, "", "up+left"],
+    [64, "", ""]
+  ],
+  "hash": "2256c760"
+}

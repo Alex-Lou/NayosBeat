@@ -6,7 +6,7 @@ export const MAX_CLOSE_UP = 1.45;
 const SIDE_MARGIN = 64;
 /** Height of a standing fighter plus the free space kept above the highest one. */
 const FIGHTER_TOP = 104;
-/** Share of the distance to its target framing the camera covers each display frame. */
+/** Share of the distance to its target framing the camera covers every 1/60 s. */
 const EASE = 0.1;
 
 export interface FramingInput {
@@ -20,6 +20,8 @@ export interface FramingInput {
   readonly groundY: number;
   /** The close-up of the previous display frame. */
   readonly closeUp: number;
+  /** Time since the previous display frame, in 1/60 s (fractional): the same easing at any refresh rate. */
+  readonly elapsed: number;
 }
 
 export interface Framing {
@@ -43,7 +45,7 @@ export function frameFight(input: FramingInput): Framing {
   const fitWidth = VIEW_SIZE.width / (rightmost - leftmost + 2 * SIDE_MARGIN);
   const fitHeight = groundY / (highestFeet + FIGHTER_TOP);
   const target = Math.min(MAX_CLOSE_UP, Math.max(1, Math.min(fitWidth, fitHeight)));
-  const closeUp = input.closeUp + (target - input.closeUp) * EASE;
+  const closeUp = target + (input.closeUp - target) * (1 - EASE) ** input.elapsed;
 
   const width = VIEW_SIZE.width / closeUp;
   const middle = (leftmost + rightmost) / 2;

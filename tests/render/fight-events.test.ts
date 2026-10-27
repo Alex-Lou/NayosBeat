@@ -1,19 +1,24 @@
 import { describe, expect, it } from 'vitest';
+import type { MatchConfig } from '../../src/core/config';
 import { Input } from '../../src/core/input';
 import type { GameState } from '../../src/core/state';
 import { step } from '../../src/core/step';
-import { POLYVALENT as P } from '../../src/data/fighters';
+import { NAYO as P } from '../../src/data/fighters/nayo';
 import { detectEvents, type FightEvent } from '../../src/render/fight-events';
 import { facingOff, MIRROR_MATCH, repeat } from '../core/helpers';
 
 /** Plays scripted ticks and collects every event detected along the way. */
-function eventsOf(start: GameState, ticks: [number, number][]): FightEvent[] {
+function eventsOf(
+  start: GameState,
+  ticks: [number, number][],
+  config: MatchConfig = MIRROR_MATCH,
+): FightEvent[] {
   const events: FightEvent[] = [];
   let state = start;
   for (const inputs of ticks) {
-    const next = step(state, inputs, MIRROR_MATCH);
+    const next = step(state, inputs, config);
     const tickEvents: FightEvent[] = [];
-    detectEvents(state, next, MIRROR_MATCH, tickEvents);
+    detectEvents(state, next, config, tickEvents);
     events.push(...tickEvents);
     state = next;
   }
@@ -93,6 +98,27 @@ describe('detectEvents', () => {
     expect(low.y).toBeLessThanOrEqual(lowBox.y + lowBox.height);
     expect(jab.y).toBeGreaterThanOrEqual(jabBox.y);
     expect(jab.y).toBeLessThanOrEqual(jabBox.y + jabBox.height);
+  });
+
+  it('reports a hit on a training dummy at its 1 HP floor, though its health does not move', () => {
+    const training: MatchConfig = { ...MIRROR_MATCH, training: true };
+    const start = facingOff(30, training, [{}, { health: 1 }]);
+    const hit = eventsOf(start, [[Input.Light, 0], ...idle(10)], training).find(
+      (e) => e.type === 'hit',
+    );
+    expect(hit).toMatchObject({ type: 'hit', damage: 0, heavy: false });
+  });
+
+  it('calls a blow heavy by its move, even once combo scaling has cut its damage', () => {
+    // Late in a combo, the heavy hook deals less than the heavy threshold: it stays heavy.
+    const start = facingOff(30, MIRROR_MATCH, [
+      {},
+      { action: 'hitstun', stunFrames: 30, comboCount: 6 },
+    ]);
+    const hit = eventsOf(start, [[Input.Heavy, 0], ...idle(20)]).find((e) => e.type === 'hit');
+    if (!hit) throw new Error('The hook must hit');
+    expect(hit.damage).toBeLessThan(P.moves.standHeavy.damage);
+    expect(hit.heavy).toBe(true);
   });
 
   it('places the contact point between the fighters', () => {

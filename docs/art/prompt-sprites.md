@@ -2,7 +2,7 @@
 
 > **Mis à jour par [prompt-agents.md](prompt-agents.md)** : liste exacte des planches, nombres d'images et durées lus par le jeu, univers et personnages ([univers.md](univers.md)). En cas de différence, ces deux documents font foi ; celui-ci reste utile pour la méthode et les prompts détaillés image par image.
 
-Base : le modèle **Polyvalent** (portée, onde de choc, uppercut). Toutes les tailles, portées et nombres d'images ci-dessous viennent des données du jeu (`src/data/fighters.ts`) : les respecter, c'est garantir que le dessin colle aux coups (un poing dessiné qui touche là où le jeu fait toucher).
+Base : le modèle **Polyvalent** (portée, onde de choc, uppercut). Toutes les tailles, portées et nombres d'images ci-dessous viennent des données du jeu (`src/data/fighters/nayo.ts`) : les respecter, c'est garantir que le dessin colle aux coups (un poing dessiné qui touche là où le jeu fait toucher).
 
 ## Mode d'emploi (à lire avant tout)
 

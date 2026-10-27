@@ -1,14 +1,6 @@
-import {
-  AIR_MOVE_IDS,
-  MOVE_IDS,
-  type Box,
-  type BoxSize,
-  type FighterTemplate,
-  type FrameRange,
-  type MatchConfig,
-  type StageConfig,
-} from './config';
+import type { Box, BoxSize, FighterTemplate, MatchConfig, StageConfig } from './config';
 import { CAMERA_WIDTH_PX, px } from './constants';
+import { AIR_MOVE_IDS, CORE_MOVE_IDS, type FrameRange } from './move-data';
 import { moveDuration } from './moves';
 
 /**
@@ -41,17 +33,19 @@ export function validateTemplate(template: FighterTemplate): string[] {
   for (const name of ['standingPushbox', 'crouchingPushbox'] as const) {
     expect(isPositiveSize(template[name]), `${name} must have a positive integer size`);
   }
-  for (const name of ['standingHurtbox', 'crouchingHurtbox', 'airHurtbox'] as const) {
-    expect(isValidBox(template[name]), `${name} must have integer offsets and a positive size`);
+  for (const name of ['standingHurtboxes', 'crouchingHurtboxes', 'airHurtboxes'] as const) {
+    const boxes = template[name];
+    expect(boxes.length > 0, `${name} must have at least one box`);
+    expect(boxes.every(isValidBox), `${name} must have integer offsets and a positive size`);
   }
 
-  for (const id of MOVE_IDS) {
+  for (const id of CORE_MOVE_IDS) {
     const move = template.moves[id];
     const duration = moveDuration(move);
     expect(move.name.length > 0, `${id}.name must not be empty`);
     expect(
-      (id === 'throw') === (move.kind === 'throw'),
-      `${id}: only the throw move may (and must) be of kind "throw"`,
+      (id === 'grab') === (move.kind === 'grab'),
+      `${id}: only the grab move may (and must) be of kind "grab"`,
     );
     for (const name of [
       'startup',
@@ -85,15 +79,18 @@ export function validateTemplate(template: FighterTemplate): string[] {
         `${id}.projectile.hitbox must have integer offsets and a positive size`,
       );
     }
-    if (move.advance) {
-      expect(isRangeWithin(move.advance, duration), `${id}.advance must fit within the move`);
-      expect(isInteger(move.advance.speed, 1), `${id}.advance.speed must be an integer >= 1`);
+    if (move.motion) {
+      expect(
+        move.motion.dx.length === duration,
+        `${id}.motion.dx must have one entry per frame of the move (${duration})`,
+      );
+      expect(move.motion.dx.every(Number.isInteger), `${id}.motion.dx must be integers`);
     }
     if (move.invincible) {
       expect(isRangeWithin(move.invincible, duration), `${id}.invincible must fit within the move`);
     }
     if (move.cancelInto) {
-      expect(!move.cancelInto.includes('throw'), `${id} cannot be cancelled into a throw`);
+      expect(!move.cancelInto.includes('grab'), `${id} cannot be cancelled into a grab`);
     }
   }
   return errors;

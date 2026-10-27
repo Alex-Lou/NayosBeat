@@ -1,12 +1,12 @@
 import type Phaser from 'phaser';
 import { ART_SCALE, cellOf, playedSheets, type FighterArt } from '../art/types';
-import { activeMove, hitboxInWorld, hurtboxInWorld } from '../core/combat';
+import { activeMove } from '../core/combat';
 import type { FighterTemplate } from '../core/config';
 import { toPx } from '../core/constants';
 import type { FighterState, RoundState } from '../core/state';
 import { clipFrameAt, clipIdOf, clipTickOf } from './animation';
 import { DEPTH } from './depth';
-import { addHitbox, outlineBox, placeBox } from './fighter-view';
+import { addHitbox, hitboxOf, outlineHurtboxes, placeBox } from './fighter-view';
 
 const SHADOW_WIDTH = 36;
 const SHADOW_HEIGHT = 6;
@@ -162,8 +162,8 @@ export class SpriteFighterView {
     if (this.hitbox) {
       const move = activeMove(fighter, template);
       this.hitbox.setVisible(move !== null);
-      if (move?.hitbox) placeBox(this.hitbox, hitboxInWorld(fighter, move.hitbox), this.groundY);
+      if (move?.hitbox) placeBox(this.hitbox, hitboxOf(fighter, move.hitbox), this.groundY);
     }
-    if (this.hurtbox) outlineBox(this.hurtbox, hurtboxInWorld(fighter, template), this.groundY);
+    if (this.hurtbox) outlineHurtboxes(this.hurtbox, fighter, template, this.groundY);
   }
 }

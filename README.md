@@ -36,7 +36,7 @@ npm run dev        # serveur local, accessible aussi depuis un téléphone sur l
 | Coup léger | J | Pavé 1 ou `.` | X / □ | Bouton L |
 | Coup lourd | K | Pavé 2 ou `/` | Y / △ | Bouton H |
 | Spécial | L | Pavé 3 ou `'` | B / ○ | Bouton S |
-| Chope | J + K | Léger + lourd | X + Y ou RB / R1 | Bouton CHOPE |
+| Prise | J + K | Léger + lourd | X + Y ou RB / R1 | Bouton CHOPE |
 | Garde | Maintenir arrière (accroupi pour les coups bas) | | | |
 
 Les manettes sont attribuées dans l'ordre de connexion (1re → joueur 1, 2e → joueur 2).
@@ -59,9 +59,11 @@ Nayo est dessiné (sprites générés par `npm run sprites`, provisoires en atte
 
 ## Combat
 
-- Univers **Sound Clash** : **Nayo**, boxeur-DJ (gabarit Polyvalent : portée, 1000 PV) et **Riff**, b-girl (gabarit Rushdown : vitesse, 900 PV).
-- 10 coups chacun (6 normaux, 3 spéciaux, 1 chope), décrits comme données dans `src/data/fighters.ts`.
-- Coups bas à parer accroupi, coups sautés à parer debout, chope imparable (mais deux chopes simultanées s'annulent). Hitstop, pushback, chute au sol si touché en l'air ou balayé.
+- Univers **Sound Clash** : **Nayo**, boxeur-DJ (polyvalent : portée, 1000 PV) et **Riff**, b-girl (rushdown : vitesse, 900 PV).
+- 10 coups chacun (6 normaux, 3 spéciaux, 1 prise), décrits comme données dans `src/data/fighters/` (un fichier par personnage, les aides communes dans `shared.ts`).
+- Coups bas à parer accroupi, coups sautés à parer debout, prise imparable (mais deux prises simultanées s'annulent). Hitstop, pushback, chute au sol si touché en l'air ou balayé.
+- Le cœur dit où les coups touchent (`GameState.contacts`, centre du recouvrement des boîtes) : les étincelles et les sons en partent.
+- La refonte du combat (v2) suit `docs/combat-v2.md`.
 - Rounds de 99 s, 2 rounds gagnants, nouveau match automatique.
 
 ## Scripts
@@ -76,6 +78,8 @@ Nayo est dessiné (sprites générés par `npm run sprites`, provisoires en atte
 | `npm run typecheck` | TypeScript |
 | `npm run format` | Prettier |
 | `npm run sprites` | Redessine les planches de sprites (`tools/sprites` → `src/art`) |
+| `npm run bench` | Banc de perfs de la simulation (100 000 tics CPU contre CPU) |
+| `npm run replays:update` | Réenregistre les hashs des replays dorés (`tests/core/replays`), seulement quand le jeu doit changer |
 
 ## Architecture
 
@@ -87,7 +91,7 @@ src/
   audio/    Effets sonores synthétisés
   app/      Enchaînement des écrans et configuration d'un match
   ui/       Menus et écran titre (HTML par-dessus le jeu)
-  data/     Stats des combattants et des stages (données statiques)
+  data/     Stats des combattants (un fichier par personnage) et des stages (données statiques)
   input/    Clavier, manette, tactile → un masque d'inputs par joueur
   loop/     Pas de temps fixe : convertit les frames d'affichage en ticks de simulation
   render/   Phaser : affichage, mise à l'échelle pixel-perfect, overlay de debug
@@ -96,11 +100,13 @@ tests/      Tests Vitest, même arborescence que src/
 tools/      Générateur de sprites (Node, sans dépendance)
 ```
 
-Dépendances à sens unique : `app` → `ui`, `render` ; `render` → `art`, `ai`, `input`, `loop`, `data`, `core` ; `art` → `data`, `core` ; `ai` → `core` ; `data` → `core` ; `core` ne dépend de rien.
+Dépendances à sens unique : `app` → `ui`, `render` ; `render` → `art`, `ai`, `input`, `loop`, `data`, `core` ; `art` → `data`, `core` ; `ai` → `data`, `core` ; `data` → `core` ; `core` ne dépend de rien (vérifié par ESLint pour `core`, `data` et `ai`).
 
 ## Qualité et sécurité
 
-- TypeScript strict et ESLint avec règles typées (`strictTypeChecked`) ; `core/` et `ai/` interdits d'accès au moteur, au DOM, à l'horloge et au hasard non reproductible.
+- TypeScript strict et ESLint avec règles typées (`strictTypeChecked`) ; `core/`, `ai/` et `data/` interdits d'accès au moteur, au DOM, à l'horloge et au hasard non reproductible.
+- Replays dorés : des séquences d'entrées scriptées rejouées à chaque test, qui doivent retomber sur le même état final (hash) ; un refactor ne change rien au jeu.
+- Pas de fuite : un test vérifie que chaque classe qui écoute la page (entrées, menus) retire tous ses écouteurs à `dispose()`. Pas de dérive de perfs : 10 minutes de jeu CPU contre CPU doivent tenir dans un budget fixe.
 - Données des combattants et du stage validées au démarrage (entiers, plages d'images, cohérence des coups).
 - Build publié avec une Content-Security-Policy stricte (tout depuis la même origine, aucun script ni style en ligne).
 - CI à permissions minimales, actions épinglées par SHA, `npm audit` bloquant, mises à jour hebdomadaires par Dependabot.

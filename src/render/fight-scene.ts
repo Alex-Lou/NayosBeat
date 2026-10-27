@@ -24,7 +24,7 @@ import { PlayerInputs } from '../input/player-inputs';
 import { isTouchDevice, TouchControls } from '../input/touch-controls';
 import { FixedTimestep } from '../loop/fixed-timestep';
 import { frontFighter } from './animation';
-import { frameFight, MAX_CLOSE_UP } from './camera-framing';
+import { frameFight, MAX_CLOSE_UP, type FramingInput } from './camera-framing';
 import { DebugOverlay, isDebugEnabled } from './debug-overlay';
 import { detectEvents, type FightEvent } from './fight-events';
 import { FightFeedback } from './fight-feedback';
@@ -61,6 +61,8 @@ export interface FightSceneData {
   readonly onMatchEnd: (winner: 0 | 1 | null) => void;
 }
 
+type Mutable<T> = { -readonly [K in keyof T]: T[K] };
+
 /** A fighter on screen: sprites when it has art, a grey box otherwise. */
 interface FighterDisplay {
   update(fighter: FighterState, template: FighterTemplate, round: RoundState): void;
@@ -88,6 +90,12 @@ export class FightScene extends Phaser.Scene {
   private config!: MatchConfig;
   private state!: GameState;
   private timestep!: FixedTimestep;
+  /**
+   * Visual effects count steps of 1/60 s (their durations are written in 60 Hz frames), not
+   * display frames: a KO lasts as long on a 144 Hz screen as on a 60 Hz one. Unscaled by slow
+   * motion, which only slows the simulation.
+   */
+  private visualClock!: FixedTimestep;
   /** Player 2's CPU, unless a human plays it. */
   private cpu: CpuState | undefined;
   private arts: readonly [FighterArt | undefined, FighterArt | undefined] = [undefined, undefined];
@@ -103,6 +111,20 @@ export class FightScene extends Phaser.Scene {
   /** Reused every tick to avoid allocating. */
   private readonly tickInputs: [InputBits, InputBits] = [0, 0];
   private readonly tickEvents: FightEvent[] = [];
+  /**
+   * Reused every display frame by `syncViews`. What the framing keeps in view: both fighters,
+   * then the projectiles (at most one per player). A missing projectile repeats the first
+   * fighter's position, which moves neither bound.
+   */
+  private readonly framedXs: [number, number, number, number] = [0, 0, 0, 0];
+  private readonly framingInput: Mutable<FramingInput> = {
+    xs: this.framedXs,
+    highestFeet: 0,
+    viewLeft: 0,
+    groundY: GROUND_Y,
+    closeUp: MAX_CLOSE_UP,
+    elapsed: 0,
+  };
 
   constructor() {
     super('fight');
@@ -124,6 +146,7 @@ export class FightScene extends Phaser.Scene {
       if (art) assertValidArt(art, this.config.fighters[player]);
     }
     this.timestep = new FixedTimestep(1000 / TICK_RATE, MAX_TICKS_PER_FRAME);
+    this.visualClock = new FixedTimestep(1000 / TICK_RATE, MAX_TICKS_PER_FRAME);
     const behavior = player2Behavior(data.setup);
     this.cpu = behavior === 'human' ? undefined : createCpu(1, behavior, Date.now() | 0);
     this.paused = false;
@@ -155,7 +178,7 @@ export class FightScene extends Phaser.Scene {
       ],
       projectileView: new ProjectileView(this, this.config, GROUND_Y, this.arts),
       feedback: new FightFeedback(this, GROUND_Y, this.sceneData.sfx, this.styles),
-      hud: new Hud(this, this.config, this.styles),
+      hud: new Hud(this, this.config),
       debugOverlay: debug ? new DebugOverlay(document.body) : undefined,
     };
 
@@ -163,7 +186,7 @@ export class FightScene extends Phaser.Scene {
       this.dispose();
     });
     this.addScreenCamera();
-    this.syncViews(this.runtime);
+    this.syncViews(this.runtime, 0);
   }
 
   /**
@@ -211,6 +234,7 @@ export class FightScene extends Phaser.Scene {
       return;
     }
 
+    const visualFrames = this.visualClock.advance(deltaMs);
     const ticks = this.timestep.advance(deltaMs * runtime.feedback.timeScale());
     const startMs = runtime.debugOverlay ? performance.now() : 0;
 
@@ -224,16 +248,18 @@ export class FightScene extends Phaser.Scene {
         const previous = this.state;
         this.state = step(previous, this.tickInputs, this.config);
         detectEvents(previous, this.state, this.config, this.tickEvents);
-        for (const event of this.tickEvents) runtime.feedback.react(event);
+        const viewLeft = toPx(this.state.cameraX) - VIEW_SIZE.width / 2;
+        runtime.feedback.beginTick();
+        for (const event of this.tickEvents) runtime.feedback.react(event, viewLeft);
       }
     }
-    runtime.feedback.update();
+    runtime.feedback.update(visualFrames);
 
     runtime.debugOverlay?.record(
       { frameMs: deltaMs, ticks, tickTimeMs: performance.now() - startMs },
       this.describeState,
     );
-    this.syncViews(runtime);
+    this.syncViews(runtime, deltaMs / (1000 / TICK_RATE));
     this.reportMatchEnd();
   }
 
@@ -251,7 +277,8 @@ export class FightScene extends Phaser.Scene {
     this.sceneData.onMatchEnd(matchWinner(round));
   }
 
-  private syncViews(runtime: Runtime): void {
+  /** `elapsed`: time since the previous frame, in 1/60 s (for the camera's easing). */
+  private syncViews(runtime: Runtime, elapsed: number): void {
     const [viewA, viewB] = runtime.fighterViews;
     const [a, b] = this.state.fighters;
     this.front = frontFighter(this.front, a, b);
@@ -262,16 +289,18 @@ export class FightScene extends Phaser.Scene {
     runtime.projectileView.update(this.state.projectiles, this.state.frame);
     runtime.hud.update(this.state);
 
-    const framing = frameFight({
-      xs: [
-        ...this.state.fighters.map((fighter) => toPx(fighter.x)),
-        ...this.state.projectiles.map((projectile) => toPx(projectile.x)),
-      ],
-      highestFeet: Math.max(...this.state.fighters.map((fighter) => toPx(fighter.y))),
-      viewLeft: toPx(this.state.cameraX) - VIEW_SIZE.width / 2,
-      groundY: GROUND_Y,
-      closeUp: this.closeUp,
-    });
+    const xs = this.framedXs;
+    const projectiles = this.state.projectiles;
+    xs[0] = toPx(a.x);
+    xs[1] = toPx(b.x);
+    xs[2] = projectiles[0] ? toPx(projectiles[0].x) : xs[0];
+    xs[3] = projectiles[1] ? toPx(projectiles[1].x) : xs[0];
+    const input = this.framingInput;
+    input.highestFeet = toPx(Math.max(a.y, b.y));
+    input.viewLeft = toPx(this.state.cameraX) - VIEW_SIZE.width / 2;
+    input.closeUp = this.closeUp;
+    input.elapsed = elapsed;
+    const framing = frameFight(input);
     this.closeUp = framing.closeUp;
     this.cameras.main
       .setZoom((this.scale.width / VIEW_SIZE.width) * framing.closeUp)
