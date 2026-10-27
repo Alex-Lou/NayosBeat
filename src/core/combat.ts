@@ -11,6 +11,7 @@ import {
   THROW_TECH_PUSHBACK,
   THROW_TECH_STUN,
 } from './rules';
+import { sideOf } from './side';
 import type { Contact, Facing, FighterAction, FighterState } from './state';
 
 /** States in which holding back blocks. Attacking, jumping or walking forward does not. */
@@ -212,6 +213,5 @@ function isBlocking(defender: FighterState, attackerOnRight: boolean, guard: Gua
 }
 
 function isOnRight(attackerX: number, defender: FighterState): boolean {
-  if (attackerX === defender.x) return defender.facing === 1;
-  return attackerX > defender.x;
+  return sideOf(defender, attackerX) === 1;
 }

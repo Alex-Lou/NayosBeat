@@ -197,6 +197,20 @@ describe('TouchControls', () => {
     expect(controls.read()).toBe(Input.Right);
   });
 
+  it('gives a button pressed in the same read the direction reached through neutral', () => {
+    const { controls, stick, buttons } = setup();
+    stick.dispatchEvent(pointer('pointerdown', 7, 100, 200));
+    stick.dispatchEvent(pointer('pointermove', 7, 130, 200));
+    expect(controls.read()).toBe(Input.Right);
+    // A quick reversal through the center to back, and DASH, all between two reads: the dash
+    // is read with back held, a backdash, not a dash into the attack.
+    stick.dispatchEvent(pointer('pointermove', 7, 101, 200));
+    stick.dispatchEvent(pointer('pointermove', 7, 70, 200));
+    press(buttons, 'DASH', 1);
+    expect(controls.read()).toBe(Input.Left | Input.Dash);
+    expect(controls.read()).toBe(Input.Left | Input.Dash);
+  });
+
   it('reads a lifted thumb as neutral, then the new touch', () => {
     const { controls, stick } = setup();
     stick.dispatchEvent(pointer('pointerdown', 7, 100, 200));

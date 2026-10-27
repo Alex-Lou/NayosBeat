@@ -90,7 +90,11 @@ export class TouchControls {
 
   /** Call once per frame. */
   read(): InputBits {
-    let bits = (this.passedNeutral ? 0 : this.stickBits) | this.tappedBits;
+    // No latch on a read with a fresh button press: the button takes the stick's direction
+    // (back + DASH is a backdash, → + S the forward special), and it outranks a double tap on
+    // that tick anyway.
+    const latched = this.passedNeutral && this.tappedBits === 0;
+    let bits = (latched ? 0 : this.stickBits) | this.tappedBits;
     for (let index = 0; index < this.holders.length; index++) {
       if ((this.holders[index] ?? 0) > 0) bits |= TOUCH_BUTTONS[index]?.flag ?? 0;
     }

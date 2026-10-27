@@ -24,7 +24,7 @@ export function updateFighter(
   opponentX: number,
   threatened = false,
 ): FighterState {
-  const read = readInput(fighter, rawInput, true);
+  const read = readInput(fighter, rawInput, true, opponentX);
   // Allocates only on the few ticks the protection lasts.
   const f =
     read.throwImmuneFrames > 0 ? { ...read, throwImmuneFrames: read.throwImmuneFrames - 1 } : read;

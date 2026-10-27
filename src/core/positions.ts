@@ -47,10 +47,11 @@ export function resolvePositions(
   if (overlap > 0) {
     const aIsLeft = isLeftOf(a.fighter, xA, b.fighter, xB);
     const sign = aIsLeft ? -1 : 1;
-    const pushA = Math.trunc(overlap / 2);
-    const pushB = overlap - pushA;
-    xA += sign * pushA;
-    xB -= sign * pushB;
+    // An odd overlap is split upward on both sides, so a player's slot never earns them a
+    // sub-pixel (dash curves make odd overlaps common); the 1 sub-pixel gap left is invisible.
+    const push = Math.ceil(overlap / 2);
+    xA += sign * push;
+    xB -= sign * push;
 
     // If a wall stops one fighter, the other one takes the rest of the push.
     const blockedA = clamp(xA, rangeA) - xA;

@@ -1,13 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import type { FighterTemplate, MatchConfig } from '../../src/core/config';
 import { px } from '../../src/core/constants';
-import { Input } from '../../src/core/input';
-import type { FighterState } from '../../src/core/state';
+import { Input, type InputBits } from '../../src/core/input';
+import type { FighterState, GameState } from '../../src/core/state';
 import { step } from '../../src/core/step';
 import { NAYO } from '../../src/data/fighters/nayo';
 import { RIFF } from '../../src/data/fighters/riff';
 import { TRAINING_STAGE } from '../../src/data/stages';
-import { facingOff } from './helpers';
+import { facingOff, MIRROR_MATCH } from './helpers';
+
+const { Up, Left, Right, Dash } = Input;
 
 type Posture = 'standing' | 'crouching' | 'lying';
 
@@ -92,5 +94,69 @@ describe('cross-ups (§3.5)', () => {
     for (let distance = 30; distance <= 80; distance++) {
       expect(landsBehind(grounded, NAYO, 'standing', distance), `${distance} px`).toBe(false);
     }
+  });
+});
+
+describe('dashing out of a cross-up (§2.5, §2.6, §3.5)', () => {
+  /** Player 1's inputs from `p1(tick)`, player 2's from `p2(tick)`: the state after each tick. */
+  function play(
+    start: GameState,
+    ticks: number,
+    p1: (tick: number) => InputBits,
+    p2: (tick: number) => InputBits,
+  ): GameState[] {
+    const states: GameState[] = [];
+    let state = start;
+    for (let tick = 0; tick < ticks; tick++) {
+      state = step(state, [p1(tick), p2(tick)], MIRROR_MATCH);
+      states.push(state);
+    }
+    return states;
+  }
+  const jumpOver = (tick: number): InputBits => (tick < NAYO.preJumpFrames + 1 ? Up | Right : 0);
+
+  it('backdashes away on the wake-up, with back read from where the jumper landed', () => {
+    // Player 2 lies down while player 1 jumps over it: its facing still points left.
+    const start = facingOff(60, MIRROR_MATCH, [{}, { action: 'knockdown', stunFrames: 50 }]);
+    // Player 1 is on its right by then: away is left, pressed with DASH just before waking up.
+    const states = play(start, 75, jumpOver, (tick) => (tick === 46 ? Left | Dash : 0));
+    const pressed = states[46];
+    expect(pressed && pressed.fighters[0].x > pressed.fighters[1].x).toBe(true);
+    const dash = states.findIndex((state) => state.fighters[1].move !== null);
+    expect(states[dash]?.fighters[1].move).toBe('dashBack');
+    const from = states[dash]?.fighters[1].x ?? 0;
+    expect(states.at(-1)?.fighters[1].x).toBe(from - px(44));
+  });
+
+  it('backdashes away out of a blockstun whose attacker switched sides', () => {
+    // Player 2 blocks with player 1 now on its right, facing the old way (left).
+    const start = facingOff(40, MIRROR_MATCH, [
+      { x: px(500) },
+      { x: px(460), facing: -1, action: 'blockstun', stunFrames: 6 },
+    ]);
+    const states = play(
+      start,
+      40,
+      () => 0,
+      (tick) => (tick === 3 ? Left | Dash : 0),
+    );
+    const dash = states.find((state) => state.fighters[1].move !== null)?.fighters[1];
+    expect(dash).toMatchObject({ move: 'dashBack', facing: 1 });
+    expect(states.at(-1)?.fighters[1].x).toBe(px(460) - px(44));
+  });
+
+  it('dashes toward the opponent tapped twice before landing behind it', () => {
+    const jump = play(facingOff(50, MIRROR_MATCH), 50, jumpOver, () => 0);
+    const landing = jump.findIndex((state) => state.fighters[0].action === 'landing');
+    // Still in the air and facing right, the jumper taps left twice: toward the opponent.
+    const taps = [landing - 3, landing - 1];
+    const states = play(
+      facingOff(50, MIRROR_MATCH),
+      70,
+      (tick) => (taps.includes(tick) ? Left : jumpOver(tick)),
+      () => 0,
+    );
+    const dash = states.find((state) => state.fighters[0].move !== null)?.fighters[0];
+    expect(dash).toMatchObject({ move: 'dashForward', facing: -1 });
   });
 });

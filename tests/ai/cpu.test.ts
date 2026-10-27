@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { cpuStep, createCpu, type CpuBehavior, type CpuState } from '../../src/ai/cpu';
 import { nextRandom } from '../../src/ai/rng';
 import type { MatchConfig } from '../../src/core/config';
+import { px } from '../../src/core/constants';
 import { Input, type InputBits } from '../../src/core/input';
 import type { GameState } from '../../src/core/state';
 import { step } from '../../src/core/step';
@@ -150,6 +151,19 @@ describe('cpu movement', () => {
     expect(used.has('dashForward')).toBe(true);
     expect(used.has('dashBack')).toBe(true);
     expect(used.has('grab')).toBe(true);
+  });
+
+  it('backdashes away from the attacker after blocking a cross-up', () => {
+    // The CPU (player 2) ends a blockstun with player 1 now on its right: it still faces left.
+    const start = facingOff(30, MIRROR_MATCH, [
+      { x: px(490) },
+      { x: px(460), facing: -1, action: 'blockstun', stunFrames: 0 },
+    ]);
+    // A seed whose first draw backdashes at every level.
+    const seed = Array.from({ length: 100 }, (_, s) => s).find((s) => nextRandom(s)[0] < 0.05);
+    if (seed === undefined) throw new Error('No seed draws low enough');
+    const { state } = playAgainstCpu('hard', 1, () => 0, start, MIRROR_MATCH, seed);
+    expect(state.fighters[1]).toMatchObject({ move: 'dashBack', facing: 1 });
   });
 
   it('does not take a dash for an attack', () => {

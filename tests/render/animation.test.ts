@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { NAYO_CLIPS } from '../../src/art/nayo/clips';
 import type { Clip } from '../../src/art/types';
 import type { FighterState, RoundState } from '../../src/core/state';
 import {
@@ -42,12 +43,15 @@ describe('clipIdOf', () => {
     expect(clipIdOf(makeFighter({ action: 'air', facing: 1, vx: 0 }))).toBe('jump');
   });
 
-  it('holds the first pose of the block in the proximity guard, standing or crouching', () => {
-    const standing = makeFighter({ action: 'guard', actionFrame: 40 });
-    const crouching = makeFighter({ action: 'guard', actionFrame: 40, crouching: true });
-    expect(clipIdOf(standing)).toBe('blockStand');
-    expect(clipIdOf(crouching)).toBe('blockCrouch');
-    expect(clipTickOf('blockStand', standing, FIGHTING)).toBe(0);
+  it('holds the last pose of the block in the proximity guard, standing or crouching', () => {
+    // The first pose is the impact: shown before anything touches, it would read as a hit.
+    for (const crouching of [false, true]) {
+      const guard = makeFighter({ action: 'guard', actionFrame: 0, crouching });
+      const id = clipIdOf(guard);
+      expect(id).toBe(crouching ? 'blockCrouch' : 'blockStand');
+      const clip = NAYO_CLIPS[id];
+      expect(clipFrameAt(clip, clipTickOf(id, guard, FIGHTING))).toBe(clip.frames.length - 1);
+    }
   });
 
   it('shows a dash with the clip of its move', () => {

@@ -326,7 +326,7 @@ Quand on tient arrière **et** que l'adversaire menace, le combattant **s'arrêt
 - Menace (`src/core/threat.ts`, fonction pure partagée avec l'IA : DRY) : un coup adverse (hors `movement`) en démarrage ou actif dont la portée (`threatReach(move)` = bord avant de la hitbox + mouvement jusqu'à la fin des frames actives) plus `THREAT_MARGIN` (24 px) couvre la distance ; ou un projectile adverse qui s'approche à moins de 96 px.
 - `step` calcule la menace une fois par tic, à partir de l'état **précédent** de l'adversaire, et la passe à `updateFighter` dans une petite vue `{ x, threatened }` au lieu du seul `opponentX`.
 - `guard` entre dans `BLOCKING_ACTIONS` ; on peut y être saisi comme en `idle`.
-- Clip : première image de `blockStand` ou de `blockCrouch`, tenue.
+- Clip : dernière image de `blockStand` ou de `blockCrouch` (la garde installée), tenue. La première est l'impact : montrée avant tout contact, elle se lirait comme un coup reçu, et le vrai blocage ne changerait plus rien à l'image.
 
 ### 3.7 Pré-saut, atterrissage, demi-tour
 
@@ -858,7 +858,7 @@ Rappels du pipeline : 1 px de sprite = ½ px monde, cellule de 256, ancre en (12
 | `held` | 2 | 4, 4 en boucle ; l'image 1 rejoue « encaisse » à chaque tabassage | victime tenue qui lutte |
 | `thrownBack` | 4 | synchronisée sur le lancer : image = ⌊frame de l'attaquant × 4 / lâcher⌋ | soulevée et retournée par-dessus l'épaule (arc dessiné dans la cellule) |
 | `tech` | 4 | 3, 3, 4, 4 (14 = étourdissement du dégagement) | mains écartées, recul |
-| `guard` | — | première image de `blockStand` / `blockCrouch`, tenue | garde de proximité (aucune nouvelle image) |
+| `guard` | — | dernière image de `blockStand` / `blockCrouch` (la garde installée, pas l'impact), tenue | garde de proximité (aucune nouvelle image) |
 | `blockStand` / `blockCrouch` | — | existantes ; dernière image calée sur la fin du blockstun | — |
 
 ### 11.2 Nayo : nouvelles planches

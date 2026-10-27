@@ -38,7 +38,10 @@ export function step(
       ...state,
       frame: state.frame + 1,
       hitstop: state.hitstop - 1,
-      fighters: [readInput(prevA, inputA, false), readInput(prevB, inputB, false)],
+      fighters: [
+        readInput(prevA, inputA, false, prevB.x),
+        readInput(prevB, inputB, false, prevA.x),
+      ],
       contacts: EMPTY_CONTACTS,
     };
   }

@@ -2,6 +2,7 @@ import { doubleTap, nextTapDirection, nextTapFrames, nextTapReleased } from './d
 import { cleanSocd, DIRECTIONS, has, Input, type InputBits } from './input';
 import { detectMotion } from './motion';
 import { DIRECTION_HISTORY_FRAMES, INPUT_BUFFER_FRAMES } from './rules';
+import { sideOf } from './side';
 import type { Facing, FighterState } from './state';
 
 /**
@@ -13,12 +14,13 @@ export type Command = 'light' | 'heavy' | 'special' | 'grab' | 'dash' | 'backdas
 /**
  * Records this tick's input and buffers the command pressed, if any: one buffer slot, the last
  * press wins. During hitstop it runs alone, without aging the buffer nor the double tap, so
- * presses made during the freeze are not lost.
+ * presses made during the freeze are not lost. `opponentX` tells a dash from a backdash.
  */
 export function readInput(
   fighter: FighterState,
   rawInput: InputBits,
   ageBuffer: boolean,
+  opponentX: number,
 ): FighterState {
   const input = cleanSocd(rawInput);
   const directionHistory = withDirections(fighter.directionHistory, input & DIRECTIONS);
@@ -27,7 +29,7 @@ export function readInput(
   // Same-tick priority: grab, special, heavy, light (`pressedButton`), then dash, then jump.
   const command =
     pressedButton(pressed, input) ??
-    dashCommand(pressed, input, fighter.facing, tapped) ??
+    dashCommand(pressed, input, sideOf(fighter, opponentX), tapped) ??
     jumpCommand(pressed);
 
   const aged =
@@ -68,20 +70,22 @@ export function pressedButton(pressed: InputBits, held: InputBits): Command | nu
 
 /**
  * A dash, from the dash button (a backdash with back held) or a double tap completed on this
- * tick (`tapped`, its stage side): toward the side faced, which is the opponent's, it dashes,
- * away from it it backdashes.
+ * tick (`tapped`, its stage side): toward the opponent's side (`opponentSide`) it dashes, away
+ * from it it backdashes. The opponent's real side, not the side faced: after a cross-up,
+ * `facing` still points the old way until the fighter is free to turn, and the dash it buffers
+ * meanwhile would go the wrong way (into the attacker on a wake-up backdash).
  */
 export function dashCommand(
   pressed: InputBits,
   held: InputBits,
-  facing: Facing,
+  opponentSide: Facing,
   tapped: -1 | 0 | 1,
 ): Command | null {
   if (has(pressed, Input.Dash)) {
-    return has(held, facing === 1 ? Input.Left : Input.Right) ? 'backdash' : 'dash';
+    return has(held, opponentSide === 1 ? Input.Left : Input.Right) ? 'backdash' : 'dash';
   }
   if (tapped === 0) return null;
-  return tapped === facing ? 'dash' : 'backdash';
+  return tapped === opponentSide ? 'dash' : 'backdash';
 }
 
 /** The jump button, or up just pressed. Holding up keeps jumping (see `actOnGround`). */

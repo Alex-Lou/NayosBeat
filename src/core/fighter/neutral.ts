@@ -2,7 +2,8 @@ import type { FighterTemplate } from '../config';
 import { has, horizontalDirection, Input } from '../input';
 import { groundMove } from '../moves';
 import { signed } from '../numbers';
-import type { Facing, FighterState } from '../state';
+import { sideOf } from '../side';
+import type { FighterState } from '../state';
 import { continueOrEnter, enter } from './action';
 import { startGroundMove } from './move';
 
@@ -19,7 +20,8 @@ export function actOnGround(
 ): FighterState {
   const f: FighterState = {
     ...fighter,
-    facing: faceOpponent(fighter, opponentX),
+    // Grounded fighters always turn to face their opponent; airborne ones keep their side.
+    facing: sideOf(fighter, opponentX),
     move: null,
     comboCount: 0,
     vx: 0,
@@ -57,10 +59,4 @@ export function actOnGround(
     vx,
     x: f.x + vx,
   };
-}
-
-/** Grounded fighters always turn to face their opponent; airborne ones keep their side. */
-function faceOpponent(fighter: FighterState, opponentX: number): Facing {
-  if (opponentX === fighter.x) return fighter.facing;
-  return opponentX > fighter.x ? 1 : -1;
 }

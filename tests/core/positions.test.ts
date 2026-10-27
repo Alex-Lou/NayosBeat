@@ -32,6 +32,16 @@ describe('resolvePositions', () => {
     expect(px(475) - a.x).toBe(b.x - px(475));
   });
 
+  it('splits an odd overlap evenly, whichever player stands on the left', () => {
+    // 1 sub-pixel off a round distance: an odd overlap.
+    const [a, b] = resolve(at(px(470)), at(px(480) + 1));
+    expect(px(470) - a.x).toBe(b.x - (px(480) + 1));
+    // Both pushed the upper half: 1 sub-pixel apart from touching, never closer.
+    expect(b.x - a.x).toBe(BOX.width + 1);
+    const [right, left] = resolve(at(px(480) + 1), at(px(470)));
+    expect([left.x, right.x]).toEqual([a.x, b.x]);
+  });
+
   it('separates fighters standing on the same spot deterministically', () => {
     const [a, b] = resolve(at(px(480), { facing: -1 }), at(px(480), { facing: 1 }));
     expect(b.x).toBeLessThan(a.x);

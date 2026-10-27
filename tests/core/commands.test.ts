@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { pressedButton, readInput, type Command } from '../../src/core/commands';
+import { px } from '../../src/core/constants';
 import { Input, type InputBits } from '../../src/core/input';
 import {
   DASH_TAP_WINDOW,
@@ -11,16 +12,25 @@ import { makeFighter, repeat } from './helpers';
 
 const { Up, Down, Left, Right, Light, Heavy, Special, Jump, Grab, Dash } = Input;
 
+/** Where the opponent stands unless told: in front of the fighter, on the side it faces. */
+function ahead(fighter: FighterState): number {
+  return fighter.x + fighter.facing * px(100);
+}
+
+/** The opponent of the default fighter (`makeFighter()`), in front of it. */
+const OPPONENT = ahead(makeFighter());
+
 /** Reads one input per tick; returns the commands pressed, with the tick of each. */
 function commandsOf(
   inputs: readonly InputBits[],
   fighter: FighterState = makeFighter(),
   hitstop: readonly boolean[] = [],
+  opponentX = ahead(fighter),
 ): [number, Command][] {
   const commands: [number, Command][] = [];
   let current = fighter;
   inputs.forEach((input, tick) => {
-    current = readInput(current, input, !(hitstop[tick] ?? false));
+    current = readInput(current, input, !(hitstop[tick] ?? false), opponentX);
     // A press refills the buffer: that is how a command shows.
     if (current.bufferFrames === INPUT_BUFFER_FRAMES && current.bufferedCommand) {
       commands.push([tick, current.bufferedCommand]);
@@ -91,6 +101,15 @@ describe('dash button', () => {
     expect(commandsOf([Left | Dash], makeFighter({ facing: -1 }))).toEqual([[0, 'dash']]);
   });
 
+  it("reads back from the opponent's real side, not from a facing left over by a cross-up", () => {
+    // Still facing right, as after a knockdown or a blockstun, the opponent now on the left.
+    const crossedUp = makeFighter({ facing: 1, action: 'knockdown' });
+    const onTheLeft = px(360);
+    expect(commandsOf([Right | Dash], crossedUp, [], onTheLeft)).toEqual([[0, 'backdash']]);
+    expect(commandsOf([Left | Dash], crossedUp, [], onTheLeft)).toEqual([[0, 'dash']]);
+    expect(commandsOf([Dash], crossedUp, [], onTheLeft)).toEqual([[0, 'dash']]);
+  });
+
   it('dashes on the press only, not while held', () => {
     expect(commandsOf(repeat(Dash, 20))).toEqual([[0, 'dash']]);
   });
@@ -117,6 +136,13 @@ describe('double tap (§2.6)', () => {
   it('backdashes with a double tap away from the opponent', () => {
     expect(commandsOf(doubleTap(Left, 2))).toEqual([[3, 'backdash']]);
     expect(commandsOf(doubleTap(Right, 2), makeFighter({ facing: -1 }))).toEqual([[3, 'backdash']]);
+  });
+
+  it("reads the tap's side against the opponent's real side after a cross-up", () => {
+    const crossedUp = makeFighter({ facing: 1, action: 'air', y: px(20) });
+    const onTheLeft = px(360);
+    expect(commandsOf(doubleTap(Left, 2), crossedUp, [], onTheLeft)).toEqual([[3, 'dash']]);
+    expect(commandsOf(doubleTap(Right, 2), crossedUp, [], onTheLeft)).toEqual([[3, 'backdash']]);
   });
 
   it('needs a tick without any direction between the two taps', () => {
@@ -154,10 +180,11 @@ describe('double tap (§2.6)', () => {
 
   it('keeps its state in three fields, bounded', () => {
     let fighter = makeFighter();
-    for (let i = 0; i < 500; i++) fighter = readInput(fighter, i % 3 === 0 ? Right : 0, true);
+    for (let i = 0; i < 500; i++)
+      fighter = readInput(fighter, i % 3 === 0 ? Right : 0, true, OPPONENT);
     expect(fighter.tapFrames).toBeLessThanOrEqual(DASH_TAP_WINDOW + 1);
     fighter = makeFighter();
-    for (let i = 0; i < 500; i++) fighter = readInput(fighter, Right, true);
+    for (let i = 0; i < 500; i++) fighter = readInput(fighter, Right, true, OPPONENT);
     expect(fighter).toMatchObject({ tapDirection: 1, tapFrames: DASH_TAP_WINDOW + 1 });
   });
 });
@@ -173,7 +200,7 @@ describe('jump command', () => {
 describe('readInput', () => {
   it('buffers a press with the direction, motion and side it was made with', () => {
     const fighter = makeFighter({ directionHistory: [Down, Down | Right] });
-    const read = readInput(fighter, Right | Light, true);
+    const read = readInput(fighter, Right | Light, true, OPPONENT);
     expect(read).toMatchObject({
       input: Right | Light,
       bufferedCommand: 'light',
@@ -185,17 +212,19 @@ describe('readInput', () => {
   });
 
   it('forgets the press once the buffer runs out, but not during hitstop', () => {
-    let fighter = readInput(makeFighter(), Light, true);
-    for (let i = 0; i < 20; i++) fighter = readInput(fighter, Light, false);
+    let fighter = readInput(makeFighter(), Light, true, OPPONENT);
+    for (let i = 0; i < 20; i++) fighter = readInput(fighter, Light, false, OPPONENT);
     expect(fighter.bufferedCommand).toBe('light');
-    for (let i = 0; i < INPUT_BUFFER_FRAMES; i++) fighter = readInput(fighter, Light, true);
+    for (let i = 0; i < INPUT_BUFFER_FRAMES; i++)
+      fighter = readInput(fighter, Light, true, OPPONENT);
     expect(fighter.bufferedCommand).toBeNull();
   });
 
   it('keeps the last ticks of directions only, without the buttons', () => {
     let fighter = makeFighter();
-    for (let i = 0; i < DIRECTION_HISTORY_FRAMES; i++) fighter = readInput(fighter, Down, true);
-    fighter = readInput(fighter, Right | Light, true);
+    for (let i = 0; i < DIRECTION_HISTORY_FRAMES; i++)
+      fighter = readInput(fighter, Down, true, OPPONENT);
+    fighter = readInput(fighter, Right | Light, true, OPPONENT);
     expect(fighter.directionHistory).toHaveLength(DIRECTION_HISTORY_FRAMES);
     expect(fighter.directionHistory.at(-1)).toBe(Right);
     expect(fighter.directionHistory.at(-2)).toBe(Down);

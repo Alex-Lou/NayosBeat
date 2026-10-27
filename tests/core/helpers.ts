@@ -1,6 +1,7 @@
+import { expect } from 'vitest';
 import type { FighterTemplate, MatchConfig } from '../../src/core/config';
 import { px } from '../../src/core/constants';
-import type { InputBits } from '../../src/core/input';
+import { Input, type InputBits } from '../../src/core/input';
 import { createInitialState, type FighterState, type GameState } from '../../src/core/state';
 import { updateFighter } from '../../src/core/fighter';
 import { step } from '../../src/core/step';
@@ -116,4 +117,74 @@ export function stepsOf(states: readonly FighterState[], start = makeFighter()):
 
 export function sum(values: readonly number[]): number {
   return values.reduce((total, value) => total + value, 0);
+}
+
+/** Both players' inputs on one tick. */
+export type TickInputs = readonly [InputBits, InputBits];
+
+/** The same input seen in a mirror: left and right exchanged. */
+export function mirroredInput(input: InputBits): InputBits {
+  const sides = Input.Left | Input.Right;
+  const left = input & Input.Left ? Input.Right : 0;
+  const right = input & Input.Right ? Input.Left : 0;
+  return (input & ~sides) | left | right;
+}
+
+/**
+ * Plays `script` from `facingOff(distancePx, config, overrides)`, then its mirror image (players
+ * swapped, left and right exchanged), and expects every tick of one to be the reflection of the
+ * other: x ↦ stage width − x, the other facing, the same height, action, move, frame and health.
+ * Returns the states of the script as written, for the mechanic's own checks. `config` has the
+ * same template on both sides.
+ */
+export function expectMirrored(
+  script: readonly TickInputs[],
+  config: MatchConfig,
+  distancePx: number,
+  overrides: [Partial<FighterState>, Partial<FighterState>] = [{}, {}],
+): GameState[] {
+  const width = config.stage.width;
+  const mirrored = (o: Partial<FighterState>): Partial<FighterState> => ({
+    ...o,
+    ...(o.x === undefined ? {} : { x: width - o.x }),
+    ...(o.facing === undefined ? {} : { facing: o.facing === 1 ? -1 : 1 }),
+  });
+  const played = playScript(script, config, facingOff(distancePx, config, overrides));
+  const mirror = playScript(
+    script.map(([a, b]) => [mirroredInput(b), mirroredInput(a)] as const),
+    config,
+    facingOff(distancePx, config, [mirrored(overrides[1]), mirrored(overrides[0])]),
+  );
+  const pose = (f: FighterState, reflected: boolean) => [
+    reflected ? width - f.x : f.x,
+    reflected ? -f.facing : f.facing,
+    f.y,
+    f.action,
+    f.move,
+    f.actionFrame,
+    f.health,
+  ];
+  const rows = (states: GameState[], reflected: boolean) =>
+    states.map((state, tick) => {
+      const [a, b] = state.fighters;
+      const [first, second] = reflected ? [b, a] : [a, b];
+      return [tick, state.hitstop, pose(first, reflected), pose(second, reflected)];
+    });
+  expect(rows(mirror, true)).toEqual(rows(played, false));
+  return played;
+}
+
+/** Plays one pair of inputs per tick; returns the state after each tick. */
+function playScript(
+  script: readonly TickInputs[],
+  config: MatchConfig,
+  start: GameState,
+): GameState[] {
+  const states: GameState[] = [];
+  let current = start;
+  for (const inputs of script) {
+    current = step(current, inputs, config);
+    states.push(current);
+  }
+  return states;
 }

@@ -2,6 +2,9 @@ import type { Clip, ClipId } from '../art/types';
 import { ROUND_END_FRAMES } from '../core/rules';
 import type { FighterState, RoundState } from '../core/state';
 
+/** Past every clip's end: the proximity guard holds the shell the block settles into. */
+const HELD = Number.POSITIVE_INFINITY;
+
 /**
  * Which clip shows a fighter: a round pose while the round is not being fought (entrance,
  * winner, loser on time), otherwise the clip of its current action.
@@ -37,8 +40,9 @@ export function clipTickOf(clip: ClipId, fighter: FighterState, round: RoundStat
       // The match end follows the round end: keep counting so the pose does not restart.
       return round.phaseFrame + (round.phase === 'matchEnd' ? ROUND_END_FRAMES : 0);
     default:
-      // The proximity guard holds the first pose of the block (no impact to show).
-      return fighter.action === 'guard' ? 0 : fighter.actionFrame;
+      // The proximity guard holds the block's last pose, not its impact: nothing has touched
+      // yet, and a real block then shows by rocking back from it.
+      return fighter.action === 'guard' ? HELD : fighter.actionFrame;
   }
 }
 
