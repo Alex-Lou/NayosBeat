@@ -1,11 +1,11 @@
 import { contactOf, techGrab } from './combat';
-import { readInput } from './commands';
+import { agedBuffer, readInput } from './commands';
 import type { FighterTemplate, MatchConfig } from './config';
 import { enter, nextFrame } from './fighter/action';
 import { startAttack } from './fighter/move';
 import { Input, type InputBits } from './input';
 import type { MoveData } from './move-data';
-import { holdMove, moveDuration } from './moves';
+import { holdMove, isHoldChoice, moveDuration } from './moves';
 import { signed } from './numbers';
 import { GRAB_TECH_FRAMES, HOLD_LIMIT_FRAMES, HOLD_MIN_FRAMES, STRUGGLE_FRAMES } from './rules';
 import { sideOf } from './side';
@@ -138,7 +138,7 @@ export function updateHold(
   const before = state.fighters[heldIndex];
   const t = hold.frame;
   const clinch = t < GRAB_TECH_FRAMES;
-  const read = readInput(state.fighters[hold.holder], inputs[hold.holder], !clinch, before.x);
+  const read = readFighter(state.fighters[hold.holder], inputs[hold.holder], !clinch, before.x);
   const victim = readInput(before, inputs[heldIndex], true, read.x);
 
   // Time out: the hold breaks like a tech, without damage (§4.2).
@@ -168,6 +168,33 @@ export function updateHold(
     return { fighters: pairOf(hold, placedHolder, placedHeld), hold: next, ...QUIET };
   }
   return lands(next, move, placedHolder, placedHeld, config);
+}
+
+/**
+ * `readInput`, except for the holder: a jump or a dash has no move in the hold (§2.8), so
+ * pressed after a choice (the touch stick slipping to ↖ on ← + H) it must not erase the choice
+ * kept for the clinch's end (§4.1). The choice ages as if nothing were pressed; a new L, H, S or
+ * PRISE still replaces it. Used in the freeze too, where the buffer does not age.
+ */
+export function readFighter(
+  fighter: FighterState,
+  rawInput: InputBits,
+  ageBuffer: boolean,
+  opponentX: number,
+): FighterState {
+  const read = readInput(fighter, rawInput, ageBuffer, opponentX);
+  const kept = fighter.bufferedCommand;
+  const stray = read.bufferedCommand !== null && !isHoldChoice(read.bufferedCommand);
+  if (fighter.action !== 'holding' || !stray || !isHoldChoice(kept)) return read;
+  const bufferFrames = agedBuffer(fighter, ageBuffer);
+  return {
+    ...read,
+    bufferedCommand: bufferFrames > 0 ? kept : null,
+    bufferFrames,
+    bufferedInput: fighter.bufferedInput,
+    bufferedMotion: fighter.bufferedMotion,
+    bufferedFacing: fighter.bufferedFacing,
+  };
 }
 
 /**

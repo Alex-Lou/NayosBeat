@@ -54,10 +54,15 @@ export function groundMove(
  * for the rest: a hold has no jump nor dash.
  */
 export function holdMove(command: Command, input: InputBits, facing: Facing): MoveId | null {
+  if (!isHoldChoice(command)) return null;
   if (command === 'light') return 'pummel';
-  if (command !== 'heavy' && command !== 'special' && command !== 'grab') return null;
   const back = facing === 1 ? Input.Left : Input.Right;
   return has(input, back) ? 'throwBack' : 'throwForward';
+}
+
+/** Whether a command chooses a move in the hold: L, H, S or the grab (§2.8). */
+export function isHoldChoice(command: Command | null): boolean {
+  return command === 'light' || command === 'heavy' || command === 'special' || command === 'grab';
 }
 
 /** Air move for a command; there are no air specials, air grabs nor air dashes. */

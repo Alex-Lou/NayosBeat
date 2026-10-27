@@ -1,8 +1,7 @@
-import { readInput } from './commands';
 import { applyHit, contactOf, findHit, techGrab } from './combat';
 import type { MatchConfig } from './config';
 import { pushboxOf, updateFighter } from './fighter';
-import { startHold, struggleInHitstop, updateHold, type HoldTick } from './hold';
+import { readFighter, startHold, struggleInHitstop, updateHold, type HoldTick } from './hold';
 import type { InputBits } from './input';
 import type { MoveData } from './move-data';
 import { followCamera, resolvePositions } from './positions';
@@ -57,8 +56,8 @@ export function step(
 function frozen(state: GameState, inputA: InputBits, inputB: InputBits): GameState {
   const [prevA, prevB] = state.fighters;
   const fighters = [
-    readInput(prevA, inputA, false, prevB.x),
-    readInput(prevB, inputB, false, prevA.x),
+    readFighter(prevA, inputA, false, prevB.x),
+    readFighter(prevB, inputB, false, prevA.x),
   ] as const;
   return {
     ...state,

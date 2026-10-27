@@ -1,6 +1,7 @@
 import type Phaser from 'phaser';
 import { toPx } from '../core/constants';
 import { GRAB_TECH_FRAMES, HOLD_LIMIT_FRAMES } from '../core/rules';
+import { sideOf } from '../core/side';
 import type { GameState } from '../core/state';
 import { DEPTH } from './depth';
 
@@ -16,7 +17,11 @@ const BLINK_COLOR = 0xffffff;
 /** A struggle press makes the ring jump: it swells this much, back in POP_TICKS ticks. */
 const POP = 0.18;
 const POP_TICKS = 6;
-/** The ring starts at the top and drains clockwise. */
+/**
+ * The ring starts at the top and drains from the holder's side: its near half, behind the
+ * holder's body, empties first, and the far half, the one the held player sees, drains last,
+ * the same on both sides of the stage.
+ */
 const TOP = -90;
 
 /**
@@ -41,8 +46,11 @@ export class HoldRing {
   ) {
     const arc = (alpha: number): Phaser.GameObjects.Arc => {
       const shape = scene.add.arc(0, 0, RADIUS, TOP, TOP + 360, false);
-      shape.isFilled = false;
-      return shape.setStrokeStyle(WIDTH, 0xffffff, alpha).setDepth(DEPTH.holdRing);
+      // A Shape closes its stroke by default: a draining arc would show a chord back to the top.
+      return shape
+        .setClosePath(false)
+        .setStrokeStyle(WIDTH, 0xffffff, alpha)
+        .setDepth(DEPTH.holdRing);
     };
     this.track = arc(TRACK_ALPHA).setVisible(false);
     this.ring = arc(RING_ALPHA).setVisible(false);
@@ -57,13 +65,17 @@ export class HoldRing {
     if (hold.limit < this.shownLimit) this.poppedAt = state.frame;
     this.shownLimit = hold.limit;
 
+    const holder = state.fighters[hold.holder];
     const held = state.fighters[hold.holder === 0 ? 1 : 0];
     const x = toPx(held.x);
     const y = this.groundY - toPx(held.y) - CENTER_HEIGHT;
     const left = Math.max(0, hold.limit - hold.frame) / HOLD_LIMIT_FRAMES;
-    const end = TOP + Math.round(360 * left);
+    // Away from the holder: anticlockwise when held on its left (behind it, once a throw
+    // backward has switched sides). Both sides give distinct ends, one cache is enough.
+    const side = sideOf(holder, held.x);
+    const end = TOP + side * Math.round(360 * left);
     if (end !== this.shownEnd) {
-      this.ring.setEndAngle(end);
+      this.ring.setEndAngle(end, side < 0);
       this.shownEnd = end;
     }
     const clinch = hold.techable && hold.frame < GRAB_TECH_FRAMES;

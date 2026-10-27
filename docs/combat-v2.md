@@ -402,7 +402,7 @@ PRISE ──► tentative (démarrage 5, actif 3, très courte portée)
 6. **Dégagement** : PRISE (ou L + H) pendant t0–t11 (`GRAB_TECH_FRAMES` = 12, soit 200 ms), ou une Prise déjà dans le buffer. 200 ms se jouent à l'anticipation pour la plupart des joueurs, au réflexe pour les meilleurs ; la vibration et l'anneau (§4.5) aident.
 7. **PUNITION** : une prise qui saisit un adversaire **en récupération** (fin d'attaque après ses frames actives, atterrissage, fin de dash ou de backdash, prise ratée) **ne se dégage pas**. Tampon « PUNITION ! ».
 8. **Se débattre** : à partir de t12, chaque nouvel appui de bouton de la victime (L, H, S, PRISE, SAUT, DASH ; pas les directions) retire 3 tics à la limite (`STRUGGLE_FRAMES`), plancher 36 (`HOLD_MIN_FRAMES`). On ne s'échappe pas : on écourte le tabassage et on peut priver l'attaquant du choix de lancer.
-9. **Tabasser** : un coup de tabassage ne part que s'il finit avant la limite du moment. Un tabassage ou un lancer commencé va toujours au bout. Le temps fait la limite, pas un compteur : **2 coups de genou au plus pour Nayo, 3 coups de tête pour Riff** sans lutte.
+9. **Tabasser** : un coup de tabassage ne part que s'il finit avant la limite du moment. Un tabassage ou un lancer commencé va toujours au bout. Le temps fait la limite, pas un compteur : **2 coups de genou au plus pour Nayo, 3 coups de tête pour Riff** sans lutte. Le choix de l'attaquant, mémorisé pour t12, ne s'efface que par un autre choix (L, H, S, PRISE) : un saut ou un dash n'ont pas de coup dans une prise, et un stick tactile qui glisse vers ↖ sur ← + H ne le perd pas.
 10. **Dégâts fixes** pour le tabassage et les lancers : pas de scaling, pas de bonus de CONTRE ni de DROP. Ils comptent comme des coups dans le compteur de combo.
 11. **Coins** : si la victime sortirait d'un mur, toute la paire est décalée (l'attaquant recule d'autant). Le lancer derrière depuis le coin **met l'adversaire au coin**.
 12. **Fin de round pendant une prise** (temps écoulé) : la prise se rompt comme un dégagement, sans dégâts. Un KO par tabassage ou par lancer termine le round normalement. En entraînement, pas de recharge de vie pendant une prise.
@@ -434,7 +434,7 @@ Pour mémoire, la Projection actuelle fait 110 / 100 sans aucune option. Une vic
 
 ### 4.5 Affichage, son et haptique
 
-- **Anneau de prise** autour de la victime : il se vide jusqu'à la limite ; chaque appui de la victime le fait sauter. Pendant t0–t11, l'anneau clignote (au plus 3 fois par seconde) en blanc : c'est le moment de se dégager.
+- **Anneau de prise** autour de la victime : il se vide jusqu'à la limite, en partant du haut, du côté de l'attaquant (sa moitié proche, cachée derrière l'attaquant, se vide d'abord ; la moitié que voit la victime, en dernier, de la même façon des deux côtés de l'écran) ; chaque appui de la victime le fait sauter. Pendant t0–t11, l'anneau clignote (au plus 3 fois par seconde) en blanc : c'est le moment de se dégager.
 - **Tampons** : « DÉGAGEMENT ! », « PUNITION ! » (phase 2, en lettrage BD : la police Bangers a les capitales accentuées, le test des glyphes le vérifie), « CONTRE ! » (phase 3, voir §7.9).
 - **Entraînement** : rappel sous l'attaquant, « L frapper · H lancer · ← H derrière ».
 - **Sons** : saisie (cuir et tissu), genou ou tête (sourd), lancer (souffle puis impact au sol), dégagement (deux claques).

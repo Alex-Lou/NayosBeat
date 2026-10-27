@@ -2,22 +2,31 @@ import { describe, expect, it } from 'vitest';
 import type { MatchConfig } from '../../src/core/config';
 import { px } from '../../src/core/constants';
 import { contactDistance } from '../../src/core/hold-pair';
-import { Input } from '../../src/core/input';
+import { Input, type InputBits } from '../../src/core/input';
+import type { MoveId } from '../../src/core/move-data';
 import {
   GRAB_HITSTOP,
   HOLD_LIMIT_FRAMES,
   STRUGGLE_FRAMES,
   THROW_TECH_STUN,
 } from '../../src/core/rules';
+import type { GameState } from '../../src/core/state';
 import { step } from '../../src/core/step';
 import { NAYO } from '../../src/data/fighters/nayo';
 import { RIFF } from '../../src/data/fighters/riff';
 import { atHoldTick, catches, grabbed, last, NAYO_MIRROR, play, RIFF_MIRROR } from './hold-helpers';
 import { facingOff, MATCH } from './helpers';
 
-const { Up, Left, Right, Light, Heavy, Grab } = Input;
+const { Up, Left, Right, Jump, Dash, Light, Heavy, Grab } = Input;
 
 const RIFF_ON_NAYO: MatchConfig = { ...NAYO_MIRROR, fighters: [RIFF, NAYO] };
+
+/** The holder's move on its first tick out of the clinch, after one input a tick from `from`. */
+function choiceOf(from: GameState, ...inputs: readonly InputBits[]): MoveId | null {
+  let state = from;
+  for (const input of inputs) state = step(state, [input, 0], NAYO_MIRROR);
+  return step(atHoldTick(state, 12), [0, 0], NAYO_MIRROR).fighters[0].move;
+}
 
 /** The rules of the hold (docs/combat-v2.md §4.2) that the cases of §4.6 rest on. */
 describe('the grab catches (§4.2)', () => {
@@ -88,6 +97,21 @@ describe('the clinch (§4.2.6)', () => {
     expect(state.fighters[0].move).toBeNull();
     state = step(state, [0, 0], NAYO_MIRROR);
     expect(state.fighters[0]).toMatchObject({ move: 'throwForward', actionFrame: 0 });
+  });
+
+  it.each([
+    { stray: 'up', input: Up },
+    { stray: 'jump', input: Jump },
+    { stray: 'DASH', input: Dash },
+  ])('keeps the choice when $stray is pressed after it: no move in a hold', ({ input }) => {
+    const t3 = atHoldTick(grabbed(), 3);
+    expect(choiceOf(t3, Light, 0, input)).toBe('pummel');
+    expect(choiceOf(t3, Left | Heavy, Left, Left | input)).toBe('throwBack');
+    expect(choiceOf(grabbed(), Light, 0, input)).toBe('pummel');
+  });
+
+  it('plays the last real choice: L, then H, throws forward', () => {
+    expect(choiceOf(atHoldTick(grabbed(), 3), Light, 0, Heavy)).toBe('throwForward');
   });
 });
 
