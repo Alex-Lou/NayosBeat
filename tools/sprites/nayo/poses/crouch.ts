@@ -1,20 +1,25 @@
-import { solve } from '../../skeleton.ts';
-import { at, GUARD, planted, type Foot, type Pose } from './common.ts';
+import type { Point } from '../../raster.ts';
+import { solve, type Foot } from '../../skeleton.ts';
+import { at, GUARD, planted, type Pose } from './common.ts';
 
 /**
  * crouch: 7 frames. 0-2 drop from GUARD into the crouch (2 ticks each): the hips fall back
- * and down first, the chest folds after them, the hands arrive last; he sinks a hair past the
- * crouch and settles. 3-6 loop (8 ticks each): breathing in the crouch, the chest lifting, the
- * shoulders a beat later, the hands last.
+ * and down first, the chest folds after them, the gloves ride the head a beat late; the rear
+ * foot is drawn in under the hips, he sinks a hair past the crouch and settles. 3-6 loop (8
+ * ticks each): breathing in the crouch, the hips rising and sinking a pixel at a time (a soft
+ * sine), the lead shoulder rolling up a beat later, the lead glove last.
  *
- * The crouch is the guard's Philly shell, sitting low on the rear leg: lead shoulder rolled up
- * to the chin, lead forearm across the thigh, rear fist at the jaw, eyes over the shoulder.
- * The crouching block raises both forearms from there. Compact enough to stay inside the
- * crouching pushbox (no clinch at point blank) and about as tall as the crouching hurtbox.
- * The lead foot never moves; the rear heel peels up around its toes.
+ * The crouch is the guard sunk on its haunches: the same high guard (far glove up by the cheek,
+ * near glove under the chin, elbows tucked down onto the knees), the torso leaning in, eyes over
+ * the gloves. Compact enough to stay inside the crouching pushbox (no clinch at point blank)
+ * and about as tall as the crouching hurtbox. The lead foot never moves; the rear foot is drawn
+ * in under the hips from the guard's wide stance, on its toes.
+ *
+ * Pixel-locked loop: the torso and the head never turn and the hips move by whole sprite
+ * pixels (0.5 world px), the arms ride rigidly with the shoulders (a glove only swings about
+ * its elbow), so the sleeve's emblem, the headphone ring and the face are the same pixels in
+ * every frame, only shifted: nothing boils.
  */
-
-const mix = (a: number, b: number, t: number): number => a + (b - a) * t;
 
 /** A foot pivoting on its toes: the heel rises by `angle` (negative) around a fixed toe. */
 function onToes(flatX: number, angle: number): Foot {
@@ -23,24 +28,18 @@ function onToes(flatX: number, angle: number): Foot {
 }
 
 const REAR_HEEL = -30;
+/** Where the rear foot sits in the crouch: drawn in under the hips from the guard's wide stance. */
+const REAR_X = -13.5;
 
-/** The crouching shell at rest, but for the hands (placed around the head, see guarded). */
-const SEAT: Pose = {
-  hip: at(-10, 15),
-  torso: 22,
-  head: -4,
-  shrug: 4.2,
-  nearFoot: GUARD.nearFoot,
-  farFoot: onToes(GUARD.farFoot.x, REAR_HEEL),
-  nearFist: GUARD.nearFist,
-  farFist: GUARD.farFist,
-};
+/** One sprite pixel, in world pixels: the step of every move of the loop. */
+const PIXEL = 0.5;
 
-/** Hands relative to the head: lead fist low over the knee, rear fist at the jaw. */
-const LEAD = at(7, -20);
-const REAR = at(8.5, -3.5);
+/** The gloves around the head, as in GUARD: near glove under the chin, far glove by the cheek. */
+const GUARD_HEAD = solve(GUARD).head;
+const LEAD = at(GUARD.nearFist.x - GUARD_HEAD.x, GUARD.nearFist.y - GUARD_HEAD.y);
+const REAR = at(GUARD.farFist.x - GUARD_HEAD.x, GUARD.farFist.y - GUARD_HEAD.y);
 
-/** Puts the hands around the head of `pose`, nudged by `lead` and `rear` (world px). */
+/** Puts the gloves around the head of `pose` as in the guard, nudged by `lead` and `rear`. */
 function guarded(pose: Pose, lead = at(0, 0), rear = at(0, 0)): Pose {
   const { head } = solve(pose);
   return {
@@ -50,102 +49,125 @@ function guarded(pose: Pose, lead = at(0, 0), rear = at(0, 0)): Pose {
   };
 }
 
-/** Where the hands sit around the head in GUARD, as nudges from the crouch's. */
-const GUARD_HEAD = solve(GUARD).head;
-const FROM_GUARD = {
-  lead: at(GUARD.nearFist.x - GUARD_HEAD.x - LEAD.x, GUARD.nearFist.y - GUARD_HEAD.y - LEAD.y),
-  rear: at(GUARD.farFist.x - GUARD_HEAD.x - REAR.x, GUARD.farFist.y - GUARD_HEAD.y - REAR.y),
-};
-
-/** How far each part has gone from GUARD to the crouch, 0 to 1 (overlapping action). */
-interface Progress {
-  readonly hipX: number;
-  readonly hipY: number;
-  readonly torso: number;
-  readonly head: number;
-  readonly lead: number;
-  readonly rear: number;
-  readonly heel: number;
-}
-
-function between(p: Progress): Pose {
-  return guarded(
-    {
-      ...SEAT,
-      hip: at(mix(GUARD.hip.x, SEAT.hip.x, p.hipX), mix(GUARD.hip.y, SEAT.hip.y, p.hipY)),
-      torso: mix(GUARD.torso, SEAT.torso, p.torso),
-      head: mix(GUARD.head, SEAT.head, p.head),
-      shrug: mix(GUARD.shrug ?? 0, SEAT.shrug ?? 0, p.torso),
-      farFoot: onToes(GUARD.farFoot.x, REAR_HEEL * p.heel),
-    },
-    at(FROM_GUARD.lead.x * (1 - p.lead), FROM_GUARD.lead.y * (1 - p.lead)),
-    at(FROM_GUARD.rear.x * (1 - p.rear), FROM_GUARD.rear.y * (1 - p.rear)),
-  );
-}
-
-/**
- * The drop: hips back and down (back first, so the lead knee stays home), chest tipping in,
- * eyes level, the rear heel peeling up; the hands ride along, the rear fist glued to the jaw.
- */
-const DROP = between({
-  hipX: 0.92,
-  hipY: 0.7,
-  torso: 0.85,
-  head: 0.8,
-  lead: 0.5,
-  rear: 0.7,
-  heel: 0.8,
+/** The crouching guard at rest (first frame of the loop): where the low moves start and land. */
+const REST: Pose = guarded({
+  hip: at(-10, 15),
+  torso: 22,
+  head: -4,
+  shrug: 2,
+  nearFoot: GUARD.nearFoot,
+  farFoot: onToes(REAR_X, REAR_HEEL),
+  nearFist: GUARD.nearFist,
+  farFist: GUARD.farFist,
+  bends: { ...GUARD.bends },
 });
 
-/** Sinks past the crouch: hips low, chest folded, chin tucked; the hands still trail. */
-const LOW = guarded(
+// ---------------------------------------------------------------------------------------------
+// The drop
+
+/**
+ * The drop, nearly all the way at once (a crouch must answer the stick): hips back and down,
+ * back first so the lead knee stays over the toes, the chest tipping in, eyes level; the gloves
+ * lag a hair above their place. Both feet on the floor: the rear foot snaps in under the hips
+ * with the fall, onto its crouch spot. The clip also restarts here when he settles back into
+ * the crouch after a low attack, a block or a hit, so this frame is a near-crouch: from the
+ * guard it is most of the fall, from the crouch only a breath up, the feet never shuffling.
+ */
+const DROP: Pose = guarded(
   {
-    ...SEAT,
-    hip: at(SEAT.hip.x - 0.3, SEAT.hip.y - 1.4),
-    torso: SEAT.torso + 3,
-    head: SEAT.head + 3,
+    ...REST,
+    hip: at(REST.hip.x + 0.1, REST.hip.y + 1.5),
+    torso: 20.5,
+    head: -2,
+    shrug: 1.6,
   },
-  at(-1, -1.4),
-  at(-0.9, -1.2),
+  at(-1.4, 0.8),
+  at(-0.2, 0.6),
 );
 
-/** Settles back up, the hands overshooting a touch. */
-const SETTLE = guarded(
+/** Sinks past the crouch: hips low, chest folded, the rear heel rising; the gloves catch up. */
+const LOW: Pose = guarded(
   {
-    ...SEAT,
-    hip: at(SEAT.hip.x - 0.1, SEAT.hip.y - 0.4),
-    torso: SEAT.torso + 1,
-    head: SEAT.head + 1,
+    ...REST,
+    hip: at(REST.hip.x - 0.3, REST.hip.y - 1),
+    torso: REST.torso + 2,
+    head: REST.head - 1.5,
+    shrug: (REST.shrug ?? 0) + 0.5,
+    farFoot: onToes(REAR_X, REAR_HEEL - 4),
   },
-  at(0, 0.4),
+  at(1, -0.6),
+  at(0.1, -0.5),
+);
+
+/** Settles back up, the gloves overshooting a touch. */
+const SETTLE: Pose = guarded(
+  {
+    ...REST,
+    hip: at(REST.hip.x - 0.1, REST.hip.y - 0.5),
+    torso: REST.torso + 0.5,
+    head: REST.head - 0.5,
+  },
+  at(-0.6, 0.5),
   at(0, 0.3),
 );
 
+// ---------------------------------------------------------------------------------------------
+// The breathing loop, pixel-locked
+
+const REST_BONES = solve(REST);
+
+/** Turns `v` by `degrees` (counterclockwise, y up). */
+function turn(v: Point, degrees: number): Point {
+  const a = (degrees * Math.PI) / 180;
+  return at(v.x * Math.cos(a) - v.y * Math.sin(a), v.x * Math.sin(a) + v.y * Math.cos(a));
+}
+
 /**
- * Breathing in the crouch, each channel from 0 (rest) to 1: `chest` lifts the hips and
- * straightens the back, `shoulders` roll the lead shoulder up and the chin with it, `hands`
- * let the fists ride up after them.
+ * A glove carried rigidly by its elbow (moved by `shift`), the forearm swung `swing` degrees
+ * about the elbow (+ = the glove rises): the upper arm and its emblem keep their pixels.
  */
-function breathe(chest: number, shoulders: number, hands: number): Pose {
-  return guarded(
-    {
-      ...SEAT,
-      hip: at(SEAT.hip.x, SEAT.hip.y + 0.7 * chest),
-      torso: SEAT.torso - 1.5 * chest,
-      head: SEAT.head + 1.5 * shoulders,
-      shrug: (SEAT.shrug ?? 0) + 0.5 * shoulders,
-    },
-    at(-0.2 * hands, 0.4 * hands - 0.7 * chest),
-    at(-0.2 * hands, 0.3 * hands - 0.6 * chest),
-  );
+function carried(side: 'near' | 'far', shift: Point, swing: number): Point {
+  const { elbow, wrist } = REST_BONES[side];
+  const forearm = turn(at(wrist.x - elbow.x, wrist.y - elbow.y), swing);
+  return at(elbow.x + shift.x + forearm.x, elbow.y + shift.y + forearm.y);
+}
+
+/** Shrug that rolls the lead shoulder up and forward by one sprite pixel (along the torso). */
+const ROLL =
+  PIXEL / (Math.cos((REST.torso * Math.PI) / 180) - 0.45 * Math.sin((REST.torso * Math.PI) / 180));
+const roll = (amount: number): Point => {
+  const up = REST_BONES.up;
+  const front = REST_BONES.front;
+  const k = ROLL * amount;
+  return at(up.x * k + front.x * k * 0.45, up.y * k + front.y * k * 0.45);
+};
+
+/**
+ * One frame of the breathing: hips `lift` sprite pixels up, the lead shoulder rolled `rolled`
+ * pixels, each forearm swung about its elbow (degrees, + = the glove rises).
+ */
+function breath(lift: number, rolled: number, leadSwing: number, rearSwing: number): Pose {
+  const hip = at(0, lift * PIXEL);
+  const shoulder = roll(rolled);
+  return {
+    ...REST,
+    hip: at(REST.hip.x + hip.x, REST.hip.y + hip.y),
+    shrug: (REST.shrug ?? 0) + ROLL * rolled,
+    nearFist: carried('near', at(hip.x + shoulder.x, hip.y + shoulder.y), leadSwing),
+    farFist: carried('far', hip, rearSwing),
+  };
 }
 
 export const POSES: readonly Pose[] = [
   DROP,
   LOW,
   SETTLE,
-  breathe(0, 0.15, 0.25),
-  breathe(0.55, 0.35, 0.1),
-  breathe(1, 0.85, 0.45),
-  breathe(0.45, 0.8, 0.9),
+  // Exhaled, settled.
+  REST,
+  // The breath lifts the hips a pixel, the lead glove left behind.
+  breath(1, 0, -5, -2),
+  // Top of the breath, a pixel more: the lead shoulder rolls up on it, the glove riding after.
+  breath(2, 1, 1, 0),
+  // Breathing out: the hips sink back a pixel, the shoulder and the glove still up.
+  breath(1, 1, 4, 2),
 ];

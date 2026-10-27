@@ -77,6 +77,24 @@ describe('detectEvents', () => {
     expect(events).toContainEqual({ type: 'phase', phase: 'roundEnd' });
   });
 
+  it('sparks where the blow lands: a low kick at the shins, a jab at the body', () => {
+    const contact = (input: number) =>
+      eventsOf(facingOff(30, MIRROR_MATCH), [[input, 0], ...idle(10)]).find(
+        (e) => e.type === 'hit',
+      );
+    const low = contact(Input.Down | Input.Light);
+    const jab = contact(Input.Light);
+    const lowBox = P.moves.crouchLight.hitbox;
+    const jabBox = P.moves.standLight.hitbox;
+    if (!low || !('y' in low) || !jab || !('y' in jab) || !lowBox || !jabBox) {
+      throw new Error('Both blows must hit');
+    }
+    expect(low.y).toBeGreaterThanOrEqual(lowBox.y);
+    expect(low.y).toBeLessThanOrEqual(lowBox.y + lowBox.height);
+    expect(jab.y).toBeGreaterThanOrEqual(jabBox.y);
+    expect(jab.y).toBeLessThanOrEqual(jabBox.y + jabBox.height);
+  });
+
   it('places the contact point between the fighters', () => {
     const start = facingOff(30, MIRROR_MATCH);
     const hit = eventsOf(start, [[Input.Light, 0], ...idle(10)]).find((e) => e.type === 'hit');

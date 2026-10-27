@@ -1,22 +1,25 @@
 import type { Point } from '../../raster.ts';
 import { solve } from '../../skeleton.ts';
 import { at, ease, smear, tween, type Effect, type Foot, type Pose } from './common.ts';
-import { FALL } from './jump.ts';
+import { FALL, guarded } from './jump.ts';
 
 /**
  * jumpForward: a front flip. 8 frames of 4,5,5,5,5,5,5,4 ticks, the last held until landing
  * (the jump's FALL pose, then the jump's landing frame).
  *
- * He leaps up and forward off the preJump crouch, balls up and turns over once, then opens out
- * and reaches down for the floor. The spin speeds up as he tucks and slows as he opens (52°, then
- * about 66° a frame, then 54, 28 and 10): the tuck reads, the landing is set early. The tucked
- * body turns around its own center, which stays put in the cell (the game moves him along the
- * jump's arc), so the flip has no wobble.
+ * He springs up and forward off the preJump crouch (the jump's load, in the guard's wide
+ * stance), balls up and turns over once, then opens out and reaches down for the floor, landing
+ * through the jump's own fall and landing frames back into the guard. The rotation eases in: the
+ * takeoff only tips him over (the knees come up in front of the chest first, the ball forms), the
+ * tuck carries the fastest turn, and it slows as he opens. Counting the torso lean with the spin,
+ * the body turns 12, 15, 14, 14, 12, 4 and 1 degrees a tick from frame to frame: the tuck reads,
+ * the landing is set early. The tucked body turns around its own center, which stays put in the
+ * cell (the game moves him along the jump's arc), so the flip has no wobble.
  *
- * The boxer keeps his cover through the roll: the lead glove up in front of the face, like a
- * peek-a-boo guard. It also hides the face while the head is upside down (the face's pixel
- * stamps are never rotated, see face.ts). A cyan swoosh trails the boots on the two fastest
- * frames.
+ * The boxer keeps his high guard through the roll: both gloves stay up at the face, the lead one
+ * over it, which also hides the face while the head is upside down (turned by RotSprite, the eye
+ * would smear). Upright frames keep the head under 20 degrees, so the face is the one drawn. A
+ * cyan swoosh trails the boots on the two fastest frames.
  */
 
 /** `p` turned by `degrees` (clockwise, like a forward somersault). */
@@ -65,9 +68,14 @@ function onHead(pose: Pose, dx: number, dy: number): Point {
   );
 }
 
-/** The lead glove up in front of the face: brow, eye and mouth hidden at every angle. */
+/**
+ * Both gloves up at the face: the lead one in front of it, low enough to cover the eye, the
+ * cheek and the jaw down to the collar (upside down, the bare jaw read as a smudge), the rear
+ * one by the cheek where the guard holds it.
+ */
 function covered(pose: Pose): Pose {
-  return { ...pose, nearFist: onHead({ ...pose, spin: 0 }, 6, 1) };
+  const upright = { ...pose, spin: 0 };
+  return { ...pose, nearFist: onHead(upright, 6.5, -1.5), farFist: onHead(upright, 9.5, -3) };
 }
 
 /** The boots' swoosh: a trail along the circle they travel, from `from` to `to` degrees. */
@@ -85,59 +93,61 @@ function trailed(pose: Pose, ...effects: Effect[]): Pose {
 
 // Key poses, drawn upright with the hip at the origin; roll() turns and places them.
 
-// The leap: up and forward off the crouch, the lead knee driving, the back leg pushing long,
-// the shell guard kept.
-const LAUNCH: Pose = {
-  hip: at(0, 0),
-  torso: 6,
-  head: 6,
-  shrug: 3.6,
-  nearFoot: { x: 8, y: -23, angle: -50 },
-  farFoot: { x: -6, y: -34, angle: -70 },
-  nearFist: at(11, 19),
-  farFist: at(9, 24),
-};
+// The leap: up and forward off the crouch, the whole body tipped into the jump, the lead knee
+// driving, the back leg pushing long behind; the high guard kept up at the face.
+const LAUNCH: Pose = guarded(
+  {
+    hip: at(0, 0),
+    torso: -3,
+    head: 1,
+    shrug: 1.2,
+    nearFoot: { x: 8, y: -22, angle: -50 },
+    farFoot: { x: -7, y: -34, angle: -72 },
+  },
+  at(0.5, 0.5),
+  at(0.3, 0.5),
+);
 
-// The ball: back rounded, chin down, knees up in front of the chest, boots pointed, the lead
-// glove covering the face.
+// The ball: back rounded, chin down, knees up in front of the chest, boots pointed; both gloves
+// up at the face, the lead one covering it.
 const TUCK: Pose = covered({
   hip: at(0, 0),
   torso: 28,
   head: 30,
-  shrug: 4,
+  shrug: 1.8,
   nearFoot: { x: 8, y: -10, angle: -60 },
   farFoot: { x: 3, y: -7, angle: -65 },
   nearFist: at(14, 24),
   farFist: at(19, 18),
 });
 
-// Opening out: the legs unfold toward the floor, the lead hand comes down for balance, the rear
-// fist back by the jaw.
-const OPEN: Pose = {
+// Opening out: the legs unfold toward the floor, the gloves come off the face back into the
+// guard.
+const OPEN: Pose = guarded({
   hip: at(0, 0),
   torso: 16,
-  head: 14,
-  shrug: 3.6,
+  head: 2,
+  shrug: 1.2,
   nearFoot: { x: 12, y: -22, angle: -40 },
   farFoot: { x: 0, y: -20, angle: -55 },
-  nearFist: at(14, 10),
-  farFist: at(11.5, 27),
-};
+});
 
 export const POSES: readonly Pose[] = [
   // 0 · Takeoff (4 ticks), already tipping forward.
-  moved(LAUNCH, -3, 42, 22),
-  // 1 · Balling up, the glove rising to the face.
-  roll(covered(tween(LAUNCH, TUCK, 0.7, ease.out)), 62),
+  moved(LAUNCH, -3, 42, 19),
+  // 1 · Balling up, the knees coming up in front of the chest, the lead glove closing over the
+  // face.
+  roll(covered(tween(LAUNCH, TUCK, 0.7, ease.out)), 38),
   // 2-3 · Fully tucked, over the top, the fastest frames: the boots swoosh around.
-  trailed(roll(TUCK, 135), swoosh(-150, -222)),
-  trailed(roll(TUCK, 202), swoosh(-217, -289)),
+  trailed(roll(TUCK, 112), swoosh(-127, -199)),
+  trailed(roll(TUCK, 182), swoosh(-197, -269)),
   // 4 · Coming round, the tuck starting to loosen.
-  roll(covered(tween(TUCK, OPEN, 0.2)), 268),
-  // 5 · Opening: the head comes up, the guard comes off the face.
-  roll({ ...tween(TUCK, OPEN, 0.5), nearFist: at(17, 15), farFist: at(14, 29) }, 322),
+  roll(covered(tween(TUCK, OPEN, 0.2)), 255),
+  // 5 · Opening: the head comes up, the guard comes off the face (the spin counted from -360 so
+  // the head angle stays small: the face is drawn upright again).
+  roll(guarded(tween(TUCK, OPEN, 0.5), at(1, 0.5), at(0.5, 0.5)), -38),
   // 6 · Unfolded, the legs reaching for the floor.
-  roll(OPEN, 350, at(0, 45)),
+  roll(OPEN, -10, at(0, 45)),
   // 7 · Falling, ready to land (held).
   FALL,
 ];

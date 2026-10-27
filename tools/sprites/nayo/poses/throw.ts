@@ -1,50 +1,14 @@
-import { at, GUARD, lifted, planted, smear, type Effect, type Pose } from './common.ts';
-
-type Knot = readonly [number, number];
+import { at, GUARD, lifted, planted, type Effect, type Foot, type Pose } from './common.ts';
 
 /**
- * A smooth path through `knots` (Catmull-Rom), sampled finely enough that a motion trail
- * drawn along it reads as one clean curve instead of a broken line.
+ * throw (Projection): out of the high guard both hands shoot out for the collar and close on it.
+ * Then, the way the game throws (the opponent leaves forward and up off the grab, flies about
+ * 45 px and lands on its own knockdown), he launches it: one drive off the rear foot through the
+ * hips into both arms, the hands opening forward and up as they let go. The arms float a beat in
+ * the follow-through, drop, and the gloves come back up into the guard. The opponent is not
+ * drawn: the speed lines leaving his hands sell the launch, its own knockdown makes the dust.
+ * Ticks 3,[2],4,4,5,5,4 (grab: frame 1, held through the hitstop).
  */
-function curve(...knots: readonly Knot[]): Knot[] {
-  const points: Knot[] = [];
-  for (let i = 0; i + 1 < knots.length; i++) {
-    const p0 = knots[Math.max(0, i - 1)];
-    const p1 = knots[i];
-    const p2 = knots[i + 1];
-    const p3 = knots[Math.min(knots.length - 1, i + 2)];
-    if (!p0 || !p1 || !p2 || !p3) continue;
-    for (let step = 0; step < 4; step++) {
-      const t = step / 4;
-      const blend = (a: number, b: number, c: number, d: number): number =>
-        0.5 *
-        (2 * b +
-          (c - a) * t +
-          (2 * a - 5 * b + 4 * c - d) * t * t +
-          (3 * b - a - 3 * c + d) * t * t * t);
-      points.push([blend(p0[0], p1[0], p2[0], p3[0]), blend(p0[1], p1[1], p2[1], p3[1])]);
-    }
-  }
-  const last = knots[knots.length - 1];
-  if (last) points.push(last);
-  return points;
-}
-
-/**
- * A ring spreading on the floor, its lowest edge on the ground line at every size (nothing
- * may be drawn below the floor).
- */
-function floorRing(x: number, radius: number, progress: number, squash = 0.32): Effect {
-  const outer = radius * (0.35 + 0.65 * progress) + 0.5;
-  return {
-    kind: 'ring',
-    center: at(x, outer * squash - 0.6),
-    radius,
-    progress,
-    tone: 'strike',
-    squash,
-  };
-}
 
 const dust = (x: number, size: number, progress: number): Effect => ({
   kind: 'dust',
@@ -53,128 +17,133 @@ const dust = (x: number, size: number, progress: number): Effect => ({
   progress,
 });
 
-// Frame 0 (3 ticks): the reach. The lead foot slides in, both hands open and shoot for the
-// collar, the shell opens.
+/** Where the toe tip of a foot touches the floor (a foot on the ball pivots around it). */
+function toeOf(foot: Foot): number {
+  const a = ((foot.angle ?? 0) * Math.PI) / 180;
+  return foot.x + 2.3 * Math.sin(a) + 7 * Math.cos(a);
+}
+
+/** A foot on the floor turned to `angle` around its toe tip at `toe`: the toe never slides. */
+function onToes(toe: number, angle: number): Foot {
+  const a = (angle * Math.PI) / 180;
+  return planted(toe - 2.3 * Math.sin(a) - 7 * Math.cos(a), angle);
+}
+
+const REAR_TOE = toeOf(GUARD.farFoot);
+/** The lead foot slides in for the grab and stays there through the launch. */
+const IN = 9.5;
+
+// Frame 0 (3 ticks): the reach. Straight out of the guard, both hands opening for the collar
+// and the lapel, the lead arm long: the grab is the closing of this reach, not a jump forward.
+// The lead foot slides in, the rear heel lifts.
 const REACH: Pose = {
   ...GUARD,
-  hip: at(-1.2, 36),
-  torso: 9,
-  head: 6,
+  hip: at(-4.6, 36.1),
+  torso: 18,
+  head: -1,
   shrug: 1.6,
-  twist: 0.15,
+  twist: 0.1,
   reach: { near: 2, far: 2 },
-  nearFoot: lifted(planted(8, 6), 1.5),
-  farFoot: planted(-13.5, -6),
-  nearFist: at(19, 55),
-  farFist: at(17.5, 51),
+  nearFoot: lifted(planted(8.2, 4), 1.2),
+  farFoot: onToes(REAR_TOE, -19),
+  nearFist: at(25.5, 56.6),
+  farFist: at(22.5, 61.2),
   nearHand: 'open',
   farHand: 'open',
 };
 
-// Frame 1 (2 ticks, active): the lead fist closes on the collar, the rear one on the lapel.
+// Frame 1 (2 ticks, active, held through the hitstop): both fists close, on the collar and on
+// the lapel.
 const GRAB: Pose = {
   ...GUARD,
-  hip: at(0.2, 35.6),
-  torso: 12,
-  head: 6,
-  shrug: 1,
-  twist: 0.1,
+  hip: at(-3, 35.7),
+  torso: 20,
+  head: -1,
+  shrug: 1.2,
+  twist: 0.05,
   reach: { near: 3, far: 3 },
-  nearFoot: planted(9.5),
-  farFoot: planted(-13.5, -14),
-  nearFist: at(24.5, 58.5),
-  farFist: at(23, 49.5),
+  nearFoot: planted(IN),
+  farFoot: onToes(REAR_TOE, -22),
+  nearFist: at(25, 55.4),
+  farFist: at(24.4, 60.4),
   face: 'effort',
-  effects: [{ kind: 'flash', center: at(29, 56), radius: 4, tone: 'strike' }],
+  effects: [{ kind: 'flash', center: at(29.5, 58), radius: 4, tone: 'strike' }],
 };
 
-// Frame 2 (4 ticks): the pivot. He drops his hips under the load and turns his lead shoulder
-// in, the collar hauled in to his chest.
-const SCOOP: Pose = {
+// Frame 2 (4 ticks): the launch. One line from the rear toe through the hips into both arms,
+// driven forward and up, the arms long; the hands open, palms out, as they let go. Speed lines
+// streak off just ahead of them where the opponent leaves, a puff of dust off the rear toe.
+const RELEASE: Pose = {
   ...GUARD,
-  hip: at(-3, 31.5),
-  torso: 14,
-  head: 12,
-  shrug: 4,
-  twist: -0.7,
-  nearFoot: planted(9.5, -10),
-  farFoot: planted(-13.5),
-  nearFist: at(16, 51),
-  farFist: at(13.5, 47.5),
-  face: 'effort',
-  effects: [
-    { kind: 'speed', center: at(21.5, 50), length: 9, spread: 3.5, direction: 205, tone: 'strike' },
-  ],
-};
-
-// Frame 3 (4 ticks): the heave. The legs drive, the hips come through under the load, the
-// back arches and the arms carry it up and over his head.
-const HEAVE: Pose = {
-  ...GUARD,
-  hip: at(2.5, 38.2),
-  torso: -11,
-  head: 2,
-  shrug: 3,
-  twist: 0.6,
-  nearFoot: planted(9.5),
-  farFoot: planted(-13.5, -32),
-  nearFist: at(-2, 84),
-  farFist: at(-5, 81),
-  face: 'effort',
-  effects: [smear(5, ...curve([19, 49], [25, 60], [23, 75], [13, 86], [0, 88]))],
-};
-
-// Frame 4 (5 ticks): the slam. He folds over his lead knee and drives it down over the top,
-// into the floor in front of him: flash, ring and dust where it lands.
-const SLAM: Pose = {
-  ...GUARD,
-  hip: at(2, 30.5),
-  torso: 44,
-  head: 8,
-  shrug: 1,
-  twist: 0.4,
-  nearFoot: planted(9.5),
-  farFoot: planted(-13.5, -40),
-  nearFist: at(25.5, 22.5),
-  farFist: at(22.5, 24.5),
-  face: 'effort',
-  effects: [
-    smear(6, ...curve([-1, 89], [12, 93], [27, 86], [35, 69], [35, 47], [28.5, 19])),
-    { kind: 'flash', center: at(32, 4.5), radius: 5.5, tone: 'strike' },
-    floorRing(36, 18, 0.12),
-    dust(36, 5, 0.12),
-  ],
-};
-
-// Frame 5 (5 ticks): he lets go and rises, the lead foot stepping back home.
-const RISE: Pose = {
-  ...GUARD,
-  hip: at(-0.5, 34.4),
-  torso: 18,
-  head: 6,
-  shrug: 2.5,
-  twist: 0.1,
-  nearFoot: lifted(planted(8, -8), 1.2),
-  farFoot: planted(-13.5, -14),
-  nearFist: at(17, 40),
-  farFist: at(13, 56),
+  hip: at(-1.5, 35.2),
+  torso: 27,
+  head: -8,
+  shrug: 2,
+  twist: -0.6,
+  reach: { near: 3, far: 3 },
+  nearFoot: planted(IN),
+  farFoot: onToes(REAR_TOE, -33),
+  nearFist: at(35.9, 57.7),
+  farFist: at(31.3, 60.5),
   nearHand: 'open',
-  face: 'cool',
-  effects: [floorRing(36, 18, 0.55), dust(36, 5, 0.5)],
+  farHand: 'open',
+  face: 'effort',
+  effects: [
+    { kind: 'speed', center: at(48, 64), length: 10, spread: 3.5, direction: 15, tone: 'strike' },
+    dust(REAR_TOE, 3, 0.15),
+  ],
 };
 
-// Frame 6 (4 ticks): back in the shell.
+// Frame 3 (4 ticks): the follow-through. The arms float on up after the opponent, the hands
+// still open, the weight settling back off the drive (the dust spreading).
+const FOLLOW: Pose = {
+  ...GUARD,
+  hip: at(-2.5, 35.6),
+  torso: 23,
+  head: -5,
+  shrug: 1.8,
+  twist: -0.45,
+  reach: { near: 2, far: 2 },
+  nearFoot: planted(IN),
+  farFoot: onToes(REAR_TOE, -27),
+  nearFist: at(33, 61.5),
+  farFist: at(29.5, 63.5),
+  nearHand: 'open',
+  farHand: 'open',
+  face: 'effort',
+  effects: [dust(REAR_TOE, 3, 0.55)],
+};
+
+// Frame 4 (5 ticks): the arms drop, the fists close, the weight comes back and the lead foot
+// steps home.
+const DROP: Pose = {
+  ...GUARD,
+  hip: at(-4.5, 35.8),
+  torso: 18,
+  head: 0,
+  shrug: 1.8,
+  twist: -0.2,
+  reach: { near: 1, far: 0.5 },
+  nearFoot: lifted(planted(8, 2), 1.2),
+  farFoot: onToes(REAR_TOE, -19),
+  nearFist: at(17, 52),
+  farFist: at(15, 57),
+};
+
+// Frame 5 (5 ticks): most of the way home, the gloves back up at the chin and the cheek.
 const SETTLE: Pose = {
   ...GUARD,
-  hip: at(-3.4, 36.9),
-  torso: -3,
-  head: 11,
-  shrug: 4,
-  effects: [floorRing(36, 18, 0.9), dust(36, 5, 0.85)],
+  hip: at(-5.8, 35.9),
+  torso: 16,
+  head: 1,
+  shrug: 1.5,
+  twist: -0.05,
+  reach: { near: 0.3 },
+  nearFoot: planted(6.6, -1.5),
+  farFoot: onToes(REAR_TOE, -16.5),
+  nearFist: at(10.5, 53.6),
+  farFist: at(11.6, 61.5),
 };
 
-/**
- * throw (Projection): grab at the collar, pivot under the load, heave it over the top and slam
- * it into the floor in front (the game knocks the opponent down forward). Ticks 3,2,4,4,5,5,4.
- */
-export const POSES: readonly Pose[] = [REACH, GRAB, SCOOP, HEAVE, SLAM, RISE, SETTLE];
+// Frame 6 (4 ticks): the guard.
+export const POSES: readonly Pose[] = [REACH, GRAB, RELEASE, FOLLOW, DROP, SETTLE, GUARD];

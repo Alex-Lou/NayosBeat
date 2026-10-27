@@ -1,167 +1,149 @@
 import { solve } from '../../skeleton.ts';
-import { at, GUARD, planted, type Foot, type Pose } from './common.ts';
+import { at, GUARD, type Foot, type Pose } from './common.ts';
 
 /**
- * walkForward: 12 frames of 2 ticks, looping (0.4 s, 28.8 px). A boxer's step-drag, twice per
- * loop. The rhythm is push, fall, settle: the hips hang back while the lead foot reaches out,
- * then fall onto it as its heel strikes, and the rear foot snaps in behind. The feet never
- * cross, and a foot on the floor stays put on the stage: in the cell it slides back at the
- * walking speed, 2.4 px per frame.
+ * walkForward: 12 frames of 2 ticks, looping (0.4 s, 28.8 px), a boxer's step-drag twice per
+ * loop in Tazz's high guard. The rear foot drives on its ball (the heel rising) while the lead
+ * foot snaps out of its heel peel, glides out low and slows into its landing on the ball; the
+ * rear foot is dragged in behind it, skimming the canvas, and sets softly. The hips hang back
+ * on the push, then lurch past GUARD onto the lead and sink two sprite pixels as it lands (the
+ * lead knee taking the weight), and brake. The feet never cross; a foot on the floor stays put
+ * on the stage: in the cell it slides back at the walking speed.
  *
- * On the stage the hips travel 1.9, 1.9, 2.5, 2.9, 2.8, 2.4 px per frame (slow, slow, fast,
- * fast, settle) and the head leads the fall by a frame. Frame 0 is the guard (feet a little
- * narrower): the walk starts from idle without a pop.
+ * The upper body is GUARD's, pixel-locked like the idle: it moves by whole sprite pixels (0.5
+ * world px), the torso and the upper arms never turn (only the lead forearm trails the bounce,
+ * about its elbow), so the jacket, the sleeve emblem and the headphone ring never boil. Frame 0
+ * is exactly GUARD: the walk starts from idle without a pop.
  */
 
 const FRAMES = 12;
 const HALF = 6;
-const TAU = Math.PI * 2;
 /** How far a planted foot travels back in the cell each frame: 1.2 px/tick, 2 ticks. */
 const SLIDE = 2.4;
 
+const radians = (degrees: number): number => (degrees * Math.PI) / 180;
+
 /**
- * Flat foot, or heel raised (negative angle) pivoting on the ball: the ball stays put. The
- * drawn toe cap runs a little past the skeleton's toe: lift it so it never dips into the floor.
+ * The front corner of the drawn sole (the ball of the foot): it stays on the same floor pixel
+ * while the heel rises, so a foot rolling onto its toes never slides.
  */
-function onBall(x: number, angle = 0, lift = 0): Foot {
-  const a = (angle * Math.PI) / 180;
-  const foot = planted(x, angle);
-  const toeCap = 0.9 * Math.max(0, -Math.sin(a));
+function ballOf(foot: Foot): { x: number; y: number } {
+  const a = radians(foot.angle ?? 0);
   return {
-    ...foot,
-    x: x + 7 - 7 * Math.cos(a) - 2.3 * Math.sin(a),
-    y: foot.y + toeCap + lift,
+    x: foot.x + 8 * Math.cos(a) + 4.7 * Math.sin(a),
+    y: foot.y + 8 * Math.sin(a) - 4.7 * Math.cos(a),
   };
 }
 
-/**
- * A foot with its toes up (positive angle) rocking on its heel, `lift` px off the floor (0: the
- * heel on the floor, the heel strike). The ankle is at `x`.
- */
-function onHeel(x: number, angle: number, lift = 0): Foot {
-  const foot = planted(x, angle);
-  return { ...foot, y: foot.y + lift };
+/** A foot shaped like `guard`, its ball at `x`, the heel raised by `-angle`, `lift` px up. */
+function onBall(guard: Foot, x: number, angle: number, lift = 0): Foot {
+  const depth = ballOf(guard).y;
+  const shape = ballOf({ x: 0, y: 0, angle });
+  return { x: x - shape.x, y: depth - shape.y + lift, angle };
 }
 
 /**
- * Where the back of the drawn sole touches the floor, from the ankle, toes up by `angle`: the
- * heel the foot rolls over as the toes come down.
+ * 2.4 px is not a whole number of sprite pixels: drawn on the cell's grid, a ball pinned on the
+ * stage rounds about 0.4 px ahead of GUARD's floor pixels. Pulled back by that much, it keeps
+ * them (measured on the drawn sole).
  */
-function heelX(angle: number): number {
-  const a = (angle * Math.PI) / 180;
-  return 4.7 * Math.sin(a) - 3.6 * Math.cos(a);
-}
+const SNAP = 0.4;
+const LEAD = ballOf(GUARD.nearFoot).x;
+const REAR = ballOf(GUARD.farFoot).x;
+const lead = (x: number, angle: number, lift = 0): Foot => onBall(GUARD.nearFoot, x, angle, lift);
+/** The rear ball sits a quarter pixel up: its raised toe cap never dips into the floor. */
+const rear = (x: number, angle: number, lift = 0.25): Foot => onBall(GUARD.farFoot, x, angle, lift);
 
-/** Smooth periodic curve through one value per frame of the step (Catmull-Rom), at time `t`. */
-function sample(values: readonly number[], t: number): number {
-  const n = values.length;
-  const i = Math.floor(t);
-  const u = t - i;
-  const v = (k: number): number => values[(((i + k) % n) + n) % n] ?? 0;
-  const [p0, p1, p2, p3] = [v(-1), v(0), v(1), v(2)];
-  return (
-    p1 + 0.5 * u * (p2 - p0 + u * (2 * p0 - 5 * p1 + 4 * p2 - p3 + u * (3 * (p1 - p2) + p3 - p0)))
+// One step-drag, frame by frame (frames 0-5, then again 6-11), in the cell:
+//   0 set (GUARD)  1 the rear drives, the lead heel peels  2-3 the lead glides out low
+//   4 it reaches, the rear toes off  5 the lead lands on its ball, the rear is dragged in.
+// The lead ball covers 2.7, 4.7, 4.7, 2.7 px of stage from frame 1 to 5: eased at both ends.
+const LEAD_STEP: readonly Foot[] = [
+  GUARD.nearFoot,
+  lead(LEAD - SLIDE - SNAP, -14),
+  lead(LEAD - 2.5, -10, 2.2),
+  lead(LEAD - 0.2, -4, 3.0),
+  lead(LEAD + 2.1, -6, 1.4),
+  // Pinned on its ball from here: a frame later it is GUARD's foot again.
+  lead(LEAD + SLIDE, -5),
+];
+const REAR_STEP: readonly Foot[] = [
+  GUARD.farFoot,
+  // The ball pinned, the heel rising as the rear leg drives.
+  rear(REAR - SLIDE - SNAP, -18),
+  rear(REAR - 2 * SLIDE - SNAP, -22),
+  rear(REAR - 3 * SLIDE - SNAP, -27),
+  rear(REAR - 4 * SLIDE - SNAP, -33),
+  // Dragged in low, the toe skimming the canvas a pixel up: 9 px of stage, then it sets on
+  // GUARD's ball (5.8 px), a snap and a soft set.
+  rear(REAR - 3.4, -20, 1.0),
+];
+/**
+ * Upper body offset from GUARD, in whole sprite pixels (0.5 world px): it rides up on the push,
+ * hangs back while the lead reaches, then lurches onto it as it lands (a sprite pixel ahead of
+ * GUARD, two below: 3.4 px of stage), and brakes on it (1.9 px). Frames 1-4 stay as they are:
+ * the lead knee already sits on the 14 px margin while the foot is out.
+ */
+const BODY: readonly (readonly [number, number])[] = [
+  [0, 0],
+  [-0.5, 0.5],
+  [-1, 0.5],
+  [-1, 0.5],
+  [-0.5, 0],
+  [0.5, -1],
+];
+/** The lead forearm trails the bounce (degrees, + lifts the glove), turning about its elbow. */
+const NEAR_TRAIL: readonly number[] = [0, -1.2, 0, 0, 1.2, 1.2];
+/** The far glove rides the body a frame late (on GUARD's glove on frame 0). */
+const FAR_LAG: readonly (readonly [number, number])[] = [
+  [0, 0],
+  [0, 0],
+  [-0.5, 0.5],
+  [-1, 0.5],
+  [-1, 0.5],
+  [-0.5, 0],
+];
+/**
+ * Once a loop, on the first landing, the lead shoulder rolls up to the chin (the shrug of the
+ * idle's breath, exactly one sprite pixel): the two steps differ, the walk has a groove.
+ */
+const SHRUG: readonly number[] = [0, 0, 0, 0, 0.68, 0.68, 0, 0, 0, 0, 0, 0];
+
+const ARM = solve(GUARD).near;
+const UP = solve(GUARD).up;
+const FRONT = solve(GUARD).front;
+
+/**
+ * The lead glove for a body offset, a shoulder roll and a forearm turn: the upper arm keeps
+ * GUARD's angle (the sleeve emblem is the same pixels), only the forearm turns about the elbow.
+ */
+function nearGlove(dx: number, dy: number, roll: number, turn: number): { x: number; y: number } {
+  const shift = {
+    x: dx + roll * (UP.x + 0.45 * FRONT.x),
+    y: dy + roll * (UP.y + 0.45 * FRONT.y),
+  };
+  const a = radians(turn);
+  const fx = ARM.wrist.x - ARM.elbow.x;
+  const fy = ARM.wrist.y - ARM.elbow.y;
+  return at(
+    ARM.elbow.x + shift.x + fx * Math.cos(a) - fy * Math.sin(a),
+    ARM.elbow.y + shift.y + fx * Math.sin(a) + fy * Math.cos(a),
   );
 }
 
-/** The groove on top, once a loop (the beat he walks to): 0 on frame 0, 1 half a loop later. */
-function groove(t: number, lag: number): number {
-  const wave = (f: number): number => (1 - Math.cos((TAU * (f - lag)) / FRAMES)) / 2;
-  return wave(t) - wave(0);
-}
-
-/** The shoulder roll, once a loop, a little ahead of the nod: 0 on frame 0, from -0.7 to 1.3. */
-function roll(t: number): number {
-  const wave = (f: number): number => Math.sin((TAU * (f - 0.5)) / FRAMES);
-  return wave(t) - wave(0);
-}
-
-// One step-drag, frame by frame (frames 0-5, then again 6-11): set, push, reach, heel strike
-// (frame 3 to 4), toes down and drag, (frame 0) the rear foot lands.
-const LEAD = 4.4;
-const REAR = -13;
-/** The heel strike: toes up this much, then they slap down with the heel pinned. */
-const STRIKE = 4;
-/** Where the lead ankle lands so that the heel stays put while the toes come down. */
-const LANDING = LEAD + 2 * SLIDE - (heelX(STRIKE) - heelX(0));
-const lead = {
-  // Ankle (in the air or rocking on the heel) or ball (flat): slow off the floor, fast through
-  // the reach, slowing into the heel strike, then pinned.
-  x: [LEAD, LEAD - 0.3, LEAD + 2.0, LEAD + 3.9, LANDING, LEAD + SLIDE],
-  lift: [0, 0.8, 1.3, 0.6, 0, 0],
-  angle: [0, 3, 7, 7, STRIKE, 0],
-};
-const rear = {
-  // Peeling off the floor heel first (the ball pinned), then snapping in, toes hanging.
-  x: [REAR, REAR - SLIDE, REAR - 2 * SLIDE, REAR - 3 * SLIDE, REAR - 4 * SLIDE, REAR - 2.8],
-  lift: [0, 0, 0, 0, 0, 1.8],
-  angle: [0, -5, -10, -13, -16, -20],
-};
-const step = {
-  // The hips hang back while the lead foot reaches, then fall onto it.
-  hipX: [-3.4, -3.9, -4.4, -4.3, -3.8, -3.4],
-  hipY: [37.3, 37.7, 38.0, 37.9, 37.3, 36.9],
-  // The chest pitches into the fall a frame ahead of the hips (the head leads), then settles.
-  torso: [-1.8, -1.2, 0.2, 1.6, 2.3, 0.6],
-  // Counters most of the pitch (the eyes stay on the opponent), dips on the heel strike.
-  head: [9.8, 9.2, 8.1, 7.2, 8.0, 8.7],
-  // Capped so the chin always shows over the rolled shoulder.
-  shrug: [3.4, 3.55, 3.75, 3.9, 3.75, 3.5],
-  reach: [0, 0.15, 0.3, 0.4, 0.3, 0.1],
-  // A narrow band: the jacket front does not flap from frame to frame.
-  twist: [-0.1, -0.13, -0.16, -0.18, -0.16, -0.12],
-  // The lead hand hangs loose: it lags back as the body pushes off, swings home as it lands.
-  swing: [0, 0.3, 0.75, 1.0, 0.55, 0.15],
-  // The rear fist ticks down with the heel strike (the beat) and springs back to the jaw.
-  tick: [0, 0, 0, 0, 1, 0.3],
-};
-
-/** Hips, torso and head at time `t` (frames), without the limbs. */
-function body(t: number): Pose {
-  const k = ((t % HALF) + HALF) % HALF;
-  const nod = groove(t, 0);
-  const rolled = roll(t);
-  return {
-    ...GUARD,
-    hip: at(sample(step.hipX, k), sample(step.hipY, k)),
-    torso: sample(step.torso, k),
-    head: sample(step.head, k) + 2 * nod,
-    shrug: sample(step.shrug, k) + 0.2 * rolled,
-    reach: { near: sample(step.reach, k) },
-    twist: sample(step.twist, k) - 0.03 * rolled,
-  };
-}
-
-/** The rear fist follows the head this many frames late, the lead hand the shoulder. */
-const HEAD_LAG = 0.6;
-const SHOULDER_LAG = 1.2;
-/** Where they are on frame 0: the fists are exactly GUARD's there. */
-const HEAD_ON_FRAME_0 = solve(body(-HEAD_LAG)).head;
-const SHOULDER_ON_FRAME_0 = solve(body(-SHOULDER_LAG)).near.shoulder;
-
 function walk(frame: number): Pose {
   const k = frame % HALF;
-  const pick = (values: readonly number[]): number => values[k] ?? 0;
-  const [x, lift, angle] = [pick(lead.x), pick(lead.lift), pick(lead.angle)];
-  const nearFoot = angle > 0 ? onHeel(x, angle, lift) : onBall(x, angle, lift);
-  const farFoot = onBall(pick(rear.x), pick(rear.angle), pick(rear.lift));
-  const head = solve(body(frame - HEAD_LAG)).head;
-  const shoulder = solve(body(frame - SHOULDER_LAG)).near.shoulder;
-  const swing = pick(step.swing);
+  const [dx, dy] = BODY[k] ?? [0, 0];
+  const [fx, fy] = FAR_LAG[k] ?? [0, 0];
+  const roll = SHRUG[frame] ?? 0;
   return {
-    ...body(frame),
-    nearFoot,
-    farFoot,
-    // Leaning in, the fists stay home: closer to the face, not out toward the opponent.
-    farFist: at(
-      GUARD.farFist.x + 0.3 * (head.x - HEAD_ON_FRAME_0.x),
-      GUARD.farFist.y + head.y - HEAD_ON_FRAME_0.y - 0.8 * pick(step.tick),
-    ),
-    // Back and down only: nothing reaches out toward the opponent.
-    nearFist: at(
-      GUARD.nearFist.x + 0.3 * (shoulder.x - SHOULDER_ON_FRAME_0.x) - 1.2 * swing,
-      GUARD.nearFist.y + 0.8 * (shoulder.y - SHOULDER_ON_FRAME_0.y) - 0.5 * swing,
-    ),
+    ...GUARD,
+    hip: at(GUARD.hip.x + dx, GUARD.hip.y + dy),
+    shrug: (GUARD.shrug ?? 0) + roll,
+    nearFist: nearGlove(dx, dy, roll, NEAR_TRAIL[k] ?? 0),
+    farFist: at(GUARD.farFist.x + fx, GUARD.farFist.y + fy),
+    nearFoot: LEAD_STEP[k] ?? GUARD.nearFoot,
+    farFoot: REAR_STEP[k] ?? GUARD.farFoot,
   };
 }
 

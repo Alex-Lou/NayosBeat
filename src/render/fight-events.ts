@@ -1,5 +1,8 @@
+import { intersects, type WorldBox } from '../core/boxes';
+import { activeMove, hitboxInWorld, hurtboxInWorld } from '../core/combat';
 import type { MatchConfig } from '../core/config';
 import { px } from '../core/constants';
+import { projectileBox } from '../core/projectiles';
 import type { FighterState, GameState, RoundPhase } from '../core/state';
 
 /**
@@ -29,7 +32,7 @@ export type FightEvent =
 /** Above this damage, a hit counts as heavy (bigger sparks, screen shake). */
 export const HEAVY_HIT_DAMAGE = 60;
 
-/** Contact point: in front of the defender, toward the attacker, at mid-body height. */
+/** Without a striking box: in front of the defender, toward the attacker, at mid-body height. */
 const CONTACT_OFFSET_X = px(12);
 const CONTACT_HEIGHT_STANDING = px(50);
 const CONTACT_HEIGHT_CROUCHING = px(28);
@@ -50,7 +53,7 @@ export function detectEvents(
     const before = prev.fighters[player];
     const after = next.fighters[player];
     const attacker = player === 0 ? 1 : 0;
-    const contact = contactPoint(after, next.fighters[attacker], attacker);
+    const contact = contactPoint(prev, next, config, player, attacker);
 
     if (after.action === 'ko' && before.action !== 'ko') {
       events.push({ type: 'ko', ...contact });
@@ -84,13 +87,55 @@ function startedNewMove(before: FighterState, after: FighterState): boolean {
   return before.move !== after.move || before.actionFrame > 0;
 }
 
-function contactPoint(defender: FighterState, attacker: FighterState, by: 0 | 1): Contact {
+/**
+ * Where a blow lands: the middle of the overlap between what struck (the attacker's hitbox, or
+ * its projectile) and the defender's body. A sweep sparks at the ankles, an uppercut at the
+ * chin. On the tick of the hit, the attacker is still on the active frame that connected.
+ */
+function contactPoint(
+  prev: GameState,
+  next: GameState,
+  config: MatchConfig,
+  defenderIndex: 0 | 1,
+  by: 0 | 1,
+): Contact {
+  const defender = next.fighters[defenderIndex];
+  const attacker = next.fighters[by];
   const toward = attacker.x >= defender.x ? 1 : -1;
+  const away = toward === 1 ? -1 : 1;
+  const body = hurtboxInWorld(defender, config.fighters[defenderIndex]);
+  const strike = strikingBox(prev, attacker, body, config, by);
+  if (strike) return { ...middleOfOverlap(strike, body), away, by };
+
   const height = defender.crouching ? CONTACT_HEIGHT_CROUCHING : CONTACT_HEIGHT_STANDING;
-  return {
-    x: defender.x + toward * CONTACT_OFFSET_X,
-    y: defender.y + height,
-    away: toward === 1 ? -1 : 1,
-    by,
-  };
+  return { x: defender.x + toward * CONTACT_OFFSET_X, y: defender.y + height, away, by };
+}
+
+/** The attacker's active hitbox, else its projectile that reached the defender's body. */
+function strikingBox(
+  prev: GameState,
+  attacker: FighterState,
+  body: WorldBox,
+  config: MatchConfig,
+  by: 0 | 1,
+): WorldBox | null {
+  const move = activeMove(attacker, config.fighters[by]);
+  if (move?.hitbox) {
+    const hitbox = hitboxInWorld(attacker, move.hitbox);
+    if (intersects(hitbox, body)) return hitbox;
+  }
+  for (const projectile of prev.projectiles) {
+    if (projectile.owner !== by) continue;
+    const box = projectileBox(projectile, config);
+    if (intersects(box, body)) return box;
+  }
+  return null;
+}
+
+function middleOfOverlap(a: WorldBox, b: WorldBox): { x: number; y: number } {
+  const left = Math.max(a.left, b.left);
+  const right = Math.min(a.left + a.width, b.left + b.width);
+  const bottom = Math.max(a.bottom, b.bottom);
+  const top = Math.min(a.bottom + a.height, b.bottom + b.height);
+  return { x: (left + right) / 2, y: (bottom + top) / 2 };
 }

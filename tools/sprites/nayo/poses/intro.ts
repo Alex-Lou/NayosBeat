@@ -1,149 +1,177 @@
-import { at, ease, GUARD, planted, tween, type Effect, type Pose } from './common.ts';
+import {
+  at,
+  ease,
+  GUARD,
+  lifted,
+  planted,
+  smear,
+  tween,
+  type Effect,
+  type Pose,
+} from './common.ts';
 
 /**
  * intro: 10 frames, 10,8,8,8,10,8,8,10,10,10 ticks (90, the round announcement). He takes his
- * time: cracks his knuckles (fist pressed into the palm, the elbow flares, a small pop), rolls
- * his neck, touches the headphones around his neck and nods on the beat they pulse (flat rings
- * of sound around the collar), then a smirk and a lazy "come on" with the lead hand, and he
- * slides the back foot into the Philly shell. The last frame is exactly GUARD: the fight starts
- * on idle's frame 0 without a pop.
+ * time: cracks his knuckles (the lead fist pressed into the rear palm, a squeeze, the elbow
+ * flares, a small pop), shakes the hands out, sets the headphones around his neck (two flat
+ * pulses of sound at the cup on the beat, the knees giving on it), then a composed stare at the
+ * opponent, no smile, and he sinks into Tazz's high guard: the back foot slides back on its
+ * ball, the gloves come up. The last frame is exactly GUARD: the fight starts on idle's frame 0
+ * without a pop.
  *
- * Standing tall and loose between the beats (weight on the back leg, the rear hand in the
- * pocket while the lead one works), the head always a little late on the body.
+ * Standing tall and loose between the beats, the weight on the back leg; the lead foot is
+ * GUARD's from the start, so only the rear foot travels. The head stays under 20 degrees (drawn
+ * upright, see head.ts): the attitude is in the chest, the shoulders and the hands.
  */
 
-/** A ring of sound around the collar, flattened: it spreads around the neck, not over the face. */
-const pulse = (radius: number, progress: number): Effect => ({
+/**
+ * A ring of sound around the neck, flattened, born just behind the headphones' cup: it spreads
+ * over the collar, never over the face, and stays small and behind the cup so the hand holding
+ * the cup reads.
+ */
+const pulse = (progress: number): Effect => ({
   kind: 'ring',
-  center: at(-0.5, 64),
-  radius,
+  center: at(-4, 64.5),
+  radius: 7,
   progress,
   tone: 'sound',
-  squash: 0.5,
+  squash: 0.4,
 });
 
-/** Standing tall and relaxed, the weight on the back leg: the base of the entrance. */
+/** Standing tall and easy, the weight on the back leg: the base of the entrance. */
 const STAND: Pose = {
-  hip: at(-2.5, 40.4),
-  torso: -2,
+  hip: at(-4.2, 40),
+  torso: 5,
   head: 6,
-  shrug: 1,
-  nearFoot: planted(5.5),
-  farFoot: planted(-9),
-  nearFist: at(9, 47),
-  farFist: at(8, 47),
+  shrug: 0.8,
+  nearFoot: GUARD.nearFoot,
+  farFoot: planted(-9.5),
+  nearFist: at(8, 46),
+  farFist: at(6, 46),
   face: 'cool',
 };
 
-/** The rear hand in the pocket (the elbow shows behind the back). */
-const POCKET = at(-4, 38.5);
+/** The rear hand tucked in the back pocket (the elbow shows behind the back). */
+const POCKET = at(-6, 39.5);
 
-// 0 · Head down, the lead fist resting in the rear palm at the belt.
+// 0 · The lead fist pressed into the rear palm at the chest, the shoulders loose.
 const PALM: Pose = {
   ...STAND,
-  hip: at(-3.4, 40.2),
-  torso: -3,
-  head: 14,
+  hip: at(-4.6, 39.8),
+  head: 12,
+  shrug: 1.2,
   farHand: 'open',
-  nearFist: at(7.5, 45),
-  farFist: at(11.5, 44.5),
+  nearFist: at(9, 50),
+  farFist: at(11.5, 51),
 };
 
-// 1 · Up to the chest, shoulders up, the elbow tucked: the squeeze.
+// 1 · The squeeze: hands pushed up and out, shoulders up, the chest lifting, up on the legs.
 const SQUEEZE: Pose = {
   ...STAND,
-  hip: at(-3, 40.7),
-  torso: -5,
-  head: 10,
-  shrug: 2.8,
+  hip: at(-4.2, 40.6),
+  torso: 3,
+  head: 8,
+  shrug: 2.6,
   twist: 0.3,
   farHand: 'open',
-  nearFist: at(9, 55),
-  farFist: at(13.5, 54.5),
+  nearFist: at(10.5, 54),
+  farFist: at(13, 54.5),
 };
 
-// 2 · The crack: the elbow flares up over the hands, the shoulders roll in, the chin tucks and
-// the knees give a little; a small pop at the knuckles.
+// 2 · The crack: the lead elbow flares up over the hands, the shoulders roll in, the chin tucks
+// and the knees give a little; a small pop of sound at the knuckles (his music, not a hit).
 const CRACK: Pose = {
   ...STAND,
-  hip: at(-2, 39.6),
-  torso: 4,
-  head: 16,
-  shrug: 3.4,
+  hip: at(-3.8, 39.3),
+  torso: 9,
+  head: 10,
+  shrug: 3,
   twist: -0.3,
   reach: { near: 1.5, far: 1.5 },
   farHand: 'open',
-  nearFist: at(11.5, 52.5),
-  farFist: at(15.5, 52),
+  nearFist: at(11.5, 51.5),
+  farFist: at(14, 51),
   bends: { nearElbow: 'up' },
-  effects: [{ kind: 'flash', center: at(16, 52.5), radius: 3.5, tone: 'strike' }],
+  effects: [{ kind: 'flash', center: at(15, 51.5), radius: 2.5, tone: 'sound' }],
 };
 
-// 3 · Release: the hands drop open and loose, the neck rolls back, the lead heel pops.
-const ROLL: Pose = {
+// 3 · Shaking them out: a loose flick of the wrists, the hands open and trailing behind the
+// forearms, the shoulders let go, the hips settle back, the lead heel lifts.
+const SHAKE: Pose = {
   ...STAND,
-  hip: at(-2.8, 40.7),
-  torso: -5,
-  head: -9,
-  shrug: 0.4,
-  nearFoot: planted(5.5, -7),
-  nearFist: at(9, 43),
-  farFist: at(-6, 41),
+  hip: at(-4, 40.8),
+  torso: 3,
+  head: 4,
+  shrug: 0.2,
+  nearFoot: planted(GUARD.nearFoot.x, -8),
+  nearFist: at(11, 44),
+  farFist: at(-1, 44),
+  bends: { nearElbow: 'back', farElbow: 'back' },
   nearHand: 'open',
   farHand: 'open',
+  effects: [smear(3, [14, 49], [13, 46], [11, 44])],
 };
 
-// 4 · The lead hand to the headphones' cup, the head tilts down to listen: the first pulse.
-const LISTEN: Pose = {
+// 4 · The lead hand up to the headphones' cup, the rear one into the pocket: the first pulse.
+// The lead elbow comes forward at chest height, the forearm crossing the chest on a diagonal up
+// to the cup, the fingers under its rim (the cup is drawn over them).
+const CUP: Pose = {
   ...STAND,
-  head: 10,
-  shrug: 1.5,
+  hip: at(-4.2, 40.2),
+  head: 9,
+  shrug: 1.6,
   nearHand: 'open',
-  nearFist: at(2.5, 60),
+  nearFist: at(3, 63.5),
   farFist: POCKET,
-  bends: { farElbow: 'back' },
-  effects: [pulse(7, 0.1)],
+  bends: { nearElbow: 'front', farElbow: 'back' },
+  effects: [pulse(0.2)],
 };
 
-// 5 · The nod on the beat: knees dip, the fingers pinch the cup, a second pulse.
-const NOD: Pose = {
-  ...LISTEN,
-  hip: at(-2.7, 39.4),
-  head: 15,
+// 5 · Setting it on the beat: the fingers pinch the cup, the knees dip, a second pulse.
+const SET: Pose = {
+  ...CUP,
+  hip: at(-4.4, 39.2),
+  torso: 6,
+  head: 12,
   nearHand: 'fist',
-  nearFist: at(2.2, 60.5),
-  effects: [pulse(11, 0.5), pulse(7, 0.05)],
+  nearFist: at(3, 63),
+  effects: [pulse(0.6), pulse(0.15)],
 };
 
-// 6 · Chin up, feeling it; the hand slides off down the jacket, the pulses fade out.
-const VIBE: Pose = {
-  ...LISTEN,
-  hip: at(-2.6, 40.5),
-  head: -4,
-  nearFist: at(7, 52),
-  effects: [pulse(14, 0.85), pulse(10.5, 0.5)],
-};
-
-// 7 · The smirk, leaning back, hips forward: the lead palm turns up, "come on".
-const COME_ON: Pose = {
-  ...STAND,
-  hip: at(-2.2, 40.6),
-  torso: -7,
-  head: -8,
+// 6 · The hand slides off down the jacket, he comes up tall, the second pulse spreads.
+const LET_GO: Pose = {
+  ...CUP,
+  hip: at(-4.1, 40.4),
+  torso: 4,
+  head: 5,
   shrug: 1,
-  nearFist: at(11.5, 57),
-  farFist: POCKET,
-  nearHand: 'open',
+  nearFist: at(8.5, 50),
   bends: { farElbow: 'back' },
-  face: 'smirk',
+  effects: [pulse(0.55)],
 };
 
-// 8 · He slides into the shell: the back foot drags back on its toes, the body sinks, the
-// hands come up, the lead shoulder rolls to the chin. Still smirking.
-const SLIDE: Pose = {
-  ...tween(COME_ON, GUARD, 0.75, ease.out),
-  farFoot: planted(-12, -10),
-  face: 'smirk',
+// 7 · The stare: chin level, chest square on the opponent, the lead hand closing at his side.
+const STARE: Pose = {
+  ...STAND,
+  hip: at(-4.6, 39.8),
+  torso: 8,
+  head: 7,
+  shrug: 1.8,
+  nearFist: at(4.5, 43),
+  farFist: POCKET,
+  bends: { farElbow: 'back' },
+  effects: [pulse(0.9)],
+};
+
+// 8 · He drops into the guard: the back foot drag-steps back, skimming the floor on its ball to
+// land on the guard's mark, the body sinks a touch past the stance (it settles back up into
+// it), the gloves come up, the lead shoulder rolls in.
+const DROP = tween(STARE, GUARD, 0.7, ease.linear);
+const SINK: Pose = {
+  ...DROP,
+  hip: at(DROP.hip.x, GUARD.hip.y - 1),
+  farFoot: lifted(planted(-20, -12), 1.5),
+  face: 'cool',
 };
 
 // 9 · The guard, game face on.
@@ -151,11 +179,11 @@ export const POSES: readonly Pose[] = [
   PALM,
   SQUEEZE,
   CRACK,
-  ROLL,
-  LISTEN,
-  NOD,
-  VIBE,
-  COME_ON,
-  SLIDE,
+  SHAKE,
+  CUP,
+  SET,
+  LET_GO,
+  STARE,
+  SINK,
   GUARD,
 ];

@@ -1,106 +1,155 @@
 import type { Point } from '../../raster.ts';
 import { solve } from '../../skeleton.ts';
-import { at, GUARD, planted, smear, type Pose } from './common.ts';
+import { at, ease, GUARD, planted, smear, tween, type Foot, type Pose } from './common.ts';
 
-/** The lead fist (wrist) `length` px from the lead shoulder, `angle` degrees above horizontal. */
-function leadFist(pose: Omit<Pose, 'nearFist'>, length: number, angle: number): Point {
-  const shoulder = solve({ ...pose, nearFist: GUARD.nearFist }).near.shoulder;
+/**
+ * standLight (Direct): Tazz's jab out of the high guard. Ticks 2,2,[3],2,2,3 (active: frame 2).
+ *
+ * The lead glove leaves from under the chin and goes straight down the centre line, the elbow
+ * behind it; it never drops or loops. The hips push a couple of pixels in off the ball of the
+ * rear foot, the lead shoulder rolls up behind the chin as the arm extends, the rear glove stays
+ * glued to the cheek (it rides the head). Back along the same line, a pixel of overshoot as the
+ * shoulder rolls home, and the guard.
+ */
+
+/** Where the toe tip of a foot touches the floor (a foot on the ball pivots around it). */
+function toeOf(foot: Foot): number {
+  const a = ((foot.angle ?? 0) * Math.PI) / 180;
+  return foot.x + 2.3 * Math.sin(a) + 7 * Math.cos(a);
+}
+
+/** A foot on the floor turned to `angle` around its toe tip at `toe`: the toe never slides. */
+function onToes(toe: number, angle: number): Foot {
+  const a = (angle * Math.PI) / 180;
+  return planted(toe - 2.3 * Math.sin(a) - 7 * Math.cos(a), angle);
+}
+
+const LEAD_TOE = toeOf(GUARD.nearFoot);
+const REAR_TOE = toeOf(GUARD.farFoot);
+
+/** The rear glove's place in the guard, from the head's centre: it rides the head. */
+const CHEEK = ((): Point => {
+  const { head } = solve(GUARD);
+  return at(GUARD.farFist.x - head.x, GUARD.farFist.y - head.y);
+})();
+
+type Body = Omit<Pose, 'nearFist' | 'farFist'>;
+
+/** The rear glove at the cheek (plus `dx`, `dy`), whatever the head does. */
+function atCheek(body: Body, dx = 0, dy = 0): Point {
+  const { head } = solve({ ...body, nearFist: GUARD.nearFist, farFist: GUARD.farFist });
+  return at(head.x + CHEEK.x + dx, head.y + CHEEK.y + dy);
+}
+
+/** The lead wrist `length` px from the lead shoulder, `angle` degrees above horizontal. */
+function lead(body: Body, length: number, angle: number): Point {
+  const shoulder = solve({ ...body, nearFist: GUARD.nearFist, farFist: GUARD.farFist }).near
+    .shoulder;
   const a = (angle * Math.PI) / 180;
   return at(shoulder.x + Math.cos(a) * length, shoulder.y + Math.sin(a) * length);
 }
 
-// Frame 0 (2 ticks): the lead hand leaves the low guard, the lead shoulder starts rolling up,
-// the back heel lifts to push.
-const LOAD: Pose = {
+/** The front of the lead glove's knuckles, as drawn (past the wrist along the forearm). */
+function knucklesOf(arm: Pose): Point {
+  const { wrist, forearm } = solve(arm).near;
+  return at(wrist.x + forearm.x * 5.4, wrist.y + forearm.y * 5.4);
+}
+
+/** A body with its gloves: the lead one placed from the shoulder, the rear one at the cheek. */
+function pose(body: Body, length: number, angle: number, cheek: Point = at(0, 0)): Pose {
+  return { ...body, nearFist: lead(body, length, angle), farFist: atCheek(body, cheek.x, cheek.y) };
+}
+
+// Frame 0 (2 ticks): the glove leaves the chin. The hips start in off the rear foot (its heel
+// rising), the lead shoulder starts to roll; the glove already a third of the way out.
+const START: Pose = {
   ...GUARD,
-  hip: at(-2.7, 36.9),
-  torso: 1,
-  head: 12,
-  shrug: 4.2,
-  reach: { near: 0.6 },
-  twist: -0.15,
-  nearFist: at(12.5, 48),
-  farFist: at(8, 62.4),
-  farFoot: planted(-13.5, -6),
+  hip: at(-6, 36.3),
+  torso: 16,
+  head: 1,
+  shrug: 1.8,
+  reach: { near: 0.8 },
+  twist: -0.12,
+  nearFoot: onToes(LEAD_TOE, -1),
+  farFoot: onToes(REAR_TOE, -18),
+  nearFist: at(14.5, 55),
+  farFist: atCheek({ ...GUARD, hip: at(-6, 36.3), torso: 16, head: 1 }),
 };
 
-// Frame 1 (2 ticks): the fist shoots up the line from the hip, the elbow behind it.
-const SNAP_FIST = at(23.5, 53);
-const SNAP: Pose = {
+// Frame 1 (2 ticks): three quarters out, straight down the line, the elbow behind the glove.
+const SNAP_BODY: Body = {
   ...GUARD,
-  hip: at(-2.1, 36.7),
-  torso: 5,
-  head: 13,
-  shrug: 4.8,
+  hip: at(-4.9, 36.2),
+  torso: 17.5,
+  head: 0,
+  shrug: 2.5,
   reach: { near: 2 },
-  twist: -0.3,
-  nearFist: SNAP_FIST,
-  farFist: at(10.5, 62.3),
-  farFoot: planted(-13.5, -10),
-  effects: [smear(3, [11.5, 46.2], [18, 48.6], [SNAP_FIST.x + 4.6, SNAP_FIST.y + 0.2])],
+  twist: -0.28,
+  nearFoot: onToes(LEAD_TOE, 0),
+  farFoot: onToes(REAR_TOE, -21),
+};
+const SNAP_ARM = pose(SNAP_BODY, 21.5, -4);
+const SNAP_KNUCKLES = knucklesOf(SNAP_ARM);
+const SNAP: Pose = {
+  ...SNAP_ARM,
+  // Along the path of the knuckles, ending in the glove.
+  effects: [smear(3, [19.5, 59.5], [25, 59.2], [SNAP_KNUCKLES.x - 2.1, SNAP_KNUCKLES.y])],
 };
 
-// Frame 2 (3 ticks, active): full extension, the lead shoulder up behind the chin, the rear
-// hand glued to the jaw. A thin trail rises from the hip into the knuckles, a small flash.
-const STRIKE_BODY = {
+// Frame 2 (3 ticks, active): full extension, the arm long but not locked, the lead shoulder up
+// behind the chin, the rear glove at the cheek. A thin trail down the line into the knuckles,
+// a small flash on them.
+const STRIKE_BODY: Body = {
   ...GUARD,
-  hip: at(-1.2, 36.2),
-  torso: 9,
-  head: 13,
-  shrug: 5,
+  hip: at(-4, 36.1),
+  torso: 19,
+  head: -1,
+  shrug: 3,
   reach: { near: 3 },
   twist: -0.4,
-  farFist: at(12, 62.3),
-  farFoot: planted(-13.5, -14),
+  nearFoot: onToes(LEAD_TOE, 0),
+  farFoot: onToes(REAR_TOE, -24),
 };
-const STRIKE_FIST = leadFist(STRIKE_BODY, 24.5, -14);
+const STRIKE_ARM = pose(STRIKE_BODY, 24.6, -6);
+const KNUCKLES = knucklesOf(STRIKE_ARM);
 const STRIKE: Pose = {
-  ...STRIKE_BODY,
-  nearFist: STRIKE_FIST,
+  ...STRIKE_ARM,
   effects: [
-    smear(6, [13, 48.6], [21, 50.6], [29, 52.9], [STRIKE_FIST.x + 4.8, STRIKE_FIST.y - 1]),
-    {
-      kind: 'flash',
-      center: at(STRIKE_FIST.x + 6, STRIKE_FIST.y - 1),
-      radius: 3.5,
-      tone: 'strike',
-    },
+    // One clean streak just under the forearm's sleeve, rising into the bottom of the glove.
+    smear(4, [22, 51.2], [29, 51.6], [KNUCKLES.x - 2.6, KNUCKLES.y - 3]),
+    // Just ahead of the knuckles: it frames them, never hides them.
+    { kind: 'flash', center: at(KNUCKLES.x + 2.6, KNUCKLES.y), radius: 3.5, tone: 'strike' },
   ],
 };
 
-// Frame 3 (2 ticks): snapped back along the same line.
-const RETRACT: Pose = {
+// Frame 3 (2 ticks): snapped back along the same line, faster than it went.
+const RETRACT_BODY: Body = {
   ...GUARD,
-  hip: at(-2.3, 36.8),
-  torso: 4,
-  head: 12,
-  shrug: 4.6,
-  reach: { near: 1.4 },
+  hip: at(-5.2, 36.2),
+  torso: 17.5,
+  head: 0.5,
+  shrug: 2.6,
+  reach: { near: 1.6 },
   twist: -0.25,
-  nearFist: at(21, 52.4),
-  farFist: at(9.5, 62.3),
-  farFoot: planted(-13.5, -6),
+  nearFoot: onToes(LEAD_TOE, -0.5),
+  farFoot: onToes(REAR_TOE, -20),
 };
+const RETRACT = pose(RETRACT_BODY, 17.5, -9);
 
-// Frame 4 (2 ticks): the hand drops back to the low guard, the shoulder rolls up past its rest.
-const DROP: Pose = {
+// Frame 4 (2 ticks): home a hair past the guard: the glove tucked in under the chin, the
+// shoulder still rolled up, the hips sinking back a pixel.
+const HOME: Pose = {
   ...GUARD,
-  hip: at(-3.3, 36.8),
-  torso: -1,
-  head: 12.5,
-  shrug: 4.5,
-  twist: -0.1,
-  nearFist: at(11, 45.5),
-  farFist: at(7.8, 62.3),
+  hip: at(-6.8, 36),
+  torso: 15.5,
+  head: 1.5,
+  shrug: 1.9,
+  twist: -0.08,
+  nearFist: at(8.4, 55),
+  farFist: at(GUARD.farFist.x - 0.2, GUARD.farFist.y - 0.4),
 };
 
-// Frame 5 (3 ticks): settled back in the shell.
-const SETTLE: Pose = {
-  ...GUARD,
-  hip: at(-3.2, 37.1),
-  torso: -1.6,
-  nearFist: at(8, 43.4),
-};
+// Frame 5 (3 ticks): settled into the guard, ready for the next one.
+const SETTLE: Pose = tween(HOME, GUARD, 0.75, ease.out);
 
-/** standLight (Direct): a crisp lead jab out of the Philly shell. Ticks 2,2,3,2,2,3. */
-export const POSES: readonly Pose[] = [LOAD, SNAP, STRIKE, RETRACT, DROP, SETTLE];
+export const POSES: readonly Pose[] = [START, SNAP, STRIKE, RETRACT, HOME, SETTLE];
