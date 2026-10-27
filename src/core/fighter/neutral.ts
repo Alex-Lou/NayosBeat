@@ -31,7 +31,7 @@ export function actOnGround(
 
   const command = f.bufferedCommand;
   const move = command
-    ? groundMove(command, f.bufferedInput, f.bufferedMotion, f.bufferedFacing)
+    ? groundMove(command, f.bufferedInput, f.bufferedMotion, f.bufferedFacing, template.moves)
     : null;
   if (move) return startGroundMove(f, move, template);
   if (command === 'jump' || has(input, Input.Up) || has(input, Input.Jump)) {

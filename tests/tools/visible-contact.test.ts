@@ -7,6 +7,7 @@ import type { Box } from '../../src/core/config';
 import { px, toPx } from '../../src/core/constants';
 import { Input } from '../../src/core/input';
 import type { MoveId } from '../../src/core/move-data';
+import { moveOf } from '../../src/core/moves';
 import type { Contact, GameState } from '../../src/core/state';
 import { step } from '../../src/core/step';
 import { NAYO } from '../../src/data/fighters/nayo';
@@ -26,7 +27,7 @@ import { reach } from './strip-pixels';
  */
 
 const LOW_HITS = (Object.keys(NAYO.moves) as MoveId[]).filter(
-  (id) => NAYO.moves[id].guard === 'low' && NAYO.moves[id].hitbox !== undefined,
+  (id) => moveOf(NAYO, id).guard === 'low' && moveOf(NAYO, id).hitbox !== undefined,
 );
 /** How far apart the two drawings may stay, and the spark from the toe, in world pixels. */
 const TOUCH = 1;
@@ -63,7 +64,7 @@ function edges(sheet: string, frame: number, mirrored: boolean): number[] {
 
 /** The frames of a move that show while it can hit. */
 function activeFrames(move: MoveId): number[] {
-  const { startup, active } = NAYO.moves[move];
+  const { startup, active } = moveOf(NAYO, move);
   const clip = NAYO_CLIPS[move];
   const frames: number[] = [];
   let tick = 0;
@@ -102,7 +103,7 @@ describe('low blows touch visibly', () => {
   for (const move of LOW_HITS) {
     for (const posture of ['standing', 'crouching'] as const) {
       it(`${move} against a ${posture} defender`, () => {
-        const hitbox = NAYO.moves[move].hitbox;
+        const hitbox = moveOf(NAYO, move).hitbox;
         if (!hitbox) throw new Error(`${move} has no hitbox`);
         const distance = toPx(farthestHit(hitbox, hurtboxes(posture)));
         expect(distance).toBeGreaterThan(0);
@@ -154,7 +155,7 @@ describe('the spark of a low blow', () => {
   }
 
   it.each(LOW_HITS)('%s: at the shin, by the drawn toe, on either side', (move) => {
-    const hitbox = NAYO.moves[move].hitbox;
+    const hitbox = moveOf(NAYO, move).hitbox;
     if (!hitbox) throw new Error(`${move} has no hitbox`);
     const distance = farthestHit(hitbox, NAYO.standingHurtboxes);
     const band = { from: toPx(hitbox.y), to: toPx(hitbox.y + hitbox.height) };

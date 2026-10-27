@@ -3,9 +3,13 @@ import { CAMERA_WIDTH_PX, px } from './constants';
 import {
   AIR_MOVE_IDS,
   CORE_MOVE_IDS,
+  MOVE_IDS,
   MOVEMENT_MOVE_IDS,
+  OPTIONAL_MOVE_IDS,
   THROW_MOVE_IDS,
   type FrameRange,
+  type MoveData,
+  type MoveId,
 } from './move-data';
 import { moveDuration } from './moves';
 
@@ -58,11 +62,19 @@ export function validateTemplate(template: FighterTemplate): string[] {
     expect(isStacked(boxes), `${name} must be stacked without a gap between them`);
   }
 
-  for (const id of CORE_MOVE_IDS) {
-    const move = template.moves[id];
+  for (const id of MOVE_IDS) {
+    const move: MoveData | undefined = template.moves[id];
+    if (!move) {
+      expect(!(CORE_MOVE_IDS as readonly MoveId[]).includes(id), `${id} must be defined`);
+      continue;
+    }
     const duration = moveDuration(move);
     expect(move.name.length > 0, `${id}.name must not be empty`);
     const movement = move.kind === 'movement';
+    expect(
+      !(OPTIONAL_MOVE_IDS as readonly MoveId[]).includes(id) || move.kind === 'normal',
+      `${id}: the direction normals and the chain are normals`,
+    );
     const thrown = move.kind === 'throw';
     expect(
       (id === 'grab') === (move.kind === 'grab'),
@@ -133,6 +145,25 @@ export function validateTemplate(template: FighterTemplate): string[] {
         `${id}.motion.dx must have one entry per frame of the move (${duration})`,
       );
       expect(move.motion.dx.every(Number.isInteger), `${id}.motion.dx must be integers`);
+      const heights = move.motion.y;
+      if (heights) {
+        expect(
+          heights.length === duration && heights.every((y) => isInteger(y, 0)),
+          `${id}.motion.y must have one integer height >= 0 per frame of the move (${duration})`,
+        );
+        expect(heights[duration - 1] === 0, `${id}.motion.y must be back on the ground at its end`);
+      }
+    }
+    for (const { frames, boxes } of move.hurtboxes ?? []) {
+      expect(isRangeWithin(frames, duration), `${id}.hurtboxes must fit within the move`);
+      expect(
+        boxes.length > 0 && boxes.length <= MAX_HURTBOXES && boxes.every(isValidBox),
+        `${id}.hurtboxes must have one or ${MAX_HURTBOXES} valid boxes`,
+      );
+    }
+    if (move.chain !== undefined) {
+      expect(template.moves[move.chain] !== undefined, `${id}.chain must be a move it has`);
+      expect(move.kind === 'normal', `${id}: only a normal chains`);
     }
     if (move.knockdown) {
       expect(

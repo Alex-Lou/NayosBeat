@@ -9,9 +9,9 @@ export const NAYO_SHEETS = {
   jump: { frames: 6 },
   jumpForward: { frames: 8 },
   block: { frames: 6 },
-  hit: { frames: 7 },
+  hitCrouch: { frames: 3 },
   airHit: { frames: 4 },
-  knockdown: { frames: 9 },
+  knockdown: { frames: 4 },
   ko: { frames: 8 },
   standLight: { frames: 6 },
   standHeavy: { frames: 9 },
@@ -27,7 +27,7 @@ export const NAYO_SHEETS = {
   timeOver: { frames: 4 },
   projectile: { frames: 8 },
 
-  // Combat v2 (docs/combat-v2.md §11.1, §11.2): the dashes and the hold are played.
+  // Combat v2 (docs/combat-v2.md §11.1, §11.2).
   dashForward: { frames: 6 },
   dashBack: { frames: 6 },
   grab: { frames: 6 },
@@ -38,8 +38,6 @@ export const NAYO_SHEETS = {
   held: { frames: 2 },
   thrownBack: { frames: 4 },
   tech: { frames: 4 },
-  // Drawn ahead of their gameplay (phase 3): no clip plays these strips yet, so a fight does not
-  // load them.
   chainLight: { frames: 6 },
   lightFinisher: { frames: 7 },
   forwardLight: { frames: 6 },

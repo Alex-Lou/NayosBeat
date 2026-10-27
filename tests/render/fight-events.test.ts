@@ -40,6 +40,14 @@ describe('detectEvents', () => {
     expect(events[1]).toMatchObject({ type: 'hit', damage: P.moves.standLight.damage });
   });
 
+  it('tells a counter-hit, read from the contact (§7.4)', () => {
+    const start = facingOff(40, MIRROR_MATCH);
+    const events = eventsOf(start, [[Input.Light, 0], [0, Input.Heavy], ...idle(30)]);
+    expect(events.find((e) => e.type === 'hit')).toMatchObject({ by: 0, counter: 'counter' });
+    const plain = eventsOf(start, [[Input.Light, 0], ...idle(30)]);
+    expect(plain.find((e) => e.type === 'hit')).toMatchObject({ counter: null });
+  });
+
   it('tells which way a blow pushes the defender: away from the attacker', () => {
     // Player 1 stands on the left: its jab pushes player 2 to the right, and back.
     const right = eventsOf(facingOff(30, MIRROR_MATCH), [[Input.Light, 0], ...idle(30)]);
@@ -190,9 +198,23 @@ describe('vibrationFor', () => {
 
   it("shakes the phone of a player grabbed, pummeled, thrown or hit hard, and only that player's", () => {
     const grabbed: FightEvent = { type: 'grab', ...blow, punish: false };
-    const pummel: FightEvent = { type: 'hit', ...blow, damage: 15, heavy: false, held: true };
+    const pummel: FightEvent = {
+      type: 'hit',
+      ...blow,
+      damage: 15,
+      heavy: false,
+      held: true,
+      counter: null,
+    };
     const thrown: FightEvent = { type: 'throw', ...blow, damage: 100 };
-    const heavy: FightEvent = { type: 'hit', ...blow, damage: 80, heavy: true, held: false };
+    const heavy: FightEvent = {
+      type: 'hit',
+      ...blow,
+      damage: 80,
+      heavy: true,
+      held: false,
+      counter: null,
+    };
     expect(vibrationFor(grabbed, 0)).toBe(HAPTICS.grabbed);
     expect(vibrationFor(pummel, 0)).toBe(HAPTICS.pummel);
     expect(vibrationFor(thrown, 0)).toBe(HAPTICS.heavyHit);
@@ -201,7 +223,14 @@ describe('vibrationFor', () => {
   });
 
   it('leaves light hits, blocks and everything else alone', () => {
-    const light: FightEvent = { type: 'hit', ...blow, damage: 30, heavy: false, held: false };
+    const light: FightEvent = {
+      type: 'hit',
+      ...blow,
+      damage: 30,
+      heavy: false,
+      held: false,
+      counter: null,
+    };
     expect(vibrationFor(light, 0)).toBe(0);
     expect(vibrationFor({ type: 'block', ...blow }, 0)).toBe(0);
     expect(vibrationFor({ type: 'tech', ...blow }, 0)).toBe(0);

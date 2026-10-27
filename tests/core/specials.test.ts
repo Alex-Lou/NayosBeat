@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { canBeHit, scaledDamage } from '../../src/core/combat';
+import { canBeHit } from '../../src/core/combat';
+import { chipDamage, scaledDamage } from '../../src/core/damage';
 import { px } from '../../src/core/constants';
 import { updateFighter } from '../../src/core/fighter';
 import { Input } from '../../src/core/input';
@@ -91,10 +92,11 @@ describe('fresh motions (§2.7)', () => {
     expect(play([...walk, Right | Special]).move).toBe('specialForward');
   });
 
-  it('gives a light, not a special, when walking forward out of a low guard', () => {
+  it('gives a normal, not a special, when walking forward out of a low guard', () => {
+    // Forward held: the direction normals of combat v2 (§2.8), → + L and → + H.
     const walk = [...repeat(Down | Left, 10), Down, Down | Right, ...repeat(Right, 10)];
-    expect(play([...walk, Right | Light]).move).toBe('standLight');
-    expect(play([...walk, Right | Heavy]).move).toBe('standHeavy');
+    expect(play([...walk, Right | Light]).move).toBe('forwardLight');
+    expect(play([...walk, Right | Heavy]).move).toBe('forwardHeavy');
   });
 
   it('reads the motion through the buffer, as it was when pressed', () => {
@@ -154,10 +156,10 @@ describe('projectiles', () => {
     expect(after.fighters[1].health).toBe(P.maxHealth - FIREBALL.damage);
   });
 
-  it('can be blocked', () => {
+  it('can be blocked, which only chips (§7.5)', () => {
     const start = facingOff(120, MIRROR_MATCH);
     const after = script(start, [[Special, Right], ...repeat<[number, number]>([0, Right], 60)]);
-    expect(after.fighters[1].health).toBe(P.maxHealth);
+    expect(after.fighters[1].health).toBe(P.maxHealth - chipDamage(FIREBALL));
     expect(after.projectiles).toHaveLength(0);
   });
 
@@ -280,7 +282,9 @@ describe('cancels and combos', () => {
     ]);
     const after = script(facingOff(80, MIRROR_MATCH), ticks);
     expect(after.fighters[0].health).toBe(P.maxHealth);
-    expect(after.fighters[1].health).toBe(P.maxHealth - P.moves.specialAntiAir.damage);
+    // It catches the jump attack under way: a CONTRE (§7.4).
+    const counterHit = scaledDamage(P.moves.specialAntiAir.damage, 1, true);
+    expect(after.fighters[1].health).toBe(P.maxHealth - counterHit);
   });
 
   it('loses to the same jump-in when pressed too early', () => {

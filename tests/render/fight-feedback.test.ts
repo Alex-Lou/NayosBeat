@@ -15,6 +15,7 @@ const shown = vi.hoisted(() => ({
   graze: vi.fn(),
   kick: vi.fn(),
   bleed: vi.fn(),
+  stamp: vi.fn(),
 }));
 
 vi.mock('../../src/render/hit-fx', () => ({
@@ -52,7 +53,7 @@ vi.mock('../../src/render/effects', () => ({
 }));
 vi.mock('../../src/render/stamps', () => ({
   Stamps: class {
-    show = vi.fn();
+    show = shown.stamp;
     update = vi.fn();
   },
 }));
@@ -74,7 +75,15 @@ function feedback(): FightFeedback {
 
 /** A blow landing at `y` px above the ground, low (at the feet) or not. */
 function blow(type: 'hit' | 'ko', low: boolean, heavy = false): FightEvent {
-  const impact = { x: px(200), y: px(low ? 9 : 50), away: 1, by: 0, low, held: false } as const;
+  const impact = {
+    x: px(200),
+    y: px(low ? 9 : 50),
+    away: 1,
+    by: 0,
+    low,
+    held: false,
+    counter: null,
+  } as const;
   return type === 'hit' ? { type, damage: 25, heavy, ...impact } : { type, ...impact };
 }
 
@@ -111,5 +120,36 @@ describe('the spark of a blow (docs/combat-v2.md §9.3)', () => {
     expect(shown.burst).toHaveBeenCalledWith(NAYO_STYLE, 'ko', px(200), px(9), 1);
     expect(shown.graze).toHaveBeenCalledWith(NAYO_STYLE, 'heavy', px(200), px(9), 1);
     expect(shown.bleed).not.toHaveBeenCalled();
+  });
+});
+
+describe('a counter-hit (docs/combat-v2.md §7.4)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('bursts like a heavy blow under its stamp, CONTRE or PUNITION', () => {
+    for (const counter of ['counter', 'punish'] as const) {
+      const hit: FightEvent = {
+        type: 'hit',
+        damage: 36,
+        heavy: false,
+        x: px(200),
+        y: px(50),
+        away: 1,
+        by: 0,
+        low: false,
+        held: false,
+        counter,
+      };
+      feedback().react(hit, 0);
+      expect(shown.burst).toHaveBeenLastCalledWith(NAYO_STYLE, 'heavy', px(200), px(50), 1);
+      expect(shown.stamp).toHaveBeenLastCalledWith(counter, hit, 0);
+    }
+  });
+
+  it('stamps nothing on a plain hit', () => {
+    feedback().react(blow('hit', false), 0);
+    expect(shown.stamp).not.toHaveBeenCalled();
   });
 });

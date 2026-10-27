@@ -108,6 +108,10 @@ export const FIGHTER_FIELDS = [
   'tapReleased',
   'throwImmuneFrames',
   'comboCount',
+  'juggle',
+  'reaction',
+  'reactionHeavy',
+  'stunTotal',
 ] as const satisfies readonly (keyof FighterState)[];
 
 /**

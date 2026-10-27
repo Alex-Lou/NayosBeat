@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { helpPages, withArrows, type ControlDevices } from '../../src/app/controls-content';
-import { CORE_MOVE_IDS } from '../../src/core/move-data';
+import { MOVE_IDS } from '../../src/core/move-data';
 import { MOVE_ORDER, MOVE_TEXTS } from '../../src/data/move-texts';
 import { ROSTER } from '../../src/data/roster';
 
@@ -46,7 +46,7 @@ describe('helpPages', () => {
   it('lists every move of each fighter on its page, by the name in its data', () => {
     for (const { template } of ROSTER) {
       const text = textOf(template.name);
-      for (const move of CORE_MOVE_IDS) expect(text).toContain(template.moves[move].name);
+      for (const move of Object.values(template.moves)) expect(text).toContain(move.name);
     }
   });
 
@@ -58,12 +58,12 @@ describe('helpPages', () => {
 
 describe('move texts', () => {
   it('give every move of each fighter a text and a way to do it, in page order', () => {
-    expect([...MOVE_ORDER].sort()).toEqual([...CORE_MOVE_IDS].sort());
+    expect([...MOVE_ORDER].sort()).toEqual([...MOVE_IDS].sort());
     for (const { id, template } of ROSTER) {
-      for (const move of Object.keys(template.moves) as (keyof typeof template.moves)[]) {
+      for (const move of MOVE_IDS.filter((move) => template.moves[move])) {
         const text = MOVE_TEXTS[id].moves[move];
-        expect(text.input.length, `${id} ${move}`).toBeGreaterThan(0);
-        expect(text.text.length, `${id} ${move}`).toBeGreaterThan(20);
+        expect(text?.input.length, `${id} ${move}`).toBeGreaterThan(0);
+        expect(text?.text.length, `${id} ${move}`).toBeGreaterThan(20);
       }
     }
   });

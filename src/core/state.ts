@@ -31,6 +31,13 @@ export type FighterAction =
   /** Broke free of a grab, or grabbed on the same tick as the opponent: pushed apart, reeling. */
   | 'tech';
 
+/**
+ * How the last blow taken shook the fighter (docs/combat-v2.md §9.4), read from where it landed:
+ * the head snapped back, folded at the belly, a leg buckling; crouching; swept off the legs;
+ * sent flying; thrown. The presentation picks its animation from it, the core never reads it.
+ */
+export type Reaction = 'high' | 'mid' | 'low' | 'crouch' | 'trip' | 'launch' | 'thrown';
+
 export interface FighterState {
   /** Horizontal center, in sub-pixels from the stage's left edge. */
   readonly x: number;
@@ -76,6 +83,14 @@ export interface FighterState {
   readonly throwImmuneFrames: number;
   /** Consecutive hits taken without being able to act: drives the combo counter and scaling. */
   readonly comboCount: number;
+  /** Launched by a launcher (docs/combat-v2.md §7.6): one more blow can hit it in the air. */
+  readonly juggle: 0 | 1;
+  /** The last blow taken: how it shook the fighter (null: blocked, or none yet). */
+  readonly reaction: Reaction | null;
+  /** That blow's stun was long (hitstun of 18 ticks or more): the full reaction plays. */
+  readonly reactionHeavy: boolean;
+  /** The whole hit or block stun it gave, so the reaction ends with it. */
+  readonly stunTotal: number;
 }
 
 export interface ProjectileState {
@@ -85,6 +100,9 @@ export interface ProjectileState {
   readonly x: number;
   readonly facing: Facing;
 }
+
+/** CONTRE or PUNITION: the same bonus, two words to learn to punish (§7.4). */
+export type CounterHit = 'counter' | 'punish';
 
 /**
  * Something that touched on a tick: a strike or a projectile, hit or blocked. The simulation
@@ -105,13 +123,17 @@ export interface Contact {
    */
   readonly x: number;
   readonly y: number;
-  /** Health taken: none when blocked, nor on a training dummy at its 1 HP floor. */
+  /**
+   * Health taken: a special blocked chips some (never the last point), a normal blocked none,
+   * nor a hit on a training dummy at its 1 HP floor.
+   */
   readonly damage: number;
   /**
-   * PUNITION: the grab caught a fighter recovering, the tech is out of reach. (The counter-hits
-   * of the strikes come with combat v2's phase 3.)
+   * A blow caught the defender attacking (CONTRE: starting up or out) or recovering (PUNITION:
+   * after its active frames), docs/combat-v2.md §7.4; a grab caught a fighter recovering, which
+   * cannot break free (PUNITION).
    */
-  readonly counter: 'punish' | null;
+  readonly counter: CounterHit | null;
 }
 
 /**
@@ -239,5 +261,9 @@ function createFighter(x: number, facing: Facing, template: FighterTemplate): Fi
     tapReleased: false,
     throwImmuneFrames: 0,
     comboCount: 0,
+    juggle: 0,
+    reaction: null,
+    reactionHeavy: false,
+    stunTotal: 0,
   };
 }

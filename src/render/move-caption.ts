@@ -1,6 +1,7 @@
 import type Phaser from 'phaser';
 import type { MatchConfig } from '../core/config';
 import { toPx } from '../core/constants';
+import { moveOf } from '../core/moves';
 import type { GameState } from '../core/state';
 import { MAX_CLOSE_UP } from './camera-framing';
 import { DEPTH } from './depth';
@@ -58,7 +59,7 @@ export class MoveCaption {
   react(event: FightEvent, frame: number): void {
     if (event.type !== 'attack') return;
     const caption = this.captions[event.by];
-    const name = this.config.fighters[event.by].moves[event.move].name;
+    const name = moveOf(this.config.fighters[event.by], event.move).name;
     if (caption.text.text !== name) caption.text.setText(name);
     caption.since = frame;
   }

@@ -65,6 +65,10 @@ export function makeFighter(overrides: Partial<FighterState> = {}): FighterState
     tapReleased: false,
     throwImmuneFrames: 0,
     comboCount: 0,
+    juggle: 0,
+    reaction: null,
+    reactionHeavy: false,
+    stunTotal: 0,
     ...overrides,
   };
 }

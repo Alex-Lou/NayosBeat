@@ -50,7 +50,11 @@ export type Posture = 'standing' | 'crouching' | 'air';
 export const POSTURE_CLIPS: Readonly<
   Record<Posture, { readonly body: readonly ClipId[]; readonly limbs: readonly ClipId[] }>
 > = {
-  standing: { body: ['idle', 'blockStand', 'hitStand'], limbs: ['walkForward', 'walkBack'] },
+  // A low hit buckles the lead knee forward for a frame or two (2 px past the body): a limb.
+  standing: {
+    body: ['idle', 'blockStand', 'hitHigh', 'hitMid'],
+    limbs: ['walkForward', 'walkBack', 'hitLow'],
+  },
   crouching: { body: ['crouch', 'blockCrouch', 'hitCrouch'], limbs: [] },
   air: { body: ['jump'], limbs: ['jumpForward'] },
 };

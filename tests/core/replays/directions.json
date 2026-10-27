@@ -1,0 +1,33 @@
+{
+  "description": "Direction normals and the Saut de l'ange: Nayo's Jab chassé, his Overhand blocked standing then landing on a crouching guard; Riff's Toprock, her Talon; the Saut de l'ange over Nayo's Balayage, onto him recovering.",
+  "fighters": ["nayo", "riff"],
+  "inputs": [
+    [90, "", ""],
+    [30, "right", "left"],
+    [1, "right+light", ""],
+    [2, "right", ""],
+    [60, "", ""],
+    [15, "right", "left"],
+    [1, "right+heavy", "right"],
+    [60, "", "right"],
+    [15, "right", "left"],
+    [1, "right+heavy", "right+down"],
+    [60, "", "right+down"],
+    [60, "", ""],
+    [15, "right", "left"],
+    [1, "", "left+light"],
+    [2, "", "left"],
+    [60, "", ""],
+    [15, "right", "left"],
+    [1, "", "left+heavy"],
+    [2, "", "left"],
+    [90, "", ""],
+    [12, "left", "right"],
+    [1, "", "left+special"],
+    [3, "", ""],
+    [1, "down+heavy", ""],
+    [2, "down", ""],
+    [120, "", ""]
+  ],
+  "hash": "5d9b1f49"
+}

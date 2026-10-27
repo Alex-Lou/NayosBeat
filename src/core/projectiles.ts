@@ -3,6 +3,7 @@ import { canBeHit, touchedHurtbox, type PlacedBox } from './combat';
 import type { MatchConfig } from './config';
 import { CAMERA_WIDTH_PX, px } from './constants';
 import type { MoveData, ProjectileData } from './move-data';
+import { moveOf } from './moves';
 import { signed } from './numbers';
 import { NO_PROJECTILES, type FighterState, type ProjectileState } from './state';
 
@@ -16,7 +17,7 @@ export interface ProjectileHit {
 }
 
 function projectileData(projectile: ProjectileState, config: MatchConfig): MoveData {
-  return config.fighters[projectile.owner].moves[projectile.move];
+  return moveOf(config.fighters[projectile.owner], projectile.move);
 }
 
 /** The projectile's hitbox, placed where it flies (on the ground line). */
@@ -100,7 +101,7 @@ export function findProjectileHit(
 /** The projectile the fighter's move fires on this tick, if it reaches that frame now. */
 function firing(fighter: FighterState, owner: 0 | 1, config: MatchConfig): ProjectileData | null {
   if (fighter.action !== 'attack' || !fighter.move) return null;
-  const move = config.fighters[owner].moves[fighter.move];
+  const move = moveOf(config.fighters[owner], fighter.move);
   return move.projectile && fighter.actionFrame === move.startup ? move.projectile : null;
 }
 

@@ -1,7 +1,7 @@
 import type { MatchConfig } from '../core/config';
 import { px } from '../core/constants';
 import { Input, type InputBits } from '../core/input';
-import { moveDuration } from '../core/moves';
+import { moveDuration, moveOf } from '../core/moves';
 import { wallsAt } from '../core/positions';
 import { GRAB_TECH_FRAMES } from '../core/rules';
 import type { FighterState, GameState, HoldState } from '../core/state';
@@ -72,7 +72,7 @@ function holderChoice(
   const me = state.fighters[player];
   const victim = state.fighters[player === 0 ? 1 : 0];
   const { moves } = config.fighters[player];
-  const current = me.move ? moves[me.move] : null;
+  const current = me.move ? moveOf(config.fighters[player], me.move) : null;
   // Free on the next tick: the choice is buffered, a press in the clinch kept for its end.
   if (current && me.actionFrame + 2 < moveDuration(current)) return 0;
   if (hold.frame < GRAB_TECH_FRAMES - 1) return 0;

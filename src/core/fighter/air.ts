@@ -35,7 +35,8 @@ export function airborne(fighter: FighterState, template: FighterTemplate): Figh
   const x = fighter.x + fighter.vx;
   if (y > 0) return { ...fighter, x, y, vy };
 
-  const grounded: FighterState = { ...fighter, x, y: 0, vx: 0, vy: 0 };
+  // Down, the juggle a launcher allowed is over.
+  const grounded: FighterState = { ...fighter, x, y: 0, vx: 0, vy: 0, juggle: 0 };
   switch (fighter.action) {
     case 'airHit':
       return { ...enter(grounded, 'knockdown'), stunFrames: template.knockdownFrames };

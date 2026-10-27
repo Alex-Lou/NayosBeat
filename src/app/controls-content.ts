@@ -87,10 +87,13 @@ function devicePage(devices: ControlDevices): HelpPage {
 /** Every move of a fighter: how to do it, its name (from its data), what it is for. */
 function fighterPage({ id, template }: RosterEntry): HelpPage {
   const texts = MOVE_TEXTS[id];
-  const rows = MOVE_ORDER.map((move): readonly [string, string] => {
-    const { input, text } = texts.moves[move];
-    return [input, `${template.moves[move].name} : ${text}`];
-  });
+  const rows: (readonly [string, string])[] = [];
+  for (const id of MOVE_ORDER) {
+    // The optional moves it has: a fighter without one plays its standing normal instead.
+    const move = template.moves[id];
+    const help = texts.moves[id];
+    if (move && help) rows.push([help.input, `${move.name} : ${help.text}`]);
+  }
   return { title: template.name, sections: [{ title: texts.title, rows }], fighter: id };
 }
 

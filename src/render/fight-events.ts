@@ -1,6 +1,7 @@
 import type { MatchConfig } from '../core/config';
 import type { MoveId } from '../core/move-data';
-import type { Contact, FighterState, GameState, RoundPhase } from '../core/state';
+import { moveOf } from '../core/moves';
+import type { Contact, CounterHit, FighterState, GameState, RoundPhase } from '../core/state';
 
 /**
  * Things worth a sound or a visual effect, found by comparing two consecutive states.
@@ -18,9 +19,13 @@ interface Impact {
   readonly low: boolean;
 }
 
-/** A blow that went through the guard: `held` when it landed in a hold (a pummel, a throw). */
+/**
+ * A blow that went through the guard: `held` when it landed in a hold (a pummel, a throw);
+ * `counter` when it caught the defender attacking or recovering (the core's `isCounterHit`).
+ */
 interface Blow extends Impact {
   readonly held: boolean;
+  readonly counter: CounterHit | null;
 }
 
 export type FightEvent =
@@ -87,7 +92,7 @@ export function detectEvents(
     if (contact && !sameTech) events.push(contactEvent(contact, next, config));
 
     if (after.move && after.actionFrame === 0 && startedNewMove(before, after)) {
-      const move = config.fighters[player].moves[after.move];
+      const move = moveOf(config.fighters[player], after.move);
       if (move.kind === 'movement') {
         // A backdash moves away from the side it faces.
         const back = move.motion?.dx.some((dx) => dx < 0) ?? false;
@@ -124,7 +129,7 @@ function contactOn(contacts: readonly Contact[], defender: 0 | 1): Contact | und
 function contactEvent(contact: Contact, next: GameState, config: MatchConfig): FightEvent {
   const attacker = next.fighters[contact.by];
   const defender = next.fighters[contact.by === 0 ? 1 : 0];
-  const move = config.fighters[contact.by].moves[contact.move];
+  const move = moveOf(config.fighters[contact.by], contact.move);
   const impact: Impact = {
     x: contact.x,
     y: contact.y,
@@ -142,10 +147,11 @@ function contactEvent(contact: Contact, next: GameState, config: MatchConfig): F
     default:
   }
   const held = contact.kind !== 'hit';
-  if (defender.health === 0) return { type: 'ko', ...impact, held };
+  const { counter } = contact;
+  if (defender.health === 0) return { type: 'ko', ...impact, held, counter };
   if (contact.kind === 'throw') return { type: 'throw', ...impact, damage: contact.damage };
   const heavy = move.damage >= HEAVY_HIT_DAMAGE;
-  return { type: 'hit', ...impact, damage: contact.damage, heavy, held };
+  return { type: 'hit', ...impact, damage: contact.damage, heavy, held, counter };
 }
 
 function startedNewMove(before: FighterState, after: FighterState): boolean {

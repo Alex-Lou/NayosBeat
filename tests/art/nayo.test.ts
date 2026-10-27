@@ -16,6 +16,22 @@ describe('Nayo art', () => {
     ]);
   });
 
+  it('plays every move of the fighter, its optional ones too', () => {
+    const { chainLight: _missing, ...clips } = NAYO.clips;
+    expect(_missing).toBeDefined();
+    expect(validateArt({ ...NAYO, clips }, NAYO_TEMPLATE)).toEqual([
+      'nayo: clip chainLight is missing',
+    ]);
+  });
+
+  it('lasts the whole knockdown with the getup', () => {
+    const getup = { ...NAYO.clips.getup, ticks: [2, 2, 2, 2, 3] };
+    const art = { ...NAYO, clips: { ...NAYO.clips, getup } };
+    expect(validateArt(art, NAYO_TEMPLATE)).toEqual([
+      'nayo: clips knockdown and getup last 41 ticks, its gameplay lasts 40',
+    ]);
+  });
+
   it('rejects frames that are not in the strip', () => {
     const last = NAYO.sheets.idle?.frames ?? 0;
     const frames = NAYO.clips.idle.frames.map((frame, index) => (index === 0 ? last : frame));

@@ -1,14 +1,12 @@
 import type Phaser from 'phaser';
 import { toPx } from '../core/constants';
 import { MAX_CLOSE_UP } from './camera-framing';
+import { COMIC_FONT, comicDrop, comicFill, INK } from './comic-lettering';
 import { DEPTH } from './depth';
 import type { HitStyle } from './hit-styles';
 import { VIEW_SIZE } from './view';
 
 export type BlowKind = 'light' | 'heavy' | 'ko';
-
-/** Comic lettering, self-hosted (see main.ts). */
-export const COMIC_FONT = 'Bangers, Impact, sans-serif';
 
 /** Words are picked in turn, so a string of blows never repeats the same one. */
 const WORDS: Readonly<Record<BlowKind, readonly string[]>> = {
@@ -42,7 +40,6 @@ const TILTS = [-0.13, 0.09, -0.05, 0.15] as const;
 const POOL_SIZE = 6;
 /** Depth steps inside the words' band: when the count wraps, the older words are long gone. */
 const SERIALS = 1000;
-const INK = '#150b24';
 
 /** Hits each player has landed in a row: it grows with every hit, and drops to 0 on taking one. */
 export type Tally = readonly [number, number];
@@ -221,18 +218,15 @@ export class Onomatopoeia {
   }
 
   /**
-   * Light on top, the attacker's strike color below, its energy color as the comic drop of the
-   * ink outline. The style is set without redrawing (with the metrics measured for its size),
+   * The comic lettering in the attacker's colors. The style is set without redrawing (with the metrics measured for its size),
    * then the text is drawn once.
    */
   private restyle(word: Word, kind: BlowKind, count: number): void {
     const style = this.styles[word.by];
     const { text, tally } = word;
     const size = SIZES[kind];
-    const fill = text.context.createLinearGradient(0, 0, 0, size);
-    fill.addColorStop(0, '#fffbe8');
-    fill.addColorStop(1, hex(style.strike));
-    const drop = this.drop(DROP, style.energy);
+    const fill = comicFill(text, size, style);
+    const drop = comicDrop(DROP, this.resolution, style);
     text.style.setStyle(
       { fontSize: size, color: fill, shadow: drop, metrics: this.wordMetrics[kind] },
       false,
@@ -245,18 +239,12 @@ export class Onomatopoeia {
     tally.style.setStyle(
       {
         fontSize: tallySize(kind),
-        shadow: this.drop(TALLY_DROP, style.energy),
+        shadow: comicDrop(TALLY_DROP, this.resolution, style),
         metrics: this.tallyMetrics[kind],
       },
       false,
     );
     redraw(tally, `x${count}`);
-  }
-
-  /** Shadow offsets count in device pixels, unlike every other text size. */
-  private drop(size: number, color: number): Phaser.Types.GameObjects.Text.TextShadow {
-    const offset = size * this.resolution;
-    return { offsetX: offset, offsetY: offset, color: hex(color), stroke: true, fill: false };
   }
 
   private place(word: Word): void {
@@ -305,8 +293,4 @@ function tallySize(kind: BlowKind): number {
 
 function hidden(text: Phaser.GameObjects.Text): Phaser.GameObjects.Text {
   return text.setDepth(DEPTH.words).setVisible(false);
-}
-
-function hex(color: number): string {
-  return `#${color.toString(16).padStart(6, '0')}`;
 }

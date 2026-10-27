@@ -21,8 +21,24 @@ export const CORE_MOVE_IDS = [
   'dashBack',
 ] as const;
 
+/**
+ * Moves a fighter may leave out (docs/combat-v2.md §2.8): the command that asks for one gives
+ * the standing normal instead (`groundMove`). Nayo and Riff define them all.
+ */
+export const OPTIONAL_MOVE_IDS = [
+  'forwardLight',
+  'forwardHeavy',
+  'backHeavy',
+  'chainLight',
+  'lightFinisher',
+] as const;
+
+/** Every move a fighter can have, required or not. */
+export const MOVE_IDS = [...CORE_MOVE_IDS, ...OPTIONAL_MOVE_IDS] as const;
+
 export type CoreMoveId = (typeof CORE_MOVE_IDS)[number];
-export type MoveId = CoreMoveId;
+export type OptionalMoveId = (typeof OPTIONAL_MOVE_IDS)[number];
+export type MoveId = CoreMoveId | OptionalMoveId;
 
 /** Moves performed in the air (a projectile there would never be fired). */
 export const AIR_MOVE_IDS: readonly MoveId[] = ['jumpLight', 'jumpHeavy'];
@@ -61,10 +77,19 @@ export interface ProjectileData {
 
 /**
  * How a move carries the fighter: `dx[f]` is the forward movement on action frame `f`, one
- * entry per frame of the move. Data, not code, so every way of moving shares one mechanism.
+ * entry per frame of the move, and `y[f]`, when given, the height of its feet on that frame
+ * (a leap that really leaves the ground, back on it on the last frame). Data, not code, so
+ * every way of moving shares one mechanism.
  */
 export interface RootMotion {
   readonly dx: readonly number[];
+  readonly y?: readonly number[];
+}
+
+/** Where the fighter can be hit during `frames` of a move, instead of its posture's boxes. */
+export interface MoveHurtbox {
+  readonly frames: FrameRange;
+  readonly boxes: readonly Box[];
 }
 
 /**
@@ -74,6 +99,18 @@ export interface RootMotion {
 export interface Knockdown {
   readonly vx: number;
   readonly vy: number;
+  /** Swept off the legs (sweeps, the Glissade): the defender falls on its back. */
+  readonly trip?: boolean;
+  /** A launcher: the defender, sent up from its feet, can take one more blow in the air. */
+  readonly juggle?: boolean;
+}
+
+/**
+ * Frames during which the move cannot be hit: by anything ('all', the default: strikes,
+ * projectiles, grabs), or by attacks from the air only (Riff's Genou montant, no reversal).
+ */
+export interface Invincibility extends FrameRange {
+  readonly against?: 'all' | 'air';
 }
 
 export interface MoveData {
@@ -104,14 +141,21 @@ export interface MoveData {
    */
   readonly cancelInto?: readonly MoveKind[];
   /**
+   * The move L gives once this one has hit or been blocked (L, L, L, docs/combat-v2.md §7.2),
+   * before any other reading of L: no counter, the chain is in the data.
+   */
+  readonly chain?: MoveId;
+  /**
    * From this action frame on, the move can be cancelled without having touched anything (Riff's
    * dash): the move cancelled into keeps part of its speed (DASH_MOMENTUM_PERCENT).
    */
   readonly freeCancelFrom?: number;
   /** Movement during the move. */
   readonly motion?: RootMotion;
-  /** Frames during which strikes, projectiles and grabs whiff. */
-  readonly invincible?: FrameRange;
+  /** Replaces the posture's hurtboxes on some frames (the Glissade's body along the floor). */
+  readonly hurtboxes?: readonly MoveHurtbox[];
+  /** Frames during which strikes, projectiles and grabs (or attacks from the air) whiff. */
+  readonly invincible?: Invincibility;
   /** Frames during which grabs whiff, strikes do not (the backdash). */
   readonly throwInvincible?: FrameRange;
   /** Sends the defender to the ground on hit, even when standing. */

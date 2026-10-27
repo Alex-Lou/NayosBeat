@@ -1,11 +1,11 @@
-import { contactOf, techGrab } from './combat';
+import { contactOf, impactOf, techGrab } from './combat';
 import { agedBuffer, readInput } from './commands';
 import type { FighterTemplate, MatchConfig } from './config';
 import { enter, nextFrame } from './fighter/action';
 import { startAttack } from './fighter/move';
 import { Input, type InputBits } from './input';
 import type { MoveData } from './move-data';
-import { holdMove, isHoldChoice, moveDuration } from './moves';
+import { holdMove, isHoldChoice, moveDuration, moveOf } from './moves';
 import { signed } from './numbers';
 import { GRAB_TECH_FRAMES, HOLD_LIMIT_FRAMES, HOLD_MIN_FRAMES, STRUGGLE_FRAMES } from './rules';
 import { sideOf } from './side';
@@ -50,7 +50,7 @@ export interface HoldTick {
 export function isRecovering(fighter: FighterState, template: FighterTemplate): boolean {
   if (fighter.action === 'landing') return true;
   if (fighter.action !== 'attack' || !fighter.move) return false;
-  const move = template.moves[fighter.move];
+  const move = moveOf(template, fighter.move);
   if (fighter.actionFrame >= move.startup + move.active) return true;
   const proof = move.throwInvincible;
   return proof !== undefined && fighter.actionFrame >= proof.to;
@@ -103,16 +103,8 @@ export function startHold(
   const striker = { box, x: grabber.x, y: grabber.y, facing: grabber.facing };
   const counter = hold.techable ? null : 'punish';
   const caughtTemplate = config.fighters[heldIndex];
-  const contact = contactOf(
-    holderIndex,
-    'grab',
-    striker,
-    caught,
-    caughtTemplate,
-    held,
-    'grab',
-    counter,
-  );
+  const impact = impactOf(striker, caught, caughtTemplate);
+  const contact = contactOf(holderIndex, 'grab', 'grab', impact, 0, counter);
   return {
     fighters: pairOf(hold, ...placeHeld(hold, holder, held, holder.facing, cameraX, config)),
     hold,
@@ -155,7 +147,7 @@ export function updateHold(
   const limit = struggled(hold, before.input, victim.input);
   const holderTemplate = config.fighters[hold.holder];
   const holder = holderTick(read, holderTemplate, t, limit);
-  const move = holder.move ? holderTemplate.moves[holder.move] : null;
+  const move = holder.move ? moveOf(holderTemplate, holder.move) : null;
   const behind = move?.sideSwitchFrame !== undefined && holder.actionFrame >= move.sideSwitchFrame;
   const back = holder.facing === 1 ? -1 : 1;
   const side = behind ? back : holder.facing;
@@ -234,7 +226,7 @@ function holderTick(
   t: number,
   limit: number,
 ): FighterState {
-  const current = holder.move ? template.moves[holder.move] : null;
+  const current = holder.move ? moveOf(template, holder.move) : null;
   if (current && holder.actionFrame + 1 < moveDuration(current)) return nextFrame(holder);
   const free = current ? { ...enter(holder, 'holding'), move: null } : nextFrame(holder);
   if (t < GRAB_TECH_FRAMES) return free;
@@ -285,6 +277,9 @@ function lands(
     action: health === 0 ? 'ko' : 'airHit',
     vx: flight ? signed(away, flight.vx) : 0,
     vy: flight?.vy ?? 0,
+    reaction: 'thrown',
+    reactionHeavy: true,
+    stunTotal: 0,
   };
   const free: FighterState = { ...holder, action: 'attack' };
   return {

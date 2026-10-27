@@ -1,7 +1,6 @@
 import { NAYO_CLIPS } from '../../src/art/nayo/clips.ts';
 import { NAYO_SHEETS, type NayoSheet } from '../../src/art/nayo/sheets.ts';
 import { CELL_SIZE } from '../../src/art/types.ts';
-import { isV2Sheet, NAYO_V2_STRIPS } from './nayo/combat-v2.ts';
 import { drawNayo, STILL, type Motion } from './nayo/look.ts';
 import { NAYO_POSES, NAYO_PROJECTILE, type PosedSheet } from './nayo/poses/index.ts';
 import { drawEffect, inkAt } from './nayo/vfx.ts';
@@ -73,30 +72,20 @@ function motionsOf(sheet: NayoSheet, poses: readonly Pose[]): Motion[] {
 
 /**
  * Ticks per frame of a strip, from the clips that play it (the clip named after the strip last,
- * so its timing wins where another clip borrows a few of its frames), or from the spec for a
- * combat v2 strip that no clip plays yet.
+ * so its timing wins where another clip borrows a few of its frames).
  */
 function timingOf(sheet: NayoSheet, frames: number): { ticks: number[]; loops: boolean } {
   const ticks = Array.from({ length: frames }, () => 3);
   let loops = false;
-  let played = false;
   const clips = Object.entries(NAYO_CLIPS).sort(
     ([a], [b]) => Number(a === sheet) - Number(b === sheet),
   );
   for (const [, clip] of clips) {
     if (clip.sheet !== sheet) continue;
-    played = true;
     clip.frames.forEach((frame, index) => {
       ticks[frame] = clip.ticks[index] ?? 3;
     });
     if (clip.loopFrom !== undefined) loops = true;
-  }
-  if (!played && isV2Sheet(sheet)) {
-    const planned = NAYO_V2_STRIPS[sheet];
-    planned.ticks?.forEach((duration, frame) => {
-      ticks[frame] = duration;
-    });
-    loops = planned.loops ?? false;
   }
   return { ticks, loops };
 }

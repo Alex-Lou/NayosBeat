@@ -16,7 +16,8 @@ const KO_SLOW_MOTION_SCALE = 0.35;
 
 /**
  * Turns fight events into what the player sees, hears and feels: hit effects in the attacker's
- * own style, comic words with the running tally of hits, the stamps of the hold, blood, dust,
+ * own style, comic words with the running tally of hits, the stamps (the hold's, CONTRE and
+ * PUNITION), blood, dust,
  * shake, flash, sounds, and player 1's vibrations (`vibrate`, given only where a device can). A low blow lands at the
  * feet (docs/combat-v2.md §9.3): instead of the burst, which would sink through the floor, a
  * grazing spark skims it and dust flies, without blood, which stays for heavy blows higher up.
@@ -62,12 +63,15 @@ export class FightFeedback {
     }
     switch (event.type) {
       case 'hit': {
-        const { heavy } = event;
+        // A counter-hit lands like a heavy blow, its stamp over it (docs/combat-v2.md §7.4).
+        const { counter } = event;
+        const heavy = event.heavy || counter !== null;
         const style = this.styles[event.by];
         const weight = heavy ? 'heavy' : 'light';
         if (event.low) this.lowBlow(style, weight, event);
         else hitFx.play(style, weight, event.x, event.y, event.away);
         this.words.blow(weight, event, viewLeft);
+        if (counter) this.stamps.show(counter, event, viewLeft);
         if (heavy) {
           effects.shake(10, 3);
           if (!event.low) this.blood.bleed(event.x, event.y, event.away, BLEEDS.heavyHit);
@@ -85,6 +89,7 @@ export class FightFeedback {
         const style = this.styles[event.by];
         hitFx.play(style, 'ko', event.x, event.y, event.away);
         this.words.blow('ko', event, viewLeft);
+        if (event.counter) this.stamps.show(event.counter, event, viewLeft);
         if (event.low) this.lowBlow(style, 'heavy', event);
         else this.blood.bleed(event.x, event.y, event.away, BLEEDS.ko);
         // The final blow shakes the screen hard, then dies out over about 0.7 s.

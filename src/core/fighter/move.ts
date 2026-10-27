@@ -1,6 +1,6 @@
 import type { FighterTemplate } from '../config';
 import type { MoveData, MoveId } from '../move-data';
-import { groundMove, isCrouchingMove, moveDuration } from '../moves';
+import { groundMove, isCrouchingMove, moveDuration, moveOf } from '../moves';
 import { signed } from '../numbers';
 import { DASH_MOMENTUM_PERCENT, PUSHBACK_FRICTION, THROW_CONVERSION_FRAMES } from '../rules';
 import type { FighterAction, FighterState } from '../state';
@@ -11,7 +11,7 @@ import { enter, nextFrame } from './action';
  * is over: the fighter is back in neutral.
  */
 export function updateMove(fighter: FighterState, template: FighterTemplate): FighterState | null {
-  const move = fighter.move ? template.moves[fighter.move] : null;
+  const move = fighter.move ? moveOf(template, fighter.move) : null;
   if (!move) return null;
   const cancel = cancelMove(fighter, move, template);
   if (cancel) {
@@ -28,7 +28,7 @@ export function startGroundMove(
   template: FighterTemplate,
 ): FighterState {
   const started = { ...startAttack(fighter, 'attack', moveId), crouching: isCrouchingMove(moveId) };
-  return applyMotion(started, template.moves[moveId]);
+  return applyMotion(started, moveOf(template, moveId));
 }
 
 export function startAttack(
@@ -47,9 +47,10 @@ export function startAttack(
 
 /**
  * The move that interrupts the current one, if any: a normal turned into a grab when the
- * second button came a little late, a cancel allowed once the move has connected, or, from its
- * `freeCancelFrom` frame on, a cancel without contact (Riff's dash). The cancel replaces the
- * frame the move would play next.
+ * second button came a little late, once the move has connected its chain (L) or a cancel its
+ * `cancelInto` allows (docs/combat-v2.md §7.1), or, from its `freeCancelFrom` frame on, a cancel
+ * without contact (Riff's dash, into any normal). The cancel replaces the frame the move would
+ * play next.
  */
 function cancelMove(
   fighter: FighterState,
@@ -64,15 +65,25 @@ function cancelMove(
     return early ? 'grab' : null;
   }
   const free = move.freeCancelFrom !== undefined && fighter.actionFrame + 1 >= move.freeCancelFrom;
-  if (!(fighter.moveConnected || free) || !move.cancelInto) return null;
+  if (!(fighter.moveConnected || free)) return null;
 
+  const chain = fighter.moveConnected ? move.chain : undefined;
   const next = groundMove(
     command,
     fighter.bufferedInput,
     fighter.bufferedMotion,
     fighter.bufferedFacing,
+    template.moves,
+    chain,
   );
-  return next && move.cancelInto.includes(template.moves[next].kind) ? next : null;
+  if (!next) return null;
+  if (next === chain) return next;
+  const into = moveOf(template, next);
+  if (!move.cancelInto?.includes(into.kind)) return null;
+  // A blow cancelled into a normal never steps in (the Toprock, the Jab chassé): each step would
+  // win back the distance the blow pushed, ↓L, → + L, ↓L... a loop without end.
+  const stepsIn = into.kind === 'normal' && into.motion !== undefined;
+  return fighter.moveConnected && stepsIn ? null : next;
 }
 
 /**
@@ -86,11 +97,14 @@ function momentumOf(fighter: FighterState, move: MoveData): number {
 }
 
 /**
- * Carries the fighter by the move's motion on its current frame. On the frames without motion
- * the fighter stops, unless it glides on a cancelled dash's momentum, which friction slows down
+ * Carries the fighter by the move's motion on its current frame, up to its height on that frame
+ * for a leap (the Saut de l'ange really leaves the ground). On the frames without motion the
+ * fighter stops, unless it glides on a cancelled dash's momentum, which friction slows down
  * (the rule of the pushback slide). A move stops dead where its own motion ends.
  */
-function applyMotion(fighter: FighterState, move: MoveData): FighterState {
+function applyMotion(moving: FighterState, move: MoveData): FighterState {
+  const height = move.motion?.y?.[moving.actionFrame];
+  const fighter = height === undefined || height === moving.y ? moving : { ...moving, y: height };
   const dx = move.motion?.dx[fighter.actionFrame] ?? 0;
   if (dx !== 0) {
     const vx = signed(fighter.facing, dx);

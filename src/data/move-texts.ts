@@ -7,7 +7,7 @@
  * they play today, and change with them.
  */
 
-import type { MoveId } from '../core/move-data';
+import type { CoreMoveId, MoveId, OptionalMoveId } from '../core/move-data';
 import type { FighterId } from './roster';
 
 export interface MoveText {
@@ -20,16 +20,26 @@ export interface MoveText {
 export interface FighterTexts {
   /** Who the fighter is, in a line. */
   readonly title: string;
-  readonly moves: Readonly<Record<MoveId, MoveText>>;
+  /** Every move the fighter has: the core ones, and its optional ones. */
+  readonly moves: Readonly<Record<CoreMoveId, MoveText>> &
+    Readonly<Partial<Record<OptionalMoveId, MoveText>>>;
 }
 
-/** The order of a fighter's page: the specials first, then the normals, the grab, the dashes. */
+/**
+ * The order of a fighter's page: the specials first, then the normals (the chain after the jab,
+ * the direction normals after the plain ones), the grab, the dashes.
+ */
 export const MOVE_ORDER: readonly MoveId[] = [
   'special',
   'specialForward',
   'specialAntiAir',
   'standLight',
+  'chainLight',
+  'lightFinisher',
+  'forwardLight',
   'standHeavy',
+  'forwardHeavy',
+  'backHeavy',
   'crouchLight',
   'crouchHeavy',
   'jumpLight',
@@ -43,6 +53,11 @@ export const MOVE_ORDER: readonly MoveId[] = [
 ];
 
 const SPECIAL = 'S, ou ↓↘→ + un coup';
+const CHAIN = 'L, puis L (quand il touche)';
+const FINISHER = 'L, L, L';
+const FORWARD_LIGHT = 'Avant + L';
+const FORWARD_HEAVY = 'Avant + H';
+const BACK_HEAVY = 'Arrière + H';
 const ANTI_AIR = 'Bas + S, ou →↓↘ + un coup';
 const GRAB = 'PRISE, ou L + H';
 const PUMMEL = 'En tenant, L';
@@ -57,11 +72,11 @@ export const MOVE_TEXTS: Readonly<Record<FighterId, FighterTexts>> = {
     moves: {
       special: {
         input: SPECIAL,
-        text: "Nayo lance un disque de lumière qui file droit devant, à hauteur de poitrine. C'est un projectile : de loin, il t'oblige à sauter (et Nayo t'attend avec l'Uppercut) ou à parer. Il touche debout comme accroupi ; pour l'éviter, saute par-dessus. Un seul disque à la fois. C'est l'ancienne « onde sonore ».",
+        text: "Nayo lance un disque de lumière qui file droit devant, à hauteur de poitrine. C'est un projectile : de loin, il t'oblige à sauter (et Nayo t'attend avec l'Uppercut) ou à parer. Il touche debout comme accroupi ; pour l'éviter, saute par-dessus, ou, avec Riff, glisse dessous. Un seul disque à la fois. C'est l'ancienne « onde sonore ».",
       },
       specialForward: {
         input: 'Avant + S',
-        text: "Un coup de pied volant qui avance d'un grand pas. Parfait pour finir un combo. S'il est paré, Nayo se fait punir.",
+        text: "Un coup de pied volant qui avance d'un grand pas et met au sol. Parfait pour finir un combo. S'il est paré, Nayo se fait punir.",
       },
       specialAntiAir: {
         input: ANTI_AIR,
@@ -69,11 +84,31 @@ export const MOVE_TEXTS: Readonly<Record<FighterId, FighterTexts>> = {
       },
       standLight: {
         input: 'L',
-        text: "Son coup le plus rapide. S'il touche ou s'il est paré, enchaîne sur un autre coup ou un spécial.",
+        text: "Son coup le plus rapide. S'il touche ou s'il est paré, appuie encore sur L : le Cross suit. Il s'enchaîne aussi sur un autre coup ou un spécial.",
+      },
+      chainLight: {
+        input: CHAIN,
+        text: "Le « deux » du boxeur : le bras arrière part, l'épaule tourne, un petit pas en avant. Il prolonge le Direct et s'enchaîne sur un spécial, ou sur L pour la Mise au tapis.",
+      },
+      lightFinisher: {
+        input: FINISHER,
+        text: "Un crochet large qui envoie au sol : la fin de la chaîne, Direct, Cross, Mise au tapis. Facile à sortir, il met l'adversaire au tapis.",
+      },
+      forwardLight: {
+        input: FORWARD_LIGHT,
+        text: "Un pas glissé et un jab sec, garde haute : il s'approche en frappant, pour commencer un combo de loin. S'enchaîne sur un spécial ; paré, il reste presque sûr.",
       },
       standHeavy: {
         input: 'H',
         text: "Sa plus longue portée sans bouger. S'il touche ou s'il est paré, enchaîne sur un spécial.",
+      },
+      forwardHeavy: {
+        input: FORWARD_HEAVY,
+        text: "L'Overhand : il monte sur la pointe des pieds et le poing retombe par-dessus la garde, sur la tête. Un coup d'en haut, à parer debout : il ouvre une garde basse. Lent et visible, mélange-le avec le Balayage.",
+      },
+      backHeavy: {
+        input: BACK_HEAVY,
+        text: "Un uppercut court, poing presque à la verticale, contre les sauts. Il fait décoller l'adversaire : enchaîne aussitôt avec l'Uppercut (bas + S) pendant qu'il est en l'air. Il passe au-dessus d'un adversaire accroupi.",
       },
       crouchLight: {
         input: 'Bas + L',
@@ -81,7 +116,7 @@ export const MOVE_TEXTS: Readonly<Record<FighterId, FighterTexts>> = {
       },
       crouchHeavy: {
         input: 'Bas + H',
-        text: 'Fauche les jambes et met au sol. Se pare accroupi ; raté ou paré, il se punit.',
+        text: "Fauche les jambes : l'adversaire tombe sur le dos. Se pare accroupi ; raté ou paré, il se punit.",
       },
       jumpLight: { input: "En l'air, L", text: 'Un genou rapide en plein saut. Se pare debout.' },
       jumpHeavy: {
@@ -116,23 +151,43 @@ export const MOVE_TEXTS: Readonly<Record<FighterId, FighterTexts>> = {
     moves: {
       special: {
         input: SPECIAL,
-        text: "Elle fonce poing en avant et avale la distance d'un coup. Pour punir de loin ; parée, elle se fait punir.",
+        text: "Elle plonge et glisse pieds en avant, au ras du sol : elle passe sous le Vinyle de Nayo et sous les coups hauts. C'est un coup bas : pare-la accroupi. Si elle touche, tu tombes ; un coup bas l'arrête.",
       },
       specialForward: {
         input: 'Avant + S',
-        text: "Une vrille qui retombe sur ta tête. Coup d'en haut : pare-le debout.",
+        text: "Une vrille en l'air qui retombe sur ta tête. Coup d'en haut : pare-le debout. Il passe au-dessus des coups bas et des prises, mais un anti-air la fait tomber.",
       },
       specialAntiAir: {
         input: ANTI_AIR,
-        text: 'Un genou explosif vers le haut, contre les sauts. Invincible au départ ; raté ou paré, elle reste sans défense.',
+        text: "Un genou explosif vers le haut, contre les sauts. Il n'est invincible que contre les attaques en l'air : au sol, Riff n'a pas de coup magique pour se sortir d'une pression.",
       },
       standLight: {
         input: 'L',
-        text: "Le coup le plus rapide du jeu. S'il touche ou s'il est paré, enchaîne sur un autre coup ou un spécial.",
+        text: "Le coup le plus rapide du jeu. S'il touche ou s'il est paré, appuie encore sur L : le Revers suit. Il s'enchaîne aussi sur un autre coup ou un spécial.",
+      },
+      chainLight: {
+        input: CHAIN,
+        text: "Un revers tournant, la frange qui fouette, un petit pas en avant. Il prolonge le Jab et s'enchaîne sur un spécial, ou sur L pour le Swipe.",
+      },
+      lightFinisher: {
+        input: FINISHER,
+        text: "Le corps bascule, un coup de pied circulaire balaie l'adversaire et le met au sol : la fin de la chaîne, Jab, Revers, Swipe.",
+      },
+      forwardLight: {
+        input: FORWARD_LIGHT,
+        text: "Le Toprock : un pas de danse vers l'avant, puis un jab. Paré, il la laisse un poil en avance et s'enchaîne sur un autre coup : de quoi presser et tendre des pièges.",
       },
       standHeavy: {
         input: 'H',
         text: "Un coude tournant. S'il touche ou s'il est paré, enchaîne sur un spécial.",
+      },
+      forwardHeavy: {
+        input: FORWARD_HEAVY,
+        text: "Le Talon : la jambe monte tendue puis retombe en coup de hache. Un coup d'en haut, à parer debout, plus rapide que celui de Nayo.",
+      },
+      backHeavy: {
+        input: BACK_HEAVY,
+        text: "Un coup de pied en scorpion, la jambe par-dessus la tête, qui couvre aussi derrière elle. Il fait décoller : enchaîne aussitôt avec le Genou montant (bas + S). Il passe au-dessus d'un adversaire accroupi.",
       },
       crouchLight: {
         input: 'Bas + L',
@@ -140,9 +195,12 @@ export const MOVE_TEXTS: Readonly<Record<FighterId, FighterTexts>> = {
       },
       crouchHeavy: {
         input: 'Bas + H',
-        text: 'Fauche les jambes et met au sol. Se pare accroupi.',
+        text: "Un moulinet au sol qui fauche les jambes : l'adversaire tombe sur le dos. Se pare accroupi.",
       },
-      jumpLight: { input: "En l'air, L", text: 'Un genou rapide en plein saut. Se pare debout.' },
+      jumpLight: {
+        input: "En l'air, L",
+        text: "Un grand écart en plein saut. En sautant tout près, par-dessus l'adversaire, il le touche de dos : pare dans l'autre sens. Se pare debout.",
+      },
       jumpHeavy: {
         input: "En l'air, H",
         text: 'Un talon qui tombe sur la tête. Se pare debout.',
@@ -195,9 +253,20 @@ export const BASICS: readonly (readonly [string, string])[] = [
   ],
   [
     'Enchaîner',
-    "L → H → S : un coup léger qui touche (ou qui est paré) s'enchaîne sur un autre coup ou un spécial, un coup lourd sur un spécial",
+    "L → H → S. Ou L, L, L. Un coup léger qui touche (ou qui est paré) s'enchaîne sur un autre coup ou un spécial, un coup lourd sur un spécial ; L, L, L finit au sol",
   ],
-  ['Spéciaux', 'S seul, avant + S, bas + S : trois spéciaux par combattant (voir sa page)'],
+  [
+    'Directions',
+    "Avant + L : un coup qui avance. Avant + H : un coup d'en haut, à parer debout. Arrière + H fait décoller : enchaîne avec S pendant que l'adversaire est en l'air",
+  ],
+  [
+    'CONTRE',
+    "Frappe quelqu'un qui attaque : ça fait plus mal. PUNITION : frappe-le quand il rate son coup. Seul le premier coup d'un combo peut en être un",
+  ],
+  [
+    'Spéciaux',
+    'S seul, avant + S, bas + S : trois spéciaux par combattant (voir sa page). Même parés, ils grignotent un peu de vie, jamais le dernier point',
+  ],
   [
     'Manips',
     "↓↘→ + un coup donne aussi le spécial, →↓↘ + un coup l'anti-air, d'un seul geste. Jamais obligatoire, aucun bonus",

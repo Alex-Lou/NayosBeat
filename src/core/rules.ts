@@ -64,6 +64,21 @@ export const COMBO_SCALING_STEP = 10;
 export const COMBO_SCALING_FLOOR = 50;
 
 /**
+ * A blow on a fighter attacking (CONTRE) or recovering (PUNITION) hurts this much more, stuns
+ * longer (unless it knocks down) and freezes the game longer: reading the opponent pays, and
+ * only a combo's first hit can be one (the rest land on a fighter in hitstun).
+ */
+export const COUNTER_DAMAGE_PERCENT = 20;
+export const COUNTER_HITSTUN = 4;
+export const COUNTER_HITSTOP = 3;
+
+/** A special blocked still takes this share of its damage (the chip), never the last point. */
+export const SPECIAL_CHIP_PERCENT = 15;
+
+/** A hitstun this long plays the whole reaction; a shorter one, its quick version. */
+export const HEAVY_REACTION_HITSTUN = 18;
+
+/**
  * A tech (both players grabbing on the same tick, or the held one breaking free): nobody is
  * thrown, both are pushed apart at this speed and reel for THROW_TECH_STUN ticks (the `tech`
  * strip).

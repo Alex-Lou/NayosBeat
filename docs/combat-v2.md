@@ -583,6 +583,8 @@ Règle de casting : les **mêmes directions** pour les mêmes rôles (§5.1), se
 
 Seuls les coups de type `movement` peuvent s'annuler en Prise (règle de validation). Aucun coup ne s'annule en Prise.
 
+Une annulation sur contact en normal ne donne jamais un coup qui avance (Jab chassé, Toprock) : chaque pas reprendrait la distance du recul, et ↓L, → + L, ↓L… tournerait sans fin. Le dash de Riff, qui n'a rien touché, s'annule en n'importe quel normal.
+
 ### 7.2 Chaîne L, L, L
 
 `chain` est une donnée du coup (`chain: 'chainLight'`), lue dans l'annulation : L appuyé pendant un coup qui a `chain` et qui a touché ou été gardé donne ce coup. Aucun compteur d'état. **Garantie** : L, L, L passe à toute distance où le premier L touche, debout comme accroupi, pour les deux personnages, si chaque appui tombe assez tôt pour garder le combo (test). Pour cela, le deuxième coup avance de 10 px et repousse peu (1,5 px/tic), et le coup final avance de 10 à 12 px.
@@ -635,7 +637,7 @@ Tabassage et lancers : dégâts fixes, sans scaling ni bonus. Il n'y a **aucun**
 | Riff | Dash (annulé à f8) → Jab → Coude → Genou montant | 25 + 63 + 76 = **164**, KD |
 | Riff | ←H (lance) → Genou montant (jongle) | 55 + 85 = **140**, KD |
 | Riff | Talon **en CONTRE** ⇢ Jab → Revers → Swipe | 72 + 22 + 24 + 31 = **149**, KD |
-| Riff | Ciseau aérien **en cross-up** → ↓L → ↓L → Glissade | 25 + 18 + 16 + 49 = **108**, KD |
+| Riff | Ciseau aérien **en cross-up** (sur un Nayo accroupi) → ↓L → ↓L → Glissade | 25 + 18 + 16 + 49 = **108**, KD |
 | Riff | Prise, 3 coups de tête, Ciseaux | **115** |
 
 Soit 9 à 22 % de la vie adverse : un combo compte, une erreur ne tue pas.
@@ -794,7 +796,7 @@ Colonnes : **S/A/R** = démarrage / actif / récupération (total). **Dg** = dé
 | forwardLight | → + L | Jab chassé | 7/3/10 (20) | 35 | 15/11 | 8 | 2,5 | mid | 10..42 / 46..58 | +14 px f0–6 | +3/−1 | 69 | spécial |
 | standHeavy | H | Crochet | 8/4/16 (28) | 80 | 20/14 | 12 | 3,5 | mid | **10..52** / 44..62 | — | +1/−5 | 65 | spécial |
 | forwardHeavy | → + H | Overhand | 19/3/15 (37) | 70 | 18/13 | 12 | 3 | **overhead** | 12..40 / 36..72 | +8 px f6–13 | +1/−4 (CONTRE +5) | 61 | — |
-| backHeavy | ← + H | Remontant | 7/4/17 (28) | 65 | lance (5, juggle)/14 | 11 | 3 | mid | 4..30 / 56..104 | — | lance / −6 | 43 (rate l'accroupi) | spécial |
+| backHeavy | ← + H | Remontant | 7/4/17 (28) | 65 | lance (5, juggle)/14 | 11 | 3 | mid | 4..30 / **58**..104 | — | lance / −6 | 43 (rate l'accroupi) | spécial |
 | crouchLight | ↓ + L | Coup bas | 4/2/8 (14) | 25 | 12/8 | 7 | 2,5 | low | 12..38 / 4..14 | — | +3/−1 | 51 | normal, spécial |
 | crouchHeavy | ↓ + H | Balayage | 9/3/20 (32) | 70 | KD trip (2)/14 | 11 | 3,5 | low | **12..51** / 2..14 | — | KD +25 / −8 | 64 | — |
 | jumpLight | air L | Genou sauté | 4/6/6 | 30 | 14/10 | 8 | 2 | overhead | **4..28** / 10..26 | — | — | 41 | — |
@@ -811,9 +813,9 @@ Colonnes : **S/A/R** = démarrage / actif / récupération (total). **Dg** = dé
 | chainLight | L après Jab | Revers | 5/3/10 (18) | 30 | 16/11 | 8 | 1,5 | mid | 8..38 / 44..58 | +10 px f0–4 | +4/−1 | 61 | spécial ; chain → lightFinisher |
 | lightFinisher | L après Revers | Swipe | 7/3/18 (28) | 45 | KD (2,5)/11 | 10 | 4 | mid | 8..42 / 30..56 | +10 px f0–6 | KD +29 / −9 | 65 | — |
 | forwardLight | → + L | Toprock | 8/2/10 (20) | 30 | 15/12 | 8 | 2,5 | mid | 8..32 / 44..58 | +20 px f0–7 | +4/**+1** | 65 | normal, spécial |
-| standHeavy | H | Coup de coude | 6/3/14 (23) | 70 | 19/13 | 11 | 3 | mid | 9..43 / 40..58 | — | +3/−3 | 56 | spécial |
-| forwardHeavy | → + H | Talon | 17/3/14 (34) | 60 | 17/12 | 11 | 3 | **overhead** | 8..34 / 34..70 | +15 px f4–13 | +1/−4 (CONTRE +5) | 62 | — |
-| backHeavy | ← + H | Retourné | 6/5/15 (26) | 55 | lance (5, juggle)/13 | 10 | 3 | mid | **−12..22** / 56..100 | — | lance / −6 | 35 (rate l'accroupi) | spécial |
+| standHeavy | H | Coup de coude | 6/3/14 (23) | 70 | 19/13 | 11 | **2** | mid | 9..43 / 40..58 | — | +3/−3 | 56 | spécial |
+| forwardHeavy | → + H | Talon | 17/3/14 (34) | 60 | 17/12 | 11 | **2,5** | **overhead** | 8..34 / 34..70 | +15 px f4–13 | +1/−4 (CONTRE +5) | 62 | — |
+| backHeavy | ← + H | Retourné | 6/5/15 (26) | 55 | lance (5, juggle)/13 | 10 | 3 | mid | **−12..22** / **58**..100 | — | lance / −6 | 35 (rate l'accroupi) | spécial |
 | crouchLight | ↓ + L | Coup bas | 3/2/7 (12) | 20 | 12/8 | 6 | 2 | low | 10..32 / 4..14 | — | +4/0 | 45 | normal, spécial |
 | crouchHeavy | ↓ + H | Windmill | 7/3/18 (28) | 65 | KD trip (2)/13 | 10 | 3 | low | 10..44 / 2..14 | — | KD +27 / −7 | 57 | — |
 | jumpLight | air L | **Ciseau aérien** | 3/6/5 | 25 | 13/9 | 7 | 2 | overhead | **−14..26** / 6..24 | — | — | 39, et derrière | — |
@@ -854,9 +856,9 @@ Rappels du pipeline : 1 px de sprite = ½ px monde, cellule de 256, ancre en (12
 | Planche | Images | Tics | Rôle |
 |---|---|---|---|
 | `hitHigh` / `hitMid` / `hitLow` | 5 / 5 / 5 | léger (hitstun < 18) : images 0, 1, 4 ; lourd : 0 à 4 ; dernière image calée sur la fin du stun (`endFrames: 1`) | tête rejetée / plié au ventre / jambe touchée qui plie, saut sur un pied. Remplacent `hitStand` |
-| `hitCrouch` | 3 | existante | accroupi |
+| `hitCrouch` | 3 | 3, 4, puis tenue | accroupi (les images accroupies de l'ancienne planche `hit`) |
 | `trip` | 4 | 2, 2, 2, puis tenue (vol de 7 tics) | jambes fauchées, chute sur le dos ; enchaîne sur `knockdown` |
-| `knockdown` / `getup` | 6 / 5 | 3, 3, 4, 6, 6, 8 (30) puis 2 × 5 (10) = 40 | découpage de l'actuel `knockdown` (9 images) + 2 nouvelles |
+| `knockdown` / `getup` | 4 / 5 | 3, 3, 4, 20 (30) puis 2 × 5 (10) = 40 | découpage de l'ancien `knockdown` (9 images) : la chute et le sol, puis le relevé |
 | `held` | 2 | 4, 4 en boucle, l'image 1 d'abord ; elle rejoue « encaisse » dès le tic d'impact de chaque tabassage, tenue pendant son arrêt sur image | victime tenue qui lutte |
 | `thrownBack` | 4 | 3, 3, 4, 4 : image pour image avec le `throwBack` jusqu'au lâcher (tic 14), derrière l'attaquant dès le tic 6. Pendant le vol, la dernière image reste dessinée là où il a été lâché (seule la hauteur suit la pushbox), puis `airHit` 2 et 3 à sa vraie place aux deux derniers tics (clip `thrownFall`), puis la chute : aucun saut à la passation | soulevée et retournée par-dessus l'épaule (arc dessiné dans la cellule) |
 | `tech` | 4 | 3, 3, 4, 4 (14 = étourdissement du dégagement) | mains écartées, recul |

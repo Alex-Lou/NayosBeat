@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { applyHit, findHit } from '../../src/core/combat';
 import { px } from '../../src/core/constants';
 import { Input } from '../../src/core/input';
+import type { MoveId } from '../../src/core/move-data';
+import { moveOf } from '../../src/core/moves';
 import type { FighterState } from '../../src/core/state';
 import { NAYO as T } from '../../src/data/fighters/nayo';
 import { facingOff, makeFighter, MIRROR_MATCH, run } from './helpers';
@@ -9,8 +11,8 @@ import { facingOff, makeFighter, MIRROR_MATCH, run } from './helpers';
 const LIGHT = T.moves.standLight;
 
 /** Attacker at 400 px facing right, in the first active tick of `move`. */
-function attacking(move: keyof typeof T.moves = 'standLight') {
-  return makeFighter({ action: 'attack', move, actionFrame: T.moves[move].startup });
+function attacking(move: MoveId = 'standLight') {
+  return makeFighter({ action: 'attack', move, actionFrame: moveOf(T, move).startup });
 }
 
 describe('findHit', () => {

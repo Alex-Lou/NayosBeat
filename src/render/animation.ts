@@ -1,4 +1,4 @@
-import type { Clip, ClipId, FighterArt } from '../art/types';
+import { clipOf, type Clip, type ClipId, type FighterArt } from '../art/types';
 import type { MatchConfig } from '../core/config';
 import { flightTicks } from '../core/fighter/air';
 import { contactDistance } from '../core/hold-pair';
@@ -68,6 +68,38 @@ export function showFighter(
   }
   shown.clip = clipIdOf(fighter, player, state.round);
   shown.tick = clipTickOf(shown.clip, fighter, state.round);
+  if (shown.clip === 'knockdown') standUp(fighter, art, shown);
+  else if (fighter.action === 'hitstun' || fighter.action === 'blockstun') {
+    shown.tick = stunTick(clipOf(art, shown.clip), shown.tick, fighter.stunTotal);
+  }
+}
+
+/**
+ * The last ticks of a knockdown play the getup (docs/combat-v2.md §3.8): the fighter stands up
+ * as the knockdown ends, the clip of the fall and the floor before.
+ */
+function standUp(fighter: FighterState, art: FighterArt, shown: Shown): void {
+  const getup = sumTicks(art.clips.getup, 0);
+  if (fighter.stunFrames > getup) return;
+  shown.clip = 'getup';
+  shown.tick = getup - fighter.stunFrames;
+}
+
+/**
+ * The tick of a stun's clip `tick` ticks into a stun of `stun` ticks: with `endFrames`, its last
+ * frames end with the stun (§11.4), the ones before keep their pace, or, on a stun too short
+ * for the clip, the whole clip is squeezed into it. Past the stun (the proximity guard holds
+ * the block), the last frame.
+ */
+export function stunTick(clip: Clip, tick: number, stun: number): number {
+  const ending = clip.endFrames ?? 0;
+  if (ending === 0 || stun <= 0) return tick;
+  const total = sumTicks(clip, 0);
+  if (tick >= stun) return total;
+  const tail = sumTicks(clip, clip.ticks.length - ending);
+  const head = total - tail;
+  if (stun < total) return Math.trunc((tick * total) / stun);
+  return tick < head ? tick : head + Math.trunc(((tick - head) * tail) / (stun - head));
 }
 
 /** `fighter` held or flying from the thrower's throwBack: fills `shown`, or tells it is not. */
@@ -125,7 +157,6 @@ function actionClipOf(fighter: FighterState): ClipId {
     case 'crouch':
     case 'preJump':
     case 'landing':
-    case 'airHit':
     case 'knockdown':
     case 'ko':
     case 'held':
@@ -138,11 +169,30 @@ function actionClipOf(fighter: FighterState): ClipId {
     case 'attack':
     case 'airAttack':
       return fighter.move ?? 'idle';
+    case 'airHit':
+      return fighter.reaction === 'trip' ? 'trip' : 'airHit';
     case 'hitstun':
-      return fighter.crouching ? 'hitCrouch' : 'hitStand';
+      return hitClipOf(fighter);
     case 'blockstun':
     case 'guard':
       return fighter.crouching ? 'blockCrouch' : 'blockStand';
+  }
+}
+
+/**
+ * Hit standing: the head, the belly or a leg, by where the blow landed (§9.4); the whole
+ * reaction for a long stun, its quick version otherwise. Crouching, the crouching one.
+ */
+function hitClipOf(fighter: FighterState): ClipId {
+  if (fighter.crouching) return 'hitCrouch';
+  const heavy = fighter.reactionHeavy;
+  switch (fighter.reaction) {
+    case 'high':
+      return heavy ? 'hitHigh' : 'hitHighLight';
+    case 'low':
+      return heavy ? 'hitLow' : 'hitLowLight';
+    default:
+      return heavy ? 'hitMid' : 'hitMidLight';
   }
 }
 

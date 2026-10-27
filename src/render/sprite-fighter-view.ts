@@ -1,8 +1,8 @@
 import type Phaser from 'phaser';
-import type { FighterArt } from '../art/types';
+import { clipOf, type FighterArt } from '../art/types';
 import type { FighterTemplate, MatchConfig } from '../core/config';
 import { toPx } from '../core/constants';
-import { isActiveFrame } from '../core/moves';
+import { isActiveFrame, moveOf } from '../core/moves';
 import type { FighterState, GameState } from '../core/state';
 import { AnchoredSprite } from './anchored-sprite';
 import { clipFrameAt, showFighter, type Shown } from './animation';
@@ -65,7 +65,7 @@ export class SpriteFighterView {
     const round = state.round;
     const shown = this.shown;
     showFighter(state, this.player, this.config, this.art, shown);
-    const clip = this.art.clips[shown.clip];
+    const clip = clipOf(this.art, shown.clip);
     const frame = clip.frames[clipFrameAt(clip, shown.tick)] ?? 0;
 
     const x = toPx(shown.x);
@@ -89,6 +89,6 @@ export class SpriteFighterView {
 
 /** On a frame of a dash that moves the fighter (the "active" frames of a movement). */
 function isGliding(fighter: FighterState, template: FighterTemplate): boolean {
-  const move = fighter.move ? template.moves[fighter.move] : null;
+  const move = fighter.move ? moveOf(template, fighter.move) : null;
   return move?.kind === 'movement' && isActiveFrame(move, fighter.actionFrame);
 }

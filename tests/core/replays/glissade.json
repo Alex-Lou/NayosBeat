@@ -1,0 +1,19 @@
+{
+  "description": "Glissade (§5.5): Riff slides under the Vinyle and sweeps Nayo, caught recovering (PUNITION); then his Coup bas stops the next Glissade along the floor.",
+  "fighters": ["nayo", "riff"],
+  "inputs": [
+    [90, "", ""],
+    [15, "right", "left"],
+    [1, "special", ""],
+    [11, "", ""],
+    [1, "", "special"],
+    [120, "", ""],
+    [30, "right", "left"],
+    [1, "", "special"],
+    [3, "", ""],
+    [1, "down+light", ""],
+    [2, "down", ""],
+    [90, "", ""]
+  ],
+  "hash": "f4d51100"
+}

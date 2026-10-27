@@ -2,15 +2,20 @@ import type Phaser from 'phaser';
 import { toPx } from '../core/constants';
 import { MAX_CLOSE_UP } from './camera-framing';
 import { DEPTH } from './depth';
+import { COMIC_FONT, comicDrop, comicFill, INK } from './comic-lettering';
 import type { HitStyle } from './hit-styles';
-import { COMIC_FONT } from './onomatopoeia';
 import { VIEW_SIZE } from './view';
 
 /**
- * What a stamp says (docs/combat-v2.md §4.5): a tech broke free, a grab caught a fighter
- * recovering. In the comic font, which has the accented capitals the pixel font lacks.
+ * What a stamp says (docs/combat-v2.md §4.5, §7.4): a tech broke free; a blow or a grab caught
+ * a fighter recovering (PUNITION), a blow caught one attacking (CONTRE). In the comic font of
+ * the sound words, which has the accented capitals the pixel font lacks.
  */
-export const STAMP_TEXTS = { tech: 'DÉGAGEMENT !', punish: 'PUNITION !' } as const;
+export const STAMP_TEXTS = {
+  tech: 'DÉGAGEMENT !',
+  punish: 'PUNITION !',
+  counter: 'CONTRE !',
+} as const;
 export type StampKind = keyof typeof STAMP_TEXTS;
 
 const POOL_SIZE = 4;
@@ -19,11 +24,10 @@ const SIZE = 15;
 const LIFE = 54;
 const SLAM_FRAMES = 5;
 const FADE_FRAMES = 14;
-/** Above the point of the grab, in world pixels. */
+/** Above the point of the impact, in world pixels: over the sound word that pops there. */
 const OVER = 46;
 const TILT = -0.07;
 const DROP = 2;
-const INK = '#150b24';
 
 interface Stamp {
   readonly text: Phaser.GameObjects.Text;
@@ -31,8 +35,8 @@ interface Stamp {
 }
 
 /**
- * The stamps of the hold, « DÉGAGEMENT ! » and « PUNITION ! »: slammed over the pair in the
- * colors of who earned it, then faded. A fixed pool, each text drawn once per stamp: nothing is
+ * The stamps, « DÉGAGEMENT ! », « PUNITION ! » and « CONTRE ! »: slammed over the impact in the
+ * colors of who earned it, lettered like the sound words, then faded. A fixed pool, each text drawn once per stamp: nothing is
  * created during a fight.
  */
 export class Stamps {
@@ -81,10 +85,8 @@ export class Stamps {
     const style = this.styles[at.by];
     const { text } = stamp;
     // Restyled without a redraw, then drawn once with its words.
-    const offset = DROP * this.resolution;
-    const drop = hex(style.energy);
-    const shadow = { offsetX: offset, offsetY: offset, color: drop, stroke: true, fill: false };
-    text.style.setStyle({ color: hex(style.core), shadow }, false);
+    const shadow = comicDrop(DROP, this.resolution, style);
+    text.style.setStyle({ color: comicFill(text, SIZE, style), shadow }, false);
     if (text.text === STAMP_TEXTS[kind]) text.updateText();
     else text.setText(STAMP_TEXTS[kind]);
     const half = text.width / 2 + 2;
@@ -117,8 +119,4 @@ export class Stamps {
       .setAlpha(Math.min(1, life / FADE_FRAMES))
       .setVisible(true);
   }
-}
-
-function hex(color: number): string {
-  return `#${color.toString(16).padStart(6, '0')}`;
 }

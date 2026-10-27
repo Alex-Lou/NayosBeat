@@ -4,6 +4,7 @@ import { activeMove, canBeGrabbed, canBeHit, hurtboxesOf } from '../core/combat'
 import type { Box, MatchConfig } from '../core/config';
 import { toPx } from '../core/constants';
 import { pushboxOf } from '../core/fighter';
+import { moveOf } from '../core/moves';
 import type { Facing, GameState } from '../core/state';
 import { DEPTH } from './depth';
 
@@ -62,7 +63,7 @@ export class BoxOverlay {
       if (hitbox) this.fillHitbox(hitbox, x, y, facing);
     }
     for (const projectile of state.projectiles) {
-      const spec = this.config.fighters[projectile.owner].moves[projectile.move].projectile;
+      const spec = moveOf(this.config.fighters[projectile.owner], projectile.move).projectile;
       if (spec) this.fillHitbox(spec.hitbox, projectile.x, 0, projectile.facing);
     }
   }

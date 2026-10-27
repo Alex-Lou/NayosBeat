@@ -6,6 +6,7 @@ import { px } from '../../src/core/constants';
 import { Input, type InputBits } from '../../src/core/input';
 import type { GameState } from '../../src/core/state';
 import { step } from '../../src/core/step';
+import { playCpuMatches } from '../core/cpu-match';
 import { facingOff, fightState, MATCH, MIRROR_MATCH } from '../core/helpers';
 
 /** Plays `ticks` ticks with player 2 driven by the CPU and player 1 by `player1`. */
@@ -83,6 +84,25 @@ describe('cpu', () => {
   it('finishes a match against another CPU', () => {
     const state = cpuVersusCpu('hard', 'hard', 99 * 60 * 3 + 2000, 11);
     expect(state.round.phase).toBe('matchEnd');
+  });
+
+  it('never gets stuck with the command table of combat v2: it attacks every 3 s at most', () => {
+    // §13.4: in a fight (out of a hold, a knockdown, the round's end), each CPU starts a move.
+    for (const level of ['easy', 'normal', 'hard'] as const) {
+      const quiet: [number, number] = [0, 0];
+      const longest: [number, number] = [0, 0];
+      playCpuMatches(6000, MATCH, [level, level], (state) => {
+        for (const player of [0, 1] as const) {
+          const fighter = state.fighters[player];
+          const busy =
+            fighter.move !== null || state.hold !== null || state.round.phase !== 'fight';
+          const down = fighter.action === 'knockdown' || fighter.action === 'airHit';
+          quiet[player] = busy || down ? 0 : quiet[player] + 1;
+          longest[player] = Math.max(longest[player], quiet[player]);
+        }
+      });
+      expect(Math.max(...longest), level).toBeLessThan(180);
+    }
   });
 
   it('beats an easy CPU more often when set to hard', () => {
