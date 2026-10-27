@@ -66,7 +66,13 @@ async function start(): Promise<void> {
     width: RENDER_SIZE.width,
     height: RENDER_SIZE.height,
     // Pixel art kept crisp at any zoom, even fractional (the fight camera closes in smoothly).
-    render: { smoothPixelArt: true },
+    // One texture per draw call, a workaround for Phaser 4.2: its shader picks a batched quad's
+    // texture by testing its interpolated texture index with `==`. A rasterizer that does not
+    // interpolate that constant exactly (SwiftShader, headless Chromium's software GL, for any
+    // index but 0, 1, 2, 4, 8...) matches no texture there and cuts holes in the quad: the comic
+    // words, last in a crowded batch, came out torn. A fight frame takes 10 to 17 draw calls
+    // instead of 5 to 7.
+    render: { smoothPixelArt: true, maxTextures: 1 },
     // The raw frame time: the fixed timesteps of the fight already bound the catch-up. Phaser's
     // smoothing clamps it to 60 Hz for 120 frames after every resume, which would run the game
     // at half speed on a 30 Hz screen.
