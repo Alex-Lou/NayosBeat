@@ -105,6 +105,12 @@ const DETAILS = {
   dustDeep: { main: '#2c2840' },
   dust: { main: '#4a4566' },
   dustLight: { main: '#77719a' },
+  /** Tazz's beige floor dust (puffs and grit kicked up by the feet), deep to light. */
+  sandDeep: { main: '#8c7860' },
+  sand: { main: '#bfab8e' },
+  sandLight: { main: '#e6d8c2' },
+  /** The dark smoky heart of a heavy hit spark (Tazz's hit VFX), on both colorways. */
+  strikeSmoke: { main: '#3a3246' },
 } as const satisfies Record<string, { readonly main: string; readonly alt?: string }>;
 
 export type DetailName = keyof typeof DETAILS;

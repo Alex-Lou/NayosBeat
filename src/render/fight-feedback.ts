@@ -39,7 +39,7 @@ export class FightFeedback {
         const style = this.styles[event.by];
         hitFx.play(style, heavy ? 'heavy' : 'light', event.x, event.y, event.away);
         if (heavy) {
-          effects.shake(8, 2);
+          effects.shake(10, 3);
           this.blood.bleed(event.x, event.y, event.away, BLEEDS.heavyHit);
         }
         sfx.play(heavy ? 'heavyHit' : 'lightHit');
@@ -53,7 +53,8 @@ export class FightFeedback {
         const style = this.styles[event.by];
         hitFx.play(style, 'ko', event.x, event.y, event.away);
         this.blood.bleed(event.x, event.y, event.away, BLEEDS.ko);
-        effects.shake(24, 3);
+        // The final blow shakes the screen hard, then dies out over about 0.7 s.
+        effects.shake(42, 6);
         // The final flash takes the winner's color, a light tint of it on the whole screen.
         effects.flash(12, style.energy);
         this.slowMotionFrames = KO_SLOW_MOTION_FRAMES;

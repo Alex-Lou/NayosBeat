@@ -101,69 +101,73 @@ function tumble(pose: Tumble): Pose {
 }
 
 export const POSES: readonly Pose[] = [
-  // 0 · Jolt (held through the hitstop): the head whips back, the arms fly apart, hands open,
-  // the feet just leaving the floor.
+  // 0 · Jolt (held through the hitstop), out of the high guard: the head whips back, the chest
+  // is thrown open, the arms fly apart, hands open; the wide stance leaves the floor, the rear
+  // foot dragged in under him.
   {
-    hip: at(-5, 37),
-    torso: -20,
-    head: -20,
+    hip: at(-5.4, 37.4),
+    torso: -15,
+    head: -16,
     shrug: 0,
     twist: 0.4,
-    nearFoot: { x: 7, y: 5.8, angle: 10 },
-    farFoot: { x: -10.5, y: 6.4, angle: -22 },
-    nearFist: at(9.6, 44.6),
-    farFist: at(-24.4, 63.6),
+    nearFoot: { x: 7.4, y: 6.2, angle: 14 },
+    farFoot: { x: -17.5, y: 7.4, angle: -26 },
+    nearFist: at(5, 44.5),
+    farFist: at(-28, 60),
     nearHand: 'open',
     farHand: 'open',
     face: 'hurt',
   },
-  // 1 · Launched: tipping over backward, the lead arm flung up, the rear arm dragging behind
-  // the head, the lead knee tucking, the rear leg trailing below.
+  // 1 · Launched: tipping over backward, the arms flung wide (the lead one up, the rear one out
+  // behind the head), the lead knee tucking, the rear leg trailing below.
   tumble({
-    hip: at(-6.5, 29),
+    hip: at(-6.5, 22),
     torso: -10,
     head: -14,
-    spin: -36,
+    spin: -40,
     shrug: 0,
     twist: 0.7,
     nearArm: { upper: 35, lower: 62 },
-    farArm: { upper: 165, lower: 100 },
-    nearLeg: { upper: 55, lower: -70, toes: -30 },
-    farLeg: { upper: -5, lower: -105, toes: -50 },
+    farArm: { upper: 172, lower: 138 },
+    nearLeg: { upper: 58, lower: -80, toes: -35 },
+    farLeg: { upper: 16, lower: -98, toes: -45 },
     nearHand: 'open',
     farHand: 'open',
     face: 'hurt',
   }),
-  // 2 · Turning over, low: the rear leg swings up, the lead knee stays tucked, the rear arm is
-  // thrown back over the head, the lead arm flung up.
+  // 2 · Turning over: the rear leg swings up, the lead knee stays tucked (thigh rocked back, toes
+  // pulled in), the rear arm is thrown back over the head, the lead arm flung up, loose at the
+  // elbow, the open hand floating.
   tumble({
-    hip: at(-8, 9),
+    hip: at(-8, 12),
     torso: -8,
     head: -12,
-    spin: -64,
+    spin: -62,
     shrug: 0,
     twist: 0.2,
-    nearArm: { upper: 72, lower: 45 },
+    nearArm: { upper: 60, lower: 95 },
     farArm: { upper: 168, lower: 150 },
-    nearLeg: { upper: 88, lower: -5, toes: 10 },
+    nearLeg: { upper: 100, lower: -5, toes: 10 },
     farLeg: { upper: 60, lower: -60, toes: -25 },
     nearHand: 'open',
     farHand: 'open',
     face: 'hurt',
   }),
-  // 3 · Falling flat on his back, legs up, the rear arm reaching for the floor behind the head
-  // (held until the landing).
+  // 3 · Falling flat on his back, legs up (the rear thigh rocked back, toes in), the lead arm
+  // limp, bent, the rear arm reaching for the floor behind the head, the head lifted off it,
+  // wincing (held until the landing: the face reads, the knockdown's impact then slams the head
+  // back).
   tumble({
     hip: at(-8.5, 6.8),
     torso: -4,
-    head: -8,
+    head: 26,
     spin: -78,
     shrug: 0,
     twist: -0.3,
-    nearArm: { upper: 82, lower: 102 },
+    nearArm: { upper: 65, lower: 110 },
     farArm: { upper: 162, lower: 198 },
     nearLeg: { upper: 105, lower: 15, toes: 20 },
-    farLeg: { upper: 68, lower: 50, toes: 50 },
+    farLeg: { upper: 80, lower: 50, toes: 50 },
     nearHand: 'open',
     farHand: 'open',
     face: 'hurt',
