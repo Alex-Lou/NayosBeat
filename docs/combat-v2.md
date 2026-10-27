@@ -307,10 +307,12 @@ Au relevé, la pushbox debout revient ; si le sauteur la chevauche encore, la s�
 
 | Sauteur → cible | Debout | Accroupi | Couché |
 |---|---|---|---|
-| Nayo → Nayo | ≤ 57 px | ≤ 65 px | ≤ 76 px |
-| Nayo → Riff | ≤ 59 px | ≤ 65 px | ≤ 76 px |
-| Riff → Nayo | ≤ 51 px | ≤ 64 px | ≤ 78 px |
-| Riff → Riff | ≤ 57 px | ≤ 67 px | ≤ 78 px |
+| Nayo → Nayo | ≤ 57 px | ≤ 65 px | ≤ 70 px |
+| Nayo → Riff | ≤ 59 px | ≤ 65 px | ≤ 70 px |
+| Riff → Nayo | ≤ 51 px | ≤ 64 px | ≤ 72 px |
+| Riff → Riff | ≤ 57 px | ≤ 67 px | ≤ 72 px |
+
+Au-dessus d'un adversaire couché, le corps reste sous la pushbox aérienne : la portée est la longueur du saut (70,4 px pour Nayo, 72,8 pour Riff, arrondie au pixel par le moteur). Les premières valeurs (76 et 78) venaient des anciennes vitesses de saut.
 
 Pour comparaison, le moteur actuel ne traverse jamais un adversaire debout, mais traverse déjà un adversaire accroupi (jusqu'à 55 à 61 px avec les sauts actuels). Ce tableau est figé par `tests/core/crossup.test.ts` sur le vrai moteur ; la pushbox aérienne est le seul réglage.
 
