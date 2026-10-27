@@ -1,5 +1,7 @@
 import { at, GUARD, lifted, planted, type Pose } from './common.ts';
 
+export const ANIMATED: boolean = true;
+
 /**
  * idle: 8 frames of 6 ticks, looping (0.8 s): toprock on the spot, a b-girl's Indian step done
  * in her guard. The lead heel peels up (1), the foot swings back across (2) and plants crossed
