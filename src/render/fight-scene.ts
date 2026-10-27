@@ -88,6 +88,12 @@ export class FightScene extends Phaser.Scene {
   private config!: MatchConfig;
   private state!: GameState;
   private timestep!: FixedTimestep;
+  /**
+   * Visual effects count steps of 1/60 s (their durations are written in 60 Hz frames), not
+   * display frames: a KO lasts as long on a 144 Hz screen as on a 60 Hz one. Unscaled by slow
+   * motion, which only slows the simulation.
+   */
+  private visualClock!: FixedTimestep;
   /** Player 2's CPU, unless a human plays it. */
   private cpu: CpuState | undefined;
   private arts: readonly [FighterArt | undefined, FighterArt | undefined] = [undefined, undefined];
@@ -124,6 +130,7 @@ export class FightScene extends Phaser.Scene {
       if (art) assertValidArt(art, this.config.fighters[player]);
     }
     this.timestep = new FixedTimestep(1000 / TICK_RATE, MAX_TICKS_PER_FRAME);
+    this.visualClock = new FixedTimestep(1000 / TICK_RATE, MAX_TICKS_PER_FRAME);
     const behavior = player2Behavior(data.setup);
     this.cpu = behavior === 'human' ? undefined : createCpu(1, behavior, Date.now() | 0);
     this.paused = false;
@@ -163,7 +170,7 @@ export class FightScene extends Phaser.Scene {
       this.dispose();
     });
     this.addScreenCamera();
-    this.syncViews(this.runtime);
+    this.syncViews(this.runtime, 0);
   }
 
   /**
@@ -211,6 +218,7 @@ export class FightScene extends Phaser.Scene {
       return;
     }
 
+    const visualFrames = this.visualClock.advance(deltaMs);
     const ticks = this.timestep.advance(deltaMs * runtime.feedback.timeScale());
     const startMs = runtime.debugOverlay ? performance.now() : 0;
 
@@ -224,16 +232,18 @@ export class FightScene extends Phaser.Scene {
         const previous = this.state;
         this.state = step(previous, this.tickInputs, this.config);
         detectEvents(previous, this.state, this.config, this.tickEvents);
-        for (const event of this.tickEvents) runtime.feedback.react(event);
+        const viewLeft = toPx(this.state.cameraX) - VIEW_SIZE.width / 2;
+        runtime.feedback.beginTick();
+        for (const event of this.tickEvents) runtime.feedback.react(event, viewLeft);
       }
     }
-    runtime.feedback.update();
+    runtime.feedback.update(visualFrames);
 
     runtime.debugOverlay?.record(
       { frameMs: deltaMs, ticks, tickTimeMs: performance.now() - startMs },
       this.describeState,
     );
-    this.syncViews(runtime);
+    this.syncViews(runtime, deltaMs / (1000 / TICK_RATE));
     this.reportMatchEnd();
   }
 
@@ -251,7 +261,8 @@ export class FightScene extends Phaser.Scene {
     this.sceneData.onMatchEnd(matchWinner(round));
   }
 
-  private syncViews(runtime: Runtime): void {
+  /** `elapsed`: time since the previous frame, in 1/60 s (for the camera's easing). */
+  private syncViews(runtime: Runtime, elapsed: number): void {
     const [viewA, viewB] = runtime.fighterViews;
     const [a, b] = this.state.fighters;
     this.front = frontFighter(this.front, a, b);
@@ -271,6 +282,7 @@ export class FightScene extends Phaser.Scene {
       viewLeft: toPx(this.state.cameraX) - VIEW_SIZE.width / 2,
       groundY: GROUND_Y,
       closeUp: this.closeUp,
+      elapsed,
     });
     this.closeUp = framing.closeUp;
     this.cameras.main

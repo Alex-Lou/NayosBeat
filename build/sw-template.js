@@ -2,8 +2,8 @@
  * Service worker of the installed game (PWA), filled in at build time by
  * build/service-worker.ts: VERSION changes with every build, PRECACHE lists every file of it.
  * The whole game is cached on install, so it plays offline. A new version waits: a running
- * fight never loses its files. The page asks it to take over at the next launch (see
- * src/app/service-worker.ts).
+ * fight never loses its files. The page asks it to take over when nothing is being played (see
+ * src/app/service-worker.ts), and only when no other window of the game still runs the old one.
  */
 
 const VERSION = '__VERSION__';
@@ -13,7 +13,9 @@ const CACHE = `nayosbeat-${VERSION}`;
 const SLOW_NETWORK_MS = 4000;
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(PRECACHE)));
+  // Past the HTTP cache: a page cached a few minutes ago would point to the previous build.
+  const requests = PRECACHE.map((url) => new Request(url, { cache: 'reload' }));
+  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(requests)));
 });
 
 self.addEventListener('activate', (event) => {
@@ -31,7 +33,15 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('message', (event) => {
-  if (event.data === 'activate') void self.skipWaiting();
+  if (event.data !== 'activate') return;
+  // Taking over deletes the old cache: never under another window still playing the old build.
+  // The origin may host other sites: only this game's windows count.
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windows) => {
+      const ours = windows.filter((client) => client.url.startsWith(self.registration.scope));
+      return ours.length <= 1 ? self.skipWaiting() : undefined;
+    }),
+  );
 });
 
 self.addEventListener('fetch', (event) => {

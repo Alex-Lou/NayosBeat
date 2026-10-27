@@ -42,6 +42,7 @@ export class App {
   private setup: MatchSetup = DEFAULT_SETUP;
   /** The main menu is on screen (it is redrawn when installing becomes possible). */
   private onMainMenu = false;
+  private onTitle = false;
 
   constructor(
     private readonly root: HTMLElement,
@@ -58,8 +59,14 @@ export class App {
     this.showTitle();
   }
 
+  /** Nothing is being played or chosen: an update of the game may reload it now. */
+  isIdle(): boolean {
+    return this.onTitle || this.onMainMenu;
+  }
+
   private show(screen: { dispose(): void }): void {
     this.onMainMenu = false;
+    this.onTitle = false;
     this.screen?.dispose();
     this.screen = screen;
   }
@@ -74,6 +81,7 @@ export class App {
         this.showMainMenu();
       }),
     );
+    this.onTitle = true;
   }
 
   private showMainMenu(initialIndex = 0): void {

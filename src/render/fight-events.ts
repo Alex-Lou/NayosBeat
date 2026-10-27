@@ -1,8 +1,8 @@
 import { intersects, type WorldBox } from '../core/boxes';
 import { activeMove, hitboxInWorld, hurtboxInWorld } from '../core/combat';
-import type { MatchConfig } from '../core/config';
+import type { MatchConfig, MoveData } from '../core/config';
 import { px } from '../core/constants';
-import { projectileBox } from '../core/projectiles';
+import { projectileBox, projectileData } from '../core/projectiles';
 import type { FighterState, GameState, RoundPhase } from '../core/state';
 
 /**
@@ -20,7 +20,7 @@ interface Contact {
 }
 
 export type FightEvent =
-  | ({ readonly type: 'hit'; readonly damage: number } & Contact)
+  | ({ readonly type: 'hit'; readonly damage: number; readonly heavy: boolean } & Contact)
   | ({ readonly type: 'block' } & Contact)
   | ({ readonly type: 'ko' } & Contact)
   | { readonly type: 'attack'; readonly heavy: boolean }
@@ -29,7 +29,10 @@ export type FightEvent =
   | { readonly type: 'land' }
   | { readonly type: 'phase'; readonly phase: RoundPhase };
 
-/** Above this damage, a hit counts as heavy (bigger sparks, screen shake). */
+/**
+ * A move this strong counts as heavy (bigger sparks, shake, heavy sounds), by its own damage:
+ * the swing and the hit agree, and a heavy blow stays heavy late in a scaled combo.
+ */
 export const HEAVY_HIT_DAMAGE = 60;
 
 /** Without a striking box: in front of the defender, toward the attacker, at mid-body height. */
@@ -53,14 +56,18 @@ export function detectEvents(
     const before = prev.fighters[player];
     const after = next.fighters[player];
     const attacker = player === 0 ? 1 : 0;
-    const contact = contactPoint(prev, next, config, player, attacker);
 
+    // The contact is only worked out for the ticks where something landed.
     if (after.action === 'ko' && before.action !== 'ko') {
-      events.push({ type: 'ko', ...contact });
-    } else if (after.health < before.health) {
-      events.push({ type: 'hit', ...contact, damage: before.health - after.health });
+      events.push({ type: 'ko', ...contactPoint(prev, next, config, player, attacker).contact });
+    } else if (after.health < before.health || startedHitstun(before, after)) {
+      // In training, health stops at 1: a hit is also told by the stun it starts.
+      const { contact, move } = contactPoint(prev, next, config, player, attacker);
+      const damage = before.health - after.health;
+      const heavy = (move?.damage ?? damage) >= HEAVY_HIT_DAMAGE;
+      events.push({ type: 'hit', ...contact, damage, heavy });
     } else if (startedBlocking(before, after)) {
-      events.push({ type: 'block', ...contact });
+      events.push({ type: 'block', ...contactPoint(prev, next, config, player, attacker).contact });
     }
 
     if (after.move && after.actionFrame === 0 && startedNewMove(before, after)) {
@@ -83,6 +90,14 @@ function startedBlocking(before: FighterState, after: FighterState): boolean {
   return before.action !== 'blockstun' || before.actionFrame > 0;
 }
 
+/** A new hit stun: applyHit always restarts the frame counter, a second hit included. */
+function startedHitstun(before: FighterState, after: FighterState): boolean {
+  if ((after.action !== 'hitstun' && after.action !== 'airHit') || after.actionFrame !== 0) {
+    return false;
+  }
+  return before.action !== after.action || before.actionFrame > 0;
+}
+
 function startedNewMove(before: FighterState, after: FighterState): boolean {
   return before.move !== after.move || before.actionFrame > 0;
 }
@@ -98,36 +113,43 @@ function contactPoint(
   config: MatchConfig,
   defenderIndex: 0 | 1,
   by: 0 | 1,
-): Contact {
+): { contact: Contact; move: MoveData | null } {
   const defender = next.fighters[defenderIndex];
   const attacker = next.fighters[by];
   const toward = attacker.x >= defender.x ? 1 : -1;
   const away = toward === 1 ? -1 : 1;
   const body = hurtboxInWorld(defender, config.fighters[defenderIndex]);
-  const strike = strikingBox(prev, attacker, body, config, by);
-  if (strike) return { ...middleOfOverlap(strike, body), away, by };
+  const strike = strikeOf(prev, attacker, body, config, by);
+  if (strike)
+    return { contact: { ...middleOfOverlap(strike.box, body), away, by }, move: strike.move };
 
   const height = defender.crouching ? CONTACT_HEIGHT_CROUCHING : CONTACT_HEIGHT_STANDING;
-  return { x: defender.x + toward * CONTACT_OFFSET_X, y: defender.y + height, away, by };
+  const contact: Contact = {
+    x: defender.x + toward * CONTACT_OFFSET_X,
+    y: defender.y + height,
+    away,
+    by,
+  };
+  return { contact, move: null };
 }
 
-/** The attacker's active hitbox, else its projectile that reached the defender's body. */
-function strikingBox(
+/** What struck: the attacker's active hitbox, else its projectile that reached the body. */
+function strikeOf(
   prev: GameState,
   attacker: FighterState,
   body: WorldBox,
   config: MatchConfig,
   by: 0 | 1,
-): WorldBox | null {
+): { box: WorldBox; move: MoveData } | null {
   const move = activeMove(attacker, config.fighters[by]);
   if (move?.hitbox) {
-    const hitbox = hitboxInWorld(attacker, move.hitbox);
-    if (intersects(hitbox, body)) return hitbox;
+    const box = hitboxInWorld(attacker, move.hitbox);
+    if (intersects(box, body)) return { box, move };
   }
   for (const projectile of prev.projectiles) {
     if (projectile.owner !== by) continue;
     const box = projectileBox(projectile, config);
-    if (intersects(box, body)) return box;
+    if (intersects(box, body)) return { box, move: projectileData(projectile, config) };
   }
   return null;
 }

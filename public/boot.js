@@ -5,7 +5,10 @@
  * boot screen once the game has started.
  */
 (function () {
+  /** Once every file has arrived, starting takes well under this. */
   var STALL_MS = 12000;
+  /** A file still missing after this long is not coming (a slow network is waited for). */
+  var GIVE_UP_MS = 60000;
 
   function booting() {
     return document.getElementById('boot') !== null;
@@ -19,15 +22,21 @@
     if (repair) repair.hidden = false;
   }
 
+  /** Forgets this game's install only: the origin may host other sites with their own. */
   function repair() {
+    var scope = new URL('./', location.href).href;
     var steps = [];
     if ('serviceWorker' in navigator) {
       steps.push(
         navigator.serviceWorker.getRegistrations().then(function (registrations) {
           return Promise.all(
-            registrations.map(function (registration) {
-              return registration.unregister();
-            }),
+            registrations
+              .filter(function (registration) {
+                return registration.scope === scope;
+              })
+              .map(function (registration) {
+                return registration.unregister();
+              }),
           );
         }),
       );
@@ -36,9 +45,13 @@
       steps.push(
         caches.keys().then(function (keys) {
           return Promise.all(
-            keys.map(function (key) {
-              return caches.delete(key);
-            }),
+            keys
+              .filter(function (key) {
+                return key.indexOf('nayosbeat-') === 0;
+              })
+              .map(function (key) {
+                return caches.delete(key);
+              }),
           );
         }),
       );
@@ -66,9 +79,16 @@
       'Le jeu n’a pas pu démarrer : ' + (reason && reason.message ? reason.message : reason) + '.',
     );
   });
-  setTimeout(function () {
+  var startedAt = Date.now();
+  function watch() {
+    if (!booting()) return;
+    if (document.readyState !== 'complete' && Date.now() - startedAt < GIVE_UP_MS) {
+      setTimeout(watch, 2000);
+      return;
+    }
     fail('Le jeu met trop de temps à démarrer.');
-  }, STALL_MS);
+  }
+  setTimeout(watch, STALL_MS);
   document.addEventListener('click', function (event) {
     if (event.target instanceof Element && event.target.id === 'boot-repair') repair();
   });

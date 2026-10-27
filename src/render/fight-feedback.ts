@@ -2,7 +2,7 @@ import type Phaser from 'phaser';
 import type { Sfx } from '../audio/sfx';
 import { BLEEDS, Blood } from './blood';
 import { Effects } from './effects';
-import { HEAVY_HIT_DAMAGE, type FightEvent } from './fight-events';
+import type { FightEvent } from './fight-events';
 import { HitFx } from './hit-fx';
 import type { HitStyle } from './hit-styles';
 import { Onomatopoeia } from './onomatopoeia';
@@ -34,14 +34,20 @@ export class FightFeedback {
     this.words = new Onomatopoeia(scene, groundY, styles);
   }
 
-  react(event: FightEvent): void {
+  /** Call before the events of each simulation tick: blows of the same tick trade fairly. */
+  beginTick(): void {
+    this.words.beginTick();
+  }
+
+  /** `viewLeft`: left edge of the simulation camera, in world pixels (the words stay inside). */
+  react(event: FightEvent, viewLeft: number): void {
     const { effects, hitFx, sfx } = this;
     switch (event.type) {
       case 'hit': {
-        const heavy = event.damage >= HEAVY_HIT_DAMAGE;
+        const { heavy } = event;
         const style = this.styles[event.by];
         hitFx.play(style, heavy ? 'heavy' : 'light', event.x, event.y, event.away);
-        this.words.blow(heavy ? 'heavy' : 'light', event.by, event.x, event.y, event.away);
+        this.words.blow(heavy ? 'heavy' : 'light', event, viewLeft);
         if (heavy) {
           effects.shake(10, 3);
           this.blood.bleed(event.x, event.y, event.away, BLEEDS.heavyHit);
@@ -56,7 +62,7 @@ export class FightFeedback {
       case 'ko': {
         const style = this.styles[event.by];
         hitFx.play(style, 'ko', event.x, event.y, event.away);
-        this.words.blow('ko', event.by, event.x, event.y, event.away);
+        this.words.blow('ko', event, viewLeft);
         this.blood.bleed(event.x, event.y, event.away, BLEEDS.ko);
         // The final blow shakes the screen hard, then dies out over about 0.7 s.
         effects.shake(42, 6);
@@ -88,19 +94,23 @@ export class FightFeedback {
     }
   }
 
-  /** How fast game time runs this display frame (slower right after a KO). Call once per frame. */
+  /** How fast game time runs (slower right after a KO). */
   timeScale(): number {
-    if (this.slowMotionFrames === 0) return 1;
-    this.slowMotionFrames -= 1;
-    return KO_SLOW_MOTION_SCALE;
+    return this.slowMotionFrames > 0 ? KO_SLOW_MOTION_SCALE : 1;
   }
 
-  /** Advances visual effects by one display frame. */
-  update(): void {
-    this.effects.update();
-    this.hitFx.update();
-    this.blood.update();
-    this.words.update();
+  /**
+   * Advances the visual effects by `frames` steps of 1/60 s (see the visual clock of
+   * FightScene): they last as long on a 144 Hz screen as on a 60 Hz one.
+   */
+  update(frames: number): void {
+    for (let i = 0; i < frames; i++) {
+      this.effects.update();
+      this.hitFx.update();
+      this.blood.update();
+      this.words.update();
+    }
+    this.slowMotionFrames = Math.max(0, this.slowMotionFrames - frames);
   }
 
   get shakeX(): number {

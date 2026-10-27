@@ -91,7 +91,9 @@ export class Hud {
 
   /** Keeps the last combo's result on screen until the next one starts. */
   private updateTrainingInfo(info: Phaser.GameObjects.Text, dummy: FighterState): void {
-    if (dummy.comboCount > 0 && this.dummyComboBefore === 0) {
+    // A new combo; a dummy hit again on the tick it recovers goes from N straight to 1.
+    const fresh = this.dummyComboBefore === 0 || dummy.comboCount < this.dummyComboBefore;
+    if (dummy.comboCount > 0 && fresh) {
       this.comboStartHealth = this.dummyHealthBefore;
     }
     if (dummy.comboCount > 0) {

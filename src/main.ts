@@ -33,6 +33,9 @@ function currentZoom(): number {
   return computeZoom(viewport(), RENDER_SIZE, window.devicePixelRatio);
 }
 
+/** Set once the game has started: the service worker may only reload it on the menus. */
+let app: App | undefined;
+
 function uiRoot(): HTMLElement {
   const root = document.getElementById('ui');
   if (!root) throw new Error('Missing #ui element');
@@ -64,6 +67,10 @@ async function start(): Promise<void> {
     height: RENDER_SIZE.height,
     // Pixel art kept crisp at any zoom, even fractional (the fight camera closes in smoothly).
     render: { smoothPixelArt: true },
+    // The raw frame time: the fixed timesteps of the fight already bound the catch-up. Phaser's
+    // smoothing clamps it to 60 Hz for 120 frames after every resume, which would run the game
+    // at half speed on a 30 Hz screen.
+    fps: { smoothStep: false },
     // Centering is done in CSS; Phaser only sizes the canvas.
     scale: { mode: Phaser.Scale.NONE, zoom: currentZoom() },
     // Devices are read by `input/`; Phaser's own listeners would only duplicate the work.
@@ -88,10 +95,14 @@ async function start(): Promise<void> {
   const startApp = (): void => {
     // The game has started: the boot screen (index.html, public/boot.js) is no longer needed.
     document.getElementById('boot')?.remove();
-    new App(uiRoot(), game, new Sfx()).start();
+    app = new App(uiRoot(), game, new Sfx());
+    app.start();
   };
-  if (game.isRunning) startApp();
-  else game.events.once(Phaser.Core.Events.READY, startApp);
+  // Phaser announces READY just before it starts its loop: the app starts right after, so it
+  // can put the loop to sleep on the menus (otherwise the canvas redraws behind them for good).
+  game.events.once(Phaser.Core.Events.READY, () => {
+    queueMicrotask(startApp);
+  });
 }
 
 /** A failure at startup must not leave a silent blank page: the boot screen tells it. */
@@ -111,5 +122,7 @@ watchInstallPrompt();
 
 // The installed game (PWA) plays offline; the service worker exists only in production builds.
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
-  window.addEventListener('load', registerServiceWorker);
+  window.addEventListener('load', () => {
+    registerServiceWorker(() => app?.isIdle() ?? true);
+  });
 }
