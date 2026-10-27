@@ -37,6 +37,8 @@ const BUTTONS: Readonly<Record<string, InputBits>> = {
   light: Input.Light,
   heavy: Input.Heavy,
   special: Input.Special,
+  grab: Input.Grab,
+  dash: Input.Dash,
 };
 
 export function parseInput(written: string): InputBits {
@@ -101,6 +103,10 @@ export const FIGHTER_FIELDS = [
   'bufferedMotion',
   'bufferedFacing',
   'directionHistory',
+  'tapDirection',
+  'tapFrames',
+  'tapReleased',
+  'throwImmuneFrames',
   'comboCount',
 ] as const satisfies readonly (keyof FighterState)[];
 

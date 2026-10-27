@@ -1,23 +1,26 @@
 import type { FighterTemplate } from '../../core/config';
 import { px } from '../../core/constants';
-import { advance, box, HEAVY_CANCELS, LIGHT_CANCELS } from './shared';
+import { advance, box, dash, HEAVY_CANCELS, LIGHT_CANCELS } from './shared';
 
 /** Nayo, the all-rounder: good range, a projectile and a reliable anti-air. */
 export const NAYO: FighterTemplate = {
   name: 'Nayo',
   maxHealth: 1000,
-  walkForwardSpeed: px(1.2),
-  walkBackSpeed: px(1),
-  // ~38 airborne ticks, ~85 px high: clears a standing opponent.
-  jumpVelocity: px(9.5),
-  gravity: px(0.5),
-  jumpForwardSpeed: px(1.8),
-  jumpBackSpeed: px(1.6),
+  walkForwardSpeed: px(1.5),
+  walkBackSpeed: px(1.2),
+  // 31 ticks above the ground, 79.6 px high, 70 px forward: a higher jump than Riff's, which
+  // clears projectiles better (feet above 48 px for 20 ticks).
+  jumpVelocity: px(10.5),
+  gravity: px(0.65),
+  jumpForwardSpeed: px(2.2),
+  jumpBackSpeed: px(1.9),
   preJumpFrames: 4,
   landingFrames: 3,
   knockdownFrames: 40,
   standingPushbox: { width: px(28), height: px(80) },
   crouchingPushbox: { width: px(32), height: px(50) },
+  airPushbox: { width: px(24), height: px(44), lift: px(30) },
+  lyingPushbox: { width: px(28), height: px(20) },
   standingHurtboxes: [box(-16, 0, 32, 84)],
   crouchingHurtboxes: [box(-18, 0, 36, 54)],
   airHurtboxes: [box(-16, 4, 32, 68)],
@@ -170,5 +173,16 @@ export const NAYO: FighterTemplate = {
       hitbox: box(6, 20, 20, 40),
       knockdown: true,
     },
+    // A boxer's shuffle: not cancellable, a buffered move comes out on frame 18.
+    dashForward: dash({ name: 'Pas chassé', duration: 18, frames: 14, distancePx: 56 }),
+    // Grab-proof on frames 0-11 (the answer to the grab), but strikes still hit it.
+    dashBack: dash({
+      name: 'Retrait',
+      duration: 22,
+      frames: 16,
+      distancePx: 44,
+      back: true,
+      throwInvincible: { from: 0, to: 12 },
+    }),
   },
 };

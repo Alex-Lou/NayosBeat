@@ -14,6 +14,8 @@ export const CORE_MOVE_IDS = [
   'specialForward',
   'specialAntiAir',
   'grab',
+  'dashForward',
+  'dashBack',
 ] as const;
 
 export type CoreMoveId = (typeof CORE_MOVE_IDS)[number];
@@ -22,8 +24,15 @@ export type MoveId = CoreMoveId;
 /** Moves performed in the air (a projectile there would never be fired). */
 export const AIR_MOVE_IDS: readonly MoveId[] = ['jumpLight', 'jumpHeavy'];
 
-/** Decides what a move can cancel into, and how it is blocked (grabs cannot be). */
-export type MoveKind = 'normal' | 'special' | 'grab';
+/**
+ * Decides what a move can cancel into, and how it is blocked (grabs cannot be). A `movement`
+ * (dash, backdash) carries the fighter and never strikes: the CPU does not guard against it, and
+ * a fighter hit during one is not caught attacking.
+ */
+export type MoveKind = 'normal' | 'special' | 'grab' | 'movement';
+
+/** The moves of kind `movement`, and only they. */
+export const MOVEMENT_MOVE_IDS: readonly MoveId[] = ['dashForward', 'dashBack'];
 
 /** How a move must be blocked: low = crouching, overhead = standing, mid = either. */
 export type Guard = 'mid' | 'low' | 'overhead';
@@ -69,16 +78,26 @@ export interface MoveData {
   /** Initial slide speed given to the defender (it then slows down with friction). */
   readonly pushback: number;
   readonly guard: Guard;
-  /** Strike hitbox. Absent for projectile moves: the projectile carries its own. */
+  /** Strike hitbox. Absent for projectile moves (the projectile carries its own) and movements. */
   readonly hitbox?: Box;
   /** Spawned on the first active tick. */
   readonly projectile?: ProjectileData;
-  /** Move kinds this move can be cancelled into, once it has hit or been blocked. */
+  /**
+   * Move kinds this move can be cancelled into, once it has hit or been blocked (or from
+   * `freeCancelFrom` on, without contact).
+   */
   readonly cancelInto?: readonly MoveKind[];
+  /**
+   * From this action frame on, the move can be cancelled without having touched anything (Riff's
+   * dash): the move cancelled into keeps part of its speed (DASH_MOMENTUM_PERCENT).
+   */
+  readonly freeCancelFrom?: number;
   /** Movement during the move. */
   readonly motion?: RootMotion;
   /** Frames during which strikes, projectiles and grabs whiff. */
   readonly invincible?: FrameRange;
+  /** Frames during which grabs whiff, strikes do not (the backdash). */
+  readonly throwInvincible?: FrameRange;
   /** Sends the defender to the ground on hit, even when standing. */
   readonly knockdown?: boolean;
 }

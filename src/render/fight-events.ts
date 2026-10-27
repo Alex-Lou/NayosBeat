@@ -15,11 +15,18 @@ interface Impact {
   readonly by: 0 | 1;
 }
 
+/** A blow that went through the guard: `grab` when it was one (the victim's pad shakes). */
+interface Blow extends Impact {
+  readonly grab: boolean;
+}
+
 export type FightEvent =
-  | ({ readonly type: 'hit'; readonly damage: number; readonly heavy: boolean } & Impact)
+  | ({ readonly type: 'hit'; readonly damage: number; readonly heavy: boolean } & Blow)
   | ({ readonly type: 'block' } & Impact)
-  | ({ readonly type: 'ko' } & Impact)
+  | ({ readonly type: 'ko' } & Blow)
   | { readonly type: 'attack'; readonly heavy: boolean }
+  /** A dash sets off from `x` (stage sub-pixels), toward `toward` (1: right). */
+  | { readonly type: 'dash'; readonly x: number; readonly toward: 1 | -1 }
   | { readonly type: 'projectile' }
   | { readonly type: 'jump' }
   | { readonly type: 'land' }
@@ -30,6 +37,12 @@ export type FightEvent =
  * the swing and the hit agree, and a heavy blow stays heavy late in a scaled combo.
  */
 export const HEAVY_HIT_DAMAGE = 60;
+
+/**
+ * Vibration, in ms, of a player's phone: being grabbed (the cue to break free is felt in the
+ * hand) and a heavy blow taken. Short: the thumbs play on that screen.
+ */
+export const HAPTICS = { grabbed: 30, heavyHit: 15 } as const;
 
 const PLAYERS = [0, 1] as const;
 
@@ -55,7 +68,14 @@ export function detectEvents(
 
     if (after.move && after.actionFrame === 0 && startedNewMove(before, after)) {
       const move = config.fighters[player].moves[after.move];
-      events.push({ type: 'attack', heavy: move.damage >= HEAVY_HIT_DAMAGE });
+      if (move.kind === 'movement') {
+        // A backdash moves away from the side it faces.
+        const back = move.motion?.dx.some((dx) => dx < 0) ?? false;
+        const toward = back === (after.facing === 1) ? -1 : 1;
+        events.push({ type: 'dash', x: after.x, toward });
+      } else {
+        events.push({ type: 'attack', heavy: move.damage >= HEAVY_HIT_DAMAGE });
+      }
     }
     if (after.action === 'air' && before.action === 'preJump') events.push({ type: 'jump' });
     if (after.action === 'landing' && before.action !== 'landing') events.push({ type: 'land' });
@@ -87,11 +107,20 @@ function contactEvent(contact: Contact, next: GameState, config: MatchConfig): F
     by: contact.by,
   };
   if (contact.kind === 'block') return { type: 'block', ...impact };
-  if (defender.health === 0) return { type: 'ko', ...impact };
-  const heavy = config.fighters[contact.by].moves[contact.move].damage >= HEAVY_HIT_DAMAGE;
-  return { type: 'hit', ...impact, damage: contact.damage, heavy };
+  const move = config.fighters[contact.by].moves[contact.move];
+  const grab = move.kind === 'grab';
+  if (defender.health === 0) return { type: 'ko', ...impact, grab };
+  const heavy = move.damage >= HEAVY_HIT_DAMAGE;
+  return { type: 'hit', ...impact, damage: contact.damage, heavy, grab };
 }
 
 function startedNewMove(before: FighterState, after: FighterState): boolean {
   return before.move !== after.move || before.actionFrame > 0;
+}
+
+/** How long `player`'s phone vibrates for an event: blows it takes only, 0 for none. */
+export function vibrationFor(event: FightEvent, player: 0 | 1): number {
+  if ((event.type !== 'hit' && event.type !== 'ko') || event.by === player) return 0;
+  if (event.grab) return HAPTICS.grabbed;
+  return event.type === 'ko' || event.heavy ? HAPTICS.heavyHit : 0;
 }

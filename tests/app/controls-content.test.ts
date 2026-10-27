@@ -9,15 +9,15 @@ function titles(devices: { touch: boolean; gamepad: boolean }): string[] {
 
 describe('helpSections', () => {
   it('shows the touch controls on a phone, not the keyboard', () => {
-    expect(titles({ touch: true, gamepad: false })).toEqual(['Tactile', 'Combattre']);
+    expect(titles({ touch: true, gamepad: false })).toEqual(['Tactile', 'Les bases']);
   });
 
   it('shows the keyboard on a computer', () => {
-    expect(titles({ touch: false, gamepad: false })).toEqual(['Clavier', 'Combattre']);
+    expect(titles({ touch: false, gamepad: false })).toEqual(['Clavier', 'Les bases']);
   });
 
   it('adds the gamepad when one is connected', () => {
-    expect(titles({ touch: false, gamepad: true })).toEqual(['Clavier', 'Manette', 'Combattre']);
+    expect(titles({ touch: false, gamepad: true })).toEqual(['Clavier', 'Manette', 'Les bases']);
   });
 
   it('names the special moves from the fighter data', () => {

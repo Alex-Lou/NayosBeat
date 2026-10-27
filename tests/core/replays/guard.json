@@ -1,0 +1,21 @@
+{
+  "description": "Proximity guard: holding back against a coming blow stops in guard, standing then crouching, and blocks it; walking back when nothing comes; a guard against a projectile; a guard taken by the grab button.",
+  "fighters": ["nayo", "nayo"],
+  "inputs": [
+    [90, "", ""],
+    [40, "right", "left"],
+    [1, "left", "heavy"],
+    [30, "left", ""],
+    [45, "", ""],
+    [1, "down+left", "down+heavy"],
+    [40, "down+left", ""],
+    [20, "left", ""],
+    [40, "right", "left"],
+    [1, "", "grab"],
+    [60, "left", ""],
+    [60, "left", "right"],
+    [1, "left", "special"],
+    [130, "left", ""]
+  ],
+  "hash": "2c60cce8"
+}

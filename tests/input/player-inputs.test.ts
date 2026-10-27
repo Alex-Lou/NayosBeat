@@ -69,4 +69,26 @@ describe('PlayerInputs', () => {
     const [, player2] = inputs.read([pad(3), pad(7, [PadButton.North])]);
     expect(player2).toBe(Input.Heavy);
   });
+
+  it('passes on a dash or grab press from the keyboard, even shorter than a frame', () => {
+    const { target, inputs } = setup();
+    target.dispatchEvent(key('keydown', 'ShiftLeft'));
+    target.dispatchEvent(key('keyup', 'ShiftLeft'));
+    target.dispatchEvent(key('keydown', 'Numpad4'));
+    target.dispatchEvent(key('keyup', 'Numpad4'));
+    expect(inputs.read([])).toEqual([Input.Dash, Input.Grab]);
+  });
+
+  it('passes on the dash and grab bumpers of each pad', () => {
+    const { inputs } = setup([pad(0), pad(1)]);
+    const pads = [pad(0, [PadButton.LeftBumper]), pad(1, [PadButton.RightBumper])];
+    expect(inputs.read(pads)).toEqual([Input.Dash, Input.Grab]);
+  });
+
+  it('keeps a held dash or grab from a menu until released', () => {
+    const { target, inputs } = setup();
+    target.dispatchEvent(key('keydown', 'KeyI'));
+    inputs.reset([]);
+    expect(inputs.read([])[0]).toBe(0);
+  });
 });

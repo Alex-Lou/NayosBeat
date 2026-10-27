@@ -23,13 +23,7 @@ export interface MenuOptions {
 
 export type MenuFeedback = 'move' | 'confirm' | 'back';
 
-import {
-  connectedGamepads,
-  isPressed,
-  PadButton,
-  STICK_THRESHOLD,
-  stickAxis,
-} from '../input/gamepad';
+import { connectedGamepads, isPressed, PadButton, STICK_PRESS, stickAxis } from '../input/gamepad';
 
 type MenuAction = 'up' | 'down' | 'confirm' | 'back';
 
@@ -178,8 +172,8 @@ function readPad(): number {
   let bits = 0;
   for (const pad of connectedGamepads()) {
     const stickY = stickAxis(pad, 1);
-    if (isPressed(pad, PadButton.DpadUp) || stickY < -STICK_THRESHOLD) bits |= PAD_UP;
-    if (isPressed(pad, PadButton.DpadDown) || stickY > STICK_THRESHOLD) bits |= PAD_DOWN;
+    if (isPressed(pad, PadButton.DpadUp) || stickY < -STICK_PRESS) bits |= PAD_UP;
+    if (isPressed(pad, PadButton.DpadDown) || stickY > STICK_PRESS) bits |= PAD_DOWN;
     if (isPressed(pad, PadButton.South) || isPressed(pad, PadButton.Start)) bits |= PAD_CONFIRM;
     if (isPressed(pad, PadButton.East)) bits |= PAD_BACK;
   }

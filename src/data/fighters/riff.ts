@@ -1,23 +1,26 @@
 import type { FighterTemplate } from '../../core/config';
 import { px } from '../../core/constants';
-import { advance, box, HEAVY_CANCELS, LIGHT_CANCELS } from './shared';
+import { advance, box, dash, HEAVY_CANCELS, LIGHT_CANCELS } from './shared';
 
 /** Riff, the rushdown: quicker moves, a rushing punch, an overhead, less health. */
 export const RIFF: FighterTemplate = {
   name: 'Riff',
   maxHealth: 900,
-  walkForwardSpeed: px(1.6),
-  walkBackSpeed: px(1.2),
-  // A quicker, lower jump: 33 ticks above the ground, ~77 px high.
-  jumpVelocity: px(9.5),
-  gravity: px(0.55),
-  jumpForwardSpeed: px(2.2),
-  jumpBackSpeed: px(1.8),
+  walkForwardSpeed: px(1.9),
+  walkBackSpeed: px(1.4),
+  // A quicker, lower jump: 27 ticks above the ground, 66.5 px high, 73 px forward. Jump-ins
+  // hard to catch on reaction: the rushdown's identity.
+  jumpVelocity: px(10),
+  gravity: px(0.7),
+  jumpForwardSpeed: px(2.6),
+  jumpBackSpeed: px(2.1),
   preJumpFrames: 3,
-  landingFrames: 3,
+  landingFrames: 2,
   knockdownFrames: 40,
   standingPushbox: { width: px(26), height: px(74) },
   crouchingPushbox: { width: px(30), height: px(46) },
+  airPushbox: { width: px(22), height: px(40), lift: px(26) },
+  lyingPushbox: { width: px(26), height: px(20) },
   standingHurtboxes: [box(-15, 0, 30, 78)],
   crouchingHurtboxes: [box(-17, 0, 34, 50)],
   airHurtboxes: [box(-15, 4, 30, 62)],
@@ -172,5 +175,23 @@ export const RIFF: FighterTemplate = {
       hitbox: box(6, 20, 20, 40),
       knockdown: true,
     },
+    // Footwork: from frame 8 (53 px covered) it cancels into a normal or the grab, which glides
+    // on with half the dash's speed. No run state: the cancel does that job.
+    dashForward: dash({
+      name: 'Footwork',
+      duration: 16,
+      frames: 12,
+      distancePx: 64,
+      freeCancelFrom: 8,
+    }),
+    // Grab-proof on frames 0-10 (the answer to the grab), but strikes still hit it.
+    dashBack: dash({
+      name: 'Retrait',
+      duration: 20,
+      frames: 14,
+      distancePx: 48,
+      back: true,
+      throwInvincible: { from: 0, to: 11 },
+    }),
   },
 };

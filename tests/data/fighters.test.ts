@@ -74,6 +74,67 @@ describe('fighter templates', () => {
     }
   });
 
+  it('keeps the dashes movements: they never strike, and only they cancel freely', () => {
+    const { moves } = NAYO;
+    const { dashForward, standLight } = moves;
+    const hitbox = standLight.hitbox;
+    if (!hitbox) throw new Error('The jab must have a hitbox');
+    const cases: [string, FighterTemplate][] = [
+      [
+        'dash with a hitbox',
+        {
+          ...NAYO,
+          moves: { ...moves, dashForward: { ...dashForward, hitbox } },
+        },
+      ],
+      [
+        'dash that deals damage',
+        { ...NAYO, moves: { ...moves, dashForward: { ...dashForward, damage: 10 } } },
+      ],
+      [
+        'jab as a movement',
+        { ...NAYO, moves: { ...moves, standLight: { ...standLight, kind: 'movement' } } },
+      ],
+      [
+        'jab cancelled without contact',
+        { ...NAYO, moves: { ...moves, standLight: { ...standLight, freeCancelFrom: 3 } } },
+      ],
+      [
+        'jab cancelled into a grab',
+        { ...NAYO, moves: { ...moves, standLight: { ...standLight, cancelInto: ['grab'] } } },
+      ],
+      [
+        'dash cancelled into a dash',
+        { ...NAYO, moves: { ...moves, dashForward: { ...dashForward, cancelInto: ['movement'] } } },
+      ],
+      [
+        'grab-proof frames past the move',
+        {
+          ...NAYO,
+          moves: {
+            ...moves,
+            dashBack: { ...moves.dashBack, throwInvincible: { from: 0, to: 99 } },
+          },
+        },
+      ],
+      [
+        'air pushbox with a fractional lift',
+        { ...NAYO, airPushbox: { ...NAYO.airPushbox, lift: 0.5 } },
+      ],
+      ['flat lying pushbox', { ...NAYO, lyingPushbox: { width: px(28), height: 0 } }],
+    ];
+    for (const [label, template] of cases) {
+      expect(validateTemplate(template), label).not.toEqual([]);
+    }
+  });
+
+  it('gives Riff the better mobility: faster walk, longer and cancellable dash', () => {
+    expect(RIFF.walkBackSpeed).toBeGreaterThan(NAYO.walkBackSpeed);
+    expect(RIFF.moves.dashForward.freeCancelFrom).toBe(8);
+    expect(NAYO.moves.dashForward.freeCancelFrom).toBeUndefined();
+    expect(RIFF.landingFrames).toBeLessThan(NAYO.landingFrames);
+  });
+
   it('rejects a stage narrower than the screen', () => {
     expect(validateStage({ width: px(400), startDistance: px(100) })).not.toEqual([]);
     expect(validateStage(TRAINING_STAGE)).toEqual([]);

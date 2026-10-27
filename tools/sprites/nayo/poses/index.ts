@@ -2,7 +2,8 @@
  * Nayo's poses, frame by frame, one file per strip (each strip's file is its own animation).
  * Attack poses are placed against Nayo's hitboxes (src/data/fighters/nayo.ts): on the active
  * frames the striking fist or foot reaches the far edge of the hitbox, so what you see is what
- * hits. tests/tools/sprites.test.ts checks it for every move.
+ * hits. tests/tools/sprites.test.ts checks it for every move; the combat v2 strips, against the
+ * spec's hitboxes (../combat-v2.ts), are checked by tests/tools/nayo-v2-sprites.test.ts.
  */
 
 import type { NayoSheet } from '../../../../src/art/nayo/sheets.ts';
@@ -31,6 +32,27 @@ import { POSES as throwPoses } from './throw.ts';
 import { POSES as introPoses } from './intro.ts';
 import { POSES as victoryPoses } from './victory.ts';
 import { POSES as timeOverPoses } from './timeOver.ts';
+// Combat v2 (tools/sprites/nayo/combat-v2.ts), drawn ahead of its gameplay.
+import { POSES as dashForwardPoses } from './dashForward.ts';
+import { POSES as dashBackPoses } from './dashBack.ts';
+import { POSES as chainLightPoses } from './chainLight.ts';
+import { POSES as lightFinisherPoses } from './lightFinisher.ts';
+import { POSES as forwardLightPoses } from './forwardLight.ts';
+import { POSES as forwardHeavyPoses } from './forwardHeavy.ts';
+import { POSES as backHeavyPoses } from './backHeavy.ts';
+import { POSES as grabPoses } from './grab.ts';
+import { POSES as holdPoses } from './hold.ts';
+import { POSES as pummelPoses } from './pummel.ts';
+import { POSES as throwForwardPoses } from './throwForward.ts';
+import { POSES as throwBackPoses } from './throwBack.ts';
+import { POSES as heldPoses } from './held.ts';
+import { POSES as thrownBackPoses } from './thrownBack.ts';
+import { POSES as techPoses } from './tech.ts';
+import { POSES as hitHighPoses } from './hitHigh.ts';
+import { POSES as hitMidPoses } from './hitMid.ts';
+import { POSES as hitLowPoses } from './hitLow.ts';
+import { POSES as tripPoses } from './trip.ts';
+import { POSES as getupPoses } from './getup.ts';
 
 export { PROJECTILE as NAYO_PROJECTILE } from './projectile.ts';
 
@@ -63,4 +85,24 @@ export const NAYO_POSES: Readonly<Record<PosedSheet, readonly Pose[]>> = {
   intro: introPoses,
   victory: victoryPoses,
   timeOver: timeOverPoses,
+  dashForward: dashForwardPoses,
+  dashBack: dashBackPoses,
+  chainLight: chainLightPoses,
+  lightFinisher: lightFinisherPoses,
+  forwardLight: forwardLightPoses,
+  forwardHeavy: forwardHeavyPoses,
+  backHeavy: backHeavyPoses,
+  grab: grabPoses,
+  hold: holdPoses,
+  pummel: pummelPoses,
+  throwForward: throwForwardPoses,
+  throwBack: throwBackPoses,
+  held: heldPoses,
+  thrownBack: thrownBackPoses,
+  tech: techPoses,
+  hitHigh: hitHighPoses,
+  hitMid: hitMidPoses,
+  hitLow: hitLowPoses,
+  trip: tripPoses,
+  getup: getupPoses,
 };

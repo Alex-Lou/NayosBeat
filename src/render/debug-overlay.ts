@@ -1,3 +1,6 @@
+import { toPx } from '../core/constants';
+import type { FighterState, GameState } from '../core/state';
+
 /** How often the overlay text is refreshed. Updating the DOM every frame would be wasteful. */
 const REFRESH_INTERVAL_MS = 250;
 
@@ -65,4 +68,21 @@ export class DebugOverlay {
     this.tickTimeMs = 0;
     this.maxTickTimeMs = 0;
   }
+}
+
+/** The state in a few lines, for the overlay (built only when its text is refreshed). */
+export function describeGame(state: GameState): string {
+  const [a, b] = state.fighters;
+  return [
+    `frame  ${state.frame}  ${state.round.phase}  hitstop=${state.hitstop}`,
+    `P1     ${describeFighter(a)}`,
+    `P2     ${describeFighter(b)}`,
+  ].join('\n');
+}
+
+function describeFighter(fighter: FighterState): string {
+  const x = Math.round(toPx(fighter.x));
+  const y = Math.round(toPx(fighter.y));
+  const move = fighter.move ? ` ${fighter.move}` : '';
+  return `${fighter.action}${move}[${fighter.actionFrame}] hp=${fighter.health} x=${x} y=${y}`;
 }

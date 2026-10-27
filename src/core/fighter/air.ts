@@ -2,6 +2,7 @@ import type { FighterTemplate } from '../config';
 import { horizontalDirection } from '../input';
 import { airMove } from '../moves';
 import { signed } from '../numbers';
+import { HIT_GRAVITY } from '../rules';
 import type { FighterState } from '../state';
 import { enter, nextFrame } from './action';
 import { startAttack } from './move';
@@ -22,9 +23,14 @@ export function takeOff(fighter: FighterState, template: FighterTemplate): Fight
   return airborne({ ...enter(fighter, 'air'), vx, vy: template.jumpVelocity }, template);
 }
 
-/** Applies gravity and handles the landing, which depends on how the fighter was airborne. */
+/**
+ * Applies gravity and handles the landing, which depends on how the fighter was airborne. A jump
+ * falls with the fighter's own gravity; a fighter sent flying (hit, knocked out, thrown) with the
+ * common HIT_GRAVITY, so the knockdown's advantage depends on the blow, not on the victim.
+ */
 export function airborne(fighter: FighterState, template: FighterTemplate): FighterState {
-  const vy = fighter.vy - template.gravity;
+  const jumping = fighter.action === 'air' || fighter.action === 'airAttack';
+  const vy = fighter.vy - (jumping ? template.gravity : HIT_GRAVITY);
   const y = fighter.y + vy;
   const x = fighter.x + fighter.vx;
   if (y > 0) return { ...fighter, x, y, vy };

@@ -1,4 +1,4 @@
-import type { BoxSize, StageConfig } from './config';
+import type { BoxSize, Pushbox, StageConfig } from './config';
 import { CAMERA_WIDTH_PX, px } from './constants';
 import type { FighterState } from './state';
 
@@ -6,7 +6,7 @@ const HALF_CAMERA_WIDTH = Math.trunc(px(CAMERA_WIDTH_PX) / 2);
 
 interface Body {
   readonly fighter: FighterState;
-  readonly box: BoxSize;
+  readonly box: Pushbox;
 }
 
 interface Range {
@@ -47,10 +47,11 @@ export function resolvePositions(
   if (overlap > 0) {
     const aIsLeft = isLeftOf(a.fighter, xA, b.fighter, xB);
     const sign = aIsLeft ? -1 : 1;
-    const pushA = Math.trunc(overlap / 2);
-    const pushB = overlap - pushA;
-    xA += sign * pushA;
-    xB -= sign * pushB;
+    // An odd overlap is split upward on both sides, so a player's slot never earns them a
+    // sub-pixel (dash curves make odd overlaps common); the 1 sub-pixel gap left is invisible.
+    const push = Math.ceil(overlap / 2);
+    xA += sign * push;
+    xB -= sign * push;
 
     // If a wall stops one fighter, the other one takes the rest of the push.
     const blockedA = clamp(xA, rangeA) - xA;
@@ -75,8 +76,9 @@ function isSliding(fighter: FighterState): boolean {
 }
 
 function horizontalOverlap(a: Body, xA: number, b: Body, xB: number): number {
-  const verticalOverlap =
-    a.fighter.y < b.fighter.y + b.box.height && b.fighter.y < a.fighter.y + a.box.height;
+  const bottomA = a.fighter.y + (a.box.lift ?? 0);
+  const bottomB = b.fighter.y + (b.box.lift ?? 0);
+  const verticalOverlap = bottomA < bottomB + b.box.height && bottomB < bottomA + a.box.height;
   if (!verticalOverlap) return 0;
   const minDistance = Math.trunc((a.box.width + b.box.width) / 2);
   return minDistance - Math.abs(xA - xB);

@@ -1,0 +1,26 @@
+{
+  "description": "Riff's footwork: dashes cancelled from frame 8 into a jab and into the grab, gliding on with half the speed; a special pressed in the dash waits for its end; Nayo's dash runs to its end.",
+  "fighters": ["riff", "nayo"],
+  "inputs": [
+    [90, "", ""],
+    [1, "dash", ""],
+    [4, "", ""],
+    [1, "light", ""],
+    [30, "", ""],
+    [40, "left", "right"],
+    [1, "dash", ""],
+    [5, "", ""],
+    [1, "grab", ""],
+    [80, "", ""],
+    [40, "left", "right"],
+    [1, "dash", ""],
+    [12, "", ""],
+    [1, "special", ""],
+    [60, "", ""],
+    [1, "", "dash"],
+    [14, "", ""],
+    [1, "", "light"],
+    [40, "", ""]
+  ],
+  "hash": "12f5c1fb"
+}

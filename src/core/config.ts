@@ -7,6 +7,11 @@ export interface BoxSize {
   readonly height: number;
 }
 
+/** A body the opponent cannot walk through, anchored at the feet; `lift` raises it off them. */
+export interface Pushbox extends BoxSize {
+  readonly lift?: number;
+}
+
 /**
  * A box relative to a fighter, described as if the fighter faced right:
  * `x` is the offset of the box's left edge from the fighter's center, `y` of its bottom edge
@@ -34,6 +39,13 @@ export interface FighterTemplate {
   /** Collision body that keeps fighters from overlapping, anchored at the feet. */
   readonly standingPushbox: BoxSize;
   readonly crouchingPushbox: BoxSize;
+  /**
+   * The body in the air: slimmer, and raised off the feet, so a jump close enough passes over a
+   * standing opponent's head and lands behind it (a cross-up). Its size alone sets the range.
+   */
+  readonly airPushbox: Pushbox & { readonly lift: number };
+  /** Lying on the ground (knockdown): a jumper may pass over, and stand up on either side. */
+  readonly lyingPushbox: BoxSize;
   /** Where the fighter can be hit, per posture: a list, so a body can be drawn in bands. */
   readonly standingHurtboxes: readonly Box[];
   readonly crouchingHurtboxes: readonly Box[];

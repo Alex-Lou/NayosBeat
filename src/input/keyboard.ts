@@ -3,7 +3,10 @@ import { Input, type InputBits } from '../core/input';
 /** Maps `KeyboardEvent.code` (physical key position) to an input flag. */
 export type KeyBindings = Readonly<Record<string, number>>;
 
-/** Physical positions: WASD on QWERTY is ZQSD on AZERTY. */
+/**
+ * Physical positions: WASD on QWERTY is ZQSD on AZERTY. The dash goes to the hand that moves
+ * (left Shift), the grab above the attacks, under the middle finger (I, above K).
+ */
 export const PLAYER1_KEYS: KeyBindings = {
   KeyW: Input.Up,
   KeyS: Input.Down,
@@ -13,6 +16,8 @@ export const PLAYER1_KEYS: KeyBindings = {
   KeyJ: Input.Light,
   KeyK: Input.Heavy,
   KeyL: Input.Special,
+  KeyI: Input.Grab,
+  ShiftLeft: Input.Dash,
 };
 
 export const PLAYER2_KEYS: KeyBindings = {
@@ -23,10 +28,14 @@ export const PLAYER2_KEYS: KeyBindings = {
   Numpad1: Input.Light,
   Numpad2: Input.Heavy,
   Numpad3: Input.Special,
-  // Laptops without a numeric keypad: the keys left of and above right Shift.
+  Numpad4: Input.Grab,
+  Numpad0: Input.Dash,
+  // Laptops without a numeric keypad: the keys around right Shift (M is ";" on AZERTY).
   Period: Input.Light,
   Slash: Input.Heavy,
   Quote: Input.Special,
+  Semicolon: Input.Grab,
+  ShiftRight: Input.Dash,
 };
 
 export function bitsFromKeys(pressed: ReadonlySet<string>, bindings: KeyBindings): InputBits {

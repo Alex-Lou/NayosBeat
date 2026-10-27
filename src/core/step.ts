@@ -13,6 +13,7 @@ import {
   type ProjectileHit,
 } from './projectiles';
 import { updateRound } from './round';
+import { isThreatened } from './threat';
 import { applyTrainingRules } from './training';
 import { EMPTY_CONTACTS, type Contact, type FighterState, type GameState } from './state';
 
@@ -37,14 +38,20 @@ export function step(
       ...state,
       frame: state.frame + 1,
       hitstop: state.hitstop - 1,
-      fighters: [readInput(prevA, inputA, false), readInput(prevB, inputB, false)],
+      fighters: [
+        readInput(prevA, inputA, false, prevB.x),
+        readInput(prevB, inputB, false, prevA.x),
+      ],
       contacts: EMPTY_CONTACTS,
     };
   }
 
   const [templateA, templateB] = config.fighters;
-  const movedA = updateFighter(prevA, inputA, templateA, prevB.x);
-  const movedB = updateFighter(prevB, inputB, templateB, prevA.x);
+  // Threats are read from the previous state, like the opponent's position: no order effect.
+  const threatOnA = isThreatened(0, state.fighters, state.projectiles, config);
+  const threatOnB = isThreatened(1, state.fighters, state.projectiles, config);
+  const movedA = updateFighter(prevA, inputA, templateA, prevB.x, threatOnA);
+  const movedB = updateFighter(prevB, inputB, templateB, prevA.x, threatOnB);
 
   const [a, b] = resolvePositions(
     { fighter: movedA, box: pushboxOf(movedA, templateA) },

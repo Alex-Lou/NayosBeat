@@ -89,3 +89,13 @@ export interface FighterArt {
 export function cellOf(art: FighterArt, strip: string): Cell {
   return art.cells?.[strip] ?? FULL_CELL;
 }
+
+/**
+ * The strips that a clip (or the projectile) plays: all a fight needs. The others are drawn
+ * ahead of their gameplay and stay unloaded until a clip plays them.
+ */
+export function playedSheets(art: FighterArt): ReadonlySet<string> {
+  const sheets = new Set(Object.values(art.clips).map((clip) => clip.sheet));
+  if (art.projectile) sheets.add(art.projectile.sheet);
+  return sheets;
+}

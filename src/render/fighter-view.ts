@@ -1,9 +1,8 @@
 import type Phaser from 'phaser';
 import { toWorld, type WorldBox } from '../core/boxes';
 import { activeMove, hurtboxesOf } from '../core/combat';
-import type { Box, FighterTemplate } from '../core/config';
+import type { Box, BoxSize, FighterTemplate } from '../core/config';
 import { toPx } from '../core/constants';
-import { pushboxOf } from '../core/fighter';
 import type { FighterState } from '../core/state';
 import { DEPTH } from './depth';
 
@@ -51,7 +50,7 @@ export class FighterView {
   }
 
   update(fighter: FighterState, template: FighterTemplate): void {
-    const box = pushboxOf(fighter, template);
+    const box = silhouetteOf(fighter, template);
     const width = toPx(box.width);
     const height = toPx(box.height);
     const x = toPx(fighter.x);
@@ -73,6 +72,7 @@ export class FighterView {
       case 'airHit':
         return COLORS.hit;
       case 'blockstun':
+      case 'guard':
         return COLORS.block;
       case 'knockdown':
       case 'ko':
@@ -81,6 +81,15 @@ export class FighterView {
         return this.color;
     }
   }
+}
+
+/**
+ * The grey box's body: its pushbox on the ground, the standing one in the air (the air pushbox,
+ * raised and slimmer, is a collision body, not the fighter's outline).
+ */
+function silhouetteOf(fighter: FighterState, template: FighterTemplate): BoxSize {
+  if (fighter.action === 'knockdown') return template.lyingPushbox;
+  return fighter.crouching ? template.crouchingPushbox : template.standingPushbox;
 }
 
 /** The translucent red rectangle showing an active hitbox. */

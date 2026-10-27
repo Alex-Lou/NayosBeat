@@ -1,5 +1,5 @@
 import { DIRECTIONS, type InputBits } from '../core/input';
-import { bitsFromGamepad } from './gamepad';
+import { GamepadReader } from './gamepad';
 import { KeyboardInput, PLAYER1_KEYS, PLAYER2_KEYS } from './keyboard';
 import type { TouchControls } from './touch-controls';
 
@@ -15,6 +15,7 @@ const PRESS_BUTTONS = ~DIRECTIONS;
  */
 export class PlayerInputs {
   private readonly keyboard: KeyboardInput;
+  private readonly gamepads = new GamepadReader();
   private readonly padIndices: [number | null, number | null] = [null, null];
   /** Buttons held when the last menu closed: ignored until released. */
   private readonly suppressed: [InputBits, InputBits] = [0, 0];
@@ -64,7 +65,7 @@ export class PlayerInputs {
     const index = this.padIndices[player];
     const pad = index === null ? undefined : pads.find((p) => p.index === index);
     const touch = player === 0 ? (this.touch?.read() ?? 0) : 0;
-    return this.keyboard.read(player) | (pad ? bitsFromGamepad(pad) : 0) | touch;
+    return this.keyboard.read(player) | (pad ? this.gamepads.read(pad) : 0) | touch;
   }
 
   /** Newly connected pads take the next free player slot. */
