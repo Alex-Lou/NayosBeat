@@ -45,3 +45,19 @@ export function airborne(fighter: FighterState, template: FighterTemplate): Figh
       return { ...enter(grounded, 'landing'), move: null };
   }
 }
+
+/**
+ * Ticks a fighter sent flying from the ground at `vy` (a knockdown, a throw) stays in the air:
+ * on the last one it lands. The same integer steps as `airborne`.
+ */
+export function flightTicks(vy: number): number {
+  let speed = vy;
+  let height = 0;
+  let ticks = 0;
+  do {
+    speed -= HIT_GRAVITY;
+    height += speed;
+    ticks++;
+  } while (height > 0);
+  return ticks;
+}

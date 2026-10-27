@@ -1,6 +1,12 @@
 import type { Box, BoxSize, FighterTemplate, MatchConfig, StageConfig } from './config';
 import { CAMERA_WIDTH_PX, px } from './constants';
-import { AIR_MOVE_IDS, CORE_MOVE_IDS, MOVEMENT_MOVE_IDS, type FrameRange } from './move-data';
+import {
+  AIR_MOVE_IDS,
+  CORE_MOVE_IDS,
+  MOVEMENT_MOVE_IDS,
+  THROW_MOVE_IDS,
+  type FrameRange,
+} from './move-data';
 import { moveDuration } from './moves';
 
 /** A body drawn in bands: legs and torso at most (docs/combat-v2.md §9.2). */
@@ -57,6 +63,7 @@ export function validateTemplate(template: FighterTemplate): string[] {
     const duration = moveDuration(move);
     expect(move.name.length > 0, `${id}.name must not be empty`);
     const movement = move.kind === 'movement';
+    const thrown = move.kind === 'throw';
     expect(
       (id === 'grab') === (move.kind === 'grab'),
       `${id}: only the grab move may (and must) be of kind "grab"`,
@@ -64,6 +71,10 @@ export function validateTemplate(template: FighterTemplate): string[] {
     expect(
       MOVEMENT_MOVE_IDS.includes(id) === movement,
       `${id}: only the dashes may (and must) be of kind "movement"`,
+    );
+    expect(
+      THROW_MOVE_IDS.includes(id) === thrown,
+      `${id}: only the pummel and the throws may (and must) be of kind "throw"`,
     );
     for (const name of [
       'startup',
@@ -84,6 +95,17 @@ export function validateTemplate(template: FighterTemplate): string[] {
         `${id}: a movement never strikes (no hitbox, no projectile, no damage)`,
       );
       expect(move.motion !== undefined, `${id}: a movement must have a motion`);
+    } else if (thrown) {
+      // Played on the held opponent: it lands on its startup frame, whatever the boxes say.
+      expect(
+        move.hitbox === undefined && move.projectile === undefined && move.active === 1,
+        `${id}: a pummel or throw has no hitbox nor projectile, and one active tick`,
+      );
+      expect(move.damage >= 1, `${id}: a pummel or throw must deal damage`);
+      expect(
+        (move.knockdown !== undefined) === (id !== 'pummel'),
+        `${id}: the throws (and only they) send the opponent flying`,
+      );
     } else {
       expect(
         (move.hitbox === undefined) !== (move.projectile === undefined),
@@ -112,6 +134,22 @@ export function validateTemplate(template: FighterTemplate): string[] {
       );
       expect(move.motion.dx.every(Number.isInteger), `${id}.motion.dx must be integers`);
     }
+    if (move.knockdown) {
+      expect(
+        isInteger(move.knockdown.vx, 0) && isInteger(move.knockdown.vy, 1),
+        `${id}.knockdown must fly at integer speeds, upward`,
+      );
+    }
+    expect(
+      (move.sideSwitchFrame !== undefined) === (id === 'throwBack'),
+      `${id}: the throw backward (and only it) switches sides`,
+    );
+    if (move.sideSwitchFrame !== undefined) {
+      expect(
+        isInteger(move.sideSwitchFrame, 0) && move.sideSwitchFrame < move.startup,
+        `${id}.sideSwitchFrame must come before the release`,
+      );
+    }
     for (const name of ['invincible', 'throwInvincible'] as const) {
       const range = move[name];
       if (range) expect(isRangeWithin(range, duration), `${id}.${name} must fit within the move`);
@@ -124,7 +162,10 @@ export function validateTemplate(template: FighterTemplate): string[] {
       );
     }
     if (move.cancelInto) {
-      expect(!move.cancelInto.includes('movement'), `${id} cannot be cancelled into a movement`);
+      expect(
+        !move.cancelInto.includes('movement') && !move.cancelInto.includes('throw'),
+        `${id} cannot be cancelled into a movement nor a throw`,
+      );
       expect(
         movement || !move.cancelInto.includes('grab'),
         `${id}: only a movement can be cancelled into a grab`,

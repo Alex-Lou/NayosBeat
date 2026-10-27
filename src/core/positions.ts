@@ -4,12 +4,12 @@ import type { FighterState } from './state';
 
 const HALF_CAMERA_WIDTH = Math.trunc(px(CAMERA_WIDTH_PX) / 2);
 
-interface Body {
+export interface Body {
   readonly fighter: FighterState;
   readonly box: Pushbox;
 }
 
-interface Range {
+export interface Range {
   readonly min: number;
   readonly max: number;
 }
@@ -25,10 +25,7 @@ export function resolvePositions(
   cameraX: number,
   stage: StageConfig,
 ): [FighterState, FighterState] {
-  const walls: Range = {
-    min: Math.max(0, cameraX - HALF_CAMERA_WIDTH),
-    max: Math.min(stage.width, cameraX + HALF_CAMERA_WIDTH),
-  };
+  const walls = wallsAt(cameraX, stage);
   const rangeA = centerRange(walls, a.box);
   const rangeB = centerRange(walls, b.box);
 
@@ -65,14 +62,49 @@ export function resolvePositions(
   return [withX(a.fighter, xA), withX(b.fighter, xB)];
 }
 
+/**
+ * Places the pair of a hold, which never pushes itself apart: the held fighter touching the
+ * holder on `side` (`distance` between their centers), and the pair shifted as one block when
+ * the held one would go through a wall, the holder stepping back as much (docs/combat-v2.md
+ * §4.2): a throw backward from the corner puts the opponent in it.
+ */
+export function placePair(
+  holder: Body,
+  held: Body,
+  side: 1 | -1,
+  distance: number,
+  cameraX: number,
+  stage: StageConfig,
+): [FighterState, FighterState] {
+  const walls = wallsAt(cameraX, stage);
+  const touching = holder.fighter.x + side * distance;
+  const shift = clamp(touching, centerRange(walls, held.box)) - touching;
+  const holderX = clamp(holder.fighter.x + shift, centerRange(walls, holder.box));
+  return [withX(holder.fighter, holderX), withX(held.fighter, holderX + side * distance)];
+}
+
+/**
+ * The walls of a tick: the stage's ends, and the screen edges of the previous tick's camera.
+ * Exported for the CPU, which throws away from them.
+ */
+export function wallsAt(cameraX: number, stage: StageConfig): Range {
+  return {
+    min: Math.max(0, cameraX - HALF_CAMERA_WIDTH),
+    max: Math.min(stage.width, cameraX + HALF_CAMERA_WIDTH),
+  };
+}
+
 /** The camera follows the midpoint of the fighters without leaving the stage. */
 export function followCamera(a: FighterState, b: FighterState, stage: StageConfig): number {
   const midpoint = Math.trunc((a.x + b.x) / 2);
   return clamp(midpoint, { min: HALF_CAMERA_WIDTH, max: stage.width - HALF_CAMERA_WIDTH });
 }
 
+/** Pushed back by a blow, or apart by a tech. */
 function isSliding(fighter: FighterState): boolean {
-  return (fighter.action === 'hitstun' || fighter.action === 'blockstun') && fighter.vx !== 0;
+  const { action } = fighter;
+  const pushed = action === 'hitstun' || action === 'blockstun' || action === 'tech';
+  return pushed && fighter.vx !== 0;
 }
 
 function horizontalOverlap(a: Body, xA: number, b: Body, xB: number): number {

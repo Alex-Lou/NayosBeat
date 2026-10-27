@@ -1,9 +1,10 @@
 /**
- * Nayo's combat v2 strips (docs/combat-v2.md §11.1, §11.2), drawn ahead of their gameplay: no
- * clip plays them yet. Their timing and, for the strikes, their frame data and hitbox (§10.1,
- * §10.3) live here until the combat v2 phases move them into src/data/fighters/nayo.ts and
- * src/art/nayo/clips.ts. The generator times the hanging parts with these ticks, the preview
- * draws these hitboxes, tests/tools/nayo-v2-sprites.test.ts checks the poses against them.
+ * Nayo's combat v2 strips (docs/combat-v2.md §11.1, §11.2), most drawn ahead of their gameplay.
+ * Their timing and, for the strikes, their frame data and hitbox (§10.1, §10.3) live here until
+ * the combat v2 phases move them into src/data/fighters/nayo.ts and src/art/nayo/clips.ts (the
+ * dashes and the hold are there already, and these values match them). The generator times the
+ * hanging parts of the strips no clip plays with these ticks, the preview draws these hitboxes,
+ * tests/tools/nayo-v2-sprites.test.ts checks the poses against them.
  */
 
 import type { NayoSheet } from '../../../src/art/nayo/sheets.ts';
@@ -102,12 +103,12 @@ export const NAYO_V2_STRIPS: Readonly<Record<V2Sheet, V2Strip>> = {
   pummel: { frames: 4, ticks: [3, 3, 1, 9] },
   // Renvoi: the release on frame 3 (tick 10).
   throwForward: { frames: 8, ticks: [3, 3, 4, 1, 6, 6, 6, 7] },
-  // Projection d'épaule: the sides switch on tick 8, the release on frame 4 (tick 14).
+  // Projection d'épaule: the sides switch on tick 6, the release on frame 4 (tick 14).
   throwBack: { frames: 9, ticks: [3, 3, 4, 4, 1, 6, 7, 7, 7] },
   // Frame 1 plays again on every knee.
   held: { frames: 2, ticks: [4, 4], loops: true },
-  // In step with the throw: frame = floor(attacker tick * 4 / 14) up to the release.
-  thrownBack: { frames: 4, ticks: [4, 3, 4, 3] },
+  // Frame for frame with the throw up to the release (tick 14), behind the thrower from tick 6.
+  thrownBack: { frames: 4, ticks: [3, 3, 4, 4] },
   tech: { frames: 4, ticks: [3, 3, 4, 4] },
   // The reactions last as long as the stun: light hits play frames 0, 1 and 4.
   hitHigh: { frames: 5 },

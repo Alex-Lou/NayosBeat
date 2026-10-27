@@ -58,6 +58,12 @@ export const STATE_CLIP_IDS = [
   'airHit',
   'knockdown',
   'ko',
+  // The hold: holder and held between the moves, the backward throw's victim, the tech.
+  'hold',
+  'held',
+  'thrownBack',
+  'thrownFall',
+  'tech',
   // Round poses: entrance, winner, loser on time.
   'intro',
   'victory',

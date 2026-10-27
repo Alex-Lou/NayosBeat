@@ -163,29 +163,48 @@ describe('detectEvents', () => {
     expect(attacks).toEqual([{ type: 'attack', heavy: true, by: 1, move: 'standHeavy' }]);
   });
 
-  it('tells a grab from a strike', () => {
-    const grab = eventsOf(facingOff(30, MIRROR_MATCH), [[Input.Grab, 0], ...idle(20)]);
-    expect(grab.find((e) => e.type === 'hit')).toMatchObject({ grab: true });
+  // Combat v2 (§4): the grab holds, the blows land in the hold, then the throw and the fall.
+  it('tells a grab, the pummels and the throw of a hold from a strike', () => {
+    const hold = eventsOf(facingOff(30, MIRROR_MATCH), [
+      [Input.Grab, 0],
+      ...idle(17),
+      [Input.Light, 0],
+      ...idle(120),
+    ]);
+    const types = hold.filter((e) => e.type !== 'attack').map((e) => e.type);
+    expect(types).toEqual(['grab', 'hit', 'throw', 'fall']);
+    expect(hold.find((e) => e.type === 'grab')).toMatchObject({ by: 0, punish: false });
+    expect(hold.find((e) => e.type === 'hit')).toMatchObject({ held: true, damage: 15 });
     const jab = eventsOf(facingOff(30, MIRROR_MATCH), [[Input.Light, 0], ...idle(20)]);
-    expect(jab.find((e) => e.type === 'hit')).toMatchObject({ grab: false });
+    expect(jab.find((e) => e.type === 'hit')).toMatchObject({ held: false });
+  });
+
+  it('reports two grabs on the same tick as one tech', () => {
+    const tech = eventsOf(facingOff(30, MIRROR_MATCH), [[Input.Grab, Input.Grab], ...idle(10)]);
+    expect(tech.filter((e) => e.type === 'tech')).toHaveLength(1);
   });
 });
 
 describe('vibrationFor', () => {
   const blow = { x: 0, y: 0, away: 1, by: 1, low: false } as const;
 
-  it("shakes the phone of a player grabbed, or hit hard, and only that player's", () => {
-    const grabbed: FightEvent = { type: 'hit', ...blow, damage: 110, heavy: true, grab: true };
-    const heavy: FightEvent = { type: 'hit', ...blow, damage: 80, heavy: true, grab: false };
+  it("shakes the phone of a player grabbed, pummeled, thrown or hit hard, and only that player's", () => {
+    const grabbed: FightEvent = { type: 'grab', ...blow, punish: false };
+    const pummel: FightEvent = { type: 'hit', ...blow, damage: 15, heavy: false, held: true };
+    const thrown: FightEvent = { type: 'throw', ...blow, damage: 100 };
+    const heavy: FightEvent = { type: 'hit', ...blow, damage: 80, heavy: true, held: false };
     expect(vibrationFor(grabbed, 0)).toBe(HAPTICS.grabbed);
+    expect(vibrationFor(pummel, 0)).toBe(HAPTICS.pummel);
+    expect(vibrationFor(thrown, 0)).toBe(HAPTICS.heavyHit);
     expect(vibrationFor(heavy, 0)).toBe(HAPTICS.heavyHit);
-    expect(vibrationFor(heavy, 1)).toBe(0);
+    for (const event of [grabbed, pummel, thrown, heavy]) expect(vibrationFor(event, 1)).toBe(0);
   });
 
   it('leaves light hits, blocks and everything else alone', () => {
-    const light: FightEvent = { type: 'hit', ...blow, damage: 30, heavy: false, grab: false };
+    const light: FightEvent = { type: 'hit', ...blow, damage: 30, heavy: false, held: false };
     expect(vibrationFor(light, 0)).toBe(0);
     expect(vibrationFor({ type: 'block', ...blow }, 0)).toBe(0);
+    expect(vibrationFor({ type: 'tech', ...blow }, 0)).toBe(0);
     expect(vibrationFor({ type: 'dash', x: 0, toward: 1 }, 0)).toBe(0);
   });
 });

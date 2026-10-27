@@ -93,8 +93,9 @@ describe('P1/P2 symmetry of the movement v2 (§14.7)', () => {
   });
 
   it('throw protection: a grab on the wake-up whiffs', () => {
+    // Pressed so that its 3 active ticks (from frame 5, §4.3) fall in the protection.
     const states = expectMirrored(
-      script(30, (tick) => [on([9, 10, 11], Grab, tick), 0]),
+      script(30, (tick) => [on([6, 7, 8], Grab, tick), 0]),
       MIRROR_MATCH,
       30,
       [{}, { action: 'knockdown', stunFrames: 10 }],

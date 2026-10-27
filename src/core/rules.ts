@@ -63,9 +63,27 @@ export const THROW_CONVERSION_FRAMES = 3;
 export const COMBO_SCALING_STEP = 10;
 export const COMBO_SCALING_FLOOR = 50;
 
-/** Separation speed when both players throw each other on the same tick. */
+/**
+ * A tech (both players grabbing on the same tick, or the held one breaking free): nobody is
+ * thrown, both are pushed apart at this speed and reel for THROW_TECH_STUN ticks (the `tech`
+ * strip).
+ */
 export const THROW_TECH_PUSHBACK = px(4);
-export const THROW_TECH_STUN = 12;
+export const THROW_TECH_STUN = 14;
+
+/** The freeze when a grab catches (docs/combat-v2.md §4.1): the victim's phone vibrates. */
+export const GRAB_HITSTOP = 6;
+/**
+ * The clinch: on the first ticks of a hold (200 ms), the held player breaks free with the grab
+ * button; the holder's choice waits for the end of it.
+ */
+export const GRAB_TECH_FRAMES = 12;
+/** How long a hold lasts at most, then the holder throws forward if it chose nothing. */
+export const HOLD_LIMIT_FRAMES = 56;
+/** Struggling shortens the hold down to this: a throw chosen at once is never cut short. */
+export const HOLD_MIN_FRAMES = 36;
+/** Each button the held player presses after the clinch takes this off the hold's limit. */
+export const STRUGGLE_FRAMES = 3;
 
 /** Training mode: health refills once the dummy has been left alone this long. */
 export const TRAINING_REFILL_FRAMES = 60;

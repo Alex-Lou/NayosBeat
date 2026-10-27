@@ -154,7 +154,11 @@ const MATCH_NR: MatchConfig = { stage: TRAINING_STAGE, fighters: [NAYO, RIFF] };
 describe('backdash and grabs (§3.3)', () => {
   /** Whether the grab of a fighter right in front reaches a defender on this backdash frame. */
   function grabbed(defenderTemplate: FighterTemplate, frame: number): boolean {
-    const grabber = makeFighter({ action: 'attack', move: 'grab', actionFrame: 3 });
+    const grabber = makeFighter({
+      action: 'attack',
+      move: 'grab',
+      actionFrame: NAYO.moves.grab.startup,
+    });
     const defender = makeFighter({
       x: px(420),
       facing: -1,

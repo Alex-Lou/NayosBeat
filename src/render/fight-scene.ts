@@ -5,17 +5,12 @@ import type { FighterArt } from '../art/types';
 import { assertValidArt } from '../art/validate';
 import type { Sfx } from '../audio/sfx';
 import { matchConfigOf, player2Behavior, type MatchSetup } from '../app/match-setup';
-import type { FighterTemplate, MatchConfig } from '../core/config';
+import type { MatchConfig } from '../core/config';
 import { TICK_RATE, toPx } from '../core/constants';
 import type { InputBits } from '../core/input';
 import { matchWinner } from '../core/round';
 import { MATCH_END_FRAMES } from '../core/rules';
-import {
-  createInitialState,
-  type FighterState,
-  type GameState,
-  type RoundState,
-} from '../core/state';
+import { createInitialState, type GameState } from '../core/state';
 import { step } from '../core/step';
 import { assertValidMatch } from '../core/validate';
 import { connectedGamepads } from '../input/gamepad';
@@ -34,6 +29,8 @@ import { FighterView } from './fighter-view';
 import { drawGreyboxStage, GROUND_Y } from './greybox-stage';
 import { hitStyleOf, type HitStyle } from './hit-styles';
 import { requestLandscapeFullscreen } from './fullscreen';
+import { HoldPrompt } from './hold-prompt';
+import { HoldRing } from './hold-ring';
 import { Hud } from './hud';
 import { MoveCaption } from './move-caption';
 import { ProjectileView } from './projectile-view';
@@ -59,7 +56,7 @@ type Mutable<T> = { -readonly [K in keyof T]: T[K] };
 
 /** A fighter on screen: sprites when it has art, a grey box otherwise. */
 interface FighterDisplay {
-  update(fighter: FighterState, template: FighterTemplate, round: RoundState): void;
+  update(state: GameState): void;
   setFront(front: boolean): void;
 }
 
@@ -71,8 +68,11 @@ interface Runtime {
   readonly projectileView: ProjectileView;
   readonly feedback: FightFeedback;
   readonly hud: Hud;
-  /** Training only: the name of each move as it starts. */
+  /** The time a hold has left, around the fighter held. */
+  readonly holdRing: HoldRing;
+  /** Training only: the name of each move as it starts, the buttons of a hold. */
   readonly caption: MoveCaption | undefined;
+  readonly holdPrompt: HoldPrompt | undefined;
   /** Debug only: the statistics, and every box. */
   readonly debugOverlay: DebugOverlay | undefined;
   readonly boxOverlay: BoxOverlay | undefined;
@@ -184,7 +184,9 @@ export class FightScene extends Phaser.Scene {
         touch ? vibrate : undefined,
       ),
       hud: new Hud(this, this.config),
+      holdRing: new HoldRing(this, GROUND_Y, [this.styles[0].energy, this.styles[1].energy]),
       caption: this.config.training ? new MoveCaption(this, this.config, GROUND_Y) : undefined,
+      holdPrompt: this.config.training ? new HoldPrompt(this, GROUND_Y) : undefined,
       debugOverlay: debug ? new DebugOverlay(document.body) : undefined,
       boxOverlay: debug ? new BoxOverlay(this, this.config, GROUND_Y) : undefined,
     };
@@ -216,8 +218,8 @@ export class FightScene extends Phaser.Scene {
   private fighterDisplay(player: 0 | 1, color: number): FighterDisplay {
     const art = this.arts[player];
     return art
-      ? new SpriteFighterView(this, art, player, GROUND_Y, this.styles[player].energy)
-      : new FighterView(this, color, GROUND_Y);
+      ? new SpriteFighterView(this, art, player, GROUND_Y, this.styles[player].energy, this.config)
+      : new FighterView(this, color, GROUND_Y, player, this.config.fighters[player]);
   }
 
   /** Resumes after the pause menu. The paused time is not simulated. */
@@ -294,11 +296,13 @@ export class FightScene extends Phaser.Scene {
     this.front = frontFighter(this.front, a, b);
     viewA.setFront(this.front === 0);
     viewB.setFront(this.front === 1);
-    viewA.update(a, this.config.fighters[0], this.state.round);
-    viewB.update(b, this.config.fighters[1], this.state.round);
+    viewA.update(this.state);
+    viewB.update(this.state);
     runtime.projectileView.update(this.state.projectiles, this.state.frame);
     runtime.hud.update(this.state);
+    runtime.holdRing.update(this.state);
     runtime.caption?.update(this.state);
+    runtime.holdPrompt?.update(this.state);
     runtime.boxOverlay?.update(this.state);
 
     const xs = this.framedXs;

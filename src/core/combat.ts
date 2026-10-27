@@ -14,25 +14,44 @@ import {
 import { sideOf } from './side';
 import type { Contact, Facing, FighterAction, FighterState } from './state';
 
-/** States in which holding back blocks. Attacking, jumping or walking forward does not. */
+/**
+ * States in which holding back blocks. Attacking, jumping or walking forward does not; pushed
+ * apart by a tech, one still guards.
+ */
 const BLOCKING_ACTIONS: ReadonlySet<FighterAction> = new Set([
   'idle',
   'walkBack',
   'crouch',
   'guard',
   'blockstun',
+  'tech',
 ]);
 
-/** No juggles and no hitting a fighter that is down. */
-const INVULNERABLE_ACTIONS: ReadonlySet<FighterAction> = new Set(['airHit', 'knockdown', 'ko']);
-
-/** A fighter reeling from a hit or a block cannot be grabbed (no unescapable grab loops). */
-const GRAB_IMMUNE_ACTIONS: ReadonlySet<FighterAction> = new Set([
-  'hitstun',
-  'blockstun',
+/**
+ * No juggles and no hitting a fighter that is down. Nor the pair of a hold: blows and
+ * projectiles go through both until the holder lets go (docs/combat-v2.md §4.2).
+ */
+const INVULNERABLE_ACTIONS: ReadonlySet<FighterAction> = new Set([
   'airHit',
   'knockdown',
   'ko',
+  'holding',
+  'held',
+]);
+
+/**
+ * A fighter reeling from a hit, a block or a tech cannot be grabbed (no unescapable grab loops),
+ * nor one already in a hold.
+ */
+const GRAB_IMMUNE_ACTIONS: ReadonlySet<FighterAction> = new Set([
+  'hitstun',
+  'blockstun',
+  'tech',
+  'airHit',
+  'knockdown',
+  'ko',
+  'holding',
+  'held',
 ]);
 
 /** A box placed in the stage: an attacker's hitbox, or its projectile's. */
@@ -97,7 +116,8 @@ export function findHit(
 
 /**
  * Describes a blow that touched `defender` (as it was when the blow was found), now resolved
- * into `after`: hit or blocked, and where. Only called on the ticks where something touched.
+ * into `after`: a hit, a block (or a grab, `kind`), and where. Only called on the ticks where
+ * something touched.
  */
 export function contactOf(
   by: 0 | 1,
@@ -106,17 +126,20 @@ export function contactOf(
   defender: FighterState,
   template: FighterTemplate,
   after: FighterState,
+  kind: Contact['kind'] = after.action === 'blockstun' ? 'block' : 'hit',
+  counter: Contact['counter'] = null,
 ): Contact {
   const { box, x, y, facing } = striker;
   const body = touchedHurtbox(box, x, y, facing, defender, template);
   if (!body) throw new Error(`Move ${move} touched no hurtbox`);
   return {
     by,
-    kind: after.action === 'blockstun' ? 'block' : 'hit',
+    kind,
     move,
     x: overlapMiddleX(box, x, facing, body, defender.x, defender.facing),
     y: overlapMiddleY(box, y, body, defender.y),
     damage: defender.health - after.health,
+    counter,
   };
 }
 
@@ -132,18 +155,21 @@ export function applyHit(
   minHealth = 0,
 ): FighterState {
   const attackerOnRight = isOnRight(attackerX, defender);
-  const vx = signed(attackerOnRight ? -1 : 1, move.pushback);
+  const away = attackerOnRight ? -1 : 1;
+  const { knockdown } = move;
   const interrupted = {
     ...defender,
     actionFrame: 0,
     move: null,
     moveConnected: false,
-    vx,
+    // A knockdown carries the defender at its own speed; any other blow slides it back.
+    vx: signed(away, knockdown?.vx ?? move.pushback),
   } as const;
 
   if (move.kind !== 'grab' && isBlocking(defender, attackerOnRight, move.guard)) {
     return {
       ...interrupted,
+      vx: signed(away, move.pushback),
       action: 'blockstun',
       stunFrames: move.blockstun,
       crouching: has(defender.input, Input.Down),
@@ -154,29 +180,26 @@ export function applyHit(
   const comboCount = defender.action === 'hitstun' ? defender.comboCount + 1 : 1;
   const health = Math.max(minHealth, defender.health - scaledDamage(move.damage, comboCount));
   const airborne = defender.y > 0;
+  const lift = knockdown?.vy ?? (airborne ? AIR_HIT_LIFT : 0);
   if (health === 0) {
-    const vy = airborne || move.knockdown ? AIR_HIT_LIFT : 0;
-    return { ...interrupted, action: 'ko', health, comboCount, stunFrames: 0, vy };
+    return { ...interrupted, action: 'ko', health, comboCount, stunFrames: 0, vy: lift };
   }
-  if (airborne || move.knockdown) {
-    return {
-      ...interrupted,
-      action: 'airHit',
-      health,
-      comboCount,
-      stunFrames: 0,
-      vy: AIR_HIT_LIFT,
-    };
+  if (lift > 0) {
+    return { ...interrupted, action: 'airHit', health, comboCount, stunFrames: 0, vy: lift };
   }
   return { ...interrupted, action: 'hitstun', health, comboCount, stunFrames: move.hitstun };
 }
 
-/** Both players grabbed each other on the same tick: nobody is thrown, both are pushed apart. */
+/**
+ * A tech: both players grabbed each other on the same tick, or the held one broke free. Nobody
+ * is thrown, both are pushed apart.
+ */
 export function techGrab(fighter: FighterState, opponentX: number): FighterState {
   const away = isOnRight(opponentX, fighter) ? -1 : 1;
   return {
     ...fighter,
-    action: 'blockstun',
+    action: 'tech',
+    crouching: false,
     actionFrame: 0,
     move: null,
     moveConnected: false,

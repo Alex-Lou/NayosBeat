@@ -43,6 +43,19 @@ export const NAYO_CLIPS: Readonly<Record<ClipId, NayoClip>> = {
   knockdown: play('knockdown', [3, 3, 4, 10, 4, 4, 4, 4, 4]),
   ko: play('ko', [4, 4, 4, 4, 4, 4, 6, 1]),
 
+  // The hold (docs/combat-v2.md §4, §11.1). The holder at the collar, between his moves.
+  hold: play('hold', [6, 6], 0),
+  // Held, struggling: yanked in first, and again from the impact of every knee (the game
+  // starts the clip over on it), held through the knee's hitstop.
+  held: { sheet: 'held', frames: [1, 0], ticks: [4, 4], loopFrom: 0 },
+  // Thrown backward, frame for frame with the thrower's throwBack up to the release (tick 14,
+  // the sides switching on tick 6); the last frame stays where he was let go during the flight.
+  thrownBack: play('thrownBack', [3, 3, 4, 4]),
+  // The end of that flight, at the body's real place: one tick per frame, then the knockdown.
+  thrownFall: { sheet: 'airHit', frames: [2, 3], ticks: [1, 1] },
+  // Broken free: the 14 ticks of the tech's stun.
+  tech: play('tech', [3, 3, 4, 4]),
+
   standLight: play('standLight', [2, 2, 3, 2, 2, 3]), // active: frame 2
   standHeavy: play('standHeavy', [3, 3, 2, 4, 3, 3, 3, 3, 4]), // active: frame 3
   crouchLight: play('crouchLight', [2, 2, 2, 2, 3, 3]), // active: frame 2
@@ -52,7 +65,10 @@ export const NAYO_CLIPS: Readonly<Record<ClipId, NayoClip>> = {
   special: play('special', [3, 3, 3, 3, 8, 6, 5, 5, 5]), // the Vinyle leaves on frame 4
   specialForward: play('specialForward', [3, 3, 3, 2, 4, 4, 5, 5, 4]), // active: frame 4
   specialAntiAir: play('specialAntiAir', [3, 3, 5, 4, 4, 4, 4, 4, 4, 4]), // active: frames 1-2
-  grab: play('throw', [3, 2, 4, 4, 5, 5, 4]), // active: frame 1
+  grab: play('grab', [2, 3, 3, 6, 7, 7]), // active: frame 2; a miss closes on nothing
+  pummel: play('pummel', [3, 3, 1, 9]), // the knee lands: frame 2
+  throwForward: play('throwForward', [3, 3, 4, 1, 6, 6, 6, 7]), // the release: frame 3
+  throwBack: play('throwBack', [3, 3, 4, 4, 1, 6, 7, 7, 7]), // the release: frame 4
   // Pas chassé and Retrait: set off, glide, landing (the game moves him, the poses stay put).
   dashForward: play('dashForward', [1, 4, 4, 3, 3, 3]),
   dashBack: play('dashBack', [1, 4, 4, 4, 4, 5]),

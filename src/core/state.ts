@@ -23,7 +23,13 @@ export type FighterAction =
   | 'blockstun'
   | 'airHit'
   | 'knockdown'
-  | 'ko';
+  | 'ko'
+  /** Holding the grabbed opponent (see `hold.ts`): its `move` is the pummel or throw played. */
+  | 'holding'
+  /** Grabbed and held: it can only break free (in the clinch) or struggle. */
+  | 'held'
+  /** Broke free of a grab, or grabbed on the same tick as the opponent: pushed apart, reeling. */
+  | 'tech';
 
 export interface FighterState {
   /** Horizontal center, in sub-pixels from the stage's left edge. */
@@ -85,9 +91,13 @@ export interface ProjectileState {
  * knows where its boxes met, so the presentation never has to work it out.
  */
 export interface Contact {
-  /** The attacker. */
+  /** The attacker; for a tech, the player who broke free (both, on a same-tick tech). */
   readonly by: 0 | 1;
-  readonly kind: 'hit' | 'block';
+  /**
+   * A strike or projectile hit or blocked; a grab that catches; a tech; a pummel or throw on
+   * the held opponent (its release).
+   */
+  readonly kind: 'hit' | 'block' | 'grab' | 'tech' | 'pummel' | 'throw';
   readonly move: MoveId;
   /**
    * Middle of the overlap between what struck (the attacker's hitbox, or its projectile's) and
@@ -97,6 +107,29 @@ export interface Contact {
   readonly y: number;
   /** Health taken: none when blocked, nor on a training dummy at its 1 HP floor. */
   readonly damage: number;
+  /**
+   * PUNITION: the grab caught a fighter recovering, the tech is out of reach. (The counter-hits
+   * of the strikes come with combat v2's phase 3.)
+   */
+  readonly counter: 'punish' | null;
+}
+
+/**
+ * A grab that caught (docs/combat-v2.md §4): who holds whom, for how long it has lasted and can
+ * last, and what the holder did with it. Time makes the rules (the clinch, the limit), not
+ * counters; `pummels` only tells the CPU and the HUD how many blows landed.
+ */
+export interface HoldState {
+  /** The holder; the other fighter is held. */
+  readonly holder: 0 | 1;
+  /** Ticks of the hold played, from 0 on the first tick after the grab's freeze. */
+  readonly frame: number;
+  /** When the holder throws forward if it has not thrown yet: shortened by the struggle. */
+  readonly limit: number;
+  /** False on a PUNITION: the grab caught a fighter recovering, it cannot break free. */
+  readonly techable: boolean;
+  /** Pummels landed so far. */
+  readonly pummels: number;
 }
 
 /** Shared by every tick where nothing touches, so a quiet tick allocates no list. */
@@ -138,6 +171,8 @@ export interface GameState {
   readonly projectiles: readonly ProjectileState[];
   /** What touched on the tick that produced this state (at most one per fighter). */
   readonly contacts: readonly Contact[];
+  /** The grab holding a fighter, if any. */
+  readonly hold: HoldState | null;
 }
 
 export function createInitialState(config: MatchConfig): GameState {
@@ -173,6 +208,8 @@ export function createRound(
     ],
     projectiles: NO_PROJECTILES,
     contacts: EMPTY_CONTACTS,
+    // A new round always starts free: a hold never outlives its round.
+    hold: null,
   };
 }
 

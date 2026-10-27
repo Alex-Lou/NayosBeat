@@ -47,6 +47,7 @@ describe('contacts', () => {
       x: start.fighters[0].x + px(28.25),
       y: px(52),
       damage: P.moves.standLight.damage,
+      counter: null,
     });
   });
 
@@ -74,12 +75,13 @@ describe('contacts', () => {
     ]);
   });
 
-  it('report a grab tech as a block on both sides', () => {
+  // Combat v2 (§4.1): a tech is a contact of its own, no longer a block.
+  it('report a grab tech as a tech on both sides', () => {
     const both = Light | Heavy;
     const contacts = contactsOf(facingOff(30, MIRROR_MATCH), [[both, both], ...idle(20)]);
     expect(contacts).toHaveLength(2);
     for (const contact of contacts) {
-      expect(contact).toMatchObject({ kind: 'block', move: 'grab', damage: 0 });
+      expect(contact).toMatchObject({ kind: 'tech', move: 'grab', damage: 0 });
     }
   });
 

@@ -47,6 +47,7 @@ export function updateFighter(
       return updateMove(f, template) ?? actOnGround(f, template, opponentX, threatened);
     case 'blockstun':
     case 'hitstun':
+    case 'tech':
     case 'knockdown': {
       const stunned = updateStun(f);
       if (stunned) return stunned;

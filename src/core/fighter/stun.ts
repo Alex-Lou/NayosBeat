@@ -7,7 +7,7 @@ import { nextFrame } from './action';
 import { airborne } from './air';
 
 /**
- * One tick of blockstun, hitstun or knockdown, sliding from the blow. Null once it is over:
+ * One tick of blockstun, hitstun, tech or knockdown, sliding from the blow. Null once it is over:
  * the fighter can act again.
  */
 export function updateStun(fighter: FighterState): FighterState | null {

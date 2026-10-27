@@ -1,6 +1,7 @@
 import type { FighterTemplate } from '../../core/config';
 import { px } from '../../core/constants';
-import { advance, box, dash, HEAVY_CANCELS, LIGHT_CANCELS } from './shared';
+import { GRAB_HITSTOP } from '../../core/rules';
+import { advance, box, dash, HEAVY_CANCELS, kd, LIGHT_CANCELS, throwMove } from './shared';
 
 /** Nayo, the all-rounder: good range, a projectile and a reliable anti-air. */
 export const NAYO: FighterTemplate = {
@@ -87,7 +88,7 @@ export const NAYO: FighterTemplate = {
       pushback: px(3.5),
       guard: 'low',
       hitbox: box(12, 2, 39, 12),
-      knockdown: true,
+      knockdown: kd(3, 3.5),
     },
     jumpLight: {
       name: 'Genou sauté',
@@ -160,23 +161,47 @@ export const NAYO: FighterTemplate = {
       guard: 'mid',
       hitbox: box(4, 30, 20, 70),
       invincible: { from: 0, to: 7 },
-      knockdown: true,
+      knockdown: kd(3, 3),
     },
+    // The grab, then what he does with the opponent he holds (docs/combat-v2.md §4.3). Shorter
+    // than any blow; a miss leaves him open for 20 ticks.
     grab: {
-      name: 'Projection',
+      name: 'Prise',
       kind: 'grab',
-      startup: 3,
-      active: 2,
-      recovery: 22,
-      damage: 110,
+      startup: 5,
+      active: 3,
+      recovery: 20,
+      damage: 0,
       hitstun: 0,
       blockstun: 0,
-      hitstop: 10,
-      pushback: px(4),
+      hitstop: GRAB_HITSTOP,
+      pushback: 0,
       guard: 'mid',
-      hitbox: box(6, 20, 20, 40),
-      knockdown: true,
+      hitbox: box(6, 20, 24, 40),
     },
+    // The knee in the belly: two fit in a hold the opponent does not struggle against.
+    pummel: throwMove({ name: 'Coup de genou', startup: 6, recovery: 9, damage: 15, hitstop: 6 }),
+    // Pushed off and sent away by a straight: lands about 72 px off, Nayo back at his range.
+    throwForward: throwMove({
+      name: 'Renvoi',
+      startup: 10,
+      recovery: 25,
+      damage: 100,
+      hitstop: 10,
+      knockdown: kd(3.5, 3.5),
+    }),
+    // Over the shoulder: the opponent lands about 66 px behind him, in the corner he stood in.
+    // The sides switch on tick 6, when the heave takes the collar over his head (the strips
+    // throwBack and thrownBack are drawn in step from there).
+    throwBack: throwMove({
+      name: "Projection d'épaule",
+      startup: 14,
+      recovery: 27,
+      damage: 90,
+      hitstop: 10,
+      knockdown: kd(3.5, 3),
+      sideSwitchFrame: 6,
+    }),
     // A boxer's shuffle: not cancellable, a buffered move comes out on frame 18.
     dashForward: dash({ name: 'Pas chassé', duration: 18, frames: 14, distancePx: 56 }),
     // Grab-proof on frames 0-11 (the answer to the grab), but strikes still hit it.

@@ -72,14 +72,18 @@ function motionsOf(sheet: NayoSheet, poses: readonly Pose[]): Motion[] {
 }
 
 /**
- * Ticks per frame of a strip, from the clips that play it, or from the spec for a combat v2
- * strip that no clip plays yet.
+ * Ticks per frame of a strip, from the clips that play it (the clip named after the strip last,
+ * so its timing wins where another clip borrows a few of its frames), or from the spec for a
+ * combat v2 strip that no clip plays yet.
  */
 function timingOf(sheet: NayoSheet, frames: number): { ticks: number[]; loops: boolean } {
   const ticks = Array.from({ length: frames }, () => 3);
   let loops = false;
   let played = false;
-  for (const clip of Object.values(NAYO_CLIPS)) {
+  const clips = Object.entries(NAYO_CLIPS).sort(
+    ([a], [b]) => Number(a === sheet) - Number(b === sheet),
+  );
+  for (const [, clip] of clips) {
     if (clip.sheet !== sheet) continue;
     played = true;
     clip.frames.forEach((frame, index) => {

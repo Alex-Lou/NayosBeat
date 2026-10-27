@@ -2,11 +2,16 @@
 
 import type { Box } from '../../core/config';
 import { px } from '../../core/constants';
-import type { FrameRange, MoveData, MoveKind, RootMotion } from '../../core/move-data';
+import type { FrameRange, Knockdown, MoveData, MoveKind, RootMotion } from '../../core/move-data';
 
 /** A fighter-relative box in pixels (see `Box`). */
 export function box(x: number, y: number, width: number, height: number): Box {
   return { x: px(x), y: px(y), width: px(width), height: px(height) };
+}
+
+/** Sends the defender flying at `liftPx` up and `speedPx` away (pixels per tick), then down. */
+export function kd(liftPx: number, speedPx: number): Knockdown {
+  return { vx: px(speedPx), vy: px(liftPx) };
 }
 
 /**
@@ -89,3 +94,37 @@ export function dash(spec: DashSpec): MoveData {
 /** Light normals chain into other normals and specials on contact; heavies into specials. */
 export const LIGHT_CANCELS: readonly MoveKind[] = ['normal', 'special'];
 export const HEAVY_CANCELS: readonly MoveKind[] = ['special'];
+
+/** How a pummel or a throw is written: what happens on the held opponent (docs/combat-v2.md §4.3). */
+interface ThrowSpec {
+  readonly name: string;
+  /** The frame the pummel lands, or the throw lets go. */
+  readonly startup: number;
+  readonly recovery: number;
+  /** Fixed: no scaling, no bonus. */
+  readonly damage: number;
+  readonly hitstop: number;
+  /** Throws only: the flight of the opponent let go. */
+  readonly knockdown?: Knockdown;
+  /** The throw backward: when the opponent goes over to the holder's back. */
+  readonly sideSwitchFrame?: number;
+}
+
+/**
+ * A pummel or a throw as a move of kind `throw`: played on the held opponent, it lands on its
+ * startup frame (one active tick) without a hitbox, and nothing blocks it.
+ */
+export function throwMove(spec: ThrowSpec): MoveData {
+  const { knockdown, sideSwitchFrame, ...timing } = spec;
+  return {
+    ...timing,
+    kind: 'throw',
+    active: 1,
+    hitstun: 0,
+    blockstun: 0,
+    pushback: 0,
+    guard: 'mid',
+    ...(knockdown && { knockdown }),
+    ...(sideSwitchFrame !== undefined && { sideSwitchFrame }),
+  };
+}

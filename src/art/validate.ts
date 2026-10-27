@@ -1,6 +1,7 @@
 import type { FighterTemplate } from '../core/config';
 import { CORE_MOVE_IDS } from '../core/move-data';
 import { moveDuration } from '../core/moves';
+import { THROW_TECH_STUN } from '../core/rules';
 import { STATE_CLIP_IDS, type Clip, type FighterArt } from './types';
 
 /**
@@ -33,6 +34,9 @@ export function validateArt(art: FighterArt, template: FighterTemplate): string[
     ['preJump', art.clips.preJump, template.preJumpFrames],
     ['landing', art.clips.landing, template.landingFrames],
     ['knockdown', art.clips.knockdown, template.knockdownFrames],
+    ['tech', art.clips.tech, THROW_TECH_STUN],
+    // Frame for frame with the thrower, up to the release.
+    ['thrownBack', art.clips.thrownBack, template.moves.throwBack.startup],
     ...CORE_MOVE_IDS.map((id): [string, Clip, number] => [
       id,
       art.clips[id],

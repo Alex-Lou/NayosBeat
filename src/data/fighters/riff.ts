@@ -1,6 +1,7 @@
 import type { FighterTemplate } from '../../core/config';
 import { px } from '../../core/constants';
-import { advance, box, dash, HEAVY_CANCELS, LIGHT_CANCELS } from './shared';
+import { GRAB_HITSTOP } from '../../core/rules';
+import { advance, box, dash, HEAVY_CANCELS, kd, LIGHT_CANCELS, throwMove } from './shared';
 
 /** Riff, the rushdown: quicker moves, a rushing punch, an overhead, less health. */
 export const RIFF: FighterTemplate = {
@@ -85,7 +86,7 @@ export const RIFF: FighterTemplate = {
       pushback: px(3),
       guard: 'low',
       hitbox: box(10, 2, 34, 12),
-      knockdown: true,
+      knockdown: kd(3, 3),
     },
     jumpLight: {
       name: 'Genou sauté',
@@ -160,23 +161,45 @@ export const RIFF: FighterTemplate = {
       hitbox: box(4, 30, 24, 62),
       invincible: { from: 0, to: 6 },
       motion: advance(34, { from: 0, to: 8, speed: 1.5 }),
-      knockdown: true,
+      knockdown: kd(3, 3),
     },
+    // The grab, then what she does with the opponent she holds (docs/combat-v2.md §4.3).
     grab: {
-      name: 'Projection',
+      name: 'Prise',
       kind: 'grab',
-      startup: 3,
-      active: 2,
-      recovery: 22,
-      damage: 100,
+      startup: 5,
+      active: 3,
+      recovery: 19,
+      damage: 0,
       hitstun: 0,
       blockstun: 0,
-      hitstop: 10,
-      pushback: px(4),
+      hitstop: GRAB_HITSTOP,
+      pushback: 0,
       guard: 'mid',
-      hitbox: box(6, 20, 20, 40),
-      knockdown: true,
+      hitbox: box(6, 20, 22, 36),
     },
+    // Quick headbutts: three fit in a hold the opponent does not struggle against.
+    pummel: throwMove({ name: 'Coup de tête', startup: 4, recovery: 7, damage: 10, hitstop: 5 }),
+    // A scissor of the legs: the opponent falls close by, for the pressure on the wake-up.
+    throwForward: throwMove({
+      name: 'Ciseaux',
+      startup: 10,
+      recovery: 21,
+      damage: 85,
+      hitstop: 10,
+      knockdown: kd(3, 2),
+    }),
+    // The monkey flip: over her, about 66 px behind. The sides switch on tick 6, like Nayo's
+    // (the same first frames: the arc goes over the head there).
+    throwBack: throwMove({
+      name: 'Roulade',
+      startup: 14,
+      recovery: 25,
+      damage: 80,
+      hitstop: 10,
+      knockdown: kd(3.5, 3),
+      sideSwitchFrame: 6,
+    }),
     // Footwork: from frame 8 (53 px covered) it cancels into a normal or the grab, which glides
     // on with half the dash's speed. No run state: the cancel does that job.
     dashForward: dash({

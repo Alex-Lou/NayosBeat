@@ -164,7 +164,7 @@ describe('Nayo strips', () => {
       ways.push({ up: true, band: { from: x, to: x + width }, edge: y + height });
     const frames = activeFrames(move);
     expect(frames.length).toBeGreaterThan(0);
-    // The strip the move plays (the grab plays the "throw" strip).
+    // The strip the move plays.
     const strip = sheetCanvas(NAYO_CLIPS[move].sheet as PosedSheet);
     for (const frame of frames) {
       for (const { up, band, edge } of ways) {
