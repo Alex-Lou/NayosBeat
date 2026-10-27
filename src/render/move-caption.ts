@@ -4,6 +4,7 @@ import { toPx } from '../core/constants';
 import { moveOf } from '../core/moves';
 import type { GameState } from '../core/state';
 import { MAX_CLOSE_UP } from './camera-framing';
+import { stackedY } from './caption-stack';
 import { DEPTH } from './depth';
 import type { FightEvent } from './fight-events';
 import { PIXEL_FONT } from './hud';
@@ -75,5 +76,11 @@ export class MoveCaption {
       const head = toPx(fighter.y + this.config.fighters[player].standingPushbox.height);
       text.setPosition(Math.round(toPx(fighter.x)), Math.round(this.groundY - head - OVER_HEAD));
     }
+    // Both names at once, close together: the later one goes above the other, both readable.
+    const [first, second] = this.captions;
+    if (!first.text.visible || !second.text.visible) return;
+    const [earlier, later] = first.since <= second.since ? [first, second] : [second, first];
+    const y = stackedY(later.text, earlier.text);
+    if (y !== null) later.text.setY(y);
   }
 }

@@ -218,8 +218,8 @@ export class Onomatopoeia {
   }
 
   /**
-   * The comic lettering in the attacker's colors. The style is set without redrawing (with the metrics measured for its size),
-   * then the text is drawn once.
+   * The comic lettering in the attacker's colors. The style is set without redrawing (with the
+   * metrics measured for its size), then the text is drawn once.
    */
   private restyle(word: Word, kind: BlowKind, count: number): void {
     const style = this.styles[word.by];
