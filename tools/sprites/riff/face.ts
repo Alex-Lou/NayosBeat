@@ -1,56 +1,72 @@
 /**
  * Riff's expressions, as patches over her head (head.ts): only the brow, the eye and the mouth
- * change. `focus` is the head as drawn: eye wide open on the opponent, brow up, mouth closed,
- * no grin. The mischief lives in `smirk` (a cocky brow, a smug lower lid, one mouth corner up:
- * her taunts) and `cool` (the victory wink); the others tense or close the eye on blows.
+ * change, a few pixels each, never a grin. `focus` is the head as drawn: the sharp brow, the
+ * sideways look, the lips closed. `cool` drops the lid half over the eye (unimpressed), `smirk`
+ * adds the brow up and the mouth's corner pulled back (her taunts); the others tense or close
+ * the eye on blows.
  */
 
 import type { Face } from '../skeleton.ts';
 import { patched, type Patch } from '../stamp.ts';
 
-/** The brow and the eye: columns 23 to 28, rows 10 (under the cap) to 15 (lower lid). */
-function eye(rows: readonly [string, string, string, string, string, string]): Patch {
-  return { x: 23, y: 10, rows };
+/** The brow and the eye: columns 18 to 24, rows 15 (over the brow) to 22 (under the iris). */
+function eye(
+  rows: readonly [string, string, string, string, string, string, string, string],
+): Patch {
+  return { x: 18, y: 15, rows };
 }
 
-/** The mouth: columns 26 to 30, rows 18 to 20 (21 for an open mouth, the chin's edge at 30). */
-function mouth(rows: readonly string[]): Patch {
-  return { x: 26, y: 18, rows };
+/** The mouth: columns 22 to 26, rows 26 (under the nose) to 30 (the chin). */
+function mouth(rows: readonly [string, string, string, string, string]): Patch {
+  return { x: 22, y: 26, rows };
 }
 
-const SMIRK_MOUTH = mouth(['BDBSB', 'BBDDB', 'BBLBO']);
+/** The lid half down over the iris: the lash thickens one row, the pale light goes under it. */
+const LID_DOWN = eye([
+  '???????',
+  '???????',
+  '???????',
+  '???????',
+  '???????',
+  'SKKKKKD',
+  '???????',
+  '???????',
+]);
 
 const EXPRESSIONS: Readonly<Record<Face, readonly Patch[]>> = {
-  // As drawn: the lid arched over a round green iris, a catchlight, white toward the ear.
+  // As drawn: the brow angled down to the nose, the lash with its flick, the eye on the opponent.
   focus: [],
-  // Taunt: the brow arched higher, the lower lid up over the iris, the near mouth corner up.
-  smirk: [eye(['SSsddB', 'SsBBBs', 'BBBBBB', 'KKKKBB', 'KWIXKB', 'BSSSSB']), SMIRK_MOUTH],
-  // Victory wink: the eye closed in a happy arch, the smirk.
-  cool: [eye(['??????', '??????', 'BBBBBB', 'BKKKBB', 'KBBBKB', 'BBBBSB']), SMIRK_MOUTH],
-  // Brow down toward the nose, lids narrowed, mouth set.
+  // Unimpressed: the lid half down.
+  cool: [LID_DOWN],
+  // Taunt: the brow up and flatter, the lid half down, the mouth's corner pulled back.
+  smirk: [
+    eye(['BFKKBBB', 'BBBaKBB', 'BBBBaKB', 'BBSSDSK', '???????', 'SKKKKKD', '???????', '???????']),
+    mouth(['?D???', '?Daak', '?????', '?????', '?????']),
+  ],
+  // Brow down and pinched into the lash, the lower lid up, the lips pressed.
   effort: [
-    eye(['??????', 'SBBsdB', 'BBBBdd', 'KKKKKB', 'BWIXKB', 'BSCSSB']),
-    mouth(['BBBSB', 'BDDDB', 'BBSBO']),
+    eye(['???????', 'BBBBBBB', 'BFKKBBB', 'BBSKKKS', '???????', '???????', 'BSSIDDS', '???????']),
+    mouth(['?????', '?Daak', '?acck', '?SSk.', '?????']),
   ],
-  // A short shout at the peak of a special: brow down, eye open, mouth open.
+  // A short shout at the peak of a special: brow down, the eye open on the target, the mouth open.
   kiai: [
-    eye(['??????', 'SBBsdB', 'BBBBdd', 'KKKKBB', 'KWIXKB', 'BWCJSB']),
-    mouth(['BBBSB', 'BDOOB', 'BOMMO', 'BDOO?']),
+    eye(['???????', 'BBBBBBB', 'BFKKBBB', 'BBSKKKS', '???????', '???????', '???????', '???????']),
+    mouth(['?????', '?Daak', '?aMMk', '?eeck', '?Sck.']),
   ],
-  // Eye squeezed shut, brow pinched up, teeth clenched.
+  // Eye squeezed shut, teeth clenched.
   hurt: [
-    eye(['??????', 'SBBBds', 'BsddBB', 'BBBBBB', 'KKKKBB', 'BBSKKB']),
-    mouth(['BBBSB', 'BOTTO', 'BDOOO']),
+    eye(['???????', '???????', '???????', '???????', 'BBSKKKK', 'KKKKKSD', 'BSSSSBS', 'LBBBBBB']),
+    mouth(['?????', '?Oaak', '?OMTk', '?Sack', '?????']),
   ],
-  // Knocked out: eye closed low, mouth slack.
+  // Knocked out: the eye closed low, the mouth slack.
   out: [
-    eye(['??????', 'SBsdds', 'BBBBBB', 'BBBBBB', 'BSSSSB', 'BKKKKB']),
-    mouth(['BBBSB', 'BSDOB', 'BBDLO']),
+    eye(['???????', '???????', '???????', '???????', 'BBSSSSS', 'BKKKKKD', 'BBSSSDS', 'LBBBBBB']),
+    mouth(['?????', '?Oaak', '?MMck', '?eck.', '?????']),
   ],
-  // Out of breath: a skin-shadow lid heavy over the lowered lash, mouth ajar.
+  // Out of breath: the lid heavy, the lash low over the iris, the mouth ajar.
   tired: [
-    eye(['??????', 'SBsdds', 'BBBBBB', 'SSSSBB', 'KKKKKB', 'BWCJSB']),
-    mouth(['BBBSB', 'BSDOB', 'BBDLO']),
+    eye(['???????', '???????', '???????', '???????', 'BSSSSSD', 'KKKKKKD', '???????', '???????']),
+    mouth(['?????', '?Oaak', '?Meck', '?????', '?????']),
   ],
 };
 

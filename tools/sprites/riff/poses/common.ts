@@ -62,27 +62,47 @@ export function hold(pose: Pose, frames: number): readonly Pose[] {
 // Reference poses
 
 /**
- * The guard: a b-girl's ready stance, low and springy. Weight sunk into bent knees and thrown
- * forward, the lead foot flat and pointing at the opponent, the rear one far back up on its
- * ball, ready to push off; the torso tipped well forward over the lead knee, shoulders loose (no
- * shrug: she is not hiding). The lead hand open and low, palm out, its shoulder reaching after
- * it (a "come on"); the rear fist up under the chin; the head up and level, looking straight at
- * the opponent. Head angle (torso + head) under head.ts's 20 degrees, so the face is the one
- * drawn, never turned.
+ * A foot of hers up on its ball, the heel `-angle` degrees off the floor, its toe tip at `toe`:
+ * the ankle is placed so that the ball stays put whatever the heel does (a heel pop pivots on
+ * the ball, it never slides it).
+ */
+export function onBall(toe: number, angle: number): Foot {
+  const a = (angle * Math.PI) / 180;
+  const sole = RIFF_BODY.ankle - RIFF_BODY.footRadius;
+  return planted(toe - Math.sin(a) * sole - Math.cos(a) * RIFF_BODY.foot, angle);
+}
+
+/** The toe tip of a foot (the inverse of onBall): where a heel pop pivots. */
+export function toeOf(foot: Foot): number {
+  const a = ((foot.angle ?? 0) * Math.PI) / 180;
+  const sole = RIFF_BODY.ankle - RIFF_BODY.footRadius;
+  return foot.x + Math.sin(a) * sole + Math.cos(a) * RIFF_BODY.foot;
+}
+
+/**
+ * The guard: a street punk's stance, three quarters to the viewer like the reference (near
+ * limbs on the camera side: her rear arm and leg, the lead ones behind the body), leaning into
+ * the opponent. A wide stance, the hips low between the feet: the rear foot flat, its knee
+ * giving; the lead foot light on its ball, the heel up, the knee bent over it, ready to sweep or
+ * to snap the scorpion kick. One line of action from the rear foot up through the hips to the
+ * head, pitched forward: the torso leans in 9 degrees, the head turned back by as much so that
+ * it stays upright on screen (under head.ts's 20 degrees, the face as drawn), the sideways look
+ * on the opponent. The lead fist hangs low and loose in front of the belly, out toward the
+ * opponent, the elbow down (Iori's lead hand: she baits, she doesn't cover); the rear hand rests
+ * on the hip, the elbow cocked out behind (B. Jenet's taunt), while the rest of her leans in:
+ * come on, then. Her guard stands about 74 px tall, 0.94 of Nayo's.
  *
- * The hands stay inside the no-clinch line (x = 14 for anything above the shins), which is why
- * the lead wrist stops at x = 8: the open hand reaches 6 px past it.
+ * The lead knee, the top of the lead boot and the fist stay inside the no-clinch line (x = 14
+ * for anything above the shins): the hips sit back of centre by 3 px for it.
  */
 export const GUARD: Pose = {
-  hip: at(-5.5, 32.0),
-  torso: 18,
-  head: -6,
-  shrug: 0,
-  nearFoot: planted(6.4, -2),
-  farFoot: planted(-19, -15),
-  nearFist: at(8, 39),
-  farFist: at(9, 47),
-  reach: { near: 1 },
-  nearHand: 'open',
-  bends: { nearElbow: 'down', farElbow: 'down' },
+  hip: at(-6.5, 31.3),
+  torso: 9,
+  head: -8,
+  nearFoot: planted(-16.5, 0),
+  farFoot: onBall(15.2, -14),
+  nearFist: at(-11.5, 36.2),
+  farFist: at(8.8, 43.5),
+  bends: { nearElbow: 'back', farElbow: 'down' },
+  twist: 0.5,
 };

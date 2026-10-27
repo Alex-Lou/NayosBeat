@@ -1,11 +1,11 @@
 /**
  * Riff's frame timing and strikes, from docs/combat-v2.md §10.2 and §11.3 (combat v2: not the v1
  * `RIFF` template of src/data/fighters/riff.ts). The generator reads the ticks to make her
- * hanging parts (braids, drawstrings) lag behind her moves; the tests and the preview read the
+ * hanging parts (the fringe, the belt's chain) lag behind her moves; the tests and the preview read the
  * strikes: on its active frames, the striking limb reaches the far edge of the hitbox.
  *
  * Where the spec says "as Nayo" without numbers (reactions), the ticks are Nayo's current ones;
- * they only pace the braids' swing and change nothing in the game.
+ * they only pace the hanging parts' swing and change nothing in the game.
  */
 
 import type { RiffSheet } from '../../../src/art/riff/sheets.ts';
@@ -23,7 +23,8 @@ const repeat = (ticks: number, frames: number): number[] => Array<number>(frames
 
 /** Ticks of every frame of every strip (60 per second). */
 export const RIFF_TIMING: Readonly<Record<RiffSheet, Timing>> = {
-  idle: loop(...repeat(6, 8)),
+  // One heavy beat per loop: the downbeat held (2), the taunt held (5, 6); 48 ticks as in §11.3.
+  idle: loop(6, 5, 7, 5, 5, 9, 7, 4),
   walkForward: loop(...repeat(2, 10)),
   walkBack: loop(...repeat(2, 10)),
   crouch: loop(2, 2, 2, 8, 8, 8),

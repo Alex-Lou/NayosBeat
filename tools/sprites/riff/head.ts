@@ -1,109 +1,72 @@
 /**
- * Riff's head: three-quarter view facing right like Nayo's, same pixel density, her own face.
- * A white snapback worn backwards: the violet brim sticks out at the back (the silhouette that
- * says "backwards" at any size), a sun-yellow diamond on the front panel (now at the back), a
- * yellow button on top, one panel seam, and at the forehead a lock of auburn hair poking out of
- * the strap opening. Light golden skin, freckles across the cheek and the nose; a green eye wide
- * open on the opponent under an arched lid, a white catchlight, the brow up, the mouth closed
- * (no grin: the mischief is in the `smirk` and `cool` patches of face.ts).
- *
- * One character per pixel (legend below). The braids are not in the stamp: they hang from
- * `BRAID_ROOTS` as strips of `BRAID` that bend behind her moves (see `braidSlots`); the cap is
- * rigid, so unlike Nayo's spikes no row of the head trails. Drawn like Nayo's: upright below 20
- * degrees, turned by RotSprite beyond (../stamp.ts).
+ * Riff's head is the punk girl's of Zen-Tazzer: spiky blue-black hair on top, the near side
+ * shaved (a stubble check over the scalp), a long magenta fringe swept over the far side and
+ * down along the jaw; a sharp brow angled down toward the nose, a thick lash with a flick, a
+ * blue-grey eye looking sideways at the opponent, magenta lipstick, a stud at the top of the
+ * ear and a silver stud with a short drop on the lobe. Taken from her idle sprite on its own
+ * pixel grid (an upscale of about 7.2 source pixels per art pixel), three rows and three columns
+ * taken out where they carried the least (the hair's top edge, the forehead, the cheek under the
+ * nose; the back of the hair, the temple, the fringe's tip) so that she stands at the density of
+ * her body, then cleaned by hand where the downscale broke it: outlines, strays, the lash's
+ * flick, the pout of the lower lip. Facing right; the jaw ends the stamp, the neck is the
+ * body's. One character per pixel (legend below). Expressions are patches over it (face.ts);
+ * the fringe's loose strands swing behind the motion (swayFringe); the head turns with the
+ * skeleton by RotSprite beyond 20 degrees, upright below.
  */
 
 import type { PixelCanvas, Point } from '../raster.ts';
 import type { Face } from '../skeleton.ts';
-import { slotsOf, stamp, UPRIGHT_TOLERANCE, type Legend } from '../stamp.ts';
+import { slotsOf, stamp, type Legend } from '../stamp.ts';
 import { expressionOf } from './face.ts';
 import { DETAIL, MATERIAL } from './palette.ts';
 
 export const HEAD: readonly string[] = [
-  '..................11.................',
-  '...............111YZ1111.............',
-  '............111445556665111..........',
-  '..........1134444435566655411........',
-  '........1233Y344444355555555541......',
-  '.pppppp1223YZY34444435555555441......',
-  'pttuuup1223yYy34444435555555421......',
-  'ptttuuu12223y3344444433555432kk......',
-  'pqrrrrr122233334444444435432klbk.....',
-  '.ppppppp1223333344444443321111bk.....',
-  '.......kdd11111111111kkSSSBBBBLO.....',
-  '.......kdsbllbsblbsdkkkSBsddsBLO.....',
-  '.......kdsbblbkOBSkdSBBBBBBBBBLO.....',
-  '.......kdssbbskBDOSkSBBKKKKBBBLO.....',
-  '........kdsbbskSDOBkSBBKWIXKBBLO.....',
-  '........kdssbdkSDSBSBBBBWCJSBLBO.....',
-  '.........kdsbkkOSOBLLBBBBSBBFBDLO....',
-  '..........kdsk..OSBBFBBBBBFBBSBO.....',
-  '...........kk...OSBBBBBFBBBBBBBO.....',
-  '.................OSSBBBBBBBSDDBO.....',
-  '..................OSSBBBBBBBLBO......',
-  '..................ODSSBBBBBBBDO......',
-  '...................ODSSBBBBBDO.......',
-  '.....................ODDSBBDO........',
-  '.......................OOOO..........',
+  '.............kkk......................',
+  '.........k..kgk.......................',
+  '.......kkkkkgdbkkkkkkkkkkkkk..........',
+  '.......klksgllglgbllbbtutrk...........',
+  '.....kkdlslgbgbggggbruurpkkkkk........',
+  '..k.kbldblslbglgbgbgvtqpruvuutkk......',
+  '..kkkdblsbsbsblbglguqbtuvvvttutrkk....',
+  '..kblbgbbdbsssbblbtrruvvvrrqpkqqkkk...',
+  '..kksllgbbkkkddsbbrsuurqtvvvutkk......',
+  '.ksglslbss23321kdspqtrquvttvvvtrk.....',
+  '.kglbgbd234353432dsprqutpqqrrvvuuk....',
+  'kgssgls1446S4S463DOkpqrpruvvvtrruuk...',
+  'kkslls143664S5S5SSDSDkskqrttvvvtpquk..',
+  'kkllbs33664S565S4DSBBSSDkdqrttvvtdqrk.',
+  'kslbs1364364S4S5SSBBBBBSDkkqtuquvtkkkk',
+  '.ksss223534633SDOBBBBBBBBSOksqutqruk..',
+  '.ksss122353455DDBBBFKKBBBSSkpptutqrk..',
+  '.ksbs1223OkkDSDDBBBBBaKBBSDkpprutrrk..',
+  '.kkbs123sdLBkDDBBBBBSDaKSSDkppptutkk..',
+  '.kksss22kLOOBOOBBBKKKKKKKDkppqpturkk..',
+  '..ksss12knSOBODBBBSKJIKKDDkpprptttkk..',
+  '..kdsss2kBSODBOBBBBSJIIDSkpqprprtk.k..',
+  '...ksss1kBDOBBSSBBLBBOCBBOqqpqqrtk....',
+  '....ksssskBDOBBBBBBLBBBBBBdqqrqqtk....',
+  '.....ksssskBNBBBBBBBBBBBBBBdrtqktk....',
+  '.....kssskkmkDBBBBBBBBBBSDDkrtpkktk...',
+  '.....kbssk...OBBBBBBBBBBBSpqrtk..kk...',
+  '.....klbsk...OSBBBBBBBBBaakqrrk...k...',
+  '....kkkkkk....OSBBBBBBBeeckqtk........',
+  '...............OSBBBBBBcck.ktk........',
+  '................ODBBBBBSk..krk........',
+  '.................OOOSBBSO...kkk.......',
+  '...................OOOOO..............',
 ];
 
-/** Pixel of the stamp on the skeleton's head point (the middle of the skull, at the ear). */
-export const HEAD_CENTER: Point = { x: 17, y: 13 };
-
 /**
- * One braid, root at the top: three three-strand lobes that alternate, a yellow hair tie, a
- * short flared tuft. Short enough that the tie sits at the shoulder line, over the hood. Its
- * column `BRAID_COLUMN` hangs under the root.
+ * Pixel of the stamp on the skeleton's head point: at the brow's height, over the corner of the
+ * jaw, so that the skull sits back over the neck and the fringe stays within her pushbox.
  */
-export const BRAID: readonly string[] = [
-  '.kkk..',
-  'kblk..',
-  'ksbbk.',
-  'kdslk.',
-  '.kdsk.',
-  'kblk..',
-  'ksbbk.',
-  'kdslk.',
-  '.kdsk.',
-  'kblk..',
-  'ksbbk.',
-  'kdslk.',
-  '.kdsk.',
-  '.kkk..',
-  'kyYYk.',
-  'kyyyk.',
-  'kbkbk.',
-  'kbsbsk',
-  'ksdksk',
-  '.k..k.',
-];
-
-/** Column of BRAID right under its root. */
-const BRAID_COLUMN = 3;
-
-export type BraidSide = 'near' | 'far';
-
-/**
- * Stamp pixels where the braids leave the hair, under the cap: the near one at the back of the
- * nape (so it falls over the hood, behind the sleeve), the far one higher and farther back,
- * splayed back (`BRAID_SPLAY`) so that two empty columns part the two plaits below the root.
- */
-export const BRAID_ROOTS: Readonly<Record<BraidSide, Point>> = {
-  near: { x: 10, y: 17 },
-  far: { x: 6, y: 13 },
-};
-
-/** How far each braid's tip hangs back at rest, in pixels (- is toward the back). */
-export const BRAID_SPLAY: Readonly<Record<BraidSide, number>> = { near: 0, far: -4 };
-
-/** The far braid, one tone darker (like the far limbs). */
-const FAR_HAIR: Readonly<Record<string, string>> = { l: 'b', b: 's', s: 'd' };
+export const HEAD_CENTER: Point = { x: 19, y: 17 };
 
 const SKIN = MATERIAL.skin;
 const HAIR = MATERIAL.hair;
-const CAP = MATERIAL.white;
-const BRIM = MATERIAL.primary;
-const ACCENT = MATERIAL.accent;
+const STUBBLE = MATERIAL.stubble;
+const FRINGE = MATERIAL.magenta;
+const METAL = MATERIAL.metal;
 
 /** Palette slot of each stamp character; '.' (or any other) is empty. */
 const LEGEND: Legend = {
@@ -114,98 +77,99 @@ const LEGEND: Legend = {
   B: SKIN.base,
   L: SKIN.light,
   H: SKIN.gloss,
-  F: DETAIL.freckle,
-  // Hair.
+  // Black hair.
   k: HAIR.outline,
   d: HAIR.deep,
   s: HAIR.shadow,
   b: HAIR.base,
   l: HAIR.light,
   g: HAIR.gloss,
-  // Cap crown (the white material), darkest to lightest.
-  '1': CAP.outline,
-  '2': CAP.deep,
-  '3': CAP.shadow,
-  '4': CAP.base,
-  '5': CAP.light,
-  '6': CAP.gloss,
-  // Brim (her primary color: violet, sun-yellow on the second colorway).
-  p: BRIM.outline,
-  q: BRIM.deep,
-  r: BRIM.shadow,
-  t: BRIM.base,
-  u: BRIM.light,
-  // Accent (logo, button, hair ties): yellow, violet on the second colorway.
-  y: ACCENT.shadow,
-  Y: ACCENT.base,
-  Z: ACCENT.light,
-  // Eye and mouth.
+  // The undercut's stubble, darkest to lightest.
+  '1': STUBBLE.outline,
+  '2': STUBBLE.deep,
+  '3': STUBBLE.shadow,
+  '4': STUBBLE.base,
+  '5': STUBBLE.light,
+  '6': STUBBLE.gloss,
+  // The magenta fringe, darkest to lightest.
+  p: FRINGE.outline,
+  q: FRINGE.deep,
+  r: FRINGE.shadow,
+  t: FRINGE.base,
+  u: FRINGE.light,
+  v: FRINGE.gloss,
+  // Silver earrings.
+  m: METAL.deep,
+  n: METAL.base,
+  N: METAL.light,
+  // Brow, eye, lips (and the mouth and the white of the eye for the expressions).
   K: DETAIL.ink,
+  F: DETAIL.brow,
   W: DETAIL.eyeWhite,
   C: DETAIL.iris,
   J: DETAIL.irisLight,
   I: DETAIL.irisDeep,
-  X: DETAIL.catchlight,
+  a: DETAIL.lipDeep,
+  c: DETAIL.lip,
+  e: DETAIL.lipLight,
   M: DETAIL.mouth,
   T: DETAIL.teeth,
 };
 
+/** Characters of the face (skin, eye, brow, lips): the fringe's loose strands start past them. */
+const FACE = new Set('ODSBLHKFWCJIaceMT');
+
+/** Rows of the fringe's loose strands, hanging past the face: their tips swing the most. */
+const LOOSE_TOP = 14;
+const LOOSE_BOTTOM = 31;
+/** How far the tips may swing, in sprite pixels (a windmill or a spin swings them hard). */
+const MAX_SWAY = 4;
+
+/**
+ * The fringe swung `sway` sprite pixels at its tips (positive: forward, toward the face's
+ * side), its loose strands sheared row by row from none at the brow to all at the tips. A strand
+ * swinging forward widens at its root (no gap opens between the fringe and the face); swinging
+ * back, it slides behind the face's outline.
+ */
+export function swayFringe(rows: readonly string[], sway: number): readonly string[] {
+  const tip = Math.max(-MAX_SWAY, Math.min(MAX_SWAY, sway));
+  if (Math.round(tip) === 0) return rows;
+  return rows.map((row, y) => {
+    if (y <= LOOSE_TOP || y > LOOSE_BOTTOM) return row;
+    // The shear grows faster than the distance from the brow: the roots stay put, the tips (the
+    // last rows, 26 to 31) swing the most, like hair rather than a block.
+    const shift = Math.round(tip * ((y - LOOSE_TOP) / (LOOSE_BOTTOM - LOOSE_TOP)) ** 1.6);
+    if (shift === 0) return row;
+    let face = -1;
+    for (let x = 0; x < row.length; x++) if (FACE.has(row.charAt(x))) face = x;
+    if (face < 0) return row;
+    // The fringe starts past the face and its outline.
+    const root = row.charAt(face + 1) === 'k' ? face + 2 : face + 1;
+    const strands = row.slice(root);
+    if (!/[pqrtuv]/.test(strands)) return row;
+    const moved =
+      shift > 0
+        ? strands.charAt(0).repeat(shift) + strands
+        : strands.slice(-shift) + '.'.repeat(-shift);
+    return row.slice(0, root) + moved;
+  });
+}
+
 /**
  * Draws the head with the expression of `face`, its center pixel at `center` (cell pixels),
- * turned `angle` degrees clockwise on screen.
+ * turned `angle` degrees clockwise on screen, the fringe's tips swung `sway` sprite pixels.
  */
-export function stampHead(canvas: PixelCanvas, face: Face, center: Point, angle: number): void {
-  stamp(canvas, headSlots(expressionOf(HEAD, face)), HEAD_CENTER, center, angle);
+export function stampHead(
+  canvas: PixelCanvas,
+  face: Face,
+  center: Point,
+  angle: number,
+  sway = 0,
+): void {
+  stamp(canvas, headSlots(swayFringe(expressionOf(HEAD, face), sway)), HEAD_CENTER, center, angle);
 }
 
 /** Palette slots of a head's pixels (0: empty). */
 export function headSlots(rows: readonly string[] = HEAD): number[][] {
   return slotsOf(rows, LEGEND);
-}
-
-/**
- * Where a pixel of the stamp lands (cell pixels) when the head is stamped at `center`, turned
- * `angle` degrees: the roots of the braids follow the head.
- */
-export function onHead(pixel: Point, center: Point, angle: number): Point {
-  const dx = pixel.x - HEAD_CENTER.x;
-  const dy = pixel.y - HEAD_CENTER.y;
-  const cx = Math.round(center.x);
-  const cy = Math.round(center.y);
-  if (Math.abs(angle) < UPRIGHT_TOLERANCE) return { x: cx + dx, y: cy + dy };
-  const radians = (angle * Math.PI) / 180;
-  const cos = Math.cos(radians);
-  const sin = Math.sin(radians);
-  return { x: cx + dx * cos - dy * sin, y: cy + dx * sin + dy * cos };
-}
-
-/**
- * Slots of a braid, bent by `swing` pixels at the tip (+ to the right: a forward dash wants a
- * negative swing): each row slides by a share of it that grows toward the tip, so the plaits
- * stay whole pixel art. The grid is padded by ceil(|swing|) on both sides. The far braid is one
- * tone darker.
- */
-export function braidSlots(which: BraidSide, swing = 0): number[][] {
-  const last = BRAID.length - 1;
-  const pad = Math.ceil(Math.abs(swing));
-  const rows = BRAID.map((row, y) => {
-    const shift = Math.round(swing * (y / last) ** 1.6);
-    const chars = which === 'far' ? row.replace(/[lbs]/g, (c) => FAR_HAIR[c] ?? c) : row;
-    return '.'.repeat(pad + shift) + chars + '.'.repeat(pad - shift);
-  });
-  return slotsOf(rows, LEGEND);
-}
-
-/**
- * Draws a braid hanging straight down from `root` (cell pixels), whatever the head does: it
- * follows gravity, bent `swing` pixels at the tip.
- */
-export function stampBraid(
-  canvas: PixelCanvas,
-  which: BraidSide,
-  root: Point,
-  swing: number,
-): void {
-  const pad = Math.ceil(Math.abs(swing));
-  stamp(canvas, braidSlots(which, swing), { x: BRAID_COLUMN + pad, y: 0 }, root, 0);
 }

@@ -1,82 +1,103 @@
-import { at, GUARD, lifted, planted, type Pose } from './common.ts';
+import { at, GUARD, onBall, toeOf, type Pose } from './common.ts';
 
 export const ANIMATED: boolean = true;
 
 /**
- * idle: 8 frames of 6 ticks, looping (0.8 s): toprock on the spot, a b-girl's Indian step done
- * in her guard. The lead heel peels up (1), the foot swings back across (2) and plants crossed
- * in front of the rear one (3), swings back through (4), flicks out heel first, toes up (5),
- * plants flat with the hips dropping into it (6) and rises into the guard (7). The poses are
- * spaced evenly along the foot's path: no jump between two frames, no hold that jitters.
+ * idle: 8 frames, looping (48 ticks, 0.8 s, strips.ts): one heavy beat per loop, not two
+ * (a bounce every 0.8 s is swagger; one every 0.4 s is a jog), and an uneven one: the downbeat
+ * forward is deep and slow, the back swing shallow, and she holds the taunt.
  *
- * The hips, the feet and the braids carry the bounce; the torso and the head barely move (a
- * degree or two, a pixel or two), and not at all on the two plants (3 and 6), so the accents
- * read and the sprite does not boil. The arms answer the step with a small swing: the lead
- * hand opens out as the foot crosses, comes back as it flicks out. The head keeps the guard's
- * angle (torso + head = 12 degrees, drawn upright, see head.ts), so its pixels only shift.
- * Frame 0 is exactly GUARD: every move that ends in the guard flows into it, and frame 7 flows
- * back into frame 0.
+ * - 1, 2: the downbeat. The hips sink 2 px and the shoulders roll over them (the torso pitches
+ *   in 4 more degrees, the lead shoulder shrugs up), the lead heel drops toward the floor,
+ *   pivoting on the ball (the toe never slides). Frame 2 is held a little longer: the weight.
+ * - 3: the rebound, the hips back up through the guard, the shoulders settling a frame later.
+ * - 4: the back swing, shallow: the hips rock back and dip less than 1 px.
+ * - 5, 6: the taunt, held: the lead hand opens, palm up, then the fingers curl back ("come on"),
+ *   the chin comes up 3 degrees and the lid drops (`cool`), on these two frames only.
+ * - 7: back into the guard; frame 0 is exactly GUARD, so every move ending in the guard flows
+ *   into the loop.
+ *
+ * The lead fist rides the shoulders a frame late; the hand on the hip rides with the hip; the
+ * fringe and the belt's chain swing on their springs (index.ts). The head keeps the guard's
+ * angle on screen (under head.ts's 20 degrees, so the face is drawn as is). The hips barely
+ * travel forward on the downbeat (they sink, the shoulders do the rolling): the lead knee stays
+ * inside the no-clinch line.
  */
 
-/** The guard with the torso leaning `torso` degrees, the head kept at the guard's angle. */
-function lean(pose: Omit<Pose, 'head' | 'torso'>, torso: number): Pose {
-  return { ...pose, torso, head: GUARD.torso + GUARD.head - torso };
+/** The guard's lead foot: the toe tip its heel pops around, and the heel's angle. */
+const GUARD_TOE = toeOf(GUARD.farFoot);
+const GUARD_HEEL = GUARD.farFoot.angle ?? 0;
+
+/** Where the hand on the hip sits, from the hip: it rides along with it. */
+const ON_HIP = { x: GUARD.nearFist.x - GUARD.hip.x, y: GUARD.nearFist.y - GUARD.hip.y };
+
+interface Beat {
+  /** The hips from the guard's (world pixels): forward, up. */
+  readonly hip: readonly [number, number];
+  /** Extra lean of the torso toward the opponent (degrees). */
+  readonly lean: number;
+  readonly shrug: number;
+  /** The lead heel, degrees lower (toward the floor) than in the guard. */
+  readonly heel: number;
+  /** The lead fist from the guard's (world pixels): forward, up. */
+  readonly fist: readonly [number, number];
+  /** The chin raised (degrees). */
+  readonly chin?: number;
+  readonly taunt?: 'open' | 'curl';
+  readonly twist: number;
 }
 
-/** One frame of the step: hips, lean, feet and wrists; the rest is the guard's. */
-function step(
-  hip: readonly [number, number],
-  torso: number,
-  nearFoot: Pose['nearFoot'],
-  farFoot: Pose['farFoot'],
-  nearFist: readonly [number, number],
-  farFist: readonly [number, number],
-  extra: Partial<Pose> = {},
-): Pose {
-  return lean(
-    {
-      ...GUARD,
-      ...extra,
-      hip: at(...hip),
-      nearFoot,
-      farFoot,
-      nearFist: at(...nearFist),
-      farFist: at(...farFist),
-    },
-    torso,
-  );
-}
-
-export const POSES: readonly Pose[] = [
-  GUARD,
-  // The lead heel peels up, the hips rise a little off it.
-  step([-5.6, 32.4], 18, planted(5.4, -18), GUARD.farFoot, [7.8, 39.4], [8.8, 47.4]),
-  // The lead foot swings back across, off the floor; the lead hand swings open, out and low.
-  step(
-    [-5.9, 32.6],
-    17.5,
-    lifted(planted(-2.2, -10), 3.2),
-    GUARD.farFoot,
-    [7.4, 37.4],
-    [8.6, 47.6],
-    { twist: 0.3 },
-  ),
-  // Planted, crossed over in front of the rear foot: the hips sink into it.
-  step([-6.2, 31.4], 17.5, planted(-9.5, -6), planted(-19.2, -22), [7.2, 36.6], [8.6, 47.2], {
-    twist: 0.5,
-  }),
-  // Swinging back through, lifted, toes already coming up; the hips rise.
-  step([-5.9, 32.6], 17.5, lifted(planted(-1.0, 10), 4), GUARD.farFoot, [7.6, 37.8], [8.8, 47.6], {
-    twist: 0.2,
-  }),
-  // Flicked out past the guard, heel down, toes up: the lead hand comes back in.
-  step([-5.6, 32.3], 18, planted(7.2, 20), GUARD.farFoot, [8.0, 38.8], [9.0, 47.6], {
-    twist: -0.1,
-  }),
-  // Planted flat, the weight dropped onto it: the hips down.
-  step([-5.4, 31.4], 18, planted(6.8, 0), GUARD.farFoot, [8.0, 38.4], [9.0, 46.6], {
-    twist: -0.1,
-  }),
-  // Rising back into the guard.
-  step([-5.5, 31.8], 18, planted(6.5, -2), GUARD.farFoot, [8.0, 38.8], [9.0, 46.8]),
+const BEATS: readonly Beat[] = [
+  // 1: dropping into the downbeat.
+  { hip: [-0.3, -1.1], lean: 2.5, shrug: 0.4, heel: 2, fist: [0, -0.2], twist: 0.05 },
+  // 2: the downbeat, the shoulders rolled over the hips.
+  { hip: [-0.5, -2.0], lean: 4.5, shrug: 0.5, heel: 4, fist: [-0.2, -0.9], twist: 0.1 },
+  // 3: the rebound, the fist still coming down.
+  { hip: [-0.1, -0.4], lean: 2.5, shrug: 0.5, heel: 1, fist: [-0.1, -1.4], twist: 0.05 },
+  // 4: the back swing, shallow.
+  { hip: [-1.0, -0.8], lean: -1.5, shrug: 0, heel: 3, fist: [-0.1, -0.6], twist: -0.12 },
+  // 5: the taunt: the lead hand opens, palm up, the chin up.
+  {
+    hip: [-1.1, -0.5],
+    lean: -2,
+    shrug: 0,
+    heel: 1,
+    fist: [0.2, 1.2],
+    chin: 3,
+    taunt: 'open',
+    twist: -0.15,
+  },
+  // 6: the fingers curl back: come on.
+  {
+    hip: [-0.9, -0.3],
+    lean: -1.5,
+    shrug: 0,
+    heel: 0,
+    fist: [-0.6, 1.8],
+    chin: 3,
+    taunt: 'curl',
+    twist: -0.12,
+  },
+  // 7: settling back into the guard.
+  { hip: [-0.3, -0.2], lean: -0.5, shrug: 0.1, heel: 0.5, fist: [-0.2, 0.6], twist: -0.04 },
 ];
+
+function beat(b: Beat): Pose {
+  const hip = at(GUARD.hip.x + b.hip[0], GUARD.hip.y + b.hip[1]);
+  const torso = GUARD.torso + b.lean;
+  return {
+    ...GUARD,
+    hip,
+    torso,
+    head: GUARD.torso + GUARD.head - torso - (b.chin ?? 0),
+    shrug: b.shrug,
+    farFoot: onBall(GUARD_TOE, GUARD_HEEL + b.heel),
+    nearFist: at(hip.x + ON_HIP.x, hip.y + ON_HIP.y),
+    farFist: at(GUARD.farFist.x + b.fist[0], GUARD.farFist.y + b.fist[1]),
+    ...(b.taunt === 'open' ? { farHand: 'open' as const } : {}),
+    ...(b.taunt ? { face: 'cool' as const } : {}),
+    twist: (GUARD.twist ?? 0) + b.twist,
+  };
+}
+
+export const POSES: readonly Pose[] = [GUARD, ...BEATS.map(beat)];
