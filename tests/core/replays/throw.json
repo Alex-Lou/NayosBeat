@@ -1,0 +1,29 @@
+{
+  "description": "Throws: a whiffed throw, a landed one from both sides, a late light-then-heavy conversion, a tech, and a throw that misses a blocking opponent.",
+  "fighters": ["polyvalent", "rushdown"],
+  "inputs": [
+    [90, "", ""],
+    [1, "light+heavy", ""],
+    [27, "", ""],
+    [46, "right", "left"],
+    [1, "light+heavy", ""],
+    [64, "", ""],
+    [14, "right", "left"],
+    [1, "", "light+heavy"],
+    [65, "", ""],
+    [16, "right", "left"],
+    [1, "light", ""],
+    [1, "light+heavy", ""],
+    [64, "", ""],
+    [14, "right", "left"],
+    [1, "light+heavy", "light+heavy"],
+    [16, "", ""],
+    [23, "right", "left"],
+    [1, "light", "right"],
+    [4, "", "right"],
+    [1, "light+heavy", "right"],
+    [18, "", "right"],
+    [30, "", ""]
+  ],
+  "hash": "6776c2da"
+}
