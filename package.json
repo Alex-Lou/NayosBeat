@@ -13,7 +13,7 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "bench": "vitest bench --run",
+    "bench": "vitest bench --run --reporter=verbose",
     "replays:update": "node --import ./tools/sprites/ts-imports.js tools/replays/update.ts",
     "sprites": "node tools/sprites/generate.ts",
     "sprites:preview": "node --import ./tools/sprites/ts-imports.js tools/sprites/preview.ts"

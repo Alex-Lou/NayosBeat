@@ -5,6 +5,27 @@ import tseslint from 'typescript-eslint';
 /** Folders of the presentation and the application, which the pure layers never import. */
 const OUTER_LAYERS = ['render', 'loop', 'input', 'app', 'ui', 'art', 'audio'];
 
+/** Globals that tell the time or run code later: a replay would not play the same twice. */
+const CLOCK_GLOBALS = ['Date', 'performance', 'setTimeout', 'setInterval', 'requestAnimationFrame'];
+
+/** Globals of the page and the device: state the simulation cannot see in a replay. */
+const HOST_GLOBALS = [
+  'window',
+  'document',
+  'globalThis',
+  'self',
+  'navigator',
+  'localStorage',
+  'sessionStorage',
+  'crypto',
+  'fetch',
+];
+
+/** `no-restricted-globals` entries for `names`, each with the same `message`. */
+function restricted(names, message) {
+  return names.map((name) => ({ name, message }));
+}
+
 /** Forbids `files` (the `name` layer) to import the engine, the outer layers and `inner`. */
 function layer(files, name, inner) {
   return {
@@ -65,20 +86,22 @@ export default tseslint.config(
   {
     // The simulation core, the CPU and the game data must stay pure and deterministic
     // (docs/PLAN.md §2.3, docs/combat-v2.md §14.1): no engine, no DOM, no wall clock, no
-    // unseeded randomness.
+    // unseeded randomness. The browser globals stay declared here too (flat config merges
+    // `globals`, and typescript-eslint turns `no-undef` off), hence the impure ones are named.
     files: ['src/core/**/*.ts', 'src/ai/**/*.ts', 'src/data/**/*.ts'],
-    languageOptions: { globals: {} },
     rules: {
       'no-restricted-properties': [
         'error',
         { object: 'Math', property: 'random', message: 'Use the seeded RNG from GameState.' },
-        {
-          object: 'Date',
-          property: 'now',
-          message: 'core/, ai/ and data/ must not read the clock.',
-        },
       ],
-      'no-restricted-globals': ['error', 'performance', 'window', 'document'],
+      'no-restricted-globals': [
+        'error',
+        ...restricted(
+          CLOCK_GLOBALS,
+          'core/, ai/ and data/ must not read the clock or schedule work.',
+        ),
+        ...restricted(HOST_GLOBALS, 'core/, ai/ and data/ must not touch the DOM or the host.'),
+      ],
     },
   },
   // Layers point inward: core depends on nothing, data on the core alone, the CPU on both.

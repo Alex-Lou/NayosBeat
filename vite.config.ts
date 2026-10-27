@@ -50,5 +50,9 @@ export default defineConfig({
   },
   test: {
     include: ['tests/**/*.test.ts'],
+    // `npm run bench` measures code run through Vite's module runner, which reads every
+    // imported name through a getter; the bundled game does not, so the reading is an upper
+    // bound, and counting those reads to warn about it would only add to the overhead.
+    benchmark: { suppressExportGetterWarnings: true },
   },
 });

@@ -1,8 +1,10 @@
 /**
- * Golden replays (tests/core/replays/*.json): scripted input sequences, each with the hash of
- * the state the match ends in. They pin the game's behavior: a refactor that changes nothing
- * keeps every hash, and a change of gameplay shows up as a changed hash, re-recorded on
- * purpose with `npm run replays:update`.
+ * Golden replays (tests/core/replays/*.json): scripted input sequences, each with one hash of
+ * the state on every tick of the match. They pin the game's behavior: a refactor that changes
+ * nothing keeps every hash, and a change of gameplay shows up as a changed hash, re-recorded
+ * on purpose with `npm run replays:update`. Every tick, not the last one alone: the replays
+ * settle back to neutral, so a frame of hitstun or knockdown more would leave the final state
+ * as it was.
  */
 
 import type { MatchConfig } from '../../src/core/config.ts';
@@ -22,7 +24,7 @@ export interface Replay {
   readonly training?: boolean;
   /** The whole match from its first tick (round intro included). */
   readonly inputs: readonly InputRun[];
-  /** `stateHash` of the final state. */
+  /** `replayHash` of the replay: the state on every tick. */
   readonly hash: string;
 }
 
@@ -57,13 +59,19 @@ export function replayConfig(replay: Replay): MatchConfig {
   };
 }
 
-/** Plays the replay from a fresh match and returns the final state. */
-export function playReplay(replay: Replay): GameState {
+/**
+ * Plays the replay from a fresh match, calls `visit` with the state after every tick and
+ * returns the final state.
+ */
+export function playReplay(replay: Replay, visit?: (state: GameState) => void): GameState {
   const config = replayConfig(replay);
   let state = createInitialState(config);
   for (const [ticks, player1, player2] of replay.inputs) {
     const inputs = [parseInput(player1), parseInput(player2)] as const;
-    for (let i = 0; i < ticks; i++) state = step(state, inputs, config);
+    for (let i = 0; i < ticks; i++) {
+      state = step(state, inputs, config);
+      visit?.(state);
+    }
   }
   return state;
 }
@@ -97,11 +105,9 @@ export const FIGHTER_FIELDS = [
 ] as const satisfies readonly (keyof FighterState)[];
 
 /**
- * Left out of the hash: what touched on the last tick. It reports the tick rather than shaping
- * the next one, and its effects (health, stun, hitstop) are hashed already.
+ * The game's fields, in a fixed order, `contacts` included: health and stun do not tell where a
+ * hit landed, and the impact point moves with any hitbox or hurtbox.
  */
-export const UNHASHED_FIELDS = ['contacts'] as const satisfies readonly (keyof GameState)[];
-
 export const GAME_FIELDS = [
   'frame',
   'cameraX',
@@ -109,16 +115,41 @@ export const GAME_FIELDS = [
   'round',
   'fighters',
   'projectiles',
+  'contacts',
 ] as const satisfies readonly (keyof GameState)[];
 
-/** A small stable hash (FNV-1a, 32 bits, hexadecimal) of the state's canonical form. */
+/** FNV-1a, 32 bits: small, stable, and the same in every JavaScript engine. */
+const FNV_OFFSET = 0x811c9dc5;
+
+/** A small stable hash (FNV-1a, 32 bits, hexadecimal) of one state's canonical form. */
 export function stateHash(state: GameState): string {
-  const text = JSON.stringify(canonical(state));
-  let hash = 0x811c9dc5;
+  return hex(fnv(FNV_OFFSET, canonicalText(state)));
+}
+
+/** One hash of the state on every tick of the replay, in order: what a golden replay pins. */
+export function replayHash(replay: Replay): string {
+  let hash = FNV_OFFSET;
+  playReplay(replay, (state) => {
+    hash = fnv(hash, canonicalText(state));
+  });
+  return hex(hash);
+}
+
+/** Carries the FNV-1a `hash` on over `text`, so several texts hash as one stream. */
+function fnv(hash: number, text: string): number {
+  let next = hash;
   for (let i = 0; i < text.length; i++) {
-    hash = Math.imul(hash ^ text.charCodeAt(i), 0x01000193);
+    next = Math.imul(next ^ text.charCodeAt(i), 0x01000193);
   }
+  return next;
+}
+
+function hex(hash: number): string {
   return (hash >>> 0).toString(16).padStart(8, '0');
+}
+
+function canonicalText(state: GameState): string {
+  return JSON.stringify(canonical(state));
 }
 
 function canonical(state: GameState): unknown {

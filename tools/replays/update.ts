@@ -5,7 +5,7 @@
  */
 
 import { readdir, readFile, writeFile } from 'node:fs/promises';
-import { playReplay, stateHash, type Replay } from './replay.ts';
+import { replayHash, type Replay } from './replay.ts';
 
 const REPLAYS = new URL('../../tests/core/replays/', import.meta.url);
 
@@ -13,7 +13,7 @@ for (const name of (await readdir(REPLAYS)).filter((file) => file.endsWith('.jso
   const file = new URL(name, REPLAYS);
   const text = await readFile(file, 'utf8');
   const replay = JSON.parse(text) as Replay;
-  const hash = stateHash(playReplay(replay));
+  const hash = replayHash(replay);
   if (hash === replay.hash) {
     console.log(`${name}: unchanged`);
     continue;
