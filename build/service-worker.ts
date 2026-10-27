@@ -5,6 +5,7 @@ const TEMPLATE = new URL('./sw-template.js', import.meta.url);
 
 /** Files copied from public/ as they are (not part of the bundle), cached with it. */
 const PUBLIC_FILES = [
+  'boot.js',
   'manifest.webmanifest',
   'icons/icon-192.png',
   'icons/icon-512.png',

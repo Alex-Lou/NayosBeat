@@ -1,6 +1,6 @@
 /**
  * Nayo's poses, frame by frame, one file per strip (each strip's file is its own animation).
- * Attack poses are placed against the Polyvalent hitboxes (src/data/fighters.ts): on the active
+ * Attack poses are placed against Nayo's hitboxes (src/data/fighters/nayo.ts): on the active
  * frames the striking fist or foot reaches the far edge of the hitbox, so what you see is what
  * hits. tests/tools/sprites.test.ts checks it for every move.
  */

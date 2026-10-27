@@ -1,4 +1,5 @@
-import type { MatchConfig, MoveData } from '../core/config';
+import type { MatchConfig } from '../core/config';
+import type { MoveData } from '../core/move-data';
 import { toPx } from '../core/constants';
 import { Input, type InputBits } from '../core/input';
 import { isActiveFrame } from '../core/moves';

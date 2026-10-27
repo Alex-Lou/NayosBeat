@@ -1,0 +1,18 @@
+{
+  "description": "Walking forward and back, crouching, pushing each other, and walking into a corner.",
+  "fighters": ["nayo", "riff"],
+  "inputs": [
+    [90, "", ""],
+    [40, "right", "left"],
+    [30, "left", "right"],
+    [20, "down", "down+left"],
+    [10, "down+right", "down"],
+    [80, "right", "left"],
+    [40, "right", ""],
+    [260, "left", "right"],
+    [120, "right", "right"],
+    [40, "", "left"],
+    [30, "", ""]
+  ],
+  "hash": "e90d63d6"
+}

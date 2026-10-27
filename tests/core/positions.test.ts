@@ -3,7 +3,7 @@ import { CAMERA_WIDTH_PX, px } from '../../src/core/constants';
 import { followCamera, resolvePositions } from '../../src/core/positions';
 import type { FighterState } from '../../src/core/state';
 import { Input } from '../../src/core/input';
-import { POLYVALENT as STATS } from '../../src/data/fighters';
+import { NAYO as STATS } from '../../src/data/fighters/nayo';
 import { TRAINING_STAGE as STAGE } from '../../src/data/stages';
 import { fightState, makeFighter, MIRROR_MATCH, run } from './helpers';
 

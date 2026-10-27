@@ -3,7 +3,7 @@ import { applyHit, findHit } from '../../src/core/combat';
 import { px } from '../../src/core/constants';
 import { Input } from '../../src/core/input';
 import type { FighterState } from '../../src/core/state';
-import { POLYVALENT as T } from '../../src/data/fighters';
+import { NAYO as T } from '../../src/data/fighters/nayo';
 import { facingOff, makeFighter, MIRROR_MATCH, run } from './helpers';
 
 const LIGHT = T.moves.standLight;
@@ -122,7 +122,7 @@ describe('exchanges in a match', () => {
       ...f,
       input: 0,
       directionHistory: [],
-      bufferedAttack: null,
+      bufferedCommand: null,
       bufferFrames: 0,
       bufferedInput: 0,
       bufferedMotion: null,

@@ -37,6 +37,8 @@ function contentSecurityPolicy(): Plugin {
 export default defineConfig({
   // Relative asset paths: the build works from any sub-path (static hosting, Tauri).
   base: './',
+  // Shown on the title screen: tells which version a player (or an installed game) runs.
+  define: { __BUILD_DATE__: JSON.stringify(new Date().toISOString()) },
   // The installed game (PWA) plays offline: see build/service-worker.ts.
   plugins: [contentSecurityPolicy(), serviceWorker()],
   build: {
@@ -48,5 +50,9 @@ export default defineConfig({
   },
   test: {
     include: ['tests/**/*.test.ts'],
+    // `npm run bench` measures code run through Vite's module runner, which reads every
+    // imported name through a getter; the bundled game does not, so the reading is an upper
+    // bound, and counting those reads to warn about it would only add to the overhead.
+    benchmark: { suppressExportGetterWarnings: true },
   },
 });

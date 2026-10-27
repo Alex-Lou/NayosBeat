@@ -1,0 +1,15 @@
+{
+  "description": "A round that runs out of time after a few exchanges: the healthier fighter wins.",
+  "fighters": ["nayo", "riff"],
+  "inputs": [
+    [90, "", ""],
+    [43, "right", "left"],
+    [1, "heavy", ""],
+    [41, "", ""],
+    [1, "", "down+light"],
+    [12, "", ""],
+    [60, "left", "right"],
+    [5884, "", ""]
+  ],
+  "hash": "6dd53452"
+}

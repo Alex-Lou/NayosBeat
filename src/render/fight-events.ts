@@ -1,16 +1,12 @@
-import { intersects, type WorldBox } from '../core/boxes';
-import { activeMove, hitboxInWorld, hurtboxInWorld } from '../core/combat';
 import type { MatchConfig } from '../core/config';
-import { px } from '../core/constants';
-import { projectileBox } from '../core/projectiles';
-import type { FighterState, GameState, RoundPhase } from '../core/state';
+import type { Contact, FighterState, GameState, RoundPhase } from '../core/state';
 
 /**
  * Things worth a sound or a visual effect, found by comparing two consecutive states.
  * The simulation stays unaware of presentation: nothing here feeds back into the game.
  */
 /** Where a blow landed, who landed it, and which way it pushes the defender. */
-interface Contact {
+interface Impact {
   readonly x: number;
   readonly y: number;
   /** Away from the attacker. */
@@ -20,22 +16,22 @@ interface Contact {
 }
 
 export type FightEvent =
-  | ({ readonly type: 'hit'; readonly damage: number } & Contact)
-  | ({ readonly type: 'block' } & Contact)
-  | ({ readonly type: 'ko' } & Contact)
+  | ({ readonly type: 'hit'; readonly damage: number; readonly heavy: boolean } & Impact)
+  | ({ readonly type: 'block' } & Impact)
+  | ({ readonly type: 'ko' } & Impact)
   | { readonly type: 'attack'; readonly heavy: boolean }
   | { readonly type: 'projectile' }
   | { readonly type: 'jump' }
   | { readonly type: 'land' }
   | { readonly type: 'phase'; readonly phase: RoundPhase };
 
-/** Above this damage, a hit counts as heavy (bigger sparks, screen shake). */
+/**
+ * A move this strong counts as heavy (bigger sparks, shake, heavy sounds), by its own damage:
+ * the swing and the hit agree, and a heavy blow stays heavy late in a scaled combo.
+ */
 export const HEAVY_HIT_DAMAGE = 60;
 
-/** Without a striking box: in front of the defender, toward the attacker, at mid-body height. */
-const CONTACT_OFFSET_X = px(12);
-const CONTACT_HEIGHT_STANDING = px(50);
-const CONTACT_HEIGHT_CROUCHING = px(28);
+const PLAYERS = [0, 1] as const;
 
 /**
  * Fills `events` (cleared first) with what happened between two states. The caller reuses the
@@ -49,19 +45,13 @@ export function detectEvents(
 ): void {
   events.length = 0;
 
-  for (const player of [0, 1] as const) {
+  for (const player of PLAYERS) {
     const before = prev.fighters[player];
     const after = next.fighters[player];
-    const attacker = player === 0 ? 1 : 0;
-    const contact = contactPoint(prev, next, config, player, attacker);
 
-    if (after.action === 'ko' && before.action !== 'ko') {
-      events.push({ type: 'ko', ...contact });
-    } else if (after.health < before.health) {
-      events.push({ type: 'hit', ...contact, damage: before.health - after.health });
-    } else if (startedBlocking(before, after)) {
-      events.push({ type: 'block', ...contact });
-    }
+    // Hits, blocks and KOs come from the simulation's contacts: it knows where boxes met.
+    const contact = contactOn(next.contacts, player);
+    if (contact) events.push(contactEvent(contact, next, config));
 
     if (after.move && after.actionFrame === 0 && startedNewMove(before, after)) {
       const move = config.fighters[player].moves[after.move];
@@ -77,65 +67,31 @@ export function detectEvents(
   }
 }
 
-/** A new block, including a second block while still in blockstun (its frame counter restarts). */
-function startedBlocking(before: FighterState, after: FighterState): boolean {
-  if (after.action !== 'blockstun' || after.actionFrame !== 0) return false;
-  return before.action !== 'blockstun' || before.actionFrame > 0;
+/** The contact of the tick that touched `defender`, if any. */
+function contactOn(contacts: readonly Contact[], defender: 0 | 1): Contact | undefined {
+  for (const contact of contacts) if (contact.by !== defender) return contact;
+  return undefined;
+}
+
+/**
+ * A blocked blow, a hit, or the final blow. A hit is reported even when health does not move
+ * (a training dummy at its 1 HP floor), with the damage it really took.
+ */
+function contactEvent(contact: Contact, next: GameState, config: MatchConfig): FightEvent {
+  const attacker = next.fighters[contact.by];
+  const defender = next.fighters[contact.by === 0 ? 1 : 0];
+  const impact: Impact = {
+    x: contact.x,
+    y: contact.y,
+    away: attacker.x >= defender.x ? -1 : 1,
+    by: contact.by,
+  };
+  if (contact.kind === 'block') return { type: 'block', ...impact };
+  if (defender.health === 0) return { type: 'ko', ...impact };
+  const heavy = config.fighters[contact.by].moves[contact.move].damage >= HEAVY_HIT_DAMAGE;
+  return { type: 'hit', ...impact, damage: contact.damage, heavy };
 }
 
 function startedNewMove(before: FighterState, after: FighterState): boolean {
   return before.move !== after.move || before.actionFrame > 0;
-}
-
-/**
- * Where a blow lands: the middle of the overlap between what struck (the attacker's hitbox, or
- * its projectile) and the defender's body. A sweep sparks at the ankles, an uppercut at the
- * chin. On the tick of the hit, the attacker is still on the active frame that connected.
- */
-function contactPoint(
-  prev: GameState,
-  next: GameState,
-  config: MatchConfig,
-  defenderIndex: 0 | 1,
-  by: 0 | 1,
-): Contact {
-  const defender = next.fighters[defenderIndex];
-  const attacker = next.fighters[by];
-  const toward = attacker.x >= defender.x ? 1 : -1;
-  const away = toward === 1 ? -1 : 1;
-  const body = hurtboxInWorld(defender, config.fighters[defenderIndex]);
-  const strike = strikingBox(prev, attacker, body, config, by);
-  if (strike) return { ...middleOfOverlap(strike, body), away, by };
-
-  const height = defender.crouching ? CONTACT_HEIGHT_CROUCHING : CONTACT_HEIGHT_STANDING;
-  return { x: defender.x + toward * CONTACT_OFFSET_X, y: defender.y + height, away, by };
-}
-
-/** The attacker's active hitbox, else its projectile that reached the defender's body. */
-function strikingBox(
-  prev: GameState,
-  attacker: FighterState,
-  body: WorldBox,
-  config: MatchConfig,
-  by: 0 | 1,
-): WorldBox | null {
-  const move = activeMove(attacker, config.fighters[by]);
-  if (move?.hitbox) {
-    const hitbox = hitboxInWorld(attacker, move.hitbox);
-    if (intersects(hitbox, body)) return hitbox;
-  }
-  for (const projectile of prev.projectiles) {
-    if (projectile.owner !== by) continue;
-    const box = projectileBox(projectile, config);
-    if (intersects(box, body)) return box;
-  }
-  return null;
-}
-
-function middleOfOverlap(a: WorldBox, b: WorldBox): { x: number; y: number } {
-  const left = Math.max(a.left, b.left);
-  const right = Math.min(a.left + a.width, b.left + b.width);
-  const bottom = Math.max(a.bottom, b.bottom);
-  const top = Math.min(a.bottom + a.height, b.bottom + b.height);
-  return { x: (left + right) / 2, y: (bottom + top) / 2 };
 }

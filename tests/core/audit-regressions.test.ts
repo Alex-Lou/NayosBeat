@@ -7,7 +7,7 @@ import { updateFighter } from '../../src/core/fighter';
 import { Input } from '../../src/core/input';
 import { resolvePositions } from '../../src/core/positions';
 import { createInitialState } from '../../src/core/state';
-import { POLYVALENT as P } from '../../src/data/fighters';
+import { NAYO as P } from '../../src/data/fighters/nayo';
 import { TRAINING_STAGE } from '../../src/data/stages';
 import { facingOff, fightState, makeFighter, MATCH, MIRROR_MATCH, run } from './helpers';
 

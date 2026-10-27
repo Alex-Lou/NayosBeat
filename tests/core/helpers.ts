@@ -3,18 +3,19 @@ import { px } from '../../src/core/constants';
 import type { InputBits } from '../../src/core/input';
 import { createInitialState, type FighterState, type GameState } from '../../src/core/state';
 import { step } from '../../src/core/step';
-import { POLYVALENT, RUSHDOWN } from '../../src/data/fighters';
+import { NAYO } from '../../src/data/fighters/nayo';
+import { RIFF } from '../../src/data/fighters/riff';
 import { TRAINING_STAGE } from '../../src/data/stages';
 
 export const MATCH: MatchConfig = {
   stage: TRAINING_STAGE,
-  fighters: [POLYVALENT, RUSHDOWN],
+  fighters: [NAYO, RIFF],
 };
 
 /** Same template on both sides, for symmetry tests. */
 export const MIRROR_MATCH: MatchConfig = {
   stage: TRAINING_STAGE,
-  fighters: [POLYVALENT, POLYVALENT],
+  fighters: [NAYO, NAYO],
 };
 
 /** A fresh match with the intro skipped, so inputs are accepted right away. */
@@ -51,7 +52,7 @@ export function makeFighter(overrides: Partial<FighterState> = {}): FighterState
     moveConnected: false,
     stunFrames: 0,
     input: 0,
-    bufferedAttack: null,
+    bufferedCommand: null,
     bufferFrames: 0,
     bufferedInput: 0,
     bufferedMotion: null,

@@ -4,8 +4,6 @@ import { TICK_RATE } from '../core/constants';
 import { INTRO_FRAMES, MATCH_END_FRAMES, ROUNDS_TO_WIN } from '../core/rules';
 import { matchWinner } from '../core/round';
 import type { FighterState, GameState, RoundState } from '../core/state';
-import { ComboCounter } from './combo-counter';
-import type { HitStyle } from './hit-styles';
 import { VIEW_SIZE } from './view';
 
 const MARGIN = 8;
@@ -14,7 +12,6 @@ const BAR_HEIGHT = 8;
 const BAR_WIDTH = 180;
 const PIP_SIZE = 5;
 const PIP_GAP = 3;
-const COMBO_Y = 34;
 
 const COLORS = {
   barBackground: 0x2a1a1a,
@@ -40,8 +37,6 @@ export class Hud {
   private readonly pips: [Phaser.GameObjects.Rectangle[], Phaser.GameObjects.Rectangle[]];
   private readonly timer: Phaser.GameObjects.Text;
   private readonly announcer: Phaser.GameObjects.Text;
-  /** Combo counters, each on the side of the player landing the combo. */
-  private readonly combos: [ComboCounter, ComboCounter];
   /** Training only: hits and damage of player 1's last combo on the dummy. */
   private readonly trainingInfo: Phaser.GameObjects.Text | undefined;
   private dummyHealthBefore = 0;
@@ -53,7 +48,6 @@ export class Hud {
   constructor(
     scene: Phaser.Scene,
     private readonly config: MatchConfig,
-    styles: readonly [HitStyle, HitStyle],
   ) {
     const { width } = VIEW_SIZE;
     const leftX = MARGIN;
@@ -77,12 +71,6 @@ export class Hud {
       scene.add.text(width / 2, VIEW_SIZE.height / 2 - 40, '', { ...TEXT_STYLE, fontSize: '24px' }),
     ).setOrigin(0.5);
 
-    const [first, second] = config.fighters;
-    this.combos = [
-      new ComboCounter(scene, leftX, COMBO_Y, 1, styles[0], TEXT_STYLE, second.maxHealth),
-      new ComboCounter(scene, width - MARGIN, COMBO_Y, -1, styles[1], TEXT_STYLE, first.maxHealth),
-    ];
-    for (const combo of this.combos) for (const text of combo.objects) this.fixed(text);
     this.trainingInfo = config.training
       ? this.fixed(
           scene.add.text(width / 2, VIEW_SIZE.height - 12, '', smallText()).setOrigin(0.5, 1),
@@ -95,9 +83,6 @@ export class Hud {
     this.setBar(0, a.health / this.config.fighters[0].maxHealth);
     this.setBar(1, b.health / this.config.fighters[1].maxHealth);
     this.setPips(state.round);
-    // A player's combo is counted on the opponent taking the hits.
-    this.combos[0].update(b);
-    this.combos[1].update(a);
     const seconds = Math.ceil(state.round.timer / TICK_RATE);
     setTextIfChanged(this.timer, this.config.training ? '--' : String(seconds));
     if (this.trainingInfo) this.updateTrainingInfo(this.trainingInfo, b);
@@ -106,7 +91,9 @@ export class Hud {
 
   /** Keeps the last combo's result on screen until the next one starts. */
   private updateTrainingInfo(info: Phaser.GameObjects.Text, dummy: FighterState): void {
-    if (dummy.comboCount > 0 && this.dummyComboBefore === 0) {
+    // A new combo; a dummy hit again on the tick it recovers goes from N straight to 1.
+    const fresh = this.dummyComboBefore === 0 || dummy.comboCount < this.dummyComboBefore;
+    if (dummy.comboCount > 0 && fresh) {
       this.comboStartHealth = this.dummyHealthBefore;
     }
     if (dummy.comboCount > 0) {

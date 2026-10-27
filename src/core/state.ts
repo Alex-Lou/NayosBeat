@@ -1,5 +1,7 @@
-import type { FighterTemplate, MatchConfig, MoveId } from './config';
+import type { Command } from './commands';
+import type { FighterTemplate, MatchConfig } from './config';
 import type { InputBits } from './input';
+import type { MoveId } from './move-data';
 import type { Motion } from './motion';
 import { ROUND_TIME } from './rules';
 
@@ -20,9 +22,6 @@ export type FighterAction =
   | 'airHit'
   | 'knockdown'
   | 'ko';
-
-/** Throw = light + heavy together. */
-export type AttackButton = 'light' | 'heavy' | 'special' | 'throw';
 
 export interface FighterState {
   /** Horizontal center, in sub-pixels from the stage's left edge. */
@@ -46,11 +45,11 @@ export interface FighterState {
   readonly stunFrames: number;
   /** Input of the last tick, after SOCD cleaning: used to detect presses and blocking. */
   readonly input: InputBits;
-  /** Attack pressed while busy, started as soon as the fighter can act. */
-  readonly bufferedAttack: AttackButton | null;
+  /** Command pressed while busy, carried out as soon as the fighter can act. */
+  readonly bufferedCommand: Command | null;
   readonly bufferFrames: number;
   /**
-   * Direction held, motion completed and side faced when the buffered button was pressed:
+   * Direction held, motion completed and side faced when the buffered command was pressed:
    * the move is read as the player meant it, even after a cross-up turned them around.
    */
   readonly bufferedInput: InputBits;
@@ -69,6 +68,30 @@ export interface ProjectileState {
   readonly x: number;
   readonly facing: Facing;
 }
+
+/**
+ * Something that touched on a tick: a strike or a projectile, hit or blocked. The simulation
+ * knows where its boxes met, so the presentation never has to work it out.
+ */
+export interface Contact {
+  /** The attacker. */
+  readonly by: 0 | 1;
+  readonly kind: 'hit' | 'block';
+  readonly move: MoveId;
+  /**
+   * Middle of the overlap between what struck (the attacker's hitbox, or its projectile's) and
+   * the body it touched, in stage sub-pixels (y up from the ground).
+   */
+  readonly x: number;
+  readonly y: number;
+  /** Health taken: none when blocked, nor on a training dummy at its 1 HP floor. */
+  readonly damage: number;
+}
+
+/** Shared by every tick where nothing touches, so a quiet tick allocates no list. */
+export const EMPTY_CONTACTS: readonly Contact[] = Object.freeze([]);
+/** Shared by every tick without projectiles. */
+export const NO_PROJECTILES: readonly ProjectileState[] = Object.freeze([]);
 
 export type RoundPhase = 'intro' | 'fight' | 'roundEnd' | 'matchEnd';
 
@@ -102,6 +125,8 @@ export interface GameState {
   readonly round: RoundState;
   readonly fighters: readonly [FighterState, FighterState];
   readonly projectiles: readonly ProjectileState[];
+  /** What touched on the tick that produced this state (at most one per fighter). */
+  readonly contacts: readonly Contact[];
 }
 
 export function createInitialState(config: MatchConfig): GameState {
@@ -135,7 +160,8 @@ export function createRound(
       createFighter(center - halfDistance, 1, templateA),
       createFighter(center + halfDistance, -1, templateB),
     ],
-    projectiles: [],
+    projectiles: NO_PROJECTILES,
+    contacts: EMPTY_CONTACTS,
   };
 }
 
@@ -154,7 +180,7 @@ function createFighter(x: number, facing: Facing, template: FighterTemplate): Fi
     moveConnected: false,
     stunFrames: 0,
     input: 0,
-    bufferedAttack: null,
+    bufferedCommand: null,
     bufferFrames: 0,
     bufferedInput: 0,
     bufferedMotion: null,

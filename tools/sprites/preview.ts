@@ -13,9 +13,9 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { NAYO_CLIPS } from '../../src/art/nayo/clips.ts';
 import { ANCHOR, ART_SCALE, CELL_SIZE } from '../../src/art/types.ts';
-import { MOVE_IDS, type MoveId } from '../../src/core/config.ts';
 import { toPx } from '../../src/core/constants.ts';
-import { POLYVALENT } from '../../src/data/fighters.ts';
+import { CORE_MOVE_IDS } from '../../src/core/move-data.ts';
+import { NAYO as NAYO_TEMPLATE } from '../../src/data/fighters/nayo.ts';
 import type { Fighter, Strike } from './fighter.ts';
 import { NAYO } from './nayo/index.ts';
 import type { Colorway } from './palette.ts';
@@ -40,15 +40,17 @@ interface Guides {
   readonly strike: (sheet: string) => Strike | undefined;
 }
 
-/** Nayo's moves are the Polyvalent ones (src/data/fighters.ts), played by his clips. */
+/** Nayo's moves (src/data/fighters/nayo.ts), played by his clips. */
 const NAYO_GUIDES: Guides = {
-  pushboxHalf: toPx(POLYVALENT.standingPushbox.width) / 2,
+  pushboxHalf: toPx(NAYO_TEMPLATE.standingPushbox.width) / 2,
   strike: (sheet) => {
-    if (!(MOVE_IDS as readonly string[]).includes(sheet)) return undefined;
-    const move = POLYVALENT.moves[sheet as MoveId];
+    // The move whose clip plays this strip, if any (the grab plays the "throw" strip).
+    const id = CORE_MOVE_IDS.find((move) => NAYO_CLIPS[move].sheet === sheet);
+    if (!id) return undefined;
+    const move = NAYO_TEMPLATE.moves[id];
     const box = move.hitbox;
     if (!box) return undefined;
-    const clip = NAYO_CLIPS[sheet as MoveId];
+    const clip = NAYO_CLIPS[id];
     const frames: number[] = [];
     let tick = 0;
     clip.ticks.forEach((ticks, index) => {

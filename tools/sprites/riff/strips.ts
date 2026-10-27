@@ -1,6 +1,6 @@
 /**
  * Riff's frame timing and strikes, from docs/combat-v2.md §10.2 and §11.3 (combat v2: not the v1
- * `RUSHDOWN` template of src/data/fighters.ts). The generator reads the ticks to make her
+ * `RIFF` template of src/data/fighters/riff.ts). The generator reads the ticks to make her
  * hanging parts (braids, drawstrings) lag behind her moves; the tests and the preview read the
  * strikes: on its active frames, the striking limb reaches the far edge of the hitbox.
  *

@@ -32,21 +32,24 @@ export function bitsFromStick(dx: number, dy: number, deadzone: number): InputBi
 }
 
 export interface Point {
-  readonly x: number;
-  readonly y: number;
+  x: number;
+  y: number;
 }
 
 /**
  * Drags the stick center behind the finger so it is never more than `radius` away: reversing
- * direction then takes a short move, however far the thumb has drifted.
+ * direction then takes a short move, however far the thumb has drifted. Moves `origin` in
+ * place and returns it: a thumb moves dozens of times a second, without a new point each time.
  */
-export function followFinger(origin: Point, finger: Point, radius: number): Point {
+export function followFinger(origin: Point, finger: Readonly<Point>, radius: number): Point {
   const dx = finger.x - origin.x;
   const dy = finger.y - origin.y;
   const length = Math.hypot(dx, dy);
   if (length <= radius) return origin;
   const excess = (length - radius) / length;
-  return { x: origin.x + dx * excess, y: origin.y + dy * excess };
+  origin.x += dx * excess;
+  origin.y += dy * excess;
+  return origin;
 }
 
 export function isTouchDevice(): boolean {
@@ -63,7 +66,9 @@ export class TouchControls {
   private readonly stickKnob: HTMLDivElement;
 
   private stickPointer: number | null = null;
-  private stickOrigin: Point = { x: 0, y: 0 };
+  /** The stick's center and the thumb on it, updated in place as the thumb moves. */
+  private readonly stickOrigin: Point = { x: 0, y: 0 };
+  private readonly finger: Point = { x: 0, y: 0 };
   private stickBits: InputBits = 0;
   /** Button flag held by each active pointer. */
   private readonly buttonPointers = new Map<number, number>();
@@ -131,16 +136,21 @@ export class TouchControls {
     if (this.stickPointer !== null) return;
     (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
     this.stickPointer = event.pointerId;
-    this.moveBase({ x: event.clientX, y: event.clientY });
+    this.stickOrigin.x = event.clientX;
+    this.stickOrigin.y = event.clientY;
+    this.placeBase();
     this.stickBase.classList.add('active');
     this.moveKnob(0, 0);
   };
 
   private readonly onStickMove = (event: PointerEvent): void => {
     if (event.pointerId !== this.stickPointer) return;
-    const finger = { x: event.clientX, y: event.clientY };
-    const origin = followFinger(this.stickOrigin, finger, KNOB_TRAVEL_PX);
-    if (origin !== this.stickOrigin) this.moveBase(origin);
+    const { finger, stickOrigin: origin } = this;
+    finger.x = event.clientX;
+    finger.y = event.clientY;
+    const { x, y } = origin;
+    followFinger(origin, finger, KNOB_TRAVEL_PX);
+    if (origin.x !== x || origin.y !== y) this.placeBase();
     const dx = finger.x - origin.x;
     const dy = finger.y - origin.y;
     this.stickBits = bitsFromStick(dx, dy, STICK_DEADZONE_PX);
@@ -164,9 +174,9 @@ export class TouchControls {
     this.buttonPointers.delete(event.pointerId);
   };
 
-  private moveBase(origin: Point): void {
-    this.stickOrigin = origin;
-    this.stickBase.style.transform = `translate(${origin.x}px, ${origin.y}px)`;
+  private placeBase(): void {
+    const { x, y } = this.stickOrigin;
+    this.stickBase.style.transform = `translate(${x}px, ${y}px)`;
   }
 
   private moveKnob(dx: number, dy: number): void {

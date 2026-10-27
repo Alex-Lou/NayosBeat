@@ -221,6 +221,33 @@ body {
     4px 4px 0 #d9574a,
     8px 8px 0 #000;
 }
+.boot {
+  flex-direction: column;
+  gap: 20px;
+  text-align: center;
+}
+.boot-status {
+  max-width: 520px;
+  margin: 0;
+  font-size: 10px;
+  line-height: 1.6;
+  color: #aab;
+}
+.boot-repair {
+  width: auto;
+  text-align: center;
+}
+.boot-repair[hidden] {
+  display: none;
+}
+.title-version {
+  position: absolute;
+  right: 12px;
+  bottom: 10px;
+  margin: 0;
+  font-size: 8px;
+  color: #556;
+}
 .title-prompt {
   margin: 0;
   font-size: 12px;

@@ -17,10 +17,20 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="NayosBeat" />
+    <!-- Startup guard: shows a failure instead of a blank screen (see public/boot.js). -->
+    <script src="./boot.js" vite-ignore></script>
   </head>
   <body>
     <div id="game"></div>
-    <div id="ui"></div>
+    <div id="ui">
+      <div id="boot" class="menu boot">
+        <h1 class="title-logo">NAYOSBEAT</h1>
+        <p id="boot-status" class="boot-status">Chargement…</p>
+        <button id="boot-repair" class="menu-item boot-repair" type="button" hidden>
+          Réparer et relancer
+        </button>
+      </div>
+    </div>
     <div class="rotate-hint">Tourne ton téléphone en mode paysage</div>
     <script type="module" src="/src/main.ts"></script>
   </body>

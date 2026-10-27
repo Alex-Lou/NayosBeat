@@ -11,6 +11,7 @@ describe('service worker', () => {
     expect(files).toContain('./index.html');
     expect(files).toContain('./assets/index-abc.js');
     expect(files).toContain('./manifest.webmanifest');
+    expect(files).toContain('./boot.js');
     expect(files).toContain('./icons/icon-512.png');
     expect(files.some((file) => file.endsWith('.map'))).toBe(false);
   });

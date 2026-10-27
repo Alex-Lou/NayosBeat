@@ -1,7 +1,7 @@
 import type Phaser from 'phaser';
-import type { WorldBox } from '../core/boxes';
-import { activeMove, hitboxInWorld, hurtboxInWorld } from '../core/combat';
-import type { FighterTemplate } from '../core/config';
+import { toWorld, type WorldBox } from '../core/boxes';
+import { activeMove, hurtboxesOf } from '../core/combat';
+import type { Box, FighterTemplate } from '../core/config';
 import { toPx } from '../core/constants';
 import { pushboxOf } from '../core/fighter';
 import type { FighterState } from '../core/state';
@@ -63,8 +63,8 @@ export class FighterView {
 
     const move = activeMove(fighter, template);
     this.hitbox.setVisible(move !== null);
-    if (move?.hitbox) placeBox(this.hitbox, hitboxInWorld(fighter, move.hitbox), this.groundY);
-    if (this.hurtbox) outlineBox(this.hurtbox, hurtboxInWorld(fighter, template), this.groundY);
+    if (move?.hitbox) placeBox(this.hitbox, hitboxOf(fighter, move.hitbox), this.groundY);
+    if (this.hurtbox) outlineHurtboxes(this.hurtbox, fighter, template, this.groundY);
   }
 
   private bodyColor(fighter: FighterState): number {
@@ -88,17 +88,24 @@ export function addHitbox(scene: Phaser.Scene): Phaser.GameObjects.Rectangle {
   return scene.add.rectangle(0, 0, 1, 1, COLORS.hitbox, 0.7).setOrigin(0, 1);
 }
 
-/** Draws the outline of a world box (hurtbox) for the debug view. */
-export function outlineBox(
+/** The fighter's hitbox, placed in the stage. */
+export function hitboxOf(fighter: FighterState, hitbox: Box): WorldBox {
+  return toWorld(hitbox, fighter.x, fighter.y, fighter.facing);
+}
+
+/** Draws the outlines of the fighter's hurtboxes for the debug view. */
+export function outlineHurtboxes(
   graphics: Phaser.GameObjects.Graphics,
-  box: WorldBox,
+  fighter: FighterState,
+  template: FighterTemplate,
   groundY: number,
 ): void {
-  const top = groundY - toPx(box.bottom + box.height);
-  graphics
-    .clear()
-    .lineStyle(1, COLORS.hurtbox, 0.8)
-    .strokeRect(toPx(box.left) + 0.5, top + 0.5, toPx(box.width) - 1, toPx(box.height) - 1);
+  graphics.clear().lineStyle(1, COLORS.hurtbox, 0.8);
+  for (const hurtbox of hurtboxesOf(fighter, template)) {
+    const box = toWorld(hurtbox, fighter.x, fighter.y, fighter.facing);
+    const top = groundY - toPx(box.bottom + box.height);
+    graphics.strokeRect(toPx(box.left) + 0.5, top + 0.5, toPx(box.width) - 1, toPx(box.height) - 1);
+  }
 }
 
 /** Moves and resizes a bottom-left-anchored rectangle onto a world box. */

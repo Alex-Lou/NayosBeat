@@ -1,7 +1,8 @@
-import type { MoveData, MoveId } from './config';
+import type { Command } from './commands';
 import { has, Input, type InputBits } from './input';
+import type { MoveData, MoveId } from './move-data';
 import type { Motion } from './motion';
-import type { AttackButton, Facing } from './state';
+import type { Facing } from './state';
 
 export function moveDuration(move: MoveData): number {
   return move.startup + move.active + move.recovery;
@@ -17,30 +18,32 @@ export function isInvincible(move: MoveData, actionFrame: number): boolean {
 }
 
 /**
- * Ground move for a button, from the direction held and the motion completed when it was
+ * Ground move for a command, from the direction held and the motion completed when it was
  * pressed (a buffered press keeps what the player meant, even if they let go since).
+ * Null for the commands that start no move yet.
  */
 export function groundMove(
-  button: AttackButton,
+  command: Command,
   input: InputBits,
   motion: Motion | null,
   facing: Facing,
-): MoveId {
-  if (button === 'throw') return 'throw';
-  if (button === 'special') return specialFromDirection(input, facing);
+): MoveId | null {
+  if (command === 'grab') return 'grab';
+  if (command === 'special') return specialFromDirection(input, facing);
+  if (command !== 'light' && command !== 'heavy') return null;
 
   // Classic motions turn a light or heavy press into a special.
   if (motion === 'dragonPunch') return 'specialAntiAir';
   if (motion === 'quarterCircleForward') return 'special';
 
-  if (has(input, Input.Down)) return button === 'light' ? 'crouchLight' : 'crouchHeavy';
-  return button === 'light' ? 'standLight' : 'standHeavy';
+  if (has(input, Input.Down)) return command === 'light' ? 'crouchLight' : 'crouchHeavy';
+  return command === 'light' ? 'standLight' : 'standHeavy';
 }
 
-/** Air move for a button; there are no air specials or air throws. */
-export function airMove(button: AttackButton): MoveId | null {
-  if (button === 'light') return 'jumpLight';
-  if (button === 'heavy') return 'jumpHeavy';
+/** Air move for a command; there are no air specials or air grabs. */
+export function airMove(command: Command): MoveId | null {
+  if (command === 'light') return 'jumpLight';
+  if (command === 'heavy') return 'jumpHeavy';
   return null;
 }
 

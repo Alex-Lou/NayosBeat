@@ -5,9 +5,14 @@ import { VIEW_SIZE } from '../../src/render/view';
 const GROUND_Y = 230;
 
 /** Runs the easing until it settles. */
-function settle(input: Omit<FramingInput, 'closeUp'>, closeUp = 1): ReturnType<typeof frameFight> {
-  let framing = frameFight({ ...input, closeUp });
-  for (let i = 0; i < 300; i++) framing = frameFight({ ...input, closeUp: framing.closeUp });
+function settle(
+  input: Omit<FramingInput, 'closeUp' | 'elapsed'>,
+  closeUp = 1,
+): ReturnType<typeof frameFight> {
+  let framing = frameFight({ ...input, closeUp, elapsed: 1 });
+  for (let i = 0; i < 300; i++) {
+    framing = frameFight({ ...input, closeUp: framing.closeUp, elapsed: 1 });
+  }
   return framing;
 }
 
@@ -56,8 +61,20 @@ describe('fight camera framing', () => {
       viewLeft: 0,
       groundY: GROUND_Y,
       closeUp: 1,
+      elapsed: 1,
     });
     expect(first.closeUp).toBeGreaterThan(1);
     expect(first.closeUp).toBeLessThan(1.1);
+  });
+
+  it('eases as fast at 144 Hz as at 60 Hz', () => {
+    const input = { xs: [220, 270], highestFeet: 0, viewLeft: 0, groundY: GROUND_Y };
+    let at60 = frameFight({ ...input, closeUp: 1, elapsed: 1 });
+    for (let i = 1; i < 30; i++) at60 = frameFight({ ...input, closeUp: at60.closeUp, elapsed: 1 });
+    let at144 = frameFight({ ...input, closeUp: 1, elapsed: 60 / 144 });
+    for (let i = 1; i < 72; i++) {
+      at144 = frameFight({ ...input, closeUp: at144.closeUp, elapsed: 60 / 144 });
+    }
+    expect(at144.closeUp).toBeCloseTo(at60.closeUp, 6);
   });
 });

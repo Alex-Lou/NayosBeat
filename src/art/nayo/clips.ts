@@ -45,7 +45,7 @@ export const NAYO_CLIPS: Readonly<Record<ClipId, NayoClip>> = {
   special: play('special', [3, 3, 3, 3, 8, 6, 5, 5, 5]), // the wave leaves on frame 4
   specialForward: play('specialForward', [3, 3, 3, 2, 4, 4, 5, 5, 4]), // active: frame 4
   specialAntiAir: play('specialAntiAir', [3, 3, 5, 4, 4, 4, 4, 4, 4, 4]), // active: frames 1-2
-  throw: play('throw', [3, 2, 4, 4, 5, 5, 4]), // grab: frame 1
+  grab: play('throw', [3, 2, 4, 4, 5, 5, 4]), // active: frame 1
 
   // Round poses, played on the round clock: the entrance fills the 90-tick intro.
   intro: play('intro', [10, 8, 8, 8, 10, 8, 8, 10, 10, 10]),

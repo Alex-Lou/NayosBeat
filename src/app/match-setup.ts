@@ -16,7 +16,7 @@ export interface MatchSetup {
 
 export const DEFAULT_SETUP: MatchSetup = {
   mode: 'cpu',
-  fighters: ['polyvalent', 'rushdown'],
+  fighters: ['nayo', 'riff'],
   cpuLevel: 'normal',
   dummy: 'dummyStand',
 };

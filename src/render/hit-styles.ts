@@ -21,12 +21,12 @@ export interface HitStyle {
 
 const STYLES: Readonly<Record<FighterId, Readonly<Record<Colorway, HitStyle>>>> = {
   // Nayo: neon sound slashes (cyan, magenta in his second outfit) and a gold starburst.
-  polyvalent: {
+  nayo: {
     main: { shape: 'slash', energy: 0x30e8ff, strike: 0xffa526, core: 0xfff4d6 },
     alt: { shape: 'slash', energy: 0xff4fc8, strike: 0xffa526, core: 0xfff4d6 },
   },
   // Riff: violet claw cuts and sun-yellow shards (swapped in her second outfit).
-  rushdown: {
+  riff: {
     main: { shape: 'claw', energy: 0xa25cff, strike: 0xffe03a, core: 0xfff8e6 },
     alt: { shape: 'claw', energy: 0xffd23a, strike: 0xb070ff, core: 0xfff8e6 },
   },
