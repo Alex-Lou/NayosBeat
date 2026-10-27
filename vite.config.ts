@@ -48,5 +48,8 @@ export default defineConfig({
   },
   test: {
     include: ['tests/**/*.test.ts'],
+    // A cached transform of src/art/nayo/index.ts keeps the strips its import.meta.glob found
+    // back then: the strips `npm run sprites` adds would be missing from the tests.
+    fsModuleCache: false,
   },
 });

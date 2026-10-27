@@ -5,9 +5,11 @@ import { ANCHOR, ART_SCALE, CELL_SIZE } from '../../src/art/types';
 import type { MoveId } from '../../src/core/config';
 import { toPx } from '../../src/core/constants';
 import { POLYVALENT } from '../../src/data/fighters';
+import { isV2Sheet } from '../../tools/sprites/nayo/combat-v2';
 import { NAYO_POSES, type PosedSheet } from '../../tools/sprites/nayo/poses/index';
 import { crc32, encodeIndexedPng } from '../../tools/sprites/png';
 import { drawSheet } from '../../tools/sprites/sheet';
+import { eachPixel as eachPixelOf, extent as extentOf, reach } from './strip-pixels';
 
 describe('PNG encoder', () => {
   it('computes the standard CRC-32', () => {
@@ -34,7 +36,8 @@ describe('PNG encoder', () => {
 });
 
 describe('Nayo strips', () => {
-  const sheets = Object.keys(NAYO_POSES) as PosedSheet[];
+  // The combat v2 strips have their own checks (nayo-v2-sprites.test.ts).
+  const sheets = (Object.keys(NAYO_POSES) as PosedSheet[]).filter((sheet) => !isV2Sheet(sheet));
 
   const drawn = new Map<PosedSheet, ReturnType<typeof drawSheet>>();
   const sheetCanvas = (sheet: PosedSheet): ReturnType<typeof drawSheet> => {
@@ -45,35 +48,10 @@ describe('Nayo strips', () => {
     return canvas;
   };
 
-  /** Calls `visit` with every opaque pixel of one cell, in world pixels from the feet anchor. */
-  function eachPixel(sheet: PosedSheet, frame: number, visit: (x: number, y: number) => void) {
-    const canvas = sheetCanvas(sheet);
-    for (let row = 0; row < CELL_SIZE; row++) {
-      for (let column = 0; column < CELL_SIZE; column++) {
-        if (canvas.pixels[row * canvas.width + frame * CELL_SIZE + column] === 0) continue;
-        visit((column + 1 - ANCHOR.x) / ART_SCALE, (ANCHOR.y - row) / ART_SCALE);
-      }
-    }
-  }
-
-  /** Opaque extent of one cell, in cell pixels. */
-  function extent(sheet: PosedSheet, frame: number) {
-    const canvas = sheetCanvas(sheet);
-    let top = CELL_SIZE;
-    let bottom = -1;
-    let left = CELL_SIZE;
-    let right = -1;
-    for (let y = 0; y < CELL_SIZE; y++) {
-      for (let x = 0; x < CELL_SIZE; x++) {
-        if (canvas.pixels[y * canvas.width + frame * CELL_SIZE + x] === 0) continue;
-        top = Math.min(top, y);
-        bottom = Math.max(bottom, y);
-        left = Math.min(left, x);
-        right = Math.max(right, x);
-      }
-    }
-    return { top, bottom, left, right };
-  }
+  const eachPixel = (sheet: PosedSheet, frame: number, visit: (x: number, y: number) => void) => {
+    eachPixelOf(sheetCanvas(sheet), frame, visit);
+  };
+  const extent = (sheet: PosedSheet, frame: number) => extentOf(sheetCanvas(sheet), frame);
 
   it.each(sheets)('%s: every frame stays inside its cell, away from the edges', (sheet) => {
     for (let frame = 0; frame < NAYO_SHEETS[sheet].frames; frame++) {
@@ -169,22 +147,6 @@ describe('Nayo strips', () => {
     return frames;
   }
 
-  /** Farthest opaque pixel toward the opponent (or upward) within a band, in world pixels. */
-  function reach(
-    sheet: PosedSheet,
-    frame: number,
-    band: { from: number; to: number },
-    up: boolean,
-  ) {
-    let best = -Infinity;
-    eachPixel(sheet, frame, (x, y) => {
-      const across = up ? x : y;
-      if (across < band.from || across > band.to) return;
-      best = Math.max(best, up ? y : x);
-    });
-    return best;
-  }
-
   it.each(STRIKES)('%s: the active frames reach the hitbox, no farther', (move) => {
     const hitbox = POLYVALENT.moves[move].hitbox;
     if (!hitbox) throw new Error(`${move} has no hitbox`);
@@ -197,7 +159,7 @@ describe('Nayo strips', () => {
     const frames = activeFrames(move);
     expect(frames.length).toBeGreaterThan(0);
     for (const frame of frames) {
-      const reached = reach(move, frame, band, up);
+      const reached = reach([sheetCanvas(move)], frame, band, up);
       expect(reached, `frame ${frame} reaches ${reached}, edge ${edge}`).toBeGreaterThanOrEqual(
         edge - REACH_SLACK,
       );

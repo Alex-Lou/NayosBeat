@@ -1,5 +1,5 @@
 import type Phaser from 'phaser';
-import { ART_SCALE, cellOf, type FighterArt } from '../art/types';
+import { ART_SCALE, cellOf, playedSheets, type FighterArt } from '../art/types';
 import { activeMove, hitboxInWorld, hurtboxInWorld } from '../core/combat';
 import type { FighterTemplate } from '../core/config';
 import { toPx } from '../core/constants';
@@ -26,25 +26,25 @@ export function textureKey(art: FighterArt, sheet: string, layer: Layer = 'body'
   return `${art.key}/${stripName(sheet, layer)}`;
 }
 
-/** Loads every strip of `art`, effects included, that is not already in the texture cache. */
+/** Image URL of each strip of one layer that a clip plays, by sheet (the others never show). */
+function playedUrls(art: FighterArt, layer: Layer): [sheet: string, url: string][] {
+  const played = playedSheets(art);
+  const urls = layer === 'fx' ? (art.fx ?? {}) : art.urls;
+  return Object.entries(urls).filter(([sheet]) => played.has(sheet));
+}
+
+/**
+ * Loads every strip of `art` that a clip plays, effects included, that is not already in the
+ * texture cache.
+ */
 export function loadArt(scene: Phaser.Scene, art: FighterArt): void {
-  const strips: [string, string, Layer][] = [
-    ...Object.entries(art.urls).map(([sheet, url]): [string, string, Layer] => [
-      sheet,
-      url,
-      'body',
-    ]),
-    ...Object.entries(art.fx ?? {}).map(([sheet, url]): [string, string, Layer] => [
-      sheet,
-      url,
-      'fx',
-    ]),
-  ];
-  for (const [sheet, url, layer] of strips) {
-    const key = textureKey(art, sheet, layer);
-    if (scene.textures.exists(key)) continue;
-    const cell = cellOf(art, stripName(sheet, layer));
-    scene.load.spritesheet(key, url, { frameWidth: cell.width, frameHeight: cell.height });
+  for (const layer of ['body', 'fx'] as const) {
+    for (const [sheet, url] of playedUrls(art, layer)) {
+      const key = textureKey(art, sheet, layer);
+      if (scene.textures.exists(key)) continue;
+      const cell = cellOf(art, stripName(sheet, layer));
+      scene.load.spritesheet(key, url, { frameWidth: cell.width, frameHeight: cell.height });
+    }
   }
 }
 
@@ -62,7 +62,7 @@ export class AnchoredSprite {
     private readonly art: FighterArt,
     private readonly layer: Layer = 'body',
   ) {
-    const sheets = Object.keys(layer === 'fx' ? (art.fx ?? {}) : art.urls);
+    const sheets = playedUrls(art, layer).map(([sheet]) => sheet);
     this.keys = Object.fromEntries(sheets.map((sheet) => [sheet, textureKey(art, sheet, layer)]));
     const first = sheets[0] ?? art.clips.idle.sheet;
     this.sprite = scene.add

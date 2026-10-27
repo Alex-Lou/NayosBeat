@@ -27,6 +27,29 @@ export const NAYO_SHEETS = {
   victory: { frames: 8 },
   timeOver: { frames: 4 },
   projectile: { frames: 6 },
+
+  // Combat v2 (docs/combat-v2.md §11.1, §11.2), drawn ahead of its gameplay: no clip plays these
+  // strips yet, so a fight does not load them.
+  dashForward: { frames: 6 },
+  dashBack: { frames: 6 },
+  chainLight: { frames: 6 },
+  lightFinisher: { frames: 7 },
+  forwardLight: { frames: 6 },
+  forwardHeavy: { frames: 9 },
+  backHeavy: { frames: 7 },
+  grab: { frames: 6 },
+  hold: { frames: 2 },
+  pummel: { frames: 4 },
+  throwForward: { frames: 8 },
+  throwBack: { frames: 9 },
+  held: { frames: 2 },
+  thrownBack: { frames: 4 },
+  tech: { frames: 4 },
+  hitHigh: { frames: 5 },
+  hitMid: { frames: 5 },
+  hitLow: { frames: 5 },
+  trip: { frames: 4 },
+  getup: { frames: 5 },
 } as const satisfies Record<string, SheetSpec>;
 
 export type NayoSheet = keyof typeof NAYO_SHEETS;
