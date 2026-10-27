@@ -2,7 +2,7 @@ import { overlapMiddleX, overlapMiddleY, overlaps } from './boxes';
 import type { Box, FighterTemplate } from './config';
 import { has, Input } from './input';
 import type { Guard, MoveData, MoveId } from './move-data';
-import { isActiveFrame, isInvincible } from './moves';
+import { isActiveFrame, isInvincible, isThrowInvincible } from './moves';
 import { signed } from './numbers';
 import {
   AIR_HIT_LIFT,
@@ -18,6 +18,7 @@ const BLOCKING_ACTIONS: ReadonlySet<FighterAction> = new Set([
   'idle',
   'walkBack',
   'crouch',
+  'guard',
   'blockstun',
 ]);
 
@@ -87,7 +88,7 @@ export function findHit(
   if (attacker.moveConnected || !canBeHit(defender, defenderTemplate)) return null;
   const move = activeMove(attacker, attackerTemplate);
   if (!move?.hitbox) return null;
-  if (move.kind === 'grab' && !canBeGrabbed(defender)) return null;
+  if (move.kind === 'grab' && !canBeGrabbed(defender, defenderTemplate)) return null;
 
   const { x, y, facing } = attacker;
   return touchedHurtbox(move.hitbox, x, y, facing, defender, defenderTemplate) ? move : null;
@@ -189,8 +190,14 @@ export function scaledDamage(damage: number, comboCount: number): number {
   return Math.trunc((damage * percent) / 100);
 }
 
-function canBeGrabbed(fighter: FighterState): boolean {
-  return fighter.y === 0 && !GRAB_IMMUNE_ACTIONS.has(fighter.action);
+/**
+ * Grabs only take a grounded fighter that is not reeling, nor just out of a stun (the throw
+ * protection), nor in the grab-proof frames of a backdash.
+ */
+function canBeGrabbed(fighter: FighterState, template: FighterTemplate): boolean {
+  if (fighter.y !== 0 || fighter.throwImmuneFrames > 0) return false;
+  if (GRAB_IMMUNE_ACTIONS.has(fighter.action)) return false;
+  return !(fighter.move && isThrowInvincible(template.moves[fighter.move], fighter.actionFrame));
 }
 
 function isBlocking(defender: FighterState, attackerOnRight: boolean, guard: Guard): boolean {

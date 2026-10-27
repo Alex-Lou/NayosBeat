@@ -6,7 +6,7 @@ import { projectileBox } from '../core/projectiles';
 import type { ProjectileState } from '../core/state';
 import { clipFrameAt } from './animation';
 import { DEPTH } from './depth';
-import { AnchoredSprite } from './sprite-fighter-view';
+import { AnchoredSprite } from './anchored-sprite';
 
 const COLOR = 0xffb347;
 

@@ -10,6 +10,7 @@ export type SoundName =
   | 'ko'
   | 'swing'
   | 'heavySwing'
+  | 'dash'
   | 'projectile'
   | 'jump'
   | 'land'
@@ -61,6 +62,8 @@ const SOUNDS: Readonly<Record<SoundName, { tones?: readonly Tone[]; noise?: Nois
   },
   swing: { noise: { duration: 0.05, volume: 0.12, cutoff: 2500 } },
   heavySwing: { noise: { duration: 0.09, volume: 0.18, cutoff: 1500 } },
+  // A sole scuffing the floor: duller and longer than a swing.
+  dash: { noise: { duration: 0.08, volume: 0.16, cutoff: 900 } },
   projectile: {
     tones: [{ type: 'square', from: 300, to: 900, duration: 0.18, volume: 0.15 }],
   },

@@ -37,7 +37,8 @@ export function clipTickOf(clip: ClipId, fighter: FighterState, round: RoundStat
       // The match end follows the round end: keep counting so the pose does not restart.
       return round.phaseFrame + (round.phase === 'matchEnd' ? ROUND_END_FRAMES : 0);
     default:
-      return fighter.actionFrame;
+      // The proximity guard holds the first pose of the block (no impact to show).
+      return fighter.action === 'guard' ? 0 : fighter.actionFrame;
   }
 }
 
@@ -61,6 +62,7 @@ function actionClipOf(fighter: FighterState): ClipId {
     case 'hitstun':
       return fighter.crouching ? 'hitCrouch' : 'hitStand';
     case 'blockstun':
+    case 'guard':
       return fighter.crouching ? 'blockCrouch' : 'blockStand';
   }
 }

@@ -4,7 +4,7 @@ import { moveDuration } from '../../src/core/moves';
 import { validateTemplate } from '../../src/core/validate';
 import { NAYO } from '../../src/data/fighters/nayo';
 import { RIFF } from '../../src/data/fighters/riff';
-import { advance, box } from '../../src/data/fighters/shared';
+import { advance, box, dash } from '../../src/data/fighters/shared';
 
 describe('fighter authoring helpers', () => {
   it('writes boxes in pixels, stored in sub-pixels', () => {
@@ -31,6 +31,13 @@ describe('fighter authoring helpers', () => {
       moves: { ...NAYO.moves, specialForward: { ...specialForward, motion } },
     };
     expect(validateTemplate(broken)).not.toEqual([]);
+  });
+
+  it('writes a dash as a movement: frame 0 sets off, the curve, then a still recovery', () => {
+    const move = dash({ name: 'Test', duration: 6, frames: 3, distancePx: 9, back: true });
+    expect(move).toMatchObject({ kind: 'movement', startup: 1, active: 3, recovery: 2, damage: 0 });
+    expect(move.motion?.dx).toEqual([0, -500, -300, -100, 0, 0]);
+    expect(move.hitbox).toBeUndefined();
   });
 
   it('rejects a posture without hurtboxes', () => {

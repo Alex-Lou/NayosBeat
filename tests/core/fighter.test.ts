@@ -102,7 +102,9 @@ describe('jump', () => {
       apex = Math.max(apex, state.y);
       state = updateFighter(state, 0, T, OPPONENT_X);
     }
-    expect(apex).toBeGreaterThan(T.standingPushbox.height);
+    // The v2 jump peaks at 79.6 px, under a standing head: what clears it is the air pushbox,
+    // raised off the feet (§3.5).
+    expect(apex + T.airPushbox.lift).toBeGreaterThan(T.standingPushbox.height);
   });
 });
 

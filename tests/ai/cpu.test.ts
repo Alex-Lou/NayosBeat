@@ -124,3 +124,44 @@ describe('training dummies', () => {
     expect(state.fighters[1].health).toBe(MIRROR_MATCH.fighters[1].maxHealth);
   });
 });
+
+describe('cpu movement', () => {
+  /** Every move both CPUs start over a few hard matches. */
+  function movesUsed(seeds: number): Set<string> {
+    const used = new Set<string>();
+    for (let seed = 0; seed < seeds; seed++) {
+      let state = fightState();
+      let a = createCpu(0, 'hard', seed);
+      let b = createCpu(1, 'hard', seed + 1);
+      for (let i = 0; i < 99 * 60 && state.round.phase !== 'matchEnd'; i++) {
+        const da = cpuStep(a, state, MATCH);
+        const db = cpuStep(b, state, MATCH);
+        a = da.cpu;
+        b = db.cpu;
+        state = step(state, [da.input, db.input], MATCH);
+        for (const fighter of state.fighters) if (fighter.move) used.add(fighter.move);
+      }
+    }
+    return used;
+  }
+
+  it('dashes in and backdashes out of pressure, with the buttons', () => {
+    const used = movesUsed(4);
+    expect(used.has('dashForward')).toBe(true);
+    expect(used.has('dashBack')).toBe(true);
+    expect(used.has('grab')).toBe(true);
+  });
+
+  it('does not take a dash for an attack', () => {
+    // The opponent dashes in from mid range: a blocking dummy has nothing to block.
+    const start = facingOff(150, MIRROR_MATCH);
+    const { inputs } = playAgainstCpu(
+      'dummyBlock',
+      16,
+      (f) => (f === 0 ? Input.Dash : 0),
+      start,
+      MIRROR_MATCH,
+    );
+    expect(inputs.every((input) => input === 0)).toBe(true);
+  });
+});

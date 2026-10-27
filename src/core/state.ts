@@ -12,6 +12,8 @@ export type FighterAction =
   | 'walkForward'
   | 'walkBack'
   | 'crouch'
+  /** Holding back while the opponent threatens: stands (or crouches) still in guard. */
+  | 'guard'
   | 'preJump'
   | 'air'
   | 'landing'
@@ -57,6 +59,15 @@ export interface FighterState {
   readonly bufferedFacing: Facing;
   /** Directions held on the last ticks (oldest first), to recognize motions such as ↓↘→. */
   readonly directionHistory: readonly InputBits[];
+  /**
+   * The double tap in progress (see `double-tap.ts`): the side of the first tap in stage
+   * coordinates (0: none), ticks since it, and whether the stick went back to neutral since.
+   */
+  readonly tapDirection: -1 | 0 | 1;
+  readonly tapFrames: number;
+  readonly tapReleased: boolean;
+  /** Ticks left during which grabs whiff, after a stun (see THROW_PROTECTION_FRAMES). */
+  readonly throwImmuneFrames: number;
   /** Consecutive hits taken without being able to act: drives the combo counter and scaling. */
   readonly comboCount: number;
 }
@@ -186,6 +197,10 @@ function createFighter(x: number, facing: Facing, template: FighterTemplate): Fi
     bufferedMotion: null,
     bufferedFacing: facing,
     directionHistory: [],
+    tapDirection: 0,
+    tapFrames: 0,
+    tapReleased: false,
+    throwImmuneFrames: 0,
     comboCount: 0,
   };
 }

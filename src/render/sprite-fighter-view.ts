@@ -1,10 +1,13 @@
 import type Phaser from 'phaser';
-import { ART_SCALE, cellOf, type FighterArt } from '../art/types';
+import { cellOf, type FighterArt } from '../art/types';
 import { activeMove } from '../core/combat';
 import type { FighterTemplate } from '../core/config';
 import { toPx } from '../core/constants';
+import { isActiveFrame } from '../core/moves';
 import type { FighterState, RoundState } from '../core/state';
+import { AnchoredSprite, stripName, textureKey, type Layer } from './anchored-sprite';
 import { clipFrameAt, clipIdOf, clipTickOf } from './animation';
+import { DashTrail } from './dash-trail';
 import { DEPTH } from './depth';
 import { addHitbox, hitboxOf, outlineHurtboxes, placeBox } from './fighter-view';
 
@@ -13,18 +16,6 @@ const SHADOW_HEIGHT = 6;
 const SHADOW_ALPHA = 0.35;
 /** Jump height (px) at which the shadow has shrunk to half its size. */
 const SHADOW_HALF_HEIGHT = 120;
-
-/** A fighter's strips: its body, or the front effects drawn over both fighters. */
-export type Layer = 'body' | 'fx';
-
-/** Name of a strip's image: the strip itself, or `fx/` and the strip for its front effects. */
-export function stripName(sheet: string, layer: Layer = 'body'): string {
-  return layer === 'fx' ? `fx/${sheet}` : sheet;
-}
-
-export function textureKey(art: FighterArt, sheet: string, layer: Layer = 'body'): string {
-  return `${art.key}/${stripName(sheet, layer)}`;
-}
 
 /** Loads every strip of `art`, effects included, that is not already in the texture cache. */
 export function loadArt(scene: Phaser.Scene, art: FighterArt): void {
@@ -48,66 +39,17 @@ export function loadArt(scene: Phaser.Scene, art: FighterArt): void {
   }
 }
 
-/** A sprite placed by its feet anchor, which changes texture and frame only when needed. */
-export class AnchoredSprite {
-  private readonly sprite: Phaser.GameObjects.Sprite;
-  /** Texture and frame on screen, to change them only when the animation moves on. */
-  private shownKey = '';
-  private shownFrame = -1;
-  /** Texture key of each strip, computed once. */
-  private readonly keys: Readonly<Record<string, string>>;
-
-  constructor(
-    scene: Phaser.Scene,
-    private readonly art: FighterArt,
-    private readonly layer: Layer = 'body',
-  ) {
-    const sheets = Object.keys(layer === 'fx' ? (art.fx ?? {}) : art.urls);
-    this.keys = Object.fromEntries(sheets.map((sheet) => [sheet, textureKey(art, sheet, layer)]));
-    const first = sheets[0] ?? art.clips.idle.sheet;
-    this.sprite = scene.add
-      .sprite(0, 0, textureKey(art, first, layer), 0)
-      // Positions are in world pixels; each sprite pixel is 1 / ART_SCALE of one.
-      .setScale(1 / ART_SCALE);
-    this.anchorOn(first);
-  }
-
-  show(sheet: string, frame: number, x: number, y: number, flip: boolean): void {
-    const key = this.keys[sheet] ?? textureKey(this.art, sheet, this.layer);
-    if (key !== this.shownKey || frame !== this.shownFrame) {
-      this.sprite.setTexture(key, frame);
-      if (key !== this.shownKey) this.anchorOn(sheet);
-      this.shownKey = key;
-      this.shownFrame = frame;
-    }
-    this.sprite.setPosition(x, y).setFlipX(flip).setVisible(true);
-  }
-
-  /** Each strip is cropped differently: its anchor sets the sprite's origin. */
-  private anchorOn(sheet: string): void {
-    const cell = cellOf(this.art, stripName(sheet, this.layer));
-    this.sprite.setOrigin(cell.anchor.x / cell.width, cell.anchor.y / cell.height);
-  }
-
-  hide(): void {
-    this.sprite.setVisible(false);
-  }
-
-  setDepth(depth: number): this {
-    this.sprite.setDepth(depth);
-    return this;
-  }
-}
-
 /**
  * A fighter drawn with its sprites. The frame comes from the simulation state alone (action,
  * frame counter, move, round), so the animation always matches the frame data. The strips that
- * have front effects play them in step, over both fighters. Boxes show in debug.
+ * have front effects play them in step, over both fighters; a dash leaves afterimages in the
+ * fighter's energy color (`trailColor`). Boxes show in debug.
  */
 export class SpriteFighterView {
   private readonly shadow: Phaser.GameObjects.Ellipse;
   private readonly body: AnchoredSprite;
   private readonly effects: AnchoredSprite | undefined;
+  private readonly trail: DashTrail;
   private readonly hitbox: Phaser.GameObjects.Rectangle | undefined;
   private readonly hurtbox: Phaser.GameObjects.Graphics | undefined;
 
@@ -116,6 +58,7 @@ export class SpriteFighterView {
     private readonly art: FighterArt,
     private readonly player: 0 | 1,
     private readonly groundY: number,
+    trailColor: number,
     showBoxes: boolean,
   ) {
     this.shadow = scene.add.ellipse(
@@ -126,6 +69,7 @@ export class SpriteFighterView {
       0x000000,
       SHADOW_ALPHA,
     );
+    this.trail = new DashTrail(scene, art, trailColor);
     this.body = new AnchoredSprite(scene, art).setDepth(DEPTH.fighterBack);
     this.effects = art.fx
       ? new AnchoredSprite(scene, art, 'fx').setDepth(DEPTH.effects)
@@ -149,6 +93,9 @@ export class SpriteFighterView {
     const height = toPx(fighter.y);
     const flip = fighter.facing < 0;
     this.body.show(clip.sheet, frame, x, this.groundY - height, flip);
+    const gliding = isGliding(fighter, template);
+    // The round clock counts ticks and stops with the hitstop: the afterimages do too.
+    this.trail.update(round.phaseFrame, gliding, clip.sheet, frame, x, this.groundY - height, flip);
     if (this.effects) {
       if (this.art.fx?.[clip.sheet] !== undefined) {
         this.effects.show(clip.sheet, frame, x, this.groundY - height, flip);
@@ -166,4 +113,10 @@ export class SpriteFighterView {
     }
     if (this.hurtbox) outlineHurtboxes(this.hurtbox, fighter, template, this.groundY);
   }
+}
+
+/** On a frame of a dash that moves the fighter (the "active" frames of a movement). */
+function isGliding(fighter: FighterState, template: FighterTemplate): boolean {
+  const move = fighter.move ? template.moves[fighter.move] : null;
+  return move?.kind === 'movement' && isActiveFrame(move, fighter.actionFrame);
 }

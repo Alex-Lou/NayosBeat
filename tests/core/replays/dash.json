@@ -1,0 +1,29 @@
+{
+  "description": "Dashes and backdashes of both fighters, from the dash button and from the double tap; a dash stopped by the opponent's body, a backdash that makes a grab whiff.",
+  "fighters": ["nayo", "riff"],
+  "inputs": [
+    [90, "", ""],
+    [1, "dash", ""],
+    [24, "", ""],
+    [1, "", "dash"],
+    [24, "", ""],
+    [1, "left+dash", ""],
+    [28, "", ""],
+    [1, "", "right+dash"],
+    [26, "", ""],
+    [1, "right", ""],
+    [2, "", ""],
+    [1, "right", ""],
+    [24, "", ""],
+    [1, "", "right"],
+    [3, "", ""],
+    [1, "", "right"],
+    [26, "", ""],
+    [1, "dash", "dash"],
+    [24, "", ""],
+    [1, "left+dash", ""],
+    [1, "", "grab"],
+    [40, "", ""]
+  ],
+  "hash": "6f4b857e"
+}

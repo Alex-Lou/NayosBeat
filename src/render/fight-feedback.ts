@@ -1,8 +1,9 @@
 import type Phaser from 'phaser';
 import type { Sfx } from '../audio/sfx';
 import { BLEEDS, Blood } from './blood';
+import { Dust } from './dust';
 import { Effects } from './effects';
-import type { FightEvent } from './fight-events';
+import { vibrationFor, type FightEvent } from './fight-events';
 import { HitFx } from './hit-fx';
 import type { HitStyle } from './hit-styles';
 import { Onomatopoeia } from './onomatopoeia';
@@ -12,13 +13,15 @@ const KO_SLOW_MOTION_FRAMES = 50;
 const KO_SLOW_MOTION_SCALE = 0.35;
 
 /**
- * Turns fight events into what the player sees and hears: hit effects in the attacker's own
- * style, comic words with the running tally of hits, blood, shake, flash, sounds.
+ * Turns fight events into what the player sees, hears and feels: hit effects in the attacker's
+ * own style, comic words with the running tally of hits, blood, dust, shake, flash, sounds, and
+ * player 1's vibrations (`vibrate`, given only where a device can).
  */
 export class FightFeedback {
   private readonly effects: Effects;
   private readonly hitFx: HitFx;
   private readonly blood: Blood;
+  private readonly dust: Dust;
   private readonly words: Onomatopoeia;
   private slowMotionFrames = 0;
 
@@ -27,10 +30,12 @@ export class FightFeedback {
     groundY: number,
     private readonly sfx: Sfx,
     private readonly styles: readonly [HitStyle, HitStyle],
+    private readonly vibrate?: (ms: number) => void,
   ) {
     this.effects = new Effects(scene);
     this.hitFx = new HitFx(scene, groundY);
     this.blood = new Blood(scene, groundY);
+    this.dust = new Dust(scene, groundY);
     this.words = new Onomatopoeia(scene, groundY, styles);
   }
 
@@ -42,6 +47,10 @@ export class FightFeedback {
   /** `viewLeft`: left edge of the simulation camera, in world pixels (the words stay inside). */
   react(event: FightEvent, viewLeft: number): void {
     const { effects, hitFx, sfx } = this;
+    if (this.vibrate) {
+      const ms = vibrationFor(event, 0);
+      if (ms > 0) this.vibrate(ms);
+    }
     switch (event.type) {
       case 'hit': {
         const { heavy } = event;
@@ -74,6 +83,10 @@ export class FightFeedback {
       }
       case 'attack':
         sfx.play(event.heavy ? 'heavySwing' : 'swing');
+        break;
+      case 'dash':
+        this.dust.puff(event.x, event.toward);
+        sfx.play('dash');
         break;
       case 'projectile':
         sfx.play('projectile');
@@ -108,6 +121,7 @@ export class FightFeedback {
       this.effects.update();
       this.hitFx.update();
       this.blood.update();
+      this.dust.update();
       this.words.update();
     }
     this.slowMotionFrames = Math.max(0, this.slowMotionFrames - frames);

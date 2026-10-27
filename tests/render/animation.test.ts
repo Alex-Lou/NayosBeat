@@ -42,6 +42,18 @@ describe('clipIdOf', () => {
     expect(clipIdOf(makeFighter({ action: 'air', facing: 1, vx: 0 }))).toBe('jump');
   });
 
+  it('holds the first pose of the block in the proximity guard, standing or crouching', () => {
+    const standing = makeFighter({ action: 'guard', actionFrame: 40 });
+    const crouching = makeFighter({ action: 'guard', actionFrame: 40, crouching: true });
+    expect(clipIdOf(standing)).toBe('blockStand');
+    expect(clipIdOf(crouching)).toBe('blockCrouch');
+    expect(clipTickOf('blockStand', standing, FIGHTING)).toBe(0);
+  });
+
+  it('shows a dash with the clip of its move', () => {
+    expect(clipIdOf(makeFighter({ action: 'attack', move: 'dashBack' }))).toBe('dashBack');
+  });
+
   it('uses the crouching variants of hit and block reactions', () => {
     expect(clipIdOf(makeFighter({ action: 'hitstun', crouching: true }))).toBe('hitCrouch');
     expect(clipIdOf(makeFighter({ action: 'blockstun', crouching: false }))).toBe('blockStand');

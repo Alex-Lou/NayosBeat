@@ -18,12 +18,19 @@ function play(sheet: NayoSheet, ticks: readonly number[], loopFrom?: number): Na
  */
 export const NAYO_CLIPS: Readonly<Record<ClipId, NayoClip>> = {
   idle: play('idle', [6, 6, 6, 6, 6, 6, 6, 6, 6, 6], 0),
-  walkForward: play('walkForward', [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2], 0),
-  walkBack: play('walkBack', [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2], 0),
+  // The walk poses were drawn for the v1 speeds: a planted foot slides back 2.4 px a frame in
+  // the forward walk (1.2 px/tick over 2 ticks), 2 px in the backward one (1 px/tick). At the
+  // v2 speeds (1.5 and 1.2 px/tick) a frame lasts 1.6 and 1.67 ticks on average: the ticks
+  // alternate so that each planted foot drifts at most 0.9 px (forward walk) and 0.4 px (back)
+  // on the stage. Art track: redraw both strides for the new speeds (SLIDE 3 and 2.4 px), and
+  // the loops go back to 2 ticks a frame (36 and 28.8 px a loop).
+  walkForward: play('walkForward', [2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1], 0),
+  walkBack: play('walkBack', [2, 1, 2, 1, 2, 2, 2, 1, 2, 1, 2, 2], 0),
   crouch: play('crouch', [2, 2, 2, 8, 8, 8, 8], 3),
   preJump: { sheet: 'jump', frames: [0], ticks: [4] },
-  jump: { sheet: 'jump', frames: [1, 2, 3, 4], ticks: [7, 9, 10, 12] },
-  jumpForward: play('jumpForward', [4, 5, 5, 5, 5, 5, 5, 4]),
+  // 31 ticks above the ground: the last frame holds until the landing.
+  jump: { sheet: 'jump', frames: [1, 2, 3, 4], ticks: [6, 8, 8, 10] },
+  jumpForward: play('jumpForward', [3, 4, 4, 4, 4, 5, 4, 4]),
   landing: { sheet: 'jump', frames: [5], ticks: [3] },
 
   // Impact first, then the guard or the reaction is held as long as the stun lasts.
@@ -46,6 +53,10 @@ export const NAYO_CLIPS: Readonly<Record<ClipId, NayoClip>> = {
   specialForward: play('specialForward', [3, 3, 3, 2, 4, 4, 5, 5, 4]), // active: frame 4
   specialAntiAir: play('specialAntiAir', [3, 3, 5, 4, 4, 4, 4, 4, 4, 4]), // active: frames 1-2
   grab: play('throw', [3, 2, 4, 4, 5, 5, 4]), // active: frame 1
+  // Placeholders until the dash strips of the art track are in: one step of the walk, timed on
+  // the dash (set off, glide, landing) so the frame data and the clip already agree.
+  dashForward: { sheet: 'walkForward', frames: [0, 1, 2, 3, 4, 5], ticks: [1, 4, 4, 3, 3, 3] },
+  dashBack: { sheet: 'walkBack', frames: [0, 1, 2, 3, 4, 5], ticks: [1, 4, 4, 4, 4, 5] },
 
   // Round poses, played on the round clock: the entrance fills the 90-tick intro.
   intro: play('intro', [10, 8, 8, 8, 10, 8, 8, 10, 10, 10]),

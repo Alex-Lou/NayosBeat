@@ -1,6 +1,6 @@
 import type { Box, BoxSize, FighterTemplate, MatchConfig, StageConfig } from './config';
 import { CAMERA_WIDTH_PX, px } from './constants';
-import { AIR_MOVE_IDS, CORE_MOVE_IDS, type FrameRange } from './move-data';
+import { AIR_MOVE_IDS, CORE_MOVE_IDS, MOVEMENT_MOVE_IDS, type FrameRange } from './move-data';
 import { moveDuration } from './moves';
 
 /**
@@ -30,9 +30,15 @@ export function validateTemplate(template: FighterTemplate): string[] {
     isInteger(template.jumpVelocity, template.gravity + 1),
     'jumpVelocity must be an integer greater than gravity (or the jump lands at once)',
   );
-  for (const name of ['standingPushbox', 'crouchingPushbox'] as const) {
+  for (const name of [
+    'standingPushbox',
+    'crouchingPushbox',
+    'airPushbox',
+    'lyingPushbox',
+  ] as const) {
     expect(isPositiveSize(template[name]), `${name} must have a positive integer size`);
   }
+  expect(isInteger(template.airPushbox.lift, 0), 'airPushbox.lift must be an integer >= 0');
   for (const name of ['standingHurtboxes', 'crouchingHurtboxes', 'airHurtboxes'] as const) {
     const boxes = template[name];
     expect(boxes.length > 0, `${name} must have at least one box`);
@@ -43,9 +49,14 @@ export function validateTemplate(template: FighterTemplate): string[] {
     const move = template.moves[id];
     const duration = moveDuration(move);
     expect(move.name.length > 0, `${id}.name must not be empty`);
+    const movement = move.kind === 'movement';
     expect(
       (id === 'grab') === (move.kind === 'grab'),
       `${id}: only the grab move may (and must) be of kind "grab"`,
+    );
+    expect(
+      MOVEMENT_MOVE_IDS.includes(id) === movement,
+      `${id}: only the dashes may (and must) be of kind "movement"`,
     );
     for (const name of [
       'startup',
@@ -60,10 +71,18 @@ export function validateTemplate(template: FighterTemplate): string[] {
     expect(isInteger(move.active, 1), `${id}.active must be an integer >= 1`);
     expect(isInteger(move.pushback, 0), `${id}.pushback must be an integer >= 0`);
 
-    expect(
-      (move.hitbox === undefined) !== (move.projectile === undefined),
-      `${id} must have either a hitbox or a projectile`,
-    );
+    if (movement) {
+      expect(
+        move.hitbox === undefined && move.projectile === undefined && move.damage === 0,
+        `${id}: a movement never strikes (no hitbox, no projectile, no damage)`,
+      );
+      expect(move.motion !== undefined, `${id}: a movement must have a motion`);
+    } else {
+      expect(
+        (move.hitbox === undefined) !== (move.projectile === undefined),
+        `${id} must have either a hitbox or a projectile`,
+      );
+    }
     if (move.hitbox) {
       expect(isValidBox(move.hitbox), `${id}.hitbox must have integer offsets and a positive size`);
     }
@@ -86,11 +105,23 @@ export function validateTemplate(template: FighterTemplate): string[] {
       );
       expect(move.motion.dx.every(Number.isInteger), `${id}.motion.dx must be integers`);
     }
-    if (move.invincible) {
-      expect(isRangeWithin(move.invincible, duration), `${id}.invincible must fit within the move`);
+    for (const name of ['invincible', 'throwInvincible'] as const) {
+      const range = move[name];
+      if (range) expect(isRangeWithin(range, duration), `${id}.${name} must fit within the move`);
+    }
+    if (move.freeCancelFrom !== undefined) {
+      expect(movement, `${id}: only a movement can be cancelled without contact`);
+      expect(
+        isInteger(move.freeCancelFrom, 1) && move.freeCancelFrom < duration,
+        `${id}.freeCancelFrom must be a frame of the move`,
+      );
     }
     if (move.cancelInto) {
-      expect(!move.cancelInto.includes('grab'), `${id} cannot be cancelled into a grab`);
+      expect(!move.cancelInto.includes('movement'), `${id} cannot be cancelled into a movement`);
+      expect(
+        movement || !move.cancelInto.includes('grab'),
+        `${id}: only a movement can be cancelled into a grab`,
+      );
     }
   }
   return errors;

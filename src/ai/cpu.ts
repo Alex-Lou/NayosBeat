@@ -1,9 +1,9 @@
 import type { MatchConfig } from '../core/config';
-import type { MoveData } from '../core/move-data';
 import { toPx } from '../core/constants';
 import { Input, type InputBits } from '../core/input';
-import { isActiveFrame } from '../core/moves';
 import type { FighterAction, FighterState, GameState } from '../core/state';
+import { strikeThreatens, upcomingMove } from '../core/threat';
+import { guardInput, incomingProjectile } from './defense';
 import { nextRandom } from './rng';
 
 export type CpuLevel = 'easy' | 'normal' | 'hard';
@@ -21,6 +21,10 @@ interface Profile {
   readonly throw: number;
   /** How often it closes the distance rather than waiting. */
   readonly aggression: number;
+  /** Chance to dash in rather than walk, from mid range. */
+  readonly dash: number;
+  /** Chance to backdash out of close pressure once a block ends. */
+  readonly backdash: number;
 }
 
 const PROFILES: Readonly<Record<CpuLevel, Profile>> = {
@@ -31,6 +35,8 @@ const PROFILES: Readonly<Record<CpuLevel, Profile>> = {
     combo: 0.15,
     throw: 0.05,
     aggression: 0.35,
+    dash: 0.1,
+    backdash: 0.05,
   },
   normal: {
     reactionFrames: 14,
@@ -39,6 +45,8 @@ const PROFILES: Readonly<Record<CpuLevel, Profile>> = {
     combo: 0.5,
     throw: 0.12,
     aggression: 0.5,
+    dash: 0.25,
+    backdash: 0.15,
   },
   hard: {
     reactionFrames: 8,
@@ -47,6 +55,8 @@ const PROFILES: Readonly<Record<CpuLevel, Profile>> = {
     combo: 0.85,
     throw: 0.2,
     aggression: 0.65,
+    dash: 0.4,
+    backdash: 0.25,
   },
 };
 
@@ -56,13 +66,13 @@ const DECISION_ACTIONS: ReadonlySet<FighterAction> = new Set([
   'walkForward',
   'walkBack',
   'crouch',
+  'guard',
 ]);
 
 /** Distances in pixels deciding the CPU's game plan. */
 const CLOSE_RANGE = 60;
 const MID_RANGE = 150;
 const ANTI_AIR_RANGE = 80;
-const PROJECTILE_ALERT_RANGE = 140;
 const BLOCK_HOLD_FRAMES = 14;
 
 export interface CpuState {
@@ -96,22 +106,22 @@ export function cpuStep(
   if (cpu.behavior === 'dummyStand') return { cpu, input: 0 };
   if (cpu.behavior === 'dummyBlock') {
     // Perfect guard, with no reaction delay, but only when something is coming.
-    const move = opponentMove(liveOpponent, opponentTemplate);
+    const move = upcomingMove(liveOpponent, opponentTemplate);
     const danger = move !== null || liveOpponent.y > 0 || incomingProjectile(state, cpu.player);
     return { cpu, input: danger ? guardInput(me, liveOpponent, move) : 0 };
   }
   if (state.round.phase !== 'fight') return { cpu: { ...cpu, plan: [], seen: [] }, input: 0 };
   // The game is frozen on impact: keep holding the current input, do not use up the plan.
   if (state.hitstop > 0) return { cpu, input: cpu.plan[0] ?? 0 };
+  const profile = PROFILES[cpu.behavior];
   // While blocking, keep blocking: dropping the guard mid-string would be a free hit.
   if (me.action === 'blockstun') {
-    return {
-      cpu,
-      input: guardInput(me, liveOpponent, opponentMove(liveOpponent, opponentTemplate)),
-    };
+    const guard = guardInput(me, liveOpponent, upcomingMove(liveOpponent, opponentTemplate));
+    return me.stunFrames > 0
+      ? { cpu, input: guard }
+      : leaveBlock(cpu, profile, me, liveOpponent, guard);
   }
 
-  const profile = PROFILES[cpu.behavior];
   const seen = [...cpu.seen, liveOpponent].slice(-(profile.reactionFrames + 1));
   const opponent = seen[0] ?? liveOpponent;
   const decider = new Decider({ ...cpu, seen }, profile, me, opponent, state, config);
@@ -169,8 +179,8 @@ class Decider {
     const approaching = opponent.vx === 0 || movingRight === meOnTheRight;
     if (opponent.y > 0 && approaching && this.distance < ANTI_AIR_RANGE) return 'air';
 
-    const move = opponentMove(opponent, this.opponentTemplate());
-    if (move && this.distance < reach(move) + 30) return 'strike';
+    // The same menace as a player's proximity guard.
+    if (strikeThreatens(opponent, this.opponentTemplate(), this.me.x)) return 'strike';
 
     return incomingProjectile(this.state, this.cpu.player) ? 'projectile' : null;
   }
@@ -183,7 +193,7 @@ class Decider {
       return repeat(Input.Up | this.toward, 5);
     }
     if (this.chance(this.profile.block)) {
-      const move = opponentMove(this.opponent, this.opponentTemplate());
+      const move = upcomingMove(this.opponent, this.opponentTemplate());
       return repeat(guardInput(this.me, this.opponent, move), BLOCK_HOLD_FRAMES);
     }
     return [];
@@ -203,13 +213,17 @@ class Decider {
       return repeat(toward, this.between(12, 30));
     }
     if (this.distance > CLOSE_RANGE) {
-      if (this.chance(aggression * 0.6)) return repeat(toward, this.between(8, 18));
+      if (this.chance(aggression * 0.6)) {
+        // The dash button: no double tap to simulate.
+        if (this.chance(this.profile.dash)) return [Input.Dash, 0];
+        return repeat(toward, this.between(8, 18));
+      }
       if (this.chance(0.18)) return this.jumpIn();
       if (this.chance(0.15)) return [toward | Input.Special, ...repeat(0, 10)];
       if (hasProjectile && this.chance(0.2)) return [Input.Special, ...repeat(0, 15)];
       return repeat(this.chance(0.5) ? away : 0, this.between(6, 14));
     }
-    if (this.chance(this.profile.throw)) return [Input.Light | Input.Heavy, 0];
+    if (this.chance(this.profile.throw)) return [Input.Grab, 0];
     if (this.chance(0.35)) return [Input.Light, 0, 0, 0];
     if (this.chance(0.25)) return [Input.Down | Input.Light, Input.Down, 0];
     if (this.chance(0.2)) return [Input.Heavy, 0];
@@ -256,39 +270,22 @@ class Decider {
   }
 }
 
-/** The opponent's attack, while it is starting up or out. */
-function opponentMove(
+/**
+ * The last tick of a block: the guard goes on, or, close up and by chance, a backdash out of
+ * the pressure (back + the dash button, which comes out on the first free tick).
+ */
+function leaveBlock(
+  cpu: CpuState,
+  profile: Profile,
+  me: FighterState,
   opponent: FighterState,
-  template: MatchConfig['fighters'][number],
-): MoveData | null {
-  if (!opponent.move) return null;
-  const move = template.moves[opponent.move];
-  const upcoming = opponent.actionFrame < move.startup || isActiveFrame(move, opponent.actionFrame);
-  return upcoming ? move : null;
-}
-
-/** An opponent projectile heading toward the player, close enough to worry about. */
-function incomingProjectile(state: GameState, player: 0 | 1): boolean {
-  const me = state.fighters[player];
-  return state.projectiles.some(
-    (p) =>
-      p.owner !== player &&
-      (p.facing === 1) === me.x > p.x &&
-      toPx(Math.abs(p.x - me.x)) < PROJECTILE_ALERT_RANGE,
-  );
-}
-
-/** Holds back, crouching unless the attack must be blocked standing. */
-function guardInput(me: FighterState, opponent: FighterState, move: MoveData | null): InputBits {
+  guard: InputBits,
+): { cpu: CpuState; input: InputBits } {
+  const [value, seed] = nextRandom(cpu.seed);
+  const close = toPx(Math.abs(opponent.x - me.x)) < CLOSE_RANGE;
   const back = opponent.x > me.x ? Input.Left : Input.Right;
-  const standing = opponent.y > 0 || move?.guard === 'overhead';
-  return standing ? back : back | Input.Down;
-}
-
-/** How far in front of the attacker a move reaches, in pixels. */
-function reach(move: MoveData): number {
-  const box = move.hitbox ?? move.projectile?.hitbox;
-  return box ? toPx(box.x + box.width) : 0;
+  const input = close && value < profile.backdash ? back | Input.Dash : guard;
+  return { cpu: { ...cpu, seed }, input };
 }
 
 function repeat(input: InputBits, count: number): InputBits[] {

@@ -10,10 +10,36 @@ export const ROUND_END_FRAMES = 150;
 /** Delay before the results screen, so the final KO can be seen. */
 export const MATCH_END_FRAMES = 120;
 
-/** An attack pressed while busy is remembered this long, then started as soon as possible. */
-export const INPUT_BUFFER_FRAMES = 5;
+/**
+ * A command pressed while busy (an attack, a grab, a dash, a jump) is remembered this long, then
+ * carried out on the first tick the fighter is free: 100 ms, which absorbs the touch latency.
+ */
+export const INPUT_BUFFER_FRAMES = 6;
 
-/** Slowdown applied each tick to the slide of a fighter in hit or block stun. */
+/** The second tap of a double tap must come this many ticks after the first, at most. */
+export const DASH_TAP_WINDOW = 12;
+
+/** Share of its speed a dash hands over to the move it is cancelled into (Riff's momentum). */
+export const DASH_MOMENTUM_PERCENT = 50;
+
+/** Ticks a fighter cannot be grabbed once out of any stun: no unescapable grab loops. */
+export const THROW_PROTECTION_FRAMES = 4;
+
+/** An attack threatens from this far beyond its reach: the proximity guard stops the retreat. */
+export const THREAT_MARGIN = px(24);
+/** A projectile heading for a fighter threatens it from this close. */
+export const PROJECTILE_THREAT_RANGE = px(96);
+
+/**
+ * Gravity of everyone sent flying (hit in the air, knocked out, thrown), whoever they are: the
+ * advantage of a knockdown depends on the blow alone, not on the victim's jump.
+ */
+export const HIT_GRAVITY = px(0.5);
+
+/**
+ * Slowdown applied each tick to the slide of a fighter in hit or block stun, and to the momentum
+ * a cancelled dash hands over (one rule for every slide).
+ */
 export const PUSHBACK_FRICTION = px(0.25);
 
 /** Upward speed given to a fighter hit in the air. */

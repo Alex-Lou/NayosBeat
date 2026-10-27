@@ -1,7 +1,8 @@
-import type { MatchConfig } from '../../src/core/config';
+import type { FighterTemplate, MatchConfig } from '../../src/core/config';
 import { px } from '../../src/core/constants';
 import type { InputBits } from '../../src/core/input';
 import { createInitialState, type FighterState, type GameState } from '../../src/core/state';
+import { updateFighter } from '../../src/core/fighter';
 import { step } from '../../src/core/step';
 import { NAYO } from '../../src/data/fighters/nayo';
 import { RIFF } from '../../src/data/fighters/riff';
@@ -58,6 +59,10 @@ export function makeFighter(overrides: Partial<FighterState> = {}): FighterState
     bufferedMotion: null,
     bufferedFacing: facing,
     directionHistory: [],
+    tapDirection: 0,
+    tapFrames: 0,
+    tapReleased: false,
+    throwImmuneFrames: 0,
     comboCount: 0,
     ...overrides,
   };
@@ -84,4 +89,31 @@ export function facingOff(
 /** `count` copies of `value`, typed (unlike `Array(n).fill`, which yields `any[]`). */
 export function repeat<T>(value: T, count: number): T[] {
   return Array.from({ length: count }, () => value);
+}
+
+/** Far away on the right: a fighter played alone faces right and nothing interferes. */
+const FAR = px(900);
+
+/** Plays one input per tick on a lone fighter; returns its state after each tick. */
+export function playAlone(
+  template: FighterTemplate,
+  inputs: readonly InputBits[],
+  start: FighterState = makeFighter(),
+): FighterState[] {
+  const states: FighterState[] = [];
+  let current = start;
+  for (const input of inputs) {
+    current = updateFighter(current, input, template, FAR);
+    states.push(current);
+  }
+  return states;
+}
+
+/** How far the fighter moved on each tick (sub-pixels), from `start`. */
+export function stepsOf(states: readonly FighterState[], start = makeFighter()): number[] {
+  return states.map((state, tick) => state.x - (states[tick - 1] ?? start).x);
+}
+
+export function sum(values: readonly number[]): number {
+  return values.reduce((total, value) => total + value, 0);
 }

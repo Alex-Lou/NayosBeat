@@ -4,7 +4,12 @@ import { Input } from '../../src/core/input';
 import type { GameState } from '../../src/core/state';
 import { step } from '../../src/core/step';
 import { NAYO as P } from '../../src/data/fighters/nayo';
-import { detectEvents, type FightEvent } from '../../src/render/fight-events';
+import {
+  detectEvents,
+  HAPTICS,
+  vibrationFor,
+  type FightEvent,
+} from '../../src/render/fight-events';
 import { facingOff, MIRROR_MATCH, repeat } from '../core/helpers';
 
 /** Plays scripted ticks and collects every event detected along the way. */
@@ -126,5 +131,41 @@ describe('detectEvents', () => {
     const hit = eventsOf(start, [[Input.Light, 0], ...idle(10)]).find((e) => e.type === 'hit');
     const [a, b] = start.fighters;
     expect(hit && 'x' in hit && hit.x > a.x && hit.x < b.x).toBe(true);
+  });
+
+  it('reports a dash, not an attack, with where it sets off and which way it goes', () => {
+    const start = facingOff(200, MIRROR_MATCH);
+    const dash = eventsOf(start, [[Input.Dash, 0], ...idle(20)]);
+    expect(dash).toEqual([{ type: 'dash', x: start.fighters[0].x, toward: 1 }]);
+    const back = eventsOf(start, [[Input.Left | Input.Dash, 0], ...idle(24)]);
+    expect(back).toEqual([{ type: 'dash', x: start.fighters[0].x, toward: -1 }]);
+    const second = eventsOf(start, [[0, Input.Dash], ...idle(20)]);
+    expect(second).toEqual([{ type: 'dash', x: start.fighters[1].x, toward: -1 }]);
+  });
+
+  it('tells a grab from a strike', () => {
+    const grab = eventsOf(facingOff(30, MIRROR_MATCH), [[Input.Grab, 0], ...idle(20)]);
+    expect(grab.find((e) => e.type === 'hit')).toMatchObject({ grab: true });
+    const jab = eventsOf(facingOff(30, MIRROR_MATCH), [[Input.Light, 0], ...idle(20)]);
+    expect(jab.find((e) => e.type === 'hit')).toMatchObject({ grab: false });
+  });
+});
+
+describe('vibrationFor', () => {
+  const blow = { x: 0, y: 0, away: 1, by: 1 } as const;
+
+  it("shakes the phone of a player grabbed, or hit hard, and only that player's", () => {
+    const grabbed: FightEvent = { type: 'hit', ...blow, damage: 110, heavy: true, grab: true };
+    const heavy: FightEvent = { type: 'hit', ...blow, damage: 80, heavy: true, grab: false };
+    expect(vibrationFor(grabbed, 0)).toBe(HAPTICS.grabbed);
+    expect(vibrationFor(heavy, 0)).toBe(HAPTICS.heavyHit);
+    expect(vibrationFor(heavy, 1)).toBe(0);
+  });
+
+  it('leaves light hits, blocks and everything else alone', () => {
+    const light: FightEvent = { type: 'hit', ...blow, damage: 30, heavy: false, grab: false };
+    expect(vibrationFor(light, 0)).toBe(0);
+    expect(vibrationFor({ type: 'block', ...blow }, 0)).toBe(0);
+    expect(vibrationFor({ type: 'dash', x: 0, toward: 1 }, 0)).toBe(0);
   });
 });

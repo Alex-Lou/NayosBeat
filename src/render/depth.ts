@@ -1,9 +1,10 @@
 /**
- * Draw order of the fight, back to front (Phaser depth). The fighter attacking is drawn over
- * the other one; effects and projectiles over both; blood, then sparks, then the comic words
- * of the blows; debug boxes on top.
+ * Draw order of the fight, back to front (Phaser depth). A dash's afterimages behind both
+ * fighters; the fighter attacking is drawn over the other one; effects, projectiles and dust over
+ * both; blood, then sparks, then the comic words of the blows; debug boxes on top.
  */
 export const DEPTH = {
+  trail: 0.5,
   fighterBack: 1,
   fighterFront: 2,
   effects: 3,

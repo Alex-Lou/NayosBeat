@@ -75,41 +75,57 @@ body {
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.45);
 }
+.touch-button-zone {
+  /* Hugs the safe area's bottom-right corner: the button layout is measured from it. */
+  position: absolute;
+  top: 0;
+  left: 50%;
+  right: env(safe-area-inset-right, 0px);
+  bottom: env(safe-area-inset-bottom, 0px);
+}
+/* Placed and sized from src/input/touch-layout.ts; the colors tell the buttons apart. */
 .touch-button {
   position: absolute;
-  width: 64px;
-  height: 64px;
+  box-sizing: border-box;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font:
-    10px 'Press Start 2P',
-    monospace;
-  color: rgba(255, 255, 255, 0.8);
+  font-family: 'Press Start 2P', monospace;
+  color: rgba(255, 255, 255, 0.85);
   background: rgba(255, 255, 255, 0.15);
   border: 2px solid rgba(255, 255, 255, 0.35);
+  pointer-events: none;
+  transition: transform 50ms;
 }
-.touch-jump {
-  right: calc(20px + env(safe-area-inset-right));
-  bottom: calc(20px + env(safe-area-inset-bottom));
-}
-.touch-heavy {
-  right: calc(94px + env(safe-area-inset-right));
-  bottom: calc(20px + env(safe-area-inset-bottom));
+/* Pressed: a little smaller, its edge lit. */
+.touch-button.pressed {
+  transform: scale(0.92);
+  background: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 0 8px 1px currentColor;
 }
 .touch-light {
-  right: calc(168px + env(safe-area-inset-right));
-  bottom: calc(20px + env(safe-area-inset-bottom));
+  color: #fff;
 }
-.touch-throw {
-  right: calc(57px + env(safe-area-inset-right));
-  bottom: calc(94px + env(safe-area-inset-bottom));
-  font-size: 8px;
+.touch-heavy {
+  color: #ffb347;
+  border-color: rgba(255, 179, 71, 0.6);
+}
+.touch-jump {
+  color: #7bea8a;
+  border-color: rgba(123, 234, 138, 0.6);
 }
 .touch-special {
-  right: calc(131px + env(safe-area-inset-right));
-  bottom: calc(94px + env(safe-area-inset-bottom));
+  color: #30e8ff;
+  border-color: rgba(48, 232, 255, 0.6);
+}
+.touch-grab {
+  color: #ffd84a;
+  border-color: rgba(255, 216, 74, 0.6);
+}
+.touch-dash {
+  color: #6aa8ff;
+  border-color: rgba(106, 168, 255, 0.6);
 }
 /* Keyboard and gamepad players pause with Escape / Start; the button is for touch. */
 .pause-button {

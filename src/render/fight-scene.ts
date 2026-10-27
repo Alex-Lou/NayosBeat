@@ -20,15 +20,17 @@ import { step } from '../core/step';
 import { assertValidMatch } from '../core/validate';
 import { connectedGamepads } from '../input/gamepad';
 import { PauseInput } from '../input/pause-input';
+import { vibrate } from '../input/haptics';
 import { PlayerInputs } from '../input/player-inputs';
 import { isTouchDevice, TouchControls } from '../input/touch-controls';
 import { FixedTimestep } from '../loop/fixed-timestep';
 import { frontFighter } from './animation';
 import { frameFight, MAX_CLOSE_UP, type FramingInput } from './camera-framing';
-import { DebugOverlay, isDebugEnabled } from './debug-overlay';
+import { DebugOverlay, describeGame, isDebugEnabled } from './debug-overlay';
 import { detectEvents, type FightEvent } from './fight-events';
 import { FightFeedback } from './fight-feedback';
 import { FighterView } from './fighter-view';
+import { drawGreyboxStage, GROUND_Y } from './greybox-stage';
 import { hitStyleOf, type HitStyle } from './hit-styles';
 import { requestLandscapeFullscreen } from './fullscreen';
 import { Hud } from './hud';
@@ -39,19 +41,8 @@ import { VIEW_SIZE } from './view';
 /** Caps the catch-up after a long stall (~83 ms of simulation at 60 Hz). */
 const MAX_TICKS_PER_FRAME = 5;
 
-const GROUND_HEIGHT = 40;
-const GROUND_Y = VIEW_SIZE.height - GROUND_HEIGHT;
-const GROUND_MARK_SPACING = 32;
-const GROUND_MARK_SIZE = 2;
-
-const COLORS = {
-  background: 0x1b1b2f,
-  ground: 0x3a3a5c,
-  groundMark: 0x50507a,
-  border: 0x8888aa,
-  player1: 0xd9574a,
-  player2: 0x4a8fd9,
-} as const;
+/** Grey boxes of the fighters without art. */
+const COLORS = { player1: 0xd9574a, player2: 0x4a8fd9 } as const;
 
 export interface FightSceneData {
   readonly setup: MatchSetup;
@@ -164,9 +155,9 @@ export class FightScene extends Phaser.Scene {
     // Everything is placed in world pixels; the canvas is finer (see renderScaleFor). With the
     // origin at the top left, the scroll stays the world x of the screen's left edge.
     this.cameras.main.setZoom(this.scale.width / VIEW_SIZE.width).setOrigin(0, 0);
-    this.drawStage();
+    drawGreyboxStage(this, toPx(this.config.stage.width));
     const touch = isTouchDevice()
-      ? new TouchControls(document.body, requestLandscapeFullscreen)
+      ? new TouchControls(document.body, requestLandscapeFullscreen, this.styles[0].energy)
       : undefined;
 
     this.runtime = {
@@ -177,7 +168,14 @@ export class FightScene extends Phaser.Scene {
         this.fighterDisplay(1, COLORS.player2, debug),
       ],
       projectileView: new ProjectileView(this, this.config, GROUND_Y, this.arts),
-      feedback: new FightFeedback(this, GROUND_Y, this.sceneData.sfx, this.styles),
+      // Touch is player 1's: its phone vibrates when player 1 is grabbed or hit hard.
+      feedback: new FightFeedback(
+        this,
+        GROUND_Y,
+        this.sceneData.sfx,
+        this.styles,
+        touch ? vibrate : undefined,
+      ),
       hud: new Hud(this, this.config),
       debugOverlay: debug ? new DebugOverlay(document.body) : undefined,
     };
@@ -209,7 +207,7 @@ export class FightScene extends Phaser.Scene {
   private fighterDisplay(player: 0 | 1, color: number, debug: boolean): FighterDisplay {
     const art = this.arts[player];
     return art
-      ? new SpriteFighterView(this, art, player, GROUND_Y, debug)
+      ? new SpriteFighterView(this, art, player, GROUND_Y, this.styles[player].energy, debug)
       : new FighterView(this, color, GROUND_Y, debug);
   }
 
@@ -316,37 +314,5 @@ export class FightScene extends Phaser.Scene {
     this.runtime = undefined;
   }
 
-  private readonly describeState = (): string => {
-    const [a, b] = this.state.fighters;
-    return [
-      `frame  ${this.state.frame}  ${this.state.round.phase}  hitstop=${this.state.hitstop}`,
-      `P1     ${describeFighter(a)}`,
-      `P2     ${describeFighter(b)}`,
-    ].join('\n');
-  };
-
-  /** Static grey-box stage; the 1 px screen border makes scaling artifacts easy to spot. */
-  private drawStage(): void {
-    const stageWidth = toPx(this.config.stage.width);
-    this.cameras.main.setBackgroundColor(COLORS.background);
-
-    const ground = this.add.graphics();
-    ground.fillStyle(COLORS.ground);
-    ground.fillRect(0, GROUND_Y, stageWidth, GROUND_HEIGHT);
-    ground.fillStyle(COLORS.groundMark);
-    for (let x = 0; x <= stageWidth; x += GROUND_MARK_SPACING) {
-      ground.fillRect(x, GROUND_Y + GROUND_MARK_SIZE, GROUND_MARK_SIZE, GROUND_MARK_SIZE);
-    }
-
-    const border = this.add.graphics().setScrollFactor(0).setDepth(1);
-    border.lineStyle(1, COLORS.border);
-    border.strokeRect(0.5, 0.5, VIEW_SIZE.width - 1, VIEW_SIZE.height - 1);
-  }
-}
-
-function describeFighter(fighter: FighterState): string {
-  const x = Math.round(toPx(fighter.x));
-  const y = Math.round(toPx(fighter.y));
-  const move = fighter.move ? ` ${fighter.move}` : '';
-  return `${fighter.action}${move}[${fighter.actionFrame}] hp=${fighter.health} x=${x} y=${y}`;
+  private readonly describeState = (): string => describeGame(this.state);
 }

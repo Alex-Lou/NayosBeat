@@ -13,6 +13,10 @@ export const Input = {
   Light: 1 << 5,
   Heavy: 1 << 6,
   Special: 1 << 7,
+  /** PRISE: the grab. Light + heavy together stays an alias (see `pressedButton`). */
+  Grab: 1 << 8,
+  /** DASH: toward the opponent, or a backdash with back held. A double tap does the same. */
+  Dash: 1 << 9,
 } as const;
 
 export const DIRECTIONS = Input.Up | Input.Down | Input.Left | Input.Right;

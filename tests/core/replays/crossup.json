@@ -1,0 +1,18 @@
+{
+  "description": "Cross-ups: forward jumps that land behind a standing and a crouching opponent, and one from too far that lands in front.",
+  "fighters": ["nayo", "riff"],
+  "inputs": [
+    [90, "", ""],
+    [30, "right", "left"],
+    [6, "up+right", ""],
+    [40, "", ""],
+    [10, "", "left"],
+    [6, "", "up+left"],
+    [40, "down", "down"],
+    [20, "", ""],
+    [40, "left", "left"],
+    [6, "up+left", ""],
+    [50, "", ""]
+  ],
+  "hash": "86a2bc67"
+}

@@ -1,0 +1,16 @@
+{
+  "description": "Throw protection: a grab on the wake-up whiffs, the same grab a moment later lands; the grab button and light + heavy grab alike.",
+  "fighters": ["nayo", "riff"],
+  "inputs": [
+    [90, "", ""],
+    [40, "right", "left"],
+    [1, "grab", ""],
+    [27, "", ""],
+    [34, "right", ""],
+    [1, "light+heavy", ""],
+    [27, "", ""],
+    [1, "light+heavy", ""],
+    [80, "", ""]
+  ],
+  "hash": "b7d3ac93"
+}
