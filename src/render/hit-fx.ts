@@ -214,6 +214,9 @@ const STARS: Readonly<Record<Exclude<HitKind, 'block'>, Star>> = {
   },
 };
 
+/** Lowest height of a KO burst's center (world pixels): half the biggest burst, Nayo's. */
+const KO_LIFT = Math.max(STARS.ko.size, BURSTS.ko.glow) / 2;
+
 /** The burst is this much wider than high, along the blow. */
 const STRETCH = 1.15;
 
@@ -399,7 +402,8 @@ export class HitFx {
     // A blow before the atlas is all painted (never seen: the intro is longer) waits for it.
     paintAtlas(Infinity);
     const px = toPx(x);
-    const py = this.groundY - toPx(y);
+    // The KO of a sweep lands at the feet: its burst rises above the floor, not through it.
+    const py = this.groundY - Math.max(toPx(y), kind === 'ko' ? KO_LIFT : 0);
     const direction = away > 0 ? 0 : Math.PI;
     if (style.shape === 'slash') {
       if (kind === 'block') this.guard(style, px, py, direction);

@@ -63,10 +63,5 @@ export const NAYO_CLIPS: Readonly<Record<ClipId, NayoClip>> = {
   timeOver: play('timeOver', [10, 10, 10, 10], 0),
 };
 
-/**
- * The Vinyle in flight, looping on the match clock. Still the sound wave's strip, placed over
- * the Vinyle's hitbox (tools/sprites/nayo/poses/projectile.ts).
- * TODO(art): the disc of docs/combat-v2.md §11.2 (8 frames of 2 ticks: a 20 px light disc,
- * grooves, label, afterimages) replaces it, with NAYO_SHEETS.projectile at 8 frames.
- */
-export const NAYO_PROJECTILE: NayoClip = play('projectile', [2, 2, 2, 2, 2, 2], 0);
+/** The Vinyle in flight, looping on the match clock: a turn of the record every 16 ticks. */
+export const NAYO_PROJECTILE: NayoClip = play('projectile', [2, 2, 2, 2, 2, 2, 2, 2], 0);

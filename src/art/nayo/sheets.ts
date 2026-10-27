@@ -26,7 +26,7 @@ export const NAYO_SHEETS = {
   intro: { frames: 10 },
   victory: { frames: 8 },
   timeOver: { frames: 4 },
-  projectile: { frames: 6 },
+  projectile: { frames: 8 },
 
   // Combat v2 (docs/combat-v2.md §11.1, §11.2), drawn ahead of its gameplay: no clip plays these
   // strips yet, so a fight does not load them.

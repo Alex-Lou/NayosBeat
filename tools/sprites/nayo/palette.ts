@@ -86,7 +86,7 @@ const DETAILS = {
   neon: { main: '#00b8d0', alt: '#d0288e' },
   neonLight: { main: '#2ce8f8', alt: '#ff5cc8' },
   neonCore: { main: '#c8fcff', alt: '#ffd6f2' },
-  /** Sound (waves, energy, trails): the neon color. */
+  /** Sound (the Vinyle, energy, trails): the neon color. */
   soundDeep: { main: '#006a80', alt: '#80105a' },
   sound: { main: '#00c0d8', alt: '#d82896' },
   soundLight: { main: '#40f0ff', alt: '#ff60cc' },

@@ -1,13 +1,16 @@
 import { BODY, solve } from '../../skeleton.ts';
-import { at, energy, GUARD, lifted, planted, type Effect, type Foot, type Pose } from './common.ts';
+import { at, GUARD, lifted, planted, smear, type Effect, type Foot, type Pose } from './common.ts';
 
-/** A ring of sound around `(x, y)`, `progress` from 0 (born, bright, thick) to 1 (faded). */
-const ring = (x: number, y: number, radius: number, progress: number): Effect => ({
-  kind: 'ring',
+/**
+ * The record in his hands at `(x, y)`, before it lights up into the flying Vinyle: smaller,
+ * no afterimages, turned `phase` of a turn (the scratch rocks it back and forth).
+ */
+const record = (x: number, y: number, phase: number): Effect => ({
+  kind: 'disc',
   center: at(x, y),
-  radius,
-  progress,
-  tone: 'sound',
+  radius: 5,
+  phase,
+  afterimages: 0,
 });
 
 /** Where the guard's toes touch the floor: the lead foot's and the rear one's (heel up). */
@@ -26,22 +29,21 @@ function onToes(toe: number, angle: number): Foot {
   );
 }
 
-// Startup (frames 0-3, 3 ticks each): out of the high guard, the weight rocks back onto the rear
-// leg and the hands sink to the rear hip, hunched over a ball of sound like a DJ over the decks.
-// The ball grows, rings of sound converge into it.
+// Startup (frames 0-3, 3 ticks each): out of the high guard, the rear hand pulls a record out
+// of the jacket and the weight rocks back onto the rear leg; hunched over it at the rear hip
+// like a DJ over the decks, he gives it a scratch, then coils for a flat sidearm throw.
 
-// Frame 0: out of the guard, the gloves open and drop, sweeping down and back past the belt (the
-// lead elbow stays in front of the jacket, between the guard's and the coil's); the chest starts
-// turning away, the hips rock back.
-const SWING: Pose = {
+// Frame 0: the rear hand slips inside the open jacket, the lead glove holds the flap open; the
+// chest starts turning away, the hips rock back.
+const DRAW: Pose = {
   ...GUARD,
   hip: at(-7.8, 35.4),
   torso: 10,
-  head: 6,
+  head: 8,
   shrug: 2.6,
   twist: -0.5,
-  nearFist: at(-6, 41),
-  farFist: at(-9, 43),
+  nearFist: at(7, 50),
+  farFist: at(1, 56),
   nearHand: 'open',
   farHand: 'open',
   nearFoot: onToes(LEAD_TOE, -4),
@@ -49,8 +51,9 @@ const SWING: Pose = {
   bends: { nearElbow: 'down', farElbow: 'down' },
 };
 
-// Frame 1: coiled on the rear leg (its heel sinks), chest turned away, the lead shoulder up at
-// the chin; the palms frame the ball at the rear hip (lead palm on top, rear one under it).
+// Frame 1: the record comes out and sweeps down to the rear hip, coiled on the rear leg (its
+// heel sinks), chest turned away, the lead shoulder up at the chin; the palms hold the record
+// by its rim (lead palm on top, rear one under it).
 const COIL: Pose = {
   ...GUARD,
   hip: at(-9.2, 34),
@@ -58,32 +61,32 @@ const COIL: Pose = {
   head: 8,
   shrug: 2.8,
   twist: -0.8,
-  nearFist: at(-9.5, 45.5),
-  farFist: at(-14, 38.5),
+  nearFist: at(-9.5, 47),
+  farFist: at(-14, 37.5),
   nearHand: 'open',
   farHand: 'open',
   nearFoot: onToes(LEAD_TOE, -8),
   farFoot: onToes(REAR_TOE, -7),
   bends: { nearElbow: 'front', farElbow: 'front' },
-  effects: [energy(-12, 42, 2.3), ring(-12, 42, 14, 0.8)],
+  effects: [smear(2.5, [1, 56], [-5, 51], [-13, 40]), record(-12, 42, 0)],
 };
 
-// Frame 2: the scratch: the lead palm drags back hard over the top of the ball, the head nods
-// down on the beat; the first ring closes in, a second one follows.
+// Frame 2: the scratch: the lead palm drags the record back hard, the head nods down on the
+// beat.
 const SCRATCH: Pose = {
   ...COIL,
   hip: at(-9.9, 33.1),
   torso: 8,
   head: 11,
   nearFist: at(-15, 48.5),
-  farFist: at(-14.5, 38),
+  farFist: at(-15.5, 37.5),
   nearFoot: onToes(LEAD_TOE, -10),
   farFoot: onToes(REAR_TOE, -6),
-  effects: [energy(-14.7, 42.8, 3.2), ring(-14.7, 42.8, 12, 0.5), ring(-14.7, 42.8, 15, 0.85)],
+  effects: [record(-14.2, 42.8, -0.15)],
 };
 
 // Frame 3: the scratch back and the deepest coil, low on the rear leg, the chest turned right
-// away, lead heel up; the ball at full size between the palms, the rings tight around it.
+// away, lead heel up; the rear hand cocks the record behind the hip, flat, ready to whip.
 const LOAD: Pose = {
   ...COIL,
   hip: at(-11, 32),
@@ -91,61 +94,58 @@ const LOAD: Pose = {
   head: 6,
   shrug: 3.2,
   twist: -0.95,
-  nearFist: at(-8.5, 44.5),
+  nearFist: at(-8.5, 46),
   farFist: at(-15.5, 37),
   nearFoot: onToes(LEAD_TOE, -13),
   farFoot: onToes(REAR_TOE, -6),
-  effects: [energy(-12.5, 41, 4), ring(-12.5, 41, 12.5, 0.2), ring(-12.5, 41, 13, 0.55)],
+  effects: [record(-12.5, 41, 0.05)],
 };
 
-// Frame 4 (8 ticks, the wave leaves at x 24, y 43): the hips drive through off the rear toe,
+// Frame 4 (8 ticks, the Vinyle leaves at x 24, y 42): the hips drive through off the rear toe,
 // the lead foot stamps a short step, chest squared; one line from the rear toe through the hips
-// and the leaning back to the head. Both arms shoot out long and the palms meet heel to heel
-// just ahead of the spawn, inside the wave; a sound flash in a thin ring past them (the palms
-// stay readable), dust under the stamp.
-const PUSH: Pose = {
+// and the leaning back to the head. The rear arm whips out flat at chest height, the palm open
+// just behind the record it let go of, the lead glove pulled back to the chest; speed lines
+// stream behind the throwing hand, dust under the stamp.
+const THROW: Pose = {
   ...GUARD,
   hip: at(-5.5, 33),
   torso: 17,
   head: 0,
   shrug: 0.6,
-  reach: { near: 3, far: 3.5 },
-  twist: 0.55,
-  nearFist: at(26.5, 46.5),
-  farFist: at(24.5, 43),
-  nearHand: 'open',
+  reach: { near: 0, far: 3.5 },
+  twist: 0.6,
+  nearFist: at(4, 52),
+  farFist: at(19, 43),
   farHand: 'open',
   nearFoot: planted(10),
   farFoot: onToes(REAR_TOE, -28),
   bends: { nearElbow: 'down', farElbow: 'down' },
   face: 'effort',
   effects: [
-    ring(31, 44, 13, 0.5),
-    { kind: 'flash', center: at(31.5, 44.5), radius: 6, tone: 'sound' },
+    { kind: 'speed', center: at(17, 43), length: 9, spread: 4, direction: 0, tone: 'sound' },
     { kind: 'dust', x: 11.5, size: 2.6, progress: 0.15 },
   ],
 };
 
-// Recovery (frames 5-8): the release's ripples spread and drift after the wave while he
-// rolls back into the high guard.
+// Recovery (frames 5-8): the arm follows through and he rolls back into the high guard.
 
-// Frame 5: follow-through, the whole pose drifts on half a pixel, two ripples open ahead.
+// Frame 5: follow-through, the throwing arm still out, the whole pose drifting on half a pixel;
+// the speed lines thin out.
 const HOLD: Pose = {
-  ...PUSH,
+  ...THROW,
   hip: at(-5.2, 33.2),
   torso: 18,
   head: 0,
-  nearFist: at(27, 46.9),
-  farFist: at(25, 43.4),
+  nearFist: at(4.5, 52.5),
+  farFist: at(19.5, 43.6),
   effects: [
-    ring(33, 44, 15, 0.4),
-    ring(33, 44, 9, 0.3),
+    { kind: 'speed', center: at(17, 44), length: 6, spread: 3, direction: 0, tone: 'sound' },
     { kind: 'dust', x: 11.5, size: 2.6, progress: 0.55 },
   ],
 };
 
-// Frame 6: the hands come back up the same line toward the chin, the hips rock back, the lead
-// foot steps home.
+// Frame 6: the hands come back up toward the chin, the hips rock back, the lead foot steps
+// home.
 const RETURN: Pose = {
   ...GUARD,
   hip: at(-5.4, 35.3),
@@ -158,15 +158,11 @@ const RETURN: Pose = {
   farFist: at(14.5, 57),
   nearFoot: lifted(planted(7.6, -4), 1),
   farFoot: onToes(REAR_TOE, -17),
-  effects: [
-    ring(33, 44, 15, 0.75),
-    ring(33, 44, 11, 0.6),
-    { kind: 'dust', x: 11.5, size: 2.6, progress: 0.85 },
-  ],
+  effects: [{ kind: 'dust', x: 11.5, size: 2.6, progress: 0.85 }],
 };
 
 // Frame 7: back in the high guard, up a hair past it on the bounce, the lead shoulder rolling
-// up to the chin and the far glove a beat late; the last ripple fades.
+// up to the chin and the far glove a beat late.
 const SETTLE: Pose = {
   ...GUARD,
   hip: at(-6.9, 37.1),
@@ -175,7 +171,6 @@ const SETTLE: Pose = {
   shrug: 2.2,
   nearFist: at(8.8, 55.6),
   farFist: at(10.5, 61.4),
-  effects: [ring(33.5, 44, 15, 0.95)],
 };
 
 /**
@@ -190,18 +185,18 @@ const IDLE_HANG: Pose = {
 };
 
 /**
- * special (Onde sonore): a DJ's scratch on a ball of sound at the rear hip, then both palms
- * push the wave out. Ticks 3,3,3,3,8,6,5,5,5; the wave leaves at the start of frame 4
- * (x 24, y 43), right out of the palms. Starts from the high guard and ends on the idle's last
- * frame (the guard, shoulder up on the breath); the toes keep their marks while the heels rise
- * and sink.
+ * special (Vinyle, docs/combat-v2.md §5.4): he pulls a record out of his jacket, scratches it at
+ * the rear hip like a DJ, and throws it flat with a whip of the rear arm. Ticks 3,3,3,3,8,6,5,5,5;
+ * the record leaves the hand at the start of frame 4, where the flying Vinyle takes over (x 24,
+ * y 42). Starts from the high guard and ends on the idle's last frame (the guard, shoulder up on
+ * the breath); the toes keep their marks while the heels rise and sink.
  */
 export const POSES: readonly Pose[] = [
-  SWING,
+  DRAW,
   COIL,
   SCRATCH,
   LOAD,
-  PUSH,
+  THROW,
   HOLD,
   RETURN,
   SETTLE,

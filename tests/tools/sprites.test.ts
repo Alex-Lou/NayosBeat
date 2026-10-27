@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { NAYO_CLIPS } from '../../src/art/nayo/clips';
+import { NAYO_CLIPS, NAYO_PROJECTILE } from '../../src/art/nayo/clips';
 import { NAYO_SHEETS } from '../../src/art/nayo/sheets';
 import { ANCHOR, ART_SCALE, CELL_SIZE } from '../../src/art/types';
 import type { MoveId } from '../../src/core/move-data';
@@ -178,6 +178,12 @@ describe('Nayo strips', () => {
 });
 
 describe('the Vinyle in flight', () => {
+  it('turns on a loop of 8 frames of 2 ticks (docs/combat-v2.md §11.2)', () => {
+    expect(NAYO_SHEETS.projectile.frames).toBe(8);
+    expect(NAYO_PROJECTILE).toMatchObject({ frames: [0, 1, 2, 3, 4, 5, 6, 7], loopFrom: 0 });
+    expect(NAYO_PROJECTILE.ticks).toEqual([2, 2, 2, 2, 2, 2, 2, 2]);
+  });
+
   /**
    * No reach nobody sees: on every frame of its loop, the strip covers the Vinyle's whole hitbox
    * (−10..10 px, 32 to 52 px high), and its lead reaches the front edge, no farther than a

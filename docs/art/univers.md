@@ -52,7 +52,7 @@ Entrepôt reconverti en club, la nuit. Mur d'enceintes empilées au fond, néons
 | crouchHeavy | Balayage | Balayage au sol, main arrière au sol |
 | jumpLight | Genou sauté | Genou en avant en l'air |
 | jumpHeavy | Coup de pied sauté | Coup de pied plongeant vers l'avant-bas |
-| special | Onde sonore | Les paumes poussent une onde sonore (noyau + arcs) |
+| special | Vinyle | Tire un vinyle de sa veste, le scratche à la hanche et le lance à plat : un disque de lumière qui tourne |
 | specialForward | Coup de pied fendu | Coup de pied latéral volant |
 | specialAntiAir | Uppercut | « Le drop » : uppercut montant sur la pointe des pieds |
 | throw | Projection | Saisie au col, pivot, jeté par-dessus l'épaule |

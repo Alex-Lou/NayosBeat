@@ -35,7 +35,7 @@ export type Hand = 'fist' | 'open';
  */
 export type Face = 'focus' | 'effort' | 'kiai' | 'smirk' | 'cool' | 'hurt' | 'out' | 'tired';
 
-/** Which of the fighter's two effect colors: sound (waves, energy) or strike (impacts, trails). */
+/** Which of the fighter's two effect colors: sound (energy, rings) or strike (impacts, trails). */
 export type Tone = 'sound' | 'strike';
 
 /**
@@ -47,8 +47,17 @@ export type Effect =
   | { readonly kind: 'smear'; readonly points: readonly Point[]; readonly width: number }
   /** Sound energy gathered or released by the hands. */
   | { readonly kind: 'energy'; readonly center: Point; readonly radius: number }
-  /** The flying sound wave (projectile), `phase` from 0 to 1 along its loop. */
-  | { readonly kind: 'wave'; readonly center: Point; readonly phase: number }
+  /**
+   * The Vinyle: a record of light seen face on, `radius` pixels, turned `phase` of a full turn
+   * clockwise (0 to 1); in flight, `afterimages` ghosts of it (0 to 3) trail behind.
+   */
+  | {
+      readonly kind: 'disc';
+      readonly center: Point;
+      readonly radius: number;
+      readonly phase: number;
+      readonly afterimages: number;
+    }
   /** A star-shaped flash where a strike snaps out. */
   | { readonly kind: 'flash'; readonly center: Point; readonly radius: number; readonly tone: Tone }
   /**

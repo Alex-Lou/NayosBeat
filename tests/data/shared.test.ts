@@ -43,4 +43,20 @@ describe('fighter authoring helpers', () => {
   it('rejects a posture without hurtboxes', () => {
     expect(validateTemplate({ ...NAYO, airHurtboxes: [] })).not.toEqual([]);
   });
+
+  it('rejects a posture with more than two hurtboxes, even stacked', () => {
+    const three = [box(-10, 0, 20, 20), box(-10, 20, 20, 20), box(-10, 40, 20, 20)];
+    expect(validateTemplate({ ...NAYO, airHurtboxes: three })).not.toEqual([]);
+  });
+
+  it('rejects two hurtboxes with a gap between them', () => {
+    // Legs up to 40 px, torso from 44 px: a blow at 42 px would go through the fighter.
+    const gap = [box(-22, 4, 43, 36), box(-11, 44, 29, 42)];
+    expect(validateTemplate({ ...NAYO, airHurtboxes: gap })).not.toEqual([]);
+  });
+
+  it('accepts stacked hurtboxes listed in any order', () => {
+    const torsoFirst = [...NAYO.airHurtboxes].reverse();
+    expect(validateTemplate({ ...NAYO, airHurtboxes: torsoFirst })).toEqual([]);
+  });
 });

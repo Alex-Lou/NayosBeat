@@ -1,6 +1,6 @@
 /**
  * Nayo's effects, in Tazz's language (Zen-Tazzer): energy that streaks, splashes and breaks off
- * into sparkles. Two colors: sound (motion trails, energy, waves, rings, speed lines, the
+ * into sparkles. Two colors: sound (motion trails, energy, the Vinyle, rings, speed lines, the
  * uppercut's column: the neon color, swapped by the second colorway) and strike (impact
  * flashes: gold and orange). Effects are drawn in exact palette slots, never shaded nor
  * outlined: crisp 1 px streaks and spiky shapes in a few tones, a translucent glow at their
@@ -67,6 +67,15 @@ const TRAIL: Tones = [
   DETAIL.soundCore,
   DETAIL.soundDeep,
 ];
+/** The Vinyle: the sound tones, and its black label in the smoke rank, over every other. */
+const VINYL: Tones = [
+  DETAIL.soundGlow,
+  DETAIL.soundDeep,
+  DETAIL.sound,
+  DETAIL.soundLight,
+  DETAIL.soundCore,
+  DETAIL.ink,
+];
 /** Floor dust: beige, lit on top; the glow rank is a grey fleck of grit. */
 const DUST: Tones = [
   DETAIL.dustLight,
@@ -97,8 +106,8 @@ export function drawEffect(ink: Ink, effect: Effect): void {
     case 'energy':
       drawEnergy(ink, effect.center, effect.radius);
       return;
-    case 'wave':
-      drawWave(ink, effect.center, effect.phase);
+    case 'disc':
+      drawDisc(ink, effect.center, effect.radius, effect.phase, effect.afterimages);
       return;
     case 'flash':
       drawFlash(ink, effect.center, effect.radius, effect.tone);
@@ -529,106 +538,77 @@ function drawShards(ink: Ink, center: Point, radius: number, progress: number, t
 }
 
 // ---------------------------------------------------------------------------------------------
-// Waves, rings, guards
+// The Vinyle, rings, guards
 
 /**
- * The sound wave in flight: a crackling orb pushing crescents ")))" ahead of it (thick in the
- * middle, pointed at the tips), and a comet tail of speed streaks behind it. Over its loop
- * (`phase` 0 to 1) the crescents move out by exactly one spacing, a new one swelling in at the
- * orb while the outer one fades out, and the tail's breaks scroll back a whole number of times:
- * the last frame flows into the first.
+ * The Vinyle (docs/combat-v2.md §5.4): a record of light seen face on, its center pixel-exact
+ * so a radius of 10 px covers its hitbox (−10..10) to the pixel. A bright cyan rim, cyan vinyl
+ * cut by white grooves, the black label in the middle around a white spindle hole. Everything
+ * that shows its spin turns with `phase`: each groove's break, the two sheen wedges and the
+ * logo printed on the label (one turn per loop: the last frame flows into the first). Behind
+ * it, its afterimages are the crescents of the same disc a few pixels back, dimmer each time,
+ * and sparkles drift back through the loop.
  */
-function drawWave(ink: Ink, center: Point, phase: number): void {
+function drawDisc(
+  ink: Ink,
+  center: Point,
+  radius: number,
+  phase: number,
+  afterimages: number,
+): void {
   const c = ink.at(center);
-  const layer = new Layer(ink, TONES.sound);
-  // The same tail and sparkles in every frame: only the phase moves them.
-  const random = randomFrom(center.x, center.y);
-  const first = 6.5;
-  const spacing = 3;
-  // Each crescent's look depends on how far out it is (0 at the orb, 1 at the outer one).
-  const crescents = [-1, 0, 1, 2, 3].map((j) => {
-    const out = (j + phase) / 3;
-    const swell = clamp01((out + 1 / 3) * 3);
-    const fade = clamp01((4 / 3 - out) * 3);
-    const size = Math.min(swell, fade);
-    return {
-      outer: (first + (j + phase) * spacing) * S,
-      thickness: (2.4 - clamp01(out) * 1.1) * S * size,
-      span: ((66 - clamp01(out) * 20) * Math.PI) / 180,
-      dim: out < 0.3 ? 0 : out < 0.75 ? 1 : 2,
-      fading: fade < 1 || swell < 1,
-    };
-  });
-  const reach = (first + 4 * spacing) * S + 2;
-  layer.fill({ left: c.x, right: c.x + reach, top: c.y - reach, bottom: c.y + reach }, (x, y) => {
+  const r = radius * S;
+  const layer = new Layer(ink, VINYL);
+  const spin = phase * 2 * Math.PI;
+  // The same breaks and sparkles in every frame: only the phase moves them.
+  const random = randomFrom(center.x, center.y, radius);
+  const label = r * 0.34;
+  const grooves = [0.5, 0.66, 0.82].map((at) => ({ radius: r * at, gap: random() * 2 * Math.PI }));
+  layer.fill(squareAround(c, r), (x, y) => {
     const d = Math.hypot(x - c.x, y - c.y);
-    const tip = Math.abs(Math.atan2(y - c.y, x - c.x));
-    let paint: Paint = NONE;
-    for (const crescent of crescents) {
-      if (crescent.thickness <= 0) continue;
-      const a = tip / crescent.span;
-      if (a > 1) continue;
-      const thickness = crescent.thickness * (1 - a * a) + 0.6;
-      if (d > crescent.outer || d < crescent.outer - thickness) continue;
-      const s = (crescent.outer - d) / thickness;
-      // A bright leading edge, the tips a tone dimmer.
-      const top = s < 0.45 ? LIGHT : s < 0.8 ? BASE : DEEP;
-      const rank = lower(top, crescent.dim + (a > 0.75 ? 1 : 0) + (crescent.fading ? 1 : 0));
-      paint = Math.max(paint, rank) as Paint;
+    if (d >= r) return NONE;
+    // The angle on the record itself (image axes, y down: a positive spin turns clockwise).
+    const angle = Math.atan2(y - c.y, x - c.x) - spin;
+    if (d < 1) return CORE;
+    if (d < label) {
+      // The logo, a short arc printed on the label.
+      const logo = Math.abs(d - label * 0.6) < 0.7 && Math.abs(wrap(angle)) < 0.55;
+      return logo ? LIGHT : SMOKE;
     }
-    return paint;
+    if (d < label + 1) return BASE;
+    if (d > r - 1) return BASE;
+    if (d > r - 2.2) return LIGHT;
+    for (const groove of grooves) {
+      if (Math.abs(d - groove.radius) < 0.55 && Math.abs(wrap(angle - groove.gap)) > 0.45) {
+        return CORE;
+      }
+    }
+    // Two sheen wedges across the grooves, the light catching the vinyl.
+    return Math.abs(wrap(2 * (angle - 0.6))) < 0.42 ? BASE : DEEP;
   });
-  const orb = 4.4 * S;
-  // Spikes longest along the flight line; their lengths flicker twice around the loop.
-  starburst(
-    layer,
-    c,
-    orb * 0.78,
-    Array.from({ length: 8 }, (_, i) => ({
-      angle: (i / 8) * 2 * Math.PI,
-      length:
-        orb *
-        ((i === 0 ? 1.55 : i === 4 ? 1.35 : i % 2 === 0 ? 1.2 : 1.05) +
-          0.15 * Math.sin(2 * Math.PI * phase * 2 + i * 2.4)),
-      width: 0.36,
-    })),
-    [0.25, 0.62, 0.86],
-  );
-  // Glow around the orb and the crescents only: between the tail's lines it would blur them.
+  // The glow hugs the disc only: around the afterimages it would double their thin rims.
   layer.halo();
-  // The tail: lines streaming back from the orb, the middle ones longest, each broken by a gap
-  // that scrolls back once or twice per loop.
-  for (const offset of [-3, -2, -1, 0, 1, 2, 3]) {
-    const [size = 0, start = 0, speed = 0] = draws(random, 3);
-    const edge = Math.abs(offset) / 3;
-    const y = c.y + offset * S * 1.1;
-    const from = c.x - orb * (0.55 + edge * 0.3);
-    const length = (12 - edge * 6 + size * 3) * S;
-    const gap = (start + phase * (speed < 0.5 ? 1 : 2)) % 1;
-    trace(
-      layer,
-      [
-        { x: from, y },
-        { x: from - length, y },
-      ],
-      (t) => {
-        if (edge > 0.3 && Math.abs(t - gap) < 0.09) return NONE;
-        if (t < 0.2) return edge < 0.4 ? LIGHT : BASE;
-        if (t < 0.6) return edge < 0.7 ? BASE : DEEP;
-        return t < 0.85 ? BASE : DEEP;
-      },
-    );
+  // Afterimages: the rim of the disc as it was a moment ago, thinner and dimmer each time back.
+  for (let k = 1; k <= afterimages; k++) {
+    const ghost = { x: c.x - k * r * 0.36, y: c.y };
+    const width = k === 1 ? 2 : 1;
+    const rim = ([LIGHT, BASE, DEEP] as const)[k - 1] ?? DEEP;
+    layer.fill(squareAround(ghost, r), (x, y) => {
+      const d = Math.hypot(x - ghost.x, y - ghost.y);
+      if (d >= r || d < r - width || Math.hypot(x - c.x, y - c.y) < r + 1) return NONE;
+      return k === 1 && d < r - 1 ? DEEP : rim;
+    });
   }
-  // Sparkles left behind, drifting back through the loop.
-  for (let i = 0; i < 9; i++) {
-    const [along = 0, across = 0, which = 0] = draws(random, 3);
-    const back = (along + phase) % 1;
-    const x = c.x + reach * 0.4 - back * reach * 1.4;
-    const y = c.y + (across * 2 - 1) * reach * 0.75;
-    if (Math.hypot(x - c.x, y - c.y) < orb * 1.6) continue;
-    const rank = lower(which < 0.15 ? CORE : which < 0.6 ? LIGHT : BASE, back > 0.75 ? 1 : 0);
-    if (i % 4 === 0) cross(layer, x, y, 1, rank);
-    else layer.plot(x, y, rank);
+  if (afterimages > 0) {
+    for (let i = 0; i < 6; i++) {
+      const [along = 0, across = 0, which = 0] = draws(random, 3);
+      const back = (along + phase) % 1;
+      const x = c.x - r * (1.1 + back * (0.4 + afterimages * 0.36));
+      const y = c.y + (across * 2 - 1) * r * 0.8;
+      const rank = lower(which < 0.3 ? CORE : LIGHT, back > 0.7 ? 1 : 0);
+      if (i % 3 === 0) cross(layer, x, y, 1, rank);
+      else layer.plot(x, y, rank);
+    }
   }
   layer.draw();
 }
