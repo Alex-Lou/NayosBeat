@@ -1,4 +1,5 @@
-import { MOVE_IDS, type FighterTemplate } from '../core/config';
+import type { FighterTemplate } from '../core/config';
+import { CORE_MOVE_IDS } from '../core/move-data';
 import { moveDuration } from '../core/moves';
 import { STATE_CLIP_IDS, type Clip, type FighterArt } from './types';
 
@@ -18,7 +19,7 @@ export function validateArt(art: FighterArt, template: FighterTemplate): string[
     check(art.urls[sheet] !== undefined, `sheet ${sheet} has no image URL`);
   }
 
-  for (const id of [...STATE_CLIP_IDS, ...MOVE_IDS]) {
+  for (const id of [...STATE_CLIP_IDS, ...CORE_MOVE_IDS]) {
     for (const problem of clipProblems(art.clips[id], art)) check(false, `clip ${id}: ${problem}`);
   }
   if (art.projectile) {
@@ -32,7 +33,7 @@ export function validateArt(art: FighterArt, template: FighterTemplate): string[
     ['preJump', art.clips.preJump, template.preJumpFrames],
     ['landing', art.clips.landing, template.landingFrames],
     ['knockdown', art.clips.knockdown, template.knockdownFrames],
-    ...MOVE_IDS.map((id): [string, Clip, number] => [
+    ...CORE_MOVE_IDS.map((id): [string, Clip, number] => [
       id,
       art.clips[id],
       moveDuration(template.moves[id]),

@@ -1,6 +1,6 @@
 {
   "description": "Training mode: combos on a standing dummy down to its 1 HP floor and beyond, up to the tick it has rested enough to heal.",
-  "fighters": ["polyvalent", "polyvalent"],
+  "fighters": ["nayo", "nayo"],
   "training": true,
   "inputs": [
     [104, "right", ""],

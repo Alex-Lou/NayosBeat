@@ -1,6 +1,6 @@
 {
   "description": "Every normal of both fighters: standing, crouching and air, whiffed from afar then landed.",
-  "fighters": ["polyvalent", "rushdown"],
+  "fighters": ["nayo", "riff"],
   "inputs": [
     [90, "", ""],
     [1, "light", ""],

@@ -1,6 +1,6 @@
 {
   "description": "A first round between two CPUs, up to the KO and the start of the round end.",
-  "fighters": ["polyvalent", "rushdown"],
+  "fighters": ["nayo", "riff"],
   "inputs": [
     [90, "", ""],
     [13, "right", "left"],

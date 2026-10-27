@@ -24,7 +24,7 @@ import { PlayerInputs } from '../input/player-inputs';
 import { isTouchDevice, TouchControls } from '../input/touch-controls';
 import { FixedTimestep } from '../loop/fixed-timestep';
 import { frontFighter } from './animation';
-import { frameFight, MAX_CLOSE_UP } from './camera-framing';
+import { frameFight, MAX_CLOSE_UP, type FramingInput } from './camera-framing';
 import { DebugOverlay, isDebugEnabled } from './debug-overlay';
 import { detectEvents, type FightEvent } from './fight-events';
 import { FightFeedback } from './fight-feedback';
@@ -60,6 +60,8 @@ export interface FightSceneData {
   /** Called once, a moment after the final KO, with the winner's index. */
   readonly onMatchEnd: (winner: 0 | 1 | null) => void;
 }
+
+type Mutable<T> = { -readonly [K in keyof T]: T[K] };
 
 /** A fighter on screen: sprites when it has art, a grey box otherwise. */
 interface FighterDisplay {
@@ -109,6 +111,20 @@ export class FightScene extends Phaser.Scene {
   /** Reused every tick to avoid allocating. */
   private readonly tickInputs: [InputBits, InputBits] = [0, 0];
   private readonly tickEvents: FightEvent[] = [];
+  /**
+   * Reused every display frame by `syncViews`. What the framing keeps in view: both fighters,
+   * then the projectiles (at most one per player). A missing projectile repeats the first
+   * fighter's position, which moves neither bound.
+   */
+  private readonly framedXs: [number, number, number, number] = [0, 0, 0, 0];
+  private readonly framingInput: Mutable<FramingInput> = {
+    xs: this.framedXs,
+    highestFeet: 0,
+    viewLeft: 0,
+    groundY: GROUND_Y,
+    closeUp: MAX_CLOSE_UP,
+    elapsed: 0,
+  };
 
   constructor() {
     super('fight');
@@ -273,17 +289,18 @@ export class FightScene extends Phaser.Scene {
     runtime.projectileView.update(this.state.projectiles, this.state.frame);
     runtime.hud.update(this.state);
 
-    const framing = frameFight({
-      xs: [
-        ...this.state.fighters.map((fighter) => toPx(fighter.x)),
-        ...this.state.projectiles.map((projectile) => toPx(projectile.x)),
-      ],
-      highestFeet: Math.max(...this.state.fighters.map((fighter) => toPx(fighter.y))),
-      viewLeft: toPx(this.state.cameraX) - VIEW_SIZE.width / 2,
-      groundY: GROUND_Y,
-      closeUp: this.closeUp,
-      elapsed,
-    });
+    const xs = this.framedXs;
+    const projectiles = this.state.projectiles;
+    xs[0] = toPx(a.x);
+    xs[1] = toPx(b.x);
+    xs[2] = projectiles[0] ? toPx(projectiles[0].x) : xs[0];
+    xs[3] = projectiles[1] ? toPx(projectiles[1].x) : xs[0];
+    const input = this.framingInput;
+    input.highestFeet = toPx(Math.max(a.y, b.y));
+    input.viewLeft = toPx(this.state.cameraX) - VIEW_SIZE.width / 2;
+    input.closeUp = this.closeUp;
+    input.elapsed = elapsed;
+    const framing = frameFight(input);
     this.closeUp = framing.closeUp;
     this.cameras.main
       .setZoom((this.scale.width / VIEW_SIZE.width) * framing.closeUp)

@@ -1,6 +1,6 @@
 {
   "description": "A round that runs out of time after a few exchanges: the healthier fighter wins.",
-  "fighters": ["polyvalent", "rushdown"],
+  "fighters": ["nayo", "riff"],
   "inputs": [
     [90, "", ""],
     [43, "right", "left"],

@@ -1,6 +1,6 @@
 {
   "description": "Walking forward and back, crouching, pushing each other, and walking into a corner.",
-  "fighters": ["polyvalent", "rushdown"],
+  "fighters": ["nayo", "riff"],
   "inputs": [
     [90, "", ""],
     [40, "right", "left"],

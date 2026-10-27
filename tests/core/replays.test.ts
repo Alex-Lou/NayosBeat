@@ -6,6 +6,7 @@ import {
   playReplay,
   replayConfig,
   stateHash,
+  UNHASHED_FIELDS,
   type Replay,
 } from '../../tools/replays/replay';
 
@@ -30,7 +31,7 @@ describe('golden replays', () => {
     const [first] = Object.values(REPLAYS);
     if (!first) throw new Error('No replay found');
     const state = createInitialState(replayConfig(first));
-    expect([...GAME_FIELDS].sort()).toEqual(Object.keys(state).sort());
+    expect([...GAME_FIELDS, ...UNHASHED_FIELDS].sort()).toEqual(Object.keys(state).sort());
     expect([...FIGHTER_FIELDS].sort()).toEqual(Object.keys(state.fighters[0]).sort());
   });
 

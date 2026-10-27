@@ -1,12 +1,20 @@
-import { applyHit, findHit, techThrow } from './combat';
-import type { MatchConfig, MoveData } from './config';
-import { pushboxOf, readInput, updateFighter } from './fighter';
+import { readInput } from './commands';
+import { applyHit, contactOf, findHit, techGrab } from './combat';
+import type { MatchConfig } from './config';
+import { pushboxOf, updateFighter } from './fighter';
 import type { InputBits } from './input';
+import type { MoveData } from './move-data';
 import { followCamera, resolvePositions } from './positions';
-import { findProjectileHit, updateProjectiles, type ProjectileHit } from './projectiles';
+import {
+  findProjectileHit,
+  placedProjectile,
+  updateProjectiles,
+  withoutSpent,
+  type ProjectileHit,
+} from './projectiles';
 import { updateRound } from './round';
 import { applyTrainingRules } from './training';
-import type { FighterState, GameState } from './state';
+import { EMPTY_CONTACTS, type Contact, type FighterState, type GameState } from './state';
 
 /**
  * Advances the simulation by exactly one tick. Pure: same input, same output.
@@ -30,6 +38,7 @@ export function step(
       frame: state.frame + 1,
       hitstop: state.hitstop - 1,
       fighters: [readInput(prevA, inputA, false), readInput(prevB, inputB, false)],
+      contacts: EMPTY_CONTACTS,
     };
   }
 
@@ -54,16 +63,15 @@ export function step(
     fighting && !strikeByA ? findProjectileHit(projectiles, 1, b, config) : null;
   const minHealth = config.training ? 1 : 0;
 
-  const throwTech = strikeByA?.kind === 'throw' && strikeByB?.kind === 'throw';
-  const [nextA, nextB] = throwTech
-    ? [techThrow(a, b.x), techThrow(b, a.x)]
+  const grabTech = strikeByA?.kind === 'grab' && strikeByB?.kind === 'grab';
+  const [nextA, nextB] = grabTech
+    ? [techGrab(a, b.x), techGrab(b, a.x)]
     : [
         resolveExchange(a, b.x, strikeByB, strikeByA, projectileOnA, minHealth),
         resolveExchange(b, a.x, strikeByA, strikeByB, projectileOnB, minHealth),
       ];
 
-  const spent = [projectileOnA?.projectile, projectileOnB?.projectile];
-  const hitstop = throwTech
+  const hitstop = grabTech
     ? 0
     : Math.max(
         strikeByA?.hitstop ?? 0,
@@ -72,6 +80,10 @@ export function step(
         projectileOnB?.move.hitstop ?? 0,
       );
 
+  const contactOnA = contactOn(0, a, nextA, strikeByB, projectileOnA, b, config);
+  const contactOnB = contactOn(1, b, nextB, strikeByA, projectileOnB, a, config);
+  const projectileSpent = projectileOnA !== null || projectileOnB !== null;
+
   const next = applyTrainingRules(
     {
       frame: state.frame + 1,
@@ -79,7 +91,10 @@ export function step(
       hitstop,
       round: state.round,
       fighters: [nextA, nextB],
-      projectiles: projectiles.filter((p) => !spent.includes(p)),
+      projectiles: projectileSpent
+        ? withoutSpent(projectiles, [projectileOnA?.projectile, projectileOnB?.projectile])
+        : projectiles,
+      contacts: contactsOf(contactOnA, contactOnB),
     },
     config,
   );
@@ -106,4 +121,36 @@ function resolveExchange(
   }
   if (strikeLanded) return { ...fighter, moveConnected: true };
   return fighter;
+}
+
+/**
+ * What touched the defender on this tick, if anything: the opponent's strike or projectile.
+ * `defender` is as it was when the blow was found, `after` once the blow was applied.
+ */
+function contactOn(
+  defenderIndex: 0 | 1,
+  defender: FighterState,
+  after: FighterState,
+  strike: MoveData | null,
+  projectileHit: ProjectileHit | null,
+  attacker: FighterState,
+  config: MatchConfig,
+): Contact | null {
+  const by = defenderIndex === 0 ? 1 : 0;
+  const template = config.fighters[defenderIndex];
+  if (strike?.hitbox && attacker.move) {
+    const striker = { box: strike.hitbox, x: attacker.x, y: attacker.y, facing: attacker.facing };
+    return contactOf(by, attacker.move, striker, defender, template, after);
+  }
+  if (!projectileHit) return null;
+  const { projectile } = projectileHit;
+  const striker = placedProjectile(projectile, config);
+  return contactOf(by, projectile.move, striker, defender, template, after);
+}
+
+/** At most one contact per fighter; the shared empty list when nothing touched. */
+function contactsOf(first: Contact | null, second: Contact | null): readonly Contact[] {
+  if (first && second) return [first, second];
+  if (first) return [first];
+  return second ? [second] : EMPTY_CONTACTS;
 }

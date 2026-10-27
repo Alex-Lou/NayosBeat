@@ -1,6 +1,6 @@
 {
   "description": "Neutral, forward and back jumps with up and the jump button, held up, and a jump onto the opponent.",
-  "fighters": ["polyvalent", "rushdown"],
+  "fighters": ["nayo", "riff"],
   "inputs": [
     [90, "", ""],
     [2, "up", "jump"],

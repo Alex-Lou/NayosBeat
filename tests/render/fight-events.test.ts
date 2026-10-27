@@ -3,7 +3,7 @@ import type { MatchConfig } from '../../src/core/config';
 import { Input } from '../../src/core/input';
 import type { GameState } from '../../src/core/state';
 import { step } from '../../src/core/step';
-import { POLYVALENT as P } from '../../src/data/fighters';
+import { NAYO as P } from '../../src/data/fighters/nayo';
 import { detectEvents, type FightEvent } from '../../src/render/fight-events';
 import { facingOff, MIRROR_MATCH, repeat } from '../core/helpers';
 

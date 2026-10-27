@@ -35,3 +35,10 @@ export function cleanSocd(bits: InputBits): InputBits {
   }
   return cleaned;
 }
+
+/** The horizontal direction held, in stage coordinates (SOCD already cleaned). */
+export function horizontalDirection(input: InputBits): -1 | 0 | 1 {
+  if (has(input, Input.Right)) return 1;
+  if (has(input, Input.Left)) return -1;
+  return 0;
+}

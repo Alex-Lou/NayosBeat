@@ -6,7 +6,8 @@ import { Input } from '../../src/core/input';
 import { detectMotion } from '../../src/core/motion';
 import { moveDuration } from '../../src/core/moves';
 import type { GameState } from '../../src/core/state';
-import { POLYVALENT as P, RUSHDOWN as R } from '../../src/data/fighters';
+import { NAYO as P } from '../../src/data/fighters/nayo';
+import { RIFF as R } from '../../src/data/fighters/riff';
 import { facingOff, makeFighter, MIRROR_MATCH, repeat, run } from './helpers';
 
 const { Up, Down, Left, Right, Light, Heavy, Special } = Input;
@@ -131,11 +132,11 @@ describe('projectiles', () => {
 });
 
 describe('throws', () => {
-  const THROW = P.moves.throw;
+  const THROW = P.moves.grab;
 
   it('is light + heavy, even with the second button a tick late', () => {
-    expect(play([Light | Heavy]).move).toBe('throw');
-    expect(play([Light, Light | Heavy]).move).toBe('throw');
+    expect(play([Light | Heavy]).move).toBe('grab');
+    expect(play([Light, Light | Heavy]).move).toBe('grab');
   });
 
   it('throws a nearby opponent, even when blocking, and knocks them down', () => {

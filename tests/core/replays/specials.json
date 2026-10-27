@@ -1,6 +1,6 @@
 {
   "description": "The three specials of both fighters, from the button and from the motions: the wave fired and landing, the uppercut beating a jump-in.",
-  "fighters": ["polyvalent", "rushdown"],
+  "fighters": ["nayo", "riff"],
   "inputs": [
     [90, "", ""],
     [2, "special", ""],

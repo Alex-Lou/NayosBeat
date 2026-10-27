@@ -1,6 +1,6 @@
 {
   "description": "Blocking high and low: mids blocked either way, lows blocked crouching only, overheads standing only, a blocked wave.",
-  "fighters": ["polyvalent", "rushdown"],
+  "fighters": ["nayo", "riff"],
   "inputs": [
     [90, "", ""],
     [1, "special", "right"],

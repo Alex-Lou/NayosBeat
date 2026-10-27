@@ -25,7 +25,7 @@ const TOUCH: HelpSection = {
     ['H', 'Coup lourd : fort mais lent'],
     ['S', 'Coup spécial'],
     ['SAUT', 'Sauter'],
-    ['CHOPE', "Saisir l'adversaire de près"],
+    ['CHOPE', "Prise : saisir l'adversaire de près"],
     ['II', 'Pause'],
   ],
 };
@@ -40,7 +40,7 @@ const KEYBOARD: HelpSection = {
     ['J', 'Coup léger : rapide'],
     ['K', 'Coup lourd : fort mais lent'],
     ['L', 'Coup spécial'],
-    ['J + K', "Chope : saisir l'adversaire de près"],
+    ['J + K', "Prise : saisir l'adversaire de près"],
     ['Echap, P', 'Pause'],
     ['Joueur 2', 'Flèches, et pavé 1 / 2 / 3 (ou : ! ù) pour léger, lourd, spécial'],
   ],
@@ -54,7 +54,7 @@ const GAMEPAD: HelpSection = {
     ['X (Carré)', 'Coup léger : rapide'],
     ['Y (Triangle)', 'Coup lourd : fort mais lent'],
     ['B (Rond)', 'Coup spécial'],
-    ['RB (R1), X + Y', "Chope : saisir l'adversaire de près"],
+    ['RB (R1), X + Y', "Prise : saisir l'adversaire de près"],
     ['Start', 'Pause'],
   ],
 };
@@ -76,7 +76,7 @@ function combatSection(): HelpSection {
       ['Avant + spécial', moveNames((m) => m.specialForward)],
       ['Bas + spécial', `${moveNames((m) => m.specialAntiAir)} : invincible, contre les sauts`],
       ['Enchaîner', "Un léger qui touche s'enchaîne sur un coup ou un spécial"],
-      ['Chope', "Imparable ; deux chopes simultanées s'annulent"],
+      ['Prise', "Imparable ; deux prises simultanées s'annulent"],
     ],
   };
 }

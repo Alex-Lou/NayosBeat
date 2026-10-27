@@ -87,7 +87,7 @@ export const FIGHTER_FIELDS = [
   'moveConnected',
   'stunFrames',
   'input',
-  'bufferedAttack',
+  'bufferedCommand',
   'bufferFrames',
   'bufferedInput',
   'bufferedMotion',
@@ -95,6 +95,12 @@ export const FIGHTER_FIELDS = [
   'directionHistory',
   'comboCount',
 ] as const satisfies readonly (keyof FighterState)[];
+
+/**
+ * Left out of the hash: what touched on the last tick. It reports the tick rather than shaping
+ * the next one, and its effects (health, stun, hitstop) are hashed already.
+ */
+export const UNHASHED_FIELDS = ['contacts'] as const satisfies readonly (keyof GameState)[];
 
 export const GAME_FIELDS = [
   'frame',

@@ -1,7 +1,8 @@
 import type { FighterTemplate } from '../core/config';
-import { POLYVALENT, RUSHDOWN } from './fighters';
+import { NAYO } from './fighters/nayo';
+import { RIFF } from './fighters/riff';
 
-export type FighterId = 'polyvalent' | 'rushdown';
+export type FighterId = 'nayo' | 'riff';
 
 export interface RosterEntry {
   readonly id: FighterId;
@@ -12,13 +13,13 @@ export interface RosterEntry {
 
 export const ROSTER: readonly RosterEntry[] = [
   {
-    id: 'polyvalent',
-    template: POLYVALENT,
+    id: 'nayo',
+    template: NAYO,
     description: 'Boxeur-DJ · portée · onde sonore · uppercut',
   },
   {
-    id: 'rushdown',
-    template: RUSHDOWN,
+    id: 'riff',
+    template: RIFF,
     description: 'B-girl rapide et agressive · ruée · moins de vie',
   },
 ];
