@@ -3,6 +3,14 @@ type LockableOrientation = Omit<ScreenOrientation, 'lock'> & {
   lock?: (orientation: 'landscape') => Promise<void>;
 };
 
+/** A touch can turn the game landscape here (Android); elsewhere, only turning the phone can. */
+export function canTurnLandscape(): boolean {
+  return (
+    typeof document.documentElement.requestFullscreen === 'function' &&
+    typeof (screen.orientation as LockableOrientation | undefined)?.lock === 'function'
+  );
+}
+
 /**
  * Best effort: goes fullscreen and locks landscape where the browser allows it
  * (Android). Must be called from a user gesture. Failures are expected and ignored:

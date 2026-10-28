@@ -8,6 +8,7 @@ import { registerServiceWorker } from './app/service-worker';
 import { Sfx } from './audio/sfx';
 import { isTouchDevice } from './input/touch-controls';
 import { FightScene } from './render/fight-scene';
+import { canTurnLandscape, requestLandscapeFullscreen } from './render/fullscreen';
 import { computeZoom, type Size } from './render/pixel-scaling';
 import { renderScaleFor, renderSizeOf } from './render/view';
 
@@ -137,8 +138,21 @@ function showStartupError(error: unknown): void {
   if (repair) repair.hidden = false;
 }
 
+/**
+ * The installed game opens in the phone's orientation (its manifest forces none: the app must
+ * open from a portrait home screen without a rotation at launch). In portrait, touching the
+ * hint turns it landscape where the browser can, even with auto-rotate off.
+ */
+function watchRotateHint(): void {
+  const hint = document.querySelector('.rotate-hint');
+  if (!hint || !canTurnLandscape()) return;
+  hint.textContent = "Touche l'écran ou tourne ton téléphone pour jouer en paysage";
+  hint.addEventListener('click', requestLandscapeFullscreen);
+}
+
 start().catch(showStartupError);
 watchInstallPrompt();
+watchRotateHint();
 
 // The installed game (PWA) plays offline; the service worker exists only in production builds.
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {

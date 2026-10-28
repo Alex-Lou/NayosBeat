@@ -5,6 +5,9 @@ interface Manifest {
   readonly id?: string;
   readonly start_url: string;
   readonly scope: string;
+  readonly display: string;
+  readonly display_override?: readonly string[];
+  readonly orientation?: string;
 }
 
 const MANIFEST = JSON.parse(
@@ -28,5 +31,13 @@ describe('manifest', () => {
     const scope = new URL(MANIFEST.scope, DEPLOYED).href;
     expect(start).toBe('https://example.github.io/NayosBeat/');
     expect(start.startsWith(scope)).toBe(true);
+  });
+
+  it('opens as a plain app window, in the orientation the phone is held', () => {
+    // The installed app must open from a portrait home screen without a rotation or a fullscreen
+    // switch at launch; the game itself goes fullscreen and landscape on the first touch.
+    expect(MANIFEST.display).toBe('standalone');
+    expect(MANIFEST.display_override).toBeUndefined();
+    expect(MANIFEST.orientation).toBeUndefined();
   });
 });
