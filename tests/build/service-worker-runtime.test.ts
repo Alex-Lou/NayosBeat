@@ -33,7 +33,8 @@ const absolute = (input: string | FakeRequest): string =>
  */
 function startWorker(firstNetwork: Network) {
   let network = firstNetwork;
-  const fetchSpy = vi.fn((request: FakeRequest) => network(request));
+  // The init is kept for the assertions (the fake network answers by address only).
+  const fetchSpy = vi.fn((...[request]: [FakeRequest, RequestInit?]) => network(request));
   const listeners = new Map<string, Listener>();
   const stored = new Map<string, Map<string, Response>>();
   const caches = {
@@ -84,25 +85,33 @@ function startWorker(firstNetwork: Network) {
     listeners.get(type)?.({ waitUntil: (promise: Promise<unknown>) => (done = promise) });
     await done;
   };
-  const request = (path: string, mode = 'cors', destination = ''): Promise<Response> => {
+  /** The worker's answer, or undefined when it leaves the request to the browser. */
+  const dispatch = (
+    request: FakeRequest,
+    preloadResponse?: Promise<Response>,
+  ): Promise<Response> | undefined => {
     let answer: Promise<Response> | undefined;
     listeners.get('fetch')?.({
-      request: { url: absolute(path), method: 'GET', mode, destination },
-      preloadResponse: undefined,
-      respondWith: (promise: Promise<Response>) => (answer = promise),
-    });
-    if (!answer) throw new Error(`the worker did not answer ${path}`);
-    return answer;
-  };
-  const navigate = (preloadResponse?: Promise<Response>): Promise<Response> => {
-    let answer: Promise<Response> | undefined;
-    listeners.get('fetch')?.({
-      request: { url: SCOPE, method: 'GET', mode: 'navigate', destination: 'document' },
+      request,
       preloadResponse,
       respondWith: (promise: Promise<Response>) => (answer = promise),
     });
-    if (!answer) throw new Error('the worker did not answer the navigation');
     return answer;
+  };
+  const request = (path: string, mode = 'cors', destination = '', cache = 'default') =>
+    dispatch({ url: absolute(path), method: 'GET', mode, destination, cache });
+  const answer = (path: string, mode = 'cors', destination = ''): Promise<Response> => {
+    const answered = request(path, mode, destination);
+    if (!answered) throw new Error(`the worker did not answer ${path}`);
+    return answered;
+  };
+  const navigate = (preloadResponse?: Promise<Response>, path = ''): Promise<Response> => {
+    const answered = dispatch(
+      { url: absolute(path), method: 'GET', mode: 'navigate', destination: 'document' },
+      preloadResponse,
+    );
+    if (!answered) throw new Error('the worker did not answer the navigation');
+    return answered;
   };
 
   return {
@@ -111,6 +120,7 @@ function startWorker(firstNetwork: Network) {
     navigationPreload,
     lifecycle,
     request,
+    answer,
     navigate,
     setNetwork: (next: Network) => {
       network = next;
@@ -187,6 +197,15 @@ describe('service worker at work', () => {
     expect(await page.text()).toBe('cached /NayosBeat/index.html');
   });
 
+  it('leaves an address deeper than the game to the server: the cached page would not find its files there', async () => {
+    const worker = await installed(served('Not Found', 404));
+    const page = await worker.navigate(
+      Promise.resolve(new Response('Not Found', { status: 404 })),
+      'assets/index-0ld0ld00.js',
+    );
+    expect(page.status).toBe(404);
+  });
+
   it('lets the browser follow a redirect', async () => {
     const redirect = { type: 'opaqueredirect', ok: false, status: 0, redirected: false };
     const worker = await installed(() => Promise.resolve(redirect as Response));
@@ -220,18 +239,36 @@ describe('service worker at work', () => {
     expect((await page).type).toBe('error');
   });
 
-  it('reads the deployed manifest, the cached one only offline', async () => {
+  it('reads the deployed manifest, checked with the server past the HTTP cache', async () => {
     const worker = await installed(served('{"name":"deployed"}'));
-    const manifest = await worker.request('manifest.webmanifest', 'cors', 'manifest');
+    const manifest = await worker.answer('manifest.webmanifest', 'cors', 'manifest');
     expect(await manifest.text()).toBe('{"name":"deployed"}');
-    worker.setNetwork(offline);
-    const offlineManifest = await worker.request('manifest.webmanifest', 'cors', 'manifest');
-    expect(await offlineManifest.text()).toBe('cached /NayosBeat/manifest.webmanifest');
+    expect(worker.fetchSpy.mock.calls[0]?.[1]).toEqual({ cache: 'no-cache' });
+  });
+
+  it('reads the cached manifest offline, on a server error, or after 4 s of a stalled network', async () => {
+    const cachedManifest = 'cached /NayosBeat/manifest.webmanifest';
+    const worker = await installed(offline);
+    const read = async () =>
+      (await worker.answer('manifest.webmanifest', 'cors', 'manifest')).text();
+    expect(await read()).toBe(cachedManifest);
+    worker.setNetwork(served('Service Unavailable', 503));
+    expect(await read()).toBe(cachedManifest);
+    vi.useFakeTimers();
+    worker.setNetwork(stalled);
+    const stalledRead = read();
+    await vi.advanceTimersByTimeAsync(4000);
+    expect(await stalledRead).toBe(cachedManifest);
+  });
+
+  it('leaves a request made for the network only to the browser (the repair checks the server)', async () => {
+    const worker = await installed(served('network'));
+    expect(worker.request('sw.js', 'cors', '', 'no-store')).toBeUndefined();
   });
 
   it('serves the built files from the cache first', async () => {
     const worker = await installed(served('network'));
-    const script = await worker.request('assets/index-abc12345.js', 'cors', 'script');
+    const script = await worker.answer('assets/index-abc12345.js', 'cors', 'script');
     expect(await script.text()).toBe('cached /NayosBeat/assets/index-abc12345.js');
     expect(worker.fetchSpy).not.toHaveBeenCalled();
   });

@@ -67,12 +67,12 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(page(event));
     return;
   }
-  // Chrome reads the manifest to install the game and to update the installed app: always the
-  // deployed one (a cached one would install the previous version's settings).
+  // Asked of the network only (the repair checks that the server answers): never the cache.
+  if (request.cache === 'no-store') return;
+  // Chrome reads the manifest to install the game and to update the installed app: the deployed
+  // one (a cached one would install the previous version's settings).
   if (request.destination === 'manifest') {
-    event.respondWith(
-      fetch(request).catch(() => caches.match(request).then((hit) => hit ?? Response.error())),
-    );
+    event.respondWith(manifest(request));
     return;
   }
   // Built files never change under the same name: the cache answers first.
@@ -96,21 +96,37 @@ self.addEventListener('fetch', (event) => {
  * the server answers an error, the cached page (if there is none, the network is waited for).
  */
 function page(event) {
+  const asked = Promise.resolve(event.preloadResponse).then(
+    (preloaded) => preloaded ?? fetch(event.request),
+  );
+  // The cached page loads its files by relative path: it works at the game's address only. A
+  // deeper one (a typo, an old link) gets the server's answer.
+  if (new URL('./', event.request.url).href !== self.registration.scope) return asked;
   const cached = () => caches.match('./index.html');
-  const network = Promise.resolve(event.preloadResponse)
-    .then((preloaded) => preloaded ?? fetch(event.request))
-    .then(followed)
-    .then((response) =>
-      // A redirect (the address without its final slash) is followed by the browser.
-      response.ok || response.type === 'opaqueredirect'
-        ? response
-        : cached().then((hit) => hit ?? response),
-    );
+  const network = asked.then(followed).then((response) =>
+    // A redirect (the address without its final slash) is followed by the browser.
+    response.ok || response.type === 'opaqueredirect'
+      ? response
+      : cached().then((hit) => hit ?? response),
+  );
   const slow = wait(SLOW_NETWORK_MS).then(() =>
     cached().then(
       (hit) => hit ?? Promise.race([network, wait(GIVE_UP_MS).then(() => Response.error())]),
     ),
   );
+  return Promise.race([network, slow]).catch(() => cached().then((hit) => hit ?? Response.error()));
+}
+
+/**
+ * The deployed manifest, checked with the server past the HTTP cache; offline, on a very slow
+ * network or when the server answers an error, the cached one.
+ */
+function manifest(request) {
+  const cached = () => caches.match(request);
+  const network = fetch(request, { cache: 'no-cache' }).then((response) =>
+    response.ok ? response : cached().then((hit) => hit ?? response),
+  );
+  const slow = wait(SLOW_NETWORK_MS).then(() => cached().then((hit) => hit ?? network));
   return Promise.race([network, slow]).catch(() => cached().then((hit) => hit ?? Response.error()));
 }
 
