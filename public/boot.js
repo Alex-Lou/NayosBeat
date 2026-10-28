@@ -9,21 +9,69 @@
   var STALL_MS = 12000;
   /** A file still missing after this long is not coming (a slow network is waited for). */
   var GIVE_UP_MS = 60000;
+  /** Before forgetting the install, the server must answer within this. */
+  var PROBE_MS = 5000;
 
   function booting() {
     return document.getElementById('boot') !== null;
   }
 
+  /** A failure is already on screen (here or from main.ts): the first cause says the most. */
+  function reported() {
+    var repair = document.getElementById('boot-repair');
+    return repair !== null && !repair.hidden;
+  }
+
   function fail(text) {
-    if (!booting()) return;
+    if (!booting() || reported()) return;
     var status = document.getElementById('boot-status');
     var repair = document.getElementById('boot-repair');
     if (status) status.textContent = text;
     if (repair) repair.hidden = false;
   }
 
-  /** Forgets this game's install only: the origin may host other sites with their own. */
+  /**
+   * The game's server answers (a connected but dead network, or a captive portal, does not).
+   * sw.js is never cached, so asking for it reaches the network.
+   */
+  function reachable() {
+    if (navigator.onLine === false) return Promise.resolve(false);
+    var probe = fetch('./sw.js', { cache: 'no-store' }).then(
+      function (response) {
+        return response.ok;
+      },
+      function () {
+        return false;
+      },
+    );
+    var timeout = new Promise(function (resolve) {
+      setTimeout(function () {
+        resolve(false);
+      }, PROBE_MS);
+    });
+    return Promise.race([probe, timeout]);
+  }
+
+  /**
+   * Without the server, the install is the only copy of the game: forgetting it would leave
+   * nothing to start.
+   */
   function repair() {
+    var button = document.getElementById('boot-repair');
+    if (button) button.disabled = true;
+    reachable().then(function (online) {
+      if (online) {
+        forget();
+        return;
+      }
+      var status = document.getElementById('boot-status');
+      if (status) status.textContent = 'Connecte-toi à Internet, puis réessaie la réparation.';
+      if (button) button.disabled = false;
+    });
+  }
+
+  /** Forgets this game's install only: the origin may host other sites with their own. */
+  function forget() {
     var scope = new URL('./', location.href).href;
     var steps = [];
     if ('serviceWorker' in navigator) {
@@ -81,7 +129,7 @@
   });
   var startedAt = Date.now();
   function watch() {
-    if (!booting()) return;
+    if (!booting() || reported()) return;
     if (document.readyState !== 'complete' && Date.now() - startedAt < GIVE_UP_MS) {
       setTimeout(watch, 2000);
       return;

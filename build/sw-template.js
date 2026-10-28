@@ -9,26 +9,42 @@
 const VERSION = '__VERSION__';
 const PRECACHE = /* __PRECACHE__ */ [];
 const CACHE = `nayosbeat-${VERSION}`;
+/** The built files: their names change with their content (Vite's hashes). */
+const BUILT = './assets/';
 /** On a network this slow, the installed game opens from its cache rather than wait. */
 const SLOW_NETWORK_MS = 4000;
+/**
+ * With no cached page to fall back on, the network is waited for this much longer: then Chrome's
+ * error page, rather than a blank window for as long as Chrome would wait.
+ */
+const GIVE_UP_MS = 20000;
 
 self.addEventListener('install', (event) => {
-  // Past the HTTP cache: a page cached a few minutes ago would point to the previous build.
-  const requests = PRECACHE.map((url) => new Request(url, { cache: 'reload' }));
+  // A built file the page has just downloaded is the right one: no second download. The others
+  // are checked with the server: a page cached a few minutes ago would point to the previous build.
+  const requests = PRECACHE.map(
+    (url) => new Request(url, { cache: url.startsWith(BUILT) ? 'default' : 'no-cache' }),
+  );
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(requests)));
 });
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches
-      .keys()
-      .then((keys) =>
-        Promise.all(
-          keys
-            .filter((key) => key.startsWith('nayosbeat-') && key !== CACHE)
-            .map((key) => caches.delete(key)),
+    Promise.all([
+      // The page is requested while the worker wakes up: a launch from the icon finds it asleep.
+      // This also keeps Chrome's own way of doing it (AutoPreload) away from the game: a bug
+      // there (Chrome 143) left installed apps launched from the home screen on a blank page.
+      self.registration.navigationPreload?.enable(),
+      caches
+        .keys()
+        .then((keys) =>
+          Promise.all(
+            keys
+              .filter((key) => key.startsWith('nayosbeat-') && key !== CACHE)
+              .map((key) => caches.delete(key)),
+          ),
         ),
-      ),
+    ]),
   );
 });
 
@@ -48,7 +64,15 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   if (request.method !== 'GET' || new URL(request.url).origin !== self.location.origin) return;
   if (request.mode === 'navigate') {
-    event.respondWith(page(request));
+    event.respondWith(page(event));
+    return;
+  }
+  // Chrome reads the manifest to install the game and to update the installed app: always the
+  // deployed one (a cached one would install the previous version's settings).
+  if (request.destination === 'manifest') {
+    event.respondWith(
+      fetch(request).catch(() => caches.match(request).then((hit) => hit ?? Response.error())),
+    );
     return;
   }
   // Built files never change under the same name: the cache answers first.
@@ -68,16 +92,32 @@ self.addEventListener('fetch', (event) => {
 });
 
 /**
- * Network first, so a new deployment shows up at once; offline or on a very slow network, the
- * cached page (if there is none yet, the network is waited for).
+ * Network first, so a new deployment shows up at once; offline, on a very slow network or when
+ * the server answers an error, the cached page (if there is none, the network is waited for).
  */
-function page(request) {
-  const network = fetch(request).then(followed);
+function page(event) {
   const cached = () => caches.match('./index.html');
-  const slow = new Promise((resolve) => {
-    setTimeout(resolve, SLOW_NETWORK_MS);
-  }).then(() => cached().then((hit) => hit ?? network));
+  const network = Promise.resolve(event.preloadResponse)
+    .then((preloaded) => preloaded ?? fetch(event.request))
+    .then(followed)
+    .then((response) =>
+      // A redirect (the address without its final slash) is followed by the browser.
+      response.ok || response.type === 'opaqueredirect'
+        ? response
+        : cached().then((hit) => hit ?? response),
+    );
+  const slow = wait(SLOW_NETWORK_MS).then(() =>
+    cached().then(
+      (hit) => hit ?? Promise.race([network, wait(GIVE_UP_MS).then(() => Response.error())]),
+    ),
+  );
   return Promise.race([network, slow]).catch(() => cached().then((hit) => hit ?? Response.error()));
+}
+
+function wait(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
 }
 
 /**

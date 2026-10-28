@@ -42,15 +42,21 @@ function uiRoot(): HTMLElement {
   return root;
 }
 
+/** A font that never arrives (a stalled network) must not hold the game back longer than this. */
+const FONT_WAIT_MS = 3000;
+
 /**
  * Canvas text is rendered once: the fonts must be loaded before the first fight (the pixel
  * font of the HUD, the comic lettering of the blows' words).
  */
 async function loadFonts(): Promise<void> {
   try {
-    await Promise.all([
-      document.fonts.load('8px "Press Start 2P"'),
-      document.fonts.load('16px Bangers'),
+    await Promise.race([
+      Promise.all([
+        document.fonts.load('8px "Press Start 2P"'),
+        document.fonts.load('16px Bangers'),
+      ]),
+      new Promise((resolve) => setTimeout(resolve, FONT_WAIT_MS)),
     ]);
   } catch {
     // Fallback fonts are used instead; the game stays playable.
@@ -99,10 +105,17 @@ async function start(): Promise<void> {
   });
 
   const startApp = (): void => {
-    // The game has started: the boot screen (index.html, public/boot.js) is no longer needed.
+    try {
+      const started = new App(uiRoot(), game, new Sfx());
+      started.start();
+      app = started;
+    } catch (error) {
+      // Outside start()'s promise: shown here, on the boot screen still up.
+      showStartupError(error);
+      return;
+    }
+    // The title screen is up: the boot screen (index.html, public/boot.js) is no longer needed.
     document.getElementById('boot')?.remove();
-    app = new App(uiRoot(), game, new Sfx());
-    app.start();
   };
   // Phaser announces READY just before it starts its loop: the app starts right after, so it
   // can put the loop to sleep on the menus (otherwise the canvas redraws behind them for good).
@@ -116,8 +129,9 @@ function showStartupError(error: unknown): void {
   console.error(error);
   const status = document.getElementById('boot-status');
   if (status) {
-    status.textContent =
-      "Le jeu n'a pas pu démarrer sur ce navigateur. Essaie de le réparer, ou un navigateur récent.";
+    // The cause on screen: an installed app has no console to read it from.
+    const cause = error instanceof Error ? error.message : String(error);
+    status.textContent = `Le jeu n'a pas pu démarrer sur ce navigateur (${cause}). Essaie de le réparer, ou un navigateur récent.`;
   }
   const repair = document.getElementById('boot-repair');
   if (repair) repair.hidden = false;
