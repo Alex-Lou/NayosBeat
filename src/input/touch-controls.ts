@@ -63,7 +63,10 @@ export class TouchControls {
       button.style.height = `${spec.diameter}px`;
       button.style.fontSize = `${spec.fontSize}px`;
       if (energy !== undefined && spec.flag === Input.Special) {
-        button.style.borderColor = `#${energy.toString(16).padStart(6, '0')}`;
+        // Its ring and its letter: the stylesheet's cyan is Nayo's, never Riff's magenta.
+        const color = `#${energy.toString(16).padStart(6, '0')}`;
+        button.style.borderColor = color;
+        button.style.color = color;
       }
       return button;
     });

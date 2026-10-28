@@ -146,6 +146,14 @@ describe('TouchControls', () => {
     zone.dispatchEvent(pointer('pointerdown', pointerId, 667 - button.right, 375 - button.bottom));
   }
 
+  it("dresses the special button, ring and letter, in the fighter's energy color", () => {
+    const page = installFakePage();
+    new TouchControls(page.body as unknown as HTMLElement, undefined, 0xff3ca0);
+    const buttons = page.body.children[0]?.children[2];
+    const special = buttons?.children[TOUCH_BUTTONS.findIndex((b) => b.flag === Input.Special)];
+    expect(special?.style).toMatchObject({ borderColor: '#ff3ca0', color: '#ff3ca0' });
+  });
+
   it('presses the nearest button with one listener for them all', () => {
     const { controls, buttons } = setup();
     press(buttons, 'DASH', 1);
