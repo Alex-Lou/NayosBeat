@@ -51,6 +51,14 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(page(request));
     return;
   }
+  // Chrome reads the manifest to install the game and to update the installed app: always the
+  // deployed one (a cached one would install the previous version's settings).
+  if (request.destination === 'manifest') {
+    event.respondWith(
+      fetch(request).catch(() => caches.match(request).then((hit) => hit ?? Response.error())),
+    );
+    return;
+  }
   // Built files never change under the same name: the cache answers first.
   event.respondWith(
     caches.match(request).then(
