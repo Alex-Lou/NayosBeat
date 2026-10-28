@@ -111,25 +111,31 @@ const DETAILS = {
   lipLight: { main: '#cc3e70', alt: '#d04450' },
   teeth: { main: '#f4e8e0' },
   mouth: { main: '#3a0c14' },
-  /** Energy (dashes, trails, specials): violet, sun-yellow on the second colorway. */
-  soundDeep: { main: '#3c1470', alt: '#7a5a00' },
-  sound: { main: '#a25cff', alt: '#ffd23a' },
-  soundLight: { main: '#c99aff', alt: '#ffe98a' },
-  soundCore: { main: '#f2e6ff', alt: '#fff8d6' },
-  soundGlow: { main: '#a25cff58', alt: '#ffd23a58' },
-  /** Strikes (impacts, diamond sparks): sun-yellow, violet on the second colorway. */
-  strikeDeep: { main: '#8a5a00', alt: '#4a1a8a' },
-  strike: { main: '#ffe03a', alt: '#b070ff' },
-  strikeLight: { main: '#fff08a', alt: '#d6b0ff' },
-  strikeCore: { main: '#fff8e6' },
-  strikeGlow: { main: '#ffe03a58', alt: '#b070ff58' },
+  /**
+   * Energy (dashes, trails, specials, floor rings): a neon magenta, her fringe's color lit up;
+   * gold on the second colorway, its fringe's.
+   */
+  soundDeep: { main: '#6a0a4c', alt: '#6a420c' },
+  sound: { main: '#ff3ca0', alt: '#ffc83a' },
+  soundLight: { main: '#ff8ccc', alt: '#ffe08a' },
+  soundCore: { main: '#ffe4f2', alt: '#fff6d6' },
+  soundGlow: { main: '#ff3ca058', alt: '#ffc83a58' },
+  /**
+   * Strikes (impacts, diamond sparks): silver-white, her studs and her chain struck; crimson on
+   * the second colorway, against its gold energy.
+   */
+  strikeDeep: { main: '#4a5262', alt: '#5a0a16' },
+  strike: { main: '#d8e0ec', alt: '#e0283c' },
+  strikeLight: { main: '#f0f4fa', alt: '#ff7a86' },
+  strikeCore: { main: '#ffffff', alt: '#ffe8ea' },
+  strikeGlow: { main: '#d8e0ec58', alt: '#e0283c58' },
   /** The dark smoky heart of a heavy hit spark. */
-  strikeSmoke: { main: '#34284a' },
+  strikeSmoke: { main: '#30262e' },
   /** Motion trails of the limbs, in the energy color, translucent (alpha last). */
-  trail: { main: '#a25cffb4', alt: '#ffd23ab4' },
-  trailFaint: { main: '#a25cff5c', alt: '#ffd23a5c' },
-  /** Dust kicked up from the floor: purple-grey grit, gold-beige puffs. */
-  dustLight: { main: '#5a4878' },
+  trail: { main: '#ff3ca0b4', alt: '#ffc83ab4' },
+  trailFaint: { main: '#ff3ca05c', alt: '#ffc83a5c' },
+  /** Dust kicked up from the floor: mauve-grey grit, gold-beige puffs. */
+  dustLight: { main: '#584a54' },
   sandDeep: { main: '#7a6440' },
   sand: { main: '#b89a64' },
   sandLight: { main: '#e8d6a8' },
@@ -145,5 +151,5 @@ export const MATERIAL = PALETTE.material;
 export const DETAIL = PALETTE.detail;
 export const paletteOf = PALETTE.paletteOf;
 
-/** Riff's effects: violet energy, yellow strikes and diamond sparkles, purple-gold dust. */
+/** Riff's effects: magenta energy, silver-white strikes and diamond sparkles, grey-gold dust. */
 export const EFFECTS: EffectStyle = { slots: DETAIL, sparkle: 'diamond' };

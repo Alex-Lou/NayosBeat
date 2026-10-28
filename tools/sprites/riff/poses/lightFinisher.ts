@@ -204,7 +204,7 @@ const KEYS: readonly Key[] = [
     bends: { nearElbow: 'back' },
     face: 'effort',
     effects: [
-      smear(5, [-27, 16], [-14, 27], [4, 36], [22, 42], [37, 45]),
+      smear(5, [-27, 16], [-14, 27], [4, 36], [22, 42], [35, 45]),
       { kind: 'flash', center: at(41, 44), radius: 5, tone: 'strike' },
       dust(-3, 2, 0.4),
     ],

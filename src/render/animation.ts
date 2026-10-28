@@ -2,6 +2,7 @@ import { clipOf, type Clip, type ClipId, type FighterArt } from '../art/types';
 import type { MatchConfig } from '../core/config';
 import { flightTicks } from '../core/fighter/air';
 import { contactDistance } from '../core/hold-pair';
+import { horizontalDirection } from '../core/input';
 import { ROUND_END_FRAMES } from '../core/rules';
 import type { FighterState, GameState, RoundState } from '../core/state';
 
@@ -118,7 +119,9 @@ function thrownBack(
   }
   const throwerTemplate = config.fighters[player === 0 ? 1 : 0];
   const { startup, knockdown } = throwerTemplate.moves.throwBack;
-  if (fighter.action !== 'airHit' || !knockdown || thrower.actionFrame < startup) return false;
+  // Knocked out by the throw, it flies the same way until it lands.
+  const flying = fighter.action === 'airHit' || (fighter.action === 'ko' && isAirborne(fighter));
+  if (!flying || !knockdown || thrower.actionFrame < startup) return false;
   const fall = flightTicks(knockdown.vy) - sumTicks(art.clips.thrownFall, 0);
   if (fighter.actionFrame >= fall) {
     shown.clip = 'thrownFall';
@@ -155,13 +158,16 @@ function actionClipOf(fighter: FighterState): ClipId {
     case 'walkForward':
     case 'walkBack':
     case 'crouch':
-    case 'preJump':
     case 'landing':
     case 'knockdown':
-    case 'ko':
     case 'held':
     case 'tech':
       return fighter.action;
+    case 'preJump':
+      // The jump's direction is read at take-off: forward held, it is about to be the flip.
+      return horizontalDirection(fighter.input) === fighter.facing ? 'preJumpForward' : 'preJump';
+    case 'ko':
+      return koClipOf(fighter);
     case 'holding':
       return fighter.move ?? 'hold';
     case 'air':
@@ -170,13 +176,35 @@ function actionClipOf(fighter: FighterState): ClipId {
     case 'airAttack':
       return fighter.move ?? 'idle';
     case 'airHit':
-      return fighter.reaction === 'trip' ? 'trip' : 'airHit';
+      return flightClipOf(fighter);
     case 'hitstun':
       return hitClipOf(fighter);
     case 'blockstun':
     case 'guard':
       return fighter.crouching ? 'blockCrouch' : 'blockStand';
   }
+}
+
+/** Sent flying: swept off the legs by a sweep, launched otherwise. */
+function flightClipOf(fighter: FighterState): ClipId {
+  return fighter.reaction === 'trip' ? 'trip' : 'airHit';
+}
+
+/**
+ * Knocked out. Sent flying (a launcher, a sweep, a throw, a blow in the air), it flies as any
+ * fighter sent flying until the body lands, then plays the ko from the frame it meets the floor
+ * (`koLanding`), on the clock the landing restarts: it never hovers upright through the first
+ * frames of a ko drawn on its feet. On its feet, the whole ko.
+ */
+function koClipOf(fighter: FighterState): ClipId {
+  if (isAirborne(fighter)) return flightClipOf(fighter);
+  const { reaction } = fighter;
+  return reaction === 'launch' || reaction === 'trip' || reaction === 'thrown' ? 'koLanding' : 'ko';
+}
+
+/** Off the ground, or leaving it on this tick (the blow that sends it flying has just landed). */
+function isAirborne(fighter: FighterState): boolean {
+  return fighter.y > 0 || fighter.vy > 0;
 }
 
 /**

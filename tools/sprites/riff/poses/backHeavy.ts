@@ -202,7 +202,7 @@ const KEYS: readonly Key[] = [
     hands: { near: 'open', far: 'open' },
     face: 'effort',
     effects: [
-      smear(5, [-28, 50], [-27, 66], [-20, 81], [-10, 91], [1, 95]),
+      smear(5, [-28, 50], [-27, 66], [-20, 81], [-10, 91], [1, 93]),
       { kind: 'flash', center: at(6, 96), radius: 3.5, tone: 'strike' },
       { kind: 'speed', center: at(5, 99), length: 8, spread: 5, direction: -90, tone: 'strike' },
       dust(12, 3, 0.5),

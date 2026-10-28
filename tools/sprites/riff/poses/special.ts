@@ -21,7 +21,7 @@ export const ANIMATED: boolean = true;
  * with its sole to the opponent, the rear boot just behind and over it (two boots, stepped, not
  * one block); her weight on the rear forearm, the elbow on the floor, the lead hand behind her
  * head: she lounges under the projectile and gives it a half-lidded look along her boots
- * (`cool`). A violet streak runs along the floor behind her, yellow sparks fan back along the
+ * (`cool`). A magenta streak runs along the floor behind her, silver sparks fan back along the
  * floor from her heels. Then she draws her legs in, sits up and springs back into the guard.
  * Nothing like her Windmill (on her back, propped on a straight arm, a leg wheeling up, the arcs
  * of its trail): this one is a straight line on the floor, every limb along it, the effects
@@ -29,13 +29,13 @@ export const ANIMATED: boolean = true;
  *
  * - 0 (3 ticks): the launch: the hips sink and pitch in over the lead leg, the rear heel pops
  *   hard off the floor, the lead fist drops toward the knee; dust off the rear ball and a short
- *   violet streak behind the heels (the game already moves her on these ticks). As far from the
+ *   magenta streak behind the heels (the game already moves her on these ticks). As far from the
  *   guard as its first frame may go (3.5 px).
  * - 1 (3 ticks): the dive: she drops flat in one beat, the lead leg already long and low, the
  *   rear leg kicking through over it (its knee up, its trail along the floor), the rear forearm
  *   reaching back for the floor, the lead arm flung back over her head; dust where she pushed.
  * - 2 (4 ticks): the hip and the elbow hit the floor: the arrow, the boots not all the way out;
- *   dust under the hip, the first sparks off the heel, the violet streak; the cool look.
+ *   dust under the hip, the first sparks off the heel, the magenta streak; the cool look.
  * - 3 (4 ticks, active): the arrow at full length, the lead heel on the far edge of the hitbox;
  *   the sparks fan off the heel along the floor, the streak at its longest.
  * - 4 (4 ticks, active): still gliding, slower: the rear leg starts to draw in, the lead boot
@@ -79,7 +79,7 @@ const dust = (x: number, size: number, progress: number): Effect => ({
   progress,
 });
 
-/** Streaks left behind something going forward along the floor: violet, or yellow sparks. */
+/** Streaks left behind something going forward along the floor: magenta, or silver sparks. */
 const streak = (
   center: Point,
   length: number,
@@ -101,7 +101,7 @@ const spark = (center: Point, radius: number): Effect => ({
   tone: 'strike',
 });
 
-/** The yellow sparks thrown forward off the heels, at floor level. */
+/** The silver sparks thrown forward off the heels, at floor level. */
 const sparks = (x: number, radius: number, progress: number): Effect => ({
   kind: 'shards',
   center: at(x, 2.5),
@@ -200,7 +200,7 @@ const GLIDE: Pose = {
   torso: -67,
   head: LOOK - 12 + 67,
   nearFoot: { x: 13, y: 9, angle: 25 },
-  farFoot: { x: 28, y: 5.6, angle: 45 },
+  farFoot: { x: 28.6, y: 5.6, angle: 45 },
   farFist: at(-35, 19),
   effects: [
     streak(at(-40, 2.5), 10, 1.6, 'sound'),

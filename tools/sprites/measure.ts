@@ -4,10 +4,10 @@
  * the generated PNGs, and by the tests, which draw the same strips in memory.
  */
 
-import { NAYO_CLIPS } from '../../src/art/nayo/clips.ts';
 import { ART_SCALE, type Cell, type ClipId } from '../../src/art/types.ts';
 import type { Box } from '../../src/core/config.ts';
 import { toPx } from '../../src/core/constants.ts';
+import type { Clips } from './clips.ts';
 
 /** The cells of one strip, as what they draw: opaque or not. */
 export interface StripMask {
@@ -59,9 +59,13 @@ export const POSTURE_CLIPS: Readonly<
   air: { body: ['jump'], limbs: ['jumpForward'] },
 };
 
-/** The strip a clip plays, and the frames of it that show the posture. */
-export function postureFrames(id: ClipId): { sheet: string; frames: readonly number[] } {
-  const clip = NAYO_CLIPS[id];
+/** The strip a fighter's clip plays, and the frames of it that show the posture. */
+export function postureFrames(
+  clips: Clips,
+  id: ClipId,
+): { sheet: string; frames: readonly number[] } {
+  const clip = clips[id];
+  if (!clip) throw new Error(`No clip ${id}`);
   return { sheet: clip.sheet, frames: clip.frames.slice(clip.loopFrom ?? 0) };
 }
 

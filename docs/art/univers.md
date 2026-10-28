@@ -54,7 +54,7 @@ Entrepôt reconverti en club, la nuit. Mur d'enceintes empilées au fond, néons
 | jumpHeavy | Coup de pied sauté | Coup de pied plongeant vers l'avant-bas |
 | special | Vinyle | Tire un vinyle de sa veste, le scratche à la hanche et le lance à plat : un disque de lumière qui tourne |
 | specialForward | Coup de pied fendu | Coup de pied latéral volant |
-| specialAntiAir | Uppercut | « Le drop » : uppercut montant sur la pointe des pieds |
+| specialAntiAir | Uppercut | « La montée » : uppercut montant sur la pointe des pieds (le mot « drop » appartient au Crossfader) |
 | throw | Projection | Saisie au col, pivot, jeté par-dessus l'épaule |
 
 - **Entrée** : se craque les poings, ajuste son casque, regard posé, garde.
@@ -62,35 +62,42 @@ Entrepôt reconverti en club, la nuit. Mur d'enceintes empilées au fond, néons
 
 ### Riff — Rushdown
 
-> B-girl ultra rapide, provocatrice et rieuse. Elle danse autour de l'adversaire.
+> La punk de rue de Zen-Tazzer : provocatrice, rieuse, elle breake et elle cogne. Elle danse autour de l'adversaire, puis lui rentre dedans.
 
-- **Silhouette** : petite et vive, appuis bas, casquette à l'envers (détail signature), sweat oversize.
-- **Tenue** : sweat cyan oversize à capuche, short cargo noir sur legging, genouillères blanches, baskets montantes blanches et violettes, bracelets éponge.
-- **Tenue 2** : sweat jaune soleil, accents violets.
-- **Peau** claire et dorée, taches de rousseur ; cheveux auburn en deux tresses qui dépassent de la casquette (animation secondaire).
-- **Palette** :
-  - sweat `#0b2c3a #13708f #2fb3d9 #9be6ff` ;
-  - noir `#0d0c12 #1f1d29 #312e40 #4a4660` ;
-  - peau `#3a2216 #b0745a #e0a585 #f6cdb0` ;
-  - auburn `#2a0f08 #6e2b14 #a5421c #d9672d` ;
-  - violet `#2a1240 #5a2b8a #8a4fd1 #c79bff`.
-- **Effets de coup** (haute définition, propres à Riff) : entailles en X violettes (griffures sur les coups lourds), éclats en losange jaunes ; couleurs inversées en tenue 2.
+- **Silhouette** : petite et vive, appuis bas : la base en ginga d'une b-girl, le poing arrière armé d'une bagarreuse. Détail signature : la **frange magenta** sur un crâne rasé sur le côté (animation secondaire, comme la **chaîne** de sa ceinture).
+- **Tenue** : blouson de cuir noir court (écusson rond magenta sur la manche), crop top noir, jean noir déchiré aux genoux, ceinture cloutée et chaîne argent, mitaines de cuir, rangers à semelles crantées avec triangles magenta, boucles d'oreilles et ras-du-cou argent, rouge à lèvres magenta.
+- **Tenue 2** (miroir) : blouson de cuir **rouge sang**, frange et accents **or**, jean gris délavé, lèvres cramoisies ; peau, cheveux, crop top, rangers et argent inchangés.
+- **Peau** pêche chaud, ombres rouille ; cheveux bleu-noir, reflets gris froids ; yeux sarcelle.
+- **Palette** (`tools/sprites/riff/palette.ts`) :
+  - cuir noir `#040406 #16171d #30333c #6c7890` (tenue 2 : rouge `#3c0a10 #8e1c24 #c4383e #f08a86`) ;
+  - jean `#040507 #151920 #2c323d #56627a` (tenue 2 : gris `#17191e #353943 #5c6270 #7c8392`) ;
+  - magenta `#4c0b44 #8e1468 #b81e7c #e04a9e` (tenue 2 : or `#6a420c #c89628 #ecc85a #ffe08a`) ;
+  - argent `#3e4046 #8e9298 #c4c8cc #f2f4f6` ;
+  - peau `#561c22 #cc744d #f1ad7a #ffdcb0`.
+- **Effets de coup** (haute définition, propres à Riff, `src/render/hit-styles.ts`) : entailles en griffes **magenta** `#ff3ca0`, éclats en losange **argent** `#d8e0ec` (ses clous et sa chaîne frappés) ; son énergie (dash, traînées, ondes au sol, spéciaux) est magenta. Tenue 2 : griffes **or** `#ffc83a`, éclats **cramoisis** `#e0283c`.
 
 | Coup (gabarit) | Nom | Mise en scène |
 |---|---|---|
-| standLight | Jab | Jab rapide, épaule rentrée |
-| standHeavy | Coup de coude | Coude tournant en avançant |
-| crouchLight | Coup bas | Coup de pied bas en appui sur une main |
-| crouchHeavy | Balayage | « Windmill » : balayage en rotation au sol |
-| jumpLight | Genou sauté | Genou en avant en l'air |
+| standLight | Jab | Jab sec, épaule rentrée |
+| chainLight | Revers | Revers tournant à plat, la frange qui fouette |
+| lightFinisher | Swipe | Meia lua de compasso : appuyée sur les mains, la jambe balaie |
+| forwardLight | Toprock | Pas croisé de danse vers l'avant, puis jab |
+| standHeavy | Coup de coude | Coude à plat en fente avant |
+| forwardHeavy | Talon | La jambe monte tendue, retombe en coup de hache |
+| backHeavy | Retourné | Scorpion sauté, la ranger par-dessus la tête |
+| crouchLight | Coup bas | Coup de talon rasant, en appui sur une main |
+| crouchHeavy | Windmill | Moulinet au sol, les jambes en rotation |
+| jumpLight | Ciseau aérien | Grand écart en l'air (touche aussi de dos) |
 | jumpHeavy | Talon sauté | Talon qui retombe, jambe tendue |
-| special | Ruée | Glissade au sol (footwork) qui finit en coude |
-| specialForward | Saut de l'ange | Vrille aérienne qui retombe sur la tête adverse (à parer debout) |
+| special | Glissade | Plonge et glisse sur la hanche, rangers en avant, sous le Vinyle |
+| specialForward | Saut de l'ange | Vrille aérienne, retombe à deux talons sur la tête adverse (à parer debout) |
 | specialAntiAir | Genou montant | « Freeze » explosif : genou qui jaillit vers le haut |
-| throw | Projection | Saisie, roulade et renvoi au sol |
+| grab, pummel | Prise, Coup de tête | Saisie d'une main au col, coups de tête courts |
+| throwForward, throwBack | Ciseaux, Roulade | Ciseau de jambes qui couche l'adversaire tout près ; monkey flip par-dessus elle |
 
-- **Entrée** : tourne sa casquette, toprock (pas de danse), pointe l'adversaire.
-- **Victoire** : freeze sur une main, clin d'œil.
+- **Entrée** : plantée comme si la rue était à elle, elle rejette sa frange d'une main, tend l'autre paume en l'air (« viens »), puis tombe en garde sur le temps.
+- **Victoire** : freeze sur une main, la jambe au ciel, clin d'œil.
+- **Temps écoulé** : bras croisés, elle boude en tapant du pied.
 
 ---
 

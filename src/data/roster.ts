@@ -20,8 +20,8 @@ export const ROSTER: readonly RosterEntry[] = [
   {
     id: 'riff',
     template: RIFF,
-    // The punk of Zen-Tazzer: her moves change with combat v2 (phase 3), not her attitude.
-    description: 'Punk de rue qui breake et cogne · vitesse · dash · moins de vie',
+    // The punk of Zen-Tazzer, her identity in combat v2 (docs/combat-v2.md §6.2, §17.3).
+    description: 'Punk de rue explosive · dash · Glissade · deux overheads · moins de vie',
   },
 ];
 

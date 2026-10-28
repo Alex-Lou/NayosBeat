@@ -18,7 +18,7 @@ export const ANIMATED: boolean = true;
  * head turns past 20 degrees on screen: RotSprite, the brow set, `effort`). The knuckles never
  * leave his collar (at about x 22-26 here): they haul it a pixel or two down onto the blow while
  * the body drives in, so the arms fold and the elbows flare as the head comes through, and the
- * yank shows. A violet trail follows the head's arc, a small yellow star bursts where the heads
+ * yank shows. A magenta trail follows the head's arc, a small silver star bursts where the heads
  * meet, just above both pairs of eyes (the hitstop and the shake sell the rest). She rocks back off it, chin up, the lid
  * half down (`cool`): unimpressed; the hold loop settles her back into the grip. The fringe
  * whips forward on the snap and flicks back on the recoil by itself.
@@ -36,8 +36,8 @@ const REAR: Pose = {
   shrug: 3.2,
   twist: 0.55,
   nearFoot: onBall(REAR_TOE, -14),
-  nearFist: at(19, 55),
-  farFist: at(18.5, 49),
+  nearFist: at(20.5, 55),
+  farFist: at(20, 49),
 };
 
 // Frame 1 (2 ticks): the snap. Up onto the ball of the rear foot, the hips driving in, the head
@@ -50,8 +50,8 @@ const DRIVE_BODY: Pose = {
   shrug: 2.8,
   twist: 0.3,
   nearFoot: onBall(REAR_TOE, -30),
-  nearFist: at(19.5, 54),
-  farFist: at(19, 48.5),
+  nearFist: at(21, 54),
+  farFist: at(20.5, 48.5),
   face: 'effort',
 };
 
@@ -66,8 +66,8 @@ const IMPACT_BODY: Pose = {
   shrug: 2.6,
   twist: 0.15,
   nearFoot: onBall(REAR_TOE, -38),
-  nearFist: at(19, 52.5),
-  farFist: at(18.5, 47),
+  nearFist: at(20.5, 52.5),
+  farFist: at(21.5, 47),
   face: 'effort',
 };
 

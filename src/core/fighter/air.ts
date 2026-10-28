@@ -41,7 +41,9 @@ export function airborne(fighter: FighterState, template: FighterTemplate): Figh
     case 'airHit':
       return { ...enter(grounded, 'knockdown'), stunFrames: template.knockdownFrames };
     case 'ko':
-      return grounded;
+      // The ko's clock restarts as the body meets the floor: no rule reads it, the drawing plays
+      // the fall onto the floor from there (render/animation.ts).
+      return enter(grounded, 'ko');
     default:
       return { ...enter(grounded, 'landing'), move: null };
   }

@@ -169,7 +169,7 @@ const SPLIT = key({
   shrug: 2.8,
   twist: 0.75,
   rear: [SPLIT_OPEN.rear, 31.2],
-  lead: [SPLIT_OPEN.lead, 31.2],
+  lead: [SPLIT_OPEN.lead, 29.5],
   nearFist: at(-24, 73),
   farFist: at(17.5, 41),
   knees: OPEN_KNEES,
@@ -190,7 +190,7 @@ const SHUT = key({
   knees: { nearKnee: 'front', farKnee: 'front' },
 });
 
-/** A small yellow spark just past a boot's toe, on the active frame. */
+/** A small silver spark just past a boot's toe, on the active frame. */
 function spark(toe: Point, ankle: Point): Effect {
   const d = Math.hypot(toe.x - ankle.x, toe.y - ankle.y) || 1;
   const past = 1.5 / d;
@@ -215,7 +215,7 @@ export const POSES: readonly Pose[] = [
   ),
   fx(
     SPLIT,
-    sweep(SPLIT.hip, SPLIT.torso, 'far', -80, SPLIT_OPEN.lead - 2, 33, 4),
+    sweep(SPLIT.hip, SPLIT.torso, 'far', -80, SPLIT_OPEN.lead - 2, 28, 4),
     sweep(SPLIT.hip, SPLIT.torso, 'near', -100, SPLIT_OPEN.rear + 2, 33, 4),
     spark(SPLIT_SKELETON.far.toe, SPLIT_SKELETON.far.ankle),
     spark(SPLIT_SKELETON.near.toe, SPLIT_SKELETON.near.ankle),

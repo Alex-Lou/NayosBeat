@@ -17,6 +17,30 @@ describe('hit styles', () => {
     expect(looks.size).toBe(styles.length);
   });
 
+  it('Riff hits magenta, her strikes silver-white; gold and crimson in her second outfit', () => {
+    const rgb = (color: number): [number, number, number] => [
+      (color >> 16) & 0xff,
+      (color >> 8) & 0xff,
+      color & 0xff,
+    ];
+    const [r, g, b] = rgb(hitStyleOf('riff').energy);
+    expect(r).toBeGreaterThan(200);
+    expect(b).toBeGreaterThan(g + 60);
+    const strike = rgb(hitStyleOf('riff').strike);
+    expect(Math.min(...strike)).toBeGreaterThan(200);
+    const [gr, gg, gb] = rgb(hitStyleOf('riff', 'alt').energy);
+    expect(gr).toBeGreaterThan(gg);
+    expect(gg).toBeGreaterThan(gb + 100);
+    const [cr, cg, cb] = rgb(hitStyleOf('riff', 'alt').strike);
+    expect(cr).toBeGreaterThan(200);
+    expect(Math.max(cg, cb)).toBeLessThan(80);
+  });
+
+  it('the two players hit in different energy colors in every pairing', () => {
+    // Nayo against Riff, both in their first outfit; a mirror match puts player 2 in the second.
+    expect(hitStyleOf('nayo').energy).not.toBe(hitStyleOf('riff').energy);
+  });
+
   it('in a mirror match, the two players hit in different energy colors', () => {
     for (const { id } of ROSTER) {
       expect(hitStyleOf(id, 'alt').energy).not.toBe(hitStyleOf(id).energy);

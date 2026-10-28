@@ -7,6 +7,7 @@ import type {
   Guard,
   Knockdown,
   MoveData,
+  MoveHurtbox,
   MoveKind,
   RootMotion,
 } from '../../core/move-data';
@@ -138,6 +139,8 @@ interface DashSpec {
   /** Backward: a backdash. */
   readonly back?: boolean;
   readonly throwInvincible?: FrameRange;
+  /** Its own hurtboxes where the drawing leaves the posture's (a hop, a flip). */
+  readonly hurtboxes?: readonly MoveHurtbox[];
   /** Riff's footwork: cancelled from this frame into a normal or the grab, momentum kept. */
   readonly freeCancelFrom?: number;
 }
@@ -167,6 +170,7 @@ export function dash(spec: DashSpec): MoveData {
     guard: 'mid',
     motion: { dx },
     ...(spec.throwInvincible && { throwInvincible: spec.throwInvincible }),
+    ...(spec.hurtboxes && { hurtboxes: spec.hurtboxes }),
     ...(spec.freeCancelFrom !== undefined && {
       freeCancelFrom: spec.freeCancelFrom,
       cancelInto: FOOTWORK_CANCELS,

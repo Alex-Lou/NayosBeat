@@ -15,7 +15,7 @@ import {
 } from './shared';
 
 /**
- * Riff, the rushdown, « elle danse autour de toi » (docs/combat-v2.md §5.3, §5.5, §10.2): the
+ * Riff, the rushdown, « la punk qui breake et cogne » (docs/combat-v2.md §5.3, §5.5, §10.2): the
  * quickest normals, a slide under projectiles, two overheads, the only blow behind her in the
  * air; less health, a short reach, no reversal on the ground. Her blows spin and kick where
  * Nayo's go straight.
@@ -38,11 +38,15 @@ export const RIFF: FighterTemplate = {
   crouchingPushbox: { width: px(30), height: px(46) },
   airPushbox: { width: px(22), height: px(40), lift: px(26) },
   lyingPushbox: { width: px(26), height: px(20) },
-  // Her body as the art brief draws it (docs/combat-v2.md §9.2), until her strips can be
-  // measured: the grey box shows exactly these.
-  standingHurtboxes: [box(-15, 0, 27, 76)],
-  crouchingHurtboxes: [box(-16, 0, 29, 50)],
-  airHurtboxes: [box(-14, 4, 26, 60)],
+  // Calibrated on the drawing (`npm run measure-boxes`, docs/combat-v2.md §9.2): the front edge
+  // at the farthest the body reaches (the toes of the boots, 16 px; a pixel inside them, so a
+  // low blow at its farthest still meets the boot, never the air before it), the back at the
+  // rear foot (her wide b-girl base, skidding back the most on a blow to the belly), the top at
+  // the fringe. In the air the knees drive 3.5 px ahead of the chest: legs and torso get a box
+  // each.
+  standingHurtboxes: [box(-33.5, 0, 48.5, 75)],
+  crouchingHurtboxes: [box(-32, 0, 47, 57.5)],
+  airHurtboxes: [box(-28, 4, 46, 40), box(-21, 44, 35.5, 37)],
   moves: {
     standLight: strike({
       name: 'Jab',
@@ -113,7 +117,9 @@ export const RIFF: FighterTemplate = {
       motion: advance(34, { from: 4, to: 14, distancePx: 15 }),
     }),
     // ← + H: a scorpion kick, the leg over her head, covering behind her too (against
-    // cross-ups). The launcher; it whiffs on a crouching opponent (57 px at most).
+    // cross-ups). The launcher; it whiffs on a crouching opponent (57 px at most). She hops
+    // into it: on its active frames her body is 16 px off the floor (measured, §9.2), and a
+    // low blow passes under her feet.
     backHeavy: strike({
       name: 'Retourné',
       frames: [6, 5, 15],
@@ -123,6 +129,7 @@ export const RIFF: FighterTemplate = {
       pushbackPx: 3,
       guard: 'mid',
       hitbox: box(-12, 58, 34, 42),
+      hurtboxes: [{ frames: { from: 6, to: 11 }, boxes: [box(-15, 16, 30, 80)] }],
       knockdown: kd(5, 0.5, { juggle: true }),
       cancelInto: HEAVY_CANCELS,
     }),
@@ -182,8 +189,9 @@ export const RIFF: FighterTemplate = {
       guard: 'overhead',
       hitbox: box(2, -4, 30, 22),
     }),
-    // She dives and slides on her hip, feet first, 64 px: her body 26 px high from frame 2 to
-    // 20 goes under the Vinyle and the high blows. A low that sweeps: block it crouching, or
+    // She dives and slides on her hip, feet first, 64 px: her body, under 29 px high from frame
+    // 2 to 20 (measured: her head on the floor behind her, the boots she strikes with ahead),
+    // goes under the Vinyle and the high blows. A low that sweeps: block it crouching, or
     // hit it low (the Coup bas catches it).
     special: strike({
       name: 'Glissade',
@@ -196,12 +204,13 @@ export const RIFF: FighterTemplate = {
       guard: 'low',
       hitbox: box(6, 2, 30, 12),
       motion: glide(34, { from: 1, to: 18, distancePx: 64 }),
-      hurtboxes: [{ frames: { from: 2, to: 21 }, boxes: [box(-20, 0, 40, 26)] }],
+      hurtboxes: [{ frames: { from: 2, to: 21 }, boxes: [box(-42, 0, 62, 28.5)] }],
       knockdown: kd(2, 3.5, { trip: true }),
     }),
     // A spin that really leaves the ground (34 px high at frame 11) and lands heels first: an
     // overhead over the low blows (frames 4-18) and the grabs (in the air on frames 3-19). An
-    // anti-air brings her down.
+    // anti-air brings her down. At the top of the spin (frames 12-15) she is balled up high,
+    // 32 px over her feet: her body there is all there is to hit.
     specialForward: strike({
       name: "Saut de l'ange",
       kind: 'special',
@@ -212,6 +221,7 @@ export const RIFF: FighterTemplate = {
       pushbackPx: 3,
       guard: 'overhead',
       hitbox: box(0, 16, 30, 40),
+      hurtboxes: [{ frames: { from: 12, to: 16 }, boxes: [box(-24, 32, 54.5, 46)] }],
       motion: {
         ...advance(34, { from: 4, to: 20, distancePx: 35 }),
         y: leapArc(34, { from: 3, to: 20, apexPx: 34 }),
@@ -278,7 +288,8 @@ export const RIFF: FighterTemplate = {
       distancePx: 64,
       freeCancelFrom: 8,
     }),
-    // Grab-proof on frames 0-10 (the answer to the grab), but strikes still hit it.
+    // Grab-proof on frames 0-10 (the answer to the grab), but strikes still hit it. Its flip
+    // lifts her feet 12 px off the floor on frames 5-8: a low blow only grazes them.
     dashBack: dash({
       name: 'Retrait',
       duration: 20,
@@ -286,6 +297,7 @@ export const RIFF: FighterTemplate = {
       distancePx: 48,
       back: true,
       throwInvincible: { from: 0, to: 11 },
+      hurtboxes: [{ frames: { from: 5, to: 9 }, boxes: [box(-21, 12, 35, 63)] }],
     }),
   },
 };

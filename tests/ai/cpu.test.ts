@@ -4,7 +4,7 @@ import { nextRandom } from '../../src/ai/rng';
 import type { MatchConfig } from '../../src/core/config';
 import { px } from '../../src/core/constants';
 import { Input, type InputBits } from '../../src/core/input';
-import type { GameState } from '../../src/core/state';
+import type { FighterAction, GameState } from '../../src/core/state';
 import { step } from '../../src/core/step';
 import { playCpuMatches } from '../core/cpu-match';
 import { facingOff, fightState, MATCH, MIRROR_MATCH } from '../core/helpers';
@@ -60,6 +60,14 @@ describe('rng', () => {
   });
 });
 
+/** Not in neutral: sent flying, down, hit or blocking. */
+const STUNNED: ReadonlySet<FighterAction> = new Set<FighterAction>([
+  'knockdown',
+  'airHit',
+  'hitstun',
+  'blockstun',
+]);
+
 describe('cpu', () => {
   it('makes the same decisions for the same seed', () => {
     expect(playAgainstCpu('normal', 1500).inputs).toEqual(playAgainstCpu('normal', 1500).inputs);
@@ -87,7 +95,8 @@ describe('cpu', () => {
   });
 
   it('never gets stuck with the command table of combat v2: it attacks every 3 s at most', () => {
-    // §13.4: in a fight (out of a hold, a knockdown, the round's end), each CPU starts a move.
+    // §13.4: in neutral (out of a hold, a knockdown, a stun, the round's end), each CPU starts a
+    // move: the time it spends hit or blocking is the opponent's pressure, not its stalling.
     for (const level of ['easy', 'normal', 'hard'] as const) {
       const quiet: [number, number] = [0, 0];
       const longest: [number, number] = [0, 0];
@@ -96,7 +105,7 @@ describe('cpu', () => {
           const fighter = state.fighters[player];
           const busy =
             fighter.move !== null || state.hold !== null || state.round.phase !== 'fight';
-          const down = fighter.action === 'knockdown' || fighter.action === 'airHit';
+          const down = STUNNED.has(fighter.action);
           quiet[player] = busy || down ? 0 : quiet[player] + 1;
           longest[player] = Math.max(longest[player], quiet[player]);
         }

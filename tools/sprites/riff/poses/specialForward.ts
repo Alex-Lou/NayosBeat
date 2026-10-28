@@ -16,7 +16,7 @@ export const ANIMATED: boolean = true;
  *
  * A corkscrew that opens into an angel and comes down heels first. Out of a quick coil she
  * springs straight up, wrapping her arms across to wind the spin; at the climb she is a tight
- * corkscrew, arms crossed on her chest, legs crossed and long, turned away, a violet spiral
+ * corkscrew, arms crossed on her chest, legs crossed and long, turned away, a magenta spiral
  * wound round her; at the top the spin opens: the arms fling out wide like wings, the chest to
  * the sky, the legs piking up in front of her (the angel). Falling, she jackknifes: the heels
  * rise over the opponent's head and her hands reach up for them (the gather before the blow);
@@ -36,7 +36,7 @@ export const ANIMATED: boolean = true;
  * - 4 (4 ticks): the jackknife: the heels raised over the opponent's head, the hands reaching
  *   for them; the legs' trail rising.
  * - 5 (4 ticks, active): the stomp: the legs 30 degrees off straight down, the heels together,
- *   the trail arcing over and down into the hitbox, a yellow spark and diamonds at the heels;
+ *   the trail arcing over and down into the hitbox, a silver spark and diamonds at the heels;
  *   the line of action runs from the shoulders down the body to the heels; the jaw set.
  * - 6 (4 ticks): the touchdown, wide and low in the plié: the lead heel down with its toes
  *   coming down after it, the rear foot landing on its ball on its guard mark (its knee already
@@ -92,7 +92,7 @@ const dust = (x: number, size: number, progress: number): Effect => ({
   progress,
 });
 
-/** A violet ring squashed flat on the floor: the landing's shockwave. */
+/** A magenta ring squashed flat on the floor: the landing's shockwave. */
 const ring = (center: Point, radius: number, progress: number, squash: number): Effect => ({
   kind: 'ring',
   center,
@@ -234,7 +234,7 @@ const CHOP: Pose = {
     [33, 0.99, 30],
   ),
   effects: [
-    smear(4, [5, 72], [15, 67], [21, 50], [19, 28]),
+    smear(4, [5, 72], [13, 67], [17, 50], [18, 28]),
     { kind: 'flash', center: at(24, 20), radius: 5, tone: 'strike' },
     { kind: 'shards', center: at(23, 20), radius: 8, progress: 0.25, tone: 'strike' },
   ],

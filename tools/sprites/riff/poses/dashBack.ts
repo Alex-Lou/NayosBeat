@@ -28,7 +28,7 @@ export const ANIMATED: boolean = true;
  * crown, tipped back only 20 degrees, the chest up, the cocked rear arm flung up and back over
  * her head to lead the turn, the lead fist at the chin, the eyes on the opponent (the head the
  * drawing). Nothing hangs limp: it is a take-off, never a knock-back (airHit). Then she balls up
- * and goes over the top, the boots sweeping a violet arc that carries the half turn; she comes
+ * and goes over the top, the boots sweeping a magenta arc that carries the half turn; she comes
  * round with the knees still tucked, the shoulders already pitched forward, opens out onto the
  * guard's marks and soaks the landing into her plié, dust out from both boots, and rises into
  * the guard on the idle's last frame.
@@ -46,7 +46,7 @@ export const ANIMATED: boolean = true;
  * under 20 degrees, the face as drawn. The fringe and the belt's chain whip round by themselves.
  */
 
-/** Ticks of each frame (strips.ts). */
+/** Ticks of each frame (her clip, src/art/riff/clips.ts). */
 const TICKS = [1, 4, 4, 3, 3, 5] as const;
 /** The game's backdash curve (§3.3): px per tick on ticks 1 to 14, backward. */
 const SPEEDS = [

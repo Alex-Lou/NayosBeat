@@ -55,6 +55,8 @@ export const STATE_CLIP_IDS = [
   'walkBack',
   'crouch',
   'preJump',
+  // The pre-jump of a jump forward, forward held: a fighter may load it its own way.
+  'preJumpForward',
   'jump',
   'jumpForward',
   'landing',
@@ -76,6 +78,9 @@ export const STATE_CLIP_IDS = [
   // The last ticks of the knockdown: standing up.
   'getup',
   'ko',
+  // Knocked out in the air (a launcher, a sweep, a throw, a blow in the air): the airHit until
+  // the body lands, then the ko from the frame it meets the floor.
+  'koLanding',
   // The hold: holder and held between the moves, the backward throw's victim, the tech.
   'hold',
   'held',

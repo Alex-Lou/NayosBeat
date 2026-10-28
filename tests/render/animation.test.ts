@@ -3,6 +3,7 @@ import { NAYO_CLIPS } from '../../src/art/nayo/clips';
 import type { Clip } from '../../src/art/types';
 import type { FighterState, RoundState } from '../../src/core/state';
 import { NAYO } from '../../src/art/nayo';
+import { RIFF } from '../../src/art/riff';
 import {
   clipFrameAt,
   clipIdOf as clipIdIn,
@@ -12,7 +13,13 @@ import {
   stunTick,
   type Shown,
 } from '../../src/render/animation';
-import { fightState, makeFighter, MIRROR_MATCH } from '../core/helpers';
+import type { MatchConfig } from '../../src/core/config';
+import { Input } from '../../src/core/input';
+import { NAYO as NAYO_TEMPLATE } from '../../src/data/fighters/nayo';
+import { RIFF as RIFF_TEMPLATE } from '../../src/data/fighters/riff';
+import { TRAINING_STAGE } from '../../src/data/stages';
+import { facingOff, fightState, makeFighter, MIRROR_MATCH } from '../core/helpers';
+import { atHoldTick, grabbed, play } from '../core/hold-helpers';
 
 const FIGHTING: RoundState = {
   number: 1,
@@ -87,6 +94,69 @@ describe('clipIdOf', () => {
   it('shows a fighter swept off its legs falling on its back', () => {
     expect(clipIdOf(makeFighter({ action: 'airHit', reaction: 'trip' }))).toBe('trip');
     expect(clipIdOf(makeFighter({ action: 'airHit', reaction: 'launch' }))).toBe('airHit');
+  });
+
+  it('loads a jump forward its own way when forward is held', () => {
+    const preJump = (facing: 1 | -1, input: number) =>
+      clipIdOf(makeFighter({ action: 'preJump', facing, input }));
+    expect(preJump(1, Input.Up | Input.Right)).toBe('preJumpForward');
+    expect(preJump(-1, Input.Up | Input.Left)).toBe('preJumpForward');
+    expect(preJump(1, Input.Up | Input.Left)).toBe('preJump');
+    expect(preJump(1, Input.Up)).toBe('preJump');
+  });
+
+  /** ko.ts of both fighters: sent flying, the fall, then the ko from where the body lands. */
+  it('flies a fighter knocked out in the air, then plays its ko from the floor', () => {
+    expect(clipIdOf(makeFighter({ action: 'ko', reaction: 'mid' }))).toBe('ko');
+    // On the tick the blow lands, the lift is given but the body has not left the floor yet.
+    expect(clipIdOf(makeFighter({ action: 'ko', reaction: 'launch', vy: 300 }))).toBe('airHit');
+    expect(clipIdOf(makeFighter({ action: 'ko', reaction: 'trip', y: 900 }))).toBe('trip');
+    expect(clipIdOf(makeFighter({ action: 'ko', reaction: 'thrown', y: 900 }))).toBe('airHit');
+    for (const reaction of ['launch', 'trip', 'thrown'] as const) {
+      expect(clipIdOf(makeFighter({ action: 'ko', reaction }))).toBe('koLanding');
+    }
+    // Knocked out by a pummel, it drops where it was held.
+    expect(clipIdOf(makeFighter({ action: 'ko', reaction: null }))).toBe('ko');
+  });
+});
+
+describe('a knockout in the air, through the game', () => {
+  /** Riff's Retourné launches and knocks out a Nayo on his last point. */
+  const config: MatchConfig = { stage: TRAINING_STAGE, fighters: [RIFF_TEMPLATE, NAYO_TEMPLATE] };
+  const start = facingOff(30, config, [{}, { health: 1 }]);
+  const states = play(start, 80, (tick) => [tick === 0 ? Input.Left | Input.Heavy : 0, 0], config);
+  const ko = states.filter((state) => state.fighters[1].action === 'ko');
+  const landing = ko.findIndex((state) => state.fighters[1].y === 0 && state.fighters[1].vy === 0);
+
+  it('flies until the body lands, then the ko starts from the floor, on its own clock', () => {
+    expect(ko.length).toBeGreaterThan(0);
+    expect(landing).toBeGreaterThan(0);
+    const shown: Shown = { clip: 'idle', tick: 0, x: 0 };
+    ko.forEach((state, index) => {
+      showFighter(state, 1, config, NAYO, shown);
+      if (index < landing) expect(shown.clip).toBe('airHit');
+      else expect(shown).toMatchObject({ clip: 'koLanding', tick: index - landing });
+    });
+  });
+});
+
+describe('a knockout by a throw backward', () => {
+  /** Nayo throws a Riff on her last points over his shoulder: the throw's flight, then her ko. */
+  const config: MatchConfig = { stage: TRAINING_STAGE, fighters: [NAYO_TEMPLATE, RIFF_TEMPLATE] };
+  const start = atHoldTick(grabbed(config, [{}, { health: 1 }]), 12, config);
+  const states = play(start, 60, (tick) => [tick === 0 ? Input.Left | Input.Heavy : 0, 0], config);
+  const ko = states.filter((state) => state.fighters[1].action === 'ko');
+
+  it('flies as any throw does, then lands into the ko from the floor', () => {
+    expect(ko.length).toBeGreaterThan(0);
+    const shown: Shown = { clip: 'idle', tick: 0, x: 0 };
+    const clips = ko.map((state) => {
+      showFighter(state, 1, config, RIFF, shown);
+      return shown.clip;
+    });
+    const landed = clips.indexOf('koLanding');
+    expect(new Set(clips.slice(0, landed))).toEqual(new Set(['thrownBack', 'thrownFall']));
+    expect(clips.slice(landed).every((clip) => clip === 'koLanding')).toBe(true);
   });
 });
 

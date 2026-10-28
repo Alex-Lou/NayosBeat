@@ -169,7 +169,7 @@ const fx = (pose: Pose, ...effects: Effect[]): Pose => ({ ...pose, effects });
 export const POSES: readonly Pose[] = [
   CHAMBER,
   fx(RAISE, sweep(RAISE.hip, RAISE.torso, 'far', 8, RAISE_ANGLE - 2, 33, 3)),
-  fx(CHOP, sweep(CHOP.hip, CHOP.torso, 'far', 15, -52, 30.5, 3), SPARK),
+  fx(CHOP, sweep(CHOP.hip, CHOP.torso, 'far', 15, -52, 27, 3), SPARK),
   FOLLOW,
   RECOIL,
   FALL,

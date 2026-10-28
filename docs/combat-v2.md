@@ -23,7 +23,7 @@
 | « Des compteurs de combos » | Le compteur en cours (`combo-counter.ts`) est finalisé, avec les étiquettes **CONTRE** / **PUNITION**, une traînée de vie blanche, des onomatopées BD et une note de musique qui monte à chaque coup. | 7.8 |
 | « Un bouton prise : lancer ou tabasser » | Bouton **PRISE** sur tous les appareils : saisir, **tenir**, **tabasser** (L), **lancer devant** (H, S ou PRISE) ou **derrière** (← + H, S ou PRISE). La victime peut **se dégager** au tout début ou **se débattre** pour écourter. Lancer automatique si le joueur ne choisit rien. | 4 |
 | « Gaffe aux hitbox » | Règles écrites et testées : portée dessinée = portée réelle, plus aucune portée invisible, tableau des portées figé en test, vue debug complète. | 9, 10 |
-| « Chaque perso son style, ses forces, ses faiblesses » | **Nayo** : contrôle, portée, Vinyle, Uppercut invincible. **Riff** : vitesse, dash annulable, Glissade sous le Vinyle, deux overheads, cross-up ; 900 PV, pas de reversal au sol. Riff passe en **violet et jaune**. | 6 |
+| « Chaque perso son style, ses forces, ses faiblesses » | **Nayo** : contrôle, portée, Vinyle, Uppercut invincible. **Riff** : vitesse, dash annulable, Glissade sous le Vinyle, deux overheads, cross-up ; 900 PV, pas de reversal au sol. Riff, la punk de Zen-Tazzer, frappe en **magenta et argent**. | 6 |
 | « Pense au dash (bouton ou double direction) » | **Les deux**, sur tous les appareils : double-tap avant/arrière **et** bouton **DASH**. Dash de Nayo 56 px en 18 tics. Dash de Riff 64 px, annulable en coup ou en prise avec élan. Backdash qui évite les prises mais pas les coups. | 2, 3 |
 | « Plus fluide, plus rapide, robuste » | Marche +20 à 25 %. Sauts plus secs (32 et 28 tics au lieu de 37 et 34). Buffer de 6 tics qui garde aussi saut et dash. Garde de proximité. Cross-ups possibles. Stick tactile corrigé (sauts involontaires, faux dashs, appuis perdus à 30 i/s). | 2, 3 |
 | « Inspiré mais original » | **Le Crossfader** : une table de mixage entre les barres de vie. Prendre l'initiative tire le curseur vers soi et la musique bascule sur son thème. Curseur plein : **DROP** sur le temps fort suivant. Aucun bouton, aucune précision rythmique demandée. | 8 |
@@ -53,7 +53,7 @@
 | D17 | Mécanique signature = **Crossfader** (sans bouton) ; le tempo reste **cosmétique** | sf + revues | Pas de bonus « en rythme » : injuste selon l'appareil (latence tactile, Bluetooth) |
 | D18 | Le Remix du DROP **ne touche jamais au timing** (type qui l'interdit) | mk | Les clips restent valides, aucun art en plus |
 | D19 | Pas d'air dash, pas de double saut, pas de course, pas de roulade au réveil | sf, mk | Lisibilité sur téléphone ; l'annulation du dash de Riff donne l'élan sans nouvel état |
-| D20 | Riff passe en **violet et jaune** | sf, mk, lf | Nayo est cyan : les deux joueurs se distinguent d'un coup d'œil |
+| D20 | Riff frappe en **magenta et argent** (tenue 2 : or et cramoisi) ; c'était violet et jaune avant qu'elle devienne la punk de Zen-Tazzer (phase 4) | sf, mk, lf | Nayo est cyan : les deux joueurs se distinguent d'un coup d'œil ; le magenta est celui de sa frange |
 | D21 | Flashs au plus 3 par seconde, option « Flashs réduits » | revue tactile (WCAG 2.3.1) | Accessibilité photosensible |
 | D22 | Textes d'aide **hors du cœur** (`data/move-texts.ts`) | mk | Le cœur ne porte pas de présentation |
 | D23 | Pas d'interpolation des personnages entre deux tics | sf, mk | La fluidité vient de l'animation et de la réactivité, pas d'une latence de 16 ms |
@@ -147,7 +147,7 @@ LT, RT, Select, L3, R3 et le stick droit restent libres (remappage et provocatio
 | L | 200, 52 | 68 | blanc, « L » | coup léger |
 | H | 126, 52 | 68 | orange, « H » | coup lourd |
 | SAUT | 52, 52 | 60 | vert, flèche ↑ | saut |
-| S | 163, 126 | 64 | couleur d'énergie du perso (cyan Nayo, violet Riff), « S » | spécial |
+| S | 163, 126 | 64 | couleur d'énergie du perso (cyan Nayo, magenta Riff), « S » | spécial |
 | **PRISE** | 89, 126 | 60 | or, icône main | prise, lancer, dégagement |
 | **DASH** | 237, 126 | 56 | bleu, double chevron « » » | dash ; stick en arrière + DASH = backdash |
 
@@ -476,15 +476,15 @@ Résumé pour l'aide : **« L → H → S. Ou L, L, L. »** et **« ← + H fait
 | → + H | **Overhand** (`forwardHeavy`) | Il monte sur la pointe des pieds ; le bras arrière passe *par-dessus* la garde et retombe sur la tête ; arc cyan visible dès le démarrage | **Overhead** : ouvre un adversaire qui garde accroupi. Lent (19 tics) et télégraphié : à mélanger avec le Balayage |
 | ← + H | **Remontant** (`backHeavy`) | Uppercut court, tête rentrée, le poing monte presque à la verticale | Anti-air normal, sans invincibilité ; **lanceur** : s'annule en Uppercut pour une jongle |
 
-### 5.3 Riff, « la b-girl qui danse autour de toi »
+### 5.3 Riff, « la punk qui breake et cogne »
 
 | Entrée | Nom | Ce que l'on voit | À quoi ça sert |
 |---|---|---|---|
-| L, puis L | **Revers** (`chainLight`) | Revers tournant, la casquette pivote | Prolonge le Jab ; s'annule en spécial |
-| L, L, L | **Swipe** (`lightFinisher`) | Le corps bascule, coup de pied circulaire qui balaie l'adversaire | Finit la chaîne, met au sol |
-| → + L | **Toprock** (`forwardLight`) | Pas de danse vers l'avant puis jab, les tresses suivent | Avance de 20 px, **+1 en garde**, s'annule en normal : pression et pièges |
-| → + H | **Talon** (`forwardHeavy`) | Jambe tendue qui monte puis retombe en coup de hache | **Overhead** plus rapide que celui de Nayo (17 tics), −4 en garde |
-| ← + H | **Retourné** (`backHeavy`) | Coup de pied en scorpion, jambe par-dessus la tête, qui couvre aussi derrière elle | Anti-air normal, aussi contre les cross-ups (x −12..22) ; **lanceur** |
+| L, puis L | **Revers** (`chainLight`) | Revers tournant à plat, la frange magenta qui fouette | Prolonge le Jab ; s'annule en spécial |
+| L, L, L | **Swipe** (`lightFinisher`) | Le corps bascule sur les mains (meia lua de compasso), coup de pied circulaire qui balaie l'adversaire | Finit la chaîne, met au sol |
+| → + L | **Toprock** (`forwardLight`) | Pas croisé de danse vers l'avant puis jab, la frange et la chaîne de ceinture suivent | Avance de 20 px, **+1 en garde**, s'annule en normal : pression et pièges |
+| → + H | **Talon** (`forwardHeavy`) | Jambe tendue qui monte, rangers en l'air, puis retombe en coup de hache | **Overhead** plus rapide que celui de Nayo (17 tics), −4 en garde |
+| ← + H | **Retourné** (`backHeavy`) | Scorpion sauté : elle décolle de 16 px, la ranger accrochée par-dessus sa tête, et couvre aussi derrière elle | Anti-air normal, aussi contre les cross-ups (x −12..22) ; **lanceur** |
 
 ### 5.4 Spéciaux de Nayo : le nom dit ce que c'est, l'image dit où ça frappe, le son dit quand
 
@@ -498,9 +498,9 @@ Résumé pour l'aide : **« L → H → S. Ou L, L, L. »** et **« ← + H fait
 
 | Entrée | Nom | Ce que l'on voit | Rôle | Comment le contrer |
 |---|---|---|---|---|
-| S, ou ↓↘→ + L/H/S | **Glissade** (remplace la « Ruée ») | Elle plonge au sol et glisse sur la hanche, pieds en avant ; traînée violette au ras du sol, étincelles jaunes sous les baskets | **Passe sous le Vinyle et sous les coups hauts** (corps à 26 px de haut de f2 à f20). Coup **bas** qui fauche et met au sol, traverse 64 px. Son outil anti-zoning et sa fin de combo | Garder **accroupi** (−9 au contact, −2 en bout de portée), sauter, frapper bas (le Coup bas la touche) |
+| S, ou ↓↘→ + L/H/S | **Glissade** (remplace la « Ruée ») | Elle plonge au sol et glisse sur la hanche, rangers en avant, appuyée sur l'avant-bras ; traînée magenta au ras du sol, éclats argent sous les semelles | **Passe sous le Vinyle et sous les coups hauts** (corps à 28,5 px de haut de f2 à f20, mesuré sur le dessin). Coup **bas** qui fauche et met au sol, traverse 64 px. Son outil anti-zoning et sa fin de combo | Garder **accroupi** (−9 au contact, −2 en bout de portée), sauter, frapper bas (le Coup bas la touche) |
 | → + S | **Saut de l'ange** | Vrille aérienne qui **quitte vraiment le sol** (sommet 34 px) et retombe talons en premier | **Overhead** qui passe au-dessus des coups bas (f4–f18) et des prises (en l'air de f3 à f19) | Garder **debout** (−7) ; un anti-air la fait tomber |
-| ↓ + S, ou →↓↘ + L/H/S | **Genou montant** | « Freeze » explosif, genou qui jaillit, éclats en losange jaunes | Anti-air. **Invincible seulement contre les attaques aériennes** (f0–5) : ce n'est pas un reversal au sol, c'est sa faiblesse | −17 en garde ; un coup au sol placé au réveil le bat |
+| ↓ + S, ou →↓↘ + L/H/S | **Genou montant** | « Freeze » explosif, genou qui jaillit, éclats en losange argent, onde magenta au sol | Anti-air. **Invincible seulement contre les attaques aériennes** (f0–5) : ce n'est pas un reversal au sol, c'est sa faiblesse | −17 en garde ; un coup au sol placé au réveil le bat |
 
 ### 5.6 Remix (pendant le DROP du Crossfader, §8)
 
@@ -509,7 +509,7 @@ Chaque personnage a **un** spécial signature avec une variante Remix, précalcu
 | Personnage | Spécial | Remix | Visuel |
 |---|---|---|---|
 | Nayo | Vinyle | vitesse 3,5 → 5 px/tic, 75 dégâts, hitstun 22 | double anneau doré |
-| Riff | Glissade | 80 dégâts, blockstun 20 (−3 au contact : presque sûre) | traînée double, violet et or |
+| Riff | Glissade | 80 dégâts, blockstun 20 (−3 au contact : presque sûre) | traînée double, magenta et or |
 
 ---
 
@@ -523,9 +523,11 @@ Chaque personnage a **un** spécial signature avec une variante Remix, précalcu
 - **Forces** : portée des normaux immobiles (Crochet 65 px) ; le seul projectile du duo ; un reversal invincible complet ; 1000 PV ; de meilleurs dégâts par coup ; des lancers qui font de la place.
 - **Faiblesses** : mobilité moyenne (dash non annulable, marche plus lente) ; grande hurtbox ; spéciaux très punissables (Uppercut −23, Vinyle −14 au contact) ; normaux plus lents (4 tics contre 3) ; aucun cross-up ; overhead lent (19 tics).
 
-### 6.2 Riff, Rushdown : « elle danse autour de toi »
+### 6.2 Riff, Rushdown : « la punk qui breake et cogne »
 
-- **Couleurs** (à reporter dans `univers.md`) : sweat **violet** `#2a1240 #5a2b8a #8a4fd1 #c79bff`, accents **jaunes** `#5a4300 #b89100 #f0c94a #fff1b0`. Tenue 2 : sweat jaune soleil, accents violets. Ses effets restent violet et jaune (`hit-styles.ts` déjà en place). Casquette à l'envers, tresses auburn, baskets blanc et violet.
+- **Look** (`docs/art/univers.md`) : la punk de Zen-Tazzer. Frange **magenta** sur crâne rasé sur le côté, blouson de cuir noir court, crop top, jean noir déchiré, ceinture cloutée et **chaîne** argent, rangers aux triangles magenta, mitaines. Sa garde : la base en ginga d'une b-girl, le poing arrière armé d'une bagarreuse.
+- **Couleurs** : cuir noir `#040406 #16171d #30333c #6c7890`, magenta `#4c0b44 #8e1468 #b81e7c #e04a9e`, argent `#5c5e64 #8e9298 #c4c8cc #f2f4f6`. Tenue 2 (miroir) : blouson de cuir rouge sang `#3c0a10 #8e1c24 #c4383e`, frange et accents **or** `#6a420c #c89628 #ecc85a`, jean gris délavé.
+- **Effets** (`hit-styles.ts`, `tools/sprites/riff/palette.ts`) : énergie **magenta** `#ff3ca0` (dash, traînées, ondes, spéciaux), entailles en griffes magenta et éclats **argent** `#d8e0ec` ; tenue 2 : énergie or `#ffc83a`, éclats cramoisis `#e0283c`. Le magenta de Riff ne croise jamais celui de la tenue 2 de Nayo (seulement en miroir).
 - **Personnalité** : provocatrice, rieuse ; toprock en attente ; saut avant en salto.
 - **Plan de jeu** : entrer au dash annulable, passer sous le Vinyle à la Glissade, coller, puis mélanger bas (Coup bas, Windmill, Glissade), haut (Talon, Saut de l'ange) et Prise, avec le cross-up au réveil.
 - **Forces** : la meilleure mobilité ; les normaux les plus rapides (3 tics) ; Toprock à +1 en garde ; deux overheads ; le cross-up ; la Glissade bat le zoning ; tabassage ×3.
@@ -692,7 +694,7 @@ L'inspiration avouée est le GRD d'Under Night In-Birth (un tug-of-war qui réco
 
 ### 8.3 Interface (lisible sur téléphone)
 
-- Sous le chronomètre : une **piste de 96 × 4 px** avec un **curseur de 8 × 12 px**. La moitié du côté du meneur se remplit dans sa couleur (cyan ou violet).
+- Sous le chronomètre : une **piste de 96 × 4 px** avec un **curseur de 8 × 12 px**. La moitié du côté du meneur se remplit dans sa couleur (cyan ou magenta).
 - La piste **pulse sur chaque temps** (1 px de lueur, 2 Hz à 120 BPM, toujours sous 3 Hz).
 - **Montée** : le curseur clignote sur chaque temps restant (« 3 · 2 · 1 ») ; le son monte (filtre qui s'ouvre).
 - **DROP** : tampon « DROP ! » ; les lumières du stage passent à la couleur du joueur ; la foule saute ; aura additive autour du joueur (sprite de pool) ; petite lampe « DROP » sous sa barre de vie tant qu'il dure.
@@ -739,7 +741,15 @@ L'inspiration avouée est le GRD d'Under Night In-Birth (un tug-of-war qui réco
 | Nayo | x −16..13 / y 0..82 | x −17..14 / y 0..55 | x −15..13 / y 4..72 |
 | Riff | x −15..12 / y 0..76 | x −16..13 / y 0..50 | x −14..12 / y 4..64 |
 
-- **Hurtbox de coup** (`MoveData.hurtboxes`, par plage de frames) : remplace la posture pendant le coup. La Glissade s'en sert (−20..20 / 0..26 de f2 à f20). Les membres tendus ne sont pas encore touchables (YAGNI : les pokes restent disjoints, mais honnêtes en portée) ; le champ le permettra si le jeu en a besoin.
+- Valeurs calibrées sur les planches (`npm run measure-boxes`, testées par `tests/tools/hurtboxes.test.ts`) :
+
+| | Debout | Accroupi | En l'air |
+|---|---|---|---|
+| Nayo | x −27..13,5 / y 0..78,5 | x −18,5..14 / y 0..57 | jambes x −22..21 / y 4..44, buste x −11..18 / y 44..86,5 |
+| Riff | x −33,5..15 / y 0..75 | x −32..15 / y 0..57,5 | jambes x −28..18 / y 4..44, buste x −21..14,5 / y 44..81 |
+
+  Riff, la punk : sa base de b-girl est large (le pied arrière à −27 en garde, −33,5 quand un coup au ventre le fait glisser), le bout des rangers à 16 px (la boîte s'arrête un pixel avant, comme celle de Nayo, pour qu'un coup bas à sa portée maximale touche la ranger et jamais l'air devant), la frange à 75 px debout et 81 en saut.
+- **Hurtbox de coup** (`MoveData.hurtboxes`, par plage de frames) : remplace la posture pendant le coup, là où le dessin quitte la posture (mesuré par `npm run measure-boxes -- riff --moves`). La Glissade s'en sert (−42..20 / 0..28,5 de f2 à f20 : la tête au sol derrière elle, les rangers qui frappent devant). Riff aussi pour les coups qui la décollent du sol : le Retourné (−15..15 / 16..96 de f6 à f10, le saut du scorpion), le Retrait (−21..14 / 12..75 de f5 à f8, son flip) et le Saut de l'ange (−24..30,5 / 32..78 de f12 à f15, roulée en boule au sommet). Les membres tendus ne sont pas encore touchables (YAGNI : les pokes restent disjoints, mais honnêtes en portée) ; le champ le permettra si le jeu en a besoin.
 
 ### 9.3 Le point d'impact vient du cœur (`GameState.contacts`)
 
@@ -773,14 +783,14 @@ Le cœur garde aussi `reactionHeavy` (hitstun ≥ 18) et `stunTotal` (durée du 
 | Uppercut et anti-airs | contrôlés **aussi en horizontal** |
 | Bord avant des hurtbox contre bord dessiné, poses neutres, de garde, de coup reçu | ±1,5 px sur toute la hauteur de la boîte |
 | **Contact visible** : pour chaque coup bas, à la distance maximale où il touche (calculée depuis les boîtes) contre chaque posture adverse, les masques alpha de l'attaquant et du défenseur rendus côte à côte se touchent | écart ≤ 1 px |
-| Riff | les mêmes tests dès que son art existe (phase 4) |
+| Riff | les mêmes tests depuis la phase 4 (`tests/tools/riff-sprites.test.ts`, `hurtboxes.test.ts`, `visible-contact.test.ts`, `hold-pairs.test.ts`), sauf la portée du Genou montant, vérifiée vers le haut seulement (−6 / +8) tant que son saut dessiné attend sa décision |
 
 Correctifs de données déjà identifiés : Uppercut x 4..30 → **4..24** ; j.L de Nayo x 4..30 → **4..28** (corps à 25,5) ; Crochet x 10..54 → **10..52** et pose du bras qui atteint 51 à 53 ; Balayage x 12..52 → **12..51** (pied à 49,5, effet à 53).
 
 ### 9.6 Vue debug et boîte grise
 
 - Debug (`?debug` ou DEV) : pushbox (bleu), pushbox aérienne et couchée, hurtbox (vert), hurtbox de coup (pointillés), hitbox active (rouge), invincibilité (teinte blanche), anti-prise (contour jaune). Option « Afficher les boîtes » dans le menu d'entraînement.
-- Riff tant qu'elle n'a pas d'art : la boîte grise dessine **sa hurtbox** et un « pied » de 6 × 4 px dans la direction du regard. Sa hitbox rouge n'apparaît plus hors debug.
+- Un personnage sans art (Riff jusqu'à la phase 4) : la boîte grise dessine **sa hurtbox** et un « pied » de 6 × 4 px dans la direction du regard. Sa hitbox rouge n'apparaît plus hors debug. Dès que son art existe, ses planches prennent le relais.
 
 ---
 
@@ -822,7 +832,7 @@ Colonnes : **S/A/R** = démarrage / actif / récupération (total). **Dg** = dé
 | crouchHeavy | ↓ + H | Windmill | 7/3/18 (28) | 65 | KD trip (2)/13 | 10 | 3 | low | 10..44 / 2..14 | — | KD +27 / −7 | 57 | — |
 | jumpLight | air L | **Ciseau aérien** | 3/6/5 | 25 | 13/9 | 7 | 2 | overhead | **−14..26** / 6..24 | — | — | 39, et derrière | — |
 | jumpHeavy | air H | Talon sauté | 6/5/9 | 65 | 17/11 | 10 | 3 | overhead | 2..32 / −4..18 | — | — | 45 | — |
-| special | S, ↓↘→ | **Glissade** | 10/8/16 (34) | 70 (10) | KD trip (2)/14 | 10 | 3,5 | **low** | 6..36 / 2..14 | 64 px f1–17 (ease-out) ; hurtbox −20..20 / 0..26 de f2 à f20 | KD +24 à +31 / −9 au contact, −2 en bout | ≈ 102 | — |
+| special | S, ↓↘→ | **Glissade** | 10/8/16 (34) | 70 (10) | KD trip (2)/14 | 10 | 3,5 | **low** | 6..36 / 2..14 | 64 px f1–17 (ease-out) ; hurtbox −42..20 / 0..28,5 de f2 à f20 | KD +24 à +31 / −9 au contact, −2 en bout | ≈ 102 | — |
 | specialForward | → + S | Saut de l'ange | 16/4/14 (34) | 70 (10) | 18/10 | 11 | 3 | overhead | 0..30 / 16..56 | dx 2,2 px f4–19 (35 px) ; **y en arc f3–19, sommet 34 px à f11** | +1/−7 | 69 | — |
 | specialAntiAir | ↓ + S, →↓↘ | Genou montant | 4/6/24 (34) | 95 (14) | KD (3)/12 | 12 | 3 | mid | 4..28 / 30..92 | +12 px f0–7 | KD +22 / −17 | 47 | — ; invincible f0–5 **contre les attaques aériennes seulement** |
 
@@ -895,18 +905,18 @@ Total Nayo : environ **115 images nouvelles**, plus les retouches.
 
 | Planche | Images | Tics (somme) | Actif | Hitbox x / y | Notes |
 |---|---|---|---|---|---|
-| `idle` | 8 | 6 × 8 en boucle | — | — | toprock sur place, tresses en animation secondaire |
+| `idle` | 8 | 7, 4, 5, 5, 7, 3, 9, 8 (48) en boucle | — | — | toprock sur place, la frange et la chaîne de ceinture en animation secondaire |
 | `walkForward` / `walkBack` | 10 / 10 | 2 × 10 en boucle | — | — | pas dansés, foulée 38 / 28 px |
 | `crouch` | 6 | 2, 2, 2, 8, 8, 8 (boucle depuis 3) | — | — | appuis bas |
 | `jump` | 6 | pré-saut [0] 3 ; air [1–4] 6, 7, 7, 8 (28) ; atterrissage [5] 2 | — | — | — |
-| `jumpForward` | 7 | 3, 4, 4, 4, 4, 4, 5 (28) | — | — | **salto avant** |
+| `jumpForward` | 7 | 3, 4, 4, 4, 4, 4, 5 (28) | — | — | **salto avant** ; l'image 0 est son pré-saut (clip `preJumpForward`, avant tenu), les images 1–6 l'air |
 | `block` | 6 | debout 0–2, accroupi 3–5 (comme Nayo) | — | — | — |
 | `hitHigh`, `hitMid`, `hitLow`, `hitCrouch`, `trip`, `airHit`, `knockdown`, `getup`, `ko`, `held`, `thrownBack`, `tech` | 5, 5, 5, 3, 4, 4, 6, 5, 8, 2, 4, 4 | comme Nayo (KD 40) | — | — | — |
-| `intro` / `victory` / `timeOver` | 10 / 8 / 4 | intro = 90 | — | — | tourne sa casquette ; freeze sur une main et clin d'œil |
-| `dashForward` (Footwork) | 6 | 1, 3, 3, 3, 3, 3 (16) | — | — | traînée violette ; image 4 = posture d'annulation |
+| `intro` / `victory` / `timeOver` | 10 / 8 / 4 | intro = 90 | — | — | rejette sa frange d'une main, « viens » ; freeze sur une main et clin d'œil |
+| `dashForward` (Footwork) | 6 | 1, 3, 3, 3, 3, 3 (16) | — | — | traînée magenta ; image 4 = posture d'annulation |
 | `dashBack` | 6 | 1, 4, 4, 3, 3, 5 (20) | — | — | petit flip arrière |
 | `standLight` (Jab) | 5 | 1, 2, **2**, 3, 3 (11) | image 2 | 9..33 / 42..54 | épaule rentrée |
-| `chainLight` (Revers) | 6 | 2, 3, **3**, 3, 3, 4 (18) | image 2 | 8..38 / 44..58 | la casquette pivote |
+| `chainLight` (Revers) | 6 | 2, 3, **3**, 3, 3, 4 (18) | image 2 | 8..38 / 44..58 | la frange fouette |
 | `lightFinisher` (Swipe) | 7 | 2, 2, 3, **3**, 5, 6, 7 (28) | image 3 | 8..42 / 30..56 | coup de pied circulaire |
 | `forwardLight` (Toprock) | 6 | 2, 3, 3, **2**, 5, 5 (20) | image 3 | 8..32 / 44..58 | pas de danse sur les images 0–2 |
 | `standHeavy` (Coude) | 7 | 2, 2, 2, **3**, 4, 5, 5 (23) | image 3 | 9..43 / 40..58 | coude tournant |
@@ -916,7 +926,7 @@ Total Nayo : environ **115 images nouvelles**, plus les retouches.
 | `crouchHeavy` (Windmill) | 8 | 2, 2, 3, **3**, 4, 4, 5, 5 (28) | image 3 | 10..44 / 2..14 | rotation au sol |
 | `jumpLight` (Ciseau aérien) | 5 | 1, 2, **6**, 2, 3 (14) | image 2 | −14..26 / 6..24 | grand écart : cross-up |
 | `jumpHeavy` (Talon sauté) | 6 | 3, 3, **5**, 3, 3, 3 (20) | image 2 | 2..32 / −4..18 | — |
-| `special` (Glissade) | 8 | 3, 3, 4, **4, 4**, 5, 5, 6 (34) | images 3–4 | 6..36 / 2..14 | corps bas dès l'image 1 |
+| `special` (Glissade) | 8 | 2, 4, 4, **4, 4**, 3, 7, 6 (34) | images 3–4 | 6..36 / 2..14 | corps bas dès l'image 1, exactement pendant sa hurtbox basse (f2–f20) : dessinée sur 3, 3, 4, 4, 4, 5, 5, 6, re-calée sur le jeu |
 | `specialForward` (Saut de l'ange) | 9 | 3, 3, 3, 3, 4, **4**, 4, 5, 5 (34) | image 5 | 0..30 / 16..56 | vrille, talons en premier |
 | `specialAntiAir` (Genou montant) | 8 | 2, 2, **3, 3**, 6, 6, 6, 6 (34) | images 2–3 | 4..28 / 30..92 | freeze explosif |
 | `grab` | 6 | 2, 3, **3**, 6, 6, 7 (27) | image 2 | 6..28 / 20..56 | — |
@@ -925,7 +935,7 @@ Total Nayo : environ **115 images nouvelles**, plus les retouches.
 | `throwForward` (Ciseaux) | 7 | 3, 3, 4, **1**, 7, 7, 7 (32) | lâcher tic 10 | — | ciseau de jambes, chute tout près |
 | `throwBack` (Roulade) | 8 | 3, 3, 4, 4, **1**, 8, 8, 9 (40) | côté changé tic 6, lâcher tic 14 | — | monkey flip |
 
-Riff : 43 planches, environ **265 images**. C'est le poste le plus lourd : il démarre **en parallèle dès la phase 1**, dans des fichiers séparés, sans attendre le gameplay (la boîte grise honnête suffit pour jouer).
+Riff : 43 planches, environ **265 images**. Elles se jouent par `src/art/riff/clips.ts` (le générateur lit les mêmes tics pour la frange et la chaîne) : les réactions (`hitHigh`, `hitMid`, `hitLow`, `hitCrouch`, `block`) ont leur dernière image calée sur la fin du stun (`endFrames`), `thrownBack` suit le `throwBack` de celui qui lance (3, 3, 4, 4), et un KO en l'air (lanceur, balayage, lancer, coup en l'air) vole comme un `airHit` puis joue `koLanding` (le `ko` depuis l'assise, image 4 ; image 3 pour Nayo) dès que le corps touche le sol. C'est le poste le plus lourd : il démarre **en parallèle dès la phase 1**, dans des fichiers séparés, sans attendre le gameplay (la boîte grise honnête suffit pour jouer).
 
 ### 11.4 Variété à coût nul
 
@@ -950,7 +960,7 @@ Riff : 43 planches, environ **265 images**. C'est le poste le plus lourd : il d�
 **Lisibilité (checklist vérifiée sur captures à chaque stage)**
 
 1. Le décor reste entre 10 et 40 % de valeur : les combattants ressortent toujours.
-2. Aucun aplat saturé cyan ou violet (les couleurs des persos) dans la bande de 20 à 110 px au-dessus du sol derrière les combattants : la place est réservée aux projectiles et aux étincelles.
+2. Aucun aplat saturé cyan ou magenta (les couleurs des persos) dans la bande de 20 à 110 px au-dessus du sol derrière les combattants : la place est réservée aux projectiles et aux étincelles.
 3. Aucune animation de décor à hauteur de combattant qui ressemble à un projectile.
 4. **Rien ne recouvre les pieds** : la brume au sol passe *derrière* les combattants, à 15 % d'opacité au plus. Les coups bas restent visibles.
 5. Le premier plan reste dans les 12 px du bas, sombre, et aux bords seulement.
@@ -1299,7 +1309,7 @@ Chaque phase (et chaque PR à l'intérieur) laisse une build **jouable sur PC et
 ### Phase 4 — Riff illustrée (M8.6, piste art commencée en parallèle dès la phase 1)
 
 - Générateur `tools/sprites/riff/` sur le squelette partagé ; `src/art/riff/{sheets,clips,cells,index}.ts` ; `src/art/index.ts` mappe `riff`.
-- Les 43 planches du §11.3, palettes violet et jaune, effets.
+- Les 43 planches du §11.3, la punk de Zen-Tazzer (noir, magenta et argent ; tenue 2 rouge et or), effets magenta.
 - Validation de ses boîtes contre son art (mêmes tests que Nayo).
 - `docs/art/univers.md` mis à jour : couleurs de Riff, Vinyle, « la montée » pour l'Uppercut (le mot « drop » appartient désormais au Crossfader), Glissade.
 
@@ -1352,7 +1362,7 @@ Chaque phase (et chaque PR à l'intérieur) laisse une build **jouable sur PC et
 - **Uppercut** (↓ + S) : il jaillit, poing vers le ciel. **Invincible au départ** : il bat les sauts et les attaques au réveil. S'il le rate ou se fait parer, il reste longtemps sans défense.
 - **Ses coups de direction** : → + L, un jab qui avance ; → + H, l'**Overhand**, un coup qui tombe sur la tête (à parer **debout**) ; ← + H, le **Remontant**, qui fait décoller l'adversaire en l'air : enchaîne avec S. **L, L, L** : jab, cross, puis la Mise au tapis.
 
-### 17.2 Riff, la b-girl : elle entre, danse et te fait deviner
+### 17.2 Riff, la punk de rue : elle entre, breake et te fait deviner
 
 - **Glissade** (S, ou ↓↘→ + un coup) : elle plonge et **glisse pieds en avant**. Elle passe **sous le Vinyle de Nayo** et sous les coups hauts. C'est un coup **bas** : pare-la **accroupi**. Si elle touche, tu tombes.
 - **Saut de l'ange** (→ + S) : une vrille en l'air qui retombe sur ta tête. Coup **haut** : pare-le **debout**. Il passe au-dessus des coups bas, mais un anti-air la fait tomber.
@@ -1369,7 +1379,7 @@ Chaque phase (et chaque PR à l'intérieur) laisse une build **jouable sur PC et
 - **CONTRE** : frappe quelqu'un qui attaque, ça fait plus mal. **PUNITION** : frappe-le quand il rate.
 - **Le Crossfader** : avance, attaque, fais garder ton projectile : le curseur vient vers toi et la musique devient la tienne. Curseur à fond : **DROP** sur le prochain temps fort. Tu frappes plus fort et ton spécial passe en version **Remix**.
 
-Descriptions de sélection (`roster.ts`) : Nayo « Boxeur-DJ posé · portée · Vinyle · Uppercut invincible » ; Riff « B-girl explosive · dash · Glissade sous les ondes · deux overheads · moins de vie ».
+Descriptions de sélection (`roster.ts`) : Nayo « Boxeur-DJ posé · portée · Vinyle · Uppercut invincible » ; Riff « Punk de rue explosive · dash · Glissade · deux overheads · moins de vie ».
 
 ---
 
@@ -1404,7 +1414,7 @@ Descriptions de sélection (`roster.ts`) : Nayo « Boxeur-DJ posé · portée ·
 
 1. Le bouton DASH est **visible par défaut** sur le tactile.
 2. Le nom des spéciaux s'affiche **en entraînement seulement**, pour garder l'écran propre en match.
-3. Riff passe en **violet et jaune** (`univers.md` mis à jour en phase 4).
+3. Riff frappe en **magenta et argent**, la punk de Zen-Tazzer (`univers.md` mis à jour en phase 4).
 4. Vibrations : actives par défaut sur « saisi » et « coup lourd reçu », désactivées sur les appuis.
 5. Le mot « drop » appartient au Crossfader : l'Uppercut de Nayo devient « la montée » dans la mise en scène.
 

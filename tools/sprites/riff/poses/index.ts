@@ -1,8 +1,9 @@
 /**
  * Riff's poses, frame by frame, one file per strip (each strip's file is its own animation).
- * Attack poses are placed against her v2 hitboxes (../strips.ts): on the active frames the
- * striking limb reaches the far edge of the hitbox, so what you see is what hits.
- * tests/tools/riff-sprites.test.ts checks it for every animated strike.
+ * Attack poses are placed against her hitboxes (src/data/fighters/riff.ts): on the frames her
+ * clips show while a move can hit (src/art/riff/clips.ts), the striking limb reaches the far
+ * edge of the hitbox, so what you see is what hits. tests/tools/riff-sprites.test.ts checks it
+ * for every animated strike.
  *
  * A strip not animated yet holds her GUARD on each of its frames, so the whole pipeline runs
  * end to end. Each file says whether it is animated (`ANIMATED`): animators work on their own

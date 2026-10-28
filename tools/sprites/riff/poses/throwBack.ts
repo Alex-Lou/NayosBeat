@@ -28,7 +28,7 @@ export const ANIMATED: boolean = true;
  * - 1: the load. Squatting under him, the torso tipped back, both fists up at his collar, the
  *   rear boot planted in his belly, the knee bent under it: he comes over face down.
  * - 2: the kick (the sides switch). The torso tips back further and the rear leg drives up
- *   straight into him and throws him over the top (a violet trail on the boot's arc); the lead
+ *   straight into him and throws him over the top (a magenta trail on the boot's arc); the lead
  *   fist keeps the collar, the rear hand lets go and swings back for the floor (the near arm is
  *   drawn over the head: up at the collar it would cover her face).
  * - 3: the roll. Dropped onto her back under him in a tight back-rock: knees to the chest, chin
@@ -37,7 +37,7 @@ export const ANIMATED: boolean = true;
  * - 4 (1 tick, the release): rocked over onto the shoulders, the hips up, the legs up over her,
  *   the hands flying open behind her head; speed lines where he leaves, up and back.
  * - 5: the kip's thrust. Hands and shoulders on the floor, the hips arched up high, the legs
- *   snapping forward and down (a violet trail along the boots).
+ *   snapping forward and down (a magenta trail along the boots).
  * - 6: the landing. Popped onto her feet in a deep plié, the chest still coming up from the kip,
  *   the fists thrown forward; a trail up from the floor, dust under the boots.
  * - 7: the guard, a hair low (throwForward's settle).

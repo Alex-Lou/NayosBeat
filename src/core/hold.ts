@@ -277,7 +277,8 @@ function lands(
     action: health === 0 ? 'ko' : 'airHit',
     vx: flight ? signed(away, flight.vx) : 0,
     vy: flight?.vy ?? 0,
-    reaction: 'thrown',
+    // Only a throw sends it flying; knocked out by a pummel, it drops where it was held.
+    reaction: thrown ? 'thrown' : null,
     reactionHeavy: true,
     stunTotal: 0,
   };

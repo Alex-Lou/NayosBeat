@@ -31,6 +31,7 @@ export const NAYO_CLIPS: Readonly<Record<ClipId, NayoClip>> = {
   walkBack: play('walkBack', [2, 1, 2, 1, 2, 2, 2, 1, 2, 1, 2, 2], 0),
   crouch: play('crouch', [2, 2, 2, 8, 8, 8, 8], 3),
   preJump: { sheet: 'jump', frames: [0], ticks: [4] },
+  preJumpForward: { sheet: 'jump', frames: [0], ticks: [4] },
   // 31 ticks above the ground: the last frame holds until the landing.
   jump: { sheet: 'jump', frames: [1, 2, 3, 4], ticks: [6, 8, 8, 10] },
   jumpForward: play('jumpForward', [3, 4, 4, 4, 4, 5, 4, 4]),
@@ -59,6 +60,8 @@ export const NAYO_CLIPS: Readonly<Record<ClipId, NayoClip>> = {
   knockdown: play('knockdown', [3, 3, 4, 20]),
   getup: play('getup', [2, 2, 2, 2, 2]),
   ko: play('ko', [4, 4, 4, 4, 4, 4, 6, 1]),
+  // Out cold in the air: from the slam onto his back (frame 3) once he lands.
+  koLanding: { sheet: 'ko', frames: [3, 4, 5, 6, 7], ticks: [4, 4, 4, 6, 1] },
 
   // The hold (docs/combat-v2.md §4, §11.1). The holder at the collar, between his moves.
   hold: play('hold', [6, 6], 0),

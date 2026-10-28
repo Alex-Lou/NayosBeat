@@ -162,7 +162,7 @@ const KEYS: readonly Key[] = [
     rear: at(30.2, 53.5),
     lead: [-2, 43],
     effects: [
-      smear(3, [-9, 53], [2, 56], [14, 57], [25, 55.5], [33, 53.5]),
+      smear(3, [-9, 53], [2, 56], [14, 57], [25, 55.5], [32, 53.5]),
       { kind: 'flash', center: at(36, 53), radius: 4, tone: 'strike' },
     ],
   },

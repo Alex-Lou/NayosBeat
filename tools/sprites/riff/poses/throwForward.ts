@@ -28,7 +28,7 @@ export const ANIMATED: boolean = true;
  * belt, the hands already reaching for the floor behind her head: the near leg high across his
  * belt, the far one low at his heels, reaping his ankles (the two blades about 30 px apart, both
  * readable over his dark legs). The release is the snap: the high leg drives through his belly,
- * the low one reaps his heels back, two violet trails crossing the other way and a yellow star
+ * the low one reaps his heels back, two magenta trails crossing the other way and a silver star
  * where her boot sinks in. She drops to the floor and lands sitting up, b-girl style: the rear
  * leg tucked under her, its knee up and the boot planted by her hip, the lead leg long toward
  * him, propped on the rear hand, the lead wrist on its knee, the lid half down on him (`cool`):

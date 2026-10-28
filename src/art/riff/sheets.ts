@@ -2,7 +2,7 @@ import type { SheetSpec } from '../types';
 
 /**
  * Strips drawn for Riff, with their number of frames: the full set of docs/combat-v2.md §11.3.
- * Read by tools/sprites (and by the game once she is wired in).
+ * Read by the game and by tools/sprites.
  */
 export const RIFF_SHEETS = {
   // Movement.

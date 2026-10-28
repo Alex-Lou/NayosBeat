@@ -12,16 +12,18 @@
 
 import { mkdir, writeFile } from 'node:fs/promises';
 import { NAYO_CLIPS } from '../../src/art/nayo/clips.ts';
+import { RIFF_CLIPS } from '../../src/art/riff/clips.ts';
 import { ANCHOR, ART_SCALE, CELL_SIZE } from '../../src/art/types.ts';
+import type { FighterTemplate } from '../../src/core/config.ts';
 import { toPx } from '../../src/core/constants.ts';
-import { MOVE_IDS } from '../../src/core/move-data.ts';
 import { NAYO as NAYO_TEMPLATE } from '../../src/data/fighters/nayo.ts';
+import { RIFF as RIFF_TEMPLATE } from '../../src/data/fighters/riff.ts';
+import { strikeOf, type Clips } from './clips.ts';
 import type { Fighter, Strike } from './fighter.ts';
 import { NAYO } from './nayo/index.ts';
 import type { Colorway } from './palette.ts';
 import { encodeIndexedPng, type Rgba } from './png.ts';
 import { RIFF } from './riff/index.ts';
-import { PUSHBOX_HALF, RIFF_STRIKES } from './riff/strips.ts';
 import { drawStrip } from './sheet.ts';
 
 const PREVIEW = new URL('./preview/', import.meta.url);
@@ -40,36 +42,16 @@ interface Guides {
   readonly strike: (sheet: string) => Strike | undefined;
 }
 
-/** Nayo's moves (src/data/fighters/nayo.ts), played by his clips. */
-const NAYO_GUIDES: Guides = {
-  pushboxHalf: toPx(NAYO_TEMPLATE.standingPushbox.width) / 2,
-  strike: (sheet) => {
-    // The move whose clip plays this strip, if any.
-    const id = MOVE_IDS.find((move) => NAYO_CLIPS[move].sheet === sheet);
-    const move = id && NAYO_TEMPLATE.moves[id];
-    const box = move?.hitbox;
-    if (!id || !move || !box) return undefined;
-    const clip = NAYO_CLIPS[id];
-    const frames: number[] = [];
-    let tick = 0;
-    clip.ticks.forEach((ticks, index) => {
-      const active = tick < move.startup + move.active && tick + ticks > move.startup;
-      tick += ticks;
-      const frame = clip.frames[index];
-      if (active && frame !== undefined) frames.push(frame);
-    });
-    return {
-      frames,
-      box: { x: toPx(box.x), y: toPx(box.y), width: toPx(box.width), height: toPx(box.height) },
-    };
-  },
-};
+/** A fighter's moves (src/data/fighters/), played by its clips (src/art/<name>/clips.ts). */
+function guidesOf(template: FighterTemplate, clips: Clips): Guides {
+  return {
+    pushboxHalf: toPx(template.standingPushbox.width) / 2,
+    strike: (sheet) => strikeOf(clips, template, sheet),
+  };
+}
 
-/** Riff's are the combat v2 ones (docs/combat-v2.md §10.2, see riff/strips.ts). */
-const RIFF_GUIDES: Guides = {
-  pushboxHalf: PUSHBOX_HALF,
-  strike: (sheet) => (RIFF_STRIKES as Readonly<Record<string, Strike | undefined>>)[sheet],
-};
+const NAYO_GUIDES = guidesOf(NAYO_TEMPLATE, NAYO_CLIPS);
+const RIFF_GUIDES = guidesOf(RIFF_TEMPLATE, RIFF_CLIPS);
 
 interface Box {
   readonly left: number;

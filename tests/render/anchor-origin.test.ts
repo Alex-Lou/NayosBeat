@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { NAYO } from '../../src/art/nayo';
+import { RIFF } from '../../src/art/riff';
 import { cellOf, type Cell } from '../../src/art/types';
 import { anchorOrigin } from '../../src/render/anchor-origin';
 
@@ -17,18 +18,21 @@ function drawnX(cell: Cell, originX: number, flip: boolean, column: number): num
 }
 
 describe('anchorOrigin', () => {
-  it('puts the feet anchor on the position on both sides, for every strip', () => {
-    const strips = Object.keys(NAYO.cells ?? {});
-    expect(strips.length).toBeGreaterThan(0);
-    for (const strip of strips) {
-      const cell = cellOf(NAYO, strip);
-      for (const flip of [false, true]) {
-        // The anchor column's left edge: the line a flip mirrors the drawing around.
-        const anchor = drawnX(cell, anchorOrigin(cell, flip).x, flip, cell.anchor.x);
-        expect(anchor, `${strip} flip=${String(flip)}`).toBeCloseTo(0, 9);
+  it.each([NAYO, RIFF])(
+    'puts the feet anchor on the position on both sides, every strip of $key',
+    (art) => {
+      const strips = Object.keys(art.cells ?? {});
+      expect(strips.length).toBeGreaterThan(0);
+      for (const strip of strips) {
+        const cell = cellOf(art, strip);
+        for (const flip of [false, true]) {
+          // The anchor column's left edge: the line a flip mirrors the drawing around.
+          const anchor = drawnX(cell, anchorOrigin(cell, flip).x, flip, cell.anchor.x);
+          expect(anchor, `${strip} flip=${String(flip)}`).toBeCloseTo(0, 9);
+        }
       }
-    }
-  });
+    },
+  );
 
   it('keeps the vertical origin on the feet', () => {
     const cell: Cell = { width: 88, height: 160, anchor: { x: 56, y: 150 } };

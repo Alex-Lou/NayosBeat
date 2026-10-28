@@ -7,7 +7,7 @@ export const ANIMATED: boolean = true;
 /**
  * thrownBack (docs/combat-v2.md §4.3, §11.1): 4 frames, each one played with the same frame of
  * the thrower's throwBack up to the release (Nayo's Projection d'épaule: 3, 3, 4, 4 ticks, ticks
- * 0-2, 3-5, 6-9, 10-13; RIFF_TIMING's 4, 4, 4, 4 only pace her fringe and chain). Frames 0 and 1
+ * 0-2, 3-5, 6-9, 10-13; her own Roulade too, src/art/riff/clips.ts). Frames 0 and 1
  * are drawn in front of the thrower, facing him (centers 27 px apart); frames 2 and 3 behind him,
  * 27 px back, from their first tick (tick 6). She keeps facing the same way, so the thrower is
  * then on her back side, toward -x. The thrower (not drawn) is drawn over her and holds her
@@ -29,7 +29,7 @@ export const ANIMATED: boolean = true;
  *   kicking out long behind; a puff where the rear foot left the floor. `effort`, not `hurt`.
  * - 2, over: upside down over the top of his shoulders, and a silhouette only a b-girl makes:
  *   the legs flung into a wide inverted V, the boots far apart, the arms flung wide; a short
- *   violet arc behind the leading boot as it whips over the top.
+ *   magenta arc behind the leading boot as it whips over the top.
  * - 3, down: dumped down his back, on her back in the air, the head hanging low behind his rear
  *   knee; the breaker's reflex, the rear hand posting for the floor as for a freeze, the knees
  *   open, one leg long toward where she flies; the face gives (`hurt`).

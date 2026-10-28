@@ -1,18 +1,28 @@
 /**
- * Prints where Nayo's drawing stands against his hurtboxes (docs/combat-v2.md §9.2), from the
- * generated strips (src/art/nayo/main/*.png). For each posture: the drawn front edge of every
- * neutral, guard and hit pose, band by band (4 px), the farthest of them ("body") and the front
- * edge of the hurtbox there; the walks and the forward jump (marked *) for the record, their
- * limbs reaching out. Then each edge of the hurtboxes against the drawing, flagged when they are
- * more than 1.5 px apart. Run with `npm run measure-boxes` after `npm run sprites`.
+ * Prints where each fighter's drawing stands against its hurtboxes (docs/combat-v2.md §9.2),
+ * from the generated strips (src/art/<name>/main/*.png). For each posture: the drawn front edge
+ * of every neutral, guard and hit pose, band by band (4 px), the farthest of them ("body") and
+ * the front edge of the hurtbox there; the walks and the forward jump (marked *) for the record,
+ * their limbs reaching out. Then each edge of the hurtboxes against the drawing, flagged when
+ * they are more than 1.5 px apart. With `--moves`, every frame of every move against the
+ * hurtboxes in force while it shows: a body that leaves them (the feet off the floor, the
+ * whole body above the box) is flagged, a move hurtbox (§9.2) is what fixes it. Run with
+ * `npm run measure-boxes` after `npm run sprites`; `npm run measure-boxes -- riff --moves` for
+ * one fighter.
  */
 
 import { readFile } from 'node:fs/promises';
 import { NAYO_CELLS } from '../../src/art/nayo/cells.ts';
-import { FULL_CELL } from '../../src/art/types.ts';
-import type { Box } from '../../src/core/config.ts';
+import { NAYO_CLIPS } from '../../src/art/nayo/clips.ts';
+import { RIFF_CELLS } from '../../src/art/riff/cells.ts';
+import { RIFF_CLIPS } from '../../src/art/riff/clips.ts';
+import { FULL_CELL, type Cell } from '../../src/art/types.ts';
+import type { Box, FighterTemplate } from '../../src/core/config.ts';
 import { toPx } from '../../src/core/constants.ts';
+import { MOVE_IDS, type MoveData } from '../../src/core/move-data.ts';
 import { NAYO } from '../../src/data/fighters/nayo.ts';
+import { RIFF } from '../../src/data/fighters/riff.ts';
+import type { Clips } from './clips.ts';
 import {
   BAND,
   calibrate,
@@ -27,28 +37,48 @@ import {
 } from './measure.ts';
 import { decodeIndexedPng } from './png.ts';
 
-const STRIPS = new URL('../../src/art/nayo/main/', import.meta.url);
+interface Measured {
+  readonly name: string;
+  readonly template: FighterTemplate;
+  readonly clips: Clips;
+  readonly cells: Readonly<Record<string, Cell>>;
+}
 
-const HURTBOXES: Readonly<Record<Posture, readonly Box[]>> = {
-  standing: NAYO.standingHurtboxes,
-  crouching: NAYO.crouchingHurtboxes,
-  air: NAYO.airHurtboxes,
-};
+const FIGHTERS: readonly Measured[] = [
+  { name: 'nayo', template: NAYO, clips: NAYO_CLIPS, cells: NAYO_CELLS },
+  { name: 'riff', template: RIFF, clips: RIFF_CLIPS, cells: RIFF_CELLS },
+];
+
+/** How far the drawing's lowest pixel may float over its box's bottom, in world px. */
+const FLOAT = 4;
+
+function hurtboxes(template: FighterTemplate, posture: Posture): readonly Box[] {
+  switch (posture) {
+    case 'standing':
+      return template.standingHurtboxes;
+    case 'crouching':
+      return template.crouchingHurtboxes;
+    case 'air':
+      return template.airHurtboxes;
+  }
+}
 
 const masks = new Map<string, StripMask>();
 
 /** A strip as generated, its cells cropped (their size and anchor: cells.ts). */
-async function maskOf(sheet: string): Promise<StripMask> {
-  const known = masks.get(sheet);
+async function maskOf(fighter: Measured, sheet: string): Promise<StripMask> {
+  const key = `${fighter.name}/${sheet}`;
+  const known = masks.get(key);
   if (known) return known;
-  const image = await decodeIndexedPng(await readFile(new URL(`${sheet}.png`, STRIPS)));
-  const cell = NAYO_CELLS[sheet] ?? FULL_CELL;
+  const file = new URL(`../../src/art/${fighter.name}/main/${sheet}.png`, import.meta.url);
+  const image = await decodeIndexedPng(await readFile(file));
+  const cell = fighter.cells[sheet] ?? FULL_CELL;
   const mask: StripMask = {
     cell,
     opaque: (frame, column, row) =>
       (image.alpha[image.pixels[row * image.width + frame * cell.width + column] ?? 0] ?? 0) > 0,
   };
-  masks.set(sheet, mask);
+  masks.set(key, mask);
   return mask;
 }
 
@@ -69,19 +99,19 @@ const number = (value: number, width: number): string =>
 const verdict = (edge: { box: number; drawn: number }): string =>
   `box ${edge.box.toFixed(1)}, drawn ${edge.drawn.toFixed(1)}${fits(edge) ? '' : '  <- off by more than 1.5 px'}`;
 
-async function measure(posture: Posture): Promise<void> {
+async function measure(fighter: Measured, posture: Posture): Promise<void> {
   const { body, limbs } = POSTURE_CLIPS[posture];
   const columns: { name: string; drawing: Drawing }[] = [];
   for (const clip of [...body, ...limbs]) {
-    const { sheet, frames } = postureFrames(clip);
+    const { sheet, frames } = postureFrames(fighter.clips, clip);
     const name = limbs.includes(clip) ? `${clip}*` : clip;
-    columns.push({ name, drawing: measureFrames(await maskOf(sheet), frames) });
+    columns.push({ name, drawing: measureFrames(await maskOf(fighter, sheet), frames) });
   }
   const drawn = envelope(columns.slice(0, body.length).map((column) => column.drawing));
-  const boxes = HURTBOXES[posture];
+  const boxes = hurtboxes(fighter.template, posture);
   const width = Math.max(7, ...columns.map((column) => column.name.length)) + 1;
 
-  console.log(`\n${posture}: front edge per band (world px)`);
+  console.log(`\n${fighter.name}, ${posture}: front edge per band (world px)`);
   console.log(
     [
       'band'.padStart(7),
@@ -109,4 +139,63 @@ async function measure(posture: Posture): Promise<void> {
   console.log(`top: ${verdict(calibration.top)}`);
 }
 
-for (const posture of Object.keys(POSTURE_CLIPS) as Posture[]) await measure(posture);
+/**
+ * The hurtboxes in force on tick `tick` of `move`: its own (§9.2), or its posture's (a low blow
+ * crouches, an air blow or a move that leaves the ground is in the air), as `hurtboxesOf` reads
+ * them in the core.
+ */
+function boxesAt(fighter: Measured, id: string, move: MoveData, tick: number): readonly Box[] {
+  const own = move.hurtboxes?.find(({ frames }) => tick >= frames.from && tick < frames.to);
+  if (own) return own.boxes;
+  const air = id.startsWith('jump') || (move.motion?.y?.[tick] ?? 0) > 0;
+  if (air) return fighter.template.airHurtboxes;
+  return id.startsWith('crouch')
+    ? fighter.template.crouchingHurtboxes
+    : fighter.template.standingHurtboxes;
+}
+
+/** Every frame of every move: the drawn body (bottom, top, back, front) against its boxes. */
+async function measureMoves(fighter: Measured): Promise<void> {
+  console.log(`\n${fighter.name}, moves: drawn body against the hurtboxes in force (world px)`);
+  console.log('move / frame (ticks)        drawn y   box y      drawn x        box x');
+  for (const id of MOVE_IDS) {
+    const move = fighter.template.moves[id];
+    const clip = fighter.clips[id];
+    if (!move || !clip) continue;
+    const mask = await maskOf(fighter, clip.sheet);
+    let tick = 0;
+    for (let index = 0; index < clip.frames.length; index++) {
+      const frame = clip.frames[index] ?? 0;
+      const ticks = clip.ticks[index] ?? 0;
+      const drawn = measureFrames(mask, [frame]);
+      const rows = drawn.bands.filter((band) => Number.isFinite(band.front));
+      const bottom = rows[0]?.from ?? 0;
+      const front = Math.max(...rows.map((band) => band.front));
+      const back = Math.min(...rows.map((band) => band.back));
+      const boxes = boxesAt(fighter, id, move, tick);
+      const low = Math.min(...boxes.map((box) => toPx(box.y)));
+      const high = Math.max(...boxes.map((box) => toPx(box.y + box.height)));
+      const left = Math.min(...boxes.map((box) => toPx(box.x)));
+      const right = Math.max(...boxes.map((box) => toPx(box.x + box.width)));
+      const flags = [
+        bottom - low > FLOAT ? 'floats over its box' : '',
+        bottom >= high ? 'above its box' : '',
+      ].filter((flag) => flag !== '');
+      const name = `${id} ${frame} (${tick}-${tick + ticks - 1})`.padEnd(26);
+      const y = `${number(bottom, 5)}..${number(drawn.top, 5)}`;
+      const x = `${number(back, 6)}..${number(front, 6)}`;
+      const box = `${number(low, 5)}..${number(high, 5)}`;
+      const boxX = `${number(left, 6)}..${number(right, 6)}`;
+      console.log(`${name}${y} ${box}  ${x} ${boxX}  ${flags.join(', ')}`);
+      tick += ticks;
+    }
+  }
+}
+
+const args = process.argv.slice(2);
+const names = args.filter((arg) => !arg.startsWith('--'));
+for (const fighter of FIGHTERS) {
+  if (names.length > 0 && !names.includes(fighter.name)) continue;
+  for (const posture of Object.keys(POSTURE_CLIPS) as Posture[]) await measure(fighter, posture);
+  if (args.includes('--moves')) await measureMoves(fighter);
+}

@@ -31,17 +31,17 @@ export const ANIMATED: boolean = true;
  * the lead leg long below, both arms flung back like the tail of the freeze, the head thrown
  * back on what she hit. Then she hangs a beat and drops hard into her plié. Nothing like Nayo's
  * uppercut (a fist up the front of the body, a column of sound): her anti-air is the leg, the
- * arch and a burst of yellow diamonds.
+ * arch and a burst of silver diamonds.
  *
  * - 0 (2 ticks): the drop: the hips sink over the lead knee, the rear heel pops off the floor;
  *   the loaded rear fist and the lead fist hang a beat behind (they stay put while she sinks).
  * - 1 (2 ticks): the launch: the lead leg stretched long, its toes the last thing on the floor,
  *   the rear knee driving up through the front, the rear fist ripping down past the hip, the
  *   lead fist whipping up and out in front of her face (the face stays clear, the arm leads the
- *   rise); a violet shockwave squashed on the floor, dust, the knee's trail.
+ *   rise); a magenta shockwave squashed on the floor, dust, the knee's trail.
  * - 2 (3 ticks, active): the freeze, kiai: arched back, the knee high in front of the chest (it
  *   must clear the torso, which the renderer draws over the near thigh), the arms flung back;
- *   the knee's trail up its path, a yellow spark at the top of the knee, the diamonds bursting.
+ *   the knee's trail up its path, a silver spark at the top of the knee, the diamonds bursting.
  * - 3 (3 ticks, active): the freeze held a hair higher (the follow-through), the jaw set; the
  *   diamonds fly out.
  * - 4 (6 ticks): the hang just past the top, 10 px under it: the freeze breaks, the knee drops,
@@ -49,7 +49,7 @@ export const ANIMATED: boolean = true;
  *   under her), the fists come in. The fall is all ahead of her: it snaps into the next frame.
  * - 5 (6 ticks): the landing, hard: 40 px down at once, low and wide on the guard's marks, the
  *   hips 9 px under the guard's, the rear heel up on its ball, the lead fist low, the rear one
- *   trailing down a beat; dust under both boots and a flat violet ring.
+ *   trailing down a beat; dust under both boots and a flat magenta ring.
  * - 6 (6 ticks): the overshoot: the hips over the guard's, the fists a touch high.
  * - 7 (6 ticks): the guard.
  *
@@ -103,7 +103,7 @@ const dust = (x: number, size: number, progress: number): Effect => ({
   progress,
 });
 
-/** The yellow spark of the knee's impact. */
+/** The silver spark of the knee's impact. */
 const spark = (center: Point, radius: number): Effect => ({
   kind: 'flash',
   center,
@@ -111,7 +111,7 @@ const spark = (center: Point, radius: number): Effect => ({
   tone: 'strike',
 });
 
-/** Her yellow diamonds bursting off the knee. */
+/** Her silver diamonds bursting off the knee. */
 const diamonds = (radius: number, progress: number): Effect => ({
   kind: 'shards',
   center: at(12, 89),

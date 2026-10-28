@@ -13,7 +13,7 @@ export const ANIMATED: boolean = true;
  * the ear is the hand that grabs (the guard keeps it there for this). It opens, cocks back and
  * rises over the head, the fingers spread like a claw, while the hips drive in over the lead
  * foot (it skims in) and the chin goes out; then it rakes down and forward onto the collar at
- * full stretch, a short violet arc from over her ear to the collar behind it. The lead hand
+ * full stretch, a short magenta arc from over her ear to the collar behind it. The lead hand
  * stays low and late at his belt, a fist: one hand takes him, the other waits. The near arm is
  * drawn over the head, so the claw passes over the top of the head, never across the face, and
  * reaches the collar under the chin.

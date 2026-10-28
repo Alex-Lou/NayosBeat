@@ -25,7 +25,7 @@ export const ANIMATED: boolean = true;
  * A breaker's slide-in, not a boxer's push step (Nayo's chassé): the dance step that turns into
  * a strike. Off the ball of the rear foot, she drops into a low slide, the hips down by 10 px and
  * the chest driven on over the lead knee: the lead boot shoots out on its heel along the floor
- * like a kick-out (a sweep could come out of it), the only thing touching it, on a violet streak;
+ * like a kick-out (a sweep could come out of it), the only thing touching it, on a magenta streak;
  * the rear leg trails long behind, off the floor, the toes pointed, one sweep of line from that
  * toe up through the hips to the head; the low lead fist leads the way over the knee, the rear one
  * stays loaded by the ear. Then she gathers: the rear knee scoops through high and turned out (the
@@ -55,7 +55,7 @@ export const ANIMATED: boolean = true;
  * into the drop and swings forward after it.
  */
 
-/** Ticks of each frame (strips.ts). */
+/** Ticks of each frame (her clip, src/art/riff/clips.ts). */
 const TICKS = [1, 3, 3, 3, 3, 3] as const;
 /** The game's dash curve (§3.2): px per tick on ticks 1 to 12. */
 const SPEEDS = [10.22, 9.34, 8.44, 7.56, 6.66, 5.78, 4.89, 4.0, 3.11, 2.22, 1.34, 0.44] as const;

@@ -5,7 +5,7 @@ import { at, GUARD, onBall, onHeel, toeOf, type Pose } from './common.ts';
 export const ANIMATED: boolean = true;
 
 /**
- * idle: 8 frames, looping (48 ticks, 0.8 s, strips.ts): a toprock rock and a drop into the
+ * idle: 8 frames, looping (48 ticks, 0.8 s, src/art/riff/clips.ts): a toprock rock and a drop into the
  * lead. The hips rock back and up against the shoulders, the chest pushed out at the opponent,
  * then she drops in over the lead leg: one beat per loop, and an uneven one, the rise slow and
  * eased, the top held, the drop a snap into a held downbeat. The head travels about 4 px over

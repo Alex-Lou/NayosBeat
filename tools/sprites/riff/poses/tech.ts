@@ -11,12 +11,12 @@ export const ANIMATED: boolean = true;
  * Not a boxer stripping a grip (Nayo's forearm sweep): a punk tearing loose, and her rear arm
  * carries the move from start to end.
  * - 0, the break: the cocked rear fist chops down through his wrists and whips on, open, down
- *   and back past her hip (a short violet trail behind the hand); the lead palm shoves him off
+ *   and back past her hip (a short magenta trail behind the hand); the lead palm shoves him off
  *   at arm's length, the arm straight and level with her chest. The hips thrown back and down,
  *   the torso leaning away from him, the legs flung wide, the lead heel driving in with the toes
  *   up: an X leaning away from the slap, the recoil already under way; the chin down, the eyes
  *   on him, `effort`. Mirrored, the two shoving palms meet halfway (13.5 px out, at contact 26
- *   to 27 apart) on one slap, her violet star over his (the « deux claques » of §4.5).
+ *   to 27 apart) on one slap, her magenta star over his (the « deux claques » of §4.5).
  * - 1, the skid: the recoil drops her into her b-girl base, wide and low, the knees open, the
  *   rear heel up, the lead heel braking with its toes up; the rear arm swings on up behind her
  *   for balance, the lead hand drops low in front of the knee; dust off both feet.

@@ -1,17 +1,24 @@
 import { describe, expect, it } from 'vitest';
+import { RIFF_CLIPS } from '../../src/art/riff/clips';
 import { RIFF_SHEETS, type RiffSheet } from '../../src/art/riff/sheets';
-import { ANCHOR, ART_SCALE, CELL_SIZE } from '../../src/art/types';
+import { ANCHOR, ART_SCALE, CELL_SIZE, type ClipId } from '../../src/art/types';
+import { RIFF as RIFF_TEMPLATE } from '../../src/data/fighters/riff';
+import { strikeOf } from '../../tools/sprites/clips';
 import { PixelCanvas } from '../../tools/sprites/raster';
 import { RIFF } from '../../tools/sprites/riff/index';
-import { EFFECTS } from '../../tools/sprites/riff/palette';
+import { DETAIL, EFFECTS, paletteOf } from '../../tools/sprites/riff/palette';
 import { GUARD } from '../../tools/sprites/riff/poses/common';
 import { isAnimated, RIFF_POSES } from '../../tools/sprites/riff/poses/index';
-import { RIFF_STRIKES, RIFF_TIMING } from '../../tools/sprites/riff/strips';
-import { drawStrip } from '../../tools/sprites/sheet';
+import { drawStrip, drawStripEffects } from '../../tools/sprites/sheet';
 import { solve, type Effect, type Pose } from '../../tools/sprites/skeleton';
 import { drawEffect, inkAt } from '../../tools/sprites/vfx';
 
 const SHEETS = Object.keys(RIFF_SHEETS) as RiffSheet[];
+
+interface Band {
+  readonly from: number;
+  readonly to: number;
+}
 
 /** docs/combat-v2.md §11.3: 43 strips, about 265 frames. */
 describe('Riff strips: the set of §11.3', () => {
@@ -22,10 +29,13 @@ describe('Riff strips: the set of §11.3', () => {
   it.each(SHEETS)('%s: poses and ticks for every frame', (sheet) => {
     const { frames } = RIFF_SHEETS[sheet];
     expect(RIFF_POSES[sheet]).toHaveLength(frames);
-    expect(RIFF_TIMING[sheet].ticks).toHaveLength(frames);
+    expect(RIFF.timing(sheet).ticks).toHaveLength(frames);
   });
 
-  /** S + A + R of §10.2 (and the grab of §10.3): an attack's clip lasts exactly its move. */
+  /**
+   * S + A + R of §10.2 (and the grab of §10.3): the clip named after an attack's strip lasts
+   * exactly its move (src/art/riff/clips.ts, which the generator times her strips with).
+   */
   const TOTALS: Readonly<Partial<Record<RiffSheet, number>>> = {
     standLight: 11,
     chainLight: 18,
@@ -45,8 +55,41 @@ describe('Riff strips: the set of §11.3', () => {
   };
 
   it.each(Object.entries(TOTALS))('%s: its ticks add up to %i', (sheet, total) => {
-    const ticks = RIFF_TIMING[sheet as RiffSheet].ticks;
+    const { ticks } = RIFF_CLIPS[sheet as ClipId];
     expect(ticks.reduce((sum, tick) => sum + tick, 0)).toBe(total);
+  });
+
+  /**
+   * The frames drawn as each strike's active pose (§11.3) are on screen exactly while it can
+   * hit: from its startup (§10.2) to the end of its active ticks, and nothing else is.
+   */
+  const ACTIVE: Readonly<Partial<Record<RiffSheet, readonly number[]>>> = {
+    standLight: [2],
+    chainLight: [2],
+    lightFinisher: [3],
+    forwardLight: [3],
+    standHeavy: [3],
+    forwardHeavy: [4],
+    backHeavy: [3],
+    crouchLight: [2],
+    crouchHeavy: [3],
+    jumpLight: [2],
+    jumpHeavy: [2],
+    special: [3, 4],
+    specialForward: [5],
+    specialAntiAir: [2, 3],
+    grab: [2],
+  };
+
+  it.each(Object.entries(ACTIVE))('%s: its active pose shows while it can hit', (sheet, drawn) => {
+    const strike = strikeOf(RIFF_CLIPS, RIFF_TEMPLATE, sheet);
+    if (!strike) throw new Error(`${sheet} has no strike`);
+    expect(strike.frames).toEqual(drawn);
+    const { ticks } = RIFF_CLIPS[sheet as ClipId];
+    const first = drawn[0] ?? 0;
+    const shown = drawn.reduce((sum, frame) => sum + (ticks[frame] ?? 0), 0);
+    expect(ticks.slice(0, first).reduce((sum, tick) => sum + tick, 0)).toBe(strike.move.startup);
+    expect(shown).toBe(strike.move.active);
   });
 
   /** Startup of every strike (§10.2): its active frames start on that tick. */
@@ -69,9 +112,8 @@ describe('Riff strips: the set of §11.3', () => {
   };
 
   it.each(Object.entries(STARTUP))('%s: the active frame comes on at tick %i', (sheet, startup) => {
-    const strike = RIFF_STRIKES[sheet as RiffSheet];
-    const first = strike?.frames[0] ?? -1;
-    const ticks = RIFF_TIMING[sheet as RiffSheet].ticks.slice(0, first);
+    const first = ACTIVE[sheet as RiffSheet]?.[0] ?? -1;
+    const ticks = RIFF_CLIPS[sheet as ClipId].ticks.slice(0, first);
     expect(ticks.reduce((sum, tick) => sum + tick, 0)).toBe(startup);
   });
 });
@@ -175,40 +217,69 @@ describe('Riff strips: drawing', () => {
   });
 
   /**
-   * What you see is what hits: on every active frame of an animated strike, the drawing reaches
-   * the far edge of the hitbox (within 6 px short, 8 px past), inside the hitbox's band.
-   * Horizontal strikes are measured forward, the anti-airs upward.
+   * What you see is what hits (docs/combat-v2.md §9.5): on every frame her clip shows while a
+   * move can hit, inside the band of the move's hitbox (src/data/fighters/riff.ts), the striking
+   * limb (or its trail) reaches the far edge of the hitbox, at most REACH.short px short of it
+   * and REACH.past px past it; a low blow at the tip of the boot, closer still. Horizontal
+   * strikes are measured forward; the anti-airs forward and upward both, where the front
+   * effects of their rising arc count toward the reach (an impact flash may burst past).
    */
-  const REACH_SLACK = 6;
-  const REACH_OVERSHOOT = 8;
-  const STRIKES = (Object.keys(RIFF_STRIKES) as RiffSheet[]).filter(isAnimated);
+  const REACH = { short: 3, past: 4 } as const;
+  const LOW_REACH = { short: 2, past: 3 } as const;
+  const ANTI_AIRS: ReadonlySet<RiffSheet> = new Set<RiffSheet>(['backHeavy', 'specialAntiAir']);
+  /**
+   * The Genou montant is drawn leaping, its knee 34 px off the floor (tools/sprites/riff/poses/
+   * specialAntiAir.ts), against a hitbox and a body that stay on the ground: whether the game
+   * lifts her or the hitbox comes down is the next art round's decision. Until then it is held
+   * to the art round's own rule: upward only, 6 px short or 8 past at most.
+   */
+  const LEAP = { short: 6, past: 8 } as const;
+  const STRIKES = SHEETS.filter((sheet) => strikeOf(RIFF_CLIPS, RIFF_TEMPLATE, sheet));
 
-  it('every strike strip has its hitbox', () => {
-    for (const sheet of STRIKES) expect(RIFF_STRIKES[sheet]).toBeDefined();
+  it('every strike has its strip, animated', () => {
+    expect(STRIKES).toHaveLength(15);
+    for (const sheet of STRIKES) expect(isAnimated(sheet), sheet).toBe(true);
   });
 
-  it.each(STRIKES.length > 0 ? STRIKES : (['none'] as const))(
-    '%s: the active frames reach the hitbox, no farther',
-    (sheet) => {
-      if (sheet === 'none') return;
-      const strike = RIFF_STRIKES[sheet];
-      if (!strike) throw new Error(`${sheet} has no hitbox`);
-      const { x, y, width, height } = strike.box;
-      const band = strike.up ? { from: x, to: x + width } : { from: y, to: y + height };
-      const edge = strike.up ? y + height : x + width;
-      for (const frame of strike.frames) {
-        let reached = -Infinity;
-        eachPixel(sheet, frame, (px, py) => {
-          const across = strike.up ? px : py;
-          if (across < band.from || across > band.to) return;
-          reached = Math.max(reached, strike.up ? py : px);
-        });
-        const message = `frame ${frame} reaches ${reached}, edge ${edge}`;
-        expect(reached, message).toBeGreaterThanOrEqual(edge - REACH_SLACK);
-        expect(reached, message).toBeLessThanOrEqual(edge + REACH_OVERSHOOT);
+  /** Farthest opaque pixel of `layers` forward (or up) within a band, on one frame. */
+  function reachOf(layers: readonly PixelCanvas[], frame: number, band: Band, up: boolean) {
+    let reached = -Infinity;
+    for (const canvas of layers) {
+      for (let row = 0; row < CELL_SIZE; row++) {
+        for (let column = 0; column < CELL_SIZE; column++) {
+          if (canvas.pixels[row * canvas.width + frame * CELL_SIZE + column] === 0) continue;
+          const px = (column + 1 - ANCHOR.x) / ART_SCALE;
+          const py = (ANCHOR.y - row) / ART_SCALE;
+          const across = up ? px : py;
+          if (across < band.from || across > band.to) continue;
+          reached = Math.max(reached, up ? py : px);
+        }
       }
-    },
-  );
+    }
+    return reached;
+  }
+
+  it.each(STRIKES)('%s: the active frames reach the hitbox, no farther', (sheet) => {
+    const strike = strikeOf(RIFF_CLIPS, RIFF_TEMPLATE, sheet);
+    if (!strike) throw new Error(`${sheet} has no hitbox`);
+    const { x, y, width, height } = strike.box;
+    const leap = sheet === 'specialAntiAir';
+    const { short, past } = leap ? LEAP : strike.move.guard === 'low' ? LOW_REACH : REACH;
+    const up = ANTI_AIRS.has(sheet);
+    const ways = leap ? [] : [{ up: false, band: { from: y, to: y + height }, edge: x + width }];
+    if (up) ways.push({ up: true, band: { from: x, to: x + width }, edge: y + height });
+    const body = sheetCanvas(sheet);
+    const fx = up ? drawStripEffects(RIFF, sheet) : undefined;
+    for (const frame of strike.frames) {
+      for (const way of ways) {
+        const drawn = reachOf(fx ? [body, fx] : [body], frame, way.band, way.up);
+        const limb = reachOf([body], frame, way.band, way.up);
+        const where = `frame ${frame} ${way.up ? 'up' : 'forward'}, edge ${way.edge}`;
+        expect(drawn, `${where}: reaches ${drawn}`).toBeGreaterThanOrEqual(way.edge - short);
+        expect(limb, `${where}: limb at ${limb}`).toBeLessThanOrEqual(way.edge + past);
+      }
+    }
+  });
 });
 
 describe('Riff strips: in and out of the guard', () => {
@@ -233,7 +304,11 @@ describe('Riff strips: in and out of the guard', () => {
     );
   }
 
-  /** The guard flows into them: their first frame is close to it. */
+  /**
+   * The guard flows into them: their first frame is close to it. Not the block: a block lands
+   * on the proximity guard, the shell its strip ends on, and its impact is that shell driven
+   * back, 8.6 px from it by design (tools/sprites/riff/poses/block.ts).
+   */
   const FROM_GUARD: readonly RiffSheet[] = [
     'idle',
     'walkForward',
@@ -242,7 +317,6 @@ describe('Riff strips: in and out of the guard', () => {
     'dashBack',
     'jump',
     'jumpForward',
-    'block',
     'standLight',
     'forwardLight',
     'standHeavy',
@@ -294,6 +368,31 @@ describe('Riff strips: in and out of the guard', () => {
 });
 
 describe('Riff effects', () => {
+  /**
+   * Her energy is her fringe's magenta, gold in the second colorway (its gold fringe); her
+   * strikes silver-white, crimson in the second: the old b-girl violet and yellow are gone.
+   */
+  it('glow magenta and strike silver, gold and crimson in the second colorway', () => {
+    const tone = (colorway: 'main' | 'alt', slot: keyof typeof DETAIL) => {
+      const color = paletteOf(colorway)[DETAIL[slot]];
+      if (!color) throw new Error(`No color ${slot}`);
+      return color;
+    };
+    for (const slot of ['sound', 'soundLight', 'trail'] as const) {
+      const magenta = tone('main', slot);
+      expect(magenta.r, slot).toBeGreaterThan(200);
+      expect(magenta.b, slot).toBeGreaterThan(magenta.g + 60);
+      const gold = tone('alt', slot);
+      expect(gold.r, slot).toBeGreaterThan(200);
+      expect(gold.g, slot).toBeGreaterThan(gold.b + 80);
+    }
+    const silver = tone('main', 'strike');
+    expect(Math.min(silver.r, silver.g, silver.b)).toBeGreaterThan(200);
+    const crimson = tone('alt', 'strike');
+    expect(crimson.r).toBeGreaterThan(200);
+    expect(Math.max(crimson.g, crimson.b)).toBeLessThan(80);
+  });
+
   const effects: readonly Effect[] = [
     {
       kind: 'smear',
@@ -319,7 +418,7 @@ describe('Riff effects', () => {
     },
   ];
 
-  it('are drawn in her own effect colors only (violet energy, yellow strikes)', () => {
+  it('are drawn in her own effect colors only (magenta energy, silver strikes)', () => {
     const slots = new Set(Object.values(EFFECTS.slots));
     for (const effect of effects) {
       const canvas = new PixelCanvas(CELL_SIZE, CELL_SIZE);

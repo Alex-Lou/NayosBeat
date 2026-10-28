@@ -36,7 +36,7 @@ const CLINCH = {
   nearFoot: onBall(REAR_TOE, -18),
   farFoot: planted(LEAD_IN),
 } as const;
-export const HOLD: Pose = { ...CLINCH, nearFist: at(20, 55.5), farFist: at(19.5, 49.5) };
+export const HOLD: Pose = { ...CLINCH, nearFist: at(21.5, 55.5), farFist: at(21, 49.5) };
 
 // Frame 1 (6 ticks): the jerk. The hips sink back half a pixel, the rear shoulder rolls up, the
 // fists draw the collar in a pixel after them.
@@ -44,8 +44,8 @@ const JERK: Pose = {
   ...CLINCH,
   hip: at(-3.7, 32.3),
   shrug: 2.9,
-  nearFist: at(19, 55),
-  farFist: at(18.5, 49),
+  nearFist: at(20.5, 55),
+  farFist: at(20, 49),
 };
 
 export const POSES: readonly Pose[] = [HOLD, JERK];

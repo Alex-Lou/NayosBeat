@@ -3,15 +3,13 @@ import { NAYO_CLIPS } from '../../src/art/nayo/clips';
 import { NAYO_SHEETS } from '../../src/art/nayo/sheets';
 import { ANCHOR, ART_SCALE, CELL_SIZE } from '../../src/art/types';
 import { toPx } from '../../src/core/constants';
-import { contactDistance } from '../../src/core/hold-pair';
 import { NAYO } from '../../src/data/fighters/nayo';
-import { clipFrameAt } from '../../src/render/animation';
 import { MOVE_IDS, type MoveData, type MoveId } from '../../src/core/move-data';
 import { GUARD } from '../../tools/sprites/nayo/poses/common';
 import { NAYO_POSES, V2_SHEETS, type V2Sheet } from '../../tools/sprites/nayo/poses/index';
 import type { PixelCanvas, Point } from '../../tools/sprites/raster';
 import { drawEffectsSheet, drawSheet } from '../../tools/sprites/sheet';
-import { solve, type Pose, type Side } from '../../tools/sprites/skeleton';
+import { solve, type Pose } from '../../tools/sprites/skeleton';
 import { extent, reach } from './strip-pixels';
 
 /**
@@ -291,43 +289,5 @@ describe('Nayo combat v2', () => {
   }
 });
 
-/**
- * The throw backward reads as one motion (docs/combat-v2.md §4.3, §11.1): tick by tick up to
- * the release, as the game plays the pair (the clips, the sides switching on the throw's
- * sideSwitchFrame, the bodies touching), the thrown opponent's neck sits in the thrower's
- * fists, within PAIR_GAP px of the middle of his two hands (a hand: its wrist plus 2.4 px
- * along the forearm).
- */
-const PAIR_GAP = 4;
-const HAND = 2.4;
-
-describe('Nayo throwing Nayo backward', () => {
-  const throwBack = NAYO.moves.throwBack;
-  const distance = toPx(contactDistance(NAYO, NAYO));
-  const hand = (side: Side): Point => ({
-    x: side.wrist.x + side.forearm.x * HAND,
-    y: side.wrist.y + side.forearm.y * HAND,
-  });
-
-  for (let tick = 0; tick < throwBack.startup; tick++) {
-    it(`holds the collar in his fists on tick ${tick}`, () => {
-      const thrower = NAYO_CLIPS.throwBack;
-      const thrown = NAYO_CLIPS.thrownBack;
-      const fists = solve(
-        NAYO_POSES.throwBack[thrower.frames[clipFrameAt(thrower, tick)] ?? 0] ?? GUARD,
-      );
-      const body = solve(
-        NAYO_POSES.thrownBack[thrown.frames[clipFrameAt(thrown, tick)] ?? 0] ?? GUARD,
-      );
-      const near = hand(fists.near);
-      const far = hand(fists.far);
-      // The thrown one faces the thrower, mirrored: in front, then behind him from the switch.
-      const behind = tick >= (throwBack.sideSwitchFrame ?? Infinity);
-      const neck = { x: (behind ? -distance : distance) - body.neck.x, y: body.neck.y };
-      const gap = Math.hypot(neck.x - (near.x + far.x) / 2, neck.y - (near.y + far.y) / 2);
-      expect(gap, `neck at (${neck.x.toFixed(1)}, ${neck.y.toFixed(1)})`).toBeLessThanOrEqual(
-        PAIR_GAP,
-      );
-    });
-  }
-});
+// The throw backward read as one motion, Nayo throwing Nayo: tests/tools/hold-pairs.test.ts,
+// which plays it for each fighter throwing each one, with the hold and the pummels.

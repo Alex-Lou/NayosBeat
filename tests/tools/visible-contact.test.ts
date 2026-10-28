@@ -1,55 +1,50 @@
 import { describe, expect, it } from 'vitest';
-import { NAYO_CLIPS } from '../../src/art/nayo/clips';
-import { ANCHOR, ART_SCALE, CELL_SIZE } from '../../src/art/types';
+import { ANCHOR, ART_SCALE, CELL_SIZE, clipOf } from '../../src/art/types';
 import { overlaps } from '../../src/core/boxes';
 import { hurtboxesOf } from '../../src/core/combat';
-import type { Box } from '../../src/core/config';
+import type { Box, MatchConfig } from '../../src/core/config';
 import { px, toPx } from '../../src/core/constants';
 import { Input } from '../../src/core/input';
 import type { MoveId } from '../../src/core/move-data';
 import { moveOf } from '../../src/core/moves';
 import type { Contact, GameState } from '../../src/core/state';
 import { step } from '../../src/core/step';
-import { NAYO } from '../../src/data/fighters/nayo';
+import { TRAINING_STAGE } from '../../src/data/stages';
+import { activeFrames } from '../../tools/sprites/clips';
 import { POSTURE_CLIPS, postureFrames, type Posture } from '../../tools/sprites/measure';
-import type { PosedSheet } from '../../tools/sprites/nayo/poses/index';
-import type { PixelCanvas } from '../../tools/sprites/raster';
-import { drawSheet } from '../../tools/sprites/sheet';
-import { fightState, makeFighter, MIRROR_MATCH, repeat } from '../core/helpers';
+import { fightState, makeFighter, repeat } from '../core/helpers';
+import { DRAWN_FIGHTERS, stripOf, type DrawnFighter } from './fighters';
 import { reach } from './strip-pixels';
 
 /**
  * Low blows touch what they hit, visibly (docs/combat-v2.md §9.5): at the farthest distance
  * where a low blow hits, computed from the boxes, the attacker's drawing and the defender's,
- * side by side, touch (1 px apart at most), against each posture. The defender faces left: its
- * strips are mirrored around the feet anchor, as the game draws them (render/anchor-origin.ts).
- * And the spark of the hit (the contact the core reports) shows at the drawn toe.
+ * side by side, touch (1 px apart at most), against each posture, for each fighter against
+ * each one. The defender faces left: its strips are mirrored around the feet anchor, as the game
+ * draws them (render/anchor-origin.ts). And the spark of the hit (the contact the core reports)
+ * shows at the drawn toe.
  */
 
-const LOW_HITS = (Object.keys(NAYO.moves) as MoveId[]).filter(
-  (id) => moveOf(NAYO, id).guard === 'low' && moveOf(NAYO, id).hitbox !== undefined,
-);
 /** How far apart the two drawings may stay, and the spark from the toe, in world pixels. */
 const TOUCH = 1;
 const SPARK_FROM_TOE = 2;
 /** §15: the spark of a low blow shows this close to the floor at most. */
 const SPARK_HEIGHT = 14;
 
-const strips = new Map<string, PixelCanvas>();
-function strip(sheet: string): PixelCanvas {
-  const known = strips.get(sheet);
-  if (known) return known;
-  const canvas = drawSheet(sheet as PosedSheet);
-  strips.set(sheet, canvas);
-  return canvas;
+/** The fighter's low blows that strike with a hitbox (the Glissade too). */
+function lowHits(fighter: DrawnFighter): MoveId[] {
+  const { template } = fighter;
+  return (Object.keys(template.moves) as MoveId[]).filter(
+    (id) => moveOf(template, id).guard === 'low' && moveOf(template, id).hitbox !== undefined,
+  );
 }
 
 /**
  * The drawn extent of one cell, row by row (a row of the cell is half a world pixel), toward
  * the side it faces: the farthest pixel edge facing right, or the nearest one once mirrored.
  */
-function edges(sheet: string, frame: number, mirrored: boolean): number[] {
-  const canvas = strip(sheet);
+function edges(fighter: DrawnFighter, sheet: string, frame: number, mirrored: boolean): number[] {
+  const canvas = stripOf(fighter, sheet);
   return Array.from({ length: CELL_SIZE }, (_, row) => {
     let edge = mirrored ? Infinity : -Infinity;
     for (let column = 0; column < CELL_SIZE; column++) {
@@ -63,25 +58,17 @@ function edges(sheet: string, frame: number, mirrored: boolean): number[] {
 }
 
 /** The frames of a move that show while it can hit. */
-function activeFrames(move: MoveId): number[] {
-  const { startup, active } = moveOf(NAYO, move);
-  const clip = NAYO_CLIPS[move];
-  const frames: number[] = [];
-  let tick = 0;
-  clip.ticks.forEach((ticks, index) => {
-    if (tick < startup + active && tick + ticks > startup) frames.push(clip.frames[index] ?? -1);
-    tick += ticks;
-  });
-  return frames;
+function shownActive(fighter: DrawnFighter, move: MoveId): number[] {
+  return activeFrames(clipOf(fighter.art, move), moveOf(fighter.template, move));
 }
 
 /** The posture's hurtboxes, through the core (a defender standing, crouching or jumping). */
-function hurtboxes(posture: Posture): readonly Box[] {
+function hurtboxes(fighter: DrawnFighter, posture: Posture): readonly Box[] {
   const defender = makeFighter({
     crouching: posture === 'crouching',
     y: posture === 'air' ? px(30) : 0,
   });
-  return hurtboxesOf(defender, NAYO);
+  return hurtboxesOf(defender, fighter.template);
 }
 
 /** The farthest distance (sub-pixels, centre to centre) at which `hitbox` touches a hurtbox. */
@@ -95,83 +82,109 @@ function farthestHit(hitbox: Box, boxes: readonly Box[]): number {
   return distance;
 }
 
-describe('low blows touch visibly', () => {
+describe('low blows', () => {
   it('are found in the data', () => {
-    expect(LOW_HITS).toEqual(['crouchLight', 'crouchHeavy']);
+    expect(DRAWN_FIGHTERS.map(lowHits)).toEqual([
+      ['crouchLight', 'crouchHeavy'],
+      ['crouchLight', 'crouchHeavy', 'special'],
+    ]);
   });
+});
 
-  for (const move of LOW_HITS) {
-    for (const posture of ['standing', 'crouching'] as const) {
-      it(`${move} against a ${posture} defender`, () => {
-        const hitbox = moveOf(NAYO, move).hitbox;
-        if (!hitbox) throw new Error(`${move} has no hitbox`);
-        const distance = toPx(farthestHit(hitbox, hurtboxes(posture)));
-        expect(distance).toBeGreaterThan(0);
-        for (const attackFrame of activeFrames(move)) {
-          const attacker = edges(NAYO_CLIPS[move].sheet, attackFrame, false);
-          for (const clip of POSTURE_CLIPS[posture].body) {
-            const { sheet, frames } = postureFrames(clip);
-            for (const frame of frames) {
-              const defender = edges(sheet, frame, true);
-              // Rows (half pixels) within TOUCH of each other: the gap across, the smallest.
-              let gap = Infinity;
-              attacker.forEach((right, row) => {
-                for (let other = row - 2; other <= row + 2; other++) {
-                  const left = defender[other] ?? Infinity;
-                  gap = Math.min(gap, distance + left - right);
-                }
-              });
-              expect(
-                gap,
-                `${clip} frame ${frame}, ${move} frame ${attackFrame}`,
-              ).toBeLessThanOrEqual(TOUCH);
+describe.each(DRAWN_FIGHTERS)("$name's low blows touch visibly", (attacker) => {
+  for (const move of lowHits(attacker)) {
+    for (const defender of DRAWN_FIGHTERS) {
+      for (const posture of ['standing', 'crouching'] as const) {
+        it(`${move} against ${defender.name} ${posture}`, () => {
+          const hitbox = moveOf(attacker.template, move).hitbox;
+          if (!hitbox) throw new Error(`${move} has no hitbox`);
+          const distance = toPx(farthestHit(hitbox, hurtboxes(defender, posture)));
+          expect(distance).toBeGreaterThan(0);
+          const sheet = clipOf(attacker.art, move).sheet;
+          for (const attackFrame of shownActive(attacker, move)) {
+            const near = edges(attacker, sheet, attackFrame, false);
+            for (const clip of POSTURE_CLIPS[posture].body) {
+              const shown = postureFrames(defender.art.clips, clip);
+              for (const frame of shown.frames) {
+                const far = edges(defender, shown.sheet, frame, true);
+                // Rows (half pixels) within TOUCH of each other: the gap across, the smallest.
+                let gap = Infinity;
+                near.forEach((right, row) => {
+                  for (let other = row - 2; other <= row + 2; other++) {
+                    const left = far[other] ?? Infinity;
+                    gap = Math.min(gap, distance + left - right);
+                  }
+                });
+                expect(
+                  gap,
+                  `${clip} frame ${frame}, ${move} frame ${attackFrame}`,
+                ).toBeLessThanOrEqual(TOUCH);
+              }
             }
           }
-        }
-      });
+        });
+      }
     }
   }
 });
 
-describe('the spark of a low blow', () => {
-  /** Plays a low kick from `attackerX` on a standing Nayo at `defenderX`; the contact made. */
-  function contactOf(move: MoveId, attackerX: number, defenderX: number): Contact {
-    const start = fightState(MIRROR_MATCH);
-    const facing = attackerX < defenderX ? 1 : -1;
-    let state: GameState = {
-      ...start,
-      fighters: [
-        { ...start.fighters[0], x: attackerX, facing },
-        { ...start.fighters[1], x: defenderX, facing: facing === 1 ? -1 : 1 },
-      ],
-    };
-    const press = move === 'crouchLight' ? Input.Down | Input.Light : Input.Down | Input.Heavy;
-    for (const input of [press, ...repeat(Input.Down, 20)]) {
-      state = step(state, [input, 0], MIRROR_MATCH);
-      const contact = state.contacts[0];
-      if (contact) return contact;
-    }
-    throw new Error(`${move} did not hit`);
+/** Plays a crouching low blow from `attackerX` on a standing defender at `defenderX`: its contact. */
+function contactOf(
+  config: MatchConfig,
+  move: MoveId,
+  attackerX: number,
+  defenderX: number,
+): Contact {
+  const start = fightState(config);
+  const facing = attackerX < defenderX ? 1 : -1;
+  let state: GameState = {
+    ...start,
+    fighters: [
+      { ...start.fighters[0], x: attackerX, facing },
+      { ...start.fighters[1], x: defenderX, facing: facing === 1 ? -1 : 1 },
+    ],
+  };
+  const press = move === 'crouchLight' ? Input.Down | Input.Light : Input.Down | Input.Heavy;
+  for (const input of [press, ...repeat(Input.Down, 20)]) {
+    state = step(state, [input, 0], config);
+    const contact = state.contacts[0];
+    if (contact) return contact;
   }
+  throw new Error(`${move} did not hit`);
+}
 
-  it.each(LOW_HITS)('%s: at the shin, by the drawn toe, on either side', (move) => {
-    const hitbox = moveOf(NAYO, move).hitbox;
-    if (!hitbox) throw new Error(`${move} has no hitbox`);
-    const distance = farthestHit(hitbox, NAYO.standingHurtboxes);
-    const band = { from: toPx(hitbox.y), to: toPx(hitbox.y + hitbox.height) };
-    const toe = Math.min(
-      ...activeFrames(move).map((frame) =>
-        reach([strip(NAYO_CLIPS[move].sheet)], frame, band, false),
-      ),
+describe.each(DRAWN_FIGHTERS)("the spark of $name's low blows", (attacker) => {
+  // The blows struck from where they started (the Glissade travels: not one of them).
+  const sweeps = lowHits(attacker).filter(
+    (move) => moveOf(attacker.template, move).motion === undefined,
+  );
+  for (const defender of DRAWN_FIGHTERS) {
+    it.each(sweeps)(
+      `%s on ${defender.name}: at the shin, by the drawn toe, either side`,
+      (move) => {
+        const config: MatchConfig = {
+          stage: TRAINING_STAGE,
+          fighters: [attacker.template, defender.template],
+        };
+        const hitbox = moveOf(attacker.template, move).hitbox;
+        if (!hitbox) throw new Error(`${move} has no hitbox`);
+        const distance = farthestHit(hitbox, defender.template.standingHurtboxes);
+        const band = { from: toPx(hitbox.y), to: toPx(hitbox.y + hitbox.height) };
+        const strip = stripOf(attacker, clipOf(attacker.art, move).sheet);
+        const toe = Math.min(
+          ...shownActive(attacker, move).map((frame) => reach([strip], frame, band, false)),
+        );
+        const center = px(480);
+        for (const facing of [1, -1] as const) {
+          const contact = contactOf(config, move, center, center + facing * distance);
+          expect(toPx(contact.y)).toBeLessThanOrEqual(SPARK_HEIGHT);
+          const ahead = toPx((contact.x - center) * facing);
+          expect(
+            Math.abs(ahead - toe),
+            `spark ${ahead} px ahead, toe at ${toe}`,
+          ).toBeLessThanOrEqual(SPARK_FROM_TOE);
+        }
+      },
     );
-    const center = px(480);
-    for (const facing of [1, -1] as const) {
-      const contact = contactOf(move, center, center + facing * distance);
-      expect(toPx(contact.y)).toBeLessThanOrEqual(SPARK_HEIGHT);
-      const ahead = toPx((contact.x - center) * facing);
-      expect(Math.abs(ahead - toe), `spark ${ahead} px ahead, toe at ${toe}`).toBeLessThanOrEqual(
-        SPARK_FROM_TOE,
-      );
-    }
-  });
+  }
 });
