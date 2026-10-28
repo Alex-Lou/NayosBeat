@@ -3,12 +3,16 @@ import { ART_SCALE, CELL_SIZE, cellOf, FULL_CELL } from '../../src/art/types';
 import { toWorld } from '../../src/core/boxes';
 import type { Box } from '../../src/core/config';
 import { toPx } from '../../src/core/constants';
+import { MOVE_IDS, type MoveId } from '../../src/core/move-data';
 import { anchorOrigin } from '../../src/render/anchor-origin';
 import {
   calibrate,
   envelope,
   fits,
+  isAirborne,
   measureFrames,
+  moveFrameFlags,
+  moveHurtboxesAt,
   POSTURE_CLIPS,
   postureFrames,
   type Drawing,
@@ -98,5 +102,54 @@ describe.each(DRAWN_FIGHTERS)("$name's hurtboxes", (fighter) => {
     if (!box) throw new Error('No standing hurtbox');
     const world = toWorld(box, 0, 0, -1);
     expect(Math.abs(toPx(world.left) - leftmost)).toBeLessThanOrEqual(1.5);
+  });
+});
+
+/**
+ * Gaps waiting on the owner (docs/combat-v2.md §18.3): Nayo's Pied fendu is drawn flying, 20 px
+ * off the floor over ticks 6-14, while the spec gives it neither a lift nor a box of its own. A
+ * box on the drawing would carry it over the low blows: a change to Nayo's game, not a fix.
+ */
+const PENDING: Readonly<Record<string, readonly MoveId[]>> = { Nayo: ['specialForward'] };
+
+/** The ground ticks of `id` whose drawing leaves the hurtboxes in force, with what is wrong. */
+function strayTicks(fighter: DrawnFighter, id: MoveId): string[] {
+  const move = fighter.template.moves[id];
+  const clip = fighter.art.clips[id];
+  if (!move || !clip) throw new Error(`No ${id}`);
+  const mask = maskOf(fighter, clip.sheet);
+  const stray: string[] = [];
+  let tick = 0;
+  clip.frames.forEach((frame, index) => {
+    const drawing = measureFrames(mask, [frame]);
+    for (const end = tick + (clip.ticks[index] ?? 0); tick < end; tick++) {
+      if (isAirborne(id, move, tick)) continue;
+      const flags = moveFrameFlags(drawing, moveHurtboxesAt(fighter.template, id, move, tick));
+      if (flags.length > 0) stray.push(`frame ${frame}, tick ${tick}: ${flags.join(', ')}`);
+    }
+  });
+  return stray;
+}
+
+/**
+ * Every frame a move shows on the ground stands in the hurtboxes in force while it does
+ * (§9.2, `npm run measure-boxes -- --moves`): a drawing that leaves the floor, its box left on
+ * it, would let a low blow hit the air under its boots; the move gets its own box instead. In
+ * the air the engine places the boxes, the jump's own calibration covers them.
+ */
+describe.each(DRAWN_FIGHTERS)("$name's moves", (fighter) => {
+  const pending = PENDING[fighter.name] ?? [];
+  const moves = MOVE_IDS.filter((id) => fighter.template.moves[id] && fighter.art.clips[id]);
+
+  it.each(moves.filter((id) => !pending.includes(id)))(
+    '%s: the drawing stays in its hurtboxes on the ground',
+    (id) => {
+      expect(strayTicks(fighter, id)).toEqual([]);
+    },
+  );
+
+  // Once settled, a gap leaves the list: it cannot linger there unnoticed.
+  it.each(pending)('%s: still waits on its decision', (id) => {
+    expect(strayTicks(fighter, id).length).toBeGreaterThan(0);
   });
 });

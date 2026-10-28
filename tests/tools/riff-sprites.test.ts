@@ -20,6 +20,9 @@ interface Band {
   readonly to: number;
 }
 
+/** Which way a strike is measured: toward the opponent, upward, or behind her. */
+type Way = 'forward' | 'up' | 'back';
+
 /** docs/combat-v2.md §11.3: 43 strips, about 265 frames. */
 describe('Riff strips: the set of §11.3', () => {
   it('has the 43 strips', () => {
@@ -222,16 +225,21 @@ describe('Riff strips: drawing', () => {
    * limb (or its trail) reaches the far edge of the hitbox, at most REACH.short px short of it
    * and REACH.past px past it; a low blow at the tip of the boot, closer still. Horizontal
    * strikes are measured forward; the anti-airs forward and upward both, where the front
-   * effects of their rising arc count toward the reach (an impact flash may burst past).
+   * effects of their rising arc count toward the reach (an impact flash may burst past). A
+   * horizontal strike whose hitbox starts behind her (the Ciseau aérien, her cross-up) is
+   * measured backward too: a boot drawn past its back edge would sweep through an opponent it
+   * cannot hit. The Retourné's back edge is not: the trail of its rising leg, drawn on the body
+   * layer, is where the leg has been, not where it reaches.
    */
   const REACH = { short: 3, past: 4 } as const;
   const LOW_REACH = { short: 2, past: 3 } as const;
   const ANTI_AIRS: ReadonlySet<RiffSheet> = new Set<RiffSheet>(['backHeavy', 'specialAntiAir']);
   /**
    * The Genou montant is drawn leaping, its knee 34 px off the floor (tools/sprites/riff/poses/
-   * specialAntiAir.ts), against a hitbox and a body that stay on the ground: whether the game
-   * lifts her or the hitbox comes down is the next art round's decision. Until then it is held
-   * to the art round's own rule: upward only, 6 px short or 8 past at most.
+   * specialAntiAir.ts), against a hitbox that stays on the ground (her hurtboxes follow the
+   * drawing, §9.2): whether the game lifts her or the hitbox comes down is the next art round's
+   * decision. Until then it is held to the art round's own rule: upward only, 6 px short or 8
+   * past at most.
    */
   const LEAP = { short: 6, past: 8 } as const;
   const STRIKES = SHEETS.filter((sheet) => strikeOf(RIFF_CLIPS, RIFF_TEMPLATE, sheet));
@@ -241,18 +249,23 @@ describe('Riff strips: drawing', () => {
     for (const sheet of STRIKES) expect(isAnimated(sheet), sheet).toBe(true);
   });
 
-  /** Farthest opaque pixel of `layers` forward (or up) within a band, on one frame. */
-  function reachOf(layers: readonly PixelCanvas[], frame: number, band: Band, up: boolean) {
+  /**
+   * Farthest opaque pixel of `layers` along `way` within a band, on one frame: forward and up
+   * as positions, back as a distance behind her (−x, so that farther is greater every way).
+   */
+  function reachOf(layers: readonly PixelCanvas[], frame: number, band: Band, way: Way) {
     let reached = -Infinity;
     for (const canvas of layers) {
       for (let row = 0; row < CELL_SIZE; row++) {
         for (let column = 0; column < CELL_SIZE; column++) {
           if (canvas.pixels[row * canvas.width + frame * CELL_SIZE + column] === 0) continue;
-          const px = (column + 1 - ANCHOR.x) / ART_SCALE;
+          // A pixel's edges: its right edge forward, its left edge behind, its top edge up.
+          const right = (column + 1 - ANCHOR.x) / ART_SCALE;
           const py = (ANCHOR.y - row) / ART_SCALE;
-          const across = up ? px : py;
+          const across = way === 'up' ? right : py;
           if (across < band.from || across > band.to) continue;
-          reached = Math.max(reached, up ? py : px);
+          const along = way === 'up' ? py : way === 'back' ? 1 / ART_SCALE - right : right;
+          reached = Math.max(reached, along);
         }
       }
     }
@@ -266,15 +279,19 @@ describe('Riff strips: drawing', () => {
     const leap = sheet === 'specialAntiAir';
     const { short, past } = leap ? LEAP : strike.move.guard === 'low' ? LOW_REACH : REACH;
     const up = ANTI_AIRS.has(sheet);
-    const ways = leap ? [] : [{ up: false, band: { from: y, to: y + height }, edge: x + width }];
-    if (up) ways.push({ up: true, band: { from: x, to: x + width }, edge: y + height });
+    const across = { from: y, to: y + height };
+    const ways: { way: Way; band: Band; edge: number }[] = leap
+      ? []
+      : [{ way: 'forward', band: across, edge: x + width }];
+    if (up) ways.push({ way: 'up', band: { from: x, to: x + width }, edge: y + height });
+    else if (x < 0) ways.push({ way: 'back', band: across, edge: -x });
     const body = sheetCanvas(sheet);
     const fx = up ? drawStripEffects(RIFF, sheet) : undefined;
     for (const frame of strike.frames) {
       for (const way of ways) {
-        const drawn = reachOf(fx ? [body, fx] : [body], frame, way.band, way.up);
-        const limb = reachOf([body], frame, way.band, way.up);
-        const where = `frame ${frame} ${way.up ? 'up' : 'forward'}, edge ${way.edge}`;
+        const drawn = reachOf(fx ? [body, fx] : [body], frame, way.band, way.way);
+        const limb = reachOf([body], frame, way.band, way.way);
+        const where = `frame ${frame} ${way.way}, edge ${way.edge}`;
         expect(drawn, `${where}: reaches ${drawn}`).toBeGreaterThanOrEqual(way.edge - short);
         expect(limb, `${where}: limb at ${limb}`).toBeLessThanOrEqual(way.edge + past);
       }

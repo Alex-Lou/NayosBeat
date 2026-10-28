@@ -484,7 +484,7 @@ Résumé pour l'aide : **« L → H → S. Ou L, L, L. »** et **« ← + H fait
 | L, L, L | **Swipe** (`lightFinisher`) | Le corps bascule sur les mains (meia lua de compasso), coup de pied circulaire qui balaie l'adversaire | Finit la chaîne, met au sol |
 | → + L | **Toprock** (`forwardLight`) | Pas croisé de danse vers l'avant puis jab, la frange et la chaîne de ceinture suivent | Avance de 20 px, **+1 en garde**, s'annule en normal : pression et pièges |
 | → + H | **Talon** (`forwardHeavy`) | Jambe tendue qui monte, rangers en l'air, puis retombe en coup de hache | **Overhead** plus rapide que celui de Nayo (17 tics), −4 en garde |
-| ← + H | **Retourné** (`backHeavy`) | Scorpion sauté : elle décolle de 16 px, la ranger accrochée par-dessus sa tête, et couvre aussi derrière elle | Anti-air normal, aussi contre les cross-ups (x −12..22) ; **lanceur** |
+| ← + H | **Retourné** (`backHeavy`) | Scorpion sauté : elle décolle de 16 px, la ranger accrochée par-dessus sa tête, et couvre aussi derrière elle | Anti-air normal, aussi contre les cross-ups (x −12..22) ; **lanceur** ; les coups bas passent sous elle de f6 à f10 (§10.2) |
 
 ### 5.4 Spéciaux de Nayo : le nom dit ce que c'est, l'image dit où ça frappe, le son dit quand
 
@@ -500,7 +500,7 @@ Résumé pour l'aide : **« L → H → S. Ou L, L, L. »** et **« ← + H fait
 |---|---|---|---|---|
 | S, ou ↓↘→ + L/H/S | **Glissade** (remplace la « Ruée ») | Elle plonge au sol et glisse sur la hanche, rangers en avant, appuyée sur l'avant-bras ; traînée magenta au ras du sol, éclats argent sous les semelles | **Passe sous le Vinyle et sous les coups hauts** (corps à 28,5 px de haut de f2 à f20, mesuré sur le dessin). Coup **bas** qui fauche et met au sol, traverse 64 px. Son outil anti-zoning et sa fin de combo | Garder **accroupi** (−9 au contact, −2 en bout de portée), sauter, frapper bas (le Coup bas la touche) |
 | → + S | **Saut de l'ange** | Vrille aérienne qui **quitte vraiment le sol** (sommet 34 px) et retombe talons en premier | **Overhead** qui passe au-dessus des coups bas (f4–f18) et des prises (en l'air de f3 à f19) | Garder **debout** (−7) ; un anti-air la fait tomber |
-| ↓ + S, ou →↓↘ + L/H/S | **Genou montant** | « Freeze » explosif, genou qui jaillit, éclats en losange argent, onde magenta au sol | Anti-air. **Invincible seulement contre les attaques aériennes** (f0–5) : ce n'est pas un reversal au sol, c'est sa faiblesse | −17 en garde ; un coup au sol placé au réveil le bat |
+| ↓ + S, ou →↓↘ + L/H/S | **Genou montant** | « Freeze » explosif, genou qui jaillit, éclats en losange argent, onde magenta au sol | Anti-air. **Invincible seulement contre les attaques aériennes** (f0–5) : ce n'est pas un reversal au sol, c'est sa faiblesse. Dessinée en l'air de f4 à f15, elle passe alors au-dessus des coups bas (§10.2) | −17 en garde ; un coup au sol placé au réveil le bat (dès son démarrage, f0–3 ; ensuite un coup moyen ou haut, les coups bas passent dessous) |
 
 ### 5.6 Remix (pendant le DROP du Crossfader, §8)
 
@@ -530,7 +530,7 @@ Chaque personnage a **un** spécial signature avec une variante Remix, précalcu
 - **Effets** (`hit-styles.ts`, `tools/sprites/riff/palette.ts`) : énergie **magenta** `#ff3ca0` (dash, traînées, ondes, spéciaux), entailles en griffes magenta et éclats **argent** `#d8e0ec` ; tenue 2 : énergie or `#ffc83a`, éclats cramoisis `#e0283c`. Le magenta de Riff ne croise jamais celui de la tenue 2 de Nayo (seulement en miroir).
 - **Personnalité** : provocatrice, rieuse ; toprock en attente ; saut avant en salto.
 - **Plan de jeu** : entrer au dash annulable, passer sous le Vinyle à la Glissade, coller, puis mélanger bas (Coup bas, Windmill, Glissade), haut (Talon, Saut de l'ange) et Prise, avec le cross-up au réveil.
-- **Forces** : la meilleure mobilité ; les normaux les plus rapides (3 tics) ; Toprock à +1 en garde ; deux overheads ; le cross-up ; la Glissade bat le zoning ; tabassage ×3.
+- **Forces** : la meilleure mobilité ; les normaux les plus rapides (3 tics) ; Toprock à +1 en garde ; deux overheads ; le cross-up ; la Glissade bat le zoning ; tabassage ×3 ; le Retourné (f6–f10) et le Genou montant (f4–f15) sautent au-dessus des coups bas (§10.2).
 - **Faiblesses** : 900 PV ; portée immobile courte (Coude 56 px) ; dégâts par coup faibles ; **pas de reversal au sol** ; ses outils d'approche se punissent quand ils sont mal espacés ; anti-air moins fiable.
 
 ### 6.3 Statistiques comparées
@@ -557,6 +557,7 @@ Chaque personnage a **un** spécial signature avec une variante Remix, précalcu
 - Le Coup bas et le Direct de Nayo arrêtent le dash de Riff, qui n'est pas invincible.
 - La Glissade de Riff punit un Vinyle mal placé ; le Coup bas de Nayo bat la Glissade.
 - Le Saut de l'ange bat le Balayage mais perd contre l'Uppercut et le Remontant.
+- Le Retourné et le Genou montant passent au-dessus du Coup bas et du Balayage (de f6 à f10, de f4 à f15) : Nayo les prend au démarrage, ou frappe moyen.
 - Le cross-up de Riff au réveil oblige Nayo à deviner, à backdasher (contre la prise) ou à sortir l'Uppercut.
 
 ### 6.5 Les quatre suivants (`univers.md`) : une mécanique chacun, codée le jour où on les fait (YAGNI)
@@ -749,7 +750,7 @@ L'inspiration avouée est le GRD d'Under Night In-Birth (un tug-of-war qui réco
 | Riff | x −33,5..15 / y 0..75 | x −32..15 / y 0..57,5 | jambes x −28..18 / y 4..44, buste x −21..14,5 / y 44..81 |
 
   Riff, la punk : sa base de b-girl est large (le pied arrière à −27 en garde, −33,5 quand un coup au ventre le fait glisser), le bout des rangers à 16 px (la boîte s'arrête un pixel avant, comme celle de Nayo, pour qu'un coup bas à sa portée maximale touche la ranger et jamais l'air devant), la frange à 75 px debout et 81 en saut.
-- **Hurtbox de coup** (`MoveData.hurtboxes`, par plage de frames) : remplace la posture pendant le coup, là où le dessin quitte la posture (mesuré par `npm run measure-boxes -- riff --moves`). La Glissade s'en sert (−42..20 / 0..28,5 de f2 à f20 : la tête au sol derrière elle, les rangers qui frappent devant). Riff aussi pour les coups qui la décollent du sol : le Retourné (−15..15 / 16..96 de f6 à f10, le saut du scorpion), le Retrait (−21..14 / 12..75 de f5 à f8, son flip) et le Saut de l'ange (−24..30,5 / 32..78 de f12 à f15, roulée en boule au sommet). Les membres tendus ne sont pas encore touchables (YAGNI : les pokes restent disjoints, mais honnêtes en portée) ; le champ le permettra si le jeu en a besoin.
+- **Hurtbox de coup** (`MoveData.hurtboxes`, par plage de frames) : remplace la posture pendant le coup, là où le dessin quitte la posture (mesuré par `npm run measure-boxes -- riff --moves`). La Glissade s'en sert (−42..20 / 0..28,5 de f2 à f20 : la tête au sol derrière elle, les rangers qui frappent devant). Riff aussi pour les coups qui la décollent du sol : le Retourné (−15..15 / 16..96 de f6 à f10, le saut du scorpion), le Genou montant (−24..13,5 / 32..111 de f4 à f9, −16,5..13 / 24..106 de f10 à f15, son freeze en l'air ; le genou tendu devant reste un membre), le Retrait (−21..14 / 12..75 de f5 à f8, son flip : les coups bas l'effleurent encore, leur hitbox monte à 14) et le Saut de l'ange (−24..30,5 / 32..78 de f12 à f15, roulée en boule au sommet). `tests/tools/hurtboxes.test.ts` vérifie chaque image d'un coup au sol contre les boîtes en vigueur (pieds à plus de 4 px au-dessus du bas de la boîte, ou corps au-dessus d'elle : refusé) ; `tests/core/lifted-boxes.test.ts` fige les échanges que ces boîtes changent. Les membres tendus ne sont pas encore touchables (YAGNI : les pokes restent disjoints, mais honnêtes en portée) ; le champ le permettra si le jeu en a besoin.
 
 ### 9.3 Le point d'impact vient du cœur (`GameState.contacts`)
 
@@ -783,7 +784,7 @@ Le cœur garde aussi `reactionHeavy` (hitstun ≥ 18) et `stunTotal` (durée du 
 | Uppercut et anti-airs | contrôlés **aussi en horizontal** |
 | Bord avant des hurtbox contre bord dessiné, poses neutres, de garde, de coup reçu | ±1,5 px sur toute la hauteur de la boîte |
 | **Contact visible** : pour chaque coup bas, à la distance maximale où il touche (calculée depuis les boîtes) contre chaque posture adverse, les masques alpha de l'attaquant et du défenseur rendus côte à côte se touchent | écart ≤ 1 px |
-| Riff | les mêmes tests depuis la phase 4 (`tests/tools/riff-sprites.test.ts`, `hurtboxes.test.ts`, `visible-contact.test.ts`, `hold-pairs.test.ts`), sauf la portée du Genou montant, vérifiée vers le haut seulement (−6 / +8) tant que son saut dessiné attend sa décision |
+| Riff | les mêmes tests depuis la phase 4 (`tests/tools/riff-sprites.test.ts`, `hurtboxes.test.ts`, `visible-contact.test.ts`, `hold-pairs.test.ts`), sauf la portée du Genou montant, vérifiée vers le haut seulement (−6 / +8) tant que son saut dessiné attend sa décision. Le Ciseau aérien, dont la hitbox commence derrière elle, est aussi mesuré **vers l'arrière** (−3 / +4 contre le bord −14) |
 
 Correctifs de données déjà identifiés : Uppercut x 4..30 → **4..24** ; j.L de Nayo x 4..30 → **4..28** (corps à 25,5) ; Crochet x 10..54 → **10..52** et pose du bras qui atteint 51 à 53 ; Balayage x 12..52 → **12..51** (pied à 49,5, effet à 53).
 
@@ -827,16 +828,18 @@ Colonnes : **S/A/R** = démarrage / actif / récupération (total). **Dg** = dé
 | forwardLight | → + L | Toprock | 8/2/10 (20) | 30 | 15/12 | 8 | 2,5 | mid | 8..32 / 44..58 | +20 px f0–7 | +4/**+1** | 65 | normal, spécial |
 | standHeavy | H | Coup de coude | 6/3/14 (23) | 70 | 19/13 | 11 | **2** | mid | 9..43 / 40..58 | — | +3/−3 | 56 | spécial |
 | forwardHeavy | → + H | Talon | 17/3/14 (34) | 60 | 17/12 | 11 | **2,5** | **overhead** | 8..34 / 34..70 | +15 px f4–13 | +1/−4 (CONTRE +5) | 62 | — |
-| backHeavy | ← + H | Retourné | 6/5/15 (26) | 55 | lance (5, juggle)/13 | 10 | 3 | mid | **−12..22** / **58**..100 | — | lance / −6 | 35 (rate l'accroupi) | spécial |
+| backHeavy | ← + H | Retourné | 6/5/15 (26) | 55 | lance (5, juggle)/13 | 10 | 3 | mid | **−12..22** / **58**..100 | hurtbox −15..15 / 16..96 de f6 à f10 | lance / −6 | 35 (rate l'accroupi) | spécial |
 | crouchLight | ↓ + L | Coup bas | 3/2/7 (12) | 20 | 12/8 | 6 | 2 | low | 10..32 / 4..14 | — | +4/0 | 45 | normal, spécial |
 | crouchHeavy | ↓ + H | Windmill | 7/3/18 (28) | 65 | KD trip (2)/13 | 10 | 3 | low | 10..44 / 2..14 | — | KD +27 / −7 | 57 | — |
 | jumpLight | air L | **Ciseau aérien** | 3/6/5 | 25 | 13/9 | 7 | 2 | overhead | **−14..26** / 6..24 | — | — | 39, et derrière | — |
 | jumpHeavy | air H | Talon sauté | 6/5/9 | 65 | 17/11 | 10 | 3 | overhead | 2..32 / −4..18 | — | — | 45 | — |
 | special | S, ↓↘→ | **Glissade** | 10/8/16 (34) | 70 (10) | KD trip (2)/14 | 10 | 3,5 | **low** | 6..36 / 2..14 | 64 px f1–17 (ease-out) ; hurtbox −42..20 / 0..28,5 de f2 à f20 | KD +24 à +31 / −9 au contact, −2 en bout | ≈ 102 | — |
 | specialForward | → + S | Saut de l'ange | 16/4/14 (34) | 70 (10) | 18/10 | 11 | 3 | overhead | 0..30 / 16..56 | dx 2,2 px f4–19 (35 px) ; **y en arc f3–19, sommet 34 px à f11** | +1/−7 | 69 | — |
-| specialAntiAir | ↓ + S, →↓↘ | Genou montant | 4/6/24 (34) | 95 (14) | KD (3)/12 | 12 | 3 | mid | 4..28 / 30..92 | +12 px f0–7 | KD +22 / −17 | 47 | — ; invincible f0–5 **contre les attaques aériennes seulement** |
+| specialAntiAir | ↓ + S, →↓↘ | Genou montant | 4/6/24 (34) | 95 (14) | KD (3)/12 | 12 | 3 | mid | 4..28 / 30..92 | +12 px f0–7 ; hurtbox −24..13,5 / 32..111 de f4 à f9, −16,5..13 / 24..106 de f10 à f15 | KD +22 / −17 | 47 | — ; invincible f0–5 **contre les attaques aériennes seulement** |
 
-Hauteur du Saut de l'ange par frame (px, f3 → f19) : 5,9 · 11,6 · 17,0 · 21,9 · 26,1 · 29,4 · 31,9 · 33,5 · 34,0 · 33,5 · 31,9 · 29,4 · 26,1 · 21,9 · 17,0 · 11,6 · 5,9. Les coups bas (hitbox sous 14 px) la ratent de f4 à f18 ; une prise la rate de f3 à f19.
+Hauteur du Saut de l'ange par frame (px, f3 → f19) : 5,9 · 11,6 · 17,0 · 21,9 · 26,1 · 29,4 · 31,9 · 33,5 · 34,0 · 33,5 · 31,9 · 29,4 · 26,1 · 21,9 · 17,0 · 11,6 · 5,9. Les coups bas (hitbox sous 14 px) la ratent de f4 à f18 ; une prise la rate de f3 à f19. Au sommet (f12 à f15), roulée en boule à 32 px au-dessus de ses pieds, elle passe aussi au-dessus du Direct (46..58), pas de l'Uppercut.
+
+Le Retourné et le Genou montant sont dessinés en l'air sans quitter le sol (le moteur ne les lève pas) : leurs hurtbox suivent le dessin (§9.2). Les coups bas (hitbox sous 14 px) ratent le Retourné de f6 à f10 et le Genou montant de f4 à f15 ; ils les touchent avant et après (CONTRE au démarrage et en actif, PUNITION en récupération). Le Retrait (12..75 de f5 à f8) reste effleuré par les coups bas. Décision prise par défaut (§18.3).
 
 Vitesses de la Glissade (px/tic, f1 → f17) : 7,31 · 6,86 · 6,43 · 5,97 · 5,54 · 5,09 · 4,65 · 4,21 · 3,77 · 3,32 · 2,88 · 2,43 · 2,00 · 1,55 · 1,10 · 0,67 · 0,22.
 
@@ -924,7 +927,7 @@ Total Nayo : environ **115 images nouvelles**, plus les retouches.
 | `backHeavy` (Retourné) | 7 | 2, 2, 2, **5**, 5, 5, 5 (26) | image 3 | −12..22 / 56..100 | scorpion |
 | `crouchLight` | 5 | 1, 2, **2**, 3, 4 (12) | image 2 | 10..32 / 4..14 | sur une main |
 | `crouchHeavy` (Windmill) | 8 | 2, 2, 3, **3**, 4, 4, 5, 5 (28) | image 3 | 10..44 / 2..14 | rotation au sol |
-| `jumpLight` (Ciseau aérien) | 5 | 1, 2, **6**, 2, 3 (14) | image 2 | −14..26 / 6..24 | grand écart : cross-up |
+| `jumpLight` (Ciseau aérien) | 5 | 1, 2, **6**, 2, 3 (14) | image 2 | −14..26 / 6..24 | ciseau de jambes, la ranger arrière plantée sous elle sur le bord −14 : cross-up |
 | `jumpHeavy` (Talon sauté) | 6 | 3, 3, **5**, 3, 3, 3 (20) | image 2 | 2..32 / −4..18 | — |
 | `special` (Glissade) | 8 | 2, 4, 4, **4, 4**, 3, 7, 6 (34) | images 3–4 | 6..36 / 2..14 | corps bas dès l'image 1, exactement pendant sa hurtbox basse (f2–f20) : dessinée sur 3, 3, 4, 4, 4, 5, 5, 6, re-calée sur le jeu |
 | `specialForward` (Saut de l'ange) | 9 | 3, 3, 3, 3, 4, **4**, 4, 5, 5 (34) | image 5 | 0..30 / 16..56 | vrille, talons en premier |
@@ -1417,6 +1420,9 @@ Descriptions de sélection (`roster.ts`) : Nayo « Boxeur-DJ posé · portée ·
 3. Riff frappe en **magenta et argent**, la punk de Zen-Tazzer (`univers.md` mis à jour en phase 4).
 4. Vibrations : actives par défaut sur « saisi » et « coup lourd reçu », désactivées sur les appuis.
 5. Le mot « drop » appartient au Crossfader : l'Uppercut de Nayo devient « la montée » dans la mise en scène.
+6. Le Retourné et le Genou montant de Riff sont dessinés en l'air (phase 4) et leurs hurtbox suivent ce dessin : ils passent **au-dessus des coups bas** (de f6 à f10, de f4 à f15, §10.2). Réversible : redessiner les poses ancrées au sol et rendre la hurtbox debout, ou donner au Genou une courbe de hauteur comme au Saut de l'ange (sa portée dessinée attend aussi cette décision, §9.5).
+7. Le Ciseau aérien garde sa hitbox −14..26 : la ranger arrière est redessinée sur son bord arrière au lieu d'aller à −38. Élargir la hitbox vers l'arrière (≈ −36) changerait les portées de cross-up (§3.5) : à trancher par le propriétaire.
+8. En attente : le Pied fendu de Nayo est dessiné en vol, 20 px au-dessus du sol de f6 à f14, avec sa hurtbox debout (seule exception de `tests/tools/hurtboxes.test.ts`). Une hurtbox calée sur le dessin le ferait passer au-dessus des coups bas : un changement du jeu de Nayo, pas une correction.
 
 ---
 

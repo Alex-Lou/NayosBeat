@@ -5,8 +5,9 @@
  */
 
 import { ART_SCALE, type Cell, type ClipId } from '../../src/art/types.ts';
-import type { Box } from '../../src/core/config.ts';
+import type { Box, FighterTemplate } from '../../src/core/config.ts';
 import { toPx } from '../../src/core/constants.ts';
+import type { MoveData, MoveId } from '../../src/core/move-data.ts';
 import type { Clips } from './clips.ts';
 
 /** The cells of one strip, as what they draw: opaque or not. */
@@ -152,4 +153,44 @@ export function calibrate(boxes: readonly Box[], drawing: Drawing): Calibration 
 /** Whether a box edge is within the tolerance of the drawing. */
 export function fits(edge: { readonly box: number; readonly drawn: number }): boolean {
   return Math.abs(edge.box - edge.drawn) <= TOLERANCE;
+}
+
+/** How far the drawing's lowest pixel may float over its box's bottom, in world px. */
+export const FLOAT = 4;
+
+/**
+ * The hurtboxes in force on tick `tick` of move `id`: its own (§9.2), or its posture's (a low
+ * blow crouches, an air blow or a move that leaves the ground is in the air), as `hurtboxesOf`
+ * reads them in the core.
+ */
+export function moveHurtboxesAt(
+  template: FighterTemplate,
+  id: MoveId,
+  move: MoveData,
+  tick: number,
+): readonly Box[] {
+  const own = move.hurtboxes?.find(({ frames }) => tick >= frames.from && tick < frames.to);
+  if (own) return own.boxes;
+  if (isAirborne(id, move, tick)) return template.airHurtboxes;
+  return id.startsWith('crouch') ? template.crouchingHurtboxes : template.standingHurtboxes;
+}
+
+/** Whether the core places the fighter in the air on tick `tick` of move `id`. */
+export function isAirborne(id: MoveId, move: MoveData, tick: number): boolean {
+  return id.startsWith('jump') || (move.motion?.y?.[tick] ?? 0) > 0;
+}
+
+/**
+ * What is wrong with a move frame's drawing against the boxes in force while it shows: a body
+ * that leaves them, its feet off the floor while the boxes stay on it (a low blow would hit the
+ * air under its boots), or the whole of it above them. A move hurtbox (§9.2) is what fixes it.
+ */
+export function moveFrameFlags(drawing: Drawing, boxes: readonly Box[]): string[] {
+  const bottom = drawing.bands.find((band) => Number.isFinite(band.front))?.from ?? 0;
+  const low = Math.min(...boxes.map((box) => toPx(box.y)));
+  const high = Math.max(...boxes.map((box) => toPx(box.y + box.height)));
+  const flags: string[] = [];
+  if (bottom - low > FLOAT) flags.push('floats over its box');
+  if (bottom >= high) flags.push('above its box');
+  return flags;
 }

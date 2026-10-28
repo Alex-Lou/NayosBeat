@@ -2,16 +2,16 @@ import { describe, expect, it } from 'vitest';
 import type { MatchConfig } from '../../src/core/config';
 import { DIRECTIONS, Input, type InputBits } from '../../src/core/input';
 import { moveDuration } from '../../src/core/moves';
-import type { Contact, GameState } from '../../src/core/state';
+import type { GameState } from '../../src/core/state';
 import { NAYO } from '../../src/data/fighters/nayo';
 import { RIFF } from '../../src/data/fighters/riff';
 import { TRAINING_STAGE } from '../../src/data/stages';
+import { contactsBy, NAYO_VS_RIFF } from './exchange-helpers';
 import { expectMirrored, MIRROR_MATCH, type TickInputs } from './helpers';
 
 const { Up, Down, Left, Right, Light, Heavy, Special, Grab, Dash } = Input;
 
 const RIFF_MIRROR: MatchConfig = { stage: TRAINING_STAGE, fighters: [RIFF, RIFF] };
-const NAYO_VS_RIFF: MatchConfig = { stage: TRAINING_STAGE, fighters: [NAYO, RIFF] };
 const RIFF_VS_NAYO: MatchConfig = { stage: TRAINING_STAGE, fighters: [RIFF, NAYO] };
 
 /** `ticks` ticks of inputs, each pair given by `inputs(tick)`. */
@@ -31,11 +31,6 @@ function on(ticks: readonly number[], button: InputBits, tick: number): InputBit
 function mash(input: InputBits, from: number, tick: number): InputBits {
   if (tick < from) return 0;
   return (tick - from) % 2 === 0 ? input : input & DIRECTIONS;
-}
-
-/** Every contact player `by` made. */
-function contactsBy(states: readonly GameState[], by: 0 | 1): Contact[] {
-  return states.flatMap((state) => state.contacts.filter((contact) => contact.by === by));
 }
 
 /** Whether player `player` performed `move` at some point. */
@@ -170,6 +165,24 @@ describe('P1/P2 symmetry of the moves v2 (§14.7)', () => {
     );
     expect(contactsBy(states, 0)).toEqual([]);
     expect(contactsBy(states, 1)).toMatchObject([{ move: 'specialForward', kind: 'hit' }]);
+  });
+
+  it('Retourné and Genou montant: a low passes under the boxes that lift her off the floor', () => {
+    // Timed so the Coup bas is out on the Retourné's frames 7-8, the Balayage on the Genou's 8-10.
+    const retourne = expectMirrored(
+      script(40, (tick) => [on([3], Down | Light, tick), on([0], Right | Heavy, tick)]),
+      NAYO_VS_RIFF,
+      40,
+    );
+    expect(performed(retourne, 0, 'crouchLight')).toBe(true);
+    expect(contactsBy(retourne, 0)).toEqual([]);
+    const genou = expectMirrored(
+      script(50, (tick) => [on([0], Down | Heavy, tick), on([1], Down | Special, tick)]),
+      NAYO_VS_RIFF,
+      60,
+    );
+    expect(performed(genou, 1, 'specialAntiAir')).toBe(true);
+    expect(contactsBy(genou, 0)).toEqual([]);
   });
 
   it('Genou montant: invincible to a jump-in', () => {

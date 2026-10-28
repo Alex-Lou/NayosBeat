@@ -15,14 +15,16 @@ export const ANIMATED: boolean = true;
  * pieds »): a knee reaching y 92 cannot come from a grounded pose (on her toes the knee tops out
  * near 57), and §10.2 gives the move no lift, so the leap is drawn inside the cell: the hips at
  * 73-74 on frames 2-3 and 64 on frame 4 (the guard's: 32), the lowest boot 34, 35 and 26 px off
- * the floor, the top of the hair at 111. The engine keeps her shadow, her pushbox and her
- * standing hurtbox (0..76) on the floor meanwhile: a grounded low after tick 5 hits boots drawn
- * 26 to 35 px up, an air attack over 76 passes through her drawn head. To be settled in the spec,
- * one of: a lift curve for the move (like the Saut de l'ange's: up from tick 3 to about 34 px
- * over ticks 4-9, 26 at ticks 10-15, down by tick 16), these poses then dropped onto her feet
- * by those heights and the hitbox restated from her feet; or a hitbox low enough for a grounded
+ * the floor, the top of the hair at 111. The engine keeps her shadow and her pushbox on the
+ * floor meanwhile; her hurtboxes follow the drawing (src/data/fighters/riff.ts: 32..111 over
+ * ticks 4-9, 24..106 over ticks 10-15), so a grounded low passes under the boots it would have
+ * hit 26 to 35 px up, and an air attack meets her drawn head. To be settled in the spec, one
+ * of: a lift curve for the move (like the Saut de l'ange's: up from tick 3 to about 34 px over
+ * ticks 4-9, 26 at ticks 10-15, down by tick 16), these poses then dropped onto her feet by
+ * those heights and the boxes restated from her feet; or a hitbox low enough for a grounded
  * knee (about 30..60) with a hop of 10 px at most, the trail and the diamonds carrying the
- * height. Until then the drawing keeps the leap, so the knee honestly reaches the box.
+ * height, and her standing hurtbox back. Until then the drawing keeps the leap, so the knee
+ * honestly reaches the box.
  *
  * Her « freeze explosif »: a b-girl hitting a freeze on the beat, in mid-air, with a knee in it.
  * Out of the guard she sinks for two ticks, then everything goes up at once: the lead leg drives

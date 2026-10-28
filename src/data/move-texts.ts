@@ -199,7 +199,7 @@ export const MOVE_TEXTS: Readonly<Record<FighterId, FighterTexts>> = {
       },
       jumpLight: {
         input: "En l'air, L",
-        text: "Un grand écart en plein saut. En sautant tout près, par-dessus l'adversaire, il le touche de dos : pare dans l'autre sens. Se pare debout.",
+        text: "Un ciseau de jambes en plein saut. En sautant tout près, par-dessus l'adversaire, il le touche de dos : pare dans l'autre sens. Se pare debout.",
       },
       jumpHeavy: {
         input: "En l'air, H",

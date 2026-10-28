@@ -87,7 +87,7 @@ Entrepôt reconverti en club, la nuit. Mur d'enceintes empilées au fond, néons
 | backHeavy | Retourné | Scorpion sauté, la ranger par-dessus la tête |
 | crouchLight | Coup bas | Coup de talon rasant, en appui sur une main |
 | crouchHeavy | Windmill | Moulinet au sol, les jambes en rotation |
-| jumpLight | Ciseau aérien | Grand écart en l'air (touche aussi de dos) |
+| jumpLight | Ciseau aérien | Ciseau de jambes en l'air, la ranger arrière plantée sous elle (touche aussi de dos) |
 | jumpHeavy | Talon sauté | Talon qui retombe, jambe tendue |
 | special | Glissade | Plonge et glisse sur la hanche, rangers en avant, sous le Vinyle |
 | specialForward | Saut de l'ange | Vrille aérienne, retombe à deux talons sur la tête adverse (à parer debout) |

@@ -19,7 +19,7 @@ import { RIFF_CLIPS } from '../../src/art/riff/clips.ts';
 import { FULL_CELL, type Cell } from '../../src/art/types.ts';
 import type { Box, FighterTemplate } from '../../src/core/config.ts';
 import { toPx } from '../../src/core/constants.ts';
-import { MOVE_IDS, type MoveData } from '../../src/core/move-data.ts';
+import { MOVE_IDS } from '../../src/core/move-data.ts';
 import { NAYO } from '../../src/data/fighters/nayo.ts';
 import { RIFF } from '../../src/data/fighters/riff.ts';
 import type { Clips } from './clips.ts';
@@ -29,6 +29,8 @@ import {
   envelope,
   fits,
   measureFrames,
+  moveFrameFlags,
+  moveHurtboxesAt,
   POSTURE_CLIPS,
   postureFrames,
   type Drawing,
@@ -48,9 +50,6 @@ const FIGHTERS: readonly Measured[] = [
   { name: 'nayo', template: NAYO, clips: NAYO_CLIPS, cells: NAYO_CELLS },
   { name: 'riff', template: RIFF, clips: RIFF_CLIPS, cells: RIFF_CELLS },
 ];
-
-/** How far the drawing's lowest pixel may float over its box's bottom, in world px. */
-const FLOAT = 4;
 
 function hurtboxes(template: FighterTemplate, posture: Posture): readonly Box[] {
   switch (posture) {
@@ -139,21 +138,6 @@ async function measure(fighter: Measured, posture: Posture): Promise<void> {
   console.log(`top: ${verdict(calibration.top)}`);
 }
 
-/**
- * The hurtboxes in force on tick `tick` of `move`: its own (§9.2), or its posture's (a low blow
- * crouches, an air blow or a move that leaves the ground is in the air), as `hurtboxesOf` reads
- * them in the core.
- */
-function boxesAt(fighter: Measured, id: string, move: MoveData, tick: number): readonly Box[] {
-  const own = move.hurtboxes?.find(({ frames }) => tick >= frames.from && tick < frames.to);
-  if (own) return own.boxes;
-  const air = id.startsWith('jump') || (move.motion?.y?.[tick] ?? 0) > 0;
-  if (air) return fighter.template.airHurtboxes;
-  return id.startsWith('crouch')
-    ? fighter.template.crouchingHurtboxes
-    : fighter.template.standingHurtboxes;
-}
-
 /** Every frame of every move: the drawn body (bottom, top, back, front) against its boxes. */
 async function measureMoves(fighter: Measured): Promise<void> {
   console.log(`\n${fighter.name}, moves: drawn body against the hurtboxes in force (world px)`);
@@ -172,15 +156,12 @@ async function measureMoves(fighter: Measured): Promise<void> {
       const bottom = rows[0]?.from ?? 0;
       const front = Math.max(...rows.map((band) => band.front));
       const back = Math.min(...rows.map((band) => band.back));
-      const boxes = boxesAt(fighter, id, move, tick);
+      const boxes = moveHurtboxesAt(fighter.template, id, move, tick);
       const low = Math.min(...boxes.map((box) => toPx(box.y)));
       const high = Math.max(...boxes.map((box) => toPx(box.y + box.height)));
       const left = Math.min(...boxes.map((box) => toPx(box.x)));
       const right = Math.max(...boxes.map((box) => toPx(box.x + box.width)));
-      const flags = [
-        bottom - low > FLOAT ? 'floats over its box' : '',
-        bottom >= high ? 'above its box' : '',
-      ].filter((flag) => flag !== '');
+      const flags = moveFrameFlags(drawn, boxes);
       const name = `${id} ${frame} (${tick}-${tick + ticks - 1})`.padEnd(26);
       const y = `${number(bottom, 5)}..${number(drawn.top, 5)}`;
       const x = `${number(back, 6)}..${number(front, 6)}`;

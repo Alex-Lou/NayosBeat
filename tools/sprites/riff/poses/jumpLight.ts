@@ -13,11 +13,12 @@ export const ANIMATED: boolean = true;
  * until she lands, so the jump's landing takes over from it.
  *
  * A pair of scissors snapping open under her. The legs gather long and crossed under the seat,
- * then swing open around the hips like two blades, one boot in front of her and one behind, both
- * long, the toes pointed: about 105 degrees apart, the front boot on the far edge of the hitbox,
- * the rear one well past its back edge (so the cross-up reads), held through the six active
- * ticks; then the blades swing shut, the boots closing on each other under her, before the legs
- * reach down into the fall. The in-between stays close to the cross so the split snaps open. A
+ * then swing open around the hips like two blades, the front one long out in front of her, the
+ * rear one driven down under her seat, the toes pointed: 70 degrees apart, each boot on its edge
+ * of the hitbox, held through the six active ticks; then the blades swing shut, the boots
+ * closing on each other under her, before the legs reach down into the fall. The rear boot
+ * stops on the hitbox's back edge (-14, §9.5's -3 / +4 like the front one): flung back long, it
+ * swept through an opponent 50 px behind her that the cross-up only hits up to 27 px. The in-between stays close to the cross so the split snaps open. A
  * b-girl's air split with a brawler on top, a star at 1x: the hips dropped through the legs, the
  * chest tipped back, the cocked rear arm flung up and back, the lead arm out low along the front
  * leg, the look down at the target, the face focused (a light).
@@ -126,9 +127,10 @@ function key(k: Key): Pose {
  */
 const OPEN_KNEES = { nearKnee: 'down', farKnee: 'up' } as const;
 
-/** The blades' angles from the hip joints: crossed under her, then split wide open. */
+/** The blades' angles from the hip joints: crossed under her, opening, then split open. */
 const CROSSED = { rear: -74, lead: -103 } as const;
-const SPLIT_OPEN = { rear: -141, lead: -34 } as const;
+const OPENING = { rear: -89, lead: -73 } as const;
+const SPLIT_OPEN = { rear: -104, lead: -34 } as const;
 
 // 0 · The blades cross (1 tick).
 const CROSS = key({
@@ -152,15 +154,15 @@ const OPEN = key({
   chin: 6,
   shrug: 2.6,
   twist: 0.58,
-  rear: [-103, 30.4],
-  lead: [-73, 30.4],
+  rear: [OPENING.rear, 30.4],
+  lead: [OPENING.lead, 30.4],
   nearFist: at(-16, 66),
   farFist: at(8, 52),
   knees: OPEN_KNEES,
 });
 
 // 2 · The split (6 ticks, active): a star. The hips dropped through the legs, the front boot on
-// the far edge of the hitbox, the rear one well past its back edge, about 105 degrees apart; the
+// the far edge of the hitbox, the rear one driven down on its back edge, the knee soft; the
 // cocked arm flung up and back, the lead arm out low along the front leg, the chest tipped back.
 const SPLIT = key({
   hip: at(-2, 35.8),
@@ -168,7 +170,7 @@ const SPLIT = key({
   chin: 9,
   shrug: 2.8,
   twist: 0.75,
-  rear: [SPLIT_OPEN.rear, 31.2],
+  rear: [SPLIT_OPEN.rear, 29],
   lead: [SPLIT_OPEN.lead, 29.5],
   nearFist: at(-24, 73),
   farFist: at(17.5, 41),
@@ -210,13 +212,13 @@ export const POSES: readonly Pose[] = [
   CROSS,
   fx(
     OPEN,
-    sweep(OPEN.hip, OPEN.torso, 'far', CROSSED.lead, -73, 34, 5),
-    sweep(OPEN.hip, OPEN.torso, 'near', CROSSED.rear, -103, 34, 5),
+    sweep(OPEN.hip, OPEN.torso, 'far', CROSSED.lead, OPENING.lead, 34, 5),
+    sweep(OPEN.hip, OPEN.torso, 'near', CROSSED.rear, OPENING.rear, 32, 5),
   ),
   fx(
     SPLIT,
     sweep(SPLIT.hip, SPLIT.torso, 'far', -80, SPLIT_OPEN.lead - 2, 28, 4),
-    sweep(SPLIT.hip, SPLIT.torso, 'near', -100, SPLIT_OPEN.rear + 2, 33, 4),
+    sweep(SPLIT.hip, SPLIT.torso, 'near', OPENING.rear, SPLIT_OPEN.rear + 2, 30, 4),
     spark(SPLIT_SKELETON.far.toe, SPLIT_SKELETON.far.ankle),
     spark(SPLIT_SKELETON.near.toe, SPLIT_SKELETON.near.ankle),
   ),

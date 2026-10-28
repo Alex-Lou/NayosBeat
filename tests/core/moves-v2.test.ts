@@ -1,13 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { canBeGrabbed, canBeHit } from '../../src/core/combat';
-import type { MatchConfig } from '../../src/core/config';
 import { px, toPx } from '../../src/core/constants';
 import { Input, type InputBits } from '../../src/core/input';
 import { isActiveFrame } from '../../src/core/moves';
-import type { Contact, GameState } from '../../src/core/state';
 import { NAYO } from '../../src/data/fighters/nayo';
 import { RIFF } from '../../src/data/fighters/riff';
 import { TRAINING_STAGE } from '../../src/data/stages';
+import { at, contactsBy, exchange, NAYO_VS_RIFF } from './exchange-helpers';
 import { facingOff, makeFighter } from './helpers';
 import { play } from './hold-helpers';
 
@@ -19,29 +18,6 @@ import { play } from './hold-helpers';
  */
 
 const { Light, Heavy, Special, Down, Left, Right } = Input;
-
-const NAYO_VS_RIFF: MatchConfig = { stage: TRAINING_STAGE, fighters: [NAYO, RIFF] };
-
-/** Nayo (player 1) and Riff (player 2) `distancePx` apart, each pressing on given ticks. */
-function exchange(
-  distancePx: number,
-  nayo: (tick: number) => InputBits,
-  riff: (tick: number) => InputBits,
-  ticks = 80,
-): GameState[] {
-  return play(facingOff(distancePx, NAYO_VS_RIFF), ticks, (t) => [nayo(t), riff(t)], NAYO_VS_RIFF);
-}
-
-/** Pressed on tick `at` (its direction held two ticks more), nothing otherwise. */
-function at(tick: number, input: InputBits): (t: number) => InputBits {
-  return (t) =>
-    t === tick ? input : t > tick && t <= tick + 2 ? input & ~(Light | Heavy | Special) : 0;
-}
-
-/** Every contact `by` made over the states. */
-function contactsBy(states: readonly GameState[], by: 0 | 1): Contact[] {
-  return states.flatMap((state) => state.contacts.filter((contact) => contact.by === by));
-}
 
 describe('Glissade (§5.5)', () => {
   it('slides under the Vinyle, then sweeps Nayo, caught recovering', () => {

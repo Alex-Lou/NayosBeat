@@ -119,7 +119,7 @@ export const RIFF: FighterTemplate = {
     // ← + H: a scorpion kick, the leg over her head, covering behind her too (against
     // cross-ups). The launcher; it whiffs on a crouching opponent (57 px at most). She hops
     // into it: on its active frames her body is 16 px off the floor (measured, §9.2), and a
-    // low blow passes under her feet.
+    // low blow passes under her feet (§10.2; a default decision, §18.3).
     backHeavy: strike({
       name: 'Retourné',
       frames: [6, 5, 15],
@@ -239,6 +239,14 @@ export const RIFF: FighterTemplate = {
       hitbox: box(4, 30, 24, 62),
       // Against attacks from the air only: no reversal on the ground, her weakness.
       invincible: { from: 0, to: 6, against: 'air' },
+      // Her freeze is drawn leaping, the engine keeps her on the floor (§9.2): over ticks 4-9 her
+      // body hangs 32 px over her feet, arched to 111 (the knee out front is a limb), then 24 px
+      // up on its way down over ticks 10-15. A low blow there passes under her boots; a meaty
+      // low on ticks 0-3 still beats it, and a mid or a high blow still hits it after.
+      hurtboxes: [
+        { frames: { from: 4, to: 10 }, boxes: [box(-24, 32, 37.5, 79)] },
+        { frames: { from: 10, to: 16 }, boxes: [box(-16.5, 24, 29.5, 82)] },
+      ],
       motion: advance(34, { from: 0, to: 8, speed: 1.5 }),
       knockdown: kd(3, 3),
     }),
