@@ -3,7 +3,6 @@
   "short_name": "NayosBeat",
   "description": "Jeu de combat 2D en pixel art, en plein écran, même hors ligne.",
   "lang": "fr",
-  "id": "./",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
