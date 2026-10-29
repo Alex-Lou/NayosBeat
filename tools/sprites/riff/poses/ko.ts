@@ -87,7 +87,7 @@ const BUCKLE: Pose = figure({
   twist: 0.35,
   nearFoot: onBall(REAR_TOE, -22),
   farFoot: GUARD.farFoot,
-  bends: { nearKnee: 'front' },
+  bends: { nearKnee: 'back' },
   nearArm: { upper: 285, lower: 280 },
   farArm: { upper: 290, lower: 285 },
   ...LIMP,

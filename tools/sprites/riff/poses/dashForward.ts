@@ -128,7 +128,7 @@ const PUSH = pose(
     chin: 1,
     shrug: 2.8,
     twist: 0.6,
-    nearFoot: onBall(REAR_TOE, -24),
+    nearFoot: onBall(REAR_TOE, -34),
     farFoot: LEAD,
   },
   at(0.4, -0.4),
@@ -170,7 +170,7 @@ const GATHER = pose(
     chin: 4,
     shrug: 2.6,
     twist: 0.35,
-    nearFoot: { x: -13, y: 14, angle: -40 },
+    nearFoot: { x: -13, y: 14, angle: -125 },
     farFoot: onHeel(planted(14), 10),
     bends: { nearElbow: 'down', farElbow: 'down', nearKnee: 'front', farKnee: 'front' },
   },
@@ -185,7 +185,7 @@ const GATHER = pose(
 const BITE = pose(
   {
     ...GUARD,
-    hip: at(-4.5, 26.3),
+    hip: at(-4.5, 28.3),
     torso: 30,
     chin: 5,
     shrug: 2.9,

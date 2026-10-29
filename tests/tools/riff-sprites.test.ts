@@ -7,7 +7,7 @@ import { activeFrames, strikeOf, strikesOf, type ShownStrike } from '../../tools
 import { PixelCanvas } from '../../tools/sprites/raster';
 import { RIFF } from '../../tools/sprites/riff/index';
 import { DETAIL, EFFECTS, paletteOf } from '../../tools/sprites/riff/palette';
-import { GUARD } from '../../tools/sprites/riff/poses/common';
+import { GUARD, MIN_ANKLE, planted, rearAnkle } from '../../tools/sprites/riff/poses/common';
 import { isAnimated, RIFF_POSES } from '../../tools/sprites/riff/poses/index';
 import { drawStrip, drawStripEffects } from '../../tools/sprites/sheet';
 import { solve, type Effect, type Pose } from '../../tools/sprites/skeleton';
@@ -251,6 +251,16 @@ describe('Riff strips: drawing', () => {
     },
   );
 
+  // A boot rolled onto its ball rests its toe on the floor, never in it (look.ts drawBoot).
+  it.each(['idle', 'walkForward', 'walkBack', 'block', 'grab', 'hold', 'pummel', 'intro'] as const)(
+    '%s: nothing is drawn under the floor',
+    (sheet) => {
+      for (let frame = 0; frame < RIFF_SHEETS[sheet].frames; frame++) {
+        expect(extent(sheet, frame).bottom, `frame ${frame}`).toBeLessThanOrEqual(ANCHOR.y);
+      }
+    },
+  );
+
   it('the guard is about 74 px tall (her standing hurtbox is 76), smaller than Nayo', () => {
     const { top, bottom } = extent('idle', 0);
     const height = (bottom - top + 1) / ART_SCALE;
@@ -489,6 +499,19 @@ describe('Riff strips: in and out of the guard', () => {
 
   it('the idle loop starts exactly on the guard', () => {
     expect(RIFF_POSES.idle[0]).toEqual(GUARD);
+  });
+
+  // A rear knee driven forward over a planted foot lifts its heel (springAnkle): a boot does not
+  // let the ankle close past MIN_ANKLE between the shin and the foot.
+  it('every planted rear foot keeps its ankle open', () => {
+    for (const [sheet, poses] of Object.entries(RIFF_POSES)) {
+      poses.forEach((pose, frame) => {
+        const { nearFoot } = pose;
+        const angle = nearFoot.angle ?? 0;
+        const onFloor = angle <= 0 && Math.abs(nearFoot.y - planted(nearFoot.x, angle).y) < 0.01;
+        if (onFloor) expect(rearAnkle(pose), `${sheet} ${frame}`).toBeGreaterThanOrEqual(MIN_ANKLE);
+      });
+    }
   });
 });
 

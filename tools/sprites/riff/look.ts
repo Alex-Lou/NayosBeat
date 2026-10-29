@@ -620,8 +620,12 @@ function drawBoot(ctx: Ctx, side: Side, near: boolean, top: Point): void {
   const middle = scale(add(side.hip, side.ankle), 0.5);
   const fold = sub(side.knee, middle);
   const turn = 1 - (1 - TURNED_OUT) * clamp(-(fold.x * u.x + fold.y * u.y) / 3, 0, 1);
-  const world = (a: number, b: number): Point =>
-    add(sole, add(scale(u, BALL + (a - BALL) * turn), scale(v, b)));
+  // Never under the floor: a sole rolled onto its ball rests its toe on it (the skeleton plants
+  // the round of the toe, the sole's lugged corner reaches a little past it).
+  const world = (a: number, b: number): Point => {
+    const point = add(sole, add(scale(u, BALL + (a - BALL) * turn), scale(v, b)));
+    return point.y < 0 ? { x: point.x, y: 0 } : point;
+  };
   const p = (a: number, b: number): Point => at(world(a, b));
 
   // The shaft follows the shin from the ankle to the top of the boot; the foot (heel counter,

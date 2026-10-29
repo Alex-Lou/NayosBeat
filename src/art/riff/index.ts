@@ -29,7 +29,7 @@ const ALT_FX = import.meta.glob<string>('./alt/fx/*.png', {
 
 const SHARED = {
   // Her crest and her raised fist, on the character select screen.
-  portrait: { x: 30, y: 4, size: 58 },
+  portrait: { x: 28, y: 4, size: 58 },
   sheets: RIFF_SHEETS,
   clips: RIFF_CLIPS,
   cells: RIFF_CELLS,

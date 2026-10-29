@@ -197,7 +197,7 @@ const ROUND: Pose = spun(
 const LAND: Pose = guarded(
   {
     ...GUARD,
-    hip: at(-6.5, 26),
+    hip: at(-6.5, 29),
     torso: 26,
     head: LOOK + 1 - 26,
     shrug: 2.8,

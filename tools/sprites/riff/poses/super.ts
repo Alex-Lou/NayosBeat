@@ -313,12 +313,13 @@ const STOMP: Pose = {
 // hitbox's edge, platine, magenta inside.
 const SLAM_BODY: Pose = {
   ...GUARD,
-  hip: at(-7.5, 34),
+  hip: at(-7.5, 35),
   torso: 12,
   head: LOOK - 12,
   shrug: 3,
   twist: 0.5,
-  nearFoot: onBall(TOE, -22),
+  // The rear leg nearly straight on the slam: it folds into the plié next, without a flip.
+  nearFoot: onBall(TOE, -12),
   farFoot: GUARD.farFoot,
   nearHand: 'open',
   farHand: 'open',

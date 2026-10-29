@@ -159,6 +159,8 @@ const KEYS: readonly Key[] = [
     rear: at(-12, 22),
     lead: [1, 53],
     hands: { near: 'open' },
+    // The coil, low: her plié, the rear knee turned out (in front it would kneel).
+    bends: { nearKnee: 'back' },
   },
   // 1: the dive: the body tips forward and down, the rear hand reaching for the floor.
   {
@@ -221,6 +223,7 @@ const KEYS: readonly Key[] = [
     rear: at(-13, 6),
     lead: [-10, 44],
     hands: { near: 'open', far: 'open' },
+    bends: { nearKnee: 'back' },
     face: 'effort',
     effects: [smear(2, [4, 34], [-8, 28], [-16, 18], [-21, 9]), dust(-20, 2.5, 0.2)],
   },
@@ -244,7 +247,7 @@ const KEYS: readonly Key[] = [
     look: 9,
     shrug: 2.2,
     twist: 0.45,
-    near: onBall(TOE, -12),
+    near: GUARD.nearFoot,
     far: planted(GUARD.farFoot.x),
     rear: { cocked: [0, 0] },
     lead: [9.5, 46],

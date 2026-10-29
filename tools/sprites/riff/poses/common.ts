@@ -11,7 +11,14 @@
  */
 
 import type { Point } from '../../raster.ts';
-import { blend, planted as plantedOn, type Effect, type Foot, type Pose } from '../../skeleton.ts';
+import {
+  blend,
+  planted as plantedOn,
+  solve,
+  type Effect,
+  type Foot,
+  type Pose,
+} from '../../skeleton.ts';
 import { RIFF_BODY } from '../body.ts';
 
 export { blend, type Effect, type Foot, type Pose };
@@ -109,8 +116,9 @@ export function toeOf(foot: Foot): number {
  * as a knee bent the wrong way. The feet about 30 px apart (0.42 of her height), the
  * thighs about 40 degrees down: ready to push off, not a rooted horse stance. The hips a little
  * over the lead leg (0.7 px ahead of the feet's midpoint); the rear foot springy on its ball,
- * the heel 12 degrees up (the foot that whips the sweeps and the scorpion kick: the idle pumps
- * that heel a few degrees, the ball never moves), the lead foot flat and planted.
+ * the heel 32 degrees up under the forward knee, a boxer's rear foot (the foot that whips the
+ * sweeps and the scorpion kick: the idle pumps that heel a few degrees, the ball never moves),
+ * the lead foot flat and planted.
  *
  * The body: hunched in, a predator. The torso leans in 19 degrees, the chest still open to the
  * viewer, the rear shoulder shrugged up into the popped collar, the head on an on-screen tilt of
@@ -143,10 +151,48 @@ export const GUARD: Pose = {
   torso: 19,
   head: -10,
   shrug: 2.2,
-  nearFoot: onBall(-17.5, -12),
+  nearFoot: onBall(-17.5, -32),
   farFoot: planted(7.4, 0),
   nearFist: at(-12, 58),
   farFist: at(9.5, 46),
   bends: { nearElbow: 'down', farElbow: 'down', nearKnee: 'front' },
   twist: 0.45,
 };
+
+/**
+ * The least angle her rear ankle keeps between the shin and the foot (90: the shin square to
+ * the sole): a combat boot does not let it close much more.
+ */
+export const MIN_ANKLE = 55;
+/** The highest a planted rear heel rises to keep that angle (degrees up, negative). */
+const HIGHEST_HEEL = -55;
+
+/** The angle between the rear shin and the rear foot of `pose`, in degrees. */
+export function rearAnkle(pose: Pose): number {
+  const { knee, ankle, heel, toe } = solve(pose, RIFF_BODY).near;
+  const shin = { x: knee.x - ankle.x, y: knee.y - ankle.y };
+  const foot = { x: toe.x - heel.x, y: toe.y - heel.y };
+  const cos =
+    (shin.x * foot.x + shin.y * foot.y) / (Math.hypot(shin.x, shin.y) * Math.hypot(foot.x, foot.y));
+  return (Math.acos(Math.max(-1, Math.min(1, cos))) * 180) / Math.PI;
+}
+
+/**
+ * `pose` with its planted rear foot's heel lifted as far as the knee needs: when the knee drives
+ * forward over a foot on the floor, the heel comes up and the foot rolls onto its ball (the
+ * ball stays put: the foot never slides), until the ankle keeps MIN_ANKLE. A foot off the floor,
+ * or one whose ankle already keeps that angle, is left as it is.
+ */
+export function springAnkle(pose: Pose): Pose {
+  const foot = pose.nearFoot;
+  const angle = foot.angle ?? 0;
+  const grounded = Math.abs(foot.y - planted(foot.x, angle).y) < 0.01;
+  if (!grounded || angle > 0 || rearAnkle(pose) >= MIN_ANKLE) return pose;
+  const toe = toeOf(foot);
+  let best = pose;
+  for (let heel = Math.floor(angle) - 1; heel >= HIGHEST_HEEL; heel--) {
+    best = { ...pose, nearFoot: onBall(toe, heel) };
+    if (rearAnkle(best) >= MIN_ANKLE) break;
+  }
+  return best;
+}

@@ -200,7 +200,7 @@ const KEYS: readonly Key[] = [
     shrug: 2.2,
     reach: {},
     twist: 0.45,
-    near: onBall(TOE, -12),
+    near: GUARD.nearFoot,
     far: planted(GUARD.farFoot.x),
     rear: { cocked: [0, 0] },
     lead: [9.5, 46],

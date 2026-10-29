@@ -84,11 +84,11 @@ function puff(x: number, size: number, progress = 0.25): Effect {
 // within 3.5 px of the guard's).
 const LOAD: Pose = {
   ...GUARD,
-  hip: at(-7.2, 29.5),
+  hip: at(-7.2, 29),
   torso: 21,
   head: HEAD + 1 - 21,
   shrug: 2.6,
-  nearFoot: onBall(TOE, -16),
+  nearFoot: onBall(TOE, -28),
   nearFist: at(GUARD.nearFist.x + 0.6, GUARD.nearFist.y - 1.6),
   farFist: at(GUARD.farFist.x - 0.4, GUARD.farFist.y - 2.2),
   effects: [puff(-15, 3, 0.1), puff(10, 3.4, 0.1)],

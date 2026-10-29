@@ -11,7 +11,7 @@
  */
 
 import type { RiffSheet } from '../../../../src/art/riff/sheets.ts';
-import type { Pose } from './common.ts';
+import { springAnkle, type Pose } from './common.ts';
 import * as idle from './idle.ts';
 import * as walkForward from './walkForward.ts';
 import * as walkBack from './walkBack.ts';
@@ -114,9 +114,15 @@ const STRIPS: Readonly<Record<RiffSheet, Strip>> = {
   super: slam,
 };
 
-/** Poses of every strip; each list has exactly the strip's number of frames. */
+/**
+ * Poses of every strip; each list has exactly the strip's number of frames. A planted rear foot
+ * lifts its heel as far as its forward knee needs (springAnkle).
+ */
 export const RIFF_POSES = Object.fromEntries(
-  (Object.keys(STRIPS) as RiffSheet[]).map((sheet) => [sheet, STRIPS[sheet].POSES]),
+  (Object.keys(STRIPS) as RiffSheet[]).map((sheet): [RiffSheet, readonly Pose[]] => [
+    sheet,
+    STRIPS[sheet].POSES.map(springAnkle),
+  ]),
 ) as Readonly<Record<RiffSheet, readonly Pose[]>>;
 
 /** Whether a strip is drawn from its own poses, not the GUARD placeholder. */

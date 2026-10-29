@@ -107,7 +107,7 @@ const LOAD: Pose = guarded(
     torso: 22,
     head: HEAD + 1 - 22,
     shrug: 2.6,
-    nearFoot: onBall(TOE, -20),
+    nearFoot: onBall(TOE, -26),
     farFoot: GUARD.farFoot,
   },
   at(0.6, 0.4),

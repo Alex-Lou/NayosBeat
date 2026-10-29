@@ -81,7 +81,7 @@ const BREAK: Pose = {
 // rear arm swung on up behind her, the lead hand low in front of the knee; dust off both feet.
 const SKID: Pose = {
   ...GUARD,
-  hip: at(-14, 22.5),
+  hip: at(-14, 27),
   torso: -6,
   head: 9,
   shrug: 1.6,

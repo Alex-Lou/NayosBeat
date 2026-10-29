@@ -169,7 +169,7 @@ const LAND: Key = {
   look: 9,
   shrug: 2.2,
   twist: 0.3,
-  near: kick(206, 242, 165),
+  near: kick(235, 190, 150),
   far: planted(TAKE_OFF - CARRY[1] - RIFF_BODY.foot),
   rear: at(10.5 - BACK, 41),
   lead: at(16.5 - BACK, 39),

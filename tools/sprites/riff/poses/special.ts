@@ -118,7 +118,7 @@ const LAUNCH: Pose = cocked(
     torso: 20.5,
     head: LOOK - 20.5,
     shrug: 2.6,
-    nearFoot: onBall(TOE, -16),
+    nearFoot: onBall(TOE, -28),
     farFist: at(10, 43.4),
     effects: [dust(-18, 3, 0.1), streak(at(-14, 1.5), 9, 1.2, 'sound')],
   },

@@ -48,7 +48,7 @@ describe('select screen fighters', () => {
     if (!riff) throw new Error('Riff has no art');
     const { portrait: bust, ...plain } = riff;
     expect(bust).toBeDefined();
-    expect(lookOf(plain)?.portrait).toEqual({ x: 0, y: 0, size: 94 });
+    expect(lookOf(plain)?.portrait).toEqual({ x: 0, y: 0, size: 92 });
     expect(lookOf(undefined)).toBeUndefined();
   });
 });
