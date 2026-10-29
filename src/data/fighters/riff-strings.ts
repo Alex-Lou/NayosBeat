@@ -67,6 +67,8 @@ export const RIFF_STRINGS: Pick<
     cancelInto: HEAVY_CANCELS,
   }),
   // L, L, ← + H: the Retourné out of a 14 px call hop, so it still reaches after the Revers.
+  // The game carries her only while the hop shows (ticks 0-1, both boots in the air): she lands
+  // where the Retourné takes off, and no planted foot slides.
   chainLaunch: strike({
     name: 'Retourné sauté',
     frames: [6, 5, 15],
@@ -77,7 +79,7 @@ export const RIFF_STRINGS: Pick<
     guard: 'mid',
     hitbox: box(-12, 58, 34, 42),
     hurtboxes: [{ frames: { from: 6, to: 11 }, boxes: [box(-15, 16, 30, 80)] }],
-    motion: advance(26, { from: 0, to: 6, distancePx: 14 }),
+    motion: advance(26, { from: 0, to: 2, distancePx: 14 }),
     knockdown: kd(8, 0.5, { juggle: 4 }),
     cancelInto: HEAVY_CANCELS,
   }),

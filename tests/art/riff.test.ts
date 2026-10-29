@@ -19,7 +19,7 @@ describe('Riff art', () => {
   });
 
   it('plays all her strips (docs/combat-v2.md §11.3) but the ones drawn ahead, each with an image', () => {
-    // Drawn ahead of their gameplay: the combos v3 strips, until their clips come
+    // Drawn ahead of its gameplay: the Slam, until its clip comes with the super
     // (tools/sprites/riff/pending-timing.ts).
     const played = playedSheets(RIFF);
     const sheets = Object.keys(RIFF_SHEETS);

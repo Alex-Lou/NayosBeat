@@ -86,9 +86,9 @@ export const NAYO_CLIPS: FighterClips<NayoClip> = {
   // Jab chassé: the slide forward on frames 0-2.
   forwardLight: play('forwardLight', [2, 2, 3, 3, 4, 6]), // active: frame 3
   standHeavy: play('standHeavy', [3, 3, 2, 4, 3, 3, 3, 3, 4]), // active: frame 3
-  // Crochet au foie, active on frame 3: TEMPORARY, the Crochet's strip played in the ticks of
-  // its own (§5, row 1) until feat/combos-v3-art lands the chainHeavy strip.
-  chainHeavy: { sheet: 'standHeavy', frames: [0, 1, 2, 3, 4, 6, 8], ticks: [3, 3, 2, 3, 6, 6, 5] },
+  // Crochet au foie: the weight shift on the spot (frame 0), the low glide on frames 1-2 (the
+  // game moves him from tick 3), the fist under the ribs on frame 3 (§5, row 1).
+  chainHeavy: play('chainHeavy', [3, 3, 2, 3, 6, 6, 5]), // active: frame 3
   // Overhand: up on his toes on frames 3-4, the cyan arc from frame 2.
   forwardHeavy: play('forwardHeavy', [4, 4, 4, 4, 3, 3, 5, 5, 5]), // active: frame 5
   // Marteau: the Overhand from its fist already loaded behind the ear (frames 2-8), the star of
@@ -96,9 +96,8 @@ export const NAYO_CLIPS: FighterClips<NayoClip> = {
   chainHigh: { sheet: 'forwardHeavy', frames: [2, 3, 4, 5, 6, 7, 8], ticks: [5, 5, 4, 3, 5, 5, 5] },
   // Remontant: the fist nearly vertical, the head tucked.
   backHeavy: play('backHeavy', [2, 2, 3, 4, 5, 6, 6]), // active: frame 3
-  // Remontant chassé, active on frame 3: TEMPORARY, the Remontant's strip played in the ticks
-  // of its own (§5, row 2) until feat/combos-v3-art lands the chainLaunch strip.
-  chainLaunch: { sheet: 'backHeavy', frames: [0, 1, 2, 3, 4, 5, 6], ticks: [2, 3, 2, 4, 5, 6, 6] },
+  // Remontant chassé: the call step on frames 0-1, then the Remontant's frames 2-6 (§5, row 2).
+  chainLaunch: play('chainLaunch', [2, 3, 2, 4, 5, 6, 6]), // active: frame 3
   crouchLight: play('crouchLight', [2, 2, 2, 2, 3, 3]), // active: frame 2
   crouchHeavy: play('crouchHeavy', [3, 3, 3, 3, 4, 4, 4, 4, 4]), // active: frame 3
   jumpLight: play('jumpLight', [2, 2, 6, 3, 3]), // active: frame 2

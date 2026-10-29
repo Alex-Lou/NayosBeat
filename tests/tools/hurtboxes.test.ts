@@ -112,23 +112,52 @@ describe.each(DRAWN_FIGHTERS)("$name's hurtboxes", (fighter) => {
  */
 const PENDING: Readonly<Record<string, readonly MoveId[]>> = { Nayo: ['specialForward'] };
 
-/** The ground ticks of `id` whose drawing leaves the hurtboxes in force, with what is wrong. */
-function strayTicks(fighter: DrawnFighter, id: MoveId): string[] {
+/** Calls `visit` on each ground tick of `id`, with the frame shown and the boxes in force. */
+function forGroundTicks(
+  fighter: DrawnFighter,
+  id: MoveId,
+  visit: (frame: number, tick: number, drawing: Drawing, boxes: readonly Box[]) => void,
+): void {
   const move = fighter.template.moves[id];
   const clip = fighter.art.clips[id];
   if (!move || !clip) throw new Error(`No ${id}`);
   const mask = maskOf(fighter, clip.sheet);
-  const stray: string[] = [];
   let tick = 0;
   clip.frames.forEach((frame, index) => {
     const drawing = measureFrames(mask, [frame]);
     for (const end = tick + (clip.ticks[index] ?? 0); tick < end; tick++) {
       if (isAirborne(id, move, tick)) continue;
-      const flags = moveFrameFlags(drawing, moveHurtboxesAt(fighter.template, id, move, tick));
-      if (flags.length > 0) stray.push(`frame ${frame}, tick ${tick}: ${flags.join(', ')}`);
+      visit(frame, tick, drawing, moveHurtboxesAt(fighter.template, id, move, tick));
     }
   });
+}
+
+/** The ground ticks of `id` whose drawing leaves the hurtboxes in force, with what is wrong. */
+function strayTicks(fighter: DrawnFighter, id: MoveId): string[] {
+  const stray: string[] = [];
+  forGroundTicks(fighter, id, (frame, tick, drawing, boxes) => {
+    const flags = moveFrameFlags(drawing, boxes);
+    if (flags.length > 0) stray.push(`frame ${frame}, tick ${tick}: ${flags.join(', ')}`);
+  });
   return stray;
+}
+
+/**
+ * Moves whose body goes down under its posture's box (docs/combos-v3.md §2.4): their own boxes
+ * follow the drawing's top as well, to 1.5 px, or a blow would hit the air over the head.
+ */
+const DESCENDING: Readonly<Record<string, readonly MoveId[]>> = { Nayo: ['chainHeavy'] };
+
+/** The ground ticks of `id` whose boxes' top is off the drawing's, with both heights. */
+function topGaps(fighter: DrawnFighter, id: MoveId): string[] {
+  const gaps: string[] = [];
+  forGroundTicks(fighter, id, (frame, tick, drawing, boxes) => {
+    const box = Math.max(...boxes.map(({ y, height }) => toPx(y + height)));
+    if (!fits({ box, drawn: drawing.top })) {
+      gaps.push(`frame ${frame}, tick ${tick}: box top ${box}, drawn ${drawing.top}`);
+    }
+  });
+  return gaps;
 }
 
 /**
@@ -152,4 +181,11 @@ describe.each(DRAWN_FIGHTERS)("$name's moves", (fighter) => {
   it.each(pending)('%s: still waits on its decision', (id) => {
     expect(strayTicks(fighter, id).length).toBeGreaterThan(0);
   });
+
+  it.each(DESCENDING[fighter.name] ?? [])(
+    '%s: its boxes come down with the body, to 1.5 px',
+    (id) => {
+      expect(topGaps(fighter, id)).toEqual([]);
+    },
+  );
 });

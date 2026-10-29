@@ -9,13 +9,13 @@ export const ANIMATED: boolean = true;
 /**
  * chainLaunch (Retourné sauté, L, L, ← + H; docs/combos-v3.md §4): her Retourné (backHeavy)
  * out of a call hop. 7 frames, 2, 2, 2, [5], 5, 5, 5 ticks (26: 6/5/15, the Retourné's own,
- * tools/sprites/riff/pending-timing.ts), the scorpion on frame 3 (ticks 6-10), hitbox -12..22 /
- * 58..100 as the Retourné's, reached upward. It cancels out of her Revers (chainLight) on
- * contact, from its backfist (frame 2), launches (the opponent flies to about 60 px) and ends in
- * her GUARD. The game carries her 14 px forward, evenly over ticks 0-5 (CARRY: about 3.5, 8 and
- * 13 px while frames 0, 1 and 2 show, 14 from frame 3): the poses stay anchored, the hop's
+ * src/art/riff/clips.ts), the scorpion on frame 3 (ticks 6-10), hitbox -12..22 / 58..100 as the
+ * Retourné's, reached upward. It cancels out of her Revers (chainLight) on contact, from its
+ * backfist (frame 2), launches (the opponent flies to about 60 px) and ends in her GUARD. The
+ * game carries her 14 px forward while the hop shows, both boots in the air (ticks 0-1, CARRY:
+ * 10.5 px on average while frame 0 shows, 14 from frame 1): the poses stay anchored, the hop's
  * height drawn in the cell, and the foot she lands on is drawn where the Retourné takes off from
- * on the screen, so it stays put from the landing to the take-off.
+ * on the screen, so it stays put from the landing to the take-off, nothing carrying it.
  *
  * The call hop is the gymnast's hurdle before a round-off, done by a street punk: out of the
  * backfist she bounds forward pitched over it, the lead knee driven up in front, the rear leg
@@ -30,11 +30,11 @@ export const ANIMATED: boolean = true;
  *   the rear one tucked under her seat, toes down), the hips 6.5 px over her guard's, the body
  *   pitched 37 degrees; the rear fist folded across the chest on its way down from the
  *   backfist, the lead fist back at the ribs; a puff of dust where she pushed off.
- * - 1 (new, 2 ticks): the landing, loaded: the lead foot flat where the Retourné takes off (13 px
+ * - 1 (new, 2 ticks): the landing, loaded: the lead foot flat where the Retourné takes off (14 px
  *   ahead of the Revers' on the screen), the knee sunk (the hips 4 px under her guard's), the
  *   body pitched 32 degrees over it, the rear leg swung down and back off the floor, the sole up,
  *   both arms swinging down in front against the pitch; a bigger landing dust. The Retourné's own
- *   launch (its frame 1), taken from the air, deeper and 4.5 px further in.
+ *   launch (its frame 1), taken from the air, deeper, its lead toe on the same spot.
  * - 2-6: the Retourné's frames 2 to 6 (the take-off, the scorpion, the landing, the settle,
  *   the guard), with their effects.
  *
@@ -44,8 +44,15 @@ export const ANIMATED: boolean = true;
 
 const BENDS: readonly Bend[] = ['down', 'up', 'front', 'back'];
 
-/** How far the game has carried her while each frame shows (14 px, evenly over ticks 0-5). */
-const CARRY = [3.5, 8.2, 12.8, 14, 14, 14, 14] as const;
+/** How far the game has carried her while each frame shows (14 px over ticks 0-1, the hop). */
+const CARRY = [10.5, 14, 14, 14, 14, 14, 14] as const;
+
+/**
+ * The hop and the landing were first drawn for a carry spread over ticks 0-5; carried on the hop
+ * alone, both are drawn this much further back in the cell, unchanged: the hop leaves from the
+ * same spot on its first tick, and the landing foot comes down on the take-off spot.
+ */
+const BACK = 4.6;
 
 /** Where she pushes off from: the toe of the Revers' lead foot (her guard's). */
 const PUSH_OFF = toeOf(GUARD.farFoot);
@@ -143,29 +150,29 @@ const dust = (x: number, size: number, progress: number): Effect => ({
 
 // 0: the hop, pitched over, the lead knee driven up in front, the rear foot tucked after it.
 const HOP: Key = {
-  hip: [-2, 38.5],
+  hip: [-2 - BACK, 38.5],
   torso: 37,
   look: 15,
   shrug: 2.4,
   twist: 0.1,
   near: kick(-72, -128, -50),
   far: kick(-10, -95, -15),
-  rear: at(12, 50),
-  lead: at(3, 42),
+  rear: at(12 - BACK, 50),
+  lead: at(3 - BACK, 42),
   effects: [dust(PUSH_OFF - CARRY[0], 2.5, 0.2)],
 };
 
 // 1: the landing on the lead foot, sunk and loaded, the rear leg swinging back.
 const LAND: Key = {
-  hip: [0, 28],
+  hip: [-BACK, 28],
   torso: 32,
   look: 9,
   shrug: 2.2,
   twist: 0.3,
   near: kick(206, 242, 165),
   far: planted(TAKE_OFF - CARRY[1] - RIFF_BODY.foot),
-  rear: at(10.5, 41),
-  lead: at(16.5, 39),
+  rear: at(10.5 - BACK, 41),
+  lead: at(16.5 - BACK, 39),
   effects: [dust(TAKE_OFF - CARRY[1] - 4, 4, 0.1)],
 };
 

@@ -7,7 +7,7 @@ export const ANIMATED: boolean = true;
 
 /**
  * chainHeavy (Coup de boule, H, H; docs/combos-v3.md §4): 6 frames, 2, 2, 2, [2], 7, 7 ticks (22:
- * 6/2/14, tools/sprites/riff/pending-timing.ts), the forehead in on frame 3 (ticks 6-7, the
+ * 6/2/14, src/art/riff/clips.ts), the forehead in on frame 3 (ticks 6-7, the
  * hitstop holds it longer), hitbox 8..34 / 50..66. It cancels out of her Coup de coude
  * (standHeavy) on contact, right after its hitstop, so its first frame follows that strip's
  * impact (frames 3-4), not the guard; it ends in her GUARD. The game carries her 12 px forward,

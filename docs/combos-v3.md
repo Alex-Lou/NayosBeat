@@ -566,7 +566,7 @@ Colonnes :
 | L, L, L | **Mise au tapis** | Large crochet du bras avant, traînée cyan | 8/3/18 (29) | 50 | KD (3 ; 4) / 12 (KD +31 / −8) | mid ; gel **14** (c'était 11) | rien | fin de jongle | lightFinisher |
 | → + L | **Jab chassé** | Pas glissé de 14 px et jab sec | 7/3/10 (20) | 35 | 15/11 (+3 / −1) | mid | L (neutre, →, ←) : Cross ; spécial ; DASH : Rewind | 1 | forwardLight |
 | H | **Crochet** | Crochet du bras avant avec un pas ; en CONTRE, l'adversaire se plie sur place | 8/4/16 (28) | 80 | 20/14 (+1 / −5) ; **CONTRE ou PUNITION : 36 tics, recul 0,5, donc +17** | mid ; 10..52 / 44..62, gel 12, recul **3,5** (inchangé) | H (neutre, →) : Crochet au foie ; ↓H : Balayage ; ←H : Remontant chassé ; spécial ; DASH : Rewind | **coût 2** | standHeavy ; le pli rejoue hitMid tenu (stunTick) |
-| H, H | **Crochet au foie** *(nouveau)* | Genoux pliés, l'épaule avant plonge, le poing s'enfonce sous les côtes ; croissant cyan bas | 8/3/17 (28) | 60 | 22/12 (+3 / −7) | mid ; **8..46 / 24..44 : touche aussi un accroupi** ; avance de 22 px de f0 à f7 ; gel 11, recul 2,5 | spécial ; DASH : Rewind (pas de normal : à +3, aucun lien ne boucle) | coût 2 | **nouvelle planche, 7 images** (§5) |
+| H, H | **Crochet au foie** *(nouveau)* | Genoux pliés, l'épaule avant plonge, le poing s'enfonce sous les côtes ; croissant cyan bas | 8/3/17 (28) | 60 | 22/12 (+3 / −7) | mid ; **8..46 / 24..44 : touche aussi un accroupi** ; avance de 22 px de f3 à f7 ; f0–2 sur place (l'image 0 passe le poids sur le pied avant) ; gel 11, recul 2,5 | spécial ; DASH : Rewind (pas de normal : à +3, aucun lien ne boucle) | coût 2 | **nouvelle planche, 7 images** (§5) |
 | L, L, → + H | **Marteau** *(nouveau)* | L'Overhand sans sa montée : le poing arrière déjà armé retombe sur le crâne ; sur un corps en l'air, il l'écrase au sol : poussière, « REBOND ! » | 14/3/15 (32) | 60 | 19/11 (+2 / −6) ; trou de 2 tics après une Cross gardée | **overhead** ; 12..40 / 36..72 ; avance de 16 px de f0 à f9 ; gel 12, recul 3 | spécial ; DASH : Rewind ; **Rebond** une fois par combo (+2 points, +4 de gel) | 1 | clip de forwardHeavy, images 2 à 8, tics 5, 5, 4, [3], 5, 5, 5 |
 | → + H | **Overhand** | Sur la pointe des pieds, le bras arrière passe par-dessus la garde | 19/3/15 (37) | 70 | 18/13 (+1 / −4 ; CONTRE +5) | overhead | rien | 1 | forwardHeavy |
 | ← + H | **Remontant** | Uppercut court, tête rentrée ; la cible décolle jusqu'à environ 60 px | 7/4/17 (28) | 65 | lance (vy **8**, vx 0,5) : **4 points**, **5 en CONTRE ou en PUNITION** / 14 (−6) | mid ; 4..30 / 58..104 (rate un accroupi) ; gel 11 | spécial seulement ; les suites en l'air sont des liens (11 tics) | 1 | backHeavy |
@@ -644,7 +644,7 @@ standHeavy: { …, juggleCost: 2, counter: { hitstun: 16, pushback: px(0.5) }, b
   { button: 'heavy', dirs: ['back'], move: 'chainLaunch' } ] },
 chainHeavy: strike({ name: 'Crochet au foie', frames: [8, 3, 17], damage: 60, stun: [22, 12], hitstop: 11,
   pushbackPx: 2.5, guard: 'mid', hitbox: box(8, 24, 38, 20),
-  motion: advance(28, { from: 0, to: 8, distancePx: 22 }), cancelInto: HEAVY_CANCELS, juggleCost: 2 }),
+  motion: advance(28, { from: 3, to: 8, distancePx: 22 }), cancelInto: HEAVY_CANCELS, juggleCost: 2 }),
 crouchLight: { …, crouching: true }, crouchHeavy: { …, crouching: true },
 specialForward: { …, hitstop: 14 }, specialAntiAir: { …, hitstop: 16 },
 specialBoost: remix(VINYLE, { name: 'Vinyle platine', damage: 80, hitstun: 0, blockstun: 18, hitstop: 10,
@@ -670,7 +670,7 @@ Les aides de `shared.ts` :
 - `superMove(first, pulses, flash)` précalcule les frappes ; seule la dernière met au sol.
 
 **Hurtbox.**
-- Crochet au foie et Mégabasse : leurs `hurtboxes` se mesurent sur le dessin (`npm run measure-boxes`), car le corps descend.
+- Crochet au foie et Mégabasse : leurs `hurtboxes` se mesurent sur le dessin (`npm run measure-boxes`), car le corps descend. Crochet au foie, mesuré : haut 71 (f0–2), 66,5 (f3–5), 64 (f6–16), 73,5 (f17–22), arrière −27 à −31 (le pied arrière de la fente), avant celui de la garde ; `hurtboxes.test.ts` vérifie que le haut suit le dessin à 1,5 px.
 - Le Remontant chassé garde celles du Remontant.
 
 ---

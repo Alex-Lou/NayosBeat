@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { NAYO_CLIPS } from '../../src/art/nayo/clips';
 import { NAYO_SHEETS } from '../../src/art/nayo/sheets';
-import { ANCHOR, ART_SCALE, CELL_SIZE } from '../../src/art/types';
+import { ANCHOR, ART_SCALE, CELL_SIZE, type Clip, type ClipId } from '../../src/art/types';
 import { NAYO } from '../../src/data/fighters/nayo';
 import {
   activeFrames,
@@ -21,7 +21,7 @@ import {
 import type { PixelCanvas, Point } from '../../tools/sprites/raster';
 import { drawEffectsSheet, drawSheet } from '../../tools/sprites/sheet';
 import { solve, type Pose } from '../../tools/sprites/skeleton';
-import { AWAITING_ART, reachCheck } from './fighters';
+import { reachCheck } from './fighters';
 import { extent, reach } from './strip-pixels';
 
 /**
@@ -101,11 +101,12 @@ const RULES: Readonly<Record<V2Sheet, Rules>> = {
   // Crochet or the Double direct (backHeavy's frames 2-6 after a call step: an anti-air).
   chainHeavy: { frames: 7, placeholder: GUARD, toGuard: 'exact', anchored: true },
   chainLaunch: { frames: 7, placeholder: GUARD, up: true, toGuard: 'exact', anchored: true },
-  // The Mégabasse starts on the intro's cue (its feet 13 px off the guard's), held through the
-  // freeze flash; its speaker rings strike, filling the hitbox forward and up.
+  // The Mégabasse starts from the guard's stance on the cue, held through the freeze flash; its
+  // speaker rings strike, filling the hitbox forward and up.
   super: {
     frames: 10,
     placeholder: GUARD,
+    fromGuard: true,
     up: true,
     reachFrom: 'fx',
     toGuard: 'exact',
@@ -115,7 +116,6 @@ const RULES: Readonly<Record<V2Sheet, Rules>> = {
 
 /** The moves that strike with each strip (the strikes and the grab), each with its own box. */
 const STRIKES = strikesOf(NAYO_CLIPS, NAYO);
-const AWAITING = AWAITING_ART['Nayo'] ?? new Set();
 
 /**
  * The strike a strip shows, with a hitbox (the strikes and the grab): the game's, or for a strip
@@ -124,29 +124,16 @@ const AWAITING = AWAITING_ART['Nayo'] ?? new Set();
 const strikeOfStrip = (sheet: V2Sheet) => strikeOf(NAYO_CLIPS, NAYO, sheet, NAYO_PENDING);
 
 /**
- * The reach checks of a strip: one per move of the game that plays it, each with its own box
- * (a move still on a stand-in strip waits for its own); a strip no move plays yet has its
- * pending strike's.
+ * The reach checks of a strip: one per move of the game that plays it, each with its own box; a
+ * strip no move plays yet has its pending strike's.
  */
-function reachChecksOf(sheet: V2Sheet): { name: string; waits: boolean; strike: ShownStrike }[] {
+function reachChecksOf(sheet: V2Sheet): { name: string; strike: ShownStrike }[] {
   const played = STRIKES.filter((strike) => strike.sheet === sheet);
-  const planned = played.length === 0 ? strikeOfStrip(sheet) : undefined;
-  return [
-    ...played.map((strike) => ({
-      name: reachCheck('Nayo', strike.id),
-      waits: AWAITING.has(strike.id),
-      strike,
-    })),
-    ...(planned
-      ? [
-          {
-            name: 'pending: the active frames reach the hitbox, no farther',
-            waits: false,
-            strike: planned,
-          },
-        ]
-      : []),
-  ];
+  if (played.length > 0) return played.map((strike) => ({ name: reachCheck(strike.id), strike }));
+  const planned = strikeOfStrip(sheet);
+  return planned
+    ? [{ name: 'pending: the active frames reach the hitbox, no farther', strike: planned }]
+    : [];
 }
 
 /**
@@ -266,8 +253,8 @@ describe('Nayo combat v2', () => {
         }
       });
 
-      for (const { name, waits, strike } of reachChecksOf(sheet)) {
-        it.skipIf(pending || waits)(name, () => {
+      for (const { name, strike } of reachChecksOf(sheet)) {
+        it.skipIf(pending)(name, () => {
           const { body, fx } = layersOf(sheet);
           const fromFx = rules.reachFrom === 'fx';
           if (fromFx && !fx) throw new Error(`${sheet} strikes with its effects: it draws none`);
@@ -350,67 +337,76 @@ describe('Nayo combat v2', () => {
 // which plays it for each fighter throwing each one, with the hold and the pummels.
 
 /**
- * The combos v3 strips are timed by tools/sprites/nayo/pending-timing.ts until the game plays
- * them (docs/combos-v3.md §5): each clip lasts its move (S + A + R) in §5's ticks, its active
- * frames come on at the move's startup and are the ones §5 marks, and its hitbox is §2.2's.
- * Once the game has a clip for the strip, the game's timing wins: the entry must go.
+ * The combos v3 strips' timing (docs/combos-v3.md §5): each clip lasts its move (S + A + R) in
+ * §5's ticks, its active frames come on at the move's startup and are the ones §5 marks, and its
+ * hitbox is §2.2's. The game's clip and move once it plays the strip, until then its pending
+ * entry (tools/sprites/nayo/pending-timing.ts), which must go as soon as the game plays it: the
+ * game's timing wins.
  */
-const PENDING_SPEC = {
+const TIMING_SPEC = {
   chainHeavy: {
     ticks: [3, 3, 2, 3, 6, 6, 5],
-    frames: [3, 17],
+    frames: [8, 3, 17],
     active: [3],
     box: { x: [8, 46], y: [24, 44] },
   },
   chainLaunch: {
     ticks: [2, 3, 2, 4, 5, 6, 6],
-    frames: [4, 17],
+    frames: [7, 4, 17],
     active: [3],
     box: { x: [4, 30], y: [58, 104] },
   },
   // 12 entries: frames 2 and 3 played twice, the blows on action frames 2, 8 and 14.
   super: {
     ticks: [1, 1, 3, 3, 3, 3, 3, 6, 7, 7, 5, 5],
-    frames: [15, 30],
+    frames: [2, 15, 30],
     active: [2, 3, 4],
     box: { x: [4, 60], y: [0, 90] },
   },
-} as const;
+} as const satisfies Readonly<Partial<Record<V2Sheet, unknown>>>;
+
+/** The clip and the strike of a combos v3 strip: the game's once it plays it, else pending. */
+function playOf(sheet: keyof typeof TIMING_SPEC): { clip: Clip; strike: ShownStrike } {
+  const clip = isPlayed(NAYO_CLIPS, sheet)
+    ? NAYO_CLIPS[sheet as ClipId]
+    : NAYO_PENDING[sheet]?.clip;
+  const strike = strikeOfStrip(sheet);
+  if (!clip || !strike) throw new Error(`${sheet} has neither a clip nor a pending entry`);
+  return { clip, strike };
+}
 
 describe('Nayo combos v3 timing', () => {
-  for (const [sheet, spec] of Object.entries(PENDING_SPEC)) {
-    const entry = NAYO_PENDING[sheet as keyof typeof PENDING_SPEC];
-    const [active, recovery] = spec.frames;
+  for (const [sheet, spec] of Object.entries(TIMING_SPEC)) {
+    const [startup, active, recovery] = spec.frames;
+    const strip = sheet as keyof typeof TIMING_SPEC;
 
-    it(`${sheet}: its pending clip plays the strip in §5's ticks`, () => {
-      if (!entry?.strike) throw new Error(`${sheet} has no pending strike`);
-      const { clip, strike } = entry;
+    it(`${sheet}: its clip plays the strip in §5's ticks`, () => {
+      const { clip, strike } = playOf(strip);
       expect(clip.sheet).toBe(sheet);
       expect(clip.ticks).toEqual(spec.ticks);
       expect(clip.frames).toHaveLength(spec.ticks.length);
+      expect([strike.move.startup, strike.move.active]).toEqual([startup, active]);
       const total = clip.ticks.reduce((sum, ticks) => sum + ticks, 0);
-      expect(total).toBe(strike.startup + active + recovery);
-      expect(strike.active).toBe(active);
+      expect(total).toBe(startup + active + recovery);
       // Every frame of the strip shows, none outside it.
-      const strip = NAYO_SHEETS[sheet as keyof typeof PENDING_SPEC].frames;
-      expect(new Set(clip.frames)).toEqual(new Set(Array.from({ length: strip }, (_, f) => f)));
+      const frames = NAYO_SHEETS[strip].frames;
+      expect(new Set(clip.frames)).toEqual(new Set(Array.from({ length: frames }, (_, f) => f)));
     });
 
     it(`${sheet}: its active frames are §5's, from its startup`, () => {
-      if (!entry?.strike) throw new Error(`${sheet} has no pending strike`);
-      const { clip, strike } = entry;
-      const first = activeFrames(clip, strike)[0];
+      const { clip, strike } = playOf(strip);
+      const first = activeFrames(clip, strike.move)[0];
       const index = clip.frames.indexOf(first ?? -1);
       const before = clip.ticks.slice(0, index).reduce((sum, ticks) => sum + ticks, 0);
-      expect(before).toBe(strike.startup);
-      expect(strikeOfStrip(sheet as V2Sheet)?.frames).toEqual(spec.active);
+      expect(before).toBe(startup);
+      expect(strike.frames).toEqual(spec.active);
       const { x, y, width, height } = strike.box;
       expect({ x: [x, x + width], y: [y, y + height] }).toEqual(spec.box);
     });
-
-    it(`${sheet}: waits for its gameplay`, () => {
-      const message = `the game plays ${sheet}: its clip and move rule, delete its pending entry`;
-      expect(isPlayed(NAYO_CLIPS, sheet), message).toBe(false);
-    });
   }
+
+  it.each(Object.keys(NAYO_PENDING))('%s: waits for its gameplay', (sheet) => {
+    const message = `the game plays ${sheet}: its clip and move rule, delete its pending entry`;
+    expect(isPlayed(NAYO_CLIPS, sheet), message).toBe(false);
+  });
 });

@@ -8,7 +8,7 @@ export const ANIMATED: boolean = true;
 
 /**
  * chainHeavy (Crochet au foie, H, H; docs/combos-v3.md §2.2, §5 row 1): 7 frames, 3, 3, 2, [3],
- * 6, 6, 5 ticks (28: 8/3/17, tools/sprites/nayo/pending-timing.ts), the impact on frame 3
+ * 6, 6, 5 ticks (28: 8/3/17, src/art/nayo/clips.ts), the impact on frame 3
  * (ticks 8-10), hitbox x 8..46 / y 24..44: low, it hits a crouching opponent too. It follows
  * the Crochet (standHeavy): it starts from standHeavy's last frames' body, not from the guard,
  * and ends in the GUARD. The game moves him 22 px forward: the poses stay anchored (the feet
@@ -16,8 +16,8 @@ export const ANIMATED: boolean = true;
  *
  * Drawn for the glide where §5 draws it: frame 0 is the weight shift, on the spot, and the
  * 22 px are covered by frames 1-2, i.e. `advance(28, { from: 3, to: 8, distancePx: 22 })` in
- * the move's data (4.4 px a tick over ticks 3-7). §2.4 writes `from: 0`: with it frame 0's
- * planted feet would skate 8 px; the gameplay must start the advance on tick 3.
+ * the move's data (4.4 px a tick over ticks 3-7). Started on tick 0, frame 0's planted feet
+ * would skate 8 px.
  *
  * The boxer's high-low: the hook to the head, then the same hand to the body. Out of the
  * Crochet the weight drops onto the lead foot and the elbow comes down to the hip; he glides

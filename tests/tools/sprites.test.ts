@@ -14,7 +14,7 @@ import { RIFF as RIFF_GENERATOR } from '../../tools/sprites/riff/index';
 import { drawSheet } from '../../tools/sprites/sheet';
 import type { Effect } from '../../tools/sprites/skeleton';
 import { drawEffect, inkAt } from '../../tools/sprites/vfx';
-import { AWAITING_ART, reachCheck } from './fighters';
+import { reachCheck } from './fighters';
 import { eachPixel as eachPixelOf, extent as extentOf, reach } from './strip-pixels';
 
 describe('PNG encoder', () => {
@@ -196,7 +196,6 @@ describe('Nayo strips', () => {
   const STRIKES = strikesOf(NAYO_CLIPS, NAYO).filter(
     ({ sheet }) => !isV2Sheet(sheet as PosedSheet),
   );
-  const AWAITING = AWAITING_ART['Nayo'] ?? new Set();
 
   it('measures every move that strikes with a v1 strip, those that share one too', () => {
     expect(STRIKES.map(({ id }) => id)).toEqual([
@@ -208,15 +207,14 @@ describe('Nayo strips', () => {
       'jumpHeavy',
       'specialForward',
       'specialAntiAir',
-      // The Direct's strip, and the Crochet's until its own lands. The grab plays a combat v2
-      // strip: nayo-v2-sprites.test.ts measures it with them.
+      // The Direct's strip. The grab plays a combat v2 strip: nayo-v2-sprites.test.ts measures
+      // it with them.
       'jabRepeat',
-      'chainHeavy',
     ]);
   });
 
   for (const { id, move, sheet, frames, box } of STRIKES) {
-    it.skipIf(AWAITING.has(id))(reachCheck('Nayo', id), () => {
+    it(reachCheck(id), () => {
       const { x, y, width, height } = box;
       const { short, past } = move.guard === 'low' ? LOW_REACH : REACH;
       const ways = [{ up: false, band: { from: y, to: y + height }, edge: x + width }];

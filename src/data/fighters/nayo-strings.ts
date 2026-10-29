@@ -160,7 +160,9 @@ export const NAYO_STRINGS: Pick<
     ],
   }),
   // H, H: knees bent, the lead fist sunk under the ribs, low enough to hit a crouching body.
-  // It cancels into a special only: at +3, no link would loop it.
+  // It cancels into a special only: at +3, no link would loop it. The glide starts on tick 3,
+  // with the strip's step (frames 1-2): frame 0 shifts the weight on planted feet, which any
+  // carry would skate.
   chainHeavy: strike({
     name: 'Crochet au foie',
     frames: [8, 3, 17],
@@ -170,7 +172,16 @@ export const NAYO_STRINGS: Pick<
     pushbackPx: 2.5,
     guard: 'mid',
     hitbox: box(8, 24, 38, 20),
-    motion: advance(28, { from: 0, to: 8, distancePx: 22 }),
+    motion: advance(28, { from: 3, to: 8, distancePx: 22 }),
+    // The body goes down under the standing box (`npm run measure-boxes -- nayo --moves`): the
+    // top follows the hair frame by frame, the back the rear foot of the lunge, so a blow over
+    // his head passes over it.
+    hurtboxes: [
+      { frames: { from: 0, to: 3 }, boxes: [box(-27, 0, 40.5, 71)] },
+      { frames: { from: 3, to: 6 }, boxes: [box(-30.5, 0, 44, 66.5)] },
+      { frames: { from: 6, to: 17 }, boxes: [box(-31, 0, 44.5, 64)] },
+      { frames: { from: 17, to: 23 }, boxes: [box(-28.5, 0, 42, 73.5)] },
+    ],
     cancelInto: HEAVY_CANCELS,
     juggleCost: 2,
   }),

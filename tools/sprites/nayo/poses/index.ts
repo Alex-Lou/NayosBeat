@@ -6,10 +6,11 @@
  * strips, drawn to the animation brief's stricter rules, are checked by
  * tests/tools/nayo-v2-sprites.test.ts.
  *
- * The combos v3 strips are drawn ahead of their gameplay (their timing and hitboxes:
- * ../pending-timing.ts). Each of their files says whether it is animated yet (`ANIMATED`): until
- * it is, it holds placeholder poses (the GUARD, or the frames it borrows), and its tests that need
- * the finished drawing wait. Animators work on their own files only, never on this registry.
+ * The combos v3 strips were drawn ahead of their gameplay (the Mégabasse still is: its timing
+ * and hitbox, ../pending-timing.ts). Each of their files says whether it is animated yet
+ * (`ANIMATED`): until it is, it holds placeholder poses (the GUARD, or the frames it borrows),
+ * and its tests that need the finished drawing wait. Animators work on their own files only,
+ * never on this registry.
  */
 
 import type { NayoSheet } from '../../../../src/art/nayo/sheets.ts';
@@ -58,7 +59,7 @@ import { POSES as hitMidPoses } from './hitMid.ts';
 import { POSES as hitLowPoses } from './hitLow.ts';
 import { POSES as tripPoses } from './trip.ts';
 import { POSES as getupPoses } from './getup.ts';
-// Combos v3 (docs/combos-v3.md §5), drawn ahead of their gameplay.
+// Combos v3 (docs/combos-v3.md §5).
 import * as chainHeavy from './chainHeavy.ts';
 import * as chainLaunch from './chainLaunch.ts';
 import * as megabasse from './super.ts';

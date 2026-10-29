@@ -49,8 +49,8 @@ export const NAYO_SHEETS = {
   trip: { frames: 4 },
   getup: { frames: 5 },
 
-  // Combos v3 (docs/combos-v3.md §5), drawn ahead of their gameplay: no clip plays these strips
-  // yet, so a fight does not load them (tools/sprites/nayo/pending-timing.ts times them).
+  // Combos v3 (docs/combos-v3.md §5). The Mégabasse is drawn ahead of its gameplay: no clip plays
+  // it yet, so a fight does not load it (tools/sprites/nayo/pending-timing.ts times it).
   chainHeavy: { frames: 7 },
   chainLaunch: { frames: 7 },
   super: { frames: 10 },

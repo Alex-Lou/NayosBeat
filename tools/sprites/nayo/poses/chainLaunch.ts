@@ -9,8 +9,8 @@ export const ANIMATED: boolean = true;
 /**
  * chainLaunch (Remontant chassé, L, L, ← + H; docs/combos-v3.md §2.2, §5 row 2): the Remontant
  * (backHeavy) out of a call step. 7 frames, 2, 3, 2, [4], 5, 6, 6 ticks (28: 7/4/17,
- * tools/sprites/nayo/pending-timing.ts), active frame 3 (ticks 7-10), hitbox x 4..30 / y
- * 58..104 as the Remontant's, reached upward and forward. Chained (after the Cross, the
+ * src/art/nayo/clips.ts), active frame 3 (ticks 7-10), hitbox x 4..30 / y 58..104 as the
+ * Remontant's, reached upward and forward. Chained (after the Cross, the
  * Crochet, the Double direct), it ends in the GUARD. The game moves him 12 px forward over
  * action frames 0-6: the poses stay anchored (the step is the feet's, the body never slides).
  *

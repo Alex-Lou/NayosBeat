@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ANCHOR, ART_SCALE, CELL_SIZE, clipOf } from '../../src/art/types';
+import { ANCHOR, ART_SCALE, CELL_SIZE, clipOf, type ClipId } from '../../src/art/types';
 import { overlaps } from '../../src/core/boxes';
 import { hurtboxesOf } from '../../src/core/combat';
 import type { Box, MatchConfig } from '../../src/core/config';
@@ -13,7 +13,7 @@ import { TRAINING_STAGE } from '../../src/data/stages';
 import { activeFrames } from '../../tools/sprites/clips';
 import { POSTURE_CLIPS, postureFrames, type Posture } from '../../tools/sprites/measure';
 import { fightState, makeFighter, repeat } from '../core/helpers';
-import { DRAWN_FIGHTERS, stripOf, type DrawnFighter } from './fighters';
+import { DRAWN_FIGHTERS, DRAWN_NAYO, stripOf, type DrawnFighter } from './fighters';
 import { reach } from './strip-pixels';
 
 /**
@@ -91,41 +91,67 @@ describe('low blows', () => {
   });
 });
 
+/**
+ * At the farthest distance where `move` hits `defender` in `posture`, computed from the boxes,
+ * the two drawings touch, on every active frame of the move against every frame the posture's
+ * `clips` show (all its calibration poses by default).
+ */
+function expectTouch(
+  attacker: DrawnFighter,
+  move: MoveId,
+  defender: DrawnFighter,
+  posture: Posture,
+  clips: readonly ClipId[] = POSTURE_CLIPS[posture].body,
+): void {
+  const hitbox = moveOf(attacker.template, move).hitbox;
+  if (!hitbox) throw new Error(`${move} has no hitbox`);
+  const distance = toPx(farthestHit(hitbox, hurtboxes(defender, posture)));
+  expect(distance).toBeGreaterThan(0);
+  const sheet = clipOf(attacker.art, move).sheet;
+  for (const attackFrame of shownActive(attacker, move)) {
+    const near = edges(attacker, sheet, attackFrame, false);
+    for (const clip of clips) {
+      const shown = postureFrames(defender.art.clips, clip);
+      for (const frame of shown.frames) {
+        const far = edges(defender, shown.sheet, frame, true);
+        // Rows (half pixels) within TOUCH of each other: the gap across, the smallest.
+        let gap = Infinity;
+        near.forEach((right, row) => {
+          for (let other = row - 2; other <= row + 2; other++) {
+            const left = far[other] ?? Infinity;
+            gap = Math.min(gap, distance + left - right);
+          }
+        });
+        expect(gap, `${clip} frame ${frame}, ${move} frame ${attackFrame}`).toBeLessThanOrEqual(
+          TOUCH,
+        );
+      }
+    }
+  }
+}
+
 describe.each(DRAWN_FIGHTERS)("$name's low blows touch visibly", (attacker) => {
   for (const move of lowHits(attacker)) {
     for (const defender of DRAWN_FIGHTERS) {
       for (const posture of ['standing', 'crouching'] as const) {
         it(`${move} against ${defender.name} ${posture}`, () => {
-          const hitbox = moveOf(attacker.template, move).hitbox;
-          if (!hitbox) throw new Error(`${move} has no hitbox`);
-          const distance = toPx(farthestHit(hitbox, hurtboxes(defender, posture)));
-          expect(distance).toBeGreaterThan(0);
-          const sheet = clipOf(attacker.art, move).sheet;
-          for (const attackFrame of shownActive(attacker, move)) {
-            const near = edges(attacker, sheet, attackFrame, false);
-            for (const clip of POSTURE_CLIPS[posture].body) {
-              const shown = postureFrames(defender.art.clips, clip);
-              for (const frame of shown.frames) {
-                const far = edges(defender, shown.sheet, frame, true);
-                // Rows (half pixels) within TOUCH of each other: the gap across, the smallest.
-                let gap = Infinity;
-                near.forEach((right, row) => {
-                  for (let other = row - 2; other <= row + 2; other++) {
-                    const left = far[other] ?? Infinity;
-                    gap = Math.min(gap, distance + left - right);
-                  }
-                });
-                expect(
-                  gap,
-                  `${clip} frame ${frame}, ${move} frame ${attackFrame}`,
-                ).toBeLessThanOrEqual(TOUCH);
-              }
-            }
-          }
+          expectTouch(attacker, move, defender, posture);
         });
       }
     }
   }
+});
+
+/**
+ * The Crochet au foie, a mid blow at belly height, hits a crouching body (docs/combos-v3.md
+ * §2.2): it touches it visibly too (§6.2), the crouch it lands on. Not the reactions: at belly
+ * height they recoil from the blow (the guard's impact, the fold of a hit), their shins only
+ * staying on their marks, where the low blows above touch them.
+ */
+describe("Nayo's Crochet au foie touches a crouching body visibly", () => {
+  it.each(DRAWN_FIGHTERS)('against $name crouching', (defender) => {
+    expectTouch(DRAWN_NAYO, 'chainHeavy', defender, 'crouching', ['crouch']);
+  });
 });
 
 /** Plays a crouching low blow from `attackerX` on a standing defender at `defenderX`: its contact. */

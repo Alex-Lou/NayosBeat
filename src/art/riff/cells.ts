@@ -81,8 +81,8 @@ export const RIFF_CELLS: Readonly<Record<string, Cell>> = {
   timeOver: { width: 62, height: 160, anchor: { x: 35, y: 157 } },
   chainHeavy: { width: 145, height: 172, anchor: { x: 71, y: 169 } },
   'fx/chainHeavy': { width: 94, height: 155, anchor: { x: -11, y: 152 } },
-  chainLaunch: { width: 156, height: 213, anchor: { x: 100, y: 209 } },
-  'fx/chainLaunch': { width: 48, height: 219, anchor: { x: 2, y: 216 } },
+  chainLaunch: { width: 153, height: 213, anchor: { x: 100, y: 209 } },
+  'fx/chainLaunch': { width: 49, height: 219, anchor: { x: 3, y: 216 } },
   super: { width: 170, height: 174, anchor: { x: 81, y: 171 } },
   'fx/super': { width: 178, height: 142, anchor: { x: 59, y: 134 } },
 };

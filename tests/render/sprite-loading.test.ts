@@ -30,8 +30,8 @@ describe('loadArt', () => {
   });
 
   it('leaves out the strips drawn ahead of their gameplay, that no clip plays', () => {
-    // Whatever Nayo has drawn ahead now (the combos v3 strips, until their clips come), one more
-    // stands in, with its effects.
+    // Whatever Nayo has drawn ahead now (the Mégabasse, until its clip comes with the super), one
+    // more stands in, with its effects.
     const ahead: FighterArt = {
       ...NAYO,
       sheets: { ...NAYO.sheets, ahead: { frames: 2 } },
