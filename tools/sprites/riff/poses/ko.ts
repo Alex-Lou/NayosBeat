@@ -12,7 +12,7 @@ export const ANIMATED: boolean = true;
  * - 0: lights out: the head snaps aside, the chin dropping (past 20 degrees: the eyes already
  *   shut, `out`), the fringe whipping over the face; the knees unlock (the hips 3 px down), the
  *   cocked rear fist falls off her ear and the lead hand drops, both arms hanging open.
- * - 1: out on her feet: she sways back on her heels, the chest falling back, the head lolling
+ * - 1: out on her feet: she sways back over her rear foot, the chest falling back, the head lolling
  *   back after it, the arms hanging dead from the shoulders, the lead hand still drifting down
  *   in front of her, the lead toes up on the heel.
  * - 2: the legs give: the hips drop and back, and she folds forward over them, the chest 35
@@ -48,7 +48,7 @@ const LIMP = { nearHand: 'open', farHand: 'open' } as const;
 
 /** 0: lights out: the head snapped aside, the knees unlocking, both arms dropping. */
 const SNAP: Pose = figure({
-  hip: at(-8, 29),
+  hip: at(-8, 30.5),
   torso: 10,
   head: 22,
   shrug: -1,
@@ -62,9 +62,9 @@ const SNAP: Pose = figure({
   face: 'out',
 });
 
-/** 1: out on her feet, swaying back on her heels, the arms hanging dead. */
+/** 1: out on her feet, swaying back over her rear foot, the arms hanging dead. */
 const OUT_STANDING: Pose = figure({
-  hip: at(-9.5, 28),
+  hip: at(-12, 32),
   torso: -16,
   head: -20,
   shrug: 0,

@@ -71,7 +71,7 @@ export const REAR_TOE = toeOf(GUARD.nearFoot);
 
 /** 0, through the hitstop: the back-bend, the hips thrust forward, the rear arm whipped up. */
 const SNAP: Pose = {
-  hip: at(-3, 29.5),
+  hip: at(-3, 31.5),
   torso: -19,
   head: -18,
   shrug: -1,
@@ -88,7 +88,7 @@ const SNAP: Pose = {
 
 /** 1: the hips swing back, the chest comes in, the head still back, the rear arm dragging. */
 const REBOUND: Pose = {
-  hip: at(-9, 28.6),
+  hip: at(-9, 30.1),
   torso: 8,
   head: -30,
   shrug: 0.4,
@@ -106,7 +106,7 @@ const REBOUND: Pose = {
 
 /** 2, heavy hits: the sag, the chin on the chest, the hips low in the plié, the arms loose. */
 const SAG: Pose = {
-  hip: at(-9.2, 27),
+  hip: at(-9.2, 30),
   torso: 22,
   head: 4,
   shrug: 1.6,

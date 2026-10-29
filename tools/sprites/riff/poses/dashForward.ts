@@ -165,7 +165,7 @@ const SLIDE = pose(
 const GATHER = pose(
   {
     ...GUARD,
-    hip: at(-4.5, 25),
+    hip: at(-4.5, 27.5),
     torso: 26,
     chin: 4,
     shrug: 2.6,

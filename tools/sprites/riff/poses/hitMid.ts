@@ -12,8 +12,8 @@ export const ANIMATED: boolean = true;
  * The blow folds her in two, a dancer's fold, deeper than a boxer's:
  *
  * - 0, held through the hitstop: the fold at its deepest, the strongest read of the strip. The
- *   hips punched back and down over the rear foot (its heel slammed down to take her weight,
- *   the turned-out rear knee folding under her), the lead leg braced nearly straight, its toes
+ *   hips punched back and down over the rear foot (it takes her weight on its ball, the rear
+ *   knee driven forward over it), the lead leg braced nearly straight, its toes
  *   lifting; the chest doubled over the blow, the head dropped with it (the chin down, 36
  *   degrees on screen: the head turns), both forearms clutched over the belly, hands open.
  * - 1: the bridge: the chest comes halfway back up, the head first (upright again, eyes on the

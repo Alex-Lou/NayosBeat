@@ -16,7 +16,7 @@ export const ANIMATED: boolean = true;
  * the lead forearm rises across the ribs with the glove up under the chin, the rear shoulder
  * shrugs into the popped collar and the chin sinks behind it, the body hunched in over the
  * knees. On contact the whole shell is driven back into her: the chest snaps back, the hips give
- * a step's worth, the rear heel slams down to brace, the lead toes peel up, the jaw sets.
+ * a step's worth, the rear foot braces on its ball, the lead toes peel up, the jaw sets.
  *
  * Standing, the full shell: the rear forearm a vertical bar in front of the jaw, the glove at the
  * cheek, the elbow down in front of the ribs; the lead forearm upright before the chest. The
@@ -102,7 +102,7 @@ const SHELL: Pose = aroundHead(
   at(5, -12.6),
 );
 
-/** Contact: the shell driven back, the chest snapped back, the rear heel slammed down. */
+/** Contact: the shell driven back, the chest snapped back, the rear foot braced on its ball. */
 const SHELL_IMPACT: Pose = aroundHead(
   stance(GUARD, {
     hip: at(-10.6, 30.6),

@@ -14,13 +14,13 @@ export const ANIMATED: boolean = true;
  * it like a punk: she stands on one leg, then stamps the pain out.
  *
  * - 0, held through the hitstop: the lead foot knocked back under her onto its toes (planted,
- *   the heel 30 degrees up), the knee buckling forward and down as the hips drop 5.6 px, her
- *   weight dumped onto the rear leg (its heel slammed down, the turned-out knee folding); the
+ *   the heel 30 degrees up), the knee buckling forward and down as the hips drop 2 px, her
+ *   weight dumped onto the rear leg (its knee driven forward, the foot rolled onto its ball); the
  *   chest pitches over the hurt leg and the head drops to look at it (23 degrees on screen: the
  *   head turns); the lead hand grabs at the knee, the rear arm thrown out low and back for
  *   balance, near straight, the hand open.
  * - 1: on one leg: the hurt foot tucked up off the floor (the ankle 12.5 px up, the knee drawn
- *   up in front), the rear foot planted, its heel sunk under the weight; the rear arm
+ *   up in front), the rear foot planted on its ball under the weight; the rear arm
  *   straight out behind for balance, the lead hand at the knee. Stable on the ground, whichever
  *   frame the clip holds. A light hit flows from here into the held frame 4.
  * - 2 (heavy): the big hop off the rear foot (3 px up, dust), a toprock's skip gone sour: the
@@ -28,8 +28,8 @@ export const ANIMATED: boolean = true;
  *   straight.
  * - 3 (heavy): halfway down to frame 4, she lands and stomps the hurt foot flat on its spot
  *   (dust under both feet): shake it off. The hips drop into the stamp, the fists clenched.
- * - 4, held: she favors the leg and still dares you: the weight kept back on the rear leg (its
- *   heel sunk, the chest more upright than the guard's), the hurt foot up on its toes on the
+ * - 4, held: she favors the leg and still dares you: the weight kept back on the rear leg (on
+ *   its ball, the chest more upright than the guard's), the hurt foot up on its toes on the
  *   guard's ball (the heel 28 degrees up), the lead hand low and open by the thigh, the rear
  *   fist still cocked by the ear; the eyes open, the jaw set. One step out of the guard: the
  *   hand-off at the end of the stun sets the heel down.
@@ -41,7 +41,7 @@ export const ANIMATED: boolean = true;
 
 /** 0, through the hitstop: the lead foot knocked back onto its toes, the knee buckling. */
 const IMPACT: Pose = {
-  hip: at(-9.2, 26.4),
+  hip: at(-9.2, 29.9),
   torso: 28,
   head: -5,
   shrug: 1.6,
