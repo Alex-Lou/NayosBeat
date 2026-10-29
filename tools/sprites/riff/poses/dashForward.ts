@@ -28,7 +28,7 @@ export const ANIMATED: boolean = true;
  * like a kick-out (a sweep could come out of it), the only thing touching it, on a magenta streak;
  * the rear leg trails long behind, off the floor, the toes pointed, one sweep of line from that
  * toe up through the hips to the head; the low lead fist leads the way over the knee, the rear one
- * stays loaded by the ear. Then she gathers: the rear knee scoops through high and turned out (the
+ * stays loaded by the ear. Then she gathers: the rear knee scoops through high in front (the
  * plié's knee), the hips start up; and she bites the floor, the brake overshooting past her guard
  * (the hips low, the chest pitched in, the lead knee driven over the toe, the rear heel high),
  * before she rebounds up into it, loaded: the rear fist cocked deeper by the ear, the look from
@@ -128,7 +128,7 @@ const PUSH = pose(
     chin: 1,
     shrug: 2.8,
     twist: 0.6,
-    nearFoot: onBall(REAR_TOE, -34),
+    nearFoot: onBall(REAR_TOE, -24),
     farFoot: LEAD,
   },
   at(0.4, -0.4),
@@ -160,7 +160,7 @@ const SLIDE = pose(
   at(21, 27),
 );
 
-// 2 · The gather (3 ticks): the rear knee scoops through high and turned out, the lead heel
+// 2 · The gather (3 ticks): the rear knee scoops through high in front, the lead heel
 // still gliding; the hips start up, the chest stays over the knee.
 const GATHER = pose(
   {
@@ -172,7 +172,7 @@ const GATHER = pose(
     twist: 0.35,
     nearFoot: { x: -13, y: 14, angle: -40 },
     farFoot: onHeel(planted(14), 10),
-    bends: { nearElbow: 'down', farElbow: 'down', nearKnee: 'back', farKnee: 'front' },
+    bends: { nearElbow: 'down', farElbow: 'down', nearKnee: 'front', farKnee: 'front' },
   },
   at(0.6, -0.8),
   at(0, 0),

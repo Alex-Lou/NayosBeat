@@ -33,9 +33,9 @@ export const ANIMATED: boolean = true;
  *   come on.
  * - 6 · she lets go: the rear hand comes down off her head and closes by the ear, the lead fist
  *   drops in front of the belly, the rear foot kicks off back toward its mark, toe down, the leg
- *   all but straight (96 %: its knee turns out on the landing without a pop); the look cool.
+ *   all but straight (96 %: its knee bends on the landing without a pop); the look cool.
  * - 7 · the drop (10 ticks): she lands in her plié lower than the guard (the overshoot), the
- *   rear foot on its ball on the guard's mark, the knee turned out, the chest pitched in, the
+ *   rear foot on its ball on the guard's mark, the knee forward, the chest pitched in, the
  *   shoulder up into the collar; dust off the rear boot and a ring of her energy flattened on
  *   the floor: her beat.
  * - 8 · the settle: she comes up a hair past the guard, the cocked fist overshooting; the ring

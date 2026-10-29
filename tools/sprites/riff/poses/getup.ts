@@ -23,8 +23,8 @@ export const ANIMATED: boolean = true;
  * - 4: the guard exactly: idle takes over without a pop.
  *
  * The feet never slide: the rear foot stays on its ball on the guard's mark from the prowl on,
- * only its heel coming down (35, 28, 20 then the guard's 12 degrees), its knee turned out all
- * the way as in the guard (it never flips across the leg); the lead foot pushes where the roll
+ * only its heel coming down (35, 28, 20 then the guard's 12 degrees), its knee turned out in the
+ * plié up to the spring (3), where it comes forward as the leg straightens; the lead foot pushes where the roll
  * set it down, then steps onto its mark. The head stays under 20 degrees on screen in every
  * frame: the source face.
  */

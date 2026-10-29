@@ -7,7 +7,7 @@ export const ANIMATED: boolean = true;
 /**
  * crouch: 6 frames. 0-2 drop from the guard into the crouch (2 ticks each), 3-5 loop (8 ticks
  * each): her « get-down », a b-girl's deep squat before she hits the floor. The knees open wide
- * out of the guard's plié (the rear one turned out toward the camera, its thigh flat), the rear
+ * into her plié (the rear one turned out toward the camera, its thigh flat), the rear
  * heel up on the ball, ready to spin into a sweep; the chest leaning in over the lead knee, the
  * loaded rear fist still cocked by the ear, the lead fist up off the knee, a few pixels over and
  * in front of it, its knuckles against the background (on the knee, the black glove melted into
@@ -60,6 +60,8 @@ export const CROUCH: Pose = cocked({
   farFoot: GUARD.farFoot,
   farFist: at(10, 28),
   twist: 0.4,
+  // The plié: the rear knee turned out, folded back over its heel (the guard bends it forward).
+  bends: { ...GUARD.bends, nearKnee: 'back' },
 });
 
 /** The crouch moved: hips by (dx, dy), the lean by `lean`, the fists by their own offsets. */

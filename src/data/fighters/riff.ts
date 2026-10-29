@@ -43,10 +43,10 @@ const RIFF_PLAIN: FighterTemplate = {
   // Calibrated on the drawing (`npm run measure-boxes`, docs/combat-v2.md §9.2): the front edge
   // at the farthest the body reaches (the toes of the boots, 16 px; a pixel inside them, so a
   // low blow at its farthest still meets the boot, never the air before it), the back at the
-  // rear foot (her wide b-girl base, skidding back the most on a blow to the belly), the top at
+  // rear heel (her wide b-girl base, as far back in the guard as under a blow), the top at
   // the fringe. In the air the knees drive 3.5 px ahead of the chest: legs and torso get a box
   // each.
-  standingHurtboxes: [box(-33.5, 0, 48.5, 75)],
+  standingHurtboxes: [box(-29, 0, 44, 75)],
   crouchingHurtboxes: [box(-32, 0, 47, 57.5)],
   airHurtboxes: [box(-28, 4, 46, 40), box(-21, 44, 35.5, 37)],
   moves: {

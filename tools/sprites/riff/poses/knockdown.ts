@@ -37,9 +37,9 @@ export const ANIMATED: boolean = true;
  *   against it (18 degrees on screen): the source face, glaring at the opponent (`focus`). A
  *   puff where the palm and the lead boot landed. getup drives off that palm.
  *
- * The prowl keeps the rear knee turned out (`back`) like the guard: a knee down on the floor
- * would fold forward, and turning it out again on the way up would flip it across the leg in one
- * frame (and a kneel is Nayo's landing). The rock and the prowl give the strip its turn
+ * The prowl keeps the rear knee turned out (`back`) like her crouch: in front, this low, it would
+ * be a knee down on the floor (and a kneel is Nayo's landing). It comes forward once, as she
+ * springs out of the getup into the guard (getup.ts). The rock and the prowl give the strip its turn
  * (torso -115 degrees, then 64 forward): seen at speed, she rolls back and comes up facing him.
  *
  * Lying poses stretch backward (the head toward negative x), so the boots stay off the

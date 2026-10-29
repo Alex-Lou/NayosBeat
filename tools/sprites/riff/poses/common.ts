@@ -104,10 +104,9 @@ export function toeOf(foot: Foot): number {
  * the scorpion kick, the slide), the arms the street fight (the backfist, the spinning elbow,
  * the headbutt).
  *
- * The legs: low and springy, the knees opened out in a plié: the rear knee turned out, folding
- * back over the heel (`nearKnee: 'back'`, its boot turned out toward the camera by look.ts), the
- * lead one forward over its foot. A run or a walk never opens the knees (a rear knee folding
- * forward reads as a stride at once). The feet about 30 px apart (0.42 of her height), the
+ * The legs: low and springy, both knees bent forward over their feet, the rear one too: folded
+ * back over the heel like a dancer's turned-out plié, it read at full size (the select screen)
+ * as a knee bent the wrong way. The feet about 30 px apart (0.42 of her height), the
  * thighs about 40 degrees down: ready to push off, not a rooted horse stance. The hips a little
  * over the lead leg (0.7 px ahead of the feet's midpoint); the rear foot springy on its ball,
  * the heel 12 degrees up (the foot that whips the sweeps and the scorpion kick: the idle pumps
@@ -128,8 +127,11 @@ export function toeOf(foot: Foot): number {
  * reads « low hand, cocked fist », never a walk, a wave or a fan at a gig. She stands about
  * 72 px tall, 0.91 of Nayo's 79.
  *
- * Every strip that leaves the guard for a stride (walks, dashes, crouch) turns the rear knee from
- * `back` to `front` through a frame with that leg nearly straight, so the knee never pops.
+ * Her low poses keep the plié, the rear knee turned out and folded back over the heel
+ * (`nearKnee: 'back'`, its boot turned out toward the camera by look.ts): the crouch and the moves
+ * from it, the landings into the plié, the getup, the deepest frames of the falls. There a knee
+ * in front would sink into the floor, or kneel (a kneel is Nayo's). On the way between them and
+ * the guard the knee comes over once, on a frame where the whole body moves.
  *
  * The lead knee and the lead fist stay inside the no-clinch line (x = 14 for anything above the
  * shins): the body reaches 13.5 at the lead fist (its wrist at x = 9.5; at 10.5 it would cross
@@ -145,6 +147,6 @@ export const GUARD: Pose = {
   farFoot: planted(7.4, 0),
   nearFist: at(-12, 58),
   farFist: at(9.5, 46),
-  bends: { nearElbow: 'down', farElbow: 'down', nearKnee: 'back' },
+  bends: { nearElbow: 'down', farElbow: 'down', nearKnee: 'front' },
   twist: 0.45,
 };

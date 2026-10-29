@@ -45,7 +45,7 @@ export const ANIMATED: boolean = true;
  *   on its guard mark, the rear hand pushing off the floor behind her, the lead hand coming
  *   down off her head; still laid back.
  * - 6 (5 ticks): up off the floor into a low b-girl squat, the chest upright, the rear leg
- *   swung out from under her onto its guard mark (its knee turned out over it, as in the guard),
+ *   swung out from under her onto its guard mark (its knee turned out over it, as in her crouch),
  *   the cocked fist rising back to the ear a beat late.
  * - 7 (6 ticks): into the guard, a hair low (the settle), the idle takes over.
  *
@@ -118,7 +118,7 @@ const LAUNCH: Pose = cocked(
     torso: 20.5,
     head: LOOK - 20.5,
     shrug: 2.6,
-    nearFoot: onBall(TOE, -28),
+    nearFoot: onBall(TOE, -16),
     farFist: at(10, 43.4),
     effects: [dust(-18, 3, 0.1), streak(at(-14, 1.5), 9, 1.2, 'sound')],
   },

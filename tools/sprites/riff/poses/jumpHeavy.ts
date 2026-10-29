@@ -149,7 +149,7 @@ const RECOIL = key({
   rear: [-14, 12, -45],
   nearFist: at(-13, 61),
   farFist: at(3, 49),
-  rearKnee: 'back',
+  rearKnee: 'front',
 });
 
 /**

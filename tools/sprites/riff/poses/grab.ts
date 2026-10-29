@@ -56,7 +56,7 @@ const LUNGE: Pose = {
   nearFist: at(7, 71),
   farFist: at(12, 42),
   nearHand: 'open',
-  bends: { nearElbow: 'up', farElbow: 'down', nearKnee: 'back' },
+  bends: { nearElbow: 'up', farElbow: 'down', nearKnee: 'front' },
 };
 
 // Frame 2 (3 ticks, active): the claw on the collar. The lead foot planted where the hold
@@ -76,7 +76,7 @@ const REACH: Pose = {
   nearFist: at(24, 56),
   farFist: at(17, 41),
   nearHand: 'open',
-  bends: { nearElbow: 'down', farElbow: 'down', nearKnee: 'back' },
+  bends: { nearElbow: 'down', farElbow: 'down', nearKnee: 'front' },
   face: 'effort',
   effects: [smear(3, [6, 67], [15, 66.5], [21, 62.5], [25, 58.5])],
 };

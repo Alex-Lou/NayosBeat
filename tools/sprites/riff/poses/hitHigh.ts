@@ -62,7 +62,7 @@ export function onToes(foot: Foot, angle: number): Foot {
 /** The guard's rear heel (degrees up, negative): the ball she springs on. */
 export const REAR_HEEL = GUARD.nearFoot.angle ?? 0;
 
-/** The guard's bends: her rear knee turned out, folding back over its heel, in every frame. */
+/** The guard's bends, in every frame: her rear knee bent forward. */
 export const BENDS = GUARD.bends ?? {};
 
 /** Where the lead and rear toes scrape on the floor. */

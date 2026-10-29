@@ -111,7 +111,7 @@ const SET: Pose = {
   nearFist: at(0, 45),
   farFist: at(18.5, 46),
   nearHand: 'open',
-  bends: { nearElbow: 'up', farElbow: 'down', nearKnee: 'back' },
+  bends: { nearElbow: 'up', farElbow: 'down', nearKnee: 'front' },
   face: 'effort',
   effects: [smear(3, [17, 55], [9, 51], [2, 46])],
 };
@@ -221,6 +221,7 @@ const POP: Pose = {
   nearFist: at(-14, 33),
   farFist: at(8, 33),
   nearHand: 'open',
+  bends: { ...GUARD.bends, nearKnee: 'back' },
   effects: [dust(12, 4, 0.3), dust(-13, 3.5, 0.3)],
 };
 

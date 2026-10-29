@@ -39,8 +39,8 @@ export const ANIMATED: boolean = true;
  *   the trail arcing over and down into the hitbox, a silver spark and diamonds at the heels;
  *   the line of action runs from the shoulders down the body to the heels; the jaw set.
  * - 6 (4 ticks): the touchdown, wide and low in the plié: the lead heel down with its toes
- *   coming down after it, the rear foot landing on its ball on its guard mark (its knee already
- *   turned out the guard's way), the rear fist snapping back toward the ear, the lead hand open
+ *   coming down after it, the rear foot landing on its ball on its guard mark (its knee turned
+ *   out in the plié; it comes forward as she rises), the rear fist snapping back toward the ear, the lead hand open
  *   low in front; dust off both boots and a flat ring.
  * - 7 (5 ticks): she rises, the feet fixed (the lead toes down, the rear heel pivoting on the
  *   ball), the fists coming back; the fringe and the chain fall.

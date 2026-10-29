@@ -1,4 +1,4 @@
-import { solve, type Bend, type Face } from '../../skeleton.ts';
+import { solve, type Face } from '../../skeleton.ts';
 import { RIFF_BODY } from '../body.ts';
 import { at, GUARD, onBall, onHeel, planted, toeOf, type Foot, type Pose } from './common.ts';
 
@@ -32,9 +32,8 @@ export const ANIMATED: boolean = true;
  * then up into the collar. The lead fist swings against the lead leg, inside the no-clinch line;
  * the cocked rear fist rides its shoulder a frame late and bounces after each beat.
  *
- * The rear knee: turned out (`back`) in the guard, it straightens on the push-off and comes
- * through in front (`front`), drives up to the strut, and turns out again only once that leg is
- * long and straight behind her (frame 8).
+ * The rear knee bends forward all the way, as in the guard: it straightens on the push-off, comes
+ * through, drives up to the strut and lands long and straight behind her (frame 8).
  */
 
 /** How far a planted foot slides back in the cell each frame (1.9 px/tick, 2 ticks). */
@@ -111,8 +110,6 @@ interface Beat {
   readonly twist: number;
   /** The rear shoulder into the collar, from the guard's. */
   readonly shrug: number;
-  /** The rear knee: turned out (`back`) in the guard, driving forward (`front`) in the step. */
-  readonly knee: Bend;
   /**
    * The cocked rear fist from its place on the rear shoulder, `lag` of the way back to where
    * that shoulder was the frame before (the loop wraps).
@@ -129,29 +126,29 @@ interface Beat {
 // prettier-ignore
 const BEATS: readonly Beat[] = [
   // 0: set on the lead foot: the guard.
-  { hip: [SHIFT, 0], lean: 0, twist: 0.45, shrug: 0, knee: 'back', near: [0, -0.6], lag: 0.4, far: [0, 0] },
+  { hip: [SHIFT, 0], lean: 0, twist: 0.45, shrug: 0, near: [0, -0.6], lag: 0.4, far: [0, 0] },
   // 1: the rear leg drives long and straight, the lean into the push; the chest closes, the rear
   // shoulder rolls up into the collar.
-  { hip: [-2.4, 1.6], lean: 4, twist: 0.3, shrug: 1.4, knee: 'back', near: [0, 0], lag: 0.5, far: [0.4, 0.2] },
+  { hip: [-2.4, 1.6], lean: 4, twist: 0.3, shrug: 1.4, near: [0, 0], lag: 0.5, far: [0.4, 0.2] },
   // 2: the knee comes through, the lean at its deepest; the chest starts to open.
-  { hip: [-2.6, 2.0], lean: 5, twist: 0.42, shrug: 1.2, knee: 'front', near: [0.4, 0.6], lag: 0.6, far: [0.8, 0.2] },
+  { hip: [-2.6, 2.0], lean: 5, twist: 0.42, shrug: 1.2, near: [0.4, 0.6], lag: 0.6, far: [0.8, 0.2] },
   // 3: the strut: the knee at its top, the hips coming through, the chest opening wide, the rear
   // shoulder rolled back.
-  { hip: [-1.4, 2.0], lean: 1, twist: 0.62, shrug: -0.4, knee: 'front', near: [0.6, 1.2], lag: 0.6, far: [1.2, -0.2] },
+  { hip: [-1.4, 2.0], lean: 1, twist: 0.62, shrug: -0.4, near: [0.6, 1.2], lag: 0.6, far: [1.2, -0.2] },
   // 4: the cross, the small beat: the hips thrust in between the feet, the knees give, the chest
   // popped back out over them, the shoulders back.
-  { hip: [0.6, 0], lean: -5, twist: 0.72, shrug: -1.6, knee: 'front', near: [0.2, 0.6], lag: 0.8, far: [-1.6, -0.8] },
+  { hip: [0.6, 0], lean: -5, twist: 0.72, shrug: -1.6, near: [0.2, 0.6], lag: 0.8, far: [-1.6, -0.8] },
   // 5: the rebound, the lead heel flicked up; the cocked fist lands late, low.
-  { hip: [0, 1.0], lean: -4.5, twist: 0.7, shrug: -1.4, knee: 'front', near: [-0.4, -1.8], lag: 0.7, far: [-0.4, -0.6] },
+  { hip: [0, 1.0], lean: -4.5, twist: 0.7, shrug: -1.4, near: [-0.4, -1.8], lag: 0.7, far: [-0.4, -0.6] },
   // 6: driving off the crossed foot, the lead leg whipping through; the chest closing.
-  { hip: [0.4, 1.8], lean: -2.5, twist: 0.5, shrug: -0.2, knee: 'front', near: [0, -0.4], lag: 0.5, far: [-2, 0.4] },
+  { hip: [0.4, 1.8], lean: -2.5, twist: 0.5, shrug: -0.2, near: [0, -0.4], lag: 0.5, far: [-2, 0.4] },
   // 7: the lead foot reaching out, the hips first, the lead fist swung back against it.
-  { hip: [1.2, 2.0], lean: -3.5, twist: 0.3, shrug: 1.0, knee: 'front', near: [0.4, 0.6], lag: 0.5, far: [-3.4, 0.6] },
-  // 8: the rear leg long and straight behind her: its knee turns out through the straight.
-  { hip: [2.5, 2.0], lean: -4.5, twist: 0.22, shrug: 1.6, knee: 'back', near: [0.6, 1.0], lag: 0.5, far: [-4.4, 0.4] },
+  { hip: [1.2, 2.0], lean: -3.5, twist: 0.3, shrug: 1.0, near: [0.4, 0.6], lag: 0.5, far: [-3.4, 0.6] },
+  // 8: the rear leg long and straight behind her.
+  { hip: [2.5, 2.0], lean: -4.5, twist: 0.22, shrug: 1.6, near: [0.6, 1.0], lag: 0.5, far: [-4.4, 0.4] },
   // 9: down on the lead heel, the big beat, the chest dropping in, the knees opening into the
   // plié.
-  { hip: [-0.8, -0.1], lean: 1.5, twist: 0.32, shrug: 0.6, knee: 'back', near: [-0.8, -0.6], lag: 0.6, far: [-1.6, -0.6] },
+  { hip: [-0.8, -0.1], lean: 1.5, twist: 0.32, shrug: 0.6, near: [-0.8, -0.6], lag: 0.6, far: [-1.6, -0.6] },
 ];
 
 const GUARD_SHRUG = GUARD.shrug ?? 0;
@@ -175,7 +172,6 @@ function body(b: Beat, frame: number): Pose {
     nearFoot: inCell(REAR[frame] ?? GUARD.nearFoot, frame),
     farFoot: inCell(LEAD[frame] ?? GUARD.farFoot, frame),
     farFist: at(GUARD.farFist.x + b.hip[0] + b.far[0], GUARD.farFist.y + b.hip[1] + b.far[1]),
-    bends: { ...GUARD.bends, nearKnee: b.knee },
     ...(b.face ? { face: b.face } : {}),
   };
 }

@@ -122,7 +122,7 @@ function key(k: Key): Pose {
 /**
  * The knees of the open blades: the lead one faces up, the rear one down, so both legs read long.
  * Hanging under her they face forward, and shutting too, both soft under the hips so the blades
- * read closed; the rear knee turns out the way the airborne guard holds it (FALL) only there,
+ * read closed; the rear knee bends the way the airborne guard holds it (FALL) only there,
  * where that leg is long and the turn barely shows.
  */
 const OPEN_KNEES = { nearKnee: 'down', farKnee: 'up' } as const;

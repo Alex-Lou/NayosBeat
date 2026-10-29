@@ -322,7 +322,7 @@ const SLAM_BODY: Pose = {
   farFoot: GUARD.farFoot,
   nearHand: 'open',
   farHand: 'open',
-  bends: { nearKnee: 'back', farKnee: 'front', nearElbow: 'down', farElbow: 'down' },
+  bends: { nearKnee: 'front', farKnee: 'front', nearElbow: 'down', farElbow: 'down' },
   face: 'effort',
 };
 const SLAM: Pose = {

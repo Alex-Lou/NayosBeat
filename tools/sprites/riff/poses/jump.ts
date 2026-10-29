@@ -84,11 +84,11 @@ function puff(x: number, size: number, progress = 0.25): Effect {
 // within 3.5 px of the guard's).
 const LOAD: Pose = {
   ...GUARD,
-  hip: at(-7.2, 29),
+  hip: at(-7.2, 29.5),
   torso: 21,
   head: HEAD + 1 - 21,
   shrug: 2.6,
-  nearFoot: onBall(TOE, -28),
+  nearFoot: onBall(TOE, -16),
   nearFist: at(GUARD.nearFist.x + 0.6, GUARD.nearFist.y - 1.6),
   farFist: at(GUARD.farFist.x - 0.4, GUARD.farFist.y - 2.2),
   effects: [puff(-15, 3, 0.1), puff(10, 3.4, 0.1)],
@@ -150,7 +150,7 @@ const HITCH: Pose = guarded(
 /**
  * 4 · Fall (held until she lands): the legs open for the floor, the lead foot reaching down and
  * nearly flat, the knee soft; the rear leg long and straight behind her, the toes pointed (so its
- * knee turns out for the landing's plié without a pop, from any air frame); the lead fist back
+ * knee bends into the landing without a pop, from any air frame); the lead fist back
  * to its place. Also the last frame of the forward flip, and the air attacks' airborne guard.
  */
 export const FALL: Pose = guarded(

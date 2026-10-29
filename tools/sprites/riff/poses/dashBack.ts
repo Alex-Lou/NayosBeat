@@ -188,7 +188,7 @@ const ROUND: Pose = spun(
     farFoot: { x: -6, y: 12, angle: -30 },
     nearFist: at(-2, 56),
     farFist: at(10, 52),
-    bends: { nearKnee: 'back', farKnee: 'front', nearElbow: 'down', farElbow: 'down' },
+    bends: { nearKnee: 'front', farKnee: 'front', nearElbow: 'down', farElbow: 'down' },
   },
   40,
 );

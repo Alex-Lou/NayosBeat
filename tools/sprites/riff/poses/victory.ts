@@ -92,7 +92,7 @@ const WIND: Pose = handOnHip({
   farFoot: onBall(14.2, -16),
   farFist: at(12, 71),
   farHand: 'open',
-  bends: { nearElbow: 'back', farElbow: 'down', nearKnee: 'back' },
+  bends: { nearElbow: 'back', farElbow: 'down', nearKnee: 'front' },
   twist: 0.7,
   face: 'cool',
 });
