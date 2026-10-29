@@ -70,7 +70,7 @@ export function drawNayo(
 
   // Motion trails behind the body; the other effects go on the front layer (see sheet.ts).
   for (const effect of skeleton.effects) {
-    if (effect.kind === 'smear') drawSmear(ctx, effect.points, effect.width);
+    if (effect.kind === 'smear') drawSmear(ctx, effect.points, effect.width, effect.tone);
   }
   drawArm(ctx, skeleton.far, 'far');
   drawLeg(ctx, skeleton.far, 'far');

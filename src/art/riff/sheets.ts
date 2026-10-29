@@ -1,8 +1,8 @@
 import type { SheetSpec } from '../types';
 
 /**
- * Strips drawn for Riff, with their number of frames: the full set of docs/combat-v2.md §11.3.
- * Read by the game and by tools/sprites.
+ * Strips drawn for Riff, with their number of frames: the full set of docs/combat-v2.md §11.3,
+ * then the combos v3 ones. Read by the game and by tools/sprites.
  */
 export const RIFF_SHEETS = {
   // Movement.
@@ -54,6 +54,11 @@ export const RIFF_SHEETS = {
   intro: { frames: 10 },
   victory: { frames: 8 },
   timeOver: { frames: 4 },
+  // Combos v3 (docs/combos-v3.md §4, §5), drawn ahead of their gameplay: no clip plays these
+  // strips yet, so a fight does not load them (tools/sprites/riff/pending-timing.ts times them).
+  chainHeavy: { frames: 6 },
+  chainLaunch: { frames: 7 },
+  super: { frames: 9 },
 } as const satisfies Record<string, SheetSpec>;
 
 export type RiffSheet = keyof typeof RIFF_SHEETS;

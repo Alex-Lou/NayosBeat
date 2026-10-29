@@ -80,4 +80,10 @@ export const NAYO_CELLS: Readonly<Record<string, Cell>> = {
   'fx/trip': { width: 29, height: 12, anchor: { x: 44, y: 9 } },
   getup: { width: 170, height: 166, anchor: { x: 125, y: 161 } },
   'fx/getup': { width: 106, height: 55, anchor: { x: 65, y: 47 } },
+  chainHeavy: { width: 165, height: 160, anchor: { x: 64, y: 157 } },
+  'fx/chainHeavy': { width: 168, height: 103, anchor: { x: 54, y: 100 } },
+  chainLaunch: { width: 127, height: 207, anchor: { x: 62, y: 203 } },
+  'fx/chainLaunch': { width: 102, height: 232, anchor: { x: 45, y: 229 } },
+  super: { width: 115, height: 185, anchor: { x: 56, y: 180 } },
+  'fx/super': { width: 182, height: 197, anchor: { x: 56, y: 189 } },
 };

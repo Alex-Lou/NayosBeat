@@ -48,6 +48,12 @@ export const NAYO_SHEETS = {
   hitLow: { frames: 5 },
   trip: { frames: 4 },
   getup: { frames: 5 },
+
+  // Combos v3 (docs/combos-v3.md §5), drawn ahead of their gameplay: no clip plays these strips
+  // yet, so a fight does not load them (tools/sprites/nayo/pending-timing.ts times them).
+  chainHeavy: { frames: 7 },
+  chainLaunch: { frames: 7 },
+  super: { frames: 10 },
 } as const satisfies Record<string, SheetSpec>;
 
 export type NayoSheet = keyof typeof NAYO_SHEETS;

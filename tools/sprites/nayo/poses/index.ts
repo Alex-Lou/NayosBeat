@@ -2,8 +2,14 @@
  * Nayo's poses, frame by frame, one file per strip (each strip's file is its own animation).
  * Attack poses are placed against Nayo's hitboxes (src/data/fighters/nayo.ts): on the active
  * frames the striking fist or foot reaches the far edge of the hitbox, so what you see is what
- * hits. tests/tools/sprites.test.ts checks it for every move; the combat v2 strips, drawn to the
- * animation brief's stricter rules, are checked by tests/tools/nayo-v2-sprites.test.ts.
+ * hits. tests/tools/sprites.test.ts checks it for every move; the combat v2 and combos v3
+ * strips, drawn to the animation brief's stricter rules, are checked by
+ * tests/tools/nayo-v2-sprites.test.ts.
+ *
+ * The combos v3 strips are drawn ahead of their gameplay (their timing and hitboxes:
+ * ../pending-timing.ts). Each of their files says whether it is animated yet (`ANIMATED`): until
+ * it is, it holds placeholder poses (the GUARD, or the frames it borrows), and its tests that need
+ * the finished drawing wait. Animators work on their own files only, never on this registry.
  */
 
 import type { NayoSheet } from '../../../../src/art/nayo/sheets.ts';
@@ -52,13 +58,20 @@ import { POSES as hitMidPoses } from './hitMid.ts';
 import { POSES as hitLowPoses } from './hitLow.ts';
 import { POSES as tripPoses } from './trip.ts';
 import { POSES as getupPoses } from './getup.ts';
+// Combos v3 (docs/combos-v3.md §5), drawn ahead of their gameplay.
+import * as chainHeavy from './chainHeavy.ts';
+import * as chainLaunch from './chainLaunch.ts';
+import * as megabasse from './super.ts';
 
 export { PROJECTILE as NAYO_PROJECTILE } from './projectile.ts';
 
 /** Strips of Nayo himself: all but the projectile. */
 export type PosedSheet = Exclude<NayoSheet, 'projectile'>;
 
-/** The combat v2 strips (docs/combat-v2.md §11.1, §11.2): the animation brief's rules apply. */
+/**
+ * The strips drawn to the animation brief v2's rules: the combat v2 ones (docs/combat-v2.md
+ * §11.1, §11.2), then the combos v3 ones (docs/combos-v3.md §5).
+ */
 export const V2_SHEETS = [
   'dashForward',
   'dashBack',
@@ -80,12 +93,32 @@ export const V2_SHEETS = [
   'hitLow',
   'trip',
   'getup',
+  'chainHeavy',
+  'chainLaunch',
+  'super',
 ] as const satisfies readonly PosedSheet[];
 
 export type V2Sheet = (typeof V2_SHEETS)[number];
 
 export function isV2Sheet(sheet: string): sheet is V2Sheet {
   return (V2_SHEETS as readonly string[]).includes(sheet);
+}
+
+/** The combos v3 strips, each file with its poses and whether they are drawn yet. */
+const V3_STRIPS = {
+  chainHeavy,
+  chainLaunch,
+  super: megabasse,
+} as const satisfies Readonly<
+  Partial<Record<PosedSheet, { readonly POSES: readonly Pose[]; readonly ANIMATED: boolean }>>
+>;
+
+/**
+ * Whether a strip is drawn from its own poses, not placeholders: every strip but a combos v3
+ * one whose file says it is not yet.
+ */
+export function isAnimated(sheet: PosedSheet): boolean {
+  return sheet in V3_STRIPS ? V3_STRIPS[sheet as keyof typeof V3_STRIPS].ANIMATED : true;
 }
 
 /** Poses of every strip; each list has exactly the strip's number of frames. */
@@ -133,4 +166,7 @@ export const NAYO_POSES: Readonly<Record<PosedSheet, readonly Pose[]>> = {
   hitLow: hitLowPoses,
   trip: tripPoses,
   getup: getupPoses,
+  chainHeavy: V3_STRIPS.chainHeavy.POSES,
+  chainLaunch: V3_STRIPS.chainLaunch.POSES,
+  super: V3_STRIPS.super.POSES,
 };

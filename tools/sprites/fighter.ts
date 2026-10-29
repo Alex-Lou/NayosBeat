@@ -63,5 +63,10 @@ export interface Fighter {
   /** Draws the fighter in the cell whose left edge is `cellX`. */
   readonly draw: (canvas: PixelCanvas, skeleton: Skeleton, cellX: number, motion: Motion) => void;
   readonly fx: EffectStyle;
-  readonly paletteOf: (colorway: Colorway) => readonly Rgba[];
+  /**
+   * The colors of every palette slot in `colorway`; given the pixels of an image, only the
+   * slots it may need (see Palette.paletteOf in palette.ts: the Boost's platine is left out of
+   * an image that does not draw in it).
+   */
+  readonly paletteOf: (colorway: Colorway, drawn?: Uint8Array) => readonly Rgba[];
 }

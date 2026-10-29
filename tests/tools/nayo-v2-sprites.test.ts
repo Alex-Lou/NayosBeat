@@ -3,9 +3,21 @@ import { NAYO_CLIPS } from '../../src/art/nayo/clips';
 import { NAYO_SHEETS } from '../../src/art/nayo/sheets';
 import { ANCHOR, ART_SCALE, CELL_SIZE } from '../../src/art/types';
 import { NAYO } from '../../src/data/fighters/nayo';
-import { strikesOf } from '../../tools/sprites/clips';
+import {
+  activeFrames,
+  isPlayed,
+  strikeOf,
+  strikesOf,
+  type ShownStrike,
+} from '../../tools/sprites/clips';
+import { NAYO_PENDING } from '../../tools/sprites/nayo/pending-timing';
 import { GUARD } from '../../tools/sprites/nayo/poses/common';
-import { NAYO_POSES, V2_SHEETS, type V2Sheet } from '../../tools/sprites/nayo/poses/index';
+import {
+  isAnimated,
+  NAYO_POSES,
+  V2_SHEETS,
+  type V2Sheet,
+} from '../../tools/sprites/nayo/poses/index';
 import type { PixelCanvas, Point } from '../../tools/sprites/raster';
 import { drawEffectsSheet, drawSheet } from '../../tools/sprites/sheet';
 import { solve, type Pose } from '../../tools/sprites/skeleton';
@@ -13,13 +25,16 @@ import { AWAITING_ART, reachCheck } from './fighters';
 import { extent, reach } from './strip-pixels';
 
 /**
- * Nayo's combat v2 strips (docs/combat-v2.md §11.1, §11.2) against the spec (frame counts), the
- * game (the clips that play them, the hitbox of each move that plays one: the Marteau plays the
- * Overhand's strip) and the rules of the animation brief.
- * A new strip starts as a placeholder.
+ * Nayo's combat v2 strips (docs/combat-v2.md §11.1, §11.2) and combos v3 strips
+ * (docs/combos-v3.md §5) against the spec (frame counts), the game (the clips that play them,
+ * the hitbox of each move that plays one: the Marteau plays the Overhand's strip; for a strip
+ * drawn ahead of its gameplay, its pending one, tools/sprites/nayo/pending-timing.ts) and the
+ * rules of the animation brief. A new strip starts as a placeholder.
  *
- * Strips in progress: only their frame count is checked. Take a strip off this list once it is
- * animated, and every check runs on it. A strip still made of its placeholder poses stays here.
+ * Strips in progress: only their frame count is checked. A strip is in progress while it is on
+ * this list, or while its pose file says it is not animated yet (`ANIMATED = false`, the
+ * combos v3 strips); once it is animated, every check runs on it. A strip still made of its
+ * placeholder poses stays in progress.
  */
 const IN_PROGRESS: ReadonlySet<V2Sheet> = new Set<V2Sheet>([]);
 
@@ -28,8 +43,16 @@ interface Rules {
   readonly frames: number;
   /** Its poses until it is animated. */
   readonly placeholder: Pose;
-  /** An anti-air: the drawing must also reach the top of the hitbox (§9.5). */
+  /**
+   * An anti-air: the drawing must also reach the top of the hitbox (§9.5). For a strike
+   * measured on its effects, they must fill the hitbox up to its top too.
+   */
   readonly up?: true;
+  /**
+   * Its front effects strike, not the body (the Mégabasse's speaker rings): they are what must
+   * reach the hitbox's far edge, and no farther; the body is not measured.
+   */
+  readonly reachFrom?: 'fx';
   /** A move started from neutral: the first frame carries on from the guard. */
   readonly fromGuard?: true;
   /**
@@ -73,11 +96,58 @@ const RULES: Readonly<Record<V2Sheet, Rules>> = {
   // Ends on his back: the knockdown follows.
   trip: { frames: 4, placeholder: GUARD },
   getup: { frames: 5, placeholder: GUARD, toGuard: 'exact' },
+  // Combos v3 (docs/combos-v3.md §5), drawn ahead of their gameplay. The Crochet au foie
+  // follows the Crochet (from its last frames' body), the Remontant chassé the Cross, the
+  // Crochet or the Double direct (backHeavy's frames 2-6 after a call step: an anti-air).
+  chainHeavy: { frames: 7, placeholder: GUARD, toGuard: 'exact', anchored: true },
+  chainLaunch: { frames: 7, placeholder: GUARD, up: true, toGuard: 'exact', anchored: true },
+  // The Mégabasse starts on the intro's cue (its feet 13 px off the guard's), held through the
+  // freeze flash; its speaker rings strike, filling the hitbox forward and up.
+  super: {
+    frames: 10,
+    placeholder: GUARD,
+    up: true,
+    reachFrom: 'fx',
+    toGuard: 'exact',
+    anchored: true,
+  },
 };
 
 /** The moves that strike with each strip (the strikes and the grab), each with its own box. */
 const STRIKES = strikesOf(NAYO_CLIPS, NAYO);
 const AWAITING = AWAITING_ART['Nayo'] ?? new Set();
+
+/**
+ * The strike a strip shows, with a hitbox (the strikes and the grab): the game's, or for a strip
+ * drawn ahead of its gameplay, the pending one.
+ */
+const strikeOfStrip = (sheet: V2Sheet) => strikeOf(NAYO_CLIPS, NAYO, sheet, NAYO_PENDING);
+
+/**
+ * The reach checks of a strip: one per move of the game that plays it, each with its own box
+ * (a move still on a stand-in strip waits for its own); a strip no move plays yet has its
+ * pending strike's.
+ */
+function reachChecksOf(sheet: V2Sheet): { name: string; waits: boolean; strike: ShownStrike }[] {
+  const played = STRIKES.filter((strike) => strike.sheet === sheet);
+  const planned = played.length === 0 ? strikeOfStrip(sheet) : undefined;
+  return [
+    ...played.map((strike) => ({
+      name: reachCheck('Nayo', strike.id),
+      waits: AWAITING.has(strike.id),
+      strike,
+    })),
+    ...(planned
+      ? [
+          {
+            name: 'pending: the active frames reach the hitbox, no farther',
+            waits: false,
+            strike: planned,
+          },
+        ]
+      : []),
+  ];
+}
 
 /**
  * §9.5: on every active frame, inside the hitbox's band, the striking limb (or its trail)
@@ -166,7 +236,7 @@ describe('Nayo combat v2', () => {
   for (const sheet of V2_SHEETS) {
     const rules = RULES[sheet];
     const poses = NAYO_POSES[sheet];
-    const pending = IN_PROGRESS.has(sheet);
+    const pending = IN_PROGRESS.has(sheet) || !isAnimated(sheet);
 
     describe(sheet, () => {
       it(`has ${rules.frames} frames`, () => {
@@ -196,12 +266,17 @@ describe('Nayo combat v2', () => {
         }
       });
 
-      for (const { id, frames, box } of STRIKES.filter((strike) => strike.sheet === sheet)) {
-        it.skipIf(pending || AWAITING.has(id))(reachCheck('Nayo', id), () => {
+      for (const { name, waits, strike } of reachChecksOf(sheet)) {
+        it.skipIf(pending || waits)(name, () => {
           const { body, fx } = layersOf(sheet);
-          const reaching = rules.up && fx ? [body, fx] : [body];
+          const fromFx = rules.reachFrom === 'fx';
+          if (fromFx && !fx) throw new Error(`${sheet} strikes with its effects: it draws none`);
+          // What may reach the edge, and what must not go past it.
+          const striking = fromFx && fx ? [fx] : [body];
+          const reaching = fromFx ? striking : rules.up && fx ? [body, fx] : [body];
+          const { frames } = strike;
           expect(frames.length).toBeGreaterThan(0);
-          const { x, y, width, height } = box;
+          const { x, y, width, height } = strike.box;
           const across = { from: x, to: x + width };
           const along = { from: y, to: y + height };
           // Forward; an anti-air also up to the top of the hitbox (§9.5: both ways).
@@ -210,7 +285,7 @@ describe('Nayo combat v2', () => {
           for (const frame of frames) {
             for (const { up, span, edge } of ways) {
               const drawn = reach(reaching, frame, span, up);
-              const limb = reach([body], frame, span, up);
+              const limb = reach(striking, frame, span, up);
               const where = `frame ${frame} ${up ? 'up' : 'forward'}, edge ${edge}`;
               expect(drawn, `${where}: reaches ${drawn}`).toBeGreaterThanOrEqual(
                 edge - REACH_SHORT,
@@ -273,3 +348,69 @@ describe('Nayo combat v2', () => {
 
 // The throw backward read as one motion, Nayo throwing Nayo: tests/tools/hold-pairs.test.ts,
 // which plays it for each fighter throwing each one, with the hold and the pummels.
+
+/**
+ * The combos v3 strips are timed by tools/sprites/nayo/pending-timing.ts until the game plays
+ * them (docs/combos-v3.md §5): each clip lasts its move (S + A + R) in §5's ticks, its active
+ * frames come on at the move's startup and are the ones §5 marks, and its hitbox is §2.2's.
+ * Once the game has a clip for the strip, the game's timing wins: the entry must go.
+ */
+const PENDING_SPEC = {
+  chainHeavy: {
+    ticks: [3, 3, 2, 3, 6, 6, 5],
+    frames: [3, 17],
+    active: [3],
+    box: { x: [8, 46], y: [24, 44] },
+  },
+  chainLaunch: {
+    ticks: [2, 3, 2, 4, 5, 6, 6],
+    frames: [4, 17],
+    active: [3],
+    box: { x: [4, 30], y: [58, 104] },
+  },
+  // 12 entries: frames 2 and 3 played twice, the blows on action frames 2, 8 and 14.
+  super: {
+    ticks: [1, 1, 3, 3, 3, 3, 3, 6, 7, 7, 5, 5],
+    frames: [15, 30],
+    active: [2, 3, 4],
+    box: { x: [4, 60], y: [0, 90] },
+  },
+} as const;
+
+describe('Nayo combos v3 timing', () => {
+  for (const [sheet, spec] of Object.entries(PENDING_SPEC)) {
+    const entry = NAYO_PENDING[sheet as keyof typeof PENDING_SPEC];
+    const [active, recovery] = spec.frames;
+
+    it(`${sheet}: its pending clip plays the strip in §5's ticks`, () => {
+      if (!entry?.strike) throw new Error(`${sheet} has no pending strike`);
+      const { clip, strike } = entry;
+      expect(clip.sheet).toBe(sheet);
+      expect(clip.ticks).toEqual(spec.ticks);
+      expect(clip.frames).toHaveLength(spec.ticks.length);
+      const total = clip.ticks.reduce((sum, ticks) => sum + ticks, 0);
+      expect(total).toBe(strike.startup + active + recovery);
+      expect(strike.active).toBe(active);
+      // Every frame of the strip shows, none outside it.
+      const strip = NAYO_SHEETS[sheet as keyof typeof PENDING_SPEC].frames;
+      expect(new Set(clip.frames)).toEqual(new Set(Array.from({ length: strip }, (_, f) => f)));
+    });
+
+    it(`${sheet}: its active frames are §5's, from its startup`, () => {
+      if (!entry?.strike) throw new Error(`${sheet} has no pending strike`);
+      const { clip, strike } = entry;
+      const first = activeFrames(clip, strike)[0];
+      const index = clip.frames.indexOf(first ?? -1);
+      const before = clip.ticks.slice(0, index).reduce((sum, ticks) => sum + ticks, 0);
+      expect(before).toBe(strike.startup);
+      expect(strikeOfStrip(sheet as V2Sheet)?.frames).toEqual(spec.active);
+      const { x, y, width, height } = strike.box;
+      expect({ x: [x, x + width], y: [y, y + height] }).toEqual(spec.box);
+    });
+
+    it(`${sheet}: waits for its gameplay`, () => {
+      const message = `the game plays ${sheet}: its clip and move rule, delete its pending entry`;
+      expect(isPlayed(NAYO_CLIPS, sheet), message).toBe(false);
+    });
+  }
+});

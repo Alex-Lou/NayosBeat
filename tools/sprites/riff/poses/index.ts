@@ -55,6 +55,11 @@ import * as throwBack from './throwBack.ts';
 import * as intro from './intro.ts';
 import * as victory from './victory.ts';
 import * as timeOver from './timeOver.ts';
+// Combos v3 (docs/combos-v3.md §4, §5), drawn ahead of their gameplay (their timing and
+// hitboxes: ../pending-timing.ts).
+import * as chainHeavy from './chainHeavy.ts';
+import * as chainLaunch from './chainLaunch.ts';
+import * as slam from './super.ts';
 
 interface Strip {
   readonly POSES: readonly Pose[];
@@ -105,6 +110,9 @@ const STRIPS: Readonly<Record<RiffSheet, Strip>> = {
   intro,
   victory,
   timeOver,
+  chainHeavy,
+  chainLaunch,
+  super: slam,
 };
 
 /** Poses of every strip; each list has exactly the strip's number of frames. */

@@ -3,10 +3,17 @@ import { RIFF_CLIPS } from '../../src/art/riff/clips';
 import { RIFF_SHEETS, type RiffSheet } from '../../src/art/riff/sheets';
 import { ANCHOR, ART_SCALE, CELL_SIZE, type Clip, type ClipId } from '../../src/art/types';
 import { RIFF as RIFF_TEMPLATE } from '../../src/data/fighters/riff';
-import { strikeOf, strikesOf } from '../../tools/sprites/clips';
+import {
+  activeFrames,
+  isPlayed,
+  strikeOf,
+  strikesOf,
+  type ShownStrike,
+} from '../../tools/sprites/clips';
 import { PixelCanvas } from '../../tools/sprites/raster';
 import { RIFF } from '../../tools/sprites/riff/index';
 import { DETAIL, EFFECTS, paletteOf } from '../../tools/sprites/riff/palette';
+import { RIFF_PENDING } from '../../tools/sprites/riff/pending-timing';
 import { GUARD } from '../../tools/sprites/riff/poses/common';
 import { isAnimated, RIFF_POSES } from '../../tools/sprites/riff/poses/index';
 import { drawStrip, drawStripEffects } from '../../tools/sprites/sheet';
@@ -31,10 +38,21 @@ interface Band {
 /** Which way a strike is measured: toward the opponent, upward, or behind her. */
 type Way = 'forward' | 'up' | 'back';
 
-/** docs/combat-v2.md §11.3: 43 strips, about 265 frames. */
+/**
+ * The combos v3 strips (docs/combos-v3.md §4, §5), drawn ahead of their gameplay: their timing
+ * and hitboxes are pending (tools/sprites/riff/pending-timing.ts) until the game plays them.
+ */
+const COMBOS_V3 = ['chainHeavy', 'chainLaunch', 'super'] as const satisfies readonly RiffSheet[];
+
+/** Her strike of a strip: the game's, or for a strip drawn ahead of its gameplay, the pending. */
+const strikeOfStrip = (sheet: RiffSheet) =>
+  strikeOf(RIFF_CLIPS, RIFF_TEMPLATE, sheet, RIFF_PENDING);
+
+/** docs/combat-v2.md §11.3: 43 strips, about 265 frames; and the 3 of combos v3. */
 describe('Riff strips: the set of §11.3', () => {
-  it('has the 43 strips', () => {
-    expect(SHEETS).toHaveLength(43);
+  it('has the 43 strips, and the 3 of combos v3', () => {
+    expect(SHEETS).toHaveLength(43 + COMBOS_V3.length);
+    expect(SHEETS).toEqual(expect.arrayContaining([...COMBOS_V3]));
   });
 
   it.each(SHEETS)('%s: poses and ticks for every frame', (sheet) => {
@@ -126,6 +144,57 @@ describe('Riff strips: the set of §11.3', () => {
     const first = ACTIVE[sheet as RiffSheet]?.[0] ?? -1;
     const ticks = ownClip(sheet as RiffSheet).ticks.slice(0, first);
     expect(ticks.reduce((sum, tick) => sum + tick, 0)).toBe(startup);
+  });
+});
+
+/**
+ * The combos v3 strips' pending timing (tools/sprites/riff/pending-timing.ts), from the frame
+ * data of docs/combos-v3.md §4: each clip lasts its move (S + A + R), its active frames come on
+ * at the move's startup and are the ones drawn as its active poses, and its hitbox is the
+ * design's. Once the game has a clip for the strip, the game's timing wins: the entry must go.
+ */
+const PENDING_SPEC = {
+  // Coup de boule: 6/2/14, the forehead in on frame 3.
+  chainHeavy: { frames: [6, 2, 14], active: [3], box: { x: [8, 34], y: [50, 66] } },
+  // Retourné sauté: 6/5/15, the Retourné's scorpion on frame 3.
+  chainLaunch: { frames: [6, 5, 15], active: [3], box: { x: [-12, 22], y: [58, 100] } },
+  // Slam: 12/8/26, the impact on frame 4 (tick 12), the stomp on frame 5 (tick 16).
+  super: { frames: [12, 8, 26], active: [4, 5], box: { x: [0, 44], y: [0, 60] } },
+} as const satisfies Readonly<Record<(typeof COMBOS_V3)[number], unknown>>;
+
+describe('Riff strips: combos v3 timing', () => {
+  it.each(COMBOS_V3)('%s: its pending clip lasts its move and plays every frame', (sheet) => {
+    const entry = RIFF_PENDING[sheet];
+    if (!entry?.strike) throw new Error(`${sheet} has no pending strike`);
+    const { clip, strike } = entry;
+    const [startup, active, recovery] = PENDING_SPEC[sheet].frames;
+    expect(clip.sheet).toBe(sheet);
+    expect([strike.startup, strike.active]).toEqual([startup, active]);
+    expect(clip.ticks.reduce((sum, tick) => sum + tick, 0)).toBe(startup + active + recovery);
+    const strip = RIFF_SHEETS[sheet].frames;
+    expect(new Set(clip.frames)).toEqual(new Set(Array.from({ length: strip }, (_, f) => f)));
+  });
+
+  it.each(COMBOS_V3)('%s: its active poses show while it can hit, from its startup', (sheet) => {
+    const entry = RIFF_PENDING[sheet];
+    if (!entry?.strike) throw new Error(`${sheet} has no pending strike`);
+    const { clip, strike } = entry;
+    const drawn = PENDING_SPEC[sheet].active;
+    expect(strikeOfStrip(sheet)?.frames).toEqual(drawn);
+    const first = clip.frames.indexOf(activeFrames(clip, strike)[0] ?? -1);
+    expect(clip.ticks.slice(0, first).reduce((sum, tick) => sum + tick, 0)).toBe(strike.startup);
+    const shown = drawn.reduce(
+      (sum, frame) => sum + (clip.ticks[clip.frames.indexOf(frame)] ?? 0),
+      0,
+    );
+    expect(shown).toBe(strike.active);
+    const { x, y, width, height } = strike.box;
+    expect({ x: [x, x + width], y: [y, y + height] }).toEqual(PENDING_SPEC[sheet].box);
+  });
+
+  it.each(COMBOS_V3)('%s: waits for its gameplay', (sheet) => {
+    const message = `the game plays ${sheet}: its clip and move rule, delete its pending entry`;
+    expect(isPlayed(RIFF_CLIPS, sheet), message).toBe(false);
   });
 });
 
@@ -241,7 +310,18 @@ describe('Riff strips: drawing', () => {
    */
   const REACH = { short: 3, past: 4 } as const;
   const LOW_REACH = { short: 2, past: 3 } as const;
-  const ANTI_AIRS: ReadonlySet<RiffSheet> = new Set<RiffSheet>(['backHeavy', 'specialAntiAir']);
+  const ANTI_AIRS: ReadonlySet<RiffSheet> = new Set<RiffSheet>([
+    'backHeavy',
+    'specialAntiAir',
+    // The Retourné sauté: the Retourné out of a call hop.
+    'chainLaunch',
+  ]);
+  /**
+   * Strikes whose front effects count toward the reach without being an anti-air: the Slam,
+   * whose second blow is the shockwave running on the floor (its body still may not reach past
+   * the hitbox).
+   */
+  const FX_REACH: ReadonlySet<RiffSheet> = new Set<RiffSheet>(['super']);
   /**
    * The Genou montant is drawn leaping, its knee 34 px off the floor (tools/sprites/riff/poses/
    * specialAntiAir.ts), against a hitbox that stays on the ground (her hurtboxes follow the
@@ -254,7 +334,7 @@ describe('Riff strips: drawing', () => {
   const STRIKES = strikesOf(RIFF_CLIPS, RIFF_TEMPLATE);
   const AWAITING = AWAITING_ART['Riff'] ?? new Set();
 
-  it('every strike has its strip, animated', () => {
+  it('every strike the game plays has its strip, animated', () => {
     expect(STRIKES).toHaveLength(18);
     for (const { sheet } of STRIKES) expect(isAnimated(sheet as RiffSheet), sheet).toBe(true);
     // The Hache plays the Talon's strip; the Coup de boule and the Retourné sauté the Coude's
@@ -293,31 +373,47 @@ describe('Riff strips: drawing', () => {
     return reached;
   }
 
-  for (const strike of STRIKES) {
-    const sheet = strike.sheet as RiffSheet;
-    it.skipIf(AWAITING.has(strike.id))(reachCheck('Riff', strike.id), () => {
-      const { x, y, width, height } = strike.box;
-      const leap = sheet === 'specialAntiAir';
-      const { short, past } = leap ? LEAP : strike.move.guard === 'low' ? LOW_REACH : REACH;
-      const up = ANTI_AIRS.has(sheet);
-      const across = { from: y, to: y + height };
-      const ways: { way: Way; band: Band; edge: number }[] = leap
-        ? []
-        : [{ way: 'forward', band: across, edge: x + width }];
-      if (up) ways.push({ way: 'up', band: { from: x, to: x + width }, edge: y + height });
-      else if (x < 0) ways.push({ way: 'back', band: across, edge: -x });
-      const body = sheetCanvas(sheet);
-      const fx = up ? drawStripEffects(RIFF, sheet) : undefined;
-      for (const frame of strike.frames) {
-        for (const way of ways) {
-          const drawn = reachOf(fx ? [body, fx] : [body], frame, way.band, way.way);
-          const limb = reachOf([body], frame, way.band, way.way);
-          const where = `frame ${frame} ${way.way}, edge ${way.edge}`;
-          expect(drawn, `${where}: reaches ${drawn}`).toBeGreaterThanOrEqual(way.edge - short);
-          expect(limb, `${where}: limb at ${limb}`).toBeLessThanOrEqual(way.edge + past);
-        }
+  /** Reach of one strike on the active frames of the strip it plays, the game's or a pending one. */
+  function checkReach(sheet: RiffSheet, strike: ShownStrike): void {
+    const { x, y, width, height } = strike.box;
+    const leap = sheet === 'specialAntiAir';
+    const { short, past } = leap ? LEAP : strike.move.guard === 'low' ? LOW_REACH : REACH;
+    const up = ANTI_AIRS.has(sheet);
+    const across = { from: y, to: y + height };
+    const ways: { way: Way; band: Band; edge: number }[] = leap
+      ? []
+      : [{ way: 'forward', band: across, edge: x + width }];
+    if (up) ways.push({ way: 'up', band: { from: x, to: x + width }, edge: y + height });
+    else if (x < 0) ways.push({ way: 'back', band: across, edge: -x });
+    const body = sheetCanvas(sheet);
+    const fx = up || FX_REACH.has(sheet) ? drawStripEffects(RIFF, sheet) : undefined;
+    for (const frame of strike.frames) {
+      for (const way of ways) {
+        const drawn = reachOf(fx ? [body, fx] : [body], frame, way.band, way.way);
+        const limb = reachOf([body], frame, way.band, way.way);
+        const where = `frame ${frame} ${way.way}, edge ${way.edge}`;
+        expect(drawn, `${where}: reaches ${drawn}`).toBeGreaterThanOrEqual(way.edge - short);
+        expect(limb, `${where}: limb at ${limb}`).toBeLessThanOrEqual(way.edge + past);
       }
+    }
+  }
+
+  for (const strike of STRIKES) {
+    it.skipIf(AWAITING.has(strike.id))(reachCheck('Riff', strike.id), () => {
+      checkReach(strike.sheet as RiffSheet, strike);
     });
+  }
+
+  // The combos v3 strikes no move of the game plays yet, once their files say they are animated.
+  for (const sheet of COMBOS_V3.filter((sheet) => !isPlayed(RIFF_CLIPS, sheet))) {
+    it.skipIf(!isAnimated(sheet))(
+      `${sheet}: the active frames reach the hitbox, no farther`,
+      () => {
+        const strike = strikeOfStrip(sheet);
+        if (!strike) throw new Error(`${sheet} has no hitbox`);
+        checkReach(sheet, strike);
+      },
+    );
   }
 });
 
@@ -400,6 +496,17 @@ describe('Riff strips: in and out of the guard', () => {
     if (!last) throw new Error(`${sheet} is empty`);
     expect(distanceToGuard(last)).toBeLessThanOrEqual(NEAR);
   });
+
+  // The combos v3 strips end in her guard, once their files say they are animated (the Coup de
+  // boule and the Retourné sauté start chained, the Slam on her jump's plié).
+  for (const sheet of COMBOS_V3) {
+    it.skipIf(!isAnimated(sheet))(`${sheet}: the last frame settles back into the guard`, () => {
+      const poses = RIFF_POSES[sheet];
+      const last = poses[poses.length - 1];
+      if (!last) throw new Error(`${sheet} is empty`);
+      expect(distanceToGuard(last)).toBeLessThanOrEqual(NEAR);
+    });
+  }
 
   it('the idle loop starts exactly on the guard', () => {
     expect(RIFF_POSES.idle[0]).toEqual(GUARD);

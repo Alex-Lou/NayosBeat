@@ -32,31 +32,60 @@ export interface DetailColor {
   readonly alt?: string;
 }
 
+/**
+ * The Boost's platine (docs/combos-v3.md §1.8.7, `tone: 'platine'` in ../vfx.ts): an
+ * incandescent white ramp with a dark blue-grey rim, never gold (gold is the second colorway of
+ * Riff's energy). The same for every fighter and both colorways: every palette ends with it,
+ * after the fighter's own colors.
+ */
+const PLATINE = {
+  /** The translucent glow at the edge of the effects. */
+  platineGlow: { main: '#c9d6e858' },
+  /** The rim, and the smoky heart of a heavy spark. */
+  platineRim: { main: '#20243a' },
+  platineBase: { main: '#c9d6e8' },
+  platineLight: { main: '#f2f6ff' },
+  platineCore: { main: '#ffffff' },
+} as const satisfies Record<string, DetailColor>;
+
+export type PlatineSlot = keyof typeof PLATINE;
+
 export interface Palette<M extends string, D extends string> {
   /** Palette slots of every material (slot 0 is transparent). */
   readonly material: Readonly<Record<M, Material>>;
-  /** Palette slot of every detail color. */
-  readonly detail: Readonly<Record<D, number>>;
-  readonly paletteOf: (colorway: Colorway) => readonly Rgba[];
+  /** Palette slot of every detail color, the platine's included. */
+  readonly detail: Readonly<Record<D | PlatineSlot, number>>;
+  /**
+   * The colors of every slot in `colorway`. Given the pixels of an image (`drawn`), the
+   * platine's slots are left out of it unless it draws in them: the images of the strips that
+   * have no Boost effect keep the palette, and the bytes, they always had.
+   */
+  readonly paletteOf: (colorway: Colorway, drawn?: Uint8Array) => readonly Rgba[];
 }
 
 const TONES_PER_MATERIAL = 7;
 
-/** Slots in declaration order: transparent, then 7 per material, then 1 per detail. */
+/**
+ * Slots in declaration order: transparent, then 7 per material, then 1 per detail, then the
+ * platine's.
+ */
 export function definePalette<M extends string, D extends string>(
   materials: Readonly<Record<M, MaterialTones>>,
   details: Readonly<Record<D, DetailColor>>,
 ): Palette<M, D> {
   const materialNames = Object.keys(materials) as M[];
   const detailNames = Object.keys(details) as D[];
+  const platineNames = Object.keys(PLATINE) as PlatineSlot[];
   const firstDetail = 1 + materialNames.length * TONES_PER_MATERIAL;
+  const firstPlatine = firstDetail + detailNames.length;
   const material = Object.fromEntries(
     materialNames.map((name, index) => [name, slotsOf(1 + index * TONES_PER_MATERIAL)]),
   ) as Record<M, Material>;
-  const detail = Object.fromEntries(
-    detailNames.map((name, index) => [name, firstDetail + index]),
-  ) as Record<D, number>;
-  const paletteOf = (colorway: Colorway): readonly Rgba[] => {
+  const detail = Object.fromEntries([
+    ...detailNames.map((name, index) => [name, firstDetail + index]),
+    ...platineNames.map((name, index) => [name, firstPlatine + index]),
+  ]) as Record<D | PlatineSlot, number>;
+  const paletteOf = (colorway: Colorway, drawn?: Uint8Array): readonly Rgba[] => {
     const colors: string[] = ['#00000000'];
     for (const name of materialNames) {
       const tones = materials[name];
@@ -65,6 +94,9 @@ export function definePalette<M extends string, D extends string>(
     for (const name of detailNames) {
       const color = details[name];
       colors.push(colorway === 'alt' && color.alt ? color.alt : color.main);
+    }
+    if (!drawn || drawn.some((slot) => slot >= firstPlatine)) {
+      colors.push(...platineNames.map((name) => PLATINE[name].main));
     }
     return colors.map(hexToRgba);
   };
