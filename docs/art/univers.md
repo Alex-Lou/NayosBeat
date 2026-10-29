@@ -21,6 +21,8 @@ Règles communes à tous les personnages :
 
 Un tournoi clandestin dans l'underground musical. On se bat entre deux sets, au milieu des enceintes ; le son est une arme.
 
+L'histoire de Nayo et de Riff, et ses scènes à animer plus tard : [histoire.md](histoire.md).
+
 **Palette d'ambiance** : nuit violette, orange chaud, cyan électrique.
 
 ### Stage — L'Entrepôt
