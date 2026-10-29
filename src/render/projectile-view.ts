@@ -11,8 +11,9 @@ import { AnchoredSprite } from './anchored-sprite';
 const COLOR = 0xffb347;
 
 /**
- * Draws projectiles, each player having at most one alive: with its owner's sprites when they
- * have some, as a rectangle otherwise. Everything is created up front: nothing during the fight.
+ * Draws projectiles, each player having at most one alive: with its owner's sprites for the move
+ * that fired it (the Vinyle, its platine Remix) when they have some, as a rectangle otherwise.
+ * Everything is created up front: nothing during the fight.
  */
 export class ProjectileView {
   private readonly rectangles: readonly [
@@ -35,7 +36,7 @@ export class ProjectileView {
         .setVisible(false);
     this.rectangles = [rectangle(), rectangle()];
     const sprite = (art: FighterArt | undefined): AnchoredSprite | undefined => {
-      if (!art?.projectile) return undefined;
+      if (!art?.projectiles) return undefined;
       const view = new AnchoredSprite(scene, art).setDepth(DEPTH.effects);
       view.hide();
       return view;
@@ -49,7 +50,7 @@ export class ProjectileView {
       let projectile: ProjectileState | undefined;
       for (const candidate of projectiles) if (candidate.owner === player) projectile = candidate;
       const sprite = this.sprites[player];
-      const clip = this.arts[player]?.projectile;
+      const clip = projectile && this.arts[player]?.projectiles?.[projectile.move];
       if (projectile && sprite && clip) {
         const cell = clip.frames[clipFrameAt(clip, frame)] ?? 0;
         sprite.show(clip.sheet, cell, toPx(projectile.x), this.groundY, projectile.facing < 0);

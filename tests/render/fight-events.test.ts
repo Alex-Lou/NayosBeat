@@ -4,6 +4,8 @@ import { Input } from '../../src/core/input';
 import type { GameState } from '../../src/core/state';
 import { step } from '../../src/core/step';
 import { NAYO as P } from '../../src/data/fighters/nayo';
+import { RIFF } from '../../src/data/fighters/riff';
+import { TRAINING_STAGE } from '../../src/data/stages';
 import {
   detectEvents,
   HAPTICS,
@@ -190,6 +192,39 @@ describe('detectEvents', () => {
   it('reports two grabs on the same tick as one tech', () => {
     const tech = eventsOf(facingOff(30, MIRROR_MATCH), [[Input.Grab, Input.Grab], ...idle(10)]);
     expect(tech.filter((e) => e.type === 'tech')).toHaveLength(1);
+  });
+
+  it('reports the Boost: a Remix, the Rewind and the super by their names (combos-v3 §1.8.7)', () => {
+    const boosted = (config: MatchConfig, boost: number, ticks: [number, number][]) => {
+      const start = facingOff(40, config, [{ boost }, {}]);
+      const { x, y } = start.fighters[0];
+      const spent = eventsOf(start, ticks, config).filter(
+        (e) => e.type === 'boost' || e.type === 'rewind' || e.type === 'super',
+      );
+      return { spent, x, y };
+    };
+    const remix = boosted(MIRROR_MATCH, 1000, [[Input.Boost, 0], ...idle(30)]);
+    expect(remix.spent).toEqual([{ type: 'boost', by: 0, x: remix.x, y: remix.y }]);
+    // The Rewind, pressed in the Direct's freeze: a step toward the opponent.
+    const jab: [number, number][] = [[Input.Light, 0], ...idle(6), [Input.Dash, 0], ...idle(30)];
+    expect(boosted(MIRROR_MATCH, 1000, jab).spent).toMatchObject([
+      { type: 'rewind', by: 0, name: 'Rewind', toward: 1 },
+    ]);
+    const megabasse = boosted(MIRROR_MATCH, 3000, [[Input.Left | Input.Boost, 0], ...idle(60)]);
+    expect(megabasse.spent).toEqual([
+      { type: 'super', by: 0, name: 'Mégabasse', x: megabasse.x, y: megabasse.y },
+    ]);
+    const riff: MatchConfig = { stage: TRAINING_STAGE, fighters: [RIFF, P] };
+    expect(boosted(riff, 1000, jab).spent).toMatchObject([{ type: 'rewind', name: 'Pogo' }]);
+    const slam = boosted(riff, 3000, [[Input.Left | Input.Boost, 0], ...idle(60)]);
+    expect(slam.spent).toMatchObject([{ type: 'super', name: 'Slam' }]);
+  });
+
+  it('reports no Boost for a plain special nor a dash', () => {
+    const plain = eventsOf(facingOff(200, MIRROR_MATCH), [[Input.Special, 0], ...idle(30)]);
+    expect(types(plain)).not.toContain('boost');
+    const dash = eventsOf(facingOff(200, MIRROR_MATCH), [[Input.Dash, 0], ...idle(30)]);
+    expect(types(dash)).toEqual(['dash']);
   });
 });
 

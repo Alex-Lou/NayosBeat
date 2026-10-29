@@ -15,7 +15,8 @@ import { updateKo, updateStun } from './stun';
  * every other action plays out on its own. An action lasting N ticks occupies exactly N ticks.
  * Stage bounds, collisions and hits are resolved afterwards, in `step`. `threatened` says
  * whether the opponent menaces this fighter (see `threat.ts`), for the proximity guard; `step`
- * always tells, a fighter tested alone is left in peace.
+ * always tells, a fighter tested alone is left in peace. `discOut`: the fighter's projectile
+ * still flies, so BOOST does not pay for a second one (see `groundMove`).
  */
 export function updateFighter(
   fighter: FighterState,
@@ -23,6 +24,7 @@ export function updateFighter(
   template: FighterTemplate,
   opponentX: number,
   threatened = false,
+  discOut = false,
 ): FighterState {
   const read = readInput(fighter, rawInput, true, opponentX);
   // Allocates only on the few ticks the protection lasts.
@@ -41,10 +43,12 @@ export function updateFighter(
       return updateKo(f, template);
     case 'landing':
       return f.actionFrame + 1 >= template.landingFrames
-        ? actOnGround(f, template, opponentX, threatened)
+        ? actOnGround(f, template, opponentX, threatened, discOut)
         : nextFrame(f);
     case 'attack':
-      return updateMove(f, template) ?? actOnGround(f, template, opponentX, threatened);
+      return (
+        updateMove(f, template, discOut) ?? actOnGround(f, template, opponentX, threatened, discOut)
+      );
     case 'blockstun':
     case 'hitstun':
     case 'tech':
@@ -53,10 +57,10 @@ export function updateFighter(
       if (stunned) return stunned;
       // Out of the stun, grabs whiff for a moment: a throw cannot be looped on the wake-up.
       const free = { ...f, throwImmuneFrames: THROW_PROTECTION_FRAMES };
-      return actOnGround(free, template, opponentX, threatened);
+      return actOnGround(free, template, opponentX, threatened, discOut);
     }
     default:
-      return actOnGround(f, template, opponentX, threatened);
+      return actOnGround(f, template, opponentX, threatened, discOut);
   }
 }
 

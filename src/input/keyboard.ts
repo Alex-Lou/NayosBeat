@@ -5,7 +5,8 @@ export type KeyBindings = Readonly<Record<string, number>>;
 
 /**
  * Physical positions: WASD on QWERTY is ZQSD on AZERTY. The dash goes to the hand that moves
- * (left Shift), the grab above the attacks, under the middle finger (I, above K).
+ * (left Shift), the grab above the attacks, under the middle finger (I, above K), BOOST above S
+ * (O, above L; docs/combos-v3.md §1.8.5).
  */
 export const PLAYER1_KEYS: KeyBindings = {
   KeyW: Input.Up,
@@ -17,6 +18,7 @@ export const PLAYER1_KEYS: KeyBindings = {
   KeyK: Input.Heavy,
   KeyL: Input.Special,
   KeyI: Input.Grab,
+  KeyO: Input.Boost,
   ShiftLeft: Input.Dash,
 };
 
@@ -29,12 +31,16 @@ export const PLAYER2_KEYS: KeyBindings = {
   Numpad2: Input.Heavy,
   Numpad3: Input.Special,
   Numpad4: Input.Grab,
+  // BOOST above S (Numpad3).
+  Numpad6: Input.Boost,
   Numpad0: Input.Dash,
-  // Laptops without a numeric keypad: the keys around right Shift (M is ";" on AZERTY).
+  // Laptops without a numeric keypad: the keys around right Shift (M is ";" on AZERTY), BOOST
+  // above S ("[" on QWERTY, "^" on AZERTY, above "'" / "ù").
   Period: Input.Light,
   Slash: Input.Heavy,
   Quote: Input.Special,
   Semicolon: Input.Grab,
+  BracketLeft: Input.Boost,
   ShiftRight: Input.Dash,
 };
 

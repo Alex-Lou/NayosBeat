@@ -55,9 +55,9 @@ function table(attacker: FighterTemplate): string {
         return (reach === null ? '-' : reach.toFixed(1)).padStart(6);
       }),
     );
-    return [`${id.padEnd(15)}${reaches.join('')}`];
+    return [`${id.padEnd(20)}${reaches.join('')}`];
   });
-  return ['against        Nayo  crouch  Riff  crouch', ...lines].join('\n');
+  return ['against             Nayo  crouch  Riff  crouch', ...lines].join('\n');
 }
 
 describe('reaches (§10.4)', () => {

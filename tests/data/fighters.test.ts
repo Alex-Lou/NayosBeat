@@ -226,6 +226,81 @@ describe('fighter templates', () => {
     }
   });
 
+  it('rejects Boost data that would break the ladder or the economy, each by its own rule', () => {
+    // docs/combos-v3.md §1.12, rules 3, 4, 9, 10, 11 and 13.
+    const pulses = NAYO.moves.super?.pulses ?? [];
+    const cases: [string, FighterTemplate, RegExp][] = [
+      [
+        'a Remix retimed',
+        withMove(NAYO, 'specialBoost', ({ recovery }) => ({ recovery: recovery + 1 })),
+        /specialBoost: a Remix keeps the timing of its special \(D18\)/,
+      ],
+      [
+        'a Remix at half a bar',
+        withMove(NAYO, 'specialBoost', () => ({ boostCost: 500 })),
+        /specialBoost must cost 1000 of the gauge, not 500/,
+      ],
+      [
+        'a normal that costs a bar',
+        withMove(NAYO, 'standLight', () => ({ boostCost: 1000 })),
+        /standLight must cost 0 of the gauge, not 1000/,
+      ],
+      [
+        'a special of tier 2 that is no Remix',
+        withMove(NAYO, 'special', () => ({ tier: 2 })),
+        /special: only the Remixes \(and all of them\) are of tier 2/,
+      ],
+      [
+        'a Remix that cancels',
+        withMove(RIFF, 'specialBoost', () => ({ cancelInto: ['special'] })),
+        /specialBoost: a special or a projectile has no cancelInto/,
+      ],
+      [
+        'a super that hits 3 ticks after its flash',
+        withMove(NAYO, 'super', () => ({ startup: 3 })),
+        /super: the super flashes, then hits 2 ticks after the freeze at most/,
+      ],
+      [
+        'a super that spends juggle points',
+        withMove(NAYO, 'super', () => ({ juggleCost: 1 })),
+        /super: the super's blows spend no juggle point/,
+      ],
+      [
+        'pulses out of order',
+        withMove(NAYO, 'super', () => ({ pulses: [...pulses].reverse() })),
+        /super: its pulses must follow each other within its active frames/,
+      ],
+      [
+        'pulses on a Remix',
+        withMove(NAYO, 'specialForwardBoost', () => ({ pulses })),
+        /specialForwardBoost: only the super has pulses/,
+      ],
+      [
+        'a flash on a normal',
+        withMove(NAYO, 'standHeavy', () => ({ flash: { frame: 0, ticks: 5 } })),
+        /standHeavy: only the super and the Rewind freeze the game/,
+      ],
+      [
+        'a Rewind that cancels into a grab',
+        withMove(RIFF, 'boostCancel', () => ({ cancelInto: ['normal', 'throw'] })),
+        /boostCancel: the Rewind is a movement cancelled freely into normals and specials/,
+      ],
+      [
+        'a blow heavy enough for a combo to give back a bar',
+        withMove(NAYO, 'specialAntiAir', () => ({ damage: 130 })),
+        /a combo can give 1019 of the gauge \(a bar at most\)/,
+      ],
+      [
+        'a throw heavy enough for a hold to give back a bar',
+        withMove(NAYO, 'throwForward', () => ({ damage: 700 })),
+        /a hold can give \d+ of the gauge \(a bar at most\)/,
+      ],
+    ];
+    for (const [label, template, rule] of cases) {
+      expect(validateTemplate(template).join('\n'), label).toMatch(rule);
+    }
+  });
+
   it('keeps the dashes movements: they never strike, and only they cancel freely', () => {
     const { moves } = NAYO;
     const { dashForward, standLight } = moves;

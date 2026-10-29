@@ -14,6 +14,16 @@ function play(sheet: RiffSheet, ticks: readonly number[], loopFrom?: number): Ri
   return loopFrom === undefined ? { sheet, frames, ticks } : { sheet, frames, ticks, loopFrom };
 }
 
+// The specials, which their Remixes « à fond » play too (D18): the same strip at the same timing,
+// its effects redrawn in platine under the Remix's name (docs/combos-v3.md §1.8.7, §4).
+// Glissade: low from frame 1 to frame 5, exactly while her body is low (ticks 2-20), the slide on
+// frames 3-4. Drawn to 3, 3, 4, 4, 4, 5, 5, 6: the game's low body wins, the dive comes a tick
+// sooner and the rise two ticks later.
+const GLISSADE = play('special', [2, 4, 4, 4, 4, 3, 7, 6]); // active: frames 3-4
+// Saut de l'ange: the corkscrew, then the two-heel stomp.
+const SAUT_DE_L_ANGE = play('specialForward', [3, 3, 3, 3, 4, 4, 4, 5, 5]); // active: frame 5
+const GENOU = play('specialAntiAir', [2, 2, 3, 3, 6, 6, 6, 6]); // active: frames 2-3
+
 /**
  * How Riff's strips are played (docs/combat-v2.md §11.3). Durations are in ticks (60 per
  * second); for attacks they add up to the move's startup + active + recovery, so the active pose
@@ -97,13 +107,18 @@ export const RIFF_CLIPS: FighterClips<RiffClip> = {
   crouchHeavy: play('crouchHeavy', [2, 2, 3, 3, 4, 4, 5, 5]), // active: frame 3
   jumpLight: play('jumpLight', [1, 2, 6, 2, 3]), // active: frame 2
   jumpHeavy: play('jumpHeavy', [3, 3, 5, 3, 3, 3]), // active: frame 2
-  // Glissade: low from frame 1 to frame 5, exactly while her body is low (ticks 2-20), the
-  // slide on frames 3-4. Drawn to 3, 3, 4, 4, 4, 5, 5, 6: the game's low body wins, the dive
-  // comes a tick sooner and the rise two ticks later.
-  special: play('special', [2, 4, 4, 4, 4, 3, 7, 6]), // active: frames 3-4
-  // Saut de l'ange: the corkscrew, then the two-heel stomp.
-  specialForward: play('specialForward', [3, 3, 3, 3, 4, 4, 4, 5, 5]), // active: frame 5
-  specialAntiAir: play('specialAntiAir', [2, 2, 3, 3, 6, 6, 6, 6]), // active: frames 2-3
+  special: GLISSADE,
+  specialForward: SAUT_DE_L_ANGE,
+  specialAntiAir: GENOU,
+  specialBoost: { ...GLISSADE, fx: 'specialBoost' },
+  specialForwardBoost: { ...SAUT_DE_L_ANGE, fx: 'specialForwardBoost' },
+  specialAntiAirBoost: { ...GENOU, fx: 'specialAntiAirBoost' },
+  // Slam: the load (frame 0) and the take-off (1), her jumpForward's; the leap into the crowd
+  // (2); the dive (3), on screen from tick 10, when the 20-tick freeze of its flash takes it; the
+  // impact boots first (4, the first blow on tick 12); the stomp and the shockwave (5, the second
+  // blow on tick 16, which knocks down); then back up into her guard. The game lifts and carries
+  // her (docs/combos-v3.md §4).
+  super: play('super', [2, 3, 5, 2, 4, 4, 8, 9, 9]), // active: frames 4-5
   grab: play('grab', [2, 3, 3, 6, 6, 7]), // active: frame 2; a miss closes on air
   pummel: play('pummel', [2, 2, 1, 7]), // the headbutt lands: frame 2
   throwForward: play('throwForward', [3, 3, 4, 1, 7, 7, 7]), // the release: frame 3
@@ -112,6 +127,9 @@ export const RIFF_CLIPS: FighterClips<RiffClip> = {
   // Footwork: the stance it cancels from).
   dashForward: play('dashForward', [1, 3, 3, 3, 3, 3]),
   dashBack: play('dashBack', [1, 4, 4, 3, 3, 5]),
+  // Pogo, her Rewind: the Footwork cut short (frame 3 left out), a 24 px hop forward on the
+  // floor in 10 ticks, its stance (frame 4) on the ticks it cancels from.
+  boostCancel: { sheet: 'dashForward', frames: [0, 1, 2, 4, 5], ticks: [1, 2, 2, 3, 2] },
 
   // Round poses, played on the round clock: the entrance fills the 90-tick intro.
   intro: play('intro', [10, 8, 8, 8, 10, 8, 8, 10, 10, 10]),

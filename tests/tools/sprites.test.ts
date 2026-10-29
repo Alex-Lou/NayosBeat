@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { NAYO_CLIPS, NAYO_PROJECTILE } from '../../src/art/nayo/clips';
+import { NAYO_CLIPS, NAYO_PROJECTILES } from '../../src/art/nayo/clips';
 import { NAYO_SHEETS } from '../../src/art/nayo/sheets';
 import { ANCHOR, ART_SCALE, CELL_SIZE } from '../../src/art/types';
 import { toPx } from '../../src/core/constants';
@@ -210,6 +210,9 @@ describe('Nayo strips', () => {
       // The Direct's strip. The grab plays a combat v2 strip: nayo-v2-sprites.test.ts measures
       // it with them.
       'jabRepeat',
+      // The Remixes play their special's strip (the Vinyle platine fires a projectile).
+      'specialForwardBoost',
+      'specialAntiAirBoost',
     ]);
   });
 
@@ -218,7 +221,7 @@ describe('Nayo strips', () => {
       const { x, y, width, height } = box;
       const { short, past } = move.guard === 'low' ? LOW_REACH : REACH;
       const ways = [{ up: false, band: { from: y, to: y + height }, edge: x + width }];
-      if (id === 'specialAntiAir')
+      if (id === 'specialAntiAir' || id === 'specialAntiAirBoost')
         ways.push({ up: true, band: { from: x, to: x + width }, edge: y + height });
       expect(frames.length).toBeGreaterThan(0);
       // The strip the move plays.
@@ -236,41 +239,57 @@ describe('Nayo strips', () => {
 });
 
 describe('the Vinyle in flight', () => {
-  it('turns on a loop of 8 frames of 2 ticks (docs/combat-v2.md §11.2)', () => {
+  it('turns on a loop of 8 frames of 2 ticks (docs/combat-v2.md §11.2), the platine one of 1', () => {
     expect(NAYO_SHEETS.projectile.frames).toBe(8);
-    expect(NAYO_PROJECTILE).toMatchObject({ frames: [0, 1, 2, 3, 4, 5, 6, 7], loopFrom: 0 });
-    expect(NAYO_PROJECTILE.ticks).toEqual([2, 2, 2, 2, 2, 2, 2, 2]);
+    expect(NAYO_PROJECTILES.special).toMatchObject({
+      sheet: 'projectile',
+      frames: [0, 1, 2, 3, 4, 5, 6, 7],
+      ticks: [2, 2, 2, 2, 2, 2, 2, 2],
+      loopFrom: 0,
+    });
+    expect(NAYO_SHEETS.projectileBoost.frames).toBe(8);
+    expect(NAYO_PROJECTILES.specialBoost).toMatchObject({
+      sheet: 'projectileBoost',
+      frames: [0, 1, 2, 3, 4, 5, 6, 7],
+      ticks: [1, 1, 1, 1, 1, 1, 1, 1],
+      loopFrom: 0,
+    });
   });
 
   /**
    * No reach nobody sees: on every frame of its loop, the strip covers the Vinyle's whole hitbox
    * (−10..10 px, 32 to 52 px high), and its lead reaches the front edge, no farther than a
-   * strike may (§9.5).
+   * strike may (§9.5); the platine one too, its double ring included.
    */
-  it('covers its hitbox on every frame, the lead at its front edge', () => {
-    const spec = NAYO.moves.special.projectile;
-    if (!spec) throw new Error('The Vinyle must be a projectile');
-    const [x = 0, y = 0, width = 0, height = 0] = [
-      spec.hitbox.x,
-      spec.hitbox.y,
-      spec.hitbox.width,
-      spec.hitbox.height,
-    ].map(toPx);
-    const canvas = drawSheet('projectile');
-    for (let frame = 0; frame < NAYO_SHEETS.projectile.frames; frame++) {
-      let [left, right, bottom, top] = [Infinity, -Infinity, Infinity, -Infinity];
-      eachPixelOf(canvas, frame, (px, py) => {
-        left = Math.min(left, px - 1 / ART_SCALE);
-        right = Math.max(right, px);
-        bottom = Math.min(bottom, py - 1 / ART_SCALE);
-        top = Math.max(top, py);
-      });
-      const where = `frame ${frame}: ${left}..${right} x ${bottom}..${top}`;
-      expect(left, where).toBeLessThanOrEqual(x);
-      expect(bottom, where).toBeLessThanOrEqual(y);
-      expect(top, where).toBeGreaterThanOrEqual(y + height);
-      expect(right, where).toBeGreaterThanOrEqual(x + width);
-      expect(right, where).toBeLessThanOrEqual(x + width + 4);
-    }
-  });
+  it.each(['special', 'specialBoost'] as const)(
+    '%s: covers its hitbox on every frame, the lead at its front edge',
+    (id) => {
+      const spec = NAYO.moves[id]?.projectile;
+      const clip = NAYO_PROJECTILES[id];
+      if (!spec || !clip) throw new Error(`${id} must be a projectile`);
+      const [x = 0, y = 0, width = 0, height = 0] = [
+        spec.hitbox.x,
+        spec.hitbox.y,
+        spec.hitbox.width,
+        spec.hitbox.height,
+      ].map(toPx);
+      const sheet = clip.sheet as 'projectile' | 'projectileBoost';
+      const canvas = drawSheet(sheet);
+      for (let frame = 0; frame < NAYO_SHEETS[sheet].frames; frame++) {
+        let [left, right, bottom, top] = [Infinity, -Infinity, Infinity, -Infinity];
+        eachPixelOf(canvas, frame, (px, py) => {
+          left = Math.min(left, px - 1 / ART_SCALE);
+          right = Math.max(right, px);
+          bottom = Math.min(bottom, py - 1 / ART_SCALE);
+          top = Math.max(top, py);
+        });
+        const where = `frame ${frame}: ${left}..${right} x ${bottom}..${top}`;
+        expect(left, where).toBeLessThanOrEqual(x);
+        expect(bottom, where).toBeLessThanOrEqual(y);
+        expect(top, where).toBeGreaterThanOrEqual(y + height);
+        expect(right, where).toBeGreaterThanOrEqual(x + width);
+        expect(right, where).toBeLessThanOrEqual(x + width + 4);
+      }
+    },
+  );
 });

@@ -1,5 +1,6 @@
 import type Phaser from 'phaser';
 import type { Sfx } from '../audio/sfx';
+import { px } from '../core/constants';
 import { BLEEDS, Blood } from './blood';
 import { Dust } from './dust';
 import { Effects } from './effects';
@@ -8,16 +9,29 @@ import { vibrationFor, type FightEvent } from './fight-events';
 import { HitFx } from './hit-fx';
 import type { HitStyle } from './hit-styles';
 import { Onomatopoeia } from './onomatopoeia';
-import { Stamps } from './stamps';
+import { boostStamp, STAMP_TEXTS, Stamps } from './stamps';
 
 /** The final blow plays in slow motion for a moment (display only: the simulation is intact). */
 const KO_SLOW_MOTION_FRAMES = 50;
 const KO_SLOW_MOTION_SCALE = 0.35;
 
+/** The super's flash: the Boost's platine, the same whoever lets it go. */
+const SUPER_FLASH = 0xf2f6ff;
+/**
+ * A Boost stamp stands over the head of the one who spends (its feet + this, sub-pixels), above
+ * the name of its move that training writes there (move-caption.ts), whoever spends.
+ */
+const HEAD_HEIGHT = px(60);
+
+/** Where a Boost stamp goes: over the head of the one who spends. */
+function overHead(at: { readonly by: 0 | 1; readonly x: number; readonly y: number }) {
+  return { by: at.by, x: at.x, y: at.y + HEAD_HEIGHT };
+}
+
 /**
  * Turns fight events into what the player sees, hears and feels: hit effects in the attacker's
  * own style, comic words with the running tally of hits, the stamps (the hold's, CONTRE and
- * PUNITION), blood, dust,
+ * PUNITION, the Boost's), blood, dust,
  * shake, flash, sounds, and player 1's vibrations (`vibrate`, given only where a device can). A low blow lands at the
  * feet (docs/combat-v2.md §9.3): instead of the burst, which would sink through the floor, a
  * grazing spark skims it and dust flies, without blood, which stays for heavy blows higher up.
@@ -71,7 +85,7 @@ export class FightFeedback {
         if (event.low) this.lowBlow(style, weight, event);
         else hitFx.play(style, weight, event.x, event.y, event.away);
         this.words.blow(weight, event, viewLeft);
-        if (counter) this.stamps.show(counter, event, viewLeft);
+        if (counter) this.stamps.show(STAMP_TEXTS[counter], event, viewLeft);
         if (heavy) {
           effects.shake(10, 3);
           if (!event.low) this.blood.bleed(event.x, event.y, event.away, BLEEDS.heavyHit);
@@ -89,7 +103,7 @@ export class FightFeedback {
         const style = this.styles[event.by];
         hitFx.play(style, 'ko', event.x, event.y, event.away);
         this.words.blow('ko', event, viewLeft);
-        if (event.counter) this.stamps.show(event.counter, event, viewLeft);
+        if (event.counter) this.stamps.show(STAMP_TEXTS[event.counter], event, viewLeft);
         if (event.low) this.lowBlow(style, 'heavy', event);
         else this.blood.bleed(event.x, event.y, event.away, BLEEDS.ko);
         // The final blow shakes the screen hard, then dies out over about 0.7 s.
@@ -102,13 +116,13 @@ export class FightFeedback {
       }
       case 'grab':
         // Caught: the freeze and the victim's vibration say it, a PUNITION is stamped.
-        if (event.punish) this.stamps.show('punish', event, viewLeft);
+        if (event.punish) this.stamps.show(STAMP_TEXTS.punish, event, viewLeft);
         sfx.play('grab');
         break;
       case 'tech':
         // The hands knocked away: a flash where they meet, both pushed apart.
         hitFx.play(this.styles[event.by], 'block', event.x, event.y, event.away);
-        this.stamps.show('tech', event, viewLeft);
+        this.stamps.show(STAMP_TEXTS.tech, event, viewLeft);
         sfx.play('tech');
         break;
       case 'throw':
@@ -128,6 +142,23 @@ export class FightFeedback {
       case 'dash':
         this.dust.puff(event.x, event.toward);
         sfx.play('dash');
+        break;
+      // The Boost (docs/combos-v3.md §1.8.7): its stamp over the fighter who spends, its sound.
+      case 'boost':
+        this.stamps.show(STAMP_TEXTS.remix, overHead(event), viewLeft);
+        sfx.play('remix');
+        break;
+      case 'rewind':
+        this.dust.puff(event.x, event.toward);
+        this.stamps.show(boostStamp(event.name), overHead(event), viewLeft);
+        sfx.play('rewind');
+        break;
+      case 'super':
+        // The whole game freezes on the cue (the core's flash): the screen flashes platine.
+        this.stamps.show(boostStamp(event.name), overHead(event), viewLeft);
+        effects.flash(10, SUPER_FLASH);
+        effects.shake(12, 3);
+        sfx.play('super');
         break;
       case 'projectile':
         sfx.play('projectile');

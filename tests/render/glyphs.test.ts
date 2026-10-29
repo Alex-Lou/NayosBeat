@@ -2,9 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { helpPages, withArrows } from '../../src/app/controls-content';
 import type { RoundState } from '../../src/core/state';
 import { ROSTER } from '../../src/data/roster';
+import { BOOST_WORD } from '../../src/render/boost-gauge';
 import { announcementOf, comboText, HOLD_PROMPT, NO_TIMER } from '../../src/render/hud-text';
 import { wordFor, type BlowKind } from '../../src/render/onomatopoeia';
-import { STAMP_TEXTS } from '../../src/render/stamps';
+import { boostStamp, STAMP_TEXTS } from '../../src/render/stamps';
 import { glyphsOf } from './font-glyphs';
 
 /**
@@ -61,6 +62,8 @@ function hudTexts(): string[] {
     '↑',
     comboText(1, 30),
     comboText(12, 345),
+    // The Boost gauge under each health bar (docs/combos-v3.md §1.8.6).
+    BOOST_WORD,
     ...ROSTER.flatMap(({ template }) => [
       template.name,
       ...Object.values(template.moves).map((move) => move.name),
@@ -104,8 +107,15 @@ describe('glyphs', () => {
     const words = kinds.flatMap((kind) =>
       Array.from({ length: 8 }, (_, count) => `${wordFor(kind, count + 1)} !`),
     );
-    const stamps = Object.values(STAMP_TEXTS);
+    // The Boost moves that say their names: the Rewinds and the supers.
+    const named = ROSTER.flatMap(({ template }) =>
+      [template.moves.boostCancel, template.moves.super].flatMap((move) =>
+        move ? [boostStamp(move.name)] : [],
+      ),
+    );
+    const stamps = [...Object.values(STAMP_TEXTS), ...named];
     expect(stamps).toContain('DÉGAGEMENT !');
+    expect(stamps).toContain('MÉGABASSE !');
     expect(missing(await glyphsOf(COMIC), [...words, ...stamps, 'x0123456789'])).toEqual([]);
   });
 });

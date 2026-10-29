@@ -391,8 +391,9 @@ function drawFlash(ink: Ink, center: Point, radius: number, tone: Tone): void {
     drawTick(ink, c, r, random, tones);
     return;
   }
-  if (radius >= 6) drawSoundRing(ink, c, r, random, tone === 'platine' ? tones : undefined);
-  drawSpark(ink, c, r, random, radius >= 6, tones);
+  const platine = tone === 'platine';
+  if (radius >= 6) drawSoundRing(ink, c, r, random, platine ? tones : undefined);
+  drawSpark(ink, c, r, random, radius >= 6, tones, platine);
 }
 
 /** A light hit: a small, sharp 5-spike tick, one sparkle cross, a few loose pixels. */
@@ -426,7 +427,8 @@ function drawTick(ink: Ink, c: Point, r: number, random: () => number, tones: To
 /**
  * A heavy hit (Tazz's hit spark): 10 or 12 jagged spikes around a dark smoky heart, yellow
  * inside, orange, dark at the rim; short ")))" arcs ahead of it (three on a big hit), three
- * teardrop shards.
+ * teardrop shards. The platine's heart is white-hot instead (`incandescent`): the Boost burns,
+ * it does not smoke.
  */
 function drawSpark(
   ink: Ink,
@@ -435,6 +437,7 @@ function drawSpark(
   random: () => number,
   big: boolean,
   tones: Tones,
+  incandescent = false,
 ): void {
   const layer = new Layer(ink, tones);
   const count = big ? 12 : 10;
@@ -448,8 +451,9 @@ function drawSpark(
     return { angle, length, width: spacing * (i === 0 ? 0.3 : 0.44) };
   });
   starburst(layer, c, r * 0.42, spikes, [0, 0.55, 0.82]);
-  smoke(layer, c, r * 0.3, spikes);
-  // A few hot pixels at the rim of the smoke, where the fire is brightest.
+  if (incandescent) whiteHeart(layer, c, r * 0.3, spikes);
+  else smoke(layer, c, r * 0.3, spikes);
+  // A few hot pixels at the rim of the heart, where the fire is brightest.
   for (let i = 0; i < 2; i++) {
     const angle = random() * 2 * Math.PI;
     const d = r * 0.34 + 1;
@@ -1281,6 +1285,24 @@ function smoke(layer: Layer, c: Point, radius: number, spikes: readonly Spike[])
     if (t > 1) return NONE;
     if (t < 0.55) return SMOKE;
     return (Math.floor(x) + Math.floor(y)) % 2 === 0 ? SMOKE : NONE;
+  });
+}
+
+/**
+ * The white-hot heart of a platine spark, in the smoke's shape (a smaller star along the
+ * spark's own): solid white in the middle, its light dithered into the star toward its rim.
+ */
+function whiteHeart(layer: Layer, c: Point, radius: number, spikes: readonly Spike[]): void {
+  const longest = Math.max(...spikes.map((spike) => spike.length));
+  const inner = spikes.map((spike) => ({
+    ...spike,
+    length: radius * (spike.length > longest * 0.6 ? 1.7 : 1.25),
+  }));
+  layer.fill(squareAround(c, radius * 1.8), (x, y) => {
+    const t = starEdge(c, radius, inner, x, y);
+    if (t > 1) return NONE;
+    if (t < 0.55) return CORE;
+    return (Math.floor(x) + Math.floor(y)) % 2 === 0 ? LIGHT : NONE;
   });
 }
 

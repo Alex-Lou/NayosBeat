@@ -4,16 +4,16 @@ import { Input, type InputBits } from '../../src/core/input';
 import { NAYO } from '../../src/data/fighters/nayo';
 import { RIFF } from '../../src/data/fighters/riff';
 import { TRAINING_STAGE } from '../../src/data/stages';
-import { floored, playCombo, unbroken } from './combo-helpers';
+import { floored, landsFloored, playCombo, unbroken } from './combo-helpers';
 import { facingOff } from './helpers';
 
 /**
- * Riff's measured routes of docs/combos-v3.md §4 that need no gauge, on Nayo (1000 health), as
- * a player keeps them going: her strings, the juggle her Retourné opens, the Vrille that picks
- * it up again. More blows, less damage than Nayo's: her identity.
+ * Riff's measured routes of docs/combos-v3.md §4, on Nayo (1000 health), as a player keeps them
+ * going: her strings, the juggle her Retourné opens, the Vrille that picks it up again, then the
+ * routes that spend the gauge. More blows, less damage than Nayo's: her identity.
  */
 
-const { Light: L, Heavy: H, Special: S, Down: D, Left: B, Right: F, Dash } = Input;
+const { Light: L, Heavy: H, Special: S, Down: D, Left: B, Right: F, Dash, Boost: X } = Input;
 
 const RIFF_VS_NAYO: MatchConfig = { stage: TRAINING_STAGE, fighters: [RIFF, NAYO] };
 
@@ -119,4 +119,52 @@ describe("Riff's routes without gauge (combos-v3 §4)", () => {
     ]);
     expect(unbroken(result)).toBe(true);
   });
+});
+
+/**
+ * Riff's measured routes of docs/combos-v3.md §4 that spend the gauge, from the bars they cost:
+ * the Pogo that starts her phrase over, the Genou à fond, the Slam at the end of a string and of
+ * the Vrille's juggle.
+ */
+const BOOST_ROUTES: readonly (Route & { readonly boost: number })[] = [
+  {
+    notation: 'L, L, H → DASH (Pogo) → L, L, H, H → ↓S',
+    distance: 36,
+    steps: [L, L, H, Dash, L, L, H, H, D | S],
+    damages: [25, 27, 56, 17, 18, 35, 25, 47],
+    boost: 1000,
+  },
+  {
+    notation: 'L, L, H, H → ↓BOOST (Genou à fond)',
+    distance: 36,
+    steps: [L, L, H, H, D | X],
+    damages: [25, 27, 56, 35, 69],
+    boost: 1000,
+  },
+  {
+    notation: 'L, L, H, H → ←BOOST (Slam)',
+    distance: 36,
+    steps: [L, L, H, H, B | X],
+    damages: [25, 27, 56, 35, 72, 85],
+    boost: 3000,
+  },
+  {
+    notation: 'L, L, ←H ⇢ L, L, L (Vrille) ⇢ L, L → ←BOOST',
+    distance: 36,
+    steps: [L, L, B | H, L, L, L, L, L, B | X],
+    damages: [25, 27, 40, 17, 18, 22, 12, 15, 60, 85],
+    boost: 3000,
+  },
+];
+
+describe("Riff's routes with the gauge (combos-v3 §4)", () => {
+  for (const { notation, distance, steps, damages, boost } of BOOST_ROUTES) {
+    it(`${notation}: ${total(damages)} from ${distance} px, ${boost / 1000} bar(s)`, () => {
+      const start = facingOff(distance, RIFF_VS_NAYO, [{ boost }, {}]);
+      const result = playCombo(start, RIFF_VS_NAYO, steps);
+      expect(result.hits.map((hit) => hit.damage)).toEqual(damages);
+      expect(unbroken(result)).toBe(true);
+      expect(landsFloored(result, RIFF_VS_NAYO)).toBe(true);
+    });
+  }
 });

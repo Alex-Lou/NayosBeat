@@ -69,7 +69,8 @@ function playPlan(
   const opponent = opponentFor(plan);
   const opening = OPENINGS[plan.after];
   if (opening === undefined) throw new Error(`No opening for ${plan.after}`);
-  let state: GameState = facingOff(distancePx, config);
+  // With the gauge the plan spends, no more.
+  let state: GameState = facingOff(distancePx, config, [{ boost: plan.when.minBoost ?? 0 }, {}]);
   let tick = 0;
   let came = 0;
   let connected = 0;
@@ -82,6 +83,11 @@ function playPlan(
     if (startsMove(was, now)) {
       came++;
       counted = false;
+      // The Rewind strikes nothing: it connects the steps around it.
+      if (now.move && config.fighters[0].moves[now.move]?.kind === 'movement') {
+        connected++;
+        counted = true;
+      }
     }
     // Its blow, or its projectile, hit or was blocked.
     if (!counted && (now.moveConnected || state.contacts.some((contact) => contact.by === 0))) {

@@ -17,6 +17,11 @@ export const Input = {
   Grab: 1 << 8,
   /** DASH: toward the opponent, or a backdash with back held. A double tap does the same. */
   Dash: 1 << 9,
+  /**
+   * BOOST: spends the Boost gauge (docs/combos-v3.md §1.1, §1.8), read like S: the Remix of a
+   * special (one bar), back + BOOST the super (three bars).
+   */
+  Boost: 1 << 10,
 } as const;
 
 export const DIRECTIONS = Input.Up | Input.Down | Input.Left | Input.Right;

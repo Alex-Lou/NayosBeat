@@ -1,3 +1,4 @@
+import { boosted, flashOf } from './boost';
 import { applyHit, contactOf, findHit, impactOf, techGrab, type PlacedBox } from './combat';
 import type { MatchConfig } from './config';
 import { isCounterHit } from './damage';
@@ -91,8 +92,10 @@ function freeTick(
   // Threats are read from the previous state, like the opponent's position: no order effect.
   const threatOnA = isThreatened(0, state.fighters, state.projectiles, config);
   const threatOnB = isThreatened(1, state.fighters, state.projectiles, config);
-  const movedA = updateFighter(prevA, inputA, templateA, prevB.x, threatOnA);
-  const movedB = updateFighter(prevB, inputB, templateB, prevA.x, threatOnB);
+  const discA = hasProjectile(state.projectiles, 0);
+  const discB = hasProjectile(state.projectiles, 1);
+  const movedA = updateFighter(prevA, inputA, templateA, prevB.x, threatOnA, discA);
+  const movedB = updateFighter(prevB, inputB, templateB, prevA.x, threatOnB, discB);
 
   const [a, b] = resolvePositions(
     { fighter: movedA, box: pushboxOf(movedA, templateA) },
@@ -143,6 +146,12 @@ function freeTick(
   );
 }
 
+/** Whether `owner`'s projectile still flies. No allocation. */
+function hasProjectile(projectiles: readonly ProjectileState[], owner: 0 | 1): boolean {
+  for (const projectile of projectiles) if (projectile.owner === owner) return true;
+  return false;
+}
+
 /** Both grabs caught on the same tick: a tech, each one reported where its grab met the body. */
 function techTick(fighters: readonly [FighterState, FighterState], config: MatchConfig): HoldTick {
   const [a, b] = fighters;
@@ -182,7 +191,10 @@ function concluded(
   return assembled(state, fighters, hold, contacts, hitstop, projectiles, config);
 }
 
-/** The tick's end, the same for every tick: camera, training rules, round. */
+/**
+ * The tick's end, the same for every tick: the Boost gauges, the freeze (a blow's or a flash's),
+ * camera, training rules, round.
+ */
 function assembled(
   state: GameState,
   fighters: readonly [FighterState, FighterState],
@@ -192,14 +204,16 @@ function assembled(
   projectiles: readonly ProjectileState[],
   config: MatchConfig,
 ): GameState {
-  const [a, b] = fighters;
+  const gauged = boosted(fighters, contacts, config);
+  const [a, b] = gauged;
+  const [templateA, templateB] = config.fighters;
   const next = applyTrainingRules(
     {
       frame: state.frame + 1,
       cameraX: followCamera(a, b, config.stage),
-      hitstop,
+      hitstop: Math.max(hitstop, flashOf(a, templateA), flashOf(b, templateB)),
       round: state.round,
-      fighters,
+      fighters: gauged,
       projectiles,
       contacts,
       hold,

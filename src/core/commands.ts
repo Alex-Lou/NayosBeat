@@ -7,9 +7,12 @@ import type { Facing, FighterState } from './state';
 
 /**
  * What a player asks for, read from the buttons they press. Moves are chosen from commands, so
- * every device and the CPU are read the same way.
+ * every device and the CPU are read the same way. `boostDash` is the DASH button pressed while
+ * the fighter's move has already hit or been blocked (docs/combos-v3.md §1.1): the Rewind if the
+ * gauge pays for it, else a plain dash once the move is over.
  */
-export type Command = 'light' | 'heavy' | 'special' | 'grab' | 'dash' | 'backdash' | 'jump';
+export type Command =
+  'light' | 'heavy' | 'special' | 'boost' | 'grab' | 'dash' | 'boostDash' | 'backdash' | 'jump';
 
 /**
  * Records this tick's input and buffers the command pressed, if any: one buffer slot, the last
@@ -26,10 +29,15 @@ export function readInput(
   const directionHistory = withDirections(fighter.directionHistory, input & DIRECTIONS);
   const tapped = doubleTap(fighter, input);
   const pressed = input & ~fighter.input;
-  // Same-tick priority: grab, special, heavy, light (`pressedButton`), then dash, then jump.
+  // Same-tick priority: grab, boost, special, heavy, light (`pressedButton`), then dash, then
+  // jump.
   const command =
     pressedButton(pressed, input) ??
-    dashCommand(pressed, input, sideOf(fighter, opponentX), tapped) ??
+    afterContact(
+      dashCommand(pressed, input, sideOf(fighter, opponentX), tapped),
+      pressed,
+      fighter,
+    ) ??
     jumpCommand(pressed);
 
   const bufferFrames = command ? INPUT_BUFFER_FRAMES : agedBuffer(fighter, ageBuffer);
@@ -65,6 +73,7 @@ export function pressedButton(pressed: InputBits, held: InputBits): Command | nu
   const attackPressed = has(pressed, Input.Light) || has(pressed, Input.Heavy);
   if (has(pressed, Input.Grab)) return 'grab';
   if (attackPressed && has(held, Input.Light) && has(held, Input.Heavy)) return 'grab';
+  if (has(pressed, Input.Boost)) return 'boost';
   if (has(pressed, Input.Special)) return 'special';
   if (has(pressed, Input.Heavy)) return 'heavy';
   if (has(pressed, Input.Light)) return 'light';
@@ -89,6 +98,20 @@ export function dashCommand(
   }
   if (tapped === 0) return null;
   return tapped === opponentSide ? 'dash' : 'backdash';
+}
+
+/**
+ * The dash of the DASH button (never a double tap) pressed while the fighter's move has already
+ * hit or been blocked (`fighter`, its state before this tick): the `boostDash`, decided at the
+ * press, so a DASH pressed before the contact stays a dash (docs/combos-v3.md §1.1).
+ */
+function afterContact(
+  command: Command | null,
+  pressed: InputBits,
+  fighter: FighterState,
+): Command | null {
+  if (command !== 'dash' || !has(pressed, Input.Dash)) return command;
+  return fighter.action === 'attack' && fighter.moveConnected ? 'boostDash' : 'dash';
 }
 
 /** The jump button, or up just pressed. Holding up keeps jumping (see `actOnGround`). */

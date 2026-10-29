@@ -3,17 +3,10 @@ import { RIFF_CLIPS } from '../../src/art/riff/clips';
 import { RIFF_SHEETS, type RiffSheet } from '../../src/art/riff/sheets';
 import { ANCHOR, ART_SCALE, CELL_SIZE, type Clip, type ClipId } from '../../src/art/types';
 import { RIFF as RIFF_TEMPLATE } from '../../src/data/fighters/riff';
-import {
-  activeFrames,
-  isPlayed,
-  strikeOf,
-  strikesOf,
-  type ShownStrike,
-} from '../../tools/sprites/clips';
+import { activeFrames, strikeOf, strikesOf, type ShownStrike } from '../../tools/sprites/clips';
 import { PixelCanvas } from '../../tools/sprites/raster';
 import { RIFF } from '../../tools/sprites/riff/index';
 import { DETAIL, EFFECTS, paletteOf } from '../../tools/sprites/riff/palette';
-import { RIFF_PENDING } from '../../tools/sprites/riff/pending-timing';
 import { GUARD } from '../../tools/sprites/riff/poses/common';
 import { isAnimated, RIFF_POSES } from '../../tools/sprites/riff/poses/index';
 import { drawStrip, drawStripEffects } from '../../tools/sprites/sheet';
@@ -39,15 +32,13 @@ interface Band {
 type Way = 'forward' | 'up' | 'back';
 
 /**
- * The combos v3 strips (docs/combos-v3.md §4, §5): the game's clips time the Coup de boule and
- * the Retourné sauté; the Slam, drawn ahead of its gameplay, keeps its pending timing and hitbox
- * (tools/sprites/riff/pending-timing.ts) until the game plays it.
+ * The combos v3 strips (docs/combos-v3.md §4, §5), timed by the game's clips: the Coup de boule,
+ * the Retourné sauté, the Slam.
  */
 const COMBOS_V3 = ['chainHeavy', 'chainLaunch', 'super'] as const satisfies readonly RiffSheet[];
 
-/** Her strike of a strip: the game's, or for a strip drawn ahead of its gameplay, the pending. */
-const strikeOfStrip = (sheet: RiffSheet) =>
-  strikeOf(RIFF_CLIPS, RIFF_TEMPLATE, sheet, RIFF_PENDING);
+/** Her strike of a strip. */
+const strikeOfStrip = (sheet: RiffSheet) => strikeOf(RIFF_CLIPS, RIFF_TEMPLATE, sheet);
 
 /** docs/combat-v2.md §11.3: 43 strips, about 265 frames; and the 3 of combos v3. */
 describe('Riff strips: the set of §11.3', () => {
@@ -151,9 +142,7 @@ describe('Riff strips: the set of §11.3', () => {
 /**
  * The combos v3 strips' timing, from the frame data of docs/combos-v3.md §4: each clip lasts its
  * move (S + A + R), its active frames come on at the move's startup and are the ones drawn as
- * its active poses, and its hitbox is the design's. The game's clip and move once it plays the
- * strip, until then its pending entry (tools/sprites/riff/pending-timing.ts), which must go as
- * soon as the game plays it: the game's timing wins.
+ * its active poses, and its hitbox is the design's.
  */
 const TIMING_SPEC = {
   // Coup de boule: 6/2/14, the forehead in on frame 3.
@@ -164,11 +153,11 @@ const TIMING_SPEC = {
   super: { frames: [12, 8, 26], active: [4, 5], box: { x: [0, 44], y: [0, 60] } },
 } as const satisfies Readonly<Record<(typeof COMBOS_V3)[number], unknown>>;
 
-/** The clip and the strike of a combos v3 strip: the game's once it plays it, else pending. */
+/** The clip and the strike of a combos v3 strip. */
 function playOf(sheet: (typeof COMBOS_V3)[number]): { clip: Clip; strike: ShownStrike } {
-  const clip = isPlayed(RIFF_CLIPS, sheet) ? ownClip(sheet) : RIFF_PENDING[sheet]?.clip;
+  const clip = ownClip(sheet);
   const strike = strikeOfStrip(sheet);
-  if (!clip || !strike) throw new Error(`${sheet} has neither a clip nor a pending entry`);
+  if (!strike) throw new Error(`${sheet} has no strike`);
   return { clip, strike };
 }
 
@@ -198,11 +187,6 @@ describe('Riff strips: combos v3 timing', () => {
     expect(shown).toBe(strike.move.active);
     const { x, y, width, height } = strike.box;
     expect({ x: [x, x + width], y: [y, y + height] }).toEqual(TIMING_SPEC[sheet].box);
-  });
-
-  it.each(Object.keys(RIFF_PENDING))('%s: waits for its gameplay', (sheet) => {
-    const message = `the game plays ${sheet}: its clip and move rule, delete its pending entry`;
-    expect(isPlayed(RIFF_CLIPS, sheet), message).toBe(false);
   });
 });
 
@@ -342,14 +326,19 @@ describe('Riff strips: drawing', () => {
   const STRIKES = strikesOf(RIFF_CLIPS, RIFF_TEMPLATE);
 
   it('every strike the game plays has its strip, animated', () => {
-    expect(STRIKES).toHaveLength(18);
+    expect(STRIKES).toHaveLength(22);
     for (const { sheet } of STRIKES) expect(isAnimated(sheet as RiffSheet), sheet).toBe(true);
-    // The Hache plays the Talon's strip.
+    // The Hache plays the Talon's strip, each Remix its special's.
     const shared = STRIKES.filter(({ id, sheet }) => id !== sheet).map(({ id, sheet }) => [
       id,
       sheet,
     ]);
-    expect(shared).toEqual([['chainHigh', 'forwardHeavy']]);
+    expect(shared).toEqual([
+      ['chainHigh', 'forwardHeavy'],
+      ['specialBoost', 'special'],
+      ['specialForwardBoost', 'specialForward'],
+      ['specialAntiAirBoost', 'specialAntiAir'],
+    ]);
   });
 
   /**
@@ -375,7 +364,7 @@ describe('Riff strips: drawing', () => {
     return reached;
   }
 
-  /** Reach of one strike on the active frames of the strip it plays, the game's or a pending one. */
+  /** Reach of one strike on the active frames of the strip it plays. */
   function checkReach(sheet: RiffSheet, strike: ShownStrike): void {
     const { x, y, width, height } = strike.box;
     const leap = sheet === 'specialAntiAir';
@@ -404,18 +393,6 @@ describe('Riff strips: drawing', () => {
     it(reachCheck(strike.id), () => {
       checkReach(strike.sheet as RiffSheet, strike);
     });
-  }
-
-  // The combos v3 strikes no move of the game plays yet, once their files say they are animated.
-  for (const sheet of COMBOS_V3.filter((sheet) => !isPlayed(RIFF_CLIPS, sheet))) {
-    it.skipIf(!isAnimated(sheet))(
-      `${sheet}: the active frames reach the hitbox, no farther`,
-      () => {
-        const strike = strikeOfStrip(sheet);
-        if (!strike) throw new Error(`${sheet} has no hitbox`);
-        checkReach(sheet, strike);
-      },
-    );
   }
 });
 

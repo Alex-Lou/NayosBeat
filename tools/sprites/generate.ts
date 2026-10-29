@@ -15,7 +15,7 @@ import type { Colorway } from './palette.ts';
 import { encodeIndexedPng } from './png.ts';
 import type { PixelCanvas } from './raster.ts';
 import { RIFF } from './riff/index.ts';
-import { drawStrip, drawStripEffects } from './sheet.ts';
+import { drawStrip, drawStripEffects, toPlatine } from './sheet.ts';
 
 const FIGHTERS: readonly Fighter[] = [NAYO, RIFF];
 const ART = new URL('../../src/art/', import.meta.url);
@@ -132,6 +132,15 @@ async function generate(fighter: Fighter): Promise<void> {
     }
     const { width, height } = body.cell;
     console.log(`${fighter.name} ${sheet}: ${frames} x ${width}x${height}${drawn ? ' + fx' : ''}`);
+  }
+  // The effects a clip names (a Remix's): its strip's, redrawn in platine.
+  for (const [name, sheet] of Object.entries(fighter.platine)) {
+    const drawn = drawStripEffects(fighter, sheet, toPlatine);
+    if (!drawn) throw new Error(`${fighter.name} ${name}: strip ${sheet} has no effects to redraw`);
+    const effects = crop(drawn, ANCHOR);
+    await save(fighter, effects.image, `fx/${name}.png`);
+    cells.set(`fx/${name}`, effects.cell);
+    console.log(`${fighter.name} ${name}: the effects of ${sheet} in platine`);
   }
   await writeFile(
     new URL('cells.ts', assets),

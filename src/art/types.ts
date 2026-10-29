@@ -46,6 +46,12 @@ export interface Clip {
    * squeezed into it).
    */
   readonly endFrames?: number;
+  /**
+   * The front effects played with it, when they are not its strip's own: a Remix plays its
+   * special's strip with that strip's effects redrawn in platine (docs/combos-v3.md §1.8.7),
+   * named after the Remix.
+   */
+  readonly fx?: string;
 }
 
 /** Clips for the states that are not attacks. Attacks use the clip named after their move. */
@@ -110,11 +116,15 @@ export interface FighterArt {
   readonly clips: FighterClips;
   /** Image URL of every strip, by sheet name. */
   readonly urls: Readonly<Record<string, string>>;
-  /** The flying projectile of a fighter that has one, played on the match clock. */
-  readonly projectile?: Clip;
+  /**
+   * The flying projectiles of a fighter that has some, by the move that fires each (the Vinyle,
+   * its platine Remix), played on the match clock.
+   */
+  readonly projectiles?: Readonly<Partial<Record<MoveId, Clip>>>;
   /**
    * Front effects of some strips (energy, flashes, speed lines), drawn over both fighters:
-   * image URL by strip name, frame i going with frame i of that strip.
+   * image URL by strip name, frame i going with frame i of that strip; or by the name a clip
+   * gives its effects (`Clip.fx`).
    */
   readonly fx?: Readonly<Record<string, string>>;
   /** Cropped cells by strip ('idle') and by strip effects ('fx/idle'); FULL_CELL otherwise. */
@@ -137,11 +147,25 @@ export function cellOf(art: FighterArt, strip: string): Cell {
 }
 
 /**
- * The strips that a clip (or the projectile) plays: all a fight needs. The others are drawn
+ * The strips that a clip (or a projectile) plays: all a fight needs. The others are drawn
  * ahead of their gameplay and stay unloaded until a clip plays them.
  */
 export function playedSheets(art: FighterArt): ReadonlySet<string> {
   const sheets = new Set(Object.values<Clip>(art.clips).map((clip) => clip.sheet));
-  if (art.projectile) sheets.add(art.projectile.sheet);
+  for (const clip of Object.values<Clip | undefined>(art.projectiles ?? {})) {
+    if (clip) sheets.add(clip.sheet);
+  }
   return sheets;
+}
+
+/** The front effects a clip plays: its own (`Clip.fx`), else its strip's. */
+export function effectsOf(clip: Clip): string {
+  return clip.fx ?? clip.sheet;
+}
+
+/** The front effects that a clip (or a projectile) plays, by the name of their images. */
+export function playedEffects(art: FighterArt): ReadonlySet<string> {
+  const effects = new Set(playedSheets(art));
+  for (const clip of Object.values<Clip>(art.clips)) effects.add(effectsOf(clip));
+  return effects;
 }

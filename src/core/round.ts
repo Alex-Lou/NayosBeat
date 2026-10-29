@@ -41,7 +41,11 @@ export function updateRound(state: GameState, config: MatchConfig): GameState {
       if (round.wins[0] >= ROUNDS_TO_WIN || round.wins[1] >= ROUNDS_TO_WIN) {
         return withRound(state, { ...round, phase: 'matchEnd', phaseFrame: 0 });
       }
-      return createRound(config, state.frame, round.number + 1, round.wins);
+      // The Boost gauges go on to the next round (docs/combos-v3.md §1.8.1).
+      return createRound(config, state.frame, round.number + 1, round.wins, [
+        state.fighters[0].boost,
+        state.fighters[1].boost,
+      ]);
 
     case 'matchEnd':
       return nextPhaseFrame(state);

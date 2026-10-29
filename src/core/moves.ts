@@ -3,6 +3,7 @@ import type { FighterMoves, FighterTemplate } from './config';
 import { has, Input, type InputBits } from './input';
 import type { BranchDir, FrameRange, MoveData, MoveId, OptionalMoveId } from './move-data';
 import type { Motion } from './motion';
+import { BOOST_BAR, BOOST_MAX } from './rules';
 import type { Facing } from './state';
 
 /**
@@ -46,7 +47,8 @@ export function isThrowInvincible(move: MoveData, actionFrame: number): boolean 
  * not a move. A fresh motion comes first, for the special button too: ↓↘→ + S ends holding
  * forward, and still throws the special, not the forward special. An optional move the fighter
  * does not have gives its standing normal. The strings of a move being cancelled are read
- * before this table (`branchMove`).
+ * before this table (`branchMove`). BOOST reads the gauge (`boost`) and whether the fighter's
+ * projectile still flies (`discOut`): see `boostMove`.
  */
 export function groundMove(
   command: Command,
@@ -54,10 +56,13 @@ export function groundMove(
   motion: Motion | null,
   facing: Facing,
   moves: FighterMoves,
+  boost = 0,
+  discOut = false,
 ): MoveId | null {
   if (command === 'grab') return 'grab';
-  if (command === 'dash') return 'dashForward';
+  if (command === 'dash' || command === 'boostDash') return 'dashForward';
   if (command === 'backdash') return 'dashBack';
+  if (command === 'boost') return boostMove(input, motion, facing, moves, boost, discOut);
   if (command !== 'light' && command !== 'heavy' && command !== 'special') return null;
 
   // Classic motions turn any attack button into a special.
@@ -101,11 +106,47 @@ export function airMove(command: Command): MoveId | null {
 }
 
 /**
- * The rung of the cancel ladder (docs/combos-v3.md §1.3): 0 a normal or a movement, 1 a special.
- * A move climbs it, never down: a special cancels into a higher rung only.
+ * The rung of the cancel ladder (docs/combos-v3.md §1.3): 0 a normal or a movement, 1 a special,
+ * 2 a Remix, 3 the super. A move climbs it, never down: a special or a Remix that hit cancels
+ * into the super only.
  */
 export function tierOf(move: MoveData): number {
-  return move.kind === 'special' ? 1 : 0;
+  return move.kind === 'special' ? (move.tier ?? 1) : 0;
+}
+
+/**
+ * BOOST (docs/combos-v3.md §1.1) reads like S, a fresh motion first: down (diagonals included)
+ * or →↓↘ gives the Remix of the anti-air, forward the Remix of the forward special, neither the
+ * Remix of the special (one bar each); back alone, without down nor motion, the super (three
+ * bars). Nothing it cannot pay for, nor a Remix that would fire a second projectile (`discOut`):
+ * BOOST never gives another move than the one asked for, and never spends for nothing.
+ */
+function boostMove(
+  input: InputBits,
+  motion: Motion | null,
+  facing: Facing,
+  moves: FighterMoves,
+  boost: number,
+  discOut: boolean,
+): MoveId | null {
+  const special =
+    motion === 'dragonPunch'
+      ? 'specialAntiAir'
+      : motion === 'quarterCircleForward'
+        ? 'special'
+        : specialFromDirection(input, facing);
+  if (special === 'special' && motion === null && has(input, backOf(facing))) {
+    return boost >= BOOST_MAX && moves.super ? 'super' : null;
+  }
+  if (boost < BOOST_BAR) return null;
+  const remix: OptionalMoveId =
+    special === 'specialAntiAir'
+      ? 'specialAntiAirBoost'
+      : special === 'specialForward'
+        ? 'specialForwardBoost'
+        : 'specialBoost';
+  const move = moves[remix];
+  return move && !(discOut && move.projectile) ? remix : null;
 }
 
 /**

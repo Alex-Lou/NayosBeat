@@ -1,4 +1,4 @@
-import { urlsOf } from '../strip-urls';
+import { effectNames, urlsOf } from '../strip-urls';
 import type { FighterArt } from '../types';
 import { RIFF_CELLS } from './cells';
 import { RIFF_CLIPS } from './clips';
@@ -33,13 +33,13 @@ const SHARED = { sheets: RIFF_SHEETS, clips: RIFF_CLIPS, cells: RIFF_CELLS };
 export const RIFF: FighterArt = {
   key: 'riff',
   urls: urlsOf(MAIN, 'main', RIFF_SHEETS),
-  fx: urlsOf(MAIN_FX, 'main/fx', RIFF_SHEETS),
+  fx: urlsOf(MAIN_FX, 'main/fx', effectNames(RIFF_SHEETS, RIFF_CLIPS)),
   ...SHARED,
 };
 /** The red leather jacket, the gold fringe and energy: player 2 in a mirror match. */
 export const RIFF_ALT: FighterArt = {
   key: 'riff-alt',
   urls: urlsOf(ALT, 'alt', RIFF_SHEETS),
-  fx: urlsOf(ALT_FX, 'alt/fx', RIFF_SHEETS),
+  fx: urlsOf(ALT_FX, 'alt/fx', effectNames(RIFF_SHEETS, RIFF_CLIPS)),
   ...SHARED,
 };

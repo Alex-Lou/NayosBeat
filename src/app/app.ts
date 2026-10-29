@@ -1,6 +1,7 @@
 import type Phaser from 'phaser';
 import type { CpuLevel } from '../ai/cpu';
 import type { Sfx } from '../audio/sfx';
+import type { TrainingGauge } from '../core/config';
 import { ROSTER, templateOf, type FighterId } from '../data/roster';
 import type { FightScene, FightSceneData } from '../render/fight-scene';
 import { requestLandscapeFullscreen } from '../render/fullscreen';
@@ -31,6 +32,13 @@ const DUMMIES: readonly {
   { dummy: 'dummyStand', label: 'Immobile', hint: 'Idéal pour les enchaînements' },
   { dummy: 'dummyBlock', label: 'Pare tout', hint: 'Pour tester la pression' },
   { dummy: 'normal', label: 'Ordinateur', hint: 'Se défend et attaque' },
+];
+
+/** The Boost gauge in training (docs/combos-v3.md §6.5), in the order the option cycles. */
+const GAUGES: readonly { readonly gauge: TrainingGauge; readonly label: string }[] = [
+  { gauge: 'full', label: 'pleine' },
+  { gauge: 'infinite', label: 'infinie' },
+  { gauge: 'normal', label: 'normale' },
 ];
 
 /**
@@ -246,10 +254,20 @@ export class App {
     });
   }
 
-  private chooseDummy(): void {
-    this.showMenu({
-      title: 'Mannequin',
-      items: DUMMIES.map(({ dummy, label, hint }) => ({
+  private chooseDummy(initialIndex = 0): void {
+    const gauge = GAUGES.findIndex(({ gauge }) => gauge === this.setup.gauge);
+    // The training gauge, cycled in place: the menu comes back with it still selected.
+    const gaugeItem: MenuItem = {
+      label: `Jauge : ${GAUGES[gauge]?.label ?? ''}`,
+      hint: 'La jauge de Boost : pleine, infinie, ou comme en match',
+      onSelect: () => {
+        const next = GAUGES[(gauge + 1) % GAUGES.length] ?? GAUGES[0];
+        if (next) this.setup = { ...this.setup, gauge: next.gauge };
+        this.chooseDummy(items.indexOf(gaugeItem));
+      },
+    };
+    const items: MenuItem[] = [
+      ...DUMMIES.map(({ dummy, label, hint }) => ({
         label,
         hint,
         onSelect: () => {
@@ -257,9 +275,15 @@ export class App {
           this.startFight();
         },
       })),
+      gaugeItem,
+    ];
+    this.showMenu({
+      title: 'Mannequin',
+      items,
       onBack: () => {
         this.chooseFighter(1);
       },
+      initialIndex,
     });
   }
 

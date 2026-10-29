@@ -43,6 +43,7 @@ export const NAYO_CELLS: Readonly<Record<string, Cell>> = {
   'fx/victory': { width: 51, height: 53, anchor: { x: 9, y: 198 } },
   timeOver: { width: 77, height: 144, anchor: { x: 44, y: 141 } },
   projectile: { width: 77, height: 46, anchor: { x: 54, y: 107 } },
+  projectileBoost: { width: 80, height: 66, anchor: { x: 54, y: 114 } },
   dashForward: { width: 126, height: 162, anchor: { x: 68, y: 159 } },
   'fx/dashForward': { width: 125, height: 122, anchor: { x: 80, y: 119 } },
   dashBack: { width: 100, height: 172, anchor: { x: 63, y: 169 } },
@@ -86,4 +87,7 @@ export const NAYO_CELLS: Readonly<Record<string, Cell>> = {
   'fx/chainLaunch': { width: 102, height: 232, anchor: { x: 45, y: 229 } },
   super: { width: 115, height: 185, anchor: { x: 56, y: 180 } },
   'fx/super': { width: 182, height: 197, anchor: { x: 56, y: 189 } },
+  'fx/specialBoost': { width: 83, height: 102, anchor: { x: 41, y: 99 } },
+  'fx/specialForwardBoost': { width: 211, height: 103, anchor: { x: 97, y: 100 } },
+  'fx/specialAntiAirBoost': { width: 122, height: 236, anchor: { x: 59, y: 228 } },
 };

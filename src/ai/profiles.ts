@@ -17,6 +17,11 @@ export interface Profile extends HoldProfile {
   readonly dash: number;
   /** Chance to backdash out of close pressure once a block ends. */
   readonly backdash: number;
+  /**
+   * Chance to throw a Remix instead of a plain special in neutral, when the gauge pays for it
+   * (docs/combos-v3.md §6.4): hard keeps most of its bars for its combos and its super.
+   */
+  readonly remix: number;
 }
 
 export const PROFILES: Readonly<Record<CpuLevel, Profile>> = {
@@ -29,6 +34,7 @@ export const PROFILES: Readonly<Record<CpuLevel, Profile>> = {
     aggression: 0.35,
     dash: 0.1,
     backdash: 0.05,
+    remix: 0,
     tech: 0.1,
     struggle: 2,
     pummels: 0,
@@ -42,6 +48,7 @@ export const PROFILES: Readonly<Record<CpuLevel, Profile>> = {
     aggression: 0.5,
     dash: 0.25,
     backdash: 0.15,
+    remix: 0.25,
     tech: 0.3,
     struggle: 5,
     pummels: 1,
@@ -55,6 +62,7 @@ export const PROFILES: Readonly<Record<CpuLevel, Profile>> = {
     aggression: 0.65,
     dash: 0.4,
     backdash: 0.25,
+    remix: 0.1,
     tech: 0.5,
     struggle: 8,
     pummels: Infinity,

@@ -10,7 +10,7 @@ import {
 import type { FighterState } from '../../src/core/state';
 import { makeFighter, repeat } from './helpers';
 
-const { Up, Down, Left, Right, Light, Heavy, Special, Jump, Grab, Dash } = Input;
+const { Up, Down, Left, Right, Light, Heavy, Special, Jump, Grab, Dash, Boost } = Input;
 
 /** Where the opponent stands unless told: in front of the fighter, on the side it faces. */
 function ahead(fighter: FighterState): number {
@@ -73,10 +73,12 @@ describe('pressedButton', () => {
   });
 });
 
-describe('same-tick priority (§2.5)', () => {
-  it('reads grab > special > heavy > light > dash > jump', () => {
+describe('same-tick priority (§2.5, combos-v3 §1.1)', () => {
+  it('reads grab > boost > special > heavy > light > dash > jump', () => {
     const order: [InputBits, Command][] = [
-      [Grab | Special | Heavy | Dash | Jump, 'grab'],
+      [Grab | Boost | Special | Heavy | Dash | Jump, 'grab'],
+      [Boost | Special | Heavy | Dash | Jump, 'boost'],
+      [Boost | Light, 'boost'],
       [Special | Heavy | Dash | Jump, 'special'],
       [Heavy | Dash | Jump, 'heavy'],
       [Light | Dash | Jump, 'light'],
@@ -112,6 +114,26 @@ describe('dash button', () => {
 
   it('dashes on the press only, not while held', () => {
     expect(commandsOf(repeat(Dash, 20))).toEqual([[0, 'dash']]);
+  });
+});
+
+describe('the DASH after a contact (combos-v3 §1.1)', () => {
+  /** In the middle of a move that has connected (hit or blocked), or not yet. */
+  const attacking = (moveConnected: boolean): FighterState =>
+    makeFighter({ action: 'attack', move: 'standLight', actionFrame: 6, moveConnected });
+
+  it('is the boostDash once the move has hit or been blocked, a dash before', () => {
+    expect(commandsOf([Dash], attacking(true))).toEqual([[0, 'boostDash']]);
+    expect(commandsOf([Right | Dash], attacking(true))).toEqual([[0, 'boostDash']]);
+    expect(commandsOf([Dash], attacking(false))).toEqual([[0, 'dash']]);
+  });
+
+  it('never with back held: a backdash', () => {
+    expect(commandsOf([Left | Dash], attacking(true))).toEqual([[0, 'backdash']]);
+  });
+
+  it('never from a double tap: it stays a dash, even after the contact', () => {
+    expect(commandsOf(doubleTap(Right, 2), attacking(true))).toEqual([[3, 'dash']]);
   });
 });
 

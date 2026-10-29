@@ -38,6 +38,10 @@ const TOUCH: HelpSection = {
     ['DASH', "Bond vers l'adversaire ; joystick en arrière + DASH : bond en retrait"],
     ['2 fois avant', 'Joystick, en repassant au centre : dash aussi (2 fois arrière : retrait)'],
     ['PRISE', "Saisir l'adversaire de près, puis le frapper ou le lancer"],
+    [
+      'BOOST',
+      'Dépenser la jauge : un Remix de ton spécial, ou ta super avec le joystick en arrière',
+    ],
     ['II', 'Pause'],
   ],
 };
@@ -53,12 +57,13 @@ const KEYBOARD: HelpSection = {
     ['K', 'Coup lourd (H) : fort mais lent'],
     ['L', 'Coup spécial (S)'],
     ['I, J + K', "Prise : saisir l'adversaire de près, puis le frapper ou le lancer"],
+    ['O', 'Boost : un Remix de ton spécial, ou ta super avec arrière (la jauge sous ta vie)'],
     ['Maj gauche', 'Dash ; avec arrière : bond en retrait'],
     ['2 fois avant', 'Dash aussi (2 fois arrière : bond en retrait)'],
     ['Echap, P', 'Pause'],
     [
       'Joueur 2',
-      'Flèches ; pavé 1 / 2 / 3 (ou : ! ù) léger, lourd, spécial ; pavé 4 (ou M) prise ; pavé 0 (ou Maj droite) dash',
+      'Flèches ; pavé 1 / 2 / 3 (ou : ! ù) léger, lourd, spécial ; pavé 4 (ou M) prise ; pavé 6 (ou ^) boost ; pavé 0 (ou Maj droite) dash',
     ],
   ],
 };
@@ -72,6 +77,7 @@ const GAMEPAD: HelpSection = {
     ['Y (Triangle)', 'Coup lourd (H) : fort mais lent'],
     ['B (Rond)', 'Coup spécial (S)'],
     ['RB (R1), X + Y', "Prise : saisir l'adversaire de près, puis le frapper ou le lancer"],
+    ['RT (R2)', 'Boost : un Remix de ton spécial, ou ta super avec arrière (la jauge sous ta vie)'],
     ['LB (L1)', 'Dash ; avec arrière : bond en retrait. Deux fois avant ou arrière aussi'],
     ['Start', 'Pause'],
   ],

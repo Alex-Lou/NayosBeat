@@ -54,8 +54,7 @@ export const RIFF_SHEETS = {
   intro: { frames: 10 },
   victory: { frames: 8 },
   timeOver: { frames: 4 },
-  // Combos v3 (docs/combos-v3.md §4, §5). The Slam is drawn ahead of its gameplay: no clip plays
-  // it yet, so a fight does not load it (tools/sprites/riff/pending-timing.ts times it).
+  // Combos v3 (docs/combos-v3.md §4, §5): the Coup de boule, the Retourné sauté, the Slam.
   chainHeavy: { frames: 6 },
   chainLaunch: { frames: 7 },
   super: { frames: 9 },

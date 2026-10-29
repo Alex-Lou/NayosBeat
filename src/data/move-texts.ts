@@ -15,13 +15,18 @@ import type { FighterTexts } from './texts/shared';
 export type { FighterTexts, MoveText } from './texts/shared';
 
 /**
- * The order of a fighter's page: the specials first, then the normals (each string after the
- * move it starts from, the direction normals after the plain ones), the grab, the dashes.
+ * The order of a fighter's page: the specials first, then their Remixes and the super, then the
+ * normals (each string after the move it starts from, the direction normals after the plain
+ * ones), the grab, the dashes and the Boost's one between them.
  */
 export const MOVE_ORDER: readonly MoveId[] = [
   'special',
   'specialForward',
   'specialAntiAir',
+  'specialBoost',
+  'specialForwardBoost',
+  'specialAntiAirBoost',
+  'super',
   'standLight',
   'jabRepeat',
   'chainLight',
@@ -42,6 +47,7 @@ export const MOVE_ORDER: readonly MoveId[] = [
   'throwForward',
   'throwBack',
   'dashForward',
+  'boostCancel',
   'dashBack',
 ];
 
@@ -70,7 +76,7 @@ export const BASICS: readonly (readonly [string, string])[] = [
   ],
   [
     'Enchaîner',
-    "L, L, L. Puis L, L, H, H, S. Un coup qui touche (ou qui est paré) s'enchaîne : chaque coup une fois par enchaînement (les légers deux fois), puis un spécial",
+    "L, L, L. Puis L, L, H, H, S. Un coup qui touche (ou qui est paré) s'enchaîne : chaque coup une fois par enchaînement (les légers deux fois), puis un spécial, puis la super",
   ],
   [
     'Directions',
@@ -87,6 +93,10 @@ export const BASICS: readonly (readonly [string, string])[] = [
   [
     'Spéciaux',
     'S seul, avant + S, bas + S : trois spéciaux par combattant (voir sa page). Même parés, ils grignotent un peu de vie, jamais le dernier point',
+  ],
+  [
+    'BOOST',
+    "La jauge sous ta vie : 3 barres, remplies en frappant, en parant et en encaissant, gardées d'un round à l'autre. BOOST + direction donne le Remix de ton spécial (1 barre), arrière + BOOST ta super (3 barres). DASH pendant un coup qui touche : le Rewind de Nayo, le Pogo de Riff (1 barre). Sans assez de barres, rien ne sort",
   ],
   [
     'Manips',

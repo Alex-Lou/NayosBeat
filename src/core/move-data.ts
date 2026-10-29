@@ -24,7 +24,8 @@ export const CORE_MOVE_IDS = [
 /**
  * Moves a fighter may leave out (docs/combat-v2.md §2.8): the command that asks for one gives
  * the standing normal instead (`groundMove`), and a string (`branches`) only leads to the ones it
- * has. Nayo defines them all, Riff all but the Double direct.
+ * has; BOOST gives nothing without its move. Nayo defines them all, Riff all but the Double
+ * direct.
  */
 export const OPTIONAL_MOVE_IDS = [
   'forwardLight',
@@ -37,6 +38,12 @@ export const OPTIONAL_MOVE_IDS = [
   'chainHeavy',
   'chainHigh',
   'chainLaunch',
+  // The Boost layer (docs/combos-v3.md §1.8): the Rewind, the three Remixes, the super.
+  'boostCancel',
+  'specialBoost',
+  'specialForwardBoost',
+  'specialAntiAirBoost',
+  'super',
 ] as const;
 
 /** Every move a fighter can have, required or not. */
@@ -76,14 +83,21 @@ export const AIR_MOVE_IDS: readonly MoveId[] = ['jumpLight', 'jumpHeavy'];
 
 /**
  * Decides what a move can cancel into, and how it is blocked (grabs cannot be). A `movement`
- * (dash, backdash) carries the fighter and never strikes: the CPU does not guard against it, and
- * a fighter hit during one is not caught attacking. A `throw` is played on a held opponent
- * (`hold.ts`): no hitbox, it lands on its startup frame, whatever the boxes say.
+ * (dash, backdash, the Rewind) carries the fighter and never strikes: the CPU does not guard
+ * against it, and a fighter hit during one is not caught attacking. A `throw` is played on a
+ * held opponent (`hold.ts`): no hitbox, it lands on its startup frame, whatever the boxes say.
  */
 export type MoveKind = 'normal' | 'special' | 'grab' | 'throw' | 'movement';
 
 /** The moves of kind `movement`, and only they. */
-export const MOVEMENT_MOVE_IDS: readonly MoveId[] = ['dashForward', 'dashBack'];
+export const MOVEMENT_MOVE_IDS: readonly MoveId[] = ['dashForward', 'dashBack', 'boostCancel'];
+
+/** Each Remix (docs/combos-v3.md §1.8.3) and the special whose strip and timing it keeps. */
+export const REMIX_OF = {
+  specialBoost: 'special',
+  specialForwardBoost: 'specialForward',
+  specialAntiAirBoost: 'specialAntiAir',
+} as const satisfies Partial<Record<MoveId, MoveId>>;
 
 /** The moves of kind `throw`, and only they: what the holder does with the opponent it holds. */
 export const THROW_MOVE_IDS: readonly MoveId[] = ['pummel', 'throwForward', 'throwBack'];
@@ -164,6 +178,22 @@ export interface CounterEffect {
 }
 
 /**
+ * A blow of a multi-hit move after its first (the super's, docs/combos-v3.md §1.11): from `frame`
+ * on, the move can land again, as `hit` says (its damage, stun, freeze, knockdown), computed once
+ * with the data.
+ */
+export interface Pulse {
+  readonly frame: number;
+  readonly hit: MoveData;
+}
+
+/** The whole game freezes `ticks` long as the move reaches `frame` (docs/combos-v3.md §1.9). */
+export interface Flash {
+  readonly frame: number;
+  readonly ticks: number;
+}
+
+/**
  * Frames during which the move cannot be hit: by anything ('all', the default: strikes,
  * projectiles, grabs), or by attacks from the air only (Riff's Genou montant, no reversal).
  */
@@ -200,7 +230,10 @@ export interface MoveData {
   readonly cancelInto?: readonly MoveKind[];
   /** The strings it opens once it has hit or been blocked (docs/combos-v3.md §1.4). */
   readonly branches?: readonly Branch[];
-  /** Juggle points it spends on a juggled defender (docs/combos-v3.md §1.5): 1 by default. */
+  /**
+   * Juggle points it spends on a juggled defender (docs/combos-v3.md §1.5): 1 by default; 0 for
+   * the super's blows, which land on any body already in the combo.
+   */
   readonly juggleCost?: number;
   /** Its own CONTRE (docs/combos-v3.md §1.6). */
   readonly counter?: CounterEffect;
@@ -209,6 +242,17 @@ export interface MoveData {
    * Vrille (spun away up in the air), each with more juggle points (docs/combos-v3.md §1.5).
    */
   readonly extender?: 'rebond' | 'vrille';
+  /**
+   * The rung of the cancel ladder (docs/combos-v3.md §1.3) of a special: 2 a Remix, 3 the super;
+   * a plain special (left out) is 1.
+   */
+  readonly tier?: 2 | 3;
+  /** Boost gauge it costs, paid as it starts: a bar for a Remix or the Rewind, three the super. */
+  readonly boostCost?: number;
+  /** A multi-hit move's blows after the first (the super). */
+  readonly pulses?: readonly Pulse[];
+  /** Its freeze of the whole game (the super, the Rewind). */
+  readonly flash?: Flash;
   /** Played crouching: the crouching pushbox and hurtboxes. */
   readonly crouching?: true;
   /**

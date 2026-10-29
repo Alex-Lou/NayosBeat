@@ -17,7 +17,7 @@ function borrowed(poses: readonly Pose[], frame: number): Pose {
 /**
  * super (Slam, ← + BOOST, 3 bars; docs/combos-v3.md §4): she leaps into the crowd and comes
  * down boots first. 9 frames, 2, 3, 5, 2, [4], [4], 8, 9, 9 ticks (46: 12/8/26,
- * tools/sprites/riff/pending-timing.ts), an overhead, hitbox 0..44 / 0..60. The 20-tick freeze
+ * src/art/riff/clips.ts), an overhead, hitbox 0..44 / 0..60. The 20-tick freeze
  * flash takes the dive (frame 3, on screen from tick 10); the first blow lands on tick 12 (frame
  * 4), the second on tick 16 (frame 5, it knocks down).
  *
@@ -60,9 +60,7 @@ function borrowed(poses: readonly Pose[], frame: number): Pose {
  *   floor; a short trail under the boots.
  * - 2 (5 ticks, the top): the dart.
  * - 3 (2 ticks, the flash): the dive-bomb, the hero pose.
- * - 4 (4 ticks, active): the double stomp into his chest, the V, the star at the soles (its heart
- *   white: a platine flash's own heart is the rim's dark blue, so a platine energy ball covers
- *   it).
+ * - 4 (4 ticks, active): the double stomp into his chest, the V, the white-hot star at the soles.
  * - 5 (4 ticks, active): the contact: both boots slammed on their guard marks, the legs as long
  *   as that wide stance allows (the hips 34, the guard's 32: both legs straight would only give
  *   35), the arms thrown back; the floor wave and the rays are what reach the hitbox's edge.
@@ -211,13 +209,13 @@ const rays = (top: Point, length: number, spread: number, tone: 'sound' | 'plati
   tone,
 });
 
-/** A white-hot point: a platine flash with an incandescent heart (the flash's own is dark). */
-function hot(center: Point, radius: number, heart: number): readonly Effect[] {
-  return [
-    { kind: 'flash', center, radius, tone: 'platine' },
-    { kind: 'energy', center, radius: heart, tone: 'platine' },
-  ];
-}
+/** A white-hot point: a platine flash (its heart is white). */
+const hot = (center: Point, radius: number): Effect => ({
+  kind: 'flash',
+  center,
+  radius,
+  tone: 'platine',
+});
 
 // 0 · The load (2 ticks): deep in the plié, pitched in over the lead knee, both arms swung down
 // behind the hips to throw the leap; the floor puffs under both boots.
@@ -284,7 +282,7 @@ const BOMB: Pose = {
   effects: [
     smear(1.5, [-14, 22], [-3, 15], [10, 13]),
     platine(5, [-30, 38], [-22, 23], [-9, 14], [4, 11], [13, 12]),
-    ...hot(at(16.5, 11), 5, 3),
+    hot(at(16.5, 11), 5),
   ],
 };
 
@@ -305,7 +303,7 @@ const STOMP_BODY: Pose = {
 };
 const STOMP: Pose = {
   ...arms(legs(STOMP_BODY, [18, 30, 22], [24, 36, 26]), 122, 50),
-  effects: [smear(5, [10, 30], [16, 22], [22, 15], [27, 10]), ...hot(at(28, 10), 8, 5)],
+  effects: [smear(5, [10, 30], [16, 22], [22, 15], [27, 10]), hot(at(28, 10), 8)],
 };
 
 // 5 · The contact (4 ticks, the second blow): she drops off him onto the floor and slams both

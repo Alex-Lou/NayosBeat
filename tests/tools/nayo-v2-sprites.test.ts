@@ -3,14 +3,7 @@ import { NAYO_CLIPS } from '../../src/art/nayo/clips';
 import { NAYO_SHEETS } from '../../src/art/nayo/sheets';
 import { ANCHOR, ART_SCALE, CELL_SIZE, type Clip, type ClipId } from '../../src/art/types';
 import { NAYO } from '../../src/data/fighters/nayo';
-import {
-  activeFrames,
-  isPlayed,
-  strikeOf,
-  strikesOf,
-  type ShownStrike,
-} from '../../tools/sprites/clips';
-import { NAYO_PENDING } from '../../tools/sprites/nayo/pending-timing';
+import { activeFrames, strikeOf, strikesOf, type ShownStrike } from '../../tools/sprites/clips';
 import { GUARD } from '../../tools/sprites/nayo/poses/common';
 import {
   isAnimated,
@@ -27,9 +20,8 @@ import { extent, reach } from './strip-pixels';
 /**
  * Nayo's combat v2 strips (docs/combat-v2.md §11.1, §11.2) and combos v3 strips
  * (docs/combos-v3.md §5) against the spec (frame counts), the game (the clips that play them,
- * the hitbox of each move that plays one: the Marteau plays the Overhand's strip; for a strip
- * drawn ahead of its gameplay, its pending one, tools/sprites/nayo/pending-timing.ts) and the
- * rules of the animation brief. A new strip starts as a placeholder.
+ * the hitbox of each move that plays one: the Marteau plays the Overhand's strip) and the rules
+ * of the animation brief. A new strip starts as a placeholder.
  *
  * Strips in progress: only their frame count is checked. A strip is in progress while it is on
  * this list, or while its pose file says it is not animated yet (`ANIMATED = false`, the
@@ -117,23 +109,15 @@ const RULES: Readonly<Record<V2Sheet, Rules>> = {
 /** The moves that strike with each strip (the strikes and the grab), each with its own box. */
 const STRIKES = strikesOf(NAYO_CLIPS, NAYO);
 
-/**
- * The strike a strip shows, with a hitbox (the strikes and the grab): the game's, or for a strip
- * drawn ahead of its gameplay, the pending one.
- */
-const strikeOfStrip = (sheet: V2Sheet) => strikeOf(NAYO_CLIPS, NAYO, sheet, NAYO_PENDING);
+/** The strike a strip shows, with a hitbox (the strikes and the grab). */
+const strikeOfStrip = (sheet: V2Sheet) => strikeOf(NAYO_CLIPS, NAYO, sheet);
 
-/**
- * The reach checks of a strip: one per move of the game that plays it, each with its own box; a
- * strip no move plays yet has its pending strike's.
- */
+/** The reach checks of a strip: one per move of the game that plays it, each with its own box. */
 function reachChecksOf(sheet: V2Sheet): { name: string; strike: ShownStrike }[] {
-  const played = STRIKES.filter((strike) => strike.sheet === sheet);
-  if (played.length > 0) return played.map((strike) => ({ name: reachCheck(strike.id), strike }));
-  const planned = strikeOfStrip(sheet);
-  return planned
-    ? [{ name: 'pending: the active frames reach the hitbox, no farther', strike: planned }]
-    : [];
+  return STRIKES.filter((strike) => strike.sheet === sheet).map((strike) => ({
+    name: reachCheck(strike.id),
+    strike,
+  }));
 }
 
 /**
@@ -339,9 +323,7 @@ describe('Nayo combat v2', () => {
 /**
  * The combos v3 strips' timing (docs/combos-v3.md §5): each clip lasts its move (S + A + R) in
  * §5's ticks, its active frames come on at the move's startup and are the ones §5 marks, and its
- * hitbox is §2.2's. The game's clip and move once it plays the strip, until then its pending
- * entry (tools/sprites/nayo/pending-timing.ts), which must go as soon as the game plays it: the
- * game's timing wins.
+ * hitbox is §2.2's.
  */
 const TIMING_SPEC = {
   chainHeavy: {
@@ -365,13 +347,11 @@ const TIMING_SPEC = {
   },
 } as const satisfies Readonly<Partial<Record<V2Sheet, unknown>>>;
 
-/** The clip and the strike of a combos v3 strip: the game's once it plays it, else pending. */
+/** The clip and the strike of a combos v3 strip. */
 function playOf(sheet: keyof typeof TIMING_SPEC): { clip: Clip; strike: ShownStrike } {
-  const clip = isPlayed(NAYO_CLIPS, sheet)
-    ? NAYO_CLIPS[sheet as ClipId]
-    : NAYO_PENDING[sheet]?.clip;
+  const clip: Clip | undefined = NAYO_CLIPS[sheet as ClipId];
   const strike = strikeOfStrip(sheet);
-  if (!clip || !strike) throw new Error(`${sheet} has neither a clip nor a pending entry`);
+  if (!clip || !strike) throw new Error(`${sheet} has no clip or no strike`);
   return { clip, strike };
 }
 
@@ -404,9 +384,4 @@ describe('Nayo combos v3 timing', () => {
       expect({ x: [x, x + width], y: [y, y + height] }).toEqual(spec.box);
     });
   }
-
-  it.each(Object.keys(NAYO_PENDING))('%s: waits for its gameplay', (sheet) => {
-    const message = `the game plays ${sheet}: its clip and move rule, delete its pending entry`;
-    expect(isPlayed(NAYO_CLIPS, sheet), message).toBe(false);
-  });
 });

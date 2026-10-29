@@ -2,15 +2,17 @@ import type { FighterTemplate } from '../../core/config';
 import { px } from '../../core/constants';
 import { GRAB_HITSTOP } from '../../core/rules';
 import { advance, box, dash, HEAVY_CANCELS, kd, LIGHT_CANCELS, strike, throwMove } from './shared';
+import { nayoBoost } from './nayo-boost';
 import { NAYO_STRINGS } from './nayo-strings';
 
 /**
  * Nayo, the all-rounder, « le boxeur posé » (docs/combat-v2.md §5.2, §10.1): good range, a
  * projectile and a reliable anti-air; a boxer's straight lines, his chain ends on a wide hook,
  * his overhead is slow and telegraphed. He counts the beats (docs/combos-v3.md §2): the Direct,
- * the Cross, then the bass on the third, chosen by the direction; few blows, each heavy.
+ * the Cross, then the bass on the third, chosen by the direction; few blows, each heavy. His
+ * Boost moves are written from his plain specials (`NAYO`, below).
  */
-export const NAYO: FighterTemplate = {
+const NAYO_PLAIN: FighterTemplate = {
   name: 'Nayo',
   maxHealth: 1000,
   walkForwardSpeed: px(1.5),
@@ -201,4 +203,10 @@ export const NAYO: FighterTemplate = {
       throwInvincible: { from: 0, to: 12 },
     }),
   },
+};
+
+/** Nayo with his Boost moves (docs/combos-v3.md §2.4): the platine Remixes, Rewind, Mégabasse. */
+export const NAYO: FighterTemplate = {
+  ...NAYO_PLAIN,
+  moves: { ...NAYO_PLAIN.moves, ...nayoBoost(NAYO_PLAIN.moves) },
 };

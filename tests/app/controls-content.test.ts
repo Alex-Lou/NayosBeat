@@ -50,14 +50,24 @@ describe('helpPages', () => {
     }
   });
 
-  it("ends each fighter's page on its combos to learn first, without gauge (combos-v3 §3.2)", () => {
+  it("ends each fighter's page on its combos to learn first, the last on the super (combos-v3 §3.2)", () => {
     for (const page of helpPages(PHONE).slice(2)) {
       const combos = page.sections.at(-1);
       expect(combos?.title).toBe('Combos');
       expect(combos?.rows[0]).toEqual(['L, L, L', expect.any(String)]);
-      expect(combos?.rows).toHaveLength(5);
-      expect(combos?.rows.join(' ')).not.toMatch(/BOOST/);
+      expect(combos?.rows).toHaveLength(6);
+      expect(combos?.rows.slice(0, -1).join(' ')).not.toMatch(/BOOST/);
+      expect(combos?.rows.at(-1)?.[0]).toMatch(/arrière \+ BOOST \(3 barres\)$/);
     }
+  });
+
+  it('shows BOOST on every device (combos-v3 §1.8.5)', () => {
+    const devices = [PHONE, { touch: false, gamepad: true }];
+    const rows = devices.flatMap((device) => helpPages(device)[0]?.sections ?? []);
+    for (const { title, rows: controls } of rows) {
+      expect(controls.join(' '), title).toMatch(/Boost|BOOST/);
+    }
+    expect(textOf('Les bases')).toContain('BOOST');
   });
 
   it("fits each fighter's lists on a phone held sideways, one under the other", () => {

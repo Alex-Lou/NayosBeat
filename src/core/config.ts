@@ -63,9 +63,17 @@ export interface StageConfig {
   readonly startDistance: number;
 }
 
+/**
+ * The Boost gauge in training (docs/combos-v3.md §1.8.1, §6.5): as in a match, back to three
+ * bars once a fighter is left alone, or full on every tick.
+ */
+export type TrainingGauge = 'normal' | 'full' | 'infinite';
+
 export interface MatchConfig {
   readonly stage: StageConfig;
   readonly fighters: readonly [FighterTemplate, FighterTemplate];
   /** Training mode: no timer, no KO, health refills between combos. */
   readonly training?: boolean;
+  /** Training mode's gauge: 'normal' when left out. */
+  readonly trainingGauge?: TrainingGauge;
 }

@@ -34,11 +34,32 @@ export function validateArt(art: FighterArt, template: FighterTemplate): string[
     }
     for (const problem of clipProblems(clip, art)) check(false, `clip ${id}: ${problem}`);
   }
-  if (art.projectile) {
-    for (const problem of clipProblems(art.projectile, art)) check(false, `projectile: ${problem}`);
+  // A projectile flies with the clip of the move that fires it, for each move that fires one.
+  for (const [id, move] of moves) {
+    const flying = art.projectiles?.[id];
+    if (!move.projectile) {
+      check(flying === undefined, `projectile of ${id}, which fires none`);
+    } else if (art.projectiles && !flying) {
+      check(false, `projectile of ${id} is missing`);
+    }
+    if (flying) {
+      for (const problem of clipProblems(flying, art)) check(false, `projectile ${id}: ${problem}`);
+    }
   }
-  for (const sheet of Object.keys(art.fx ?? {})) {
-    check(art.sheets[sheet] !== undefined, `effects of unknown sheet ${sheet}`);
+  // Front effects go with a strip, or with the clips that name them (a Remix's platine ones).
+  const named = new Map(
+    Object.values<Clip>(art.clips).flatMap((clip): [string, string][] =>
+      clip.fx === undefined ? [] : [[clip.fx, clip.sheet]],
+    ),
+  );
+  for (const effects of Object.keys(art.fx ?? {})) {
+    check(
+      art.sheets[effects] !== undefined || named.has(effects),
+      `effects ${effects} of no strip nor clip`,
+    );
+  }
+  for (const [effects, sheet] of named) {
+    check(art.fx?.[effects] !== undefined, `effects ${effects} of strip ${sheet} have no image`);
   }
 
   const expected: [string, Clip | undefined, number][] = [

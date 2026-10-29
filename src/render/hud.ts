@@ -3,6 +3,7 @@ import type { MatchConfig } from '../core/config';
 import { TICK_RATE } from '../core/constants';
 import { ROUNDS_TO_WIN } from '../core/rules';
 import type { FighterState, GameState, RoundState } from '../core/state';
+import { BoostGauge } from './boost-gauge';
 import { announcementOf, comboText, NO_TIMER } from './hud-text';
 import { VIEW_SIZE } from './view';
 
@@ -31,9 +32,13 @@ const TEXT_STYLE: Phaser.Types.GameObjects.Text.TextStyle = {
   strokeThickness: 3,
 };
 
-/** Health bars, timer, round wins and announcements. Fixed on screen, above the stage. */
+/**
+ * Health bars, Boost gauges, timer, round wins and announcements. Fixed on screen, above the
+ * stage.
+ */
 export class Hud {
   private readonly bars: [Phaser.GameObjects.Rectangle, Phaser.GameObjects.Rectangle];
+  private readonly gauges: readonly [BoostGauge, BoostGauge];
   private readonly pips: [Phaser.GameObjects.Rectangle[], Phaser.GameObjects.Rectangle[]];
   private readonly timer: Phaser.GameObjects.Text;
   private readonly announcer: Phaser.GameObjects.Text;
@@ -46,9 +51,11 @@ export class Hud {
   private comboStartHealth = 0;
   private readonly names: readonly [string, string];
 
+  /** `energies`: each fighter's energy color in its colorway, for its gauge. */
   constructor(
     scene: Phaser.Scene,
     private readonly config: MatchConfig,
+    energies: readonly [number, number],
   ) {
     const { width } = VIEW_SIZE;
     this.names = [config.fighters[0].name, config.fighters[1].name];
@@ -57,6 +64,13 @@ export class Hud {
 
     this.bars = [this.createBar(scene, leftX, 0), this.createBar(scene, rightX, 1)];
     this.pips = [this.createPips(scene, leftX + BAR_WIDTH, -1), this.createPips(scene, rightX, 1)];
+
+    // Under each name, on the outer side.
+    const gaugeY = BAR_TOP + BAR_HEIGHT + 14;
+    this.gauges = [
+      new BoostGauge(scene, leftX, gaugeY, 1, energies[0], smallText()),
+      new BoostGauge(scene, width - MARGIN, gaugeY, -1, energies[1], smallText()),
+    ];
 
     const nameY = BAR_TOP + BAR_HEIGHT + 2;
     this.fixed(scene.add.text(leftX, nameY, config.fighters[0].name, smallText()));
@@ -85,6 +99,8 @@ export class Hud {
     this.setBar(0, a.health / this.config.fighters[0].maxHealth);
     this.setBar(1, b.health / this.config.fighters[1].maxHealth);
     this.setPips(state.round);
+    this.gauges[0].update(a.boost, state.frame);
+    this.gauges[1].update(b.boost, state.frame);
     const seconds = Math.ceil(state.round.timer / TICK_RATE);
     setTextIfChanged(this.timer, this.config.training ? NO_TIMER : String(seconds));
     if (this.trainingInfo) this.updateTrainingInfo(this.trainingInfo, b);

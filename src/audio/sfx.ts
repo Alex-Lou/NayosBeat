@@ -19,6 +19,9 @@ export type SoundName =
   | 'throw'
   | 'fall'
   | 'tech'
+  | 'remix'
+  | 'rewind'
+  | 'super'
   | 'round'
   | 'fight'
   | 'menuMove'
@@ -101,6 +104,30 @@ const SOUNDS: Readonly<Record<SoundName, { tones?: readonly Tone[]; noises?: rea
       noises: [
         { duration: 0.035, volume: 0.45, cutoff: 5000 },
         { duration: 0.035, volume: 0.4, cutoff: 4200, delay: 0.07 },
+      ],
+    },
+    // The Boost (docs/combos-v3.md §1.8.7). A Remix: the bass boost, a low saturated sweep up.
+    remix: {
+      noises: [{ duration: 0.12, volume: 0.2, cutoff: 700 }],
+      tones: [
+        { type: 'sawtooth', from: 55, to: 165, duration: 0.26, volume: 0.28 },
+        { type: 'square', from: 41, to: 82, duration: 0.26, volume: 0.16 },
+      ],
+    },
+    // The Rewind: a record wound back, a scratch that falls.
+    rewind: {
+      noises: [{ duration: 0.16, volume: 0.18, cutoff: 3200 }],
+      tones: [
+        { type: 'sawtooth', from: 1100, to: 140, duration: 0.24, volume: 0.13 },
+        { type: 'sawtooth', from: 700, to: 90, duration: 0.18, volume: 0.08, delay: 0.06 },
+      ],
+    },
+    // The super, as its flash freezes the game: the sub-drop, the bass falling through the floor.
+    super: {
+      noises: [{ duration: 0.4, volume: 0.45, cutoff: 400 }],
+      tones: [
+        { type: 'sine', from: 180, to: 28, duration: 0.95, volume: 0.5 },
+        { type: 'square', from: 90, to: 24, duration: 0.7, volume: 0.18 },
       ],
     },
     round: { tones: [{ type: 'square', from: 523, to: 523, duration: 0.15, volume: 0.15 }] },

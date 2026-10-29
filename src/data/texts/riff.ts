@@ -1,5 +1,6 @@
 import {
   ANTI_AIR,
+  ANTI_AIR_REMIX,
   BACK_HEAVY,
   BACKDASH,
   CHAIN,
@@ -10,9 +11,14 @@ import {
   FINISHER,
   FORWARD_HEAVY,
   FORWARD_LIGHT,
+  FORWARD_REMIX,
   GRAB,
   PUMMEL,
+  REMIX,
+  REWIND,
   SPECIAL,
+  SUPER,
+  SUPER_COMBO,
   THROW_BACK,
   THROW_FORWARD,
   type FighterTexts,
@@ -33,6 +39,22 @@ export const RIFF_TEXTS: FighterTexts = {
     specialAntiAir: {
       input: ANTI_AIR,
       text: "Un genou explosif vers le haut, contre les sauts. Il n'est invincible que contre les attaques en l'air : au sol, Riff n'a pas de coup magique pour se sortir d'une pression. Il finit aussi les jongles.",
+    },
+    specialBoost: {
+      input: REMIX,
+      text: 'Le Remix de la Glissade, à fond : plus forte, plus longue à parer. Toujours un coup bas, à parer accroupi.',
+    },
+    specialForwardBoost: {
+      input: FORWARD_REMIX,
+      text: "Le Remix du Saut de l'ange, à fond : la vrille retombe plus fort et met au sol. Toujours un coup d'en haut.",
+    },
+    specialAntiAirBoost: {
+      input: ANTI_AIR_REMIX,
+      text: "Le Remix du Genou montant, à fond : invincible contre tout au départ, il lance l'adversaire. Le seul reversal de Riff au sol, et il coûte une barre.",
+    },
+    super: {
+      input: SUPER,
+      text: "La super. Riff bondit dans la foule et retombe rangers en avant sur l'adversaire, une onde au sol. Un coup d'en haut, sans invincibilité : une fin de combo, pas un reversal.",
     },
     standLight: {
       input: 'L',
@@ -110,6 +132,10 @@ export const RIFF_TEXTS: FighterTexts = {
       input: DASH,
       text: 'Un bond plus long que celui de Nayo, coupé à mi-course par un coup ou une prise qui garde son élan.',
     },
+    boostCancel: {
+      input: REWIND,
+      text: "Riff rebondit : le coup, qu'il touche ou soit paré, se coupe en un bond en avant, la cible s'arrête, et ta phrase repart du début. Une fois par combo.",
+    },
     dashBack: {
       input: BACKDASH,
       text: 'Un bond en retrait qui fait rater les prises, pas les coups.',
@@ -131,5 +157,6 @@ export const RIFF_TEXTS: FighterTexts = {
       input: 'Arrière + H, puis L, L, L, puis L, L, bas + S',
       text: 'Après la Vrille, rattrape-le : deux coups encore, puis le Genou montant.',
     },
+    { input: SUPER_COMBO, text: 'Le combo de base qui finit sur le Slam.' },
   ],
 };

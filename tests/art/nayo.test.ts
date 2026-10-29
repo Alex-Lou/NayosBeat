@@ -51,6 +51,6 @@ describe('Nayo art', () => {
 
   it('rejects effects of a strip that does not exist', () => {
     const art = { ...NAYO, fx: { ...NAYO.fx, dance: 'dance.png' } };
-    expect(validateArt(art, NAYO_TEMPLATE)).toEqual(['nayo: effects of unknown sheet dance']);
+    expect(validateArt(art, NAYO_TEMPLATE)).toEqual(['nayo: effects dance of no strip nor clip']);
   });
 });

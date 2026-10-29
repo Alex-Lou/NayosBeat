@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { MatchConfig } from '../../src/core/config';
 import { Input } from '../../src/core/input';
-import { ROUND_TIME, TRAINING_REFILL_FRAMES } from '../../src/core/rules';
+import { BOOST_MAX, ROUND_TIME, TRAINING_REFILL_FRAMES } from '../../src/core/rules';
 import { createInitialState } from '../../src/core/state';
 import { MATCH, run } from './helpers';
 
@@ -38,5 +38,37 @@ describe('training mode', () => {
     expect(run(TRAINING_REFILL_FRAMES + 5, [0, 0], hurt, TRAINING).fighters[1].health).toBe(
       TRAINING.fighters[1].maxHealth,
     );
+  });
+
+  it('plays the gauge as told (combos-v3 §6.5): as in a match, full when left alone, or infinite', () => {
+    const spent = (config: MatchConfig) => {
+      const start = createInitialState(config);
+      return {
+        ...start,
+        fighters: [{ ...start.fighters[0], boost: 500 }, start.fighters[1]],
+      } as const;
+    };
+    const gauge = (config: MatchConfig, ticks: number) =>
+      run(ticks, [0, 0], spent(config), config).fighters[0].boost;
+    // As in a match: it starts empty and never refills.
+    expect(createInitialState(TRAINING).fighters[0].boost).toBe(0);
+    expect(gauge(TRAINING, TRAINING_REFILL_FRAMES + 5)).toBe(500);
+    // Full: three bars at the start, and back to them with the health.
+    const full: MatchConfig = { ...TRAINING, trainingGauge: 'full' };
+    expect(createInitialState(full).fighters.map((fighter) => fighter.boost)).toEqual([
+      BOOST_MAX,
+      BOOST_MAX,
+    ]);
+    expect(gauge(full, TRAINING_REFILL_FRAMES - 5)).toBe(500);
+    expect(gauge(full, TRAINING_REFILL_FRAMES + 5)).toBe(BOOST_MAX);
+    // Infinite: refilled on every tick.
+    const infinite: MatchConfig = { ...TRAINING, trainingGauge: 'infinite' };
+    expect(gauge(infinite, 1)).toBe(BOOST_MAX);
+  });
+
+  it('never fills the gauge in a match, whatever the option says', () => {
+    const match: MatchConfig = { ...MATCH, trainingGauge: 'infinite' };
+    expect(createInitialState(match).fighters[0].boost).toBe(0);
+    expect(run(5, [0, 0], createInitialState(match), match).fighters[0].boost).toBe(0);
   });
 });

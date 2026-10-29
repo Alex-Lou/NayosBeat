@@ -68,6 +68,7 @@ export function makeFighter(overrides: Partial<FighterState> = {}): FighterState
     juggle: 0,
     phrase: 0,
     phraseTwice: 0,
+    boost: 0,
     flags: 0,
     reaction: null,
     reactionHeavy: false,
@@ -173,6 +174,7 @@ export function expectMirrored(
     f.health,
     f.stunFrames,
     f.juggle,
+    f.boost,
     f.reaction,
   ];
   const rows = (states: GameState[], reflected: boolean) =>

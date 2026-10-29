@@ -85,4 +85,7 @@ export const RIFF_CELLS: Readonly<Record<string, Cell>> = {
   'fx/chainLaunch': { width: 49, height: 219, anchor: { x: 3, y: 216 } },
   super: { width: 170, height: 174, anchor: { x: 81, y: 171 } },
   'fx/super': { width: 178, height: 142, anchor: { x: 59, y: 134 } },
+  'fx/specialBoost': { width: 197, height: 26, anchor: { x: 118, y: 18 } },
+  'fx/specialForwardBoost': { width: 130, height: 70, anchor: { x: 60, y: 62 } },
+  'fx/specialAntiAirBoost': { width: 125, height: 217, anchor: { x: 66, y: 209 } },
 };

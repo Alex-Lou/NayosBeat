@@ -17,16 +17,17 @@ import { makeFighter } from '../core/helpers';
  * do come out in matches between hard CPUs.
  */
 
-const { Light: L, Heavy: H, Special: S, Down: D, Left: B, Right: F } = Input;
+const { Light: L, Heavy: H, Special: S, Boost: X, Dash: R, Down: D, Left: B, Right: F } = Input;
 
-/** Nayo's `move` just connected on a standing Riff 40 px away (hit unless told). */
-function connected(move: MoveId, hit = true): FighterState {
+/** Nayo's `move` just connected on a standing Riff 40 px away (hit unless told), `boost` held. */
+function connected(move: MoveId, hit = true, boost = 0): FighterState {
   return makeFighter({
     action: 'attack',
     move,
     actionFrame: 6,
     moveConnected: true,
     flags: hit ? FLAG_MOVE_HIT : 0,
+    boost,
   });
 }
 
@@ -78,6 +79,37 @@ describe('the plans (§6.4)', () => {
   });
 });
 
+describe('the plans that spend the gauge (§6.4)', () => {
+  const spends = (plan: string) => plan.split(' ').some((step) => (Number(step) & (X | R)) !== 0);
+
+  it('come only with the bars they spend: normal the Remixes, hard the Rewind and super too', () => {
+    expect([...drawn(connected('standLight'), 'hard')].filter(spends)).toEqual([]);
+    const normal = drawn(connected('standLight', true, 1000), 'normal');
+    expect(normal).toContain(written([L, H, H, X]));
+    expect([...normal].filter(spends)).toEqual([written([L, H, H, X])]);
+    const hard = drawn(connected('standLight', true, 1000), 'hard');
+    expect(hard).toContain(written([L, H, R, L, L, H, H, F | S]));
+    expect(hard).toContain(written([L, H, H, F | X, L, D | S]));
+    expect(hard).not.toContain(written([L, H, H, B | X]));
+    expect(drawn(connected('standLight', true, 3000), 'hard')).toContain(written([L, H, H, B | X]));
+  });
+
+  it('hard keeps two bars for its super: it spends no single one then', () => {
+    const saving = [...drawn(connected('standLight', true, 2500), 'hard')].filter(spends);
+    expect(saving).toEqual([]);
+    expect([...drawn(connected('standLight', true, 2500), 'normal')].filter(spends)).not.toEqual(
+      [],
+    );
+  });
+
+  it('the Rewind only while the sequence has not spent it, a second super never', () => {
+    const rewound = { ...connected('standLight', true, 1000), flags: FLAG_MOVE_HIT | 1 };
+    expect(drawn(rewound, 'hard')).not.toContain(written([L, H, R, L, L, H, H, F | S]));
+    const superDone = { ...connected('standLight', true, 3000), flags: FLAG_MOVE_HIT | 2 };
+    expect(drawn(superDone, 'hard')).not.toContain(written([L, H, H, B | X]));
+  });
+});
+
 describe('a plan played (§6.4)', () => {
   it('presses each step again every other tick until its move comes out, turned to the side', () => {
     const facingLeft = { ...connected('standLight'), facing: -1 as const };
@@ -120,6 +152,15 @@ describe('a plan played (§6.4)', () => {
     expect(playString(waiting.next, free, RIFF_HIT).next).toBeNull();
   });
 
+  it('follows the Rewind at once: it cancels without contact', () => {
+    const play = startString([R, L], connected('standHeavy'));
+    const rewind = { ...connected('standHeavy'), move: 'boostCancel' as const, actionFrame: 0 };
+    const out = playString(play, rewind, RIFF_HIT).next;
+    if (!out) throw new Error('The plan stopped');
+    const stepping = { ...rewind, actionFrame: 1, moveConnected: false };
+    expect(playString(out, stepping, RIFF_HIT).input).toBe(L);
+  });
+
   it('plays a link only while the opponent still reels from the blow', () => {
     // The Remontant landed, Nayo is free again: the phrase in the air, if the body is still up.
     const play = startString([L, L, L], connected('backHeavy'));
@@ -128,6 +169,77 @@ describe('a plan played (§6.4)', () => {
     expect(playString(play, free, flying).input).toBe(L);
     const landed = { ...RIFF_HIT, action: 'idle' as const };
     expect(playString(play, free, landed).next).toBeNull();
+  });
+});
+
+describe('the gauge in a match', () => {
+  it('hard CPUs spend every Boost move of both fighters, never a press they cannot pay for', () => {
+    const spent: [Set<MoveId>, Set<MoveId>] = [new Set(), new Set()];
+    for (const fighters of [
+      [NAYO, RIFF],
+      [RIFF, NAYO],
+    ] as const) {
+      const config: MatchConfig = { stage: TRAINING_STAGE, fighters };
+      let before: readonly FighterState[] | null = null;
+      playCpuMatches(200_000, config, ['hard', 'hard'], (state) => {
+        state.fighters.forEach((fighter, player) => {
+          const template = fighters[player === 0 ? 0 : 1];
+          const move = fighter.move ? template.moves[fighter.move] : undefined;
+          if (fighter.move && move?.boostCost) spent[template === NAYO ? 0 : 1].add(fighter.move);
+          // BOOST newly pressed: the gauge pays for a Remix at least.
+          const was = before?.[player];
+          const pressed = (fighter.input & ~(was?.input ?? 0) & X) !== 0;
+          if (pressed)
+            expect(was?.boost ?? 0, `${template.name} pressed BOOST`).toBeGreaterThanOrEqual(1000);
+        });
+        before = state.fighters;
+      });
+    }
+    const all = [
+      'specialBoost',
+      'specialForwardBoost',
+      'specialAntiAirBoost',
+      'boostCancel',
+      'super',
+    ] as const;
+    expect([...spent[0]].sort()).toEqual([...all].sort());
+    expect([...spent[1]].sort()).toEqual([...all].sort());
+  });
+
+  it('hard CPUs build 1.2 to 3 bars a round, each fighter 40 to 60 % of it (combos-v3 §6.2)', () => {
+    // What each fighter's gauge gained, in points, and the rounds played, both sides in turn.
+    const built = new Map([
+      [NAYO, 0],
+      [RIFF, 0],
+    ]);
+    let rounds = 0;
+    for (const fighters of [
+      [NAYO, RIFF],
+      [RIFF, NAYO],
+    ] as const) {
+      const config: MatchConfig = { stage: TRAINING_STAGE, fighters };
+      let before: readonly FighterState[] | null = null;
+      let phase = '';
+      playCpuMatches(300_000, config, ['hard', 'hard'], (state) => {
+        state.fighters.forEach((fighter, player) => {
+          const gained = fighter.boost - (before?.[player]?.boost ?? fighter.boost);
+          const template = fighters[player === 0 ? 0 : 1];
+          if (gained > 0) built.set(template, (built.get(template) ?? 0) + gained);
+        });
+        if (state.round.phase === 'roundEnd' && phase !== 'roundEnd') rounds++;
+        phase = state.round.phase;
+        before = state.fighters;
+      });
+    }
+    const nayo = built.get(NAYO) ?? 0;
+    const riff = built.get(RIFF) ?? 0;
+    const bars = (nayo + riff) / 2 / 1000 / rounds;
+    expect(rounds).toBeGreaterThan(100);
+    expect(bars).toBeGreaterThanOrEqual(1.2);
+    expect(bars).toBeLessThanOrEqual(3);
+    const share = nayo / (nayo + riff);
+    expect(share).toBeGreaterThanOrEqual(0.4);
+    expect(share).toBeLessThanOrEqual(0.6);
   });
 });
 

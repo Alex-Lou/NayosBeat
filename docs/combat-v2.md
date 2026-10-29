@@ -50,8 +50,8 @@
 | D14 | **Jongle à points** après un lanceur (←+H) : 4 points (5 en CONTRE), chaque coup en l'air en coûte, la limite de 12 coups ferme tout (combos v3, `docs/combos-v3.md` §1.5, §1.7). C'était un seul coup en l'air | lf, combos v3 | Du contenu pour les combos et le compteur, sans boucle : les points, le prolongateur unique et la limite bornent la jongle |
 | D15 | CONTRE sur le premier coup seulement (+20 %, +4 de hitstun, +3 de hitstop) | sf, mk | Récompense la lecture sans gonfler les combos |
 | D16 | Dégâts en garde (chip) : spéciaux seulement, 15 %, jamais mortels | sf | Le zoning a du poids sans devenir odieux |
-| D17 | Mécanique signature = **Crossfader** (sans bouton) ; le tempo reste **cosmétique** | sf + revues | Pas de bonus « en rythme » : injuste selon l'appareil (latence tactile, Bluetooth) |
-| D18 | Le Remix du DROP **ne touche jamais au timing** (type qui l'interdit) | mk | Les clips restent valides, aucun art en plus |
+| D17 | Mécanique signature = **Crossfader** (sans bouton) ; le tempo reste **cosmétique**. À côté, la **jauge de Boost** (combos v3, `docs/combos-v3.md` §1.8) a son bouton : on la remplit en se battant et on la dépense en Remix, Rewind et super | sf + revues, combos v3 | Pas de bonus « en rythme » : injuste selon l'appareil (latence tactile, Bluetooth). La jauge est la jauge de super de SF : lisible, à soi, gardée d'un round à l'autre |
+| D18 | Un **Remix** (la version Boost d'un spécial) **ne touche jamais au timing** de son spécial (règle validée au chargement) | mk, combos v3 | Les clips restent valides : seuls les effets changent (blanc platine) |
 | D19 | Pas d'air dash, pas de double saut, pas de course, pas de roulade au réveil | sf, mk | Lisibilité sur téléphone ; l'annulation du dash de Riff donne l'élan sans nouvel état |
 | D20 | Riff frappe en **magenta et argent** (tenue 2 : or et cramoisi) ; c'était violet et jaune avant qu'elle devienne la punk de Zen-Tazzer (phase 4) | sf, mk, lf | Nayo est cyan : les deux joueurs se distinguent d'un coup d'œil ; le magenta est celui de sa frange |
 | D21 | Flashs au plus 3 par seconde, option « Flashs réduits » | revue tactile (WCAG 2.3.1) | Accessibilité photosensible |
@@ -74,13 +74,13 @@
 
 | Jeu | Ce qu'on retient | Ce que ça devient dans NayosBeat | Ce qu'on laisse |
 |---|---|---|---|
-| Street Fighter 6 | Dash net, backdash punissable, garde de proximité, dégagement de prise, contrôles simplifiés, CONTRE et PUNITION | Pas chassé de Nayo, backdash anti-prise mais frappable, `guard`, direction + S, CONTRE / PUNITION | La jauge Drive (le Crossfader la remplace) |
+| Street Fighter 6 | Dash net, backdash punissable, garde de proximité, dégagement de prise, contrôles simplifiés, CONTRE et PUNITION, la jauge de super, le Drive Rush annulé | Pas chassé de Nayo, backdash anti-prise mais frappable, `guard`, direction + S, CONTRE / PUNITION, la jauge de Boost à 3 barres (combos v3 §1.8), le Rewind | La jauge Drive et son Burnout |
 | Guilty Gear Strive | Élan conservé, bouton Dash, récompense de l'attaque | Dash annulable de Riff avec 50 % d'élan, bouton DASH, gains du Crossfader quand on avance | Course maintenue, Roman Cancel |
 | King of Fighters XV | Sauts vifs, rythme rapide | Sauts plus courts et plus secs ; saut bas de Riff | Petits sauts, roulades |
 | Tekken | Précision des déplacements, membres et hauteurs | Courbes par frame exactes, Glissade sous les coups hauts | Pas de côté (3D) |
 | Mortal Kombat | Coups de commande lisibles, impacts lourds, lanceurs | →H, ←H, lanceur ←H avec une jongle | Fatalities, chaînes à apprendre par cœur |
 | Little Fighter 2 / Smash | Saisir puis frapper l'adversaire tenu, lancers directionnels, se débattre, « L, L, L » | Prise tenue, tabassage, lancers ←/→, lutte, chaîne L, L, L | Pourcentages, éjections |
-| Under Night In-Birth | Le tug-of-war du GRD (on gagne en prenant l'initiative) | **Le Crossfader**, exprimé par la musique et la table de mixage | La jauge de super et le Veil Off |
+| Under Night In-Birth | Le tug-of-war du GRD (on gagne en prenant l'initiative) | **Le Crossfader**, exprimé par la musique et la table de mixage | Le Veil Off |
 | Hi-Fi Rush | Un monde qui bat au tempo | Décor, foule, HUD et KO calés sur le BPM | Le bonus d'appui en rythme |
 
 ---
@@ -97,7 +97,8 @@
 | Heavy | 64 | Coup lourd (H) |
 | Special | 128 | Spécial (S) |
 | **Grab** | **256** (`1 << 8`) | **PRISE**. L + H ensemble reste un alias (règle actuelle de `pressedButton`) |
-| **Dash** | **512** (`1 << 9`) | **DASH** : dash vers l'adversaire, backdash si arrière est tenu. Le double-tap fait la même chose |
+| **Dash** | **512** (`1 << 9`) | **DASH** : dash vers l'adversaire, backdash si arrière est tenu. Le double-tap fait la même chose. Pendant un coup qui a touché ou été paré, le Rewind (combos v3 §1.8.3) |
+| **Boost** | **1024** (`1 << 10`) | **BOOST** : dépense la jauge de Boost (combos v3 §1.1) : seul ou avec une direction, le Remix d'un spécial (1 barre) ; avec arrière, la super (3 barres) |
 
 `PRESS_BUTTONS = ~DIRECTIONS` (`player-inputs.ts`) couvre déjà les nouveaux bits : la suppression des boutons tenus en sortie de menu s'applique sans changement.
 
@@ -110,9 +111,10 @@
 | L / H / S | J / K / L | Pavé 1 / 2 / 3 | `.` `/` `'` (`;` `!` `ù`) |
 | **PRISE** | **I** (au-dessus de K), ou J + K | **Pavé 4**, ou 1 + 2 | **`;`** (M en AZERTY) |
 | **DASH** | **Maj gauche**, ou double-tap | **Pavé 0**, ou double-tap | **Maj droite**, ou double-tap |
+| **BOOST** | **O** (au-dessus de L) | **Pavé 6** (au-dessus de Pavé 3) | **`[`** (`^` en AZERTY, au-dessus de `ù`) |
 | Pause | Échap, P | — | — |
 
-Le dash va à la main des déplacements ; PRISE est sous le majeur, au-dessus des coups.
+Le dash va à la main des déplacements ; PRISE est sous le majeur, au-dessus des coups ; BOOST est au-dessus de S.
 
 ### 2.3 Manette (mapping standard W3C)
 
@@ -123,9 +125,10 @@ Le dash va à la main des déplacements ; PRISE est sous le majeur, au-dessus de
 | L / H / S | X / Carré (2) · Y / Triangle (3) · B / Rond (1) |
 | **PRISE** | **RB / R1 (5)** : devient un vrai bit Grab au lieu de la macro L + H. X + Y reste un alias |
 | **DASH** | **LB / L1 (4)** |
+| **BOOST** | **RT / R2 (7)** |
 | Pause | Start (9) |
 
-LT, RT, Select, L3, R3 et le stick droit restent libres (remappage et provocation plus tard). L'hystérésis vit dans `gamepad.ts` (état précédent par manette), jamais dans le cœur.
+LT, Select, L3, R3 et le stick droit restent libres (remappage et provocation plus tard). L'hystérésis vit dans `gamepad.ts` (état précédent par manette), jamais dans le cœur.
 
 ### 2.4 Tactile (joueur 1)
 
@@ -135,9 +138,10 @@ LT, RT, Select, L3, R3 et le stick droit restent libres (remappage et provocatio
 - Un backdash sous pression doit sortir à 100 %. Avec le bouton, la direction vient du stick : arrière + DASH = backdash.
 - Le « flick » façon Smash (dash si le stick part vite) est écarté : il déclenche des dashs en marchant.
 
-**Grappe de droite** (centres en px CSS depuis le coin bas-droit, `env(safe-area-inset-*)` ajouté partout). Les centres de L, H, SAUT et S ne bougent pas (mémoire musculaire), PRISE prend la place de CHOPE, DASH est le seul nouveau bouton.
+**Grappe de droite** (centres en px CSS depuis le coin bas-droit, `env(safe-area-inset-*)` ajouté partout). Les centres de L, H, SAUT et S ne bougent pas (mémoire musculaire), PRISE prend la place de CHOPE, DASH est le nouveau bouton de la v2. Combos v3 ajoute le 7e, BOOST, dans l'encoche entre S et PRISE (`docs/combos-v3.md` §1.8.5) : jamais juste au-dessus de S.
 
 ```
+            BOOST (centre à 190 du bas)                    [BOOST]
             rangée haute (centre à 126 du bas)   [DASH]   [ S ]   [PRISE]
             rangée basse (centre à 52 du bas)  [ L ]   [ H ]   [SAUT]
 ```
@@ -149,7 +153,8 @@ LT, RT, Select, L3, R3 et le stick droit restent libres (remappage et provocatio
 | SAUT | 52, 52 | 60 | vert, flèche ↑ | saut |
 | S | 163, 126 | 64 | couleur d'énergie du perso (cyan Nayo, magenta Riff), « S » | spécial |
 | **PRISE** | 89, 126 | 60 | or, icône main | prise, lancer, dégagement |
-| **DASH** | 237, 126 | 56 | bleu, double chevron « » » | dash ; stick en arrière + DASH = backdash |
+| **DASH** | 237, 126 | 56 | bleu, double chevron « » » | dash ; stick en arrière + DASH = backdash ; relâcher, puis taper DASH pendant un coup qui touche : le Rewind |
+| **BOOST** | 126, 190 | 56 | blanc platine, libellé de 8 px ; une **bague** de 3 arcs (`conic-gradient`) : la jauge sous le pouce, grisé sous 1 barre, brillant à 3 | le Remix, ou la super avec le stick en arrière (combos v3 §1.8.5) |
 
 - Écarts entre bords voisins de 6 à 16 px. Le bord le plus éloigné est à 265 px du bord droit : dans la zone du pouce, même sur un iPhone SE en paysage (moitié droite de 333 px).
 - **Zones de toucher** : rayon visible + 8 px (cible ≥ 48 dp). Là où deux zones se chevauchent, **le centre le plus proche gagne**. Un seul écouteur `pointerdown` sur la zone droite fait ce test, au lieu d'un écouteur par bouton (moins d'écouteurs, aucun conflit).
@@ -166,14 +171,16 @@ LT, RT, Select, L3, R3 et le stick droit restent libres (remappage et provocatio
 ### 2.5 Lecture des commandes (`src/core/commands.ts`, extrait de `fighter.ts`)
 
 ```ts
-export type Command = 'light' | 'heavy' | 'special' | 'grab' | 'dash' | 'backdash' | 'jump';
+export type Command =
+  | 'light' | 'heavy' | 'special' | 'boost' | 'grab' | 'dash' | 'boostDash' | 'backdash' | 'jump';
 ```
 
 - **Front montant** seulement (bouton nouvellement appuyé), comme aujourd'hui.
-- **Priorité sur un même tic** : Prise (bit Grab, ou L/H pressé avec L + H tenus) > S > H > L > dash/backdash > saut.
+- **Priorité sur un même tic** : Prise (bit Grab, ou L/H pressé avec L + H tenus) > BOOST > S > H > L > dash/backdash > saut.
 - **Buffer à une case**, la dernière commande gagne. `INPUT_BUFFER_FRAMES` passe de 5 à **6** (100 ms, pour la latence tactile). Le buffer garde, comme aujourd'hui, la direction tenue, la manip et l'orientation au moment de l'appui. Il ne vieillit pas pendant le hitstop.
 - **Le buffer garde aussi le saut et le dash.** Un appui SAUT, un front montant de haut, un appui DASH ou un double-tap fait jusqu'à 6 tics avant la fin d'une récupération, d'une garde ou d'un atterrissage sort au premier tic libre. Tenir haut fait toujours sauter.
-- **DASH** : à l'appui, arrière tenu donne `backdash`, sinon `dash` (neutre, avant, haut ou bas).
+- **DASH** : à l'appui, arrière tenu donne `backdash` ; sinon, pendant un coup qui a déjà touché ou été paré, `boostDash` (combos v3 §1.1 : le Rewind si la jauge le paie, un dash simple à la fin du coup sinon) ; sinon `dash` (neutre, avant, haut ou bas). Un double-tap donne toujours `dash` : il ne dépense jamais.
+- **BOOST** se lit comme S, une manip fraîche d'abord : ↓ (diagonales comprises) ou →↓↘ donne le Remix de l'anti-air, → celui du spécial avant, sinon celui du spécial (1 barre chacun) ; ← seul, sans bas ni manip, la super (3 barres). Il ne donne rien qu'il ne peut payer, ni un second disque (`moves.ts`, `boostMove`).
 - La conversion « L + H tardif » en Prise pendant les 3 premiers tics d'un normal qui n'a pas touché est conservée.
 
 ### 2.6 Double-tap (O(1), sans parcourir l'historique)
@@ -507,14 +514,14 @@ Ses cordes des combos v3 (Hache, Coup de boule, Retourné sauté) et sa Vrille :
 | → + S | **Saut de l'ange** | Vrille aérienne qui **quitte vraiment le sol** (sommet 34 px) et retombe talons en premier | **Overhead** qui passe au-dessus des coups bas (f4–f18) et des prises (en l'air de f3 à f19) | Garder **debout** (−7) ; un anti-air la fait tomber |
 | ↓ + S, ou →↓↘ + L/H/S | **Genou montant** | « Freeze » explosif, genou qui jaillit, éclats en losange argent, onde magenta au sol | Anti-air. **Invincible seulement contre les attaques aériennes** (f0–5) : ce n'est pas un reversal au sol, c'est sa faiblesse. Dessinée en l'air de f4 à f15, elle passe alors au-dessus des coups bas (§10.2) | −17 en garde ; un coup au sol placé au réveil le bat (dès son démarrage, f0–3 ; ensuite un coup moyen ou haut, les coups bas passent dessous) |
 
-### 5.6 Remix (pendant le DROP du Crossfader, §8)
+### 5.6 Remix (la version Boost d'un spécial, combos v3)
 
-Chaque personnage a **un** spécial signature avec une variante Remix, précalculée au chargement des données. Le type `Remix` **interdit** de changer le démarrage, l'actif ou la récupération : les clips restent valides, aucun art en plus (seuls les effets changent de couleur).
+Le Remix n'attend plus le DROP du Crossfader : c'est la version **Boost** d'un spécial (`docs/combos-v3.md` §1.8.3), **à tout moment**, en neutre comme en annulation, pour **1 barre** de la jauge de Boost (BOOST, → + BOOST, ↓ + BOOST, manips comprises). Le Remix du DROP disparaît : une seule famille de variantes. Chaque spécial a la sienne (`REMIX_OF`), même planche et **même timing** (D18, validé au chargement) ; seuls les effets passent en **blanc platine**. Les valeurs sont au §10.5.
 
-| Personnage | Spécial | Remix | Visuel |
+| Personnage | BOOST | → + BOOST | ↓ + BOOST |
 |---|---|---|---|
-| Nayo | Vinyle | vitesse 3,5 → 5 px/tic, 75 dégâts, hitstun 22 | double anneau doré |
-| Riff | Glissade | 80 dégâts, blockstun 20 (−3 au contact : presque sûre) | traînée double, magenta et or |
+| Nayo (« platine ») | **Vinyle platine** : un disque blanc à double anneau, 5 px/tic au lieu de 3,5, 80 dégâts, met au sol ; plus dur à sauter | **Pied fendu platine** : 85 dégâts, l'adversaire s'envole très haut (2 points de jongle) au lieu de tomber | **Montée platine** : 130 dégâts, invincible f0–10, toujours −23 en garde |
+| Riff (« à fond ») | **Glissade à fond** : 80 dégâts, blockstun 20 (−3 au contact) | **Saut de l'ange à fond** : 80 dégâts, un overhead qui met au sol | **Genou à fond** : 115 dégâts, **invincible à tout** f0–6, lance (2 points) : son seul reversal au sol, et il coûte une barre |
 
 ---
 
@@ -679,7 +686,7 @@ Soit 9 à 22 % de la vie adverse : un combo compte, une erreur ne tue pas.
 Dans un *sound clash*, deux sound systems s'affrontent et **la foule choisit**. Nayo est un boxeur-DJ ; le stage est un club. Entre les deux barres de vie se trouve un **crossfader de table de mixage** : chaque personnage a son thème musical, calé au tempo du stage.
 
 - Celui qui **prend l'initiative** (avance, presse, touche, saisit, fait garder son projectile) **tire le curseur vers lui**, et **la musique bascule vers son thème**.
-- Curseur à fond : **montée** (le son se tend) jusqu'au prochain temps fort de la mesure, puis **DROP** : pendant trois mesures, le joueur frappe un peu plus fort et son spécial signature passe en **Remix**.
+- Curseur à fond : **montée** (le son se tend) jusqu'au prochain temps fort de la mesure, puis **DROP** : pendant trois mesures, le joueur frappe un peu plus fort, et la foule lui donne **une barre de Boost** (combos v3 §1.8.8).
 
 L'inspiration avouée est le GRD d'Under Night In-Birth (un tug-of-war qui récompense l'initiative). La nouveauté est de l'exprimer entièrement par la musique et l'univers : on **entend** qui mène.
 
@@ -701,14 +708,14 @@ L'inspiration avouée est le GRD d'Under Night In-Birth (un tug-of-war qui réco
 | Garder, être touché, sauter, rester immobile | 0 |
 
 - **Montée** : `|level| = 1000` déclenche la montée du joueur concerné ; le curseur est **gelé**. Le DROP démarre au prochain **temps fort** (`frame % (4 × stage.beatTicks) === 0`, soit au plus 2 s à 120 BPM). La montée sert de compte à rebours lisible.
-- **DROP** : 3 mesures (12 temps : 360 tics à 120 BPM). Pour celui qui l'a : **+10 % de dégâts** et son spécial signature en **Remix** (§5.6). Un seul DROP à la fois ; le curseur reste gelé pendant la montée et le DROP.
+- **DROP** : 3 mesures (12 temps : 360 tics à 120 BPM). Pour celui qui l'a : **+10 % de dégâts**, et **+1 barre de Boost** au début du DROP (+1000, plafonnée ; `BOOST_DROP_GAIN`, combos v3 §1.8.8). C'est le seul pont entre le Crossfader et la jauge : le Crossfader dit qui mène, la jauge appartient à chacun. Un seul DROP à la fois ; le curseur reste gelé pendant la montée et le DROP, donc un combo ne gagne qu'une barre de DROP au plus (la preuve anti-infini en tient compte, combos v3 §1.13).
 - **Le zoning compte** : un Vinyle qui touche, est gardé ou force un saut fait monter le curseur ; reculer derrière son propre projectile ou au-delà de 150 px ne coûte rien. Nayo n'est pas puni pour jouer son plan.
 - **Anti-boule de neige** : le curseur récompense l'**initiative**, pas les dégâts. Être touché ne coûte rien. Un défenseur qui punit gagne autant qu'un attaquant.
 - **Ordre de grandeur** : un joueur entreprenant fait environ un DROP toutes les 25 à 45 s, soit 1 à 2 par round de 99 s. Le réglage fin se fait par simulation (§8.6).
 
 ### 8.3 Interface (lisible sur téléphone)
 
-- Sous le chronomètre : une **piste de 96 × 4 px** avec un **curseur de 8 × 12 px**. La moitié du côté du meneur se remplit dans sa couleur (cyan ou magenta).
+- Sous le chronomètre : une **piste de 96 × 4 px** avec un **curseur de 8 × 12 px**. La moitié du côté du meneur se remplit dans sa couleur (cyan ou magenta). Les jauges de Boost, elles, sont sous les barres de vie, côté extérieur (combos v3 §1.8.6) : une piste au centre, des segments au bord, on ne les confond pas.
 - La piste **pulse sur chaque temps** (1 px de lueur, 2 Hz à 120 BPM, toujours sous 3 Hz).
 - **Montée** : le curseur clignote sur chaque temps restant (« 3 · 2 · 1 ») ; le son monte (filtre qui s'ouvre).
 - **DROP** : tampon « DROP ! » ; les lumières du stage passent à la couleur du joueur ; la foule saute ; aura additive autour du joueur (sprite de pool) ; petite lampe « DROP » sous sa barre de vie tant qu'il dure.
@@ -730,7 +737,7 @@ L'inspiration avouée est le GRD d'Under Night In-Birth (un tug-of-war qui réco
 ### 8.6 Déterminisme, KISS et réglage
 
 - Tout le gameplay du Crossfader est dans `src/core/mix.ts`, une passe pure après la résolution du tic : gains calculés à partir de `GameState.contacts` et des déplacements du tic, temps forts calculés à partir de `frame` et de `stage.beatTicks`.
-- **Un seul nombre** partagé, **une** règle de déclenchement, **un** effet (+10 % et un Remix). Aucun bouton.
+- **Un seul nombre** partagé, **une** règle de déclenchement, **un** effet (+10 % et une barre de Boost). Aucun bouton.
 - `tests/core/mix-balance.test.ts` : 200 matchs CPU difficile contre CPU difficile, graine fixe, sans écran, en alternant les côtés. Il vérifie que la moyenne de DROP par round reste entre **0,8 et 2,5**, et que **la part de DROP de chaque personnage reste entre 40 et 60 %** sur Nayo contre Riff.
 
 ---
@@ -881,6 +888,23 @@ Voir §4.3 (prise, tabassage, lancers) et §3.2–3.3 (dash, backdash). Récapit
 
 Le tableau des portées (chaque coup contre chaque posture des deux personnages) est **généré** par un script et figé en test d'instantané (`tests/data/ranges.test.ts`) : aucune portée ne change par accident.
 
+### 10.5 Le Boost (combos v3, `docs/combos-v3.md` §1.8, §2.4, §4)
+
+Un Remix garde la planche et le timing de son spécial (D18) ; le chip reste celui des spéciaux, 15 %. Coût : 1 barre = 1000 de jauge, 3 barres pour la super. Le flash gèle tout le jeu, chronomètre compris, `ticks` tics au moment où le coup atteint sa frame.
+
+| Perso | Id | Entrée | Nom | S/A/R (tot) | Dg (chip) | HS/BS | Stop | Garde | Coût | Particularités |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Nayo | specialBoost | BOOST | Vinyle platine | 12/1/28 (41) | 80 (12) | KD (2,5 ; vx 3)/18 | 10 | mid | 1 | projectile **5 px/tic** ; un seul disque à l'écran : pas de Remix tant que le Vinyle vole |
+| Nayo | specialForwardBoost | → + BOOST | Pied fendu platine | 11/4/18 (33) | 85 (12) | lance (8, **2 points**)/12 | 14 | mid | 1 | l'adversaire monte très haut ; puis L et ↓ + S |
+| Nayo | specialAntiAirBoost | ↓ + BOOST | Montée platine | 3/8/28 (39) | 130 (19) | KD (3,5 ; vx 2)/12 | 16 | mid | 1 | invincible f0–10 ; −23 en garde |
+| Nayo | super | ← + BOOST | **Mégabasse** | 2/15/30 (47) | 80, 80, 140 (12, 12, 21) | 22, 22, KD (6 ; vx 2)/16 | 10, 10, 22 | mid | 3 | flash de 20 tics à f0 ; frappes à f2, f8 et f14, boîte 4..60 / 0..90 (du sol jusqu'au-dessus d'un saut) ; invincible f0–7 ; **−16** en garde ; ses frappes ne coûtent aucun point de jongle |
+| Nayo | boostCancel | DASH après le contact | **Rewind** | 1/8/3 (12) | — | — | — | — | 1 | un plongeon de 24 px ; flash de 6 tics ; annulable dès f3 en normal ou spécial ; la phrase repart ; une fois par séquence |
+| Riff | specialBoost | BOOST | Glissade à fond | 10/8/16 (34) | 80 (12) | KD trip (2 ; vx 3,5)/20 | 10 | low | 1 | environ −3 au contact |
+| Riff | specialForwardBoost | → + BOOST | Saut de l'ange à fond | 16/4/14 (34) | 80 (12) | KD (3 ; vx 3)/10 | 11 | overhead | 1 | met au sol |
+| Riff | specialAntiAirBoost | ↓ + BOOST | Genou à fond | 4/6/24 (34) | 115 (17) | lance (5, 2 points)/12 | 12 | mid | 1 | **invincible à tout** f0–6 : son seul reversal au sol |
+| Riff | super | ← + BOOST | **Slam** | 12/8/26 (46) | 120, 170 (18, 25) | 24, KD (5 ; vx 2,5)/14 | 12, 22 | overhead | 3 | bondit à 40 px, 30 px en avant (tics 2–11), flash de 20 tics à f10, frappes à f12 et f16 ; **sans invincibilité** ; **−15** en garde |
+| Riff | boostCancel | DASH après le contact | **Pogo** | 1/6/3 (10) | — | — | — | — | 1 | un bond de 24 px ; flash de 6 tics ; annulable dès f3 |
+
 ---
 
 ## 11. Planches d'animation à produire
@@ -961,7 +985,20 @@ Total Nayo : environ **115 images nouvelles**, plus les retouches.
 
 Riff : 43 planches, environ **265 images**. Elles se jouent par `src/art/riff/clips.ts` (le générateur lit les mêmes tics pour la frange et la chaîne) : les réactions (`hitHigh`, `hitMid`, `hitLow`, `hitCrouch`, `block`) ont leur dernière image calée sur la fin du stun (`endFrames`), `thrownBack` suit le `throwBack` de celui qui lance (3, 3, 4, 4), et un KO en l'air (lanceur, balayage, lancer, coup en l'air) vole comme un `airHit` puis joue `koLanding` (le `ko` depuis l'assise, image 4 ; image 3 pour Nayo) dès que le corps touche le sol. C'est le poste le plus lourd : il démarre **en parallèle dès la phase 1**, dans des fichiers séparés, sans attendre le gameplay (la boîte grise honnête suffit pour jouer).
 
-### 11.4 Variété à coût nul
+### 11.4 Le Boost (combos v3, `docs/combos-v3.md` §1.8.7, §5)
+
+| Coup | Planche | Images | Tics (somme) | Notes |
+|---|---|---|---|---|
+| Les 3 Remix, chaque perso | celle du spécial (D18) | — | celles du spécial | effets avant `fx/specialBoost`, `fx/specialForwardBoost`, `fx/specialAntiAirBoost` : ceux du spécial redessinés en blanc platine par le générateur (`toPlatine`), pour chaque tenue |
+| Vinyle platine en vol | `projectileBoost` | 8 | 1 chacune, en boucle | disque blanc à double anneau, qui tourne deux fois plus vite |
+| Mégabasse (Nayo) | `super`, et son `fx/super` | 10, le clip en rejoue 12 | 1, 1, 3, 3, 3, 3, 3, 6, 7, 7, 5, 5 (47) | la main au casque (tenue pendant le flash), l'appel, trois coups au sol, la montée, le poing au ciel, la garde ; les anneaux des enceintes sont dans ses effets (la boîte les suit) |
+| Slam (Riff) | `super`, et son `fx/super` | 9 | 2, 3, 5, 2, 4, 4, 8, 9, 9 (46) | l'appel et l'envol de son saut, le saut dans la foule, la plongée (le flash la prend au tic 10), l'impact rangers en avant, l'onde au sol, la garde |
+| Rewind (Nayo) | `dashForward` | 5 (l'image 4 sautée) | 1, 3, 3, 3, 2 (12) | le Pas chassé coupé court |
+| Pogo (Riff) | `dashForward` | 5 (l'image 3 sautée) | 1, 2, 2, 3, 2 (10) | le Footwork coupé court |
+
+Le rendu ajoute deux images rémanentes blanches (3 et 6 tics en arrière) pendant les coups Boost, les tampons « REMIX ! » et le nom du coup (« REWIND ! », « POGO ! », « MÉGABASSE ! », « SLAM ! »), et leurs sons.
+
+### 11.5 Variété à coût nul
 
 - Les coups légers reçus jouent une version courte de la même planche (images 0, 1, 4).
 - `endFrames` (dans `art/types.ts`) : les N dernières images d'un clip de stun se calent sur la **fin réelle** du stun (`stunTotal`). Le retour en garde tombe pile quand le joueur peut agir : animation plus fluide et plus honnête.
@@ -1379,6 +1416,7 @@ Chaque phase (et chaque PR à l'intérieur) laisse une build **jouable sur PC et
 10. **Performance et mémoire** : tic < 0,05 ms en moyenne (banc) ; 60 i/s sur un Android milieu de gamme ; endurance sans croissance (§14.6) ; stage ≤ 12 appels de dessin.
 11. **Identités** : chaque personnage a au moins trois forces et trois faiblesses mesurables dans les données (§6.3, test) ; en difficile contre difficile, chacun gagne entre 40 et 60 % des matchs.
 12. **Accessibilité** : aucun clignotement au-delà de 3 par seconde ; option « Flashs réduits » ; boutons tactiles ≥ 48 dp.
+13. **Boost** (combos v3) : chaque route du §3.1 et du §4 de `docs/combos-v3.md` passe avec ses dégâts exacts ; aucun combo ne rapporte une barre (borne vérifiée au chargement) ; aucun combo trouvé ne dépasse 12 coups, ni 45 % de la vie sans jauge, ni la moitié avec ; BOOST ne sort jamais un coup qu'il ne peut payer ; le CPU difficile dépense chaque coup Boost des deux persos.
 
 ---
 
@@ -1392,6 +1430,7 @@ Chaque phase (et chaque PR à l'intérieur) laisse une build **jouable sur PC et
 - **Pied fendu** (→ + S) : un coup de pied volant qui avance d'un grand pas et **met au sol**. Parfait pour finir un combo. S'il est paré, Nayo se fait punir.
 - **Uppercut** (↓ + S) : il jaillit, poing vers le ciel. **Invincible au départ** : il bat les sauts et les attaques au réveil. S'il le rate ou se fait parer, il reste longtemps sans défense.
 - **Ses coups de direction** : → + L, un jab qui avance ; → + H, l'**Overhand**, un coup qui tombe sur la tête (à parer **debout**) ; ← + H, le **Remontant**, qui fait décoller l'adversaire en l'air : enchaîne avec S. **L, L, L** : jab, cross, puis la Mise au tapis.
+- **Son Boost**, le « platine » (BOOST, une barre) : le **Vinyle platine**, un disque blanc deux fois plus rapide qui met au sol ; le **Pied fendu platine** (→ + BOOST), qui envoie très haut ; la **Montée platine** (↓ + BOOST), l'Uppercut plus fort et invincible plus longtemps. **DASH** pendant un coup qui touche : le **Rewind**, la phrase repart. Arrière + BOOST, trois barres : la **Mégabasse**, sa super, BOUM, BOUM, BOUUUM.
 
 ### 17.2 Riff, la punk de rue : elle entre, breake et te fait deviner
 
@@ -1399,6 +1438,7 @@ Chaque phase (et chaque PR à l'intérieur) laisse une build **jouable sur PC et
 - **Saut de l'ange** (→ + S) : une vrille en l'air qui retombe sur ta tête. Coup **haut** : pare-le **debout**. Il passe au-dessus des coups bas, mais un anti-air la fait tomber.
 - **Genou montant** (↓ + S) : un genou explosif vers le haut, contre les sauts. Il n'est invincible **que contre les attaques en l'air** : au sol, Riff n'a pas de coup magique pour se sortir d'une pression.
 - **Ses coups de direction** : → + L, le **Toprock**, un pas de danse qui avance et reste sûr ; → + H, le **Talon**, qui tombe sur la tête (à parer **debout**) ; ← + H, le **Retourné**, qui fait décoller et couvre aussi derrière elle. **L, L, L** : jab, revers, puis le Swipe. En sautant tout près, son Ciseau aérien peut te toucher **de dos**.
+- **Son Boost**, « à fond » (BOOST, une barre) : la **Glissade à fond**, le **Saut de l'ange à fond**, et le **Genou à fond** (↓ + BOOST), invincible : son seul reversal au sol, et il coûte une barre. **DASH** pendant un coup qui touche : le **Pogo**. Arrière + BOOST, trois barres : le **Slam**, une fin de combo, pas un reversal.
 
 ### 17.3 Pour tous (page « Les bases »)
 
@@ -1406,11 +1446,12 @@ Chaque phase (et chaque PR à l'intérieur) laisse une build **jouable sur PC et
 - **DASH** (ou deux fois avant) : un bond rapide vers l'adversaire. Avec **arrière** (ou deux fois arrière), un bond en retrait qui fait rater les prises, mais pas les coups.
 - **PRISE** (ou L + H) : de tout près, tu saisis l'adversaire. Puis **L** pour frapper, **H** (ou **S**, ou **PRISE**) pour le lancer devant, **← + H** pour le lancer derrière toi. Si tu ne choisis rien, tu le lances devant.
 - **Si on te saisit** : appuie **tout de suite** sur PRISE pour te dégager ; ensuite, tape sur les boutons pour qu'on te lâche plus vite. Sur une PUNITION (tu étais en train de finir un coup), impossible de te dégager.
-- **Enchaîner** : « L → H → S. Ou L, L, L. » ← + H fait décoller : enchaîne avec S.
+- **Enchaîner** : « L, L, L. Puis L, L, H, H, S. » Un coup qui touche (ou qui est paré) s'enchaîne : chaque coup une fois par enchaînement (les légers deux fois), puis un spécial, puis la super. ← + H fait décoller : enchaîne avec S.
+- **BOOST** : la jauge sous ta vie, 3 barres, remplies en frappant, en parant et en encaissant, gardées d'un round à l'autre. BOOST + direction donne le Remix de ton spécial (1 barre), arrière + BOOST ta super (3 barres) ; DASH pendant un coup qui touche, le Rewind de Nayo ou le Pogo de Riff (1 barre). Sans assez de barres, rien ne sort.
 - **CONTRE** : frappe quelqu'un qui attaque, ça fait plus mal. **PUNITION** : frappe-le quand il rate.
-- **Le Crossfader** : avance, attaque, fais garder ton projectile : le curseur vient vers toi et la musique devient la tienne. Curseur à fond : **DROP** sur le prochain temps fort. Tu frappes plus fort et ton spécial passe en version **Remix**.
+- **Le Crossfader** (phase 5) : avance, attaque, fais garder ton projectile : le curseur vient vers toi et la musique devient la tienne. Curseur à fond : **DROP** sur le prochain temps fort. Tu frappes plus fort et la foule te donne une barre de Boost.
 
-Descriptions de sélection (`roster.ts`) : Nayo « Boxeur-DJ posé · portée · Vinyle · Uppercut invincible » ; Riff « Punk de rue explosive · dash · Glissade · deux overheads · moins de vie ».
+Descriptions de sélection (`roster.ts`) : Nayo « Boxeur-DJ posé · portée · Vinyle · Uppercut invincible · Mégabasse » ; Riff « Punk de rue explosive · dash · Glissade · deux overheads · moins de vie ».
 
 ---
 
@@ -1421,7 +1462,7 @@ Descriptions de sélection (`roster.ts`) : Nayo « Boxeur-DJ posé · portée ·
 | Risque | Parade |
 |---|---|
 | L'art est le goulot (Riff ≈ 265 images, Nayo ≈ 115) | Générateur procédural partagé ; Riff en parallèle dès la phase 1 ; le gameplay n'attend jamais l'art (boîte grise honnête) |
-| Grappe tactile chargée (6 boutons) | Centres inchangés pour les 4 boutons connus, test de géométrie sur deux écrans, tailles hiérarchisées, centre le plus proche ; taille et opacité réglables plus tard (PLAN §5) |
+| Grappe tactile chargée (7 boutons avec BOOST) | Centres inchangés pour les 4 boutons connus, test de géométrie sur deux écrans, tailles hiérarchisées, centre le plus proche ; taille et opacité réglables plus tard (PLAN §5) |
 | Cross-ups déroutants pour les débutants | Une seule source de coup de dos (Riff) ; portée figée par test ; le demi-tour se lit à l'image |
 | Le dégagement de prise trop dur | Fenêtre de 200 ms, vibration, anneau qui clignote, buffer ; le CPU facile saisit peu |
 | Effet boule de neige du Crossfader | Gains liés à l'initiative, pas aux dégâts ; DROP limité à +10 % ; test de part par personnage |
@@ -1432,12 +1473,11 @@ Descriptions de sélection (`roster.ts`) : Nayo « Boxeur-DJ posé · portée ·
 
 | Élément | Quand |
 |---|---|
-| Super, seconde jauge | Après des retours de jeu sur le Crossfader |
 | Membres touchables sur les pokes | Si le jeu manque de « whiff punish » (le champ `hurtboxes` le permet déjà) |
 | Petit saut, air dash, contrôle en l'air | Avec un personnage qui en a besoin (Vexa ?) |
 | Relevé rapide, roulade | Si le réveil devient étouffant |
 | Armure, parade, rebond mural, téléportation | Un par futur personnage (§6.5) |
-| Coups multi-touches, prise aérienne, prise de commande | Si un personnage en a besoin |
+| Coups multi-touches (hors frappes des supers), prise aérienne, prise de commande | Si un personnage en a besoin |
 | Remappage, affichage des entrées | Menus M8 |
 | Calibrage de latence audio | Seulement si un retour de jeu le réclame (aucun gameplay ne dépend du son) |
 

@@ -80,6 +80,25 @@ export function floored(run: ComboRun, victim: 0 | 1 = 1): boolean {
   return run.states.some((state) => state.fighters[victim].action === 'knockdown');
 }
 
+/**
+ * The opponent lands knocked down, given `ticks` more after the run: a super's flash and long
+ * freezes keep the body up past the settling time.
+ */
+export function landsFloored(
+  run: ComboRun,
+  config: MatchConfig,
+  ticks = 60,
+  victim: 0 | 1 = 1,
+): boolean {
+  if (floored(run, victim)) return true;
+  let state = run.end;
+  for (let tick = 0; tick < ticks; tick++) {
+    state = step(state, [0, 0], config);
+    if (state.fighters[victim].action === 'knockdown') return true;
+  }
+  return false;
+}
+
 /** Every blow of the combo landed on a fighter that could not act in between. */
 export function unbroken(run: ComboRun, victim: 0 | 1 = 1): boolean {
   return run.hits.every((hit, index) => {

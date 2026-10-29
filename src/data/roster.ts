@@ -15,7 +15,7 @@ export const ROSTER: readonly RosterEntry[] = [
   {
     id: 'nayo',
     template: NAYO,
-    description: 'Boxeur-DJ posé · portée · Vinyle · Uppercut invincible',
+    description: 'Boxeur-DJ posé · portée · Vinyle · Uppercut invincible · Mégabasse',
   },
   {
     id: 'riff',

@@ -1,10 +1,9 @@
 /**
  * Renders strips to look at while drawing them: on the stage background, with the ground line,
  * the pushbox edges (dashed), the front effects over the body (as the game draws them) and, on
- * the active frames of an attack, its hitbox (red frame). A strip drawn ahead of its gameplay
- * takes its timing and hitbox from its fighter's pending table (tools/sprites/<name>/
- * pending-timing.ts). Writes tools/sprites/preview/<sheet>.png, tools/sprites/preview/riff/
- * <sheet>.png for Riff (not committed), and prints each frame's ticks, the active ones in [ ].
+ * the active frames of an attack, its hitbox (red frame). Writes tools/sprites/preview/
+ * <sheet>.png, tools/sprites/preview/riff/<sheet>.png for Riff (not committed), and prints each
+ * frame's ticks, the active ones in [ ].
  *
  *   npm run sprites:preview -- idle standHeavy          # Nayo, main colorway
  *   npm run sprites:preview -- --alt idle               # second colorway
@@ -20,14 +19,12 @@ import type { FighterTemplate } from '../../src/core/config.ts';
 import { toPx } from '../../src/core/constants.ts';
 import { NAYO as NAYO_TEMPLATE } from '../../src/data/fighters/nayo.ts';
 import { RIFF as RIFF_TEMPLATE } from '../../src/data/fighters/riff.ts';
-import { strikeOf, type Clips, type PendingStrips } from './clips.ts';
+import { strikeOf, type Clips } from './clips.ts';
 import type { Fighter, Strike } from './fighter.ts';
 import { NAYO } from './nayo/index.ts';
-import { NAYO_PENDING } from './nayo/pending-timing.ts';
 import type { Colorway } from './palette.ts';
 import { encodeIndexedPng, type Rgba } from './png.ts';
 import { RIFF } from './riff/index.ts';
-import { RIFF_PENDING } from './riff/pending-timing.ts';
 import { drawStrip, drawStripEffects } from './sheet.ts';
 
 const PREVIEW = new URL('./preview/', import.meta.url);
@@ -46,19 +43,16 @@ interface Guides {
   readonly strike: (sheet: string) => Strike | undefined;
 }
 
-/**
- * A fighter's moves (src/data/fighters/), played by its clips (src/art/<name>/clips.ts), and
- * its strips drawn ahead of their gameplay (`pending`).
- */
-function guidesOf(template: FighterTemplate, clips: Clips, pending: PendingStrips): Guides {
+/** A fighter's moves (src/data/fighters/), played by its clips (src/art/<name>/clips.ts). */
+function guidesOf(template: FighterTemplate, clips: Clips): Guides {
   return {
     pushboxHalf: toPx(template.standingPushbox.width) / 2,
-    strike: (sheet) => strikeOf(clips, template, sheet, pending),
+    strike: (sheet) => strikeOf(clips, template, sheet),
   };
 }
 
-const NAYO_GUIDES = guidesOf(NAYO_TEMPLATE, NAYO_CLIPS, NAYO_PENDING);
-const RIFF_GUIDES = guidesOf(RIFF_TEMPLATE, RIFF_CLIPS, RIFF_PENDING);
+const NAYO_GUIDES = guidesOf(NAYO_TEMPLATE, NAYO_CLIPS);
+const RIFF_GUIDES = guidesOf(RIFF_TEMPLATE, RIFF_CLIPS);
 
 interface Box {
   readonly left: number;

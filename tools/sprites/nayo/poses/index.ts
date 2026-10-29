@@ -6,11 +6,10 @@
  * strips, drawn to the animation brief's stricter rules, are checked by
  * tests/tools/nayo-v2-sprites.test.ts.
  *
- * The combos v3 strips were drawn ahead of their gameplay (the Mégabasse still is: its timing
- * and hitbox, ../pending-timing.ts). Each of their files says whether it is animated yet
- * (`ANIMATED`): until it is, it holds placeholder poses (the GUARD, or the frames it borrows),
- * and its tests that need the finished drawing wait. Animators work on their own files only,
- * never on this registry.
+ * The combos v3 strips were drawn ahead of their gameplay. Each of their files says whether it
+ * is animated yet (`ANIMATED`): until it is, it holds placeholder poses (the GUARD, or the frames
+ * it borrows), and its tests that need the finished drawing wait. Animators work on their own
+ * files only, never on this registry.
  */
 
 import type { NayoSheet } from '../../../../src/art/nayo/sheets.ts';
@@ -64,10 +63,13 @@ import * as chainHeavy from './chainHeavy.ts';
 import * as chainLaunch from './chainLaunch.ts';
 import * as megabasse from './super.ts';
 
-export { PROJECTILE as NAYO_PROJECTILE } from './projectile.ts';
+export {
+  PROJECTILE as NAYO_PROJECTILE,
+  PROJECTILE_BOOST as NAYO_PROJECTILE_BOOST,
+} from './projectile.ts';
 
-/** Strips of Nayo himself: all but the projectile. */
-export type PosedSheet = Exclude<NayoSheet, 'projectile'>;
+/** Strips of Nayo himself: all but the projectiles. */
+export type PosedSheet = Exclude<NayoSheet, 'projectile' | 'projectileBoost'>;
 
 /**
  * The strips drawn to the animation brief v2's rules: the combat v2 ones (docs/combat-v2.md

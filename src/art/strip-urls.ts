@@ -1,3 +1,5 @@
+import type { Clip } from './types';
+
 /**
  * The image URL of each strip of a fighter found in one of its folders (a colorway, or its
  * front effects), from what the bundler globbed there (`import.meta.glob` takes only literal
@@ -16,4 +18,17 @@ export function urlsOf(
     if (url !== undefined) urls[sheet] = url;
   }
   return urls;
+}
+
+/**
+ * Every name a fighter's effects images may have: its strips', and the names its clips give their
+ * effects (`Clip.fx`, a Remix's platine ones).
+ */
+export function effectNames(
+  sheets: Readonly<Record<string, unknown>>,
+  clips: Readonly<Partial<Record<string, Clip>>>,
+): Record<string, unknown> {
+  const names: Record<string, unknown> = { ...sheets };
+  for (const clip of Object.values(clips)) if (clip?.fx !== undefined) names[clip.fx] = clip.sheet;
+  return names;
 }

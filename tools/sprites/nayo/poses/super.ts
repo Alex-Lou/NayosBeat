@@ -9,7 +9,7 @@ export const ANIMATED: boolean = true;
 
 /**
  * super (Mégabasse, ← + BOOST, 3 bars; docs/combos-v3.md §2.2, §5 row 3): 10 strip frames, the
- * clip plays 12 entries (tools/sprites/nayo/pending-timing.ts): s0 1, s1 1, s2 [3], s3 [3], s2
+ * clip plays 12 entries (src/art/nayo/clips.ts): s0 1, s1 1, s2 [3], s3 [3], s2
  * [3], s3 [3], s4 [3], s5 6, s6 7, s7 7, s8 5, s9 5 ticks (47: 2/15/30), three blows on action
  * frames 2, 8 and 14 (s2, s2 again, s4), after a 20-tick freeze flash on action frame 0 (s0
  * holds it). Hitbox x 4..60 / y 0..90, from the floor to above a jump: the speaker rings of the

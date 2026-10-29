@@ -28,8 +28,16 @@ const gap = (a: TouchButton, b: TouchButton): number =>
   Math.hypot(a.right - b.right, a.bottom - b.bottom) - (a.diameter + b.diameter) / 2;
 
 describe('touch layout (§2.4)', () => {
-  it('has the six buttons, L, H, SAUT and S where they always were', () => {
-    expect(TOUCH_BUTTONS.map((b) => b.label)).toEqual(['L', 'H', 'SAUT', 'S', 'PRISE', 'DASH']);
+  it('has the seven buttons, L, H, SAUT and S where they always were', () => {
+    expect(TOUCH_BUTTONS.map((b) => b.label)).toEqual([
+      'L',
+      'H',
+      'SAUT',
+      'S',
+      'PRISE',
+      'DASH',
+      'BOOST',
+    ]);
     expect(byLabel('L')).toMatchObject({ right: 200, bottom: 52, diameter: 68, flag: Input.Light });
     expect(byLabel('H')).toMatchObject({ right: 126, bottom: 52, diameter: 68, flag: Input.Heavy });
     expect(byLabel('SAUT')).toMatchObject({
@@ -41,6 +49,15 @@ describe('touch layout (§2.4)', () => {
     expect(byLabel('S')).toMatchObject({ right: 163, bottom: 126, diameter: 64 });
     expect(byLabel('PRISE')).toMatchObject({ right: 89, bottom: 126, flag: Input.Grab });
     expect(byLabel('DASH')).toMatchObject({ right: 237, bottom: 126, flag: Input.Dash });
+    // In the notch between S and PRISE (docs/combos-v3.md §1.8.5): never right over S.
+    expect(byLabel('BOOST')).toMatchObject({
+      right: 126,
+      bottom: 190,
+      diameter: 56,
+      flag: Input.Boost,
+    });
+    expect(gap(byLabel('BOOST'), byLabel('S'))).toBeCloseTo(13.9, 1);
+    expect(gap(byLabel('BOOST'), byLabel('PRISE'))).toBeCloseTo(15.9, 1);
   });
 
   it('leaves 6 to 16 px between each button and its nearest neighbor', () => {
@@ -185,6 +202,30 @@ describe('TouchControls', () => {
     expect(dash.classList.contains('pressed')).toBe(true);
     buttons.dispatchEvent(pointer('pointerup', 2, 0, 0));
     expect(dash.classList.contains('pressed')).toBe(false);
+  });
+
+  it('shows the gauge on the BOOST ring, written to the page only when it changes', () => {
+    const { controls, buttons } = setup();
+    const boost = buttons.children[TOUCH_BUTTONS.indexOf(byLabel('BOOST'))];
+    if (!boost) throw new Error('No BOOST element');
+    const setProperty = vi.spyOn(boost.style as unknown as CSSStyleDeclaration, 'setProperty');
+    const add = vi.spyOn(boost.classList, 'add');
+    controls.showBoost(0);
+    expect(boost.style).toMatchObject({ '--boost-bars': '0', '--boost-part': '0' });
+    expect(boost.classList.contains('empty')).toBe(true);
+    const writes = setProperty.mock.calls.length;
+    const added = add.mock.calls.length;
+    // Within one twentieth of a bar, nothing moves.
+    controls.showBoost(49);
+    controls.showBoost(49);
+    expect(setProperty.mock.calls.length).toBe(writes);
+    expect(add.mock.calls.length).toBe(added);
+    controls.showBoost(1050);
+    expect(boost.style).toMatchObject({ '--boost-bars': '1', '--boost-part': '0.05' });
+    expect(boost.classList.contains('empty')).toBe(false);
+    controls.showBoost(3000);
+    expect(boost.style).toMatchObject({ '--boost-bars': '3', '--boost-part': '0' });
+    expect(boost.classList.contains('full')).toBe(true);
   });
 
   it('places the buttons from the layout data', () => {

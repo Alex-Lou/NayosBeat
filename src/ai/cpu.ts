@@ -1,11 +1,14 @@
 import type { MatchConfig } from '../core/config';
 import { toPx } from '../core/constants';
+import { superGauge } from '../core/fighter/move';
 import { Input, type InputBits } from '../core/input';
+import type { MoveData } from '../core/move-data';
+import { BOOST_BAR, BOOST_MAX } from '../core/rules';
 import type { FighterAction, FighterState, GameState } from '../core/state';
 import { strikeThreatens, upcomingMove } from '../core/threat';
 import { guardInput, incomingProjectile } from './defense';
 import { holdInput } from './hold-tactics';
-import { planFor, playString, startString, type StringPlay } from './plans';
+import { planFor, playString, savesForSuper, startString, type StringPlay } from './plans';
 import { PROFILES, type CpuLevel, type Profile } from './profiles';
 import { nextRandom } from './rng';
 
@@ -27,6 +30,8 @@ const CLOSE_RANGE = 60;
 const MID_RANGE = 150;
 const ANTI_AIR_RANGE = 80;
 const BLOCK_HOLD_FRAMES = 14;
+/** How often a hard CPU with the gauge for it reverses a blow (docs/combos-v3.md §6.4). */
+const REVERSAL_CHANCE = 0.25;
 
 export interface CpuState {
   readonly player: 0 | 1;
@@ -174,6 +179,12 @@ class Decider {
   }
 
   private react(threat: 'air' | 'strike' | 'projectile'): InputBits[] {
+    // Hard only, now and then, on the wake-up (just out of a stun, its throw protection still
+    // on): the gauge's reversal through the blow pressed on it (docs/combos-v3.md §6.4).
+    const waking = this.me.throwImmuneFrames > 0;
+    const reversal =
+      threat === 'strike' && waking && this.level === 'hard' ? this.reversal() : null;
+    if (reversal !== null && this.chance(REVERSAL_CHANCE)) return [reversal, 0];
     if (threat === 'air' && this.chance(this.profile.antiAir)) {
       // The invincible anti-air, or now and then the launcher, which opens a juggle (plans.ts).
       return this.chance(0.35) ? [this.away | Input.Heavy, 0] : [Input.Down | Input.Special, 0];
@@ -196,8 +207,15 @@ class Decider {
     const hasProjectile =
       this.config.fighters[this.cpu.player].moves.special.projectile !== undefined;
 
+    // Now and then the Remix of the special it would throw, when the gauge pays for it (hard
+    // keeps two bars for its super, docs/combos-v3.md §6.4).
+    const boost = superGauge(this.me);
+    const saving = this.level === 'hard' && savesForSuper(boost);
+    const remix = boost >= BOOST_BAR && !saving && this.chance(this.profile.remix);
     if (this.distance > MID_RANGE) {
-      if (hasProjectile && this.chance(0.35)) return [Input.Special, ...repeat(0, 20)];
+      if (hasProjectile && this.chance(0.35)) {
+        return [remix ? Input.Boost : Input.Special, ...repeat(0, 20)];
+      }
       if (this.chance(0.12)) return this.jumpIn();
       return repeat(toward, this.between(12, 30));
     }
@@ -208,7 +226,9 @@ class Decider {
         return repeat(toward, this.between(8, 18));
       }
       if (this.chance(0.18)) return this.jumpIn();
-      if (this.chance(0.15)) return [toward | Input.Special, ...repeat(0, 10)];
+      if (this.chance(0.15)) {
+        return [toward | (remix ? Input.Boost : Input.Special), ...repeat(0, 10)];
+      }
       if (hasProjectile && this.chance(0.2)) return [Input.Special, ...repeat(0, 15)];
       return repeat(this.chance(0.5) ? away : 0, this.between(6, 14));
     }
@@ -220,6 +240,21 @@ class Decider {
     if (this.chance(0.15)) return [Input.Down | Input.Heavy, Input.Down, 0];
     if (this.chance(0.3)) return repeat(away | Input.Down, this.between(8, 16));
     return repeat(away, this.between(6, 12));
+  }
+
+  /**
+   * The reversal the gauge pays for, if any: the super when it is invincible from its first
+   * frame (Nayo's Mégabasse, not Riff's Slam), else the Remix of the anti-air when it is (the
+   * Montée platine, the Genou à fond). Never BOOST that would give nothing.
+   */
+  private reversal(): InputBits | null {
+    const { moves } = this.config.fighters[this.cpu.player];
+    const boost = superGauge(this.me);
+    if (boost >= BOOST_MAX && isReversal(moves.super)) return this.away | Input.Boost;
+    if (boost >= BOOST_BAR && !savesForSuper(boost) && isReversal(moves.specialAntiAirBoost)) {
+      return Input.Down | Input.Boost;
+    }
+    return null;
   }
 
   private jumpIn(): InputBits[] {
@@ -283,6 +318,12 @@ function leaveBlock(
   const back = opponent.x > me.x ? Input.Left : Input.Right;
   const input = close && value < profile.backdash ? back | Input.Dash : guard;
   return { cpu: { ...cpu, seed }, input };
+}
+
+/** Invincible to every blow from its first frame: it goes through a meaty attack. */
+function isReversal(move: MoveData | undefined): boolean {
+  const range = move?.invincible;
+  return range !== undefined && range.from === 0 && range.against !== 'air';
 }
 
 function repeat(input: InputBits, count: number): InputBits[] {

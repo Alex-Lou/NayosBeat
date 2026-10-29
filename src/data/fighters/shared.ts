@@ -1,8 +1,9 @@
 /** What every fighter's data is written with: authoring helpers and shared rules. */
 
-import type { Box } from '../../core/config';
+import type { Box, FighterMoves } from '../../core/config';
 import { px } from '../../core/constants';
 import type {
+  Flash,
   FrameRange,
   Guard,
   Knockdown,
@@ -11,6 +12,7 @@ import type {
   MoveKind,
   RootMotion,
 } from '../../core/move-data';
+import { BOOST_BAR, BOOST_MAX } from '../../core/rules';
 
 /**
  * How a blow is written, in the order of the frame data tables (docs/combat-v2.md §10): frames
@@ -189,6 +191,87 @@ export function dash(spec: DashSpec): MoveData {
  */
 export const LIGHT_CANCELS: readonly MoveKind[] = ['normal', 'special'];
 export const HEAVY_CANCELS: readonly MoveKind[] = ['special'];
+
+/** The moves a fighter's Boost layer is written from: its plain specials. */
+export type PlainSpecials = Pick<FighterMoves, 'special' | 'specialForward' | 'specialAntiAir'>;
+
+/** What the Boost layer adds to a fighter (docs/combos-v3.md §1.8.3). */
+export type BoostMoves = Required<
+  Pick<
+    FighterMoves,
+    'specialBoost' | 'specialForwardBoost' | 'specialAntiAirBoost' | 'super' | 'boostCancel'
+  >
+>;
+
+/**
+ * The Remix of a special (docs/combos-v3.md §1.8.3): the same strip and the same timing (D18,
+ * validated), its own data; one bar. Written as what changes from the plain special.
+ */
+export function remix(
+  plain: MoveData,
+  changes: Partial<
+    Omit<MoveData, 'kind' | 'startup' | 'active' | 'recovery' | 'tier' | 'boostCost'>
+  >,
+): MoveData {
+  return { ...plain, ...changes, tier: 2, boostCost: BOOST_BAR };
+}
+
+/** The Rewind cancels into a normal or into any rung of the specials, never a grab. */
+const REWIND_CANCELS: readonly MoveKind[] = ['normal', 'special'];
+
+/**
+ * The Rewind, the Boost cancel (docs/combos-v3.md §1.8.3): a short step on the dash's curve,
+ * played in place of the rest of a normal that hit or was blocked, cancelled from
+ * `freeCancelFrom` on into a normal, a special, a Remix or the super, half its speed kept. One
+ * bar, once a sequence; its flash marks the moment.
+ */
+export function boostStep(
+  spec: Omit<DashSpec, 'back' | 'throwInvincible' | 'freeCancelFrom'> & {
+    readonly freeCancelFrom: number;
+    readonly flash: Flash;
+  },
+): MoveData {
+  const { flash, ...step } = spec;
+  return { ...dash(step), cancelInto: REWIND_CANCELS, boostCost: BOOST_BAR, flash };
+}
+
+/** A blow of the super after its first, as its line of the data table writes it. */
+interface PulseSpec {
+  readonly frame: number;
+  readonly damage: number;
+  readonly stun: readonly [hitstun: number, blockstun: number];
+  readonly hitstop: number;
+  readonly pushbackPx: number;
+  readonly knockdown?: Knockdown;
+}
+
+/**
+ * The super (docs/combos-v3.md §1.8.3, §1.9), from its first blow (`first`, a special): three
+ * bars, its flash, and its blows after the first (`pulses`), each landing again from its frame
+ * with its own damage, stun and freeze. Its blows spend no juggle point: they land on any body
+ * already in the combo, so the super cancelled from a special connects wherever the special
+ * did.
+ */
+export function superMove(first: MoveData, pulses: readonly PulseSpec[], flash: Flash): MoveData {
+  return {
+    ...first,
+    tier: 3,
+    boostCost: BOOST_MAX,
+    juggleCost: 0,
+    flash,
+    pulses: pulses.map(({ frame, stun, pushbackPx, ...blow }) => ({
+      frame,
+      hit: {
+        ...first,
+        ...blow,
+        hitstun: stun[0],
+        blockstun: stun[1],
+        pushback: px(pushbackPx),
+        juggleCost: 0,
+      },
+    })),
+  };
+}
 
 /** How a pummel or a throw is written: what happens on the held opponent (docs/combat-v2.md §4.3). */
 interface ThrowSpec {

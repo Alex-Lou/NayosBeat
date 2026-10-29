@@ -5,18 +5,20 @@ import { signed } from '../numbers';
 import { sideOf } from '../side';
 import { VICTIM_FLAGS, type FighterState } from '../state';
 import { continueOrEnter, enter } from './action';
-import { startGroundMove } from './move';
+import { startGroundMove, superGauge } from './move';
 
 /**
  * Neutral grounded state: the only place where the player chooses what to do next. A command
  * buffered while busy comes out first (attack, grab, dash, jump), then what is held: up jumps,
  * back guards in place when the opponent threatens (`threatened`) and walks back otherwise.
+ * `discOut`: the fighter's projectile still flies (see `groundMove`).
  */
 export function actOnGround(
   fighter: FighterState,
   template: FighterTemplate,
   opponentX: number,
   threatened: boolean,
+  discOut = false,
 ): FighterState {
   const f: FighterState = {
     ...fighter,
@@ -33,7 +35,15 @@ export function actOnGround(
 
   const command = f.bufferedCommand;
   const move = command
-    ? groundMove(command, f.bufferedInput, f.bufferedMotion, f.bufferedFacing, template.moves)
+    ? groundMove(
+        command,
+        f.bufferedInput,
+        f.bufferedMotion,
+        f.bufferedFacing,
+        template.moves,
+        superGauge(f),
+        discOut,
+      )
     : null;
   if (move) return startGroundMove(f, move, template);
   if (command === 'jump' || has(input, Input.Up) || has(input, Input.Jump)) {

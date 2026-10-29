@@ -1,11 +1,12 @@
 import type Phaser from 'phaser';
-import { clipOf, type FighterArt } from '../art/types';
+import { clipOf, effectsOf, type FighterArt } from '../art/types';
 import type { FighterTemplate, MatchConfig } from '../core/config';
 import { toPx } from '../core/constants';
 import { isActiveFrame, moveOf } from '../core/moves';
 import type { FighterState, GameState } from '../core/state';
 import { AnchoredSprite } from './anchored-sprite';
 import { clipFrameAt, showFighter, type Shown } from './animation';
+import { BoostEcho } from './boost-echo';
 import { DashTrail } from './dash-trail';
 import { DEPTH } from './depth';
 
@@ -20,13 +21,15 @@ const SHADOW_HALF_HEIGHT = 120;
  * frame counter, move, round, and the opponent holding or throwing it), so the animation always
  * matches the frame data. The strips that
  * have front effects play them in step, over both fighters; a dash leaves afterimages in the
- * fighter's energy color (`trailColor`). Its boxes show in the debug view (BoxOverlay).
+ * fighter's energy color (`trailColor`), a Boost move white echoes (`BoostEcho`). Its boxes show
+ * in the debug view (BoxOverlay).
  */
 export class SpriteFighterView {
   private readonly shadow: Phaser.GameObjects.Ellipse;
   private readonly body: AnchoredSprite;
   private readonly effects: AnchoredSprite | undefined;
   private readonly trail: DashTrail;
+  private readonly echo: BoostEcho;
   /** Reused every frame. */
   private readonly shown: Shown = { clip: 'idle', tick: 0, x: 0 };
 
@@ -47,6 +50,7 @@ export class SpriteFighterView {
       SHADOW_ALPHA,
     );
     this.trail = new DashTrail(scene, art, trailColor);
+    this.echo = new BoostEcho(scene, art);
     this.body = new AnchoredSprite(scene, art).setDepth(DEPTH.fighterBack);
     this.effects = art.fx
       ? new AnchoredSprite(scene, art, 'fx').setDepth(DEPTH.effects)
@@ -74,10 +78,21 @@ export class SpriteFighterView {
     this.body.show(clip.sheet, frame, x, this.groundY - height, flip);
     const gliding = isGliding(fighter, template);
     // The round clock counts ticks and stops with the hitstop: the afterimages do too.
-    this.trail.update(round.phaseFrame, gliding, clip.sheet, frame, x, this.groundY - height, flip);
+    const y = this.groundY - height;
+    this.trail.update(round.phaseFrame, gliding, clip.sheet, frame, x, y, flip);
+    this.echo.update(
+      round.phaseFrame,
+      isBoosting(fighter, template),
+      clip.sheet,
+      frame,
+      x,
+      y,
+      flip,
+    );
     if (this.effects) {
-      if (this.art.fx?.[clip.sheet] !== undefined) {
-        this.effects.show(clip.sheet, frame, x, this.groundY - height, flip);
+      const effects = effectsOf(clip);
+      if (this.art.fx?.[effects] !== undefined) {
+        this.effects.show(effects, frame, x, this.groundY - height, flip);
       } else {
         this.effects.hide();
       }
@@ -85,6 +100,11 @@ export class SpriteFighterView {
     const shrink = SHADOW_HALF_HEIGHT / (SHADOW_HALF_HEIGHT + height);
     this.shadow.setPosition(x, this.groundY).setScale(shrink);
   }
+}
+
+/** Playing a move that spends the Boost gauge (a Remix, the Rewind, the super). */
+function isBoosting(fighter: FighterState, template: FighterTemplate): boolean {
+  return fighter.move !== null && (moveOf(template, fighter.move).boostCost ?? 0) > 0;
 }
 
 /** On a frame of a dash that moves the fighter (the "active" frames of a movement). */

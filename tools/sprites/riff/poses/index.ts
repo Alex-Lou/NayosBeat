@@ -55,8 +55,7 @@ import * as throwBack from './throwBack.ts';
 import * as intro from './intro.ts';
 import * as victory from './victory.ts';
 import * as timeOver from './timeOver.ts';
-// Combos v3 (docs/combos-v3.md §4, §5); the Slam drawn ahead of its gameplay (its timing and
-// hitbox: ../pending-timing.ts).
+// Combos v3 (docs/combos-v3.md §4, §5).
 import * as chainHeavy from './chainHeavy.ts';
 import * as chainLaunch from './chainLaunch.ts';
 import * as slam from './super.ts';

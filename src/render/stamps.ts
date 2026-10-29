@@ -8,15 +8,22 @@ import { VIEW_SIZE } from './view';
 
 /**
  * What a stamp says (docs/combat-v2.md §4.5, §7.4): a tech broke free; a blow or a grab caught
- * a fighter recovering (PUNITION), a blow caught one attacking (CONTRE). In the comic font of
+ * a fighter recovering (PUNITION), a blow caught one attacking (CONTRE); a Remix (docs/combos-v3.md
+ * §1.8.7). The Rewind and the super say their own names (`boostStamp`). In the comic font of
  * the sound words, which has the accented capitals the pixel font lacks.
  */
 export const STAMP_TEXTS = {
   tech: 'DÉGAGEMENT !',
   punish: 'PUNITION !',
   counter: 'CONTRE !',
+  remix: 'REMIX !',
 } as const;
 export type StampKind = keyof typeof STAMP_TEXTS;
+
+/** The stamp of a Boost move that says its name: « REWIND ! », « POGO ! », « MÉGABASSE ! ». */
+export function boostStamp(name: string): string {
+  return `${name.toUpperCase()} !`;
+}
 
 const POOL_SIZE = 4;
 const SIZE = 15;
@@ -35,9 +42,10 @@ interface Stamp {
 }
 
 /**
- * The stamps, « DÉGAGEMENT ! », « PUNITION ! » and « CONTRE ! »: slammed over the impact in the
- * colors of who earned it, lettered like the sound words, then faded. A fixed pool, each text drawn once per stamp: nothing is
- * created during a fight.
+ * The stamps, « DÉGAGEMENT ! », « PUNITION ! », « CONTRE ! » and the Boost's: slammed over the
+ * impact (over the fighter who spends its gauge) in the colors of who earned it, lettered like
+ * the sound words, then faded. A fixed pool, each text drawn once per stamp: nothing is created
+ * during a fight.
  */
 export class Stamps {
   private readonly stamps: Stamp[];
@@ -71,11 +79,12 @@ export class Stamps {
   }
 
   /**
-   * Stamps `kind` for `at.by` over (at.x, at.y) (simulation units), inside the simulation
-   * camera whose left edge is `viewLeft` (world pixels).
+   * Stamps `words` (a `STAMP_TEXTS` entry, or a Boost move's) for `at.by` over (at.x, at.y)
+   * (simulation units), inside the simulation camera whose left edge is `viewLeft` (world
+   * pixels).
    */
   show(
-    kind: StampKind,
+    words: string,
     at: { readonly by: 0 | 1; readonly x: number; readonly y: number },
     viewLeft: number,
   ): void {
@@ -87,8 +96,8 @@ export class Stamps {
     // Restyled without a redraw, then drawn once with its words.
     const shadow = comicDrop(DROP, this.resolution, style);
     text.style.setStyle({ color: comicFill(text, SIZE, style), shadow }, false);
-    if (text.text === STAMP_TEXTS[kind]) text.updateText();
-    else text.setText(STAMP_TEXTS[kind]);
+    if (text.text === words) text.updateText();
+    else text.setText(words);
     const half = text.width / 2 + 2;
     const x = Math.min(Math.max(toPx(at.x), viewLeft + half), viewLeft + VIEW_SIZE.width - half);
     text.setPosition(Math.round(x), Math.round(this.groundY - toPx(at.y) - OVER));

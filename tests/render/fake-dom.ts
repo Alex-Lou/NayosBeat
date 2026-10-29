@@ -69,6 +69,15 @@ export class FakeElement extends CountingTarget {
     private readonly root = false,
   ) {
     super();
+    // Custom properties (`--boost-bars`) are set through `setProperty`: kept with the others.
+    Object.defineProperty(this.style, 'setProperty', {
+      value: (name: string, value: string) => {
+        this.style[name] = value;
+      },
+      enumerable: false,
+      configurable: true,
+      writable: true,
+    });
   }
 
   get isConnected(): boolean {

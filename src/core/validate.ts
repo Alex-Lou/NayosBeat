@@ -13,6 +13,7 @@ import {
   type OptionalMoveId,
 } from './move-data';
 import { moveDuration } from './moves';
+import { boostProblems } from './validate-boost';
 import { comboProblems } from './validate-combos';
 
 /** A body drawn in bands: legs and torso at most (docs/combat-v2.md §9.2). */
@@ -20,7 +21,8 @@ const MAX_HURTBOXES = 2;
 
 /**
  * The kinds each optional move may have (docs/combos-v3.md §1.12, rule 14): the direction
- * normals, the chain and the strings are normals.
+ * normals, the chain and the strings are normals; the Rewind a movement; the Remixes and the
+ * super specials.
  */
 const OPTIONAL_KINDS: Readonly<Partial<Record<MoveId, readonly MoveKind[]>>> = {
   forwardLight: ['normal'],
@@ -32,6 +34,11 @@ const OPTIONAL_KINDS: Readonly<Partial<Record<MoveId, readonly MoveKind[]>>> = {
   chainHeavy: ['normal'],
   chainHigh: ['normal'],
   chainLaunch: ['normal'],
+  boostCancel: ['movement'],
+  specialBoost: ['special'],
+  specialForwardBoost: ['special'],
+  specialAntiAirBoost: ['special'],
+  super: ['special'],
 } satisfies Record<OptionalMoveId, readonly MoveKind[]>;
 
 /**
@@ -98,7 +105,7 @@ export function validateTemplate(template: FighterTemplate): string[] {
     );
     expect(
       MOVEMENT_MOVE_IDS.includes(id) === movement,
-      `${id}: only the dashes may (and must) be of kind "movement"`,
+      `${id}: only the dashes and the Rewind may (and must) be of kind "movement"`,
     );
     expect(
       THROW_MOVE_IDS.includes(id) === thrown,
@@ -210,6 +217,7 @@ export function validateTemplate(template: FighterTemplate): string[] {
     }
   }
   for (const problem of comboProblems(template)) expect(false, problem);
+  for (const problem of boostProblems(template)) expect(false, problem);
   return errors;
 }
 

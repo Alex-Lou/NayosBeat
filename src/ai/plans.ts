@@ -2,15 +2,24 @@ import type { FighterTemplate } from '../core/config';
 import { toPx } from '../core/constants';
 import { DIRECTIONS, Input, type InputBits } from '../core/input';
 import type { MoveId } from '../core/move-data';
+import { superGauge } from '../core/fighter/move';
 import { moveOf } from '../core/moves';
-import { FLAG_MOVE_HIT, type FighterAction, type FighterState } from '../core/state';
+import { BOOST_BAR, BOOST_MAX } from '../core/rules';
+import {
+  FLAG_MOVE_HIT,
+  FLAG_SPENT_CANCEL,
+  type FighterAction,
+  type FighterState,
+} from '../core/state';
 import type { CpuLevel } from './profiles';
 import { nextRandom } from './rng';
 
 /**
  * The CPU's strings and juggles (docs/combos-v3.md §6.4), as data: after a move of its own that
  * connected, the steps of a route of §3.1 (Nayo) or §4 (Riff), drawn at random by the weight of
- * its level. Easy plays the beginner's routes alone, normal the strings, hard the juggles too.
+ * its level. Easy plays the beginner's routes alone, normal the strings and the Remixes, hard
+ * the juggles, the Rewind and the super too: a route that spends the gauge is drawn only when
+ * the gauge pays for it, so the CPU never presses BOOST (nor DASH for the Rewind) for nothing.
  * Once the move before has connected, each step is pressed again every other tick, the way a
  * player keeps a combo going, until its move comes out: a cancel at once, a link on the first
  * free tick. A route that drops is given up after the one blow that missed. The CPU reads only
@@ -27,6 +36,11 @@ export interface PlanCondition {
   readonly crouching?: true;
   /** Only this close (pixels between the two). */
   readonly maxDistancePx?: number;
+  /**
+   * Only with this much gauge (`superGauge`: never a second super in one sequence); a route
+   * with a DASH step (the Rewind) only while the sequence has not spent it.
+   */
+  readonly minBoost?: number;
 }
 
 export interface Plan {
@@ -39,12 +53,16 @@ export interface Plan {
   readonly weight: Readonly<Record<CpuLevel, number>>;
 }
 
-const { Light: L, Heavy: H, Special: S, Down: D, Left: B, Right: F } = Input;
+const { Light: L, Heavy: H, Special: S, Boost: X, Dash: R, Down: D, Left: B, Right: F } = Input;
 
 const EASY = { easy: 3, normal: 1, hard: 1 } as const;
 const STRING = { easy: 0, normal: 2, hard: 2 } as const;
 const MIX = { easy: 0, normal: 1, hard: 2 } as const;
 const JUGGLE = { easy: 0, normal: 0, hard: 3 } as const;
+/** A Remix to end a string: normal and hard. */
+const REMIX = { easy: 0, normal: 2, hard: 2 } as const;
+/** The Rewind, the super, a Remix that juggles: hard only. */
+const SPEND = { easy: 0, normal: 0, hard: 3 } as const;
 const HIT = { hit: true } as const;
 const BLOCKED = { hit: false } as const;
 /**
@@ -53,6 +71,9 @@ const BLOCKED = { hit: false } as const;
  * route was measured to play out whole on the engine (tests/ai/plan-routes.test.ts).
  */
 const within = (maxDistancePx: number) => ({ hit: true, maxDistancePx }) as const;
+/** A hit from this close at most, with this much gauge to spend. */
+const spending = (maxDistancePx: number, minBoost: number) =>
+  ({ hit: true, maxDistancePx, minBoost }) as const;
 
 /** Nayo's plans: the routes of combos-v3 §3.1 that need no gauge, from the move that connected. */
 const NAYO_PLANS: readonly Plan[] = [
@@ -112,6 +133,31 @@ const NAYO_PLANS: readonly Plan[] = [
   { after: 'backHeavy', when: within(39), steps: [D | S], weight: EASY },
   { after: 'backHeavy', when: HIT, steps: [L, L, L], weight: STRING },
   { after: 'backHeavy', when: HIT, steps: [L, L, F | H, L, L, L], weight: JUGGLE },
+  // With the gauge (combos-v3 §3.1). I9: the base combo ends on the Vinyle platine; the Pied
+  // fendu platine sends up (normal stops there); A8, A9: the Uppercut catches the body coming
+  // down; A7: the Rewind starts the phrase over; E3: the Mégabasse to end the base combo.
+  { after: 'standLight', when: spending(52, BOOST_BAR), steps: [L, H, H, X], weight: REMIX },
+  { after: 'standHeavy', when: spending(60, BOOST_BAR), steps: [H, F | X], weight: REMIX },
+  {
+    after: 'standHeavy',
+    when: spending(55, BOOST_BAR),
+    steps: [H, F | X, L, D | S],
+    weight: SPEND,
+  },
+  {
+    after: 'standLight',
+    when: spending(48, BOOST_BAR),
+    steps: [L, H, H, F | X, L, D | S],
+    weight: SPEND,
+  },
+  {
+    after: 'standLight',
+    when: spending(46, BOOST_BAR),
+    steps: [L, H, R, L, L, H, H, F | S],
+    weight: SPEND,
+  },
+  { after: 'standLight', when: spending(52, BOOST_MAX), steps: [L, H, H, B | X], weight: SPEND },
+  { after: 'standHeavy', when: spending(60, BOOST_MAX), steps: [H, B | X], weight: SPEND },
 ];
 
 /** Riff's plans: her routes of combos-v3 §4 that need no gauge. */
@@ -144,6 +190,18 @@ const RIFF_PLANS: readonly Plan[] = [
   { after: 'backHeavy', when: HIT, steps: [L, L, L], weight: STRING },
   // The Vrille at the end must still reach the body the phrase carried away.
   { after: 'backHeavy', when: within(32), steps: [L, L, L, L, L, D | S], weight: JUGGLE },
+  // With the gauge (combos-v3 §4): the Glissade or the Genou à fond to end the base combo, the
+  // Pogo that starts the phrase over, the Slam.
+  { after: 'standLight', when: spending(44, BOOST_BAR), steps: [L, H, H, X], weight: REMIX },
+  { after: 'standLight', when: spending(41, BOOST_BAR), steps: [L, H, H, D | X], weight: REMIX },
+  {
+    after: 'standLight',
+    when: spending(41, BOOST_BAR),
+    steps: [L, H, R, L, L, H, H, D | S],
+    weight: SPEND,
+  },
+  { after: 'standLight', when: spending(41, BOOST_MAX), steps: [L, H, H, B | X], weight: SPEND },
+  { after: 'standHeavy', when: spending(47, BOOST_MAX), steps: [H, B | X], weight: SPEND },
 ];
 
 /** Each fighter's plans, by its name. */
@@ -155,6 +213,9 @@ export const PLANS: Readonly<Record<string, readonly Plan[]>> = {
 /** What the CPU knows of its move, once it has connected and the game moves again. */
 interface Connected {
   readonly move: MoveId;
+  /** The gauge it can spend (`superGauge`), and whether its sequence still has the Rewind. */
+  readonly boost: number;
+  readonly rewind: boolean;
   /** It hit (`FLAG_MOVE_HIT`), or was blocked. */
   readonly hit: boolean;
   /** It caught the opponent attacking or recovering: the stun it gave is longer than its own. */
@@ -177,7 +238,11 @@ export function planFor(
   seed: number,
 ): { steps: readonly InputBits[]; seed: number } {
   const [value, next] = nextRandom(seed);
-  const applying = plansFor(me, opponent, template);
+  // Hard keeps its bars for its super once it has two: it spends no single one then.
+  const saving = level === 'hard' && savesForSuper(superGauge(me));
+  const applying = plansFor(me, opponent, template).filter(
+    (plan) => !(saving && plan.when.minBoost === BOOST_BAR),
+  );
   let left = value * applying.reduce((total, plan) => total + plan.weight[level], 0);
   for (const plan of applying) {
     left -= plan.weight[level];
@@ -185,6 +250,14 @@ export function planFor(
   }
   const special = me.move && moveOf(template, me.move).cancelInto?.includes('special');
   return { steps: special ? [S] : [], seed: next };
+}
+
+/**
+ * Whether a hard CPU with `boost` keeps it for its super (docs/combos-v3.md §6.4): from two bars
+ * on, it spends no single one, and lets the super go at three.
+ */
+export function savesForSuper(boost: number): boolean {
+  return boost >= 2 * BOOST_BAR && boost < BOOST_MAX;
 }
 
 /** The plans of `template` that apply to the move `me` plays, which has just connected. */
@@ -196,6 +269,8 @@ export function plansFor(
   if (!me.move) return [];
   const connected: Connected = {
     move: me.move,
+    boost: superGauge(me),
+    rewind: (me.flags & FLAG_SPENT_CANCEL) === 0,
     hit: (me.flags & FLAG_MOVE_HIT) !== 0,
     counter: opponent.stunTotal > moveOf(template, me.move).hitstun,
     crouching: opponent.crouching,
@@ -204,13 +279,15 @@ export function plansFor(
   return (PLANS[template.name] ?? []).filter((plan) => applies(plan, connected));
 }
 
-function applies({ after, when }: Plan, connected: Connected): boolean {
+function applies({ after, when, steps }: Plan, connected: Connected): boolean {
   return (
     after === connected.move &&
     when.hit === connected.hit &&
     (!when.counter || connected.counter) &&
     (!when.crouching || connected.crouching) &&
-    (when.maxDistancePx === undefined || connected.distancePx <= when.maxDistancePx)
+    (when.maxDistancePx === undefined || connected.distancePx <= when.maxDistancePx) &&
+    connected.boost >= (when.minBoost ?? 0) &&
+    (connected.rewind || !steps.some((step) => (step & Input.Dash) !== 0))
   );
 }
 
@@ -266,7 +343,8 @@ export function playString(
   const came = out && (me.move !== play.move || play.frame > 0);
   const steps = came ? play.steps.slice(1) : play.steps;
   const pressed = came ? 0 : play.pressed;
-  const connected = !came && (play.connected || me.moveConnected);
+  // The Rewind cancels without contact: the next step follows it at once.
+  const connected = !came && (play.connected || me.moveConnected || me.move === 'boostCancel');
   const [step] = steps;
   if (step === undefined || pressed >= STEP_PATIENCE) return DROPPED;
   const attacking = me.action === 'attack';

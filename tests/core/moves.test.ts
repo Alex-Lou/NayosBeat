@@ -122,6 +122,52 @@ describe('command → move (§2.8)', () => {
   });
 });
 
+/**
+ * BOOST by direction (written facing right) and gauge (docs/combos-v3.md §1.1): the move of
+ * the table, or nothing; never another move than the one asked for.
+ */
+const BOOST_TABLE: readonly (readonly [string, InputBits, Motion | null, MoveId | null])[] = [
+  ['neutral', 0, null, 'specialBoost'],
+  ['→', Right, null, 'specialForwardBoost'],
+  ['↗', Up | Right, null, 'specialForwardBoost'],
+  ['↓', Down, null, 'specialAntiAirBoost'],
+  ['↘', Down | Right, null, 'specialAntiAirBoost'],
+  ['↙', Down | Left, null, 'specialAntiAirBoost'],
+  ['←', Left, null, 'super'],
+  ['↖', Up | Left, null, 'super'],
+  ['↓↘→', Right, 'quarterCircleForward', 'specialBoost'],
+  ['→↓↘', Down | Right, 'dragonPunch', 'specialAntiAirBoost'],
+];
+
+describe('BOOST → move (combos-v3 §1.1)', () => {
+  for (const [label, held, motion, move] of BOOST_TABLE) {
+    for (const boost of [0, 999, 1000, 2999, 3000]) {
+      const cost = move === 'super' ? 3000 : 1000;
+      const expected = boost >= cost ? move : null;
+      it(`${label} with ${boost}: ${String(expected)}`, () => {
+        for (const side of [1, -1] as const) {
+          const input = facing(held, side);
+          for (const template of [NAYO, RIFF]) {
+            expect(groundMove('boost', input, motion, side, template.moves, boost)).toBe(expected);
+          }
+          expect(groundMove('boost', input, motion, side, BASIC.moves, boost)).toBeNull();
+        }
+      });
+    }
+  }
+
+  it('never a second disc: the Vinyle platine waits for the Vinyle to be gone', () => {
+    expect(groundMove('boost', 0, null, 1, NAYO.moves, 1000, true)).toBeNull();
+    expect(groundMove('boost', Right, null, 1, NAYO.moves, 1000, true)).toBe('specialForwardBoost');
+    // Riff throws nothing: her Glissade à fond does not care.
+    expect(groundMove('boost', 0, null, 1, RIFF.moves, 1000, true)).toBe('specialBoost');
+  });
+
+  it('in the air, nothing', () => {
+    expect(airMove('boost')).toBeNull();
+  });
+});
+
 describe('optional moves', () => {
   it('may be left out: a fighter with the core moves alone is valid', () => {
     expect(validateTemplate(BASIC)).toEqual([]);

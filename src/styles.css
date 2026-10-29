@@ -127,6 +127,39 @@ body {
   color: #6aa8ff;
   border-color: rgba(106, 168, 255, 0.6);
 }
+/*
+ * BOOST (docs/combos-v3.md §1.8.5): its ring is the gauge under the thumb, one arc per bar, set
+ * from src/input/touch-controls.ts: the full ones platine white, the one filling in the
+ * fighter's energy color; greyed under one bar, lit when the super is ready.
+ */
+.touch-boost {
+  --boost-bars: 0;
+  --boost-part: 0;
+  --boost-energy: #30e8ff;
+  color: #f2f6ff;
+  border-color: rgba(201, 214, 232, 0.6);
+}
+.touch-boost::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  background:
+    repeating-conic-gradient(transparent 0deg 116deg, rgba(0, 0, 0, 0.75) 116deg 120deg),
+    conic-gradient(
+      #ffffff 0deg calc(var(--boost-bars) * 120deg),
+      var(--boost-energy) 0deg calc((var(--boost-bars) + var(--boost-part)) * 120deg),
+      rgba(255, 255, 255, 0.12) 0deg
+    );
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3px));
+}
+.touch-boost.empty {
+  opacity: 0.45;
+}
+.touch-boost.full {
+  box-shadow: 0 0 10px 2px rgba(255, 255, 255, 0.6);
+}
 /* Keyboard and gamepad players pause with Escape / Start; the button is for touch. */
 .pause-button {
   display: none;

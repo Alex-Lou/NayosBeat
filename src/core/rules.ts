@@ -88,6 +88,26 @@ export const COMBO_LIMIT_LIFT = px(3);
 /** The longest path of strings from a move (docs/combos-v3.md §1.4): a string always ends. */
 export const MAX_BRANCH_DEPTH = 5;
 
+/**
+ * The Boost gauge (docs/combos-v3.md §1.8): from 0 to BOOST_MAX, three bars of BOOST_BAR, empty
+ * at the start of a match and kept from one round to the next. A blow that hits gives its
+ * attacker BOOST_GAIN_HIT_NUM / BOOST_GAIN_HIT_DEN of the health it took, on the first
+ * BOOST_GAIN_HITS hits of a combo only, and the one hit BOOST_GAIN_TAKEN_PERCENT of what it
+ * lost; a blow blocked gives BOOST_GAIN_BLOCKED to its attacker and BOOST_GAIN_BLOCKING to the
+ * one who blocked; a plain special started out of a combo gives BOOST_GAIN_SPECIAL (zoning
+ * builds the gauge). A Boost move gives its user nothing. Validation proves that a combo never
+ * gives a whole bar (§1.8.2): no combo pays for its own Rewind or super.
+ */
+export const BOOST_BAR = 1000;
+export const BOOST_MAX = 3 * BOOST_BAR;
+export const BOOST_GAIN_HIT_NUM = 3;
+export const BOOST_GAIN_HIT_DEN = 2;
+export const BOOST_GAIN_HITS = 6;
+export const BOOST_GAIN_TAKEN_PERCENT = 50;
+export const BOOST_GAIN_BLOCKED = 20;
+export const BOOST_GAIN_BLOCKING = 10;
+export const BOOST_GAIN_SPECIAL = 20;
+
 /** Ticks of input history kept to recognize motions. */
 export const DIRECTION_HISTORY_FRAMES = 16;
 

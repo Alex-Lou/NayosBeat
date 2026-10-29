@@ -1,5 +1,5 @@
 import type Phaser from 'phaser';
-import { cellOf, playedSheets, type FighterArt } from '../art/types';
+import { cellOf, playedEffects, playedSheets, type FighterArt } from '../art/types';
 
 /** A fighter's strips: its body, or the front effects drawn over both fighters. */
 export type Layer = 'body' | 'fx';
@@ -13,9 +13,12 @@ export function textureKey(art: FighterArt, sheet: string, layer: Layer = 'body'
   return `${art.key}/${stripName(sheet, layer)}`;
 }
 
-/** Image URL of each strip of one layer that a clip plays, by sheet (the others never show). */
+/**
+ * Image URL of each strip of one layer that a clip plays, by sheet, or by the name a clip gives
+ * its effects (the others never show).
+ */
 export function playedUrls(art: FighterArt, layer: Layer): [sheet: string, url: string][] {
-  const played = playedSheets(art);
+  const played = layer === 'fx' ? playedEffects(art) : playedSheets(art);
   const urls = layer === 'fx' ? (art.fx ?? {}) : art.urls;
   return Object.entries(urls).filter(([sheet]) => played.has(sheet));
 }

@@ -137,6 +137,18 @@ describe('the points (§1.5)', () => {
   });
 });
 
+describe("the super's blows (§1.5, combos-v3 §1.8.3)", () => {
+  it('cost no point: they hit a body at 0 still in the combo, never one slammed down or past the limit', () => {
+    const spent = launched({ juggle: 0, comboCount: 5 });
+    expect(canBeHit(spent, RIFF, false, 0)).toBe(true);
+    expect(canBeHit(spent, RIFF, false, 1)).toBe(false);
+    // Out of a combo, nothing for free.
+    expect(canBeHit({ ...spent, comboCount: 0 }, RIFF, false, 0)).toBe(false);
+    expect(canBeHit({ ...spent, flags: FLAG_BOUNCE }, RIFF, false, 0)).toBe(false);
+    expect(canBeHit({ ...spent, flags: FLAG_LIMIT }, RIFF, false, 0)).toBe(false);
+  });
+});
+
 describe('the Rebond and the Vrille (§1.5)', () => {
   it("Nayo's Marteau slams a juggled body down, untouchable as it falls", () => {
     const slammed = applyHit(launched(), FROM, moveOf(NAYO, 'chainHigh'));

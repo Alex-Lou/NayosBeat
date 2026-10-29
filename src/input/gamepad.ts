@@ -14,6 +14,7 @@ export const PadButton = {
   North: 3,
   LeftBumper: 4,
   RightBumper: 5,
+  RightTrigger: 7,
   Start: 9,
   DpadUp: 12,
   DpadDown: 13,
@@ -75,6 +76,8 @@ export function buttonBits(pad: GamepadSnapshot): InputBits {
   if (isPressed(pad, PadButton.East)) bits |= Input.Special;
   if (isPressed(pad, PadButton.RightBumper)) bits |= Input.Grab;
   if (isPressed(pad, PadButton.LeftBumper)) bits |= Input.Dash;
+  // BOOST on RT / R2 (docs/combos-v3.md §1.8.5).
+  if (isPressed(pad, PadButton.RightTrigger)) bits |= Input.Boost;
   return bits;
 }
 

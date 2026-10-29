@@ -1071,3 +1071,27 @@ Chaque couche ajoute des champs d'état hachés : `phrase`, `phraseTwice` et `fl
 | Banc de vitesse | `./run.sh perf` |
 
 - **Ce que le prototype ne couvre pas** : le HUD, la bague tactile et les vraies entrées ; la planche de la Mégabasse (la boîte suit les anneaux à dessiner) ; le DROP (le Crossfader n'existe pas encore) ; l'IA qui dépense (les CPU ne pressent jamais BOOST, la jauge mesurée est celle qu'ils construisent). Ces chiffres seront confirmés dans le dépôt, couche par couche, par les tests du §6.2.
+
+## Annexe B : la couche 3 (le Boost) dans le dépôt
+
+**Confirmé à l'identique** par les tests du dépôt (§6.2) :
+- les routes D6, I9, A7, A8, A9 et E3 à E8 de Nayo, et les quatre routes de Riff avec jauge, au point de dégâts près (`nayo-combos.test.ts`, `riff-combos.test.ts`) ;
+- −16 pour la Mégabasse gardée, −15 pour le Slam ; le flash gèle le chronomètre ; un saut, un backdash ou le Genou à fond appuyés pendant le flash prennent la Mégabasse (`boost.test.ts`) ;
+- les gains, le plafond, le report entre rounds, le Rewind et la super une fois par séquence, Rewind + super hors de portée (2127 de jauge avant le ← + BOOST final : il ne sort pas) ;
+- les 28 replays d'avant gardent leur comportement tic par tic : seul leur hachage change, avec le champ `boost`. `boost.json` est neuf.
+- Jauge du CPU qui dépense (difficile contre difficile, 319 rounds en alternant les côtés) : Nayo 1,49 barre construite par round, Riff 1,26, soit 54 % et 46 % ; chaque Remix, le Rewind, le Pogo et les deux supers sortent, et le CPU ne presse jamais BOOST sans pouvoir payer (`plans.test.ts`).
+
+**Écarts, choisis dans le dépôt** :
+1. Le Pogo a le même flash que le Rewind, `{ frame: 0, ticks: 6 }` (le §1.9 ne nommait que le Rewind) : les deux Boost cancels se voient de la même façon.
+2. En entraînement, la jauge est « pleine » par défaut ; l'option tourne entre pleine, infinie et normale (menu du mannequin).
+3. Le jeu n'a pas encore d'option « Flashs réduits » : le clignotement de la jauge pleine (2 Hz, sous la limite de D21) et les rémanences n'ont donc pas de variante réduite. Elle viendra avec l'option.
+4. Les tampons sont lettrés dans la police BD, comme « CONTRE ! » et « PUNITION ! », au lieu d'images générées : « REMIX ! », et le nom du coup pour le Rewind, le Pogo et les supers.
+5. Le disque inversé du Rewind n'est pas dessiné : ses rémanences blanches et son flash le marquent.
+6. **Recherche en faisceau.** Celle du prototype jetait toute branche qui ne gagnait pas de coup, donc toutes celles du Rewind : ses maxima avec jauge ne le comptaient jamais. Celle du dépôt joue le Rewind (il s'annule aussitôt par la commande suivante). Elle trouve, sur Riff (900 PV) :
+   - sans jauge : 369 au plus (41,0 %), depuis le Crochet en CONTRE ;
+   - avec 1 barre : **437 (48,6 %)**, H en CONTRE, L, L, H, H, DASH (Rewind), L, L, ←H, H, ←H, ↓S, 11 coups ;
+   - avec 3 barres : 409 (45,4 %), H en CONTRE, L, ←L, L, ←H, →L, L, →H, ↓L, ←H, ↓S, ←BOOST, 12 coups (la limite coupe les frappes de la super) ;
+   - jauge remplie à chaque tic : 426 (47,3 %) ;
+   - Riff, sur Nayo : 405 au plus (40,5 %).
+   Le test garde donc 45 % sans jauge et la moitié de la vie avec (49 % au plus). Aucun infini : 12 coups au plus partout, aucun gain de combo ne paie une barre.
+

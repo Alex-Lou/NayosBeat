@@ -51,8 +51,8 @@ export interface Fighter {
   readonly body: Body;
   /** Poses of a strip, one per frame; undefined for a strip of effects only (a projectile). */
   readonly poses: (sheet: string) => readonly Pose[] | undefined;
-  /** Effects of a strip drawn without a body (a projectile), one per frame. */
-  readonly effectsOnly?: (sheet: string) => readonly Effect[] | undefined;
+  /** Effects of a strip drawn without a body (a projectile), those of each frame. */
+  readonly effectsOnly?: (sheet: string) => readonly (readonly Effect[])[] | undefined;
   /** Ticks of every frame of a strip, and whether it loops. */
   readonly timing: (sheet: string) => {
     readonly ticks: readonly number[];
@@ -63,6 +63,11 @@ export interface Fighter {
   /** Draws the fighter in the cell whose left edge is `cellX`. */
   readonly draw: (canvas: PixelCanvas, skeleton: Skeleton, cellX: number, motion: Motion) => void;
   readonly fx: EffectStyle;
+  /**
+   * The effects its clips name (`Clip.fx`, a Remix's), by that name: the strip whose front
+   * effects they redraw in platine.
+   */
+  readonly platine: Readonly<Record<string, string>>;
   /**
    * The colors of every palette slot in `colorway`; given the pixels of an image, only the
    * slots it may need (see Palette.paletteOf in palette.ts: the Boost's platine is left out of

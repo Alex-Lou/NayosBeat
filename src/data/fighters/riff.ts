@@ -13,15 +13,16 @@ import {
   strike,
   throwMove,
 } from './shared';
+import { riffBoost } from './riff-boost';
 import { RIFF_STRINGS } from './riff-strings';
 
 /**
  * Riff, the rushdown, « la punk qui breake et cogne » (docs/combat-v2.md §5.3, §5.5, §10.2): the
  * quickest normals, a slide under projectiles, two overheads, the only blow behind her in the
  * air; less health, a short reach, no reversal on the ground. Her blows spin and kick where
- * Nayo's go straight.
+ * Nayo's go straight. Her Boost moves are written from her plain specials (`RIFF`, below).
  */
-export const RIFF: FighterTemplate = {
+const RIFF_PLAIN: FighterTemplate = {
   name: 'Riff',
   maxHealth: 900,
   walkForwardSpeed: px(1.9),
@@ -247,4 +248,10 @@ export const RIFF: FighterTemplate = {
       hurtboxes: [{ frames: { from: 5, to: 9 }, boxes: [box(-21, 12, 35, 63)] }],
     }),
   },
+};
+
+/** Riff with her Boost moves (docs/combos-v3.md §4): the Remixes « à fond », Pogo, Slam. */
+export const RIFF: FighterTemplate = {
+  ...RIFF_PLAIN,
+  moves: { ...RIFF_PLAIN.moves, ...riffBoost(RIFF_PLAIN.moves) },
 };

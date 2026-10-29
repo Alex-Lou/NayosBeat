@@ -141,7 +141,10 @@ export function canBeHit(
   );
 }
 
-/** Returns the move that hits the defender on this tick, if any. */
+/**
+ * Returns the move that hits the defender on this tick, if any: for a multi-hit move, the blow
+ * of the pulse it has reached (`landingData`), with the move's hitbox.
+ */
 export function findHit(
   attacker: FighterState,
   attackerTemplate: FighterTemplate,
@@ -149,13 +152,22 @@ export function findHit(
   defenderTemplate: FighterTemplate,
 ): MoveData | null {
   if (attacker.moveConnected) return null;
-  const move = activeMove(attacker, attackerTemplate);
-  if (!move?.hitbox) return null;
+  const active = activeMove(attacker, attackerTemplate);
+  if (!active?.hitbox) return null;
+  const move = landingData(active, attacker.actionFrame);
   if (!canBeHit(defender, defenderTemplate, attacker.y > 0, move.juggleCost)) return null;
   if (move.kind === 'grab' && !canBeGrabbed(defender, defenderTemplate)) return null;
 
   const { x, y, facing } = attacker;
-  return touchedHurtbox(move.hitbox, x, y, facing, defender, defenderTemplate) ? move : null;
+  return touchedHurtbox(active.hitbox, x, y, facing, defender, defenderTemplate) ? move : null;
+}
+
+/** The blow a move lands on `actionFrame`: its last pulse reached, or the move itself. */
+export function landingData(move: MoveData, actionFrame: number): MoveData {
+  if (!move.pulses) return move;
+  let landing = move;
+  for (const pulse of move.pulses) if (actionFrame >= pulse.frame) landing = pulse.hit;
+  return landing;
 }
 
 /**

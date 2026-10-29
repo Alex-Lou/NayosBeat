@@ -107,10 +107,13 @@ describe.each(DRAWN_FIGHTERS)("$name's hurtboxes", (fighter) => {
 
 /**
  * Gaps waiting on the owner (docs/combat-v2.md §18.3): Nayo's Pied fendu is drawn flying, 20 px
- * off the floor over ticks 6-14, while the spec gives it neither a lift nor a box of its own. A
- * box on the drawing would carry it over the low blows: a change to Nayo's game, not a fix.
+ * off the floor over ticks 6-14, while the spec gives it neither a lift nor a box of its own (its
+ * Remix plays the same strip). A box on the drawing would carry it over the low blows: a change
+ * to Nayo's game, not a fix.
  */
-const PENDING: Readonly<Record<string, readonly MoveId[]>> = { Nayo: ['specialForward'] };
+const PENDING: Readonly<Record<string, readonly MoveId[]>> = {
+  Nayo: ['specialForward', 'specialForwardBoost'],
+};
 
 /** Calls `visit` on each ground tick of `id`, with the frame shown and the boxes in force. */
 function forGroundTicks(
@@ -146,7 +149,7 @@ function strayTicks(fighter: DrawnFighter, id: MoveId): string[] {
  * Moves whose body goes down under its posture's box (docs/combos-v3.md §2.4): their own boxes
  * follow the drawing's top as well, to 1.5 px, or a blow would hit the air over the head.
  */
-const DESCENDING: Readonly<Record<string, readonly MoveId[]>> = { Nayo: ['chainHeavy'] };
+const DESCENDING: Readonly<Record<string, readonly MoveId[]>> = { Nayo: ['chainHeavy', 'super'] };
 
 /** The ground ticks of `id` whose boxes' top is off the drawing's, with both heights. */
 function topGaps(fighter: DrawnFighter, id: MoveId): string[] {

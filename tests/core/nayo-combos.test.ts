@@ -4,19 +4,19 @@ import { Input, type InputBits } from '../../src/core/input';
 import { NAYO } from '../../src/data/fighters/nayo';
 import { RIFF } from '../../src/data/fighters/riff';
 import { TRAINING_STAGE } from '../../src/data/stages';
-import { floored, playCombo, unbroken } from './combo-helpers';
+import { floored, landsFloored, playCombo, unbroken } from './combo-helpers';
 import { step } from '../../src/core/step';
 import { facingOff } from './helpers';
 
 /**
- * Nayo's routes of docs/combos-v3.md §3.1 that need no gauge, each from its distance, played on
- * the real engine as a player keeps them going (`playCombo`), to the damage of every blow on Riff
- * (900 health): the strings, the phrase, the juggle with points, the Rebond and the folding
- * CONTRE of the Crochet, as the prototype measured them. A link waits for Nayo to recover: the
- * next step is pressed again until it comes out.
+ * Nayo's routes of docs/combos-v3.md §3.1, each from its distance, played on the real engine as a
+ * player keeps them going (`playCombo`), to the damage of every blow on Riff (900 health): the
+ * strings, the phrase, the juggle with points, the Rebond and the folding CONTRE of the Crochet,
+ * then the routes that spend the gauge, as the prototype measured them. A link waits for Nayo to
+ * recover: the next step is pressed again until it comes out.
  */
 
-const { Light: L, Heavy: H, Special: S, Down: D, Left: B, Right: F, Up: U } = Input;
+const { Light: L, Heavy: H, Special: S, Down: D, Left: B, Right: F, Up: U, Dash, Boost: X } = Input;
 
 const NAYO_VS_RIFF: MatchConfig = { stage: TRAINING_STAGE, fighters: [NAYO, RIFF] };
 
@@ -213,4 +213,117 @@ describe("Nayo's routes without gauge (combos-v3 §3.1)", () => {
     expect(result.hits.map((hit) => hit.damage)).toEqual([65, 27, 32, 77]);
     expect(unbroken(result)).toBe(true);
   });
+});
+
+/** A route that spends: the gauge it starts with, its bars exactly. */
+interface BoostRoute extends Route {
+  readonly boost: number;
+}
+
+/**
+ * Nayo's routes of docs/combos-v3.md §3.1 that spend the gauge, from the bars they cost: the
+ * Remixes, the Rewind that starts the phrase over, the Mégabasse alone, at the end of a string,
+ * of a juggle, of a special.
+ */
+const BOOST_ROUTES: readonly BoostRoute[] = [
+  {
+    id: 'D6',
+    notation: '←BOOST, the Mégabasse alone',
+    distance: 50,
+    steps: [B | X],
+    damages: [80, 72, 112],
+    boost: 3000,
+  },
+  {
+    id: 'I9',
+    notation: 'L, L, H, H → BOOST (Vinyle platine)',
+    distance: 40,
+    steps: [L, L, H, H, X],
+    damages: [30, 36, 64, 42, 48],
+    boost: 1000,
+  },
+  {
+    id: 'A7',
+    notation: 'L, L, H → DASH (Rewind) → L, L, H, H → →S',
+    distance: 40,
+    steps: [L, L, H, Dash, L, L, H, H, F | S],
+    damages: [30, 36, 64, 21, 24, 40, 30, 37],
+    boost: 1000,
+  },
+  {
+    id: 'A8',
+    notation: 'H, H → →BOOST (Pied fendu platine) ⇢ L → ↓S',
+    distance: 55,
+    steps: [H, H, F | X, L, D | S],
+    damages: [80, 54, 68, 21, 66],
+    boost: 1000,
+  },
+  {
+    id: 'A9',
+    notation: 'L, L, H, H → →BOOST ⇢ L → ↓S',
+    distance: 48,
+    steps: [L, L, H, H, F | X, L, D | S],
+    damages: [30, 36, 64, 42, 51, 15, 55],
+    boost: 1000,
+  },
+  {
+    id: 'E3',
+    notation: 'L, L, H, H → ←BOOST',
+    distance: 40,
+    steps: [L, L, H, H, B | X],
+    damages: [30, 36, 64, 42, 48, 40, 70],
+    boost: 3000,
+  },
+  {
+    id: 'E4',
+    notation: 'les Quatre temps, fin ⇢ L, L → ←BOOST',
+    distance: 40,
+    steps: [L, L, B | H, L, L, F | H, L, L, B | X],
+    damages: [30, 36, 48, 21, 24, 30, 15, 20, 40, 40, 70],
+    boost: 3000,
+  },
+  {
+    id: 'E5',
+    notation: '←H ⇢ L, L → ↓S → ←BOOST',
+    distance: 30,
+    steps: [B | H, L, L, D | S, B | X],
+    damages: [65, 27, 32, 77, 48, 40, 70],
+    boost: 3000,
+  },
+  {
+    id: 'E6',
+    notation: '↓S → ←BOOST',
+    distance: 30,
+    steps: [D | S, B | X],
+    damages: [110, 72, 64, 98],
+    boost: 3000,
+  },
+  {
+    id: 'E7',
+    notation: 'L, L, H → DASH → L, L, ←H ⇢ L, L, →H ⇢ L, L, L: twelve hits, the limit',
+    distance: 40,
+    steps: [L, L, H, Dash, L, L, B | H, L, L, F | H, L, L, L],
+    damages: [30, 36, 64, 21, 24, 30, 15, 20, 30, 15, 20, 25],
+    boost: 1000,
+  },
+  {
+    id: 'E8',
+    notation: 'L, L, H → DASH → L, L, H, H → →BOOST ⇢ L → ↓S',
+    distance: 40,
+    steps: [L, L, H, Dash, L, L, H, H, F | X, L, D | S],
+    damages: [30, 36, 64, 21, 24, 40, 30, 42, 15, 55],
+    boost: 2000,
+  },
+];
+
+describe("Nayo's routes with the gauge (combos-v3 §3.1)", () => {
+  for (const { id, notation, distance, steps, damages, boost } of BOOST_ROUTES) {
+    it(`${id}, ${notation}: ${total(damages)} from ${distance} px, ${boost / 1000} bar(s)`, () => {
+      const start = facingOff(distance, NAYO_VS_RIFF, [{ boost }, {}]);
+      const result = playCombo(start, NAYO_VS_RIFF, steps);
+      expect(result.hits.map((hit) => hit.damage)).toEqual(damages);
+      expect(unbroken(result)).toBe(true);
+      expect(landsFloored(result, NAYO_VS_RIFF)).toBe(true);
+    });
+  }
 });

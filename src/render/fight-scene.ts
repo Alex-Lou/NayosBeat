@@ -63,6 +63,8 @@ interface FighterDisplay {
 /** Everything that exists only while the scene runs, created in `create`, freed on shutdown. */
 interface Runtime {
   readonly inputs: PlayerInputs;
+  /** Player 1's touch controls, on a touch device: the BOOST button wears its gauge. */
+  readonly touch: TouchControls | undefined;
   readonly pauseInput: PauseInput;
   readonly fighterViews: readonly [FighterDisplay, FighterDisplay];
   readonly projectileView: ProjectileView;
@@ -169,6 +171,7 @@ export class FightScene extends Phaser.Scene {
 
     this.runtime = {
       inputs: new PlayerInputs(window, touch, connectedGamepads()),
+      touch,
       pauseInput: new PauseInput(document.body),
       fighterViews: [
         this.fighterDisplay(0, COLORS.player1),
@@ -183,7 +186,7 @@ export class FightScene extends Phaser.Scene {
         this.styles,
         touch ? vibrate : undefined,
       ),
-      hud: new Hud(this, this.config),
+      hud: new Hud(this, this.config, [this.styles[0].energy, this.styles[1].energy]),
       holdRing: new HoldRing(this, GROUND_Y, [this.styles[0].energy, this.styles[1].energy]),
       caption: this.config.training ? new MoveCaption(this, this.config, GROUND_Y) : undefined,
       holdPrompt: this.config.training ? new HoldPrompt(this, this.config, GROUND_Y) : undefined,
@@ -300,6 +303,7 @@ export class FightScene extends Phaser.Scene {
     viewB.update(this.state);
     runtime.projectileView.update(this.state.projectiles, this.state.frame);
     runtime.hud.update(this.state);
+    runtime.touch?.showBoost(a.boost);
     runtime.holdRing.update(this.state);
     runtime.caption?.update(this.state);
     runtime.holdPrompt?.update(this.state);

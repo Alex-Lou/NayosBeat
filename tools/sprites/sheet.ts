@@ -4,7 +4,7 @@ import { STILL, type Fighter, type Motion, type Spring } from './fighter.ts';
 import { NAYO } from './nayo/index.ts';
 import type { PosedSheet } from './nayo/poses/index.ts';
 import { PixelCanvas, type Point } from './raster.ts';
-import { solve, type Pose } from './skeleton.ts';
+import { solve, type Effect, type Pose } from './skeleton.ts';
 import { drawEffect, inkAt } from './vfx.ts';
 
 /**
@@ -17,8 +17,9 @@ export function drawStrip(fighter: Fighter, sheet: string): PixelCanvas {
   const effects = fighter.effectsOnly?.(sheet);
   if (effects) {
     expectFrames(sheet, effects.length, frames);
-    effects.forEach((effect, frame) => {
-      drawEffect(inkAt(canvas, frame * CELL_SIZE, fighter.fx), effect);
+    effects.forEach((drawn, frame) => {
+      const ink = inkAt(canvas, frame * CELL_SIZE, fighter.fx);
+      for (const effect of drawn) drawEffect(ink, effect);
     });
   } else {
     const poses = posesOf(fighter, sheet);
@@ -34,13 +35,17 @@ export function drawStrip(fighter: Fighter, sheet: string): PixelCanvas {
 
 /**
  * The front effects of a strip (all but the motion trails, which are drawn behind the body),
- * or undefined when it has none.
+ * or undefined when it has none; `recolor` changes each one first (`toPlatine`).
  */
-export function drawStripEffects(fighter: Fighter, sheet: string): PixelCanvas | undefined {
+export function drawStripEffects(
+  fighter: Fighter,
+  sheet: string,
+  recolor: (effect: Effect) => Effect = (effect) => effect,
+): PixelCanvas | undefined {
   if (fighter.effectsOnly?.(sheet)) return undefined;
   const poses = posesOf(fighter, sheet);
   const front = poses.map((pose) =>
-    (pose.effects ?? []).filter((effect) => effect.kind !== 'smear'),
+    (pose.effects ?? []).filter((effect) => effect.kind !== 'smear').map(recolor),
   );
   if (front.every((effects) => effects.length === 0)) return undefined;
   const canvas = new PixelCanvas(CELL_SIZE * poses.length, CELL_SIZE);
@@ -50,6 +55,17 @@ export function drawStripEffects(fighter: Fighter, sheet: string): PixelCanvas |
   });
   canvas.finish();
   return canvas;
+}
+
+/**
+ * An effect in the Boost's platine (docs/combos-v3.md §1.8.7): a Remix plays its special's strip
+ * with that strip's effects redrawn so, all white; the dust of the floor and the guard's arc stay
+ * as they are.
+ */
+export function toPlatine(effect: Effect): Effect {
+  return effect.kind === 'dust' || effect.kind === 'shield'
+    ? effect
+    : { ...effect, tone: 'platine' };
 }
 
 /** One of Nayo's strips (see drawStrip). */

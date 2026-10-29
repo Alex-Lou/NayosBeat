@@ -30,13 +30,14 @@ export interface Flight {
 }
 
 /**
- * Whether a body sent flying can take a blow costing `cost` points: only while it has them,
- * never slammed down into its bounce nor past the combo's limit, until it lands.
+ * Whether a body sent flying can take a blow costing `cost` points: only while it has them, or,
+ * for a blow that costs none (the super's), while it is in the combo; never slammed down into
+ * its bounce nor past the combo's limit, until it lands.
  */
 export function isJuggled(fighter: FighterState, cost: number): boolean {
   if (fighter.action !== 'airHit') return false;
   if ((fighter.flags & (FLAG_LIMIT | FLAG_BOUNCE)) !== 0) return false;
-  return fighter.juggle >= cost;
+  return cost === 0 ? fighter.comboCount > 0 : fighter.juggle >= cost;
 }
 
 /**

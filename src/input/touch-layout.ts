@@ -3,9 +3,11 @@ import { Input } from '../core/input';
 /**
  * The right-hand cluster of the touch controls, as data: tested in pure geometry (no visible
  * overlap on the small phones), drawn from the same numbers. Two rows; the centers of L, H, SAUT
- * and S never move (muscle memory), PRISE takes the old throw button's place, DASH is the only
- * new one:
+ * and S never move (muscle memory), PRISE takes the old throw button's place, DASH came with the
+ * combat v2, BOOST with the combos v3 (docs/combos-v3.md §1.8.5), in the notch between S and
+ * PRISE, never right over S:
  *
+ *            (center 190 from the bottom)                     [BOOST]
  *            top row (center 126 from the bottom)    [DASH]   [ S ]   [PRISE]
  *            bottom row (center 52 from the bottom)    [ L ]   [ H ]   [SAUT]
  *
@@ -82,6 +84,15 @@ export const TOUCH_BUTTONS: readonly TouchButton[] = [
     className: 'touch-dash',
     right: 237,
     bottom: 126,
+    diameter: 56,
+  },
+  {
+    label: 'BOOST',
+    fontSize: 8,
+    flag: Input.Boost,
+    className: 'touch-boost',
+    right: 126,
+    bottom: 190,
     diameter: 56,
   },
 ];

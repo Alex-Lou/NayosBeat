@@ -7,6 +7,7 @@ import {
   type MoveData,
   type MoveId,
 } from './move-data';
+import { tierOf } from './moves';
 import { JUGGLE_POINTS_MAX, MAX_BRANCH_DEPTH } from './rules';
 
 /**
@@ -24,9 +25,12 @@ export function comboProblems(template: FighterTemplate): string[] {
     if (!condition) problems.push(message);
   };
   const moves = definedMoves(template);
-  // Rule 8: after any normal blocked, a move started from neutral leaves a gap (no blocked
-  // string without end), and every blow pushes back.
-  const quickest = Math.min(...moves.filter(([, m]) => isAttack(m)).map(([, m]) => m.startup));
+  // Rule 8: after any normal blocked, a move started from neutral (a normal or a plain special:
+  // the Boost moves are paid for, once a sequence) leaves a gap (no blocked string without
+  // end), and every blow pushes back.
+  const quickest = Math.min(
+    ...moves.filter(([, m]) => isAttack(m) && tierOf(m) <= 1).map(([, m]) => m.startup),
+  );
   const extenders = new Set<string>();
 
   for (const [id, move] of moves) {
@@ -34,7 +38,8 @@ export function comboProblems(template: FighterTemplate): string[] {
     expect(move.kind !== 'normal' || phrased, `${id}: a normal must have its bit in the phrase`);
     if (move.branches) problems.push(...branchProblems(template, id, move));
     if (move.knockdown) problems.push(...launchProblems(id, move.knockdown));
-    if (move.juggleCost !== undefined) {
+    // The super's blows cost none (rule 3, validate-boost.ts).
+    if (move.juggleCost !== undefined && move.tier !== 3) {
       expect(isInteger(move.juggleCost, 1), `${id}.juggleCost must be an integer >= 1`);
     }
     if (move.extender) {

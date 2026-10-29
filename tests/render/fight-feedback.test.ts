@@ -5,6 +5,7 @@ import { px } from '../../src/core/constants';
 import { FightFeedback } from '../../src/render/fight-feedback';
 import type { FightEvent } from '../../src/render/fight-events';
 import { hitStyleOf } from '../../src/render/hit-styles';
+import { STAMP_TEXTS } from '../../src/render/stamps';
 
 /**
  * The effects stand in for the engine's game objects: each one records what it was asked to
@@ -51,7 +52,8 @@ vi.mock('../../src/render/effects', () => ({
     update = vi.fn();
   },
 }));
-vi.mock('../../src/render/stamps', () => ({
+vi.mock('../../src/render/stamps', async (original) => ({
+  ...(await original<typeof import('../../src/render/stamps')>()),
   Stamps: class {
     show = shown.stamp;
     update = vi.fn();
@@ -67,7 +69,9 @@ vi.mock('../../src/render/onomatopoeia', () => ({
 }));
 
 const NAYO_STYLE = hitStyleOf('nayo');
-const SILENT = { play: vi.fn() } as unknown as Sfx;
+/** The sounds asked for. */
+const played = vi.fn();
+const SILENT = { play: played } as unknown as Sfx;
 
 function feedback(): FightFeedback {
   return new FightFeedback({} as Phaser.Scene, 400, SILENT, [NAYO_STYLE, NAYO_STYLE]);
@@ -144,12 +148,36 @@ describe('a counter-hit (docs/combat-v2.md §7.4)', () => {
       };
       feedback().react(hit, 0);
       expect(shown.burst).toHaveBeenLastCalledWith(NAYO_STYLE, 'heavy', px(200), px(50), 1);
-      expect(shown.stamp).toHaveBeenLastCalledWith(counter, hit, 0);
+      expect(shown.stamp).toHaveBeenLastCalledWith(STAMP_TEXTS[counter], hit, 0);
     }
   });
 
   it('stamps nothing on a plain hit', () => {
     feedback().react(blow('hit', false), 0);
     expect(shown.stamp).not.toHaveBeenCalled();
+  });
+});
+
+describe('the Boost (docs/combos-v3.md §1.8.7)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  const at = { by: 0, x: px(200), y: 0 } as const;
+  const overHead = { by: 0, x: px(200), y: px(60) };
+
+  it('stamps REMIX over the head of the one who spends, its bass boost heard', () => {
+    feedback().react({ type: 'boost', ...at }, 0);
+    expect(shown.stamp).toHaveBeenCalledWith('REMIX !', overHead, 0);
+    expect(played).toHaveBeenCalledWith('remix');
+  });
+
+  it('stamps the Rewind and the super by their names', () => {
+    feedback().react({ type: 'rewind', name: 'Pogo', toward: 1, ...at }, 0);
+    expect(shown.stamp).toHaveBeenLastCalledWith('POGO !', overHead, 0);
+    expect(played).toHaveBeenLastCalledWith('rewind');
+    feedback().react({ type: 'super', name: 'Mégabasse', ...at }, 0);
+    expect(shown.stamp).toHaveBeenLastCalledWith('MÉGABASSE !', overHead, 0);
+    expect(played).toHaveBeenLastCalledWith('super');
   });
 });

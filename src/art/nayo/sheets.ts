@@ -26,6 +26,8 @@ export const NAYO_SHEETS = {
   victory: { frames: 8 },
   timeOver: { frames: 4 },
   projectile: { frames: 8 },
+  // The Vinyle platine in flight (docs/combos-v3.md §2.2): white, a double ring.
+  projectileBoost: { frames: 8 },
 
   // Combat v2 (docs/combat-v2.md §11.1, §11.2).
   dashForward: { frames: 6 },
@@ -49,8 +51,7 @@ export const NAYO_SHEETS = {
   trip: { frames: 4 },
   getup: { frames: 5 },
 
-  // Combos v3 (docs/combos-v3.md §5). The Mégabasse is drawn ahead of its gameplay: no clip plays
-  // it yet, so a fight does not load it (tools/sprites/nayo/pending-timing.ts times it).
+  // Combos v3 (docs/combos-v3.md §5): the Crochet au foie, the Remontant chassé, the Mégabasse.
   chainHeavy: { frames: 7 },
   chainLaunch: { frames: 7 },
   super: { frames: 10 },

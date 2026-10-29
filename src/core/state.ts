@@ -4,6 +4,7 @@ import type { InputBits } from './input';
 import type { MoveId } from './move-data';
 import type { Motion } from './motion';
 import { ROUND_TIME } from './rules';
+import { trainingStartBoost } from './training';
 
 export type Facing = 1 | -1;
 
@@ -92,7 +93,12 @@ export interface FighterState {
    */
   readonly phrase: number;
   readonly phraseTwice: number;
-  /** Marks of the current move and of the combo taken (the FLAG_* bits below). */
+  /**
+   * The Boost gauge (docs/combos-v3.md §1.8): from 0 to BOOST_MAX, filled by fighting, spent on
+   * the Boost moves, kept from one round to the next.
+   */
+  readonly boost: number;
+  /** Marks of the sequence, of the current move and of the combo taken (the FLAG_* bits below). */
   readonly flags: number;
   /** The last blow taken: how it shook the fighter (null: blocked, or none yet). */
   readonly reaction: Reaction | null;
@@ -103,16 +109,21 @@ export interface FighterState {
 }
 
 /**
- * The bits of `FighterState.flags` (docs/combos-v3.md §1.11). The attacker's: its current move
- * hit (not blocked), set as it lands, cleared as the next move starts. The victim's, cleared once
- * it stands in neutral again: its combo used its extender (Rebond or Vrille, once a combo), it is
- * being slammed down to bounce, it took the combo's last blow (COMBO_LIMIT). The values leave
- * room for the attacker's spends of the Boost layer (1, 2).
+ * The bits of `FighterState.flags` (docs/combos-v3.md §1.11). The attacker's: what its sequence
+ * already spent (the Rewind, the super: once each, cleared as the opponent gets out of it, see
+ * `boosted` in step.ts); its current move hit (not blocked), set as it lands, cleared as the next
+ * move starts. The victim's, cleared once it stands in neutral again: its combo used its
+ * extender (Rebond or Vrille, once a combo), it is being slammed down to bounce, it took the
+ * combo's last blow (COMBO_LIMIT).
  */
+export const FLAG_SPENT_CANCEL = 1;
+export const FLAG_SPENT_SUPER = 2;
 export const FLAG_MOVE_HIT = 4;
 export const FLAG_EXTENDED = 8;
 export const FLAG_BOUNCE = 16;
 export const FLAG_LIMIT = 32;
+/** The attacker's spends, once each per sequence. */
+export const SEQUENCE_FLAGS = FLAG_SPENT_CANCEL | FLAG_SPENT_SUPER;
 /** The victim's marks. */
 export const VICTIM_FLAGS = FLAG_EXTENDED | FLAG_BOUNCE | FLAG_LIMIT;
 
@@ -221,15 +232,20 @@ export interface GameState {
 }
 
 export function createInitialState(config: MatchConfig): GameState {
-  return createRound(config, 0, 1, [0, 0]);
+  const boost = trainingStartBoost(config);
+  return createRound(config, 0, 1, [0, 0], [boost, boost]);
 }
 
-/** A fresh round: fighters back in place with full health, scores kept. */
+/**
+ * A fresh round: fighters back in place with full health, scores and Boost gauges (`boosts`)
+ * kept.
+ */
 export function createRound(
   config: MatchConfig,
   frame: number,
   roundNumber: number,
   wins: readonly [number, number],
+  boosts: readonly [number, number],
 ): GameState {
   const center = Math.trunc(config.stage.width / 2);
   const halfDistance = Math.trunc(config.stage.startDistance / 2);
@@ -248,8 +264,8 @@ export function createRound(
       result: null,
     },
     fighters: [
-      createFighter(center - halfDistance, 1, templateA),
-      createFighter(center + halfDistance, -1, templateB),
+      createFighter(center - halfDistance, 1, templateA, boosts[0]),
+      createFighter(center + halfDistance, -1, templateB, boosts[1]),
     ],
     projectiles: NO_PROJECTILES,
     contacts: EMPTY_CONTACTS,
@@ -258,7 +274,12 @@ export function createRound(
   };
 }
 
-function createFighter(x: number, facing: Facing, template: FighterTemplate): FighterState {
+function createFighter(
+  x: number,
+  facing: Facing,
+  template: FighterTemplate,
+  boost: number,
+): FighterState {
   return {
     x,
     y: 0,
@@ -287,6 +308,7 @@ function createFighter(x: number, facing: Facing, template: FighterTemplate): Fi
     juggle: 0,
     phrase: 0,
     phraseTwice: 0,
+    boost,
     flags: 0,
     reaction: null,
     reactionHeavy: false,

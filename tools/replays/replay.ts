@@ -7,7 +7,7 @@
  * as it was.
  */
 
-import type { MatchConfig } from '../../src/core/config.ts';
+import type { MatchConfig, TrainingGauge } from '../../src/core/config.ts';
 import { Input, type InputBits } from '../../src/core/input.ts';
 import { createInitialState, type FighterState, type GameState } from '../../src/core/state.ts';
 import { step } from '../../src/core/step.ts';
@@ -22,6 +22,8 @@ export interface Replay {
   readonly description: string;
   readonly fighters: readonly [FighterId, FighterId];
   readonly training?: boolean;
+  /** The training option of the Boost gauge (docs/combos-v3.md §6.5): 'normal' unless told. */
+  readonly trainingGauge?: TrainingGauge;
   /** The whole match from its first tick (round intro included). */
   readonly inputs: readonly InputRun[];
   /** `replayHash` of the replay: the state on every tick. */
@@ -39,6 +41,7 @@ const BUTTONS: Readonly<Record<string, InputBits>> = {
   special: Input.Special,
   grab: Input.Grab,
   dash: Input.Dash,
+  boost: Input.Boost,
 };
 
 export function parseInput(written: string): InputBits {
@@ -58,6 +61,7 @@ export function replayConfig(replay: Replay): MatchConfig {
     stage: TRAINING_STAGE,
     fighters: [templateOf(first), templateOf(second)],
     training: replay.training ?? false,
+    ...(replay.trainingGauge && { trainingGauge: replay.trainingGauge }),
   };
 }
 
@@ -111,6 +115,7 @@ export const FIGHTER_FIELDS = [
   'juggle',
   'phrase',
   'phraseTwice',
+  'boost',
   'flags',
   'reaction',
   'reactionHeavy',

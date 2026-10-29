@@ -1,9 +1,12 @@
 import { Input, type InputBits } from '../core/input';
+import { BOOST_BAR, BOOST_MAX } from '../core/rules';
 import { nearestButton, TOUCH_BUTTONS } from './touch-layout';
 import { bitsFromStick, followFinger, type Point } from './touch-stick';
 
 /** How far the knob goes from the stick center; beyond it, the center follows the thumb. */
 const KNOB_TRAVEL_PX = 36;
+/** The arc filling on the BOOST button's ring moves by a twentieth of a bar, as the HUD's. */
+const RING_STEPS = 20;
 
 export function isTouchDevice(): boolean {
   return window.matchMedia('(pointer: coarse)').matches;
@@ -37,6 +40,10 @@ export class TouchControls {
   private readonly holders: number[] = TOUCH_BUTTONS.map(() => 0);
   /** Buttons pressed since the last read, so a tap shorter than a frame is not lost. */
   private tappedBits: InputBits = 0;
+  /** The BOOST button, and the gauge its ring shows (-1: not shown yet). */
+  private readonly boostButton: HTMLDivElement | undefined;
+  private shownBars = -1;
+  private shownPart = -1;
 
   /**
    * @param onFirstTouch Called once, from inside a user gesture (e.g. to go fullscreen).
@@ -68,8 +75,13 @@ export class TouchControls {
         button.style.borderColor = color;
         button.style.color = color;
       }
+      if (energy !== undefined && spec.flag === Input.Boost) {
+        // The arc of the bar filling on its ring.
+        button.style.setProperty('--boost-energy', `#${energy.toString(16).padStart(6, '0')}`);
+      }
       return button;
     });
+    this.boostButton = this.buttons[TOUCH_BUTTONS.findIndex((spec) => spec.flag === Input.Boost)];
     this.buttonZone.append(...this.buttons);
     this.root.append(stickZone, this.stickBase, this.buttonZone);
 
@@ -104,6 +116,29 @@ export class TouchControls {
     this.passedNeutral = false;
     this.tappedBits = 0;
     return bits;
+  }
+
+  /**
+   * Player 1's Boost gauge on the ring of the BOOST button (docs/combos-v3.md §1.8.5): one arc
+   * per bar, the full ones white, the one filling by twentieths of a bar; the button greyed under
+   * a bar, lit at three, when the super is ready. Written to the page only when it changes.
+   */
+  showBoost(boost: number): void {
+    const button = this.boostButton;
+    if (!button) return;
+    const bars = Math.floor(Math.min(boost, BOOST_MAX) / BOOST_BAR);
+    const full = bars * BOOST_BAR >= BOOST_MAX;
+    const part = full ? 0 : Math.floor(((boost % BOOST_BAR) * RING_STEPS) / BOOST_BAR);
+    if (bars !== this.shownBars) {
+      button.style.setProperty('--boost-bars', String(bars));
+      toggle(button, 'empty', bars < 1);
+      toggle(button, 'full', full);
+      this.shownBars = bars;
+    }
+    if (part !== this.shownPart) {
+      button.style.setProperty('--boost-part', String(part / RING_STEPS));
+      this.shownPart = part;
+    }
   }
 
   /** Removing the elements also drops every listener attached to them. */
@@ -194,6 +229,11 @@ export class TouchControls {
     const scale = length > KNOB_TRAVEL_PX ? KNOB_TRAVEL_PX / length : 1;
     this.stickKnob.style.transform = `translate(${dx * scale}px, ${dy * scale}px)`;
   }
+}
+
+function toggle(element: HTMLElement, className: string, on: boolean): void {
+  if (on) element.classList.add(className);
+  else element.classList.remove(className);
 }
 
 function createDiv(className: string): HTMLDivElement {

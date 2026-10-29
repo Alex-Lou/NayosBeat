@@ -1,6 +1,6 @@
 import type { MatchConfig } from '../core/config';
 import type { MoveId } from '../core/move-data';
-import { moveOf } from '../core/moves';
+import { moveOf, tierOf } from '../core/moves';
 import type { Contact, CounterHit, FighterState, GameState, RoundPhase } from '../core/state';
 
 /**
@@ -17,6 +17,13 @@ interface Impact {
   readonly by: 0 | 1;
   /** A low blow (blocked crouching): it lands at the feet, skimming the floor. */
   readonly low: boolean;
+}
+
+/** Who spends its gauge, and where it stands (its feet, stage sub-pixels). */
+interface Spender {
+  readonly by: 0 | 1;
+  readonly x: number;
+  readonly y: number;
 }
 
 /**
@@ -49,6 +56,14 @@ export type FightEvent =
     }
   /** A dash sets off from `x` (stage sub-pixels), toward `toward` (1: right). */
   | { readonly type: 'dash'; readonly x: number; readonly toward: 1 | -1 }
+  /**
+   * `by` spends its Boost gauge (docs/combos-v3.md §1.8.7), standing at `x`, `y` (its feet,
+   * stage sub-pixels): a Remix, its special in platine; the Rewind (its own name, Riff's Pogo),
+   * a step toward `toward`; the super (its name), as its flash freezes the game.
+   */
+  | ({ readonly type: 'boost' } & Spender)
+  | ({ readonly type: 'rewind'; readonly name: string; readonly toward: 1 | -1 } & Spender)
+  | ({ readonly type: 'super'; readonly name: string } & Spender)
   | { readonly type: 'projectile' }
   | { readonly type: 'jump' }
   | { readonly type: 'land' }
@@ -93,14 +108,20 @@ export function detectEvents(
 
     if (after.move && after.actionFrame === 0 && startedNewMove(before, after)) {
       const move = moveOf(config.fighters[player], after.move);
+      const { x, y } = after;
       if (move.kind === 'movement') {
         // A backdash moves away from the side it faces.
         const back = move.motion?.dx.some((dx) => dx < 0) ?? false;
         const toward = back === (after.facing === 1) ? -1 : 1;
-        events.push({ type: 'dash', x: after.x, toward });
+        if (move.boostCost)
+          events.push({ type: 'rewind', by: player, name: move.name, x, y, toward });
+        else events.push({ type: 'dash', x, toward });
       } else {
         const heavy = move.damage >= HEAVY_HIT_DAMAGE;
         events.push({ type: 'attack', heavy, by: player, move: after.move });
+        const tier = tierOf(move);
+        if (tier === 2) events.push({ type: 'boost', by: player, x, y });
+        if (tier === 3) events.push({ type: 'super', by: player, name: move.name, x, y });
       }
     }
     if (after.action === 'air' && before.action === 'preJump') events.push({ type: 'jump' });

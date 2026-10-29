@@ -1,129 +1,27 @@
 import { describe, expect, it } from 'vitest';
 import { nextRandom } from '../../src/ai/rng';
-import type { FighterTemplate, MatchConfig } from '../../src/core/config';
+import type { MatchConfig, TrainingGauge } from '../../src/core/config';
 import { px } from '../../src/core/constants';
-import { DIRECTIONS, Input, type InputBits } from '../../src/core/input';
+import { Input } from '../../src/core/input';
 import { COMBO_LIMIT } from '../../src/core/rules';
-import type { GameState } from '../../src/core/state';
 import { step } from '../../src/core/step';
-import { NAYO } from '../../src/data/fighters/nayo';
-import { RIFF } from '../../src/data/fighters/riff';
 import { TRAINING_STAGE } from '../../src/data/stages';
-import { startsMove } from './combo-helpers';
-import { searchCombos, type Command } from './combo-search';
-import { facingOff } from './helpers';
+import { describeBeamSearch, PAIRS, placed } from './beam-search';
 
 /**
- * No infinite (docs/combos-v3.md §1.13), measured on the real engine, a slow test: a beam search
- * for the longest combo each fighter can find, in the middle of the stage and in the corner,
- * from the starters of the design, stays within COMBO_LIMIT hits and 45 % of the opponent's
- * health; a seeded fuzz of random presses never brings a combo past the limit, and no blocked
- * string lasts. The search is the prototype's (300 branches a depth): it finds its longest combos
- * again, Nayo's 11 hits and Riff's 12, the limit's. The fuzz is shorter than the prototype's
- * (200 000 ticks a seed), so that the file runs in about 15 s.
+ * No infinite (docs/combos-v3.md §1.13), measured on the real engine, a slow test: the beam
+ * search without gauge (the gauges' searches have their own files: infinite-*.test.ts), and a
+ * seeded fuzz of random presses, BOOST among them, that never brings a combo past the limit,
+ * with no blocked string that lasts, the gauge refilled or not. The fuzz is shorter than the
+ * prototype's (200 000 ticks a seed), so that the file runs in reasonable time.
  */
 
-const { Light: L, Heavy: H, Special: S, Down: D, Left: B, Right: F, Dash } = Input;
+const { Light: L, Heavy: H, Special: S, Down: D, Left: B, Right: F, Dash, Boost: X } = Input;
 
-/** Every button with every direction that gives a move, and the dash. */
-const COMMANDS: readonly Command[] = [
-  ['L', L],
-  ['↓L', D | L],
-  ['→L', F | L],
-  ['←L', B | L],
-  ['H', H],
-  ['→H', F | H],
-  ['↓H', D | H],
-  ['←H', B | H],
-  ['S', S],
-  ['→S', F | S],
-  ['↓S', D | S],
-  ['DASH', Dash],
-];
-
-/** Branches kept at each depth. */
-const WIDTH = 300;
-
-/** A starter: what player 1 presses, from how far, and what the opponent does. */
-interface Starter {
-  readonly name: string;
-  readonly distance: number;
-  readonly steps: readonly InputBits[];
-  /** The opponent starts a blow on this tick: the starter lands in it, a CONTRE. */
-  readonly attacksAt?: number;
-}
-
-const STARTERS: readonly Starter[] = [
-  { name: 'L', distance: 40, steps: [L] },
-  { name: '↓L', distance: 34, steps: [D | L] },
-  { name: '←H', distance: 30, steps: [B | H] },
-  { name: 'L, L, ←H', distance: 40, steps: [L, L, B | H] },
-  { name: 'H CONTRE', distance: 45, steps: [H], attacksAt: 4 },
-  { name: '→H CONTRE', distance: 30, steps: [F | H], attacksAt: 14 },
-];
-
-/** The two `distance` px apart, in the middle or with the opponent's back to the wall. */
-function placed(config: MatchConfig, distance: number, corner: boolean): GameState {
-  if (!corner) return facingOff(distance, config);
-  const wall = config.stage.width - px(16);
-  const state = facingOff(distance, config, [{ x: wall - px(distance) }, { x: wall }]);
-  return { ...state, cameraX: config.stage.width - px(240) };
-}
-
-/** The state once the starter's last blow connected, or null if it dropped. */
-function started(config: MatchConfig, starter: Starter, corner: boolean): GameState | null {
-  let state = placed(config, starter.distance, corner);
-  let tick = 0;
-  const opponent = (): InputBits => (tick++ === starter.attacksAt ? H : 0);
-  for (const input of starter.steps) {
-    let out = false;
-    for (let press = 0; press < 60 && !out; press++) {
-      const before = state.fighters[0];
-      state = step(state, [press % 2 === 0 ? input : input & DIRECTIONS, opponent()], config);
-      out = startsMove(before, state.fighters[0]);
-    }
-    for (let wait = 0; wait < 80; wait++) {
-      const attacker = state.fighters[0];
-      if ((attacker.moveConnected && state.hitstop === 0) || attacker.action !== 'attack') break;
-      state = step(state, [0, opponent()], config);
-    }
-  }
-  const { action, comboCount } = state.fighters[1];
-  return (action === 'hitstun' || action === 'airHit') && comboCount > 0 ? state : null;
-}
-
-const PAIRS: readonly (readonly [FighterTemplate, FighterTemplate, number])[] = [
-  // The attacker, its opponent, the longest combo it finds.
-  [NAYO, RIFF, 11],
-  [RIFF, NAYO, 12],
-];
-
-describe('the beam search (§1.13)', () => {
-  for (const [attacker, defender, longestFound] of PAIRS) {
-    const config: MatchConfig = { stage: TRAINING_STAGE, fighters: [attacker, defender] };
-    it(`${attacker.name}: at most ${COMBO_LIMIT} hits and 45 % of the health, mid and corner`, () => {
-      let longest = 0;
-      for (const corner of [false, true]) {
-        for (const starter of STARTERS) {
-          const start = started(config, starter, corner);
-          if (!start) throw new Error(`${starter.name} did not start a combo`);
-          const found = searchCombos(start, starter.name, COMMANDS, config, WIDTH);
-          const where = `${starter.name}${corner ? ' (corner)' : ''}: ${found.longest.path.join(', ')}`;
-          expect(found.longest.hits, where).toBeLessThanOrEqual(COMBO_LIMIT);
-          // The starter's blows count too.
-          const damage = found.heaviest.damage + defender.maxHealth - start.fighters[1].health;
-          const heaviest = `${found.heaviest.path.join(', ')}: ${damage}`;
-          expect(damage * 100, heaviest).toBeLessThanOrEqual(45 * defender.maxHealth);
-          longest = Math.max(longest, found.longest.hits);
-        }
-      }
-      expect(longest).toBe(longestFound);
-    }, 60_000);
-  }
-});
+describeBeamSearch(0);
 
 /** Presses, and the directions held with them. */
-const BUTTONS = [L, H, S, Dash, L, H, 0];
+const BUTTONS = [L, H, S, Dash, L, H, 0, X];
 const HELD = [0, 0, F, B, D, D | F, D | B];
 const FUZZ_TICKS = 50_000;
 /** The longest blocked string allowed (§6.2): a guard always gets out. */
@@ -185,13 +83,20 @@ function fuzz(config: MatchConfig, seed: number, blocking: boolean, corner: bool
 
 describe('the fuzz (§1.13)', () => {
   for (const [attacker, defender] of PAIRS) {
-    const config: MatchConfig = {
-      stage: TRAINING_STAGE,
-      fighters: [attacker, defender],
-      training: true,
-    };
-    for (const blocking of [false, true]) {
-      it(`${attacker.name} ${blocking ? 'on a guard' : 'on a dummy'}: no combo past the limit`, () => {
+    for (const [blocking, trainingGauge] of [
+      [false, 'normal'],
+      [true, 'normal'],
+      [false, 'infinite'],
+      [true, 'infinite'],
+    ] as const satisfies readonly (readonly [boolean, TrainingGauge])[]) {
+      const config: MatchConfig = {
+        stage: TRAINING_STAGE,
+        fighters: [attacker, defender],
+        training: true,
+        trainingGauge,
+      };
+      const on = blocking ? 'on a guard' : 'on a dummy';
+      it(`${attacker.name} ${on}, gauge ${trainingGauge}: no combo past the limit`, () => {
         for (const seed of [1, 2]) {
           for (const corner of [false, true]) {
             const { longest, longestBlock } = fuzz(config, seed, blocking, corner);

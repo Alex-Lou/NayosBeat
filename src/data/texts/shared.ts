@@ -21,7 +21,7 @@ export interface FighterTexts {
     Readonly<Partial<Record<OptionalMoveId, MoveText>>>;
   /**
    * Its combos to learn first (docs/combos-v3.md §3.1, §4), easiest first: how to play them,
-   * and what they are for. Only those that need no gauge.
+   * and what they are for; the last one ends on the super.
    */
   readonly combos: readonly MoveText[];
 }
@@ -43,3 +43,11 @@ export const CHAIN = 'L, L';
 export const CHAIN_HEAVY = 'H, H';
 export const CHAIN_HIGH = 'L, L, puis avant + H';
 export const CHAIN_LAUNCH = 'L, L, puis arrière + H';
+/** The Boost (docs/combos-v3.md §1.8). */
+export const REMIX = 'BOOST (1 barre)';
+export const FORWARD_REMIX = 'Avant + BOOST (1 barre)';
+export const ANTI_AIR_REMIX = 'Bas + BOOST (1 barre)';
+export const SUPER = 'Arrière + BOOST (3 barres)';
+export const REWIND = 'DASH sur un coup qui touche (1 barre)';
+/** The combo that ends on the super (§3.1 E3, §4). */
+export const SUPER_COMBO = 'L, L, H, H, arrière + BOOST (3 barres)';
