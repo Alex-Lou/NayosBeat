@@ -49,6 +49,17 @@ describe('Nayo art', () => {
     expect(validateArt(art, NAYO_TEMPLATE)).toEqual(['nayo: sheet idle has no image URL']);
   });
 
+  it('keeps the bust of the select screen whole, inside the first idle frame', () => {
+    const width = NAYO.cells?.idle?.width ?? 0;
+    const outside = { ...NAYO, portrait: { x: width - 55, y: 0, size: 56 } };
+    const halfPixel = { ...NAYO, portrait: { x: 30.5, y: 0, size: 56 } };
+    for (const art of [outside, halfPixel]) {
+      expect(validateArt(art, NAYO_TEMPLATE)).toEqual([
+        'nayo: portrait must be a square inside the first idle frame',
+      ]);
+    }
+  });
+
   it('rejects effects of a strip that does not exist', () => {
     const art = { ...NAYO, fx: { ...NAYO.fx, dance: 'dance.png' } };
     expect(validateArt(art, NAYO_TEMPLATE)).toEqual(['nayo: effects dance of no strip nor clip']);

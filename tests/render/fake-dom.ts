@@ -54,6 +54,18 @@ class FakeClassList {
   }
 }
 
+/** An animation started on an element: what it plays, and whether it was stopped. */
+export class FakeAnimation {
+  cancelled = false;
+  constructor(
+    readonly keyframes: Keyframe[],
+    readonly options: KeyframeAnimationOptions,
+  ) {}
+  cancel(): void {
+    this.cancelled = true;
+  }
+}
+
 export class FakeElement extends CountingTarget {
   className = '';
   textContent = '';
@@ -115,6 +127,14 @@ export class FakeElement extends CountingTarget {
     return this.rect;
   }
 
+  /** Animations started on the element (`animate`), stopped or not. */
+  readonly animations: FakeAnimation[] = [];
+  animate(keyframes: Keyframe[], options: KeyframeAnimationOptions): FakeAnimation {
+    const animation = new FakeAnimation(keyframes, options);
+    this.animations.push(animation);
+    return animation;
+  }
+
   /** Listeners of this element and of everything inside it. */
   get treeListenerCount(): number {
     let count = this.listenerCount;
@@ -137,6 +157,8 @@ export interface FakePage {
   listeners(): number;
   /** Animation frames requested and not yet run or cancelled. */
   pendingFrames(): number;
+  /** Animations started on the page's elements and not stopped. */
+  runningAnimations(): number;
 }
 
 /** Installs a fake window and document as globals (undone by `vi.unstubAllGlobals()`). */
@@ -145,6 +167,7 @@ export function installFakePage(): FakePage {
   const document = new CountingTarget();
   const body = new FakeElement('body', true);
   const queries: FakeMediaQueryList[] = [];
+  const elements: FakeElement[] = [];
   const frames = new Set<number>();
   let nextFrame = 1;
 
@@ -158,7 +181,11 @@ export function installFakePage(): FakePage {
   Object.assign(document, {
     body,
     hidden: false,
-    createElement: (tag: string) => new FakeElement(tag),
+    createElement: (tag: string) => {
+      const node = new FakeElement(tag);
+      elements.push(node);
+      return node;
+    },
   });
   vi.stubGlobal('window', window);
   vi.stubGlobal('document', document);
@@ -177,5 +204,10 @@ export function installFakePage(): FakePage {
       queries.reduce((sum, query) => sum + query.listenerCount, 0) +
       body.treeListenerCount,
     pendingFrames: () => frames.size,
+    runningAnimations: () =>
+      elements.reduce(
+        (sum, node) => sum + node.animations.filter(({ cancelled }) => !cancelled).length,
+        0,
+      ),
   };
 }

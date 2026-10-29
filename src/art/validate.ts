@@ -62,6 +62,19 @@ export function validateArt(art: FighterArt, template: FighterTemplate): string[
     check(art.fx?.[effects] !== undefined, `effects ${effects} of strip ${sheet} have no image`);
   }
 
+  // The bust of the select screen stays inside the first frame of the idle.
+  if (art.portrait) {
+    const { x, y, size } = art.portrait;
+    const cell = art.cells?.[art.clips.idle.sheet];
+    const fits =
+      [x, y, size].every(Number.isInteger) &&
+      x >= 0 &&
+      y >= 0 &&
+      size > 0 &&
+      (!cell || (x + size <= cell.width && y + size <= cell.height));
+    check(fits, 'portrait must be a square inside the first idle frame');
+  }
+
   const expected: [string, Clip | undefined, number][] = [
     ['preJump', art.clips.preJump, template.preJumpFrames],
     ['landing', art.clips.landing, template.landingFrames],

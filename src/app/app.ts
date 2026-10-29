@@ -6,11 +6,13 @@ import { ROSTER, templateOf, type FighterId } from '../data/roster';
 import type { FightScene, FightSceneData } from '../render/fight-scene';
 import { requestLandscapeFullscreen } from '../render/fullscreen';
 import { isTouchDevice } from '../input/touch-controls';
+import { FighterSelect } from '../ui/fighter-select';
 import { Menu, type MenuFeedback, type MenuItem, type MenuOptions } from '../ui/menu';
 import { TitleScreen } from '../ui/title-screen';
 import { controlsContent, currentDevices, helpPages } from './controls-content';
 import { installMethod, onInstallChange, promptInstall } from './install';
 import { DEFAULT_SETUP, type DummyBehavior, type GameMode, type MatchSetup } from './match-setup';
+import { SELECT_COLUMNS, SELECT_SLOTS, selectFighters } from './select-fighters';
 
 const FIGHT_SCENE = 'fight';
 
@@ -177,8 +179,12 @@ export class App {
     });
   }
 
+  /**
+   * The character select screen for `player`: the tiles of the roster, the cursor on its last
+   * pick; while player 2 chooses, player 1's pick is marked.
+   */
   private chooseFighter(player: 0 | 1): void {
-    const { mode } = this.setup;
+    const { mode, fighters } = this.setup;
     const title =
       player === 0
         ? mode === 'versus'
@@ -190,35 +196,35 @@ export class App {
             ? 'Adversaire'
             : 'Mannequin';
 
-    const pick = (id: FighterId) => () => {
-      const fighters: [FighterId, FighterId] = [...this.setup.fighters];
-      fighters[player] = id;
-      this.setup = { ...this.setup, fighters };
+    const pick = (id: FighterId): void => {
+      const chosen: [FighterId, FighterId] = [...this.setup.fighters];
+      chosen[player] = id;
+      this.setup = { ...this.setup, fighters: chosen };
       this.afterFighterChosen(player);
     };
-    const items: MenuItem[] = ROSTER.map((entry) => ({
-      label: entry.template.name,
-      hint: entry.description,
-      onSelect: pick(entry.id),
-    }));
-    if (player === 1 && mode !== 'versus') {
-      items.push({
-        label: 'Aléatoire',
-        onSelect: () => {
-          pick(randomFighter())();
+    const random = player === 1 && mode !== 'versus';
+    this.show(
+      new FighterSelect(this.root, {
+        title,
+        subtitle: 'Choisis un combattant',
+        fighters: selectFighters(),
+        slots: SELECT_SLOTS,
+        columns: SELECT_COLUMNS,
+        initial: fighters[player],
+        ...(player === 1 && { taken: fighters[0] }),
+        onPick: pick,
+        ...(random && {
+          onRandom: () => {
+            pick(randomFighter());
+          },
+        }),
+        onBack: () => {
+          if (player === 0) this.showMainMenu();
+          else this.chooseFighter(0);
         },
-      });
-    }
-
-    this.showMenu({
-      title,
-      subtitle: 'Choisis un combattant',
-      items,
-      onBack: () => {
-        if (player === 0) this.showMainMenu();
-        else this.chooseFighter(0);
-      },
-    });
+        feedback: this.menuFeedback,
+      }),
+    );
   }
 
   private afterFighterChosen(player: 0 | 1): void {

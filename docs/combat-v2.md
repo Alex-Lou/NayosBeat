@@ -1453,6 +1453,8 @@ Chaque phase (et chaque PR à l'intérieur) laisse une build **jouable sur PC et
 
 Descriptions de sélection (`roster.ts`) : Nayo « Boxeur-DJ posé · portée · Vinyle · Uppercut invincible · Mégabasse » ; Riff « Punk de rue explosive · dash · Glissade · deux overheads · moins de vie ».
 
+Écran de sélection (`ui/fighter-select.ts`, `app/select-fighters.ts`) : une grille de 10 cases (2 rangées de 5), les combattants dans l'ordre du roster, puis des cases « ? » gardées pour ceux à venir ; un cadre jaune lumineux sur la case choisie ; à côté, le combattant en garde, son idle à la cadence du jeu (pas inégaux compris), son nom et sa description. Clavier (flèches, ZQSD), manette (croix ou stick, A, B), souris et tactile (un clic ou un tap choisit). Quand le joueur 2 choisit, la case du joueur 1 porte « J1 », et le même combattant s'affiche dans sa seconde tenue ; « Aléatoire » sous la grille, contre le CPU et le mannequin. Le buste de chaque case est un carré de la première image de l'idle (`portrait` de l'art, vérifié par `validateArt`). Mouvements réduits : le combattant reste sur sa première image, le cadre ne pulse plus.
+
 ---
 
 ## 18. Risques, reports et décisions prises par défaut

@@ -28,6 +28,8 @@ const ALT_FX = import.meta.glob<string>('./alt/fx/*.png', {
 });
 
 const SHARED = {
+  // His head and his guard, on the character select screen.
+  portrait: { x: 30, y: 0, size: 56 },
   sheets: NAYO_SHEETS,
   clips: NAYO_CLIPS,
   projectiles: NAYO_PROJECTILES,

@@ -129,6 +129,18 @@ export interface FighterArt {
   readonly fx?: Readonly<Record<string, string>>;
   /** Cropped cells by strip ('idle') and by strip effects ('fx/idle'); FULL_CELL otherwise. */
   readonly cells?: Readonly<Record<string, Cell>>;
+  /**
+   * The bust on the character select screen: a square of the first frame of its idle strip,
+   * in art pixels from the cell's top left corner. The top square of the cell otherwise.
+   */
+  readonly portrait?: Portrait;
+}
+
+/** A square of a strip's frame, in art pixels. */
+export interface Portrait {
+  readonly x: number;
+  readonly y: number;
+  readonly size: number;
 }
 
 /**

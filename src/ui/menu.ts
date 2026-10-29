@@ -25,14 +25,19 @@ export type MenuFeedback = 'move' | 'confirm' | 'back';
 
 import { connectedGamepads, isPressed, PadButton, STICK_PRESS, stickAxis } from '../input/gamepad';
 
-type MenuAction = 'up' | 'down' | 'confirm' | 'back';
+/** What a key or a gamepad button asks a screen of choices for. A list ignores left and right. */
+export type MenuAction = 'up' | 'down' | 'left' | 'right' | 'confirm' | 'back';
 
-/** Physical key positions: W/S are Z/S on AZERTY. */
-const KEY_ACTIONS: Readonly<Record<string, MenuAction>> = {
+/** Physical key positions: W/A/S/D are Z/Q/S/D on AZERTY. */
+export const MENU_KEYS: Readonly<Record<string, MenuAction>> = {
   ArrowUp: 'up',
   KeyW: 'up',
   ArrowDown: 'down',
   KeyS: 'down',
+  ArrowLeft: 'left',
+  KeyA: 'left',
+  ArrowRight: 'right',
+  KeyD: 'right',
   Enter: 'confirm',
   NumpadEnter: 'confirm',
   Space: 'confirm',
@@ -46,9 +51,14 @@ const PAD_UP = 1;
 const PAD_DOWN = 2;
 const PAD_CONFIRM = 4;
 const PAD_BACK = 8;
-const PAD_ACTIONS: readonly (readonly [number, MenuAction])[] = [
+const PAD_LEFT = 16;
+const PAD_RIGHT = 32;
+/** The bits of `readMenuPad`, and what each asks for. */
+export const MENU_PAD_ACTIONS: readonly (readonly [number, MenuAction])[] = [
   [PAD_UP, 'up'],
   [PAD_DOWN, 'down'],
+  [PAD_LEFT, 'left'],
+  [PAD_RIGHT, 'right'],
   [PAD_CONFIRM, 'confirm'],
   [PAD_BACK, 'back'],
 ];
@@ -64,7 +74,7 @@ export class Menu {
   private selected = 0;
   private frameRequest = 0;
   /** Gamepad buttons held on the previous poll; starts with what is held right now. */
-  private previousPad = readPad();
+  private previousPad = readMenuPad();
 
   constructor(
     parent: HTMLElement,
@@ -112,7 +122,7 @@ export class Menu {
   }
 
   private readonly onKeyDown = (event: KeyboardEvent): void => {
-    const action = KEY_ACTIONS[event.code];
+    const action = MENU_KEYS[event.code];
     if (!action) return;
     event.preventDefault();
     // Holding a key moves through the list, but never confirms or goes back twice.
@@ -121,10 +131,10 @@ export class Menu {
   };
 
   private readonly pollGamepads = (): void => {
-    const pad = readPad();
+    const pad = readMenuPad();
     const pressed = pad & ~this.previousPad;
     this.previousPad = pad;
-    for (const [bit, action] of PAD_ACTIONS) {
+    for (const [bit, action] of MENU_PAD_ACTIONS) {
       if (!(pressed & bit)) continue;
       this.handle(action);
       // A confirm or back may have closed this menu: the rest of the press is not for it.
@@ -153,6 +163,10 @@ export class Menu {
         this.options.feedback?.('back');
         this.options.onBack();
         break;
+      case 'left':
+      case 'right':
+        // A vertical list: nothing to the sides.
+        break;
     }
   }
 
@@ -168,19 +182,22 @@ export class Menu {
 }
 
 /** Menu-relevant buttons held on any gamepad (standard mapping), as a bitmask. */
-function readPad(): number {
+export function readMenuPad(): number {
   let bits = 0;
   for (const pad of connectedGamepads()) {
+    const stickX = stickAxis(pad, 0);
     const stickY = stickAxis(pad, 1);
     if (isPressed(pad, PadButton.DpadUp) || stickY < -STICK_PRESS) bits |= PAD_UP;
     if (isPressed(pad, PadButton.DpadDown) || stickY > STICK_PRESS) bits |= PAD_DOWN;
+    if (isPressed(pad, PadButton.DpadLeft) || stickX < -STICK_PRESS) bits |= PAD_LEFT;
+    if (isPressed(pad, PadButton.DpadRight) || stickX > STICK_PRESS) bits |= PAD_RIGHT;
     if (isPressed(pad, PadButton.South) || isPressed(pad, PadButton.Start)) bits |= PAD_CONFIRM;
     if (isPressed(pad, PadButton.East)) bits |= PAD_BACK;
   }
   return bits;
 }
 
-function element<K extends keyof HTMLElementTagNameMap>(
+export function element<K extends keyof HTMLElementTagNameMap>(
   tag: K,
   className: string,
   text?: string,

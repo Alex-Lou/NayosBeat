@@ -27,7 +27,13 @@ const ALT_FX = import.meta.glob<string>('./alt/fx/*.png', {
   import: 'default',
 });
 
-const SHARED = { sheets: RIFF_SHEETS, clips: RIFF_CLIPS, cells: RIFF_CELLS };
+const SHARED = {
+  // Her crest and her raised fist, on the character select screen.
+  portrait: { x: 28, y: 4, size: 58 },
+  sheets: RIFF_SHEETS,
+  clips: RIFF_CLIPS,
+  cells: RIFF_CELLS,
+};
 
 /** The punk: black leather, magenta fringe and energy, silver studs. */
 export const RIFF: FighterArt = {

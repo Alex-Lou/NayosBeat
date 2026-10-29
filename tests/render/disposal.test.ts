@@ -4,9 +4,23 @@ import { PauseInput } from '../../src/input/pause-input';
 import { PlayerInputs } from '../../src/input/player-inputs';
 import { TouchControls } from '../../src/input/touch-controls';
 import { DebugOverlay } from '../../src/render/debug-overlay';
+import { FighterSelect } from '../../src/ui/fighter-select';
 import { Menu } from '../../src/ui/menu';
 import { TitleScreen } from '../../src/ui/title-screen';
 import { installFakePage, type FakePage } from './fake-dom';
+
+/** A fighter of the select screen that stands in guard: its idle plays while it is shown. */
+const IDLE_LOOK = {
+  strip: 'idle.png',
+  frames: 2,
+  width: 80,
+  height: 160,
+  portrait: { x: 20, y: 0, size: 40 },
+  idle: [
+    { frame: 0, seconds: 0.1 },
+    { frame: 1, seconds: 0.1 },
+  ],
+};
 
 /** Something that listens to the page while it lives, and lets go of it when disposed. */
 interface Disposable {
@@ -40,6 +54,19 @@ const CASES: readonly [string, (page: FakePage) => Disposable][] = [
       }),
   ],
   [
+    'FighterSelect',
+    (page) =>
+      new FighterSelect(asParent(page), {
+        title: 'Joueur 1',
+        fighters: [{ id: 'nayo', name: 'Nayo', description: 'Vive', look: IDLE_LOOK }],
+        slots: 10,
+        columns: 5,
+        onPick: () => undefined,
+        onRandom: () => undefined,
+        onBack: () => undefined,
+      }),
+  ],
+  [
     'DebugOverlay',
     (page) => {
       const overlay = new DebugOverlay(asParent(page));
@@ -65,6 +92,7 @@ describe('disposal', () => {
     disposable.dispose();
     expect(page.listeners()).toBe(0);
     expect(page.pendingFrames()).toBe(0);
+    expect(page.runningAnimations()).toBe(0);
     expect(page.body.children).toHaveLength(0);
   });
 
@@ -75,5 +103,13 @@ describe('disposal', () => {
     page.window.addEventListener('keydown', () => undefined);
     leaky.dispose();
     expect(page.listeners()).toBe(1);
+  });
+
+  it('counts the animations left running', () => {
+    const page = installFakePage();
+    const animation = document.createElement('div').animate([], { duration: 100 });
+    expect(page.runningAnimations()).toBe(1);
+    animation.cancel();
+    expect(page.runningAnimations()).toBe(0);
   });
 });
