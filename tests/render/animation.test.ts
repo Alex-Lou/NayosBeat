@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { NAYO_CLIPS } from '../../src/art/nayo/clips';
-import type { Clip } from '../../src/art/types';
+import { clipOf, type Clip } from '../../src/art/types';
 import type { FighterState, RoundState } from '../../src/core/state';
 import { NAYO } from '../../src/art/nayo';
 import { RIFF } from '../../src/art/riff';
@@ -60,7 +60,7 @@ describe('clipIdOf', () => {
       const guard = makeFighter({ action: 'guard', actionFrame: 0, crouching });
       const id = clipIdOf(guard);
       expect(id).toBe(crouching ? 'blockCrouch' : 'blockStand');
-      const clip = NAYO_CLIPS[id];
+      const clip = clipOf(NAYO, id);
       expect(clipFrameAt(clip, clipTickOf(id, guard, FIGHTING))).toBe(clip.frames.length - 1);
     }
   });

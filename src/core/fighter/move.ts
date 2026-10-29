@@ -1,9 +1,10 @@
 import type { FighterTemplate } from '../config';
 import type { MoveData, MoveId } from '../move-data';
-import { groundMove, isCrouchingMove, moveDuration, moveOf } from '../moves';
+import { branchMove, groundMove, moveDuration, moveOf, tierOf } from '../moves';
 import { signed } from '../numbers';
+import { phraseAllows, phraseWith } from '../phrase';
 import { DASH_MOMENTUM_PERCENT, PUSHBACK_FRICTION, THROW_CONVERSION_FRAMES } from '../rules';
-import type { FighterAction, FighterState } from '../state';
+import { FLAG_MOVE_HIT, type FighterAction, type FighterState } from '../state';
 import { enter, nextFrame } from './action';
 
 /**
@@ -15,22 +16,33 @@ export function updateMove(fighter: FighterState, template: FighterTemplate): Fi
   if (!move) return null;
   const cancel = cancelMove(fighter, move, template);
   if (cancel) {
-    return startGroundMove({ ...fighter, vx: momentumOf(fighter, move) }, cancel, template);
+    return startGroundMove({ ...fighter, vx: momentumOf(fighter, move) }, cancel, template, true);
   }
   return fighter.actionFrame + 1 < moveDuration(move)
     ? applyMotion(nextFrame(fighter), move)
     : null;
 }
 
+/**
+ * Starts a ground move, from neutral or as a cancel of the one playing (`cancelled`): a move
+ * from neutral starts a new phrase, a cancel grows it (docs/combos-v3.md §1.2).
+ */
 export function startGroundMove(
   fighter: FighterState,
   moveId: MoveId,
   template: FighterTemplate,
+  cancelled = false,
 ): FighterState {
-  const started = { ...startAttack(fighter, 'attack', moveId), crouching: isCrouchingMove(moveId) };
-  return applyMotion(started, moveOf(template, moveId));
+  const move = moveOf(template, moveId);
+  const started = {
+    ...startAttack(fighter, 'attack', moveId),
+    crouching: move.crouching === true,
+    ...phraseWith(fighter, moveId, cancelled),
+  };
+  return applyMotion(started, move);
 }
 
+/** Starts a move of any kind: it has neither connected nor hit anything yet. */
 export function startAttack(
   fighter: FighterState,
   action: FighterAction,
@@ -40,17 +52,20 @@ export function startAttack(
     ...enter(fighter, action),
     move,
     moveConnected: false,
+    flags: fighter.flags & ~FLAG_MOVE_HIT,
     bufferedCommand: null,
     bufferFrames: 0,
   };
 }
 
 /**
- * The move that interrupts the current one, if any: a normal turned into a grab when the
- * second button came a little late, once the move has connected its chain (L) or a cancel its
- * `cancelInto` allows (docs/combat-v2.md §7.1), or, from its `freeCancelFrom` frame on, a cancel
- * without contact (Riff's dash, into any normal). The cancel replaces the frame the move would
- * play next.
+ * The move that interrupts the current one, if any (docs/combos-v3.md §1.2-1.4): a normal turned
+ * into a grab when the second button came a little late; a special that hit, into a higher rung
+ * of the ladder only; else, once the move has hit or been blocked, the string of the button and
+ * direction pressed (a fresh motion asks for a special first), or the move the command gives if
+ * `cancelInto` allows its kind; or, from its `freeCancelFrom` frame on, a cancel without contact
+ * (Riff's dash, into any normal). Never a normal the phrase already played. The cancel replaces
+ * the frame the move would play next.
  */
 function cancelMove(
   fighter: FighterState,
@@ -67,23 +82,25 @@ function cancelMove(
   const free = move.freeCancelFrom !== undefined && fighter.actionFrame + 1 >= move.freeCancelFrom;
   if (!(fighter.moveConnected || free)) return null;
 
-  const chain = fighter.moveConnected ? move.chain : undefined;
-  const next = groundMove(
-    command,
-    fighter.bufferedInput,
-    fighter.bufferedMotion,
-    fighter.bufferedFacing,
-    template.moves,
-    chain,
-  );
-  if (!next) return null;
-  if (next === chain) return next;
-  const into = moveOf(template, next);
-  if (!move.cancelInto?.includes(into.kind)) return null;
-  // A blow cancelled into a normal never steps in (the Toprock, the Jab chassé): each step would
-  // win back the distance the blow pushed, ↓L, → + L, ↓L... a loop without end.
-  const stepsIn = into.kind === 'normal' && into.motion !== undefined;
-  return fighter.moveConnected && stepsIn ? null : next;
+  const { bufferedInput: input, bufferedMotion: motion, bufferedFacing: facing } = fighter;
+  const tier = tierOf(move);
+  if (tier > 0) {
+    // The ladder never goes down, and only a blow that hit climbs it (blocked, a special stays
+    // punishable); a projectile never does: its thrower has not touched anything.
+    const hit = (fighter.flags & FLAG_MOVE_HIT) !== 0;
+    if (!hit || move.projectile) return null;
+    const next = groundMove(command, input, motion, facing, template.moves);
+    return next && tierOf(moveOf(template, next)) > tier ? next : null;
+  }
+
+  // A string passes over `cancelInto`, never over the phrase.
+  const branch =
+    fighter.moveConnected && motion === null ? branchMove(command, input, facing, move) : null;
+  if (branch) return phraseAllows(fighter, branch) ? branch : null;
+
+  const next = groundMove(command, input, motion, facing, template.moves);
+  if (!next || !move.cancelInto?.includes(moveOf(template, next).kind)) return null;
+  return phraseAllows(fighter, next) ? next : null;
 }
 
 /**

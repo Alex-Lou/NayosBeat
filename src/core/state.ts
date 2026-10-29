@@ -83,8 +83,17 @@ export interface FighterState {
   readonly throwImmuneFrames: number;
   /** Consecutive hits taken without being able to act: drives the combo counter and scaling. */
   readonly comboCount: number;
-  /** Launched by a launcher (docs/combat-v2.md §7.6): one more blow can hit it in the air. */
-  readonly juggle: 0 | 1;
+  /** Juggle points left (docs/combos-v3.md §1.5): each blow in the air spends its cost. */
+  readonly juggle: number;
+  /**
+   * The phrase (docs/combos-v3.md §1.2): the normals played since the fighter last started a
+   * move from neutral, one bit each (`PHRASE_MOVE_IDS`); `phraseTwice`, the lights played a
+   * second time. A cancel never enters a normal again (a light, never a third time).
+   */
+  readonly phrase: number;
+  readonly phraseTwice: number;
+  /** Marks of the current move and of the combo taken (the FLAG_* bits below). */
+  readonly flags: number;
   /** The last blow taken: how it shook the fighter (null: blocked, or none yet). */
   readonly reaction: Reaction | null;
   /** That blow's stun was long (hitstun of 18 ticks or more): the full reaction plays. */
@@ -92,6 +101,20 @@ export interface FighterState {
   /** The whole hit or block stun it gave, so the reaction ends with it. */
   readonly stunTotal: number;
 }
+
+/**
+ * The bits of `FighterState.flags` (docs/combos-v3.md §1.11). The attacker's: its current move
+ * hit (not blocked), set as it lands, cleared as the next move starts. The victim's, cleared once
+ * it stands in neutral again: its combo used its extender (Rebond or Vrille, once a combo), it is
+ * being slammed down to bounce, it took the combo's last blow (COMBO_LIMIT). The values leave
+ * room for the attacker's spends of the Boost layer (1, 2).
+ */
+export const FLAG_MOVE_HIT = 4;
+export const FLAG_EXTENDED = 8;
+export const FLAG_BOUNCE = 16;
+export const FLAG_LIMIT = 32;
+/** The victim's marks. */
+export const VICTIM_FLAGS = FLAG_EXTENDED | FLAG_BOUNCE | FLAG_LIMIT;
 
 export interface ProjectileState {
   readonly owner: 0 | 1;
@@ -262,6 +285,9 @@ function createFighter(x: number, facing: Facing, template: FighterTemplate): Fi
     throwImmuneFrames: 0,
     comboCount: 0,
     juggle: 0,
+    phrase: 0,
+    phraseTwice: 0,
+    flags: 0,
     reaction: null,
     reactionHeavy: false,
     stunTotal: 0,

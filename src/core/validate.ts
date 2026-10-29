@@ -5,16 +5,34 @@ import {
   CORE_MOVE_IDS,
   MOVE_IDS,
   MOVEMENT_MOVE_IDS,
-  OPTIONAL_MOVE_IDS,
   THROW_MOVE_IDS,
   type FrameRange,
   type MoveData,
   type MoveId,
+  type MoveKind,
+  type OptionalMoveId,
 } from './move-data';
 import { moveDuration } from './moves';
+import { comboProblems } from './validate-combos';
 
 /** A body drawn in bands: legs and torso at most (docs/combat-v2.md §9.2). */
 const MAX_HURTBOXES = 2;
+
+/**
+ * The kinds each optional move may have (docs/combos-v3.md §1.12, rule 14): the direction
+ * normals, the chain and the strings are normals.
+ */
+const OPTIONAL_KINDS: Readonly<Partial<Record<MoveId, readonly MoveKind[]>>> = {
+  forwardLight: ['normal'],
+  forwardHeavy: ['normal'],
+  backHeavy: ['normal'],
+  chainLight: ['normal'],
+  lightFinisher: ['normal'],
+  jabRepeat: ['normal'],
+  chainHeavy: ['normal'],
+  chainHigh: ['normal'],
+  chainLaunch: ['normal'],
+} satisfies Record<OptionalMoveId, readonly MoveKind[]>;
 
 /**
  * Checks match data for authoring mistakes. Returns the list of problems (empty when valid)
@@ -71,10 +89,8 @@ export function validateTemplate(template: FighterTemplate): string[] {
     const duration = moveDuration(move);
     expect(move.name.length > 0, `${id}.name must not be empty`);
     const movement = move.kind === 'movement';
-    expect(
-      !(OPTIONAL_MOVE_IDS as readonly MoveId[]).includes(id) || move.kind === 'normal',
-      `${id}: the direction normals and the chain are normals`,
-    );
+    const kinds = OPTIONAL_KINDS[id];
+    expect(!kinds || kinds.includes(move.kind), `${id} must be of kind ${kinds?.join(' or ')}`);
     const thrown = move.kind === 'throw';
     expect(
       (id === 'grab') === (move.kind === 'grab'),
@@ -161,16 +177,6 @@ export function validateTemplate(template: FighterTemplate): string[] {
         `${id}.hurtboxes must have one or ${MAX_HURTBOXES} valid boxes`,
       );
     }
-    if (move.chain !== undefined) {
-      expect(template.moves[move.chain] !== undefined, `${id}.chain must be a move it has`);
-      expect(move.kind === 'normal', `${id}: only a normal chains`);
-    }
-    if (move.knockdown) {
-      expect(
-        isInteger(move.knockdown.vx, 0) && isInteger(move.knockdown.vy, 1),
-        `${id}.knockdown must fly at integer speeds, upward`,
-      );
-    }
     expect(
       (move.sideSwitchFrame !== undefined) === (id === 'throwBack'),
       `${id}: the throw backward (and only it) switches sides`,
@@ -203,6 +209,7 @@ export function validateTemplate(template: FighterTemplate): string[] {
       );
     }
   }
+  for (const problem of comboProblems(template)) expect(false, problem);
   return errors;
 }
 

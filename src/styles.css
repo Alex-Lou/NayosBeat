@@ -293,6 +293,11 @@ body {
   gap: 6px 20px;
   text-align: left;
 }
+/* A fighter's moves and combos are long rows, whose inputs never wrap: side by side, each list
+   would spill over the other. One under the other, they fit a phone held sideways. */
+.controls-fighter {
+  grid-template-columns: 1fr;
+}
 .controls h2 {
   margin: 0 0 4px;
   font-size: 10px;

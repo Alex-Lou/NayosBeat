@@ -47,7 +47,7 @@
 | D11 | Prise : tenue limitée par le **temps**, **lancer automatique** si on ne choisit rien | lf | Simple, sûr pour un débutant qui appuie une fois |
 | D12 | **PUNITION** : une prise sur un adversaire en récupération ne se dégage pas | lf | Récompense lisible du « whiff punish » |
 | D13 | Le coup bat la prise sur un même tic ; deux prises = dégagement | sf, mk, lf | Pierre-feuille-ciseaux classique |
-| D14 | **Jongle d'un seul coup**, seulement après un lanceur (←+H) | lf | Du contenu pour les combos et le compteur, sans boucle |
+| D14 | **Jongle à points** après un lanceur (←+H) : 4 points (5 en CONTRE), chaque coup en l'air en coûte, la limite de 12 coups ferme tout (combos v3, `docs/combos-v3.md` §1.5, §1.7). C'était un seul coup en l'air | lf, combos v3 | Du contenu pour les combos et le compteur, sans boucle : les points, le prolongateur unique et la limite bornent la jongle |
 | D15 | CONTRE sur le premier coup seulement (+20 %, +4 de hitstun, +3 de hitstop) | sf, mk | Récompense la lecture sans gonfler les combos |
 | D16 | Dégâts en garde (chip) : spéciaux seulement, 15 %, jamais mortels | sf | Le zoning a du poids sans devenir odieux |
 | D17 | Mécanique signature = **Crossfader** (sans bouton) ; le tempo reste **cosmétique** | sf + revues | Pas de bonus « en rythme » : injuste selon l'appareil (latence tactile, Bluetooth) |
@@ -220,7 +220,7 @@ Trois champs d'état : `tapDirection` (−1, 0 ou 1, en coordonnées du stage), 
 | 2 | light, heavy, special | manip →↓↘ fraîche | `specialAntiAir` |
 | 3 | light, heavy, special | manip ↓↘→ fraîche | `special` |
 | 4 | special | bas (diagonales comprises) / avant / sinon | `specialAntiAir` / `specialForward` / `special` |
-| 5 | light | en annulation d'un coup qui a `chain` et qui a touché ou été gardé | le coup de `chain` (§5.2) |
+| 5 | light, heavy | en annulation d'un coup qui a touché ou été gardé, sans manip fraîche : la corde (`branches`) de ce bouton et de la direction tenue, lue avant les lignes 6 à 9 (`docs/combos-v3.md` §1.4) | le coup de la corde (Direct : ↓L Coup bas, ←L Double direct ; Cross : L, toute direction, Mise au tapis) |
 | 6 | light, heavy | bas (diagonales comprises) | `crouchLight` / `crouchHeavy` |
 | 7 | light | avant | `forwardLight` (repli : `standLight`) |
 | 8 | heavy | avant / arrière | `forwardHeavy` / `backHeavy` (repli : `standHeavy`) |
@@ -234,7 +234,7 @@ Trois champs d'état : `tapDirection` (−1, 0 ou 1, en coordonnées du stage), 
 
 **En étant tenu** : PRISE (ou L + H) dans la fenêtre de dégagement donne le dégagement ; tout autre appui de bouton compte comme « se débattre ».
 
-**Coups optionnels avec repli** : `CORE_MOVE_IDS` sont obligatoires pour tous ; `OPTIONAL_MOVE_IDS` (`forwardLight`, `forwardHeavy`, `backHeavy`, `chainLight`, `lightFinisher`) retombent sur le normal debout s'ils manquent. Nayo et Riff les définissent tous ; un futur personnage peut en avoir de 0 à 5.
+**Coups optionnels avec repli** : `CORE_MOVE_IDS` sont obligatoires pour tous ; `OPTIONAL_MOVE_IDS` (`forwardLight`, `forwardHeavy`, `backHeavy`, `chainLight`, `lightFinisher`, et les cordes des combos v3 : `jabRepeat`, `chainHeavy`, `chainHigh`, `chainLaunch`) retombent sur le normal debout s'ils manquent ; une corde ne mène qu'à un coup que le personnage a (validation). Leur type est fixé par la table `OPTIONAL_KINDS` (tous des normaux). Nayo les définit tous ; Riff tous sauf `jabRepeat`.
 
 ---
 
@@ -455,16 +455,17 @@ Saisie contre Uppercut invincible : rate. Contre backdash dans sa plage anti-pri
 | Entrée | Rôle |
 |---|---|
 | L / H | coup rapide / coup fort |
-| L, L, L | **chaîne** : deuxième coup, puis coup final qui met au sol |
+| L, L, L | **chaîne** : deuxième coup, puis coup final qui met au sol ; au 3e temps, H et sa direction choisissent une autre fin (cordes, `docs/combos-v3.md` §1.4) |
+| L ou H, avec une direction, **après un coup qui touche** | **corde** : avant pour le haut ou l'élan, bas pour le bas, arrière pour faire décoller ; haut ne choisit rien |
 | ↓ + L / ↓ + H | coup bas rapide / **balayage** (fauche, met au sol) |
 | **→ + L** | coup d'approche propre au personnage |
 | **→ + H** | **overhead** : à parer **debout** |
-| **← + H** | **lanceur** anti-air : fait décoller, s'annule en spécial pour une jongle ; rate les adversaires accroupis |
+| **← + H** | **lanceur** anti-air : fait décoller (4 points de jongle), s'annule en spécial, ou se lie à la phrase rejouée en l'air ; rate les adversaires accroupis |
 | S / → + S / ↓ + S | spécial neutre / spécial avant / **anti-air** |
 | PRISE | saisie, puis tabasser ou lancer |
 | DASH | dash, ou backdash avec arrière |
 
-Résumé pour l'aide : **« L → H → S. Ou L, L, L. »** et **« ← + H fait décoller. »**
+Résumé pour l'aide : **« L, L, L. Puis L, L, H, H, S. »** et **« ← + H fait décoller. »** Les cordes de chaque personnage : `docs/combos-v3.md` §2.3-2.4 (Nayo) et §4 (Riff).
 
 ### 5.2 Nayo, « le boxeur posé »
 
@@ -476,6 +477,8 @@ Résumé pour l'aide : **« L → H → S. Ou L, L, L. »** et **« ← + H fait
 | → + H | **Overhand** (`forwardHeavy`) | Il monte sur la pointe des pieds ; le bras arrière passe *par-dessus* la garde et retombe sur la tête ; arc cyan visible dès le démarrage | **Overhead** : ouvre un adversaire qui garde accroupi. Lent (19 tics) et télégraphié : à mélanger avec le Balayage |
 | ← + H | **Remontant** (`backHeavy`) | Uppercut court, tête rentrée, le poing monte presque à la verticale | Anti-air normal, sans invincibilité ; **lanceur** : s'annule en Uppercut pour une jongle |
 
+Ses cordes des combos v3 (Double direct, Crochet au foie, Marteau, Remontant chassé) et le style « boxeur-DJ » qui les relie : `docs/combos-v3.md` §2.
+
 ### 5.3 Riff, « la punk qui breake et cogne »
 
 | Entrée | Nom | Ce que l'on voit | À quoi ça sert |
@@ -485,6 +488,8 @@ Résumé pour l'aide : **« L → H → S. Ou L, L, L. »** et **« ← + H fait
 | → + L | **Toprock** (`forwardLight`) | Pas croisé de danse vers l'avant puis jab, la frange et la chaîne de ceinture suivent | Avance de 20 px, **+1 en garde**, s'annule en normal : pression et pièges |
 | → + H | **Talon** (`forwardHeavy`) | Jambe tendue qui monte, rangers en l'air, puis retombe en coup de hache | **Overhead** plus rapide que celui de Nayo (17 tics), −4 en garde |
 | ← + H | **Retourné** (`backHeavy`) | Scorpion sauté : elle décolle de 16 px, la ranger accrochée par-dessus sa tête, et couvre aussi derrière elle | Anti-air normal, aussi contre les cross-ups (x −12..22) ; **lanceur** ; les coups bas passent sous elle de f6 à f10 (§10.2) |
+
+Ses cordes des combos v3 (Hache, Coup de boule, Retourné sauté) et sa Vrille : `docs/combos-v3.md` §4.
 
 ### 5.4 Spéciaux de Nayo : le nom dit ce que c'est, l'image dit où ça frappe, le son dit quand
 
@@ -580,19 +585,20 @@ Règle de casting : les **mêmes directions** pour les mêmes rôles (§5.1), se
 | Coup | S'annule en | Condition |
 |---|---|---|
 | Légers (L, ↓L), Toprock de Riff | normal, spécial | après contact (touché ou gardé), jusqu'à la fin du coup (fenêtre indulgente, faite pour le tactile) |
-| Direct / Jab | en plus : leur `chain` (Cross / Revers) sur L | idem |
-| Cross / Revers | spécial ; `chain` vers le coup final sur L | idem |
-| Lourds (H), Jab chassé de Nayo, lanceurs (←H) | spécial | idem |
-| Overheads (→H), balayages, coups finaux, coups sautés, spéciaux, prises | rien | — |
+| Tout normal qui a des `branches` | en plus : ses **cordes** (bouton × direction, `docs/combos-v3.md` §1.4), lues avant `cancelInto`, qu'elles passent outre | idem |
+| Cross / Revers, Double direct, Jab chassé, Toprock | spécial, et leurs cordes | idem |
+| Lourds (H), coups des cordes (Crochet au foie, Marteau, Coup de boule, Hache), lanceurs (←H, Remontant chassé, Retourné sauté) | spécial | idem |
+| Spéciaux | seulement un palier plus haut (`tierOf`, la super des combos v3), s'ils ont **touché** (`FLAG_MOVE_HIT`) et ne sont pas un projectile : rien tant qu'il n'y a pas de super | idem |
+| Overheads (→H), balayages, coups finaux, coups sautés, prises | rien | — |
 | Dash de Riff | normal, Prise | **sans contact**, dès f8 (`freeCancelFrom`) |
 
 Seuls les coups de type `movement` peuvent s'annuler en Prise (règle de validation). Aucun coup ne s'annule en Prise.
 
-Une annulation sur contact en normal ne donne jamais un coup qui avance (Jab chassé, Toprock) : chaque pas reprendrait la distance du recul, et ↓L, → + L, ↓L… tournerait sans fin. Le dash de Riff, qui n'a rien touché, s'annule en n'importe quel normal.
+**La phrase** (`docs/combos-v3.md` §1.2) remplace l'ancienne règle « une annulation sur contact ne donne jamais un coup qui avance » : une annulation n'entre jamais dans un normal déjà joué depuis le dernier coup lancé du neutre (le Direct et le Coup bas, deux fois). Le Jab chassé et le Toprock redeviennent des maillons, une fois par phrase : ↓L, → + L, ↓L, → + L de Riff sort les trois premiers, le quatrième attend la fin du Coup bas. Un coup lancé du neutre (un lien) commence une nouvelle phrase. Le dash de Riff, qui n'a rien touché, s'annule en n'importe quel normal.
 
-### 7.2 Chaîne L, L, L
+### 7.2 Chaîne L, L, L et cordes
 
-`chain` est une donnée du coup (`chain: 'chainLight'`), lue dans l'annulation : L appuyé pendant un coup qui a `chain` et qui a touché ou été gardé donne ce coup. Aucun compteur d'état. **Garantie** : L, L, L passe à toute distance où le premier L touche, debout comme accroupi, pour les deux personnages, si chaque appui tombe assez tôt pour garder le combo (test). Pour cela, le deuxième coup avance de 10 px et repousse peu (1,5 px/tic), et le coup final avance de 10 à 12 px.
+La chaîne est une corde comme les autres (`docs/combos-v3.md` §1.4) : `branches` est une donnée du coup (`{ button: 'light', dirs: ['neutral', 'forward'], move: 'chainLight' }`), lue dans l'annulation, avant la table des commandes : le bouton et la direction tenue quand il a été appuyé, relativement au côté regardé, donnent le coup suivant. Une manip fraîche passe d'abord (elle demande un spécial). Aucun compteur d'état. Sur la Cross et le Revers, L dans **toutes** les directions donne le coup final : le débutant qui martèle finit toujours au sol. **Garantie** : L, L, L passe à toute distance où le premier L touche, debout comme accroupi, pour les deux personnages, si chaque appui tombe assez tôt pour garder le combo (test). Pour cela, le deuxième coup avance de 10 px et repousse peu (1,5 px/tic), et le coup final avance de 10 à 12 px.
 
 ### 7.3 Liens
 
@@ -609,12 +615,13 @@ Un coup suit si `démarrage ≤ avantage − 1` (avant recul). Direct (+5) → c
 
 Les **spéciaux** gardés infligent 15 % de leurs dégâts (`SPECIAL_CHIP_PERCENT`, tronqué). Le chip ne peut pas tuer : la vie descend au minimum à 1. Les normaux n'infligent rien en garde.
 
-### 7.6 Jongle : une seule, après un lanceur
+### 7.6 Jongle à points (combos v3, `docs/combos-v3.md` §1.5)
 
-- Seuls les coups marqués `knockdown.juggle` (les deux ←+H) lancent la victime en `airHit` avec `juggle = 1`. Levée 5 px/tic, vx 0,5 : 19 tics en l'air.
-- Tant que `juggle > 0`, la victime peut prendre **un** coup en l'air (exception à `INVULNERABLE_ACTIONS`). Ce coup remet `juggle` à 0 : elle redevient intouchable jusqu'au sol.
-- Tout autre coup reçu en l'air donne `juggle = 0`, comme aujourd'hui. Toujours pas de coup au sol (OTG).
-- Effet : « anti-air → Uppercut » récompense la lecture, sans boucle. La jongle compte dans le compteur et le scaling.
+- Les lanceurs (`knockdown.juggle`, un nombre de points) envoient en `airHit` une victime qui n'y était pas déjà (au sol, ou en saut s'ils la prennent en anti-air) : Remontant et Remontant chassé **4 points** (le Remontant en CONTRE ou en PUNITION, **5**) ; Retourné et Retourné sauté de Riff, 4. Levée **8 px/tic**, vx 0,5 : 31 tics en l'air, sommet vers 60 px.
+- Un coup ne touche un corps en `airHit` que s'il lui reste ses points (`juggleCost`, 1 par défaut, **2** pour le Crochet, le Crochet au foie et le Coup de coude). Il les dépense ; le corps remonte à `min(3, 1,5 + 0,5 × points restants)` px/tic et file à 0,5 px/tic : plus les points baissent, plus il retombe vite.
+- Un coup qui met au sol sans être un lanceur (Mise au tapis, Uppercut, Pied fendu, Balayage) **finit la jongle** dans son propre vol ; un lanceur sur un corps déjà en l'air ne pose aucun point, il le relève. À 0 point, le corps est intouchable jusqu'au sol, puis passe en knockdown. Toujours pas de coup au sol (OTG).
+- **Prolongateur**, une fois par combo (`FLAG_EXTENDED`) : le **Marteau** de Nayo écrase le corps jonglé au sol à 5 px/tic (intouchable pendant la chute, `FLAG_BOUNCE`), qui rebondit à 6 px/tic avec 2 points de plus (le Rebond) ; le **Swipe** de Riff le fait tournoyer en l'air (vy 5, vx 1, 2 points de plus : la Vrille). L'impact gèle 4 tics de plus (`EXTENDER_HITSTOP`). Les marques de la victime s'effacent quand elle se tient de nouveau en neutre.
+- Les suites en l'air sont des **liens** : après le lanceur, on laisse le personnage se remettre et on recommence la phrase (fenêtres de 9 à 13 tics, mesurées). La jongle compte dans le compteur et le scaling.
 
 ### 7.7 Formule de dégâts (unique, entière, déterministe)
 
@@ -626,6 +633,12 @@ chip     = trunc(damage × 15 / 100), spéciaux seulement, la vie ne descend pas
 ```
 
 Tabassage et lancers : dégâts fixes, sans scaling ni bonus. Il n'y a **aucun** bonus de manip (D5).
+
+**CONTRE propre à un coup** (`counter`, `docs/combos-v3.md` §1.6) : le Crochet de Nayo en CONTRE ou en PUNITION **plie** l'adversaire, +16 tics de hitstun au lieu de +4 et un recul de 0,5 px/tic (+17, un lien de 18 tics) ; le Remontant lance avec 5 points au lieu de 4.
+
+**Décroissance du hitstun** : `stun = max(0, hitstun + bonus de CONTRE − 2 × max(0, coups − 8))` (`DECAY_FROM` 8, `DECAY_STEP` 2), au sol seulement : aucune route prévue ne la sent, mais une boucle de liens lâche avant la limite.
+
+**Limite dure** : `COMBO_LIMIT` = **12**. Le coup qui porte le combo à 12 met toujours au sol (levée d'au moins 3 px/tic, 0 point, `FLAG_LIMIT`), et rien ne touche plus le corps, ni coup ni projectile, jusqu'au sol. La recherche en faisceau trouve au plus 11 coups pour Nayo et 12 pour Riff, sans jauge (`tests/core/infinite.test.ts`).
 
 ### 7.8 Combos de référence (dégâts calculés avec la formule ; chacun devient un test de `tests/core/combos.test.ts`)
 
@@ -785,6 +798,7 @@ Le cœur garde aussi `reactionHeavy` (hitstun ≥ 18) et `stunTotal` (durée du 
 | Bord avant des hurtbox contre bord dessiné, poses neutres, de garde, de coup reçu | ±1,5 px sur toute la hauteur de la boîte |
 | **Contact visible** : pour chaque coup bas, à la distance maximale où il touche (calculée depuis les boîtes) contre chaque posture adverse, les masques alpha de l'attaquant et du défenseur rendus côte à côte se touchent | écart ≤ 1 px |
 | Riff | les mêmes tests depuis la phase 4 (`tests/tools/riff-sprites.test.ts`, `hurtboxes.test.ts`, `visible-contact.test.ts`, `hold-pairs.test.ts`), sauf la portée du Genou montant, vérifiée vers le haut seulement (−6 / +8) tant que son saut dessiné attend sa décision. Le Ciseau aérien, dont la hitbox commence derrière elle, est aussi mesuré **vers l'arrière** (−3 / +4 contre le bord −14) |
+| **Par coup, non par planche** (combos v3) | les portées se mesurent pour chaque coup qui frappe, avec la planche que joue son clip (`strikesOf`, `tools/sprites/clips.ts`) : le Double direct sur la planche du Direct, le Marteau sur celle de l'Overhand, la Hache sur celle du Talon. Un coup joué sur une planche d'attente (Crochet au foie, Remontant chassé, Coup de boule, Retourné sauté, jusqu'à la branche d'art `feat/combos-v3-art`) attend sa planche : sa mesure de portée est en attente, nommée comme telle |
 
 Correctifs de données déjà identifiés : Uppercut x 4..30 → **4..24** ; j.L de Nayo x 4..30 → **4..28** (corps à 25,5) ; Crochet x 10..54 → **10..52** et pose du bras qui atteint 51 à 53 ; Balayage x 12..52 → **12..51** (pied à 49,5, effet à 53).
 
@@ -797,38 +811,45 @@ Correctifs de données déjà identifiés : Uppercut x 4..30 → **4..24** ; j.L
 
 ## 10. Frame data v2
 
-Colonnes : **S/A/R** = démarrage / actif / récupération (total). **Dg** = dégâts (chip entre parenthèses). **HS/BS** = hitstun / blockstun. **Stop** = hitstop. **Recul** = vitesse initiale de glissade du défenseur (px/tic). **Av.** = avantage touché / gardé. **KD (V)** = mise au sol avec levée V ; la victime vole à la vitesse du recul, sauf les lanceurs (0,5 px/tic) et les lancers (vx indiqué). Portée = distance maximale de centre à centre contre Nayo debout (bord avant 13 px).
+Colonnes : **S/A/R** = démarrage / actif / récupération (total). **Dg** = dégâts (chip entre parenthèses). **HS/BS** = hitstun / blockstun. **Stop** = hitstop. **Recul** = vitesse initiale de glissade du défenseur (px/tic). **Av.** = avantage touché / gardé. **KD (V)** = mise au sol avec levée V ; la victime vole à la vitesse du recul, sauf les lanceurs (0,5 px/tic) et les lancers (vx indiqué). Portée = distance maximale de centre à centre contre Nayo debout (bord avant 13 px). Combos v3 (`docs/combos-v3.md`) : la colonne « Annule en » donne aussi les cordes ; un coup en l'air coûte 1 point de jongle, sauf « jongle 2 » ; les gels des fins (Mise au tapis, Pied fendu, Uppercut) sont plus longs.
 
 ### 10.1 Nayo (1000 PV)
 
 | Id | Entrée | Nom | S/A/R (tot) | Dg | HS/BS | Stop | Recul | Garde | Hitbox x / y | Mouvement | Av. | Portée | Annule en |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| standLight | L | Direct | 4/3/7 (14) | 30 | 14/10 | 8 | 2,5 | mid | 10..40 / 46..58 | — | +5/+1 | 53 | normal, spécial ; chain → chainLight |
-| chainLight | L après Direct | Cross | 6/3/12 (21) | 40 | 18/12 | 9 | 1,5 | mid | 10..46 / 46..60 | +10 px f0–5 | +4/−2 | 69 | spécial ; chain → lightFinisher |
-| lightFinisher | L après Cross | Mise au tapis | 8/3/18 (29) | 50 | KD (3)/12 | 11 | 4 | mid | 10..48 / 44..62 | +12 px f0–7 | KD +31 / −8 | 73 | — |
-| forwardLight | → + L | Jab chassé | 7/3/10 (20) | 35 | 15/11 | 8 | 2,5 | mid | 10..42 / 46..58 | +14 px f0–6 | +3/−1 | 69 | spécial |
-| standHeavy | H | Crochet | 8/4/16 (28) | 80 | 20/14 | 12 | 3,5 | mid | **10..52** / 44..62 | — | +1/−5 | 65 | spécial |
+| standLight | L | Direct | 4/3/7 (14) | 30 | 14/10 | 8 | 2,5 | mid | 10..40 / 46..58 | — | +5/+1 | 53 | normal, spécial ; cordes : L (neutre, →) Cross, ←L Double direct, ↓L Coup bas |
+| jabRepeat | L, ← + L | Double direct | 3/2/7 (12) | 20 | 13/10 | 7 | 1,5 | mid | 10..40 / 46..58 | — | +5/**+2** | 53 | spécial ; cordes : L (neutre, →, ←) Cross, ↓L Coup bas, H (neutre, →) Crochet, ↓H Balayage, ←H Remontant chassé |
+| chainLight | L après Direct | Cross | 6/3/12 (21) | 40 | 18/12 | 9 | 1,5 | mid | 10..46 / 46..60 | +10 px f0–5 | +4/−2 | 69 | spécial ; cordes : L (toute direction) Mise au tapis, H Crochet, →H Marteau, ↓H Balayage, ←H Remontant chassé |
+| lightFinisher | L après Cross | Mise au tapis | 8/3/18 (29) | 50 | KD (3)/12 | **14** | 4 | mid | 10..48 / 44..62 | +12 px f0–7 | KD +31 / −8 | 73 | — ; finit une jongle |
+| forwardLight | → + L | Jab chassé | 7/3/10 (20) | 35 | 15/11 | 8 | 2,5 | mid | 10..42 / 46..58 | +14 px f0–6 | +3/−1 | 69 | spécial ; corde : L (neutre, →, ←) Cross |
+| standHeavy | H | Crochet | 8/4/16 (28) | 80 | 20/14 ; **CONTRE 36, recul 0,5 (plie)** | 12 | 3,5 | mid | **10..52** / 44..62 | — | +1/−5 (CONTRE +17) | 65 | spécial ; cordes : H (neutre, →) Crochet au foie, ↓H Balayage, ←H Remontant chassé ; jongle 2 |
+| chainHeavy | H, H | Crochet au foie | 8/3/17 (28) | 60 | 22/12 | 11 | 2,5 | mid | 8..46 / **24..44** (touche l'accroupi) | +22 px f0–7 | +3/−7 | 81 | spécial ; jongle 2 |
+| chainHigh | L, L, → + H | Marteau | 14/3/15 (32) | 60 | 19/11 | 12 | 3 | **overhead** | 12..40 / 36..72 | +16 px f0–9 | +2/−6 | 69 | spécial ; **Rebond** sur un corps jonglé, une fois par combo |
 | forwardHeavy | → + H | Overhand | 19/3/15 (37) | 70 | 18/13 | 12 | 3 | **overhead** | 12..40 / 36..72 | +8 px f6–13 | +1/−4 (CONTRE +5) | 61 | — |
-| backHeavy | ← + H | Remontant | 7/4/17 (28) | 65 | lance (5, juggle)/14 | 11 | 3 | mid | 4..30 / **58**..104 | — | lance / −6 | 43 (rate l'accroupi) | spécial |
+| backHeavy | ← + H | Remontant | 7/4/17 (28) | 65 | lance (**8**, 4 points ; 5 en CONTRE)/14 | 11 | 3 | mid | 4..30 / **58**..104 | — | lance / −6 | 43 (rate l'accroupi) | spécial |
+| chainLaunch | L, L, ← + H | Remontant chassé | 7/4/17 (28) | 60 | lance (8, 4 points)/14 | 11 | 3 | mid | 4..30 / 58..104 | +12 px f0–6 | lance / −6 | 55 (rate l'accroupi) | spécial |
 | crouchLight | ↓ + L | Coup bas | 4/2/8 (14) | 25 | 12/8 | 7 | 2,5 | low | 12..38 / 4..14 | — | +3/−1 | 51 | normal, spécial |
 | crouchHeavy | ↓ + H | Balayage | 9/3/20 (32) | 70 | KD trip (2)/14 | 11 | 3,5 | low | **12..51** / 2..14 | — | KD +25 / −8 | 64 | — |
 | jumpLight | air L | Genou sauté | 4/6/6 | 30 | 14/10 | 8 | 2 | overhead | **4..28** / 10..26 | — | — | 41 | — |
 | jumpHeavy | air H | Coup de pied sauté | 7/5/10 | 70 | 18/12 | 11 | 3 | overhead | 2..36 / −4..18 | — | — | 49 | — |
 | special | S, ↓↘→ | **Vinyle** | 12/1/28 (41) | 60 (9) | 18/14 | 8 | 3 | mid | projectile 3,5 px/tic, né à 24 px devant, boîte **−10..10 / 32..52** | — | −14 au contact (gardé) | écran | — |
-| specialForward | → + S | Pied fendu | 11/4/18 (33) | **75** (11) | **KD (3)**/12 | 11 | 3,5 | mid | 8..44 / 24..40 | +30 px f3–14 | KD +30 / −9 | 77 | — |
-| specialAntiAir | ↓ + S, →↓↘ | Uppercut | 3/8/28 (39) | 110 (16) | KD (3)/12 | 13 | 3 | mid | **4..24** / 30..100 | — | KD +16 / −23 | 37 | — ; invincible f0–6 (coups, projectiles, prises) |
+| specialForward | → + S | Pied fendu | 11/4/18 (33) | **75** (11) | **KD (3)**/12 | **14** | 3,5 | mid | 8..44 / 24..40 | +30 px f3–14 | KD +30 / −9 | 77 | — |
+| specialAntiAir | ↓ + S, →↓↘ | Uppercut | 3/8/28 (39) | 110 (16) | KD (3)/12 | **16** | 3 | mid | **4..24** / 30..100 | — | KD +16 / −23 | 37 | — ; invincible f0–6 (coups, projectiles, prises) |
 
 ### 10.2 Riff (900 PV)
 
 | Id | Entrée | Nom | S/A/R (tot) | Dg | HS/BS | Stop | Recul | Garde | Hitbox x / y | Mouvement | Av. | Portée | Annule en |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| standLight | L | Jab | 3/2/6 (11) | 25 | 13/9 | 7 | 2,5 | mid | 9..33 / 42..54 | — | +6/+2 | 46 | normal, spécial ; chain → chainLight |
-| chainLight | L après Jab | Revers | 5/3/10 (18) | 30 | 16/11 | 8 | 1,5 | mid | 8..38 / 44..58 | +10 px f0–4 | +4/−1 | 61 | spécial ; chain → lightFinisher |
-| lightFinisher | L après Revers | Swipe | 7/3/18 (28) | 45 | KD (2,5)/11 | 10 | 4 | mid | 8..42 / 30..56 | +10 px f0–6 | KD +29 / −9 | 65 | — |
-| forwardLight | → + L | Toprock | 8/2/10 (20) | 30 | 15/12 | 8 | 2,5 | mid | 8..32 / 44..58 | +20 px f0–7 | +4/**+1** | 65 | normal, spécial |
-| standHeavy | H | Coup de coude | 6/3/14 (23) | 70 | 19/13 | 11 | **2** | mid | 9..43 / 40..58 | — | +3/−3 | 56 | spécial |
+| standLight | L | Jab | 3/2/6 (11) | 25 | 13/9 | 7 | 2,5 | mid | 9..33 / 42..54 | — | +6/+2 | 46 | normal, spécial ; corde : L (neutre, →, ←) Revers |
+| chainLight | L après Jab | Revers | 5/3/10 (18) | 30 | 16/11 | 8 | 1,5 | mid | 8..38 / 44..58 | +10 px f0–4 | +4/−1 | 61 | spécial ; cordes : L (toute direction) Swipe, H Coude, →H Hache, ↓H Windmill, ←H Retourné sauté |
+| chainHigh | L, L, → + H | Hache | 12/3/14 (29) | 50 | 17/11 | 10 | 2,5 | **overhead** | 8..34 / 34..70 | +12 px f0–7 | +1/−5 | 59 | spécial |
+| chainLaunch | L, L, ← + H | Retourné sauté | 6/5/15 (26) | 50 | lance (8, 4 points)/13 | 10 | 3 | mid | −12..22 / 58..100 | +14 px f0–5 ; hurtbox du Retourné de f6 à f10 | lance / −6 | 49 (rate l'accroupi) | spécial |
+| lightFinisher | L après Revers | Swipe | 7/3/18 (28) | 45 | KD (2,5)/11 | 10 | 4 | mid | 8..42 / 30..56 | +10 px f0–6 | KD +29 / −9 | 65 | — ; **Vrille** sur un corps jonglé, une fois par combo |
+| forwardLight | → + L | Toprock | 8/2/10 (20) | 30 | 15/12 | 8 | 2,5 | mid | 8..32 / 44..58 | +20 px f0–7 | +4/**+1** | 65 | normal, spécial (une fois par phrase) ; corde : L (neutre, →, ←) Revers |
+| standHeavy | H | Coup de coude | 6/3/14 (23) | 70 | 19/13 | 11 | **2** | mid | 9..43 / 40..58 | — | +3/−3 | 56 | spécial ; cordes : H (neutre, →) Coup de boule, ↓H Windmill, ←H Retourné ; jongle 2 |
+| chainHeavy | H, H | Coup de boule | 6/2/14 (22) | 50 | 18/12 | 10 | 2 | mid | 8..34 / 50..66 | +12 px f0–5 | +3/−3 | 59 | spécial |
 | forwardHeavy | → + H | Talon | 17/3/14 (34) | 60 | 17/12 | 11 | **2,5** | **overhead** | 8..34 / 34..70 | +15 px f4–13 | +1/−4 (CONTRE +5) | 62 | — |
-| backHeavy | ← + H | Retourné | 6/5/15 (26) | 55 | lance (5, juggle)/13 | 10 | 3 | mid | **−12..22** / **58**..100 | hurtbox −15..15 / 16..96 de f6 à f10 | lance / −6 | 35 (rate l'accroupi) | spécial |
+| backHeavy | ← + H | Retourné | 6/5/15 (26) | 55 | lance (**8**, 4 points)/13 | 10 | 3 | mid | **−12..22** / **58**..100 | hurtbox −15..15 / 16..96 de f6 à f10 | lance / −6 | 35 (rate l'accroupi) | spécial |
 | crouchLight | ↓ + L | Coup bas | 3/2/7 (12) | 20 | 12/8 | 6 | 2 | low | 10..32 / 4..14 | — | +4/0 | 45 | normal, spécial |
 | crouchHeavy | ↓ + H | Windmill | 7/3/18 (28) | 65 | KD trip (2)/13 | 10 | 3 | low | 10..44 / 2..14 | — | KD +27 / −7 | 57 | — |
 | jumpLight | air L | **Ciseau aérien** | 3/6/5 | 25 | 13/9 | 7 | 2 | overhead | **−14..26** / 6..24 | — | — | 39, et derrière | — |
@@ -1112,7 +1133,7 @@ export interface MoveHurtbox { readonly frames: FrameRange; readonly boxes: read
 export interface Knockdown {
   readonly vx: number; readonly vy: number;
   readonly trip?: boolean;    // réaction « fauché »
-  readonly juggle?: boolean;  // lanceur : un coup de plus possible en l'air
+  readonly juggle?: number;   // lanceur : ses points de jongle (combos v3, 1 à 5)
 }
 
 export interface MoveData {
@@ -1126,7 +1147,11 @@ export interface MoveData {
   readonly motion?: RootMotion;                 // remplace `advance`
   readonly hurtboxes?: readonly MoveHurtbox[];
   readonly cancelInto?: readonly MoveKind[];
-  readonly chain?: MoveId;                      // L après contact
+  readonly branches?: readonly Branch[];        // cordes après contact (combos v3, remplace `chain`)
+  readonly juggleCost?: number;                 // points de jongle dépensés en l'air (1 par défaut)
+  readonly counter?: CounterEffect;             // CONTRE propre au coup (le Crochet qui plie)
+  readonly extender?: 'rebond' | 'vrille';      // prolongateur, une fois par combo
+  readonly crouching?: true;                    // joué accroupi (remplace isCrouchingMove)
   readonly freeCancelFrom?: number;             // annulation sans contact (dash de Riff)
   readonly invincible?: FrameRange & { readonly against?: 'all' | 'air' };
   readonly throwInvincible?: FrameRange;        // backdash
@@ -1166,7 +1191,9 @@ export interface FighterState {
   readonly tapFrames: number;
   readonly tapReleased: boolean;
   readonly throwImmuneFrames: number;
-  readonly juggle: 0 | 1;
+  readonly juggle: number;                      // points de jongle restants (combos v3)
+  readonly phrase: number; readonly phraseTwice: number;  // la phrase (combos v3 §1.2)
+  readonly flags: number;                       // FLAG_MOVE_HIT, FLAG_EXTENDED, FLAG_BOUNCE, FLAG_LIMIT
   readonly reaction: Reaction | null;
   readonly reactionHeavy: boolean;
   readonly stunTotal: number;
@@ -1218,7 +1245,8 @@ Les tabassages déjà donnés se lisent dans `HoldState` via le temps (aucun com
 - Les plages de `hurtboxes`, `invincible`, `throwInvincible` et `freeCancelFrom` sont dans le coup.
 - Type `movement` : 0 dégât, pas de hitbox ni de projectile. Type `grab` : seulement `grab`, avec une hitbox. Type `throw` : seulement `pummel`, `throwForward`, `throwBack`, sans hitbox ; les lancers ont un `knockdown` et `sideSwitchFrame < startup` pour `throwBack`.
 - Seuls les `movement` peuvent annuler en `grab` ; `cancelInto` ne contient jamais `throw` ni `movement`.
-- `chain` désigne un coup défini ; un coup optionnel défini a un clip (l'art itère sur les coups **définis**).
+- Un coup optionnel défini a un clip (l'art itère sur les coups **définis**, `FighterClips` partiel sur les optionnels), et le type que lui donne la table `OPTIONAL_KINDS` (tous des normaux aujourd'hui).
+- Combos v3 (`docs/combos-v3.md` §1.12, règles 1, 2 et 5 à 8, `core/validate-combos.ts`) : les cordes mènent à des normaux définis, une seule par bouton et direction, seulement depuis un normal, sans boucle et sur 5 coups au plus ; tout normal a son bit dans la phrase (`PHRASE_MOVE_IDS`, 31 au plus) ; un lanceur donne de 1 à 5 points, un coup coûte 1 point au moins ; un prolongateur est un normal, et un seul type par personnage ; un CONTRE propre ajoute de 0 à 20 tics de hitstun et lance comme un lanceur ; l'avantage en garde de tout normal (`blockstun + 1 − actif − récupération`) reste sous le démarrage le plus court du personnage (+2 au plus aujourd'hui : une série gardée finit toujours) ; tout coup qui frappe repousse.
 - `remix` ne contient aucun champ de timing (garanti par le type, vérifié à l'exécution).
 - Hurtbox : au moins une boîte par posture, au plus deux, sans trou entre elles.
 - `airPushbox.lift ≥ 0` ; `beatTicks` entier ≥ 12 ; projectiles interdits sur les coups aériens (inchangé).

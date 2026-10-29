@@ -2,6 +2,7 @@ import { NAYO as NAYO_ART } from '../../src/art/nayo';
 import { RIFF as RIFF_ART } from '../../src/art/riff';
 import type { FighterArt } from '../../src/art/types';
 import type { FighterTemplate } from '../../src/core/config';
+import type { MoveId } from '../../src/core/move-data';
 import { NAYO as NAYO_TEMPLATE } from '../../src/data/fighters/nayo';
 import { RIFF as RIFF_TEMPLATE } from '../../src/data/fighters/riff';
 import type { Fighter } from '../../tools/sprites/fighter';
@@ -35,6 +36,22 @@ export const DRAWN_RIFF: DrawnFighter = {
   generator: RIFF,
 };
 export const DRAWN_FIGHTERS: readonly DrawnFighter[] = [DRAWN_NAYO, DRAWN_RIFF];
+
+/**
+ * The moves played on a stand-in strip, the closest one in their own ticks, until the branch
+ * feat/combos-v3-art lands theirs (docs/combos-v3.md §5): what they reach is their own strip's
+ * to show, so their reach checks wait for it, nothing else does.
+ */
+export const AWAITING_ART: Readonly<Record<string, ReadonlySet<MoveId>>> = {
+  Nayo: new Set<MoveId>(['chainHeavy', 'chainLaunch']),
+  Riff: new Set<MoveId>(['chainHeavy', 'chainLaunch']),
+};
+
+/** The name of a reach check: a move still on its stand-in says what it waits for. */
+export function reachCheck(fighter: string, id: MoveId): string {
+  const waits = AWAITING_ART[fighter]?.has(id) ?? false;
+  return `${id}: the active frames reach the hitbox, no farther${waits ? ' (waits for feat/combos-v3-art)' : ''}`;
+}
 
 const strips = new Map<string, PixelCanvas>();
 const effects = new Map<string, PixelCanvas | undefined>();

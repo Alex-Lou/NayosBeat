@@ -2,6 +2,7 @@ import type { MatchConfig } from '../../src/core/config';
 import { DIRECTIONS, type InputBits } from '../../src/core/input';
 import type { Contact, FighterState, GameState } from '../../src/core/state';
 import { step } from '../../src/core/step';
+import type { TickInputs } from './helpers';
 
 /** What a combo did: every state, and the blows the attacker landed (hits, pummels, throws). */
 export interface ComboRun {
@@ -9,6 +10,8 @@ export interface ComboRun {
   readonly hits: readonly Contact[];
   /** The state once everything has settled. */
   readonly end: GameState;
+  /** Both players' inputs on every tick: the combo as a script (`expectMirrored` plays it). */
+  readonly inputs: readonly TickInputs[];
 }
 
 /** Ticks given to a step to come out before the combo counts as dropped. */
@@ -38,12 +41,15 @@ export function playCombo(
 ): ComboRun {
   const states: GameState[] = [];
   const hits: Contact[] = [];
+  const inputs: TickInputs[] = [];
   let state = start;
   let tick = 0;
   const advance = (input: InputBits): FighterState => {
     const before = state.fighters[by];
     const other = opponent(tick);
-    state = step(state, by === 0 ? [input, other] : [other, input], config);
+    const pair = by === 0 ? ([input, other] as const) : ([other, input] as const);
+    inputs.push(pair);
+    state = step(state, pair, config);
     tick++;
     states.push(state);
     for (const contact of state.contacts) {
@@ -61,10 +67,24 @@ export function playCombo(
     }
   });
   for (let i = 0; i < SETTLE_TICKS; i++) advance(0);
-  return { states, hits, end: state };
+  return { states, hits, end: state, inputs };
 }
 
 /** Total damage of the blows. */
 export function damageOf(hits: readonly Contact[]): number {
   return hits.reduce((total, hit) => total + hit.damage, 0);
+}
+
+/** The opponent once it has landed: on the ground (knocked down, or getting up). */
+export function floored(run: ComboRun, victim: 0 | 1 = 1): boolean {
+  return run.states.some((state) => state.fighters[victim].action === 'knockdown');
+}
+
+/** Every blow of the combo landed on a fighter that could not act in between. */
+export function unbroken(run: ComboRun, victim: 0 | 1 = 1): boolean {
+  return run.hits.every((hit, index) => {
+    const state = run.states.find((s) => s.contacts.includes(hit));
+    const defender: FighterState | undefined = state?.fighters[victim];
+    return defender !== undefined && (index === 0 || defender.comboCount === index + 1);
+  });
 }

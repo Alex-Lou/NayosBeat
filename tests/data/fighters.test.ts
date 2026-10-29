@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import type { FighterTemplate } from '../../src/core/config';
-import type { MoveData, MoveId } from '../../src/core/move-data';
+import type { Branch, BranchDir, MoveData, MoveId } from '../../src/core/move-data';
 import { px } from '../../src/core/constants';
 import { assertValidMatch, validateStage, validateTemplate } from '../../src/core/validate';
 import { TRAINING_STAGE } from '../../src/data/stages';
 import { MATCH } from '../core/helpers';
 import { NAYO } from '../../src/data/fighters/nayo';
 import { RIFF } from '../../src/data/fighters/riff';
-import { box } from '../../src/data/fighters/shared';
+import { box, kd } from '../../src/data/fighters/shared';
 
 /** A jump attack firing the fireball: valid types, invalid data. */
 function withProjectileOnJumpLight(): FighterTemplate {
@@ -63,7 +63,8 @@ describe('fighter templates', () => {
       maxHealth: 0,
       moves: { ...NAYO.moves, standLight: { ...NAYO.moves.standLight, active: 0 } },
     };
-    expect(validateTemplate(broken)).toHaveLength(2);
+    // A jab without an active tick also leaves 4 on block (docs/combos-v3.md §1.12, rule 8).
+    expect(validateTemplate(broken)).toHaveLength(3);
     expect(() => {
       assertValidMatch({ ...MATCH, fighters: [broken, RIFF] });
     }).toThrow(/standLight\.active/);
@@ -128,14 +129,96 @@ describe('fighter templates', () => {
         /special\.hurtboxes must have one or 2 valid boxes/,
       ],
       [
-        'special chaining',
-        withMove(NAYO, 'special', () => ({ chain: 'chainLight' })),
-        /special: only a normal chains/,
+        'special with strings',
+        withMove(NAYO, 'special', () => ({ branches: [{ button: 'light', move: 'chainLight' }] })),
+        /special: only a normal opens strings/,
       ],
       [
         'direction move as a special',
         withMove(NAYO, 'forwardLight', () => ({ kind: 'special' })),
-        /forwardLight: the direction normals and the chain are normals/,
+        /forwardLight must be of kind normal/,
+      ],
+    ];
+    for (const [label, template, rule] of cases) {
+      expect(validateTemplate(template).join('\n'), label).toMatch(rule);
+    }
+  });
+
+  it('rejects combos v3 data that would let a combo run on, each by its own rule', () => {
+    // docs/combos-v3.md §1.12, rules 1, 2 and 5 to 8.
+    const string = (move: MoveId, dirs?: readonly BranchDir[]): Branch => ({
+      button: 'light',
+      move,
+      ...(dirs && { dirs }),
+    });
+    const launch = kd(8, 0.5, { juggle: 6 });
+    const cases: [string, FighterTemplate, RegExp][] = [
+      [
+        'strings in a loop',
+        withMove(NAYO, 'lightFinisher', () => ({ branches: [string('standLight')] })),
+        /strings from standLight loop/,
+      ],
+      [
+        'two strings for one button and direction',
+        withMove(NAYO, 'standLight', ({ branches = [] }) => ({
+          branches: [...branches, string('forwardLight', ['back'])],
+        })),
+        /standLight: two strings for light back/,
+      ],
+      [
+        'strings six moves deep',
+        withMove(NAYO, 'chainHeavy', () => ({ branches: [string('crouchLight')] })),
+        /strings from standLight run 6 moves \(5 at most\)/,
+      ],
+      [
+        'a string to a special',
+        withMove(NAYO, 'jabRepeat', () => ({ branches: [string('special')] })),
+        /jabRepeat: a string leads to a normal it has/,
+      ],
+      [
+        'a normal out of the phrase',
+        withMove(NAYO, 'special', () => ({ kind: 'normal' })),
+        /special: a normal must have its bit in the phrase/,
+      ],
+      [
+        'six juggle points',
+        withMove(NAYO, 'backHeavy', () => ({ knockdown: launch })),
+        /backHeavy: a launcher gives from 1 to 5 juggle points/,
+      ],
+      [
+        'a blow in the air for free',
+        withMove(NAYO, 'standLight', () => ({ juggleCost: 0 })),
+        /standLight\.juggleCost must be an integer >= 1/,
+      ],
+      [
+        'an extender on a special',
+        withMove(NAYO, 'specialForward', () => ({ extender: 'rebond' })),
+        /specialForward: only a normal can be an extender/,
+      ],
+      [
+        'both extenders',
+        withMove(NAYO, 'lightFinisher', () => ({ extender: 'vrille' })),
+        /one kind of extender per fighter/,
+      ],
+      [
+        'a CONTRE that stuns too long',
+        withMove(NAYO, 'standHeavy', () => ({ counter: { hitstun: 21 } })),
+        /standHeavy\.counter\.hitstun must be an integer from 0 to 20/,
+      ],
+      [
+        'a CONTRE launching with six points',
+        withMove(NAYO, 'backHeavy', () => ({ counter: { knockdown: launch } })),
+        /backHeavy\.counter: a launcher gives from 1 to 5 juggle points/,
+      ],
+      [
+        'a normal at +3 on block',
+        withMove(NAYO, 'jabRepeat', () => ({ blockstun: 11 })),
+        /jabRepeat is 3 on block: a blocked string would never end \(2 at most\)/,
+      ],
+      [
+        'a blow that does not push back',
+        withMove(RIFF, 'chainHigh', () => ({ pushback: 0 })),
+        /chainHigh: a blow must push back/,
       ],
     ];
     for (const [label, template, rule] of cases) {

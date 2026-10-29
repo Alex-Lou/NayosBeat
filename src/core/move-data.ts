@@ -23,7 +23,8 @@ export const CORE_MOVE_IDS = [
 
 /**
  * Moves a fighter may leave out (docs/combat-v2.md §2.8): the command that asks for one gives
- * the standing normal instead (`groundMove`). Nayo and Riff define them all.
+ * the standing normal instead (`groundMove`), and a string (`branches`) only leads to the ones it
+ * has. Nayo defines them all, Riff all but the Double direct.
  */
 export const OPTIONAL_MOVE_IDS = [
   'forwardLight',
@@ -31,6 +32,11 @@ export const OPTIONAL_MOVE_IDS = [
   'backHeavy',
   'chainLight',
   'lightFinisher',
+  // The strings of combos v3 (docs/combos-v3.md §2.4, §4): reached only through a branch.
+  'jabRepeat',
+  'chainHeavy',
+  'chainHigh',
+  'chainLaunch',
 ] as const;
 
 /** Every move a fighter can have, required or not. */
@@ -39,6 +45,31 @@ export const MOVE_IDS = [...CORE_MOVE_IDS, ...OPTIONAL_MOVE_IDS] as const;
 export type CoreMoveId = (typeof CORE_MOVE_IDS)[number];
 export type OptionalMoveId = (typeof OPTIONAL_MOVE_IDS)[number];
 export type MoveId = CoreMoveId | OptionalMoveId;
+
+/**
+ * The normals, one bit each in the phrase (docs/combos-v3.md §1.2): a cancel never enters a
+ * normal the phrase already played. Every normal of the cast is here (validation), 31 at most.
+ */
+export const PHRASE_MOVE_IDS = [
+  'standLight',
+  'standHeavy',
+  'crouchLight',
+  'crouchHeavy',
+  'jumpLight',
+  'jumpHeavy',
+  'forwardLight',
+  'forwardHeavy',
+  'backHeavy',
+  'chainLight',
+  'lightFinisher',
+  'jabRepeat',
+  'chainHeavy',
+  'chainHigh',
+  'chainLaunch',
+] as const satisfies readonly MoveId[];
+
+/** The beat, the two lights: a phrase may play each of them twice. */
+export const PHRASE_TWICE_IDS = ['standLight', 'crouchLight'] as const satisfies readonly MoveId[];
 
 /** Moves performed in the air (a projectile there would never be fired). */
 export const AIR_MOVE_IDS: readonly MoveId[] = ['jumpLight', 'jumpHeavy'];
@@ -101,8 +132,35 @@ export interface Knockdown {
   readonly vy: number;
   /** Swept off the legs (sweeps, the Glissade): the defender falls on its back. */
   readonly trip?: boolean;
-  /** A launcher: the defender, sent up from its feet, can take one more blow in the air. */
-  readonly juggle?: boolean;
+  /**
+   * A launcher: the juggle points the defender gets, sent up from the ground or caught in a
+   * jump (docs/combos-v3.md §1.5). Each blow in the air then spends its `juggleCost`.
+   */
+  readonly juggle?: number;
+}
+
+/** The direction a branch asks for, read relative to the side faced when the button was pressed. */
+export type BranchDir = 'neutral' | 'forward' | 'back' | 'down';
+
+/**
+ * A string (docs/combos-v3.md §1.4): this button, with one of these directions held (any, when
+ * `dirs` is left out), during a move that hit or was blocked, gives `move`, before the command
+ * table and whatever `cancelInto` says.
+ */
+export interface Branch {
+  readonly button: 'light' | 'heavy';
+  readonly dirs?: readonly BranchDir[];
+  readonly move: MoveId;
+}
+
+/** What a CONTRE or a PUNITION does instead (docs/combos-v3.md §1.6), when the move says. */
+export interface CounterEffect {
+  /** Hitstun added, instead of COUNTER_HITSTUN. */
+  readonly hitstun?: number;
+  /** The slide it gives instead of `pushback` (the Crochet folds the opponent on the spot). */
+  readonly pushback?: number;
+  /** Its own launch (the Remontant's fifth juggle point). */
+  readonly knockdown?: Knockdown;
 }
 
 /**
@@ -140,11 +198,19 @@ export interface MoveData {
    * `freeCancelFrom` on, without contact).
    */
   readonly cancelInto?: readonly MoveKind[];
+  /** The strings it opens once it has hit or been blocked (docs/combos-v3.md §1.4). */
+  readonly branches?: readonly Branch[];
+  /** Juggle points it spends on a juggled defender (docs/combos-v3.md §1.5): 1 by default. */
+  readonly juggleCost?: number;
+  /** Its own CONTRE (docs/combos-v3.md §1.6). */
+  readonly counter?: CounterEffect;
   /**
-   * The move L gives once this one has hit or been blocked (L, L, L, docs/combat-v2.md §7.2),
-   * before any other reading of L: no counter, the chain is in the data.
+   * Once per combo, on a juggled body: the Rebond (slammed down, it bounces back up) or the
+   * Vrille (spun away up in the air), each with more juggle points (docs/combos-v3.md §1.5).
    */
-  readonly chain?: MoveId;
+  readonly extender?: 'rebond' | 'vrille';
+  /** Played crouching: the crouching pushbox and hurtboxes. */
+  readonly crouching?: true;
   /**
    * From this action frame on, the move can be cancelled without having touched anything (Riff's
    * dash): the move cancelled into keeps part of its speed (DASH_MOMENTUM_PERCENT).

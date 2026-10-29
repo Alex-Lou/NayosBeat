@@ -1,7 +1,7 @@
 /**
  * How a fighter's clips (src/art/<name>/clips.ts) play its strips, read by the tools: the ticks
  * of each frame, which pace the hanging parts in the generator, and the frames on screen while
- * a move can hit, which the preview and the tests measure against its hitbox. The clips follow
+ * a move can hit, which the preview and the tests measure against its hitbox, move by move. The clips follow
  * the frame data: the strips are drawn to them, never the other way around.
  */
 
@@ -51,29 +51,46 @@ export function activeFrames(clip: Clip, move: MoveData): number[] {
   return frames;
 }
 
-/** A move that plays a strip with a hitbox: which one, and its strike in world pixels. */
+/** A move with a hitbox: which one, the strip its clip plays, and its strike in world pixels. */
 export interface StripStrike extends Strike {
   readonly id: MoveId;
   readonly move: MoveData;
+  readonly sheet: string;
 }
 
-/** The move of `template` whose clip plays `sheet`, if it has a hitbox (a strike, the grab). */
+/**
+ * Every move of `template` that strikes with a hitbox (the strikes, the grab), with the strip its
+ * clip plays: reaches are a move's, not a strip's, since several moves may play one strip, each
+ * with its own box and its own frames (docs/combos-v3.md §5: the Double direct plays the Direct's
+ * strip, the Marteau the Overhand's).
+ */
+export function strikesOf(clips: Clips, template: FighterTemplate): StripStrike[] {
+  return MOVE_IDS.flatMap((id) => {
+    const clip = clips[id];
+    const move = template.moves[id];
+    const box = move?.hitbox;
+    if (!clip || !move || !box) return [];
+    return [
+      {
+        id,
+        move,
+        sheet: clip.sheet,
+        frames: activeFrames(clip, move),
+        box: { x: toPx(box.x), y: toPx(box.y), width: toPx(box.width), height: toPx(box.height) },
+      },
+    ];
+  });
+}
+
+/**
+ * The strike a strip shows (the preview draws its hitbox): the move named after the strip,
+ * else the first move whose clip plays it, if it has a hitbox.
+ */
 export function strikeOf(
   clips: Clips,
   template: FighterTemplate,
   sheet: string,
 ): StripStrike | undefined {
-  for (const id of MOVE_IDS) {
-    const clip = clips[id];
-    const move = template.moves[id];
-    const box = move?.hitbox;
-    if (clip?.sheet !== sheet || !move || !box) continue;
-    return {
-      id,
-      move,
-      frames: activeFrames(clip, move),
-      box: { x: toPx(box.x), y: toPx(box.y), width: toPx(box.width), height: toPx(box.height) },
-    };
-  }
-  return undefined;
+  const strikes = strikesOf(clips, template).filter((strike) => strike.sheet === sheet);
+  return strikes.find((strike) => strike.id === sheet) ?? strikes[0];
 }

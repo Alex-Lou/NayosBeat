@@ -50,6 +50,35 @@ describe('helpPages', () => {
     }
   });
 
+  it("ends each fighter's page on its combos to learn first, without gauge (combos-v3 §3.2)", () => {
+    for (const page of helpPages(PHONE).slice(2)) {
+      const combos = page.sections.at(-1);
+      expect(combos?.title).toBe('Combos');
+      expect(combos?.rows[0]).toEqual(['L, L, L', expect.any(String)]);
+      expect(combos?.rows).toHaveLength(5);
+      expect(combos?.rows.join(' ')).not.toMatch(/BOOST/);
+    }
+  });
+
+  it("fits each fighter's lists on a phone held sideways, one under the other", () => {
+    // Press Start 2P draws every glyph 8 px wide at 8 px, and a cell has 4 px on each side. An
+    // input never wraps; the text wraps between words. 536 px: a 568 px wide screen, less the
+    // menu's 16 px on each side.
+    const GLYPH = 8;
+    const CELL = 8;
+    const PHONE_PX = 536;
+    const longest = (texts: readonly string[]): number =>
+      Math.max(...texts.map((text) => text.length));
+    for (const page of helpPages(PHONE).filter((candidate) => candidate.fighter)) {
+      for (const { title, rows } of page.sections) {
+        const inputs = rows.map(([input]) => input);
+        const words = rows.flatMap(([, text]) => text.split(' '));
+        const width = (longest(inputs) + longest(words)) * GLYPH + 2 * CELL;
+        expect(width, `${page.title}, ${title}`).toBeLessThanOrEqual(PHONE_PX);
+      }
+    }
+  });
+
   it('calls the special of the button and of ↓↘→ the Vinyle, for Nayo', () => {
     expect(textOf('Nayo')).toContain('Vinyle');
     expect(textOf('Nayo')).not.toMatch(/onde sonore :/i);

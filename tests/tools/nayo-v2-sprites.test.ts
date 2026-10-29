@@ -2,19 +2,20 @@ import { describe, expect, it } from 'vitest';
 import { NAYO_CLIPS } from '../../src/art/nayo/clips';
 import { NAYO_SHEETS } from '../../src/art/nayo/sheets';
 import { ANCHOR, ART_SCALE, CELL_SIZE } from '../../src/art/types';
-import { toPx } from '../../src/core/constants';
 import { NAYO } from '../../src/data/fighters/nayo';
-import { MOVE_IDS, type MoveData, type MoveId } from '../../src/core/move-data';
+import { strikesOf } from '../../tools/sprites/clips';
 import { GUARD } from '../../tools/sprites/nayo/poses/common';
 import { NAYO_POSES, V2_SHEETS, type V2Sheet } from '../../tools/sprites/nayo/poses/index';
 import type { PixelCanvas, Point } from '../../tools/sprites/raster';
 import { drawEffectsSheet, drawSheet } from '../../tools/sprites/sheet';
 import { solve, type Pose } from '../../tools/sprites/skeleton';
+import { AWAITING_ART, reachCheck } from './fighters';
 import { extent, reach } from './strip-pixels';
 
 /**
  * Nayo's combat v2 strips (docs/combat-v2.md §11.1, §11.2) against the spec (frame counts), the
- * game (the clips that play them, the moves' hitboxes) and the rules of the animation brief.
+ * game (the clips that play them, the hitbox of each move that plays one: the Marteau plays the
+ * Overhand's strip) and the rules of the animation brief.
  * A new strip starts as a placeholder.
  *
  * Strips in progress: only their frame count is checked. Take a strip off this list once it is
@@ -74,25 +75,9 @@ const RULES: Readonly<Record<V2Sheet, Rules>> = {
   getup: { frames: 5, placeholder: GUARD, toGuard: 'exact' },
 };
 
-/** The move a strip plays, with a hitbox: the strikes and the grab. */
-function strikeOf(sheet: V2Sheet): { id: MoveId; move: MoveData } | null {
-  const id = MOVE_IDS.find((move) => NAYO_CLIPS[move].sheet === sheet);
-  const move = id && NAYO.moves[id];
-  return id && move?.hitbox ? { id, move } : null;
-}
-
-/** Frames of the strip shown while the move can hit, as its clip plays it. */
-function activeFrames(id: MoveId, move: MoveData): number[] {
-  const clip = NAYO_CLIPS[id];
-  const frames: number[] = [];
-  let tick = 0;
-  clip.ticks.forEach((ticks, index) => {
-    const active = tick < move.startup + move.active && tick + ticks > move.startup;
-    if (active) frames.push(clip.frames[index] ?? -1);
-    tick += ticks;
-  });
-  return frames;
-}
+/** The moves that strike with each strip (the strikes and the grab), each with its own box. */
+const STRIKES = strikesOf(NAYO_CLIPS, NAYO);
+const AWAITING = AWAITING_ART['Nayo'] ?? new Set();
 
 /**
  * §9.5: on every active frame, inside the hitbox's band, the striking limb (or its trail)
@@ -211,17 +196,14 @@ describe('Nayo combat v2', () => {
         }
       });
 
-      const strike = strikeOf(sheet);
-      const hitbox = strike?.move.hitbox;
-      if (strike && hitbox) {
-        it.skipIf(pending)('reaches the hitbox on its active frames, no farther', () => {
+      for (const { id, frames, box } of STRIKES.filter((strike) => strike.sheet === sheet)) {
+        it.skipIf(pending || AWAITING.has(id))(reachCheck('Nayo', id), () => {
           const { body, fx } = layersOf(sheet);
           const reaching = rules.up && fx ? [body, fx] : [body];
-          const frames = activeFrames(strike.id, strike.move);
           expect(frames.length).toBeGreaterThan(0);
-          const [x, y, width, height] = [hitbox.x, hitbox.y, hitbox.width, hitbox.height].map(toPx);
-          const across = { from: x ?? 0, to: (x ?? 0) + (width ?? 0) };
-          const along = { from: y ?? 0, to: (y ?? 0) + (height ?? 0) };
+          const { x, y, width, height } = box;
+          const across = { from: x, to: x + width };
+          const along = { from: y, to: y + height };
           // Forward; an anti-air also up to the top of the hitbox (§9.5: both ways).
           const ways = [{ up: false, span: along, edge: across.to }];
           if (rules.up) ways.push({ up: true, span: across, edge: along.to });

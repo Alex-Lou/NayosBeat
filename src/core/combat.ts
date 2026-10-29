@@ -3,12 +3,14 @@ import type { Box, FighterTemplate } from './config';
 import { chipDamage, scaledDamage } from './damage';
 import { has, Input } from './input';
 import type { Guard, MoveData, MoveId } from './move-data';
+import { flightOf, isJuggled } from './juggle';
 import { isActiveFrame, isInvincible, isThrowInvincible, moveOf } from './moves';
 import { signed } from './numbers';
 import { BODY_PERCENT, reactionOf } from './reaction';
 import {
-  AIR_HIT_LIFT,
   COUNTER_HITSTUN,
+  DECAY_FROM,
+  DECAY_STEP,
   HEAVY_REACTION_HITSTUN,
   THROW_TECH_PUSHBACK,
   THROW_TECH_STUN,
@@ -30,7 +32,7 @@ const BLOCKING_ACTIONS: ReadonlySet<FighterAction> = new Set([
 ]);
 
 /**
- * No juggles (but the one a launcher allows, see `canBeHit`) and no hitting a fighter that is
+ * No juggles (but those a launcher allows, see `canBeHit`) and no hitting a fighter that is
  * down. Nor the pair of a hold: blows and projectiles go through both until the holder lets go
  * (docs/combat-v2.md §4.2).
  */
@@ -124,15 +126,16 @@ export function activeMove(fighter: FighterState, template: FighterTemplate): Mo
 
 /**
  * Whether strikes and projectiles can hit this fighter on this tick, by a blow from the air or
- * not (`fromAir`). Launched by a launcher, it can take one blow in the air (`juggle`).
+ * not (`fromAir`) that costs `juggleCost` points on a juggled body: launched by a launcher, it
+ * takes blows in the air while it has their points (`isJuggled`).
  */
 export function canBeHit(
   fighter: FighterState,
   template: FighterTemplate,
   fromAir = false,
+  juggleCost = 1,
 ): boolean {
-  const juggled = fighter.action === 'airHit' && fighter.juggle > 0;
-  if (INVULNERABLE_ACTIONS.has(fighter.action) && !juggled) return false;
+  if (INVULNERABLE_ACTIONS.has(fighter.action) && !isJuggled(fighter, juggleCost)) return false;
   return !(
     fighter.move && isInvincible(moveOf(template, fighter.move), fighter.actionFrame, fromAir)
   );
@@ -145,9 +148,10 @@ export function findHit(
   defender: FighterState,
   defenderTemplate: FighterTemplate,
 ): MoveData | null {
-  if (attacker.moveConnected || !canBeHit(defender, defenderTemplate, attacker.y > 0)) return null;
+  if (attacker.moveConnected) return null;
   const move = activeMove(attacker, attackerTemplate);
   if (!move?.hitbox) return null;
+  if (!canBeHit(defender, defenderTemplate, attacker.y > 0, move.juggleCost)) return null;
   if (move.kind === 'grab' && !canBeGrabbed(defender, defenderTemplate)) return null;
 
   const { x, y, facing } = attacker;
@@ -186,9 +190,11 @@ export function contactOf(
 
 /**
  * Resolves a connected move on the defender: block (a special chips, never the last point),
- * hit, knockdown, juggle or KO, with its reaction (§9.4) and, on a counter-hit (`detail`), more
- * damage and stun. `attackerX` is where the hit comes from (the attacker, or a projectile's
- * back). Health never drops below `minHealth`: 1 in training, where nobody can be KO'd.
+ * hit, knockdown, juggle or KO (`flightOf`), with its reaction (§9.4) and, on a counter-hit
+ * (`detail`), more damage and stun, or the move's own CONTRE. Late in a combo the hitstun decays
+ * (docs/combos-v3.md §1.7). `attackerX` is where the hit comes from (the attacker, or a
+ * projectile's back). Health never drops below `minHealth`: 1 in training, where nobody can be
+ * KO'd.
  */
 export function applyHit(
   defender: FighterState,
@@ -199,15 +205,7 @@ export function applyHit(
 ): FighterState {
   const attackerOnRight = isOnRight(attackerX, defender);
   const away = attackerOnRight ? -1 : 1;
-  const { knockdown } = move;
-  const interrupted = {
-    ...defender,
-    actionFrame: 0,
-    move: null,
-    moveConnected: false,
-    // A knockdown carries the defender at its own speed; any other blow slides it back.
-    vx: signed(away, knockdown?.vx ?? move.pushback),
-  } as const;
+  const interrupted = { ...defender, actionFrame: 0, move: null, moveConnected: false } as const;
 
   if (move.kind !== 'grab' && isBlocking(defender, attackerOnRight, move.guard)) {
     const chip = chipDamage(move);
@@ -225,28 +223,34 @@ export function applyHit(
     };
   }
 
-  // A juggled fighter is still in the combo, like one in hitstun.
-  const juggled = defender.action === 'airHit' && defender.juggle > 0;
-  const comboCount = defender.action === 'hitstun' || juggled ? defender.comboCount + 1 : 1;
+  // A fighter hit in hitstun or in the air (only a juggled one can be) is still in the combo.
+  const continuing = defender.action === 'hitstun' || defender.action === 'airHit';
+  const comboCount = continuing ? defender.comboCount + 1 : 1;
   const counter = detail.counter !== null;
+  const own = counter ? move.counter : undefined;
   const damage = scaledDamage(move.damage, comboCount, counter);
   const health = Math.max(minHealth, defender.health - damage);
-  const airborne = defender.y > 0;
-  const lift = knockdown?.vy ?? (airborne ? AIR_HIT_LIFT : 0);
-  const launched = lift > 0;
-  const stun = launched ? 0 : move.hitstun + (counter ? COUNTER_HITSTUN : 0);
+  const launch = own?.knockdown ?? move.knockdown;
+  const slide = own?.pushback ?? move.pushback;
+  const flight = flightOf(defender, move, launch, slide, away, comboCount);
+  const launched = flight.vy !== 0;
+  const bonus = counter ? (own?.hitstun ?? COUNTER_HITSTUN) : 0;
+  const decay = DECAY_STEP * Math.max(0, comboCount - DECAY_FROM);
+  const stun = launched ? 0 : Math.max(0, move.hitstun + bonus - decay);
   const shaken = {
     ...interrupted,
     health,
     comboCount,
-    // A launcher allows one more blow in the air, never a second launch on a juggled fighter.
-    juggle: knockdown?.juggle && defender.action !== 'airHit' ? 1 : 0,
+    vx: flight.vx,
+    juggle: flight.juggle,
+    flags: flight.flags,
     reaction: reactionOf(defender, move, launched, detail.impactPercent),
     reactionHeavy: stun >= HEAVY_REACTION_HITSTUN,
     stunTotal: stun,
   } as const;
-  if (health === 0) return { ...shaken, action: 'ko', stunFrames: 0, vy: lift };
-  if (launched) return { ...shaken, action: 'airHit', stunFrames: 0, vy: lift };
+  // Knocked out by a slam, the body just falls.
+  if (health === 0) return { ...shaken, action: 'ko', stunFrames: 0, vy: Math.max(0, flight.vy) };
+  if (launched) return { ...shaken, action: 'airHit', stunFrames: 0, vy: flight.vy };
   return { ...shaken, action: 'hitstun', stunFrames: stun };
 }
 

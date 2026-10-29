@@ -15,11 +15,13 @@ import {
 } from './projectiles';
 import { impactPercent } from './reaction';
 import { updateRound } from './round';
-import { COUNTER_HITSTOP } from './rules';
+import { COUNTER_HITSTOP, EXTENDER_HITSTOP } from './rules';
 import { isThreatened } from './threat';
 import { applyTrainingRules } from './training';
 import {
   EMPTY_CONTACTS,
+  FLAG_EXTENDED,
+  FLAG_MOVE_HIT,
   type Contact,
   type FighterState,
   type GameState,
@@ -123,8 +125,8 @@ function freeTick(
   const minHealth = config.training ? 1 : 0;
   const struckA = struck(0, a, landedOn(b, strikeByB, projectileOnA, config), minHealth, config);
   const struckB = struck(1, b, landedOn(a, strikeByA, projectileOnB, config), minHealth, config);
-  const nextA = struckA?.fighter ?? connected(a, strikeByA);
-  const nextB = struckB?.fighter ?? connected(b, strikeByB);
+  const nextA = struckA?.fighter ?? connected(a, strikeByA, struckB);
+  const nextB = struckB?.fighter ?? connected(b, strikeByB, struckA);
   const projectileSpent = projectileOnA !== null || projectileOnB !== null;
 
   // The quiet tick's path: its pieces are passed as they are, no tick record is built.
@@ -251,7 +253,8 @@ function landedOn(
 /**
  * Applies the blow that landed on `defender` (as it was when the blow was found): where it met
  * the body, whether it caught the defender attacking or recovering (CONTRE, PUNITION: a longer
- * freeze), and what the defender became.
+ * freeze), and what the defender became. The blow that sets off the combo's extender (Rebond,
+ * Vrille) freezes longer too: its second wind.
  */
 function struck(
   defenderIndex: 0 | 1,
@@ -273,16 +276,28 @@ function struck(
   const by = defenderIndex === 0 ? 1 : 0;
   const damage = defender.health - fighter.health;
   const kind = blocked ? 'block' : 'hit';
+  const extended = (fighter.flags & ~defender.flags & FLAG_EXTENDED) !== 0;
   return {
     fighter,
     contact: contactOf(by, kind, landed.move, impact, damage, counter),
-    hitstop: landed.data.hitstop + (counter ? COUNTER_HITSTOP : 0),
+    hitstop:
+      landed.data.hitstop + (counter ? COUNTER_HITSTOP : 0) + (extended ? EXTENDER_HITSTOP : 0),
   };
 }
 
-/** A fighter whose strike landed: it cannot hit twice, and it can now be cancelled. */
-function connected(fighter: FighterState, strikeLanded: MoveData | null): FighterState {
-  return strikeLanded ? { ...fighter, moveConnected: true } : fighter;
+/**
+ * A fighter whose strike landed (`onOpponent`, what it did): it cannot hit twice, it can now be
+ * cancelled, and it knows whether it hit or was blocked (`FLAG_MOVE_HIT`).
+ */
+function connected(
+  fighter: FighterState,
+  strikeLanded: MoveData | null,
+  onOpponent: Struck | null,
+): FighterState {
+  if (!strikeLanded) return fighter;
+  const hit = onOpponent?.contact.kind === 'hit';
+  const flags = hit ? fighter.flags | FLAG_MOVE_HIT : fighter.flags;
+  return { ...fighter, moveConnected: true, flags };
 }
 
 /** At most one contact per fighter; the shared empty list when nothing touched. */

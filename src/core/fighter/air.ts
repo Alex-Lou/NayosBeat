@@ -2,8 +2,8 @@ import type { FighterTemplate } from '../config';
 import { horizontalDirection } from '../input';
 import { airMove } from '../moves';
 import { signed } from '../numbers';
-import { HIT_GRAVITY } from '../rules';
-import type { FighterState } from '../state';
+import { BOUNCE_LIFT, BOUNCE_POINTS, HIT_GRAVITY } from '../rules';
+import { FLAG_BOUNCE, type FighterState } from '../state';
 import { enter, nextFrame } from './action';
 import { startAttack } from './move';
 
@@ -26,7 +26,8 @@ export function takeOff(fighter: FighterState, template: FighterTemplate): Fight
 /**
  * Applies gravity and handles the landing, which depends on how the fighter was airborne. A jump
  * falls with the fighter's own gravity; a fighter sent flying (hit, knocked out, thrown) with the
- * common HIT_GRAVITY, so the knockdown's advantage depends on the blow, not on the victim.
+ * common HIT_GRAVITY, so the knockdown's advantage depends on the blow, not on the victim. A body
+ * slammed down by a Rebond bounces back up instead of landing (docs/combos-v3.md §1.5).
  */
 export function airborne(fighter: FighterState, template: FighterTemplate): FighterState {
   const jumping = fighter.action === 'air' || fighter.action === 'airAttack';
@@ -35,6 +36,11 @@ export function airborne(fighter: FighterState, template: FighterTemplate): Figh
   const x = fighter.x + fighter.vx;
   if (y > 0) return { ...fighter, x, y, vy };
 
+  if (fighter.action === 'airHit' && (fighter.flags & FLAG_BOUNCE) !== 0) {
+    const flags = fighter.flags & ~FLAG_BOUNCE;
+    const juggle = fighter.juggle + BOUNCE_POINTS;
+    return { ...fighter, x, y: 0, vx: 0, vy: BOUNCE_LIFT, juggle, flags };
+  }
   // Down, the juggle a launcher allowed is over.
   const grounded: FighterState = { ...fighter, x, y: 0, vx: 0, vy: 0, juggle: 0 };
   switch (fighter.action) {

@@ -4,69 +4,14 @@ import { Input, type InputBits } from '../core/input';
 import type { FighterAction, FighterState, GameState } from '../core/state';
 import { strikeThreatens, upcomingMove } from '../core/threat';
 import { guardInput, incomingProjectile } from './defense';
-import { holdInput, type HoldProfile } from './hold-tactics';
+import { holdInput } from './hold-tactics';
+import { planFor, playString, startString, type StringPlay } from './plans';
+import { PROFILES, type CpuLevel, type Profile } from './profiles';
 import { nextRandom } from './rng';
 
-export type CpuLevel = 'easy' | 'normal' | 'hard';
+export type { CpuLevel } from './profiles';
 /** Training dummies do not play: they stand still or block everything. */
 export type CpuBehavior = CpuLevel | 'dummyStand' | 'dummyBlock';
-
-interface Profile extends HoldProfile {
-  /** Chance to block an attack it sees coming. */
-  readonly block: number;
-  readonly antiAir: number;
-  /** Chance to cancel a move that connected into a follow-up. */
-  readonly combo: number;
-  readonly throw: number;
-  /** How often it closes the distance rather than waiting. */
-  readonly aggression: number;
-  /** Chance to dash in rather than walk, from mid range. */
-  readonly dash: number;
-  /** Chance to backdash out of close pressure once a block ends. */
-  readonly backdash: number;
-}
-
-const PROFILES: Readonly<Record<CpuLevel, Profile>> = {
-  easy: {
-    reactionFrames: 24,
-    block: 0.25,
-    antiAir: 0.1,
-    combo: 0.15,
-    throw: 0.05,
-    aggression: 0.35,
-    dash: 0.1,
-    backdash: 0.05,
-    tech: 0.1,
-    struggle: 2,
-    pummels: 0,
-  },
-  normal: {
-    reactionFrames: 14,
-    block: 0.55,
-    antiAir: 0.4,
-    combo: 0.5,
-    throw: 0.12,
-    aggression: 0.5,
-    dash: 0.25,
-    backdash: 0.15,
-    tech: 0.3,
-    struggle: 5,
-    pummels: 1,
-  },
-  hard: {
-    reactionFrames: 8,
-    block: 0.85,
-    antiAir: 0.75,
-    combo: 0.85,
-    throw: 0.2,
-    aggression: 0.65,
-    dash: 0.4,
-    backdash: 0.25,
-    tech: 0.5,
-    struggle: 8,
-    pummels: Infinity,
-  },
-};
 
 /** States in which the CPU makes decisions: it can act on its next input. */
 const DECISION_ACTIONS: ReadonlySet<FighterAction> = new Set([
@@ -95,10 +40,21 @@ export interface CpuState {
   readonly threatHandled: boolean;
   /** The current attack's follow-up was already considered. */
   readonly cancelHandled: boolean;
+  /** The string or juggle being played (plans.ts), step by step. */
+  readonly string: StringPlay | null;
 }
 
 export function createCpu(player: 0 | 1, behavior: CpuBehavior, seed: number): CpuState {
-  return { player, behavior, seed, seen: [], plan: [], threatHandled: false, cancelHandled: false };
+  return {
+    player,
+    behavior,
+    seed,
+    seen: [],
+    plan: [],
+    threatHandled: false,
+    cancelHandled: false,
+    string: null,
+  };
 }
 
 /** Decides the CPU's input for this tick. Pure: same state, same decision. */
@@ -118,26 +74,31 @@ export function cpuStep(
     const danger = move !== null || liveOpponent.y > 0 || incomingProjectile(state, cpu.player);
     return { cpu, input: danger ? guardInput(me, liveOpponent, move) : 0 };
   }
-  if (state.round.phase !== 'fight') return { cpu: { ...cpu, plan: [], seen: [] }, input: 0 };
-  // The game is frozen on impact: keep holding the current input, do not use up the plan.
-  if (state.hitstop > 0) return { cpu, input: cpu.plan[0] ?? 0 };
+  if (state.round.phase !== 'fight') {
+    return { cpu: { ...cpu, plan: [], seen: [], string: null }, input: 0 };
+  }
+  // The game is frozen on impact: keep holding the current input, do not use up the plan (a
+  // string's step pressed before the freeze stays buffered through it).
+  if (state.hitstop > 0) return { cpu, input: cpu.string ? 0 : (cpu.plan[0] ?? 0) };
   const profile = PROFILES[cpu.behavior];
   // In a hold, its own state decides (hold-tactics.ts); the plan starts over afterwards.
   if (state.hold) {
     const { input, seed } = holdInput(cpu.player, profile, state, state.hold, config, cpu.seed);
-    return { cpu: { ...cpu, seed, plan: [] }, input };
+    return { cpu: { ...cpu, seed, plan: [], string: null }, input };
   }
-  // While blocking, keep blocking: dropping the guard mid-string would be a free hit.
+  // While blocking, keep blocking: dropping the guard mid-string would be a free hit. A string
+  // of its own is over once it blocks: from neutral afterwards, it would hit nothing.
   if (me.action === 'blockstun') {
+    const blocking = cpu.string ? { ...cpu, string: null } : cpu;
     const guard = guardInput(me, liveOpponent, upcomingMove(liveOpponent, opponentTemplate));
     return me.stunFrames > 0
-      ? { cpu, input: guard }
-      : leaveBlock(cpu, profile, me, liveOpponent, guard);
+      ? { cpu: blocking, input: guard }
+      : leaveBlock(blocking, profile, me, liveOpponent, guard);
   }
 
   const seen = [...cpu.seen, liveOpponent].slice(-(profile.reactionFrames + 1));
   const opponent = seen[0] ?? liveOpponent;
-  const decider = new Decider({ ...cpu, seen }, profile, me, opponent, state, config);
+  const decider = new Decider({ ...cpu, seen }, cpu.behavior, me, opponent, state, config);
   return decider.decide();
 }
 
@@ -148,15 +109,18 @@ class Decider {
   private readonly away: number;
   private readonly distance: number;
 
+  private readonly profile: Profile;
+
   constructor(
     private readonly cpu: CpuState,
-    private readonly profile: Profile,
+    private readonly level: CpuLevel,
     private readonly me: FighterState,
     private readonly opponent: FighterState,
     private readonly state: GameState,
     private readonly config: MatchConfig,
   ) {
     this.seed = cpu.seed;
+    this.profile = PROFILES[level];
     this.toward = opponent.x > me.x ? Input.Right : Input.Left;
     this.away = opponent.x > me.x ? Input.Left : Input.Right;
     this.distance = toPx(Math.abs(opponent.x - me.x));
@@ -165,10 +129,21 @@ class Decider {
   decide(): { cpu: CpuState; input: InputBits } {
     const me = this.me;
 
-    // A move that connected: maybe cancel it into a follow-up.
+    // The live opponent: what the blow did to it shows at once.
+    const opponent = this.state.fighters[this.cpu.player === 0 ? 1 : 0];
+    // A string or a juggle in progress: its next step, until its last move is out or it drops.
+    if (this.cpu.string) {
+      const { input, next } = playString(this.cpu.string, me, opponent);
+      if (next) return this.withString(next, input);
+    }
+    // A move that connected: maybe one of its plans.
     if (me.action === 'attack' && me.moveConnected && !this.cpu.cancelHandled) {
-      const followUp = this.chance(this.profile.combo) ? [Input.Special, 0] : [];
-      return this.withPlan(followUp, { cancelHandled: true });
+      if (!this.chance(this.profile.combo)) return this.withPlan([], { cancelHandled: true });
+      const template = this.config.fighters[this.cpu.player];
+      const { steps, seed } = planFor(me, opponent, template, this.level, this.seed);
+      this.seed = seed;
+      const { input, next } = playString(startString(steps, me), me, opponent);
+      return next ? this.withString(next, input) : this.withPlan([], { cancelHandled: true });
     }
     const cancelHandled = me.action === 'attack' ? this.cpu.cancelHandled : false;
     if (!DECISION_ACTIONS.has(me.action)) return this.withPlan(this.cpu.plan, { cancelHandled });
@@ -200,7 +175,8 @@ class Decider {
 
   private react(threat: 'air' | 'strike' | 'projectile'): InputBits[] {
     if (threat === 'air' && this.chance(this.profile.antiAir)) {
-      return [Input.Down | Input.Special, 0];
+      // The invincible anti-air, or now and then the launcher, which opens a juggle (plans.ts).
+      return this.chance(0.35) ? [this.away | Input.Heavy, 0] : [Input.Down | Input.Special, 0];
     }
     if (threat === 'projectile' && this.chance(0.25)) {
       return repeat(Input.Up | this.toward, 5);
@@ -237,6 +213,7 @@ class Decider {
       return repeat(this.chance(0.5) ? away : 0, this.between(6, 14));
     }
     if (this.chance(this.profile.throw)) return [Input.Grab, 0];
+    if (this.chance(0.1)) return [away | Input.Heavy, 0];
     if (this.chance(0.35)) return [Input.Light, 0, 0, 0];
     if (this.chance(0.25)) return [Input.Down | Input.Light, Input.Down, 0];
     if (this.chance(0.2)) return [Input.Heavy, 0];
@@ -265,9 +242,16 @@ class Decider {
         plan: rest,
         threatHandled: flags.threatHandled ?? false,
         cancelHandled: flags.cancelHandled ?? false,
+        string: null,
       },
       input,
     };
+  }
+
+  /** A string goes on: nothing else is planned meanwhile, its moves follow nothing else up. */
+  private withString(string: StringPlay, input: InputBits): { cpu: CpuState; input: InputBits } {
+    const cpu = { ...this.cpu, seed: this.seed, plan: [], cancelHandled: true, string };
+    return { cpu, input };
   }
 
   private chance(probability: number): boolean {

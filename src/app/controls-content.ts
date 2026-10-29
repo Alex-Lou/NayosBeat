@@ -84,7 +84,10 @@ function devicePage(devices: ControlDevices): HelpPage {
   return { title: 'Commandes', sections };
 }
 
-/** Every move of a fighter: how to do it, its name (from its data), what it is for. */
+/**
+ * Every move of a fighter: how to do it, its name (from its data), what it is for; then its
+ * combos to learn first (docs/combos-v3.md §3.2).
+ */
 function fighterPage({ id, template }: RosterEntry): HelpPage {
   const texts = MOVE_TEXTS[id];
   const rows: (readonly [string, string])[] = [];
@@ -94,7 +97,15 @@ function fighterPage({ id, template }: RosterEntry): HelpPage {
     const help = texts.moves[id];
     if (move && help) rows.push([help.input, `${move.name} : ${help.text}`]);
   }
-  return { title: template.name, sections: [{ title: texts.title, rows }], fighter: id };
+  const combos = texts.combos.map(({ input, text }) => [input, text] as const);
+  return {
+    title: template.name,
+    sections: [
+      { title: texts.title, rows },
+      { title: 'Combos', rows: combos },
+    ],
+    fighter: id,
+  };
 }
 
 /** The pages of the screen, in order: devices, « Les bases », then each fighter. */
@@ -112,7 +123,8 @@ export function currentDevices(): ControlDevices {
 
 export function controlsContent(page: HelpPage): HTMLElement {
   const container = document.createElement('div');
-  container.className = 'controls';
+  // A fighter's page: its lists one under the other (styles.css).
+  container.className = page.fighter ? 'controls controls-fighter' : 'controls';
   for (const section of page.sections) container.appendChild(sectionElement(section));
   return container;
 }

@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { RIFF_CLIPS } from '../../src/art/riff/clips';
 import { RIFF_SHEETS, type RiffSheet } from '../../src/art/riff/sheets';
-import { ANCHOR, ART_SCALE, CELL_SIZE, type ClipId } from '../../src/art/types';
+import { ANCHOR, ART_SCALE, CELL_SIZE, type Clip, type ClipId } from '../../src/art/types';
 import { RIFF as RIFF_TEMPLATE } from '../../src/data/fighters/riff';
-import { strikeOf } from '../../tools/sprites/clips';
+import { strikeOf, strikesOf } from '../../tools/sprites/clips';
 import { PixelCanvas } from '../../tools/sprites/raster';
 import { RIFF } from '../../tools/sprites/riff/index';
 import { DETAIL, EFFECTS, paletteOf } from '../../tools/sprites/riff/palette';
@@ -12,8 +12,16 @@ import { isAnimated, RIFF_POSES } from '../../tools/sprites/riff/poses/index';
 import { drawStrip, drawStripEffects } from '../../tools/sprites/sheet';
 import { solve, type Effect, type Pose } from '../../tools/sprites/skeleton';
 import { drawEffect, inkAt } from '../../tools/sprites/vfx';
+import { AWAITING_ART, reachCheck } from './fighters';
 
 const SHEETS = Object.keys(RIFF_SHEETS) as RiffSheet[];
+
+/** The clip named after a strip: the one that times it. */
+function ownClip(sheet: RiffSheet): Clip {
+  const clip = RIFF_CLIPS[sheet as ClipId];
+  if (!clip) throw new Error(`No clip ${sheet}`);
+  return clip;
+}
 
 interface Band {
   readonly from: number;
@@ -58,7 +66,7 @@ describe('Riff strips: the set of §11.3', () => {
   };
 
   it.each(Object.entries(TOTALS))('%s: its ticks add up to %i', (sheet, total) => {
-    const { ticks } = RIFF_CLIPS[sheet as ClipId];
+    const { ticks } = ownClip(sheet as RiffSheet);
     expect(ticks.reduce((sum, tick) => sum + tick, 0)).toBe(total);
   });
 
@@ -88,7 +96,7 @@ describe('Riff strips: the set of §11.3', () => {
     const strike = strikeOf(RIFF_CLIPS, RIFF_TEMPLATE, sheet);
     if (!strike) throw new Error(`${sheet} has no strike`);
     expect(strike.frames).toEqual(drawn);
-    const { ticks } = RIFF_CLIPS[sheet as ClipId];
+    const { ticks } = ownClip(sheet as RiffSheet);
     const first = drawn[0] ?? 0;
     const shown = drawn.reduce((sum, frame) => sum + (ticks[frame] ?? 0), 0);
     expect(ticks.slice(0, first).reduce((sum, tick) => sum + tick, 0)).toBe(strike.move.startup);
@@ -116,7 +124,7 @@ describe('Riff strips: the set of §11.3', () => {
 
   it.each(Object.entries(STARTUP))('%s: the active frame comes on at tick %i', (sheet, startup) => {
     const first = ACTIVE[sheet as RiffSheet]?.[0] ?? -1;
-    const ticks = RIFF_CLIPS[sheet as ClipId].ticks.slice(0, first);
+    const ticks = ownClip(sheet as RiffSheet).ticks.slice(0, first);
     expect(ticks.reduce((sum, tick) => sum + tick, 0)).toBe(startup);
   });
 });
@@ -242,11 +250,24 @@ describe('Riff strips: drawing', () => {
    * past at most.
    */
   const LEAP = { short: 6, past: 8 } as const;
-  const STRIKES = SHEETS.filter((sheet) => strikeOf(RIFF_CLIPS, RIFF_TEMPLATE, sheet));
+  /** Every move that strikes, with the strip it plays: some strips are played by two. */
+  const STRIKES = strikesOf(RIFF_CLIPS, RIFF_TEMPLATE);
+  const AWAITING = AWAITING_ART['Riff'] ?? new Set();
 
   it('every strike has its strip, animated', () => {
-    expect(STRIKES).toHaveLength(15);
-    for (const sheet of STRIKES) expect(isAnimated(sheet), sheet).toBe(true);
+    expect(STRIKES).toHaveLength(18);
+    for (const { sheet } of STRIKES) expect(isAnimated(sheet as RiffSheet), sheet).toBe(true);
+    // The Hache plays the Talon's strip; the Coup de boule and the Retourné sauté the Coude's
+    // and the Retourné's until their own land.
+    const shared = STRIKES.filter(({ id, sheet }) => id !== sheet).map(({ id, sheet }) => [
+      id,
+      sheet,
+    ]);
+    expect(shared).toEqual([
+      ['chainHeavy', 'standHeavy'],
+      ['chainHigh', 'forwardHeavy'],
+      ['chainLaunch', 'backHeavy'],
+    ]);
   });
 
   /**
@@ -272,31 +293,32 @@ describe('Riff strips: drawing', () => {
     return reached;
   }
 
-  it.each(STRIKES)('%s: the active frames reach the hitbox, no farther', (sheet) => {
-    const strike = strikeOf(RIFF_CLIPS, RIFF_TEMPLATE, sheet);
-    if (!strike) throw new Error(`${sheet} has no hitbox`);
-    const { x, y, width, height } = strike.box;
-    const leap = sheet === 'specialAntiAir';
-    const { short, past } = leap ? LEAP : strike.move.guard === 'low' ? LOW_REACH : REACH;
-    const up = ANTI_AIRS.has(sheet);
-    const across = { from: y, to: y + height };
-    const ways: { way: Way; band: Band; edge: number }[] = leap
-      ? []
-      : [{ way: 'forward', band: across, edge: x + width }];
-    if (up) ways.push({ way: 'up', band: { from: x, to: x + width }, edge: y + height });
-    else if (x < 0) ways.push({ way: 'back', band: across, edge: -x });
-    const body = sheetCanvas(sheet);
-    const fx = up ? drawStripEffects(RIFF, sheet) : undefined;
-    for (const frame of strike.frames) {
-      for (const way of ways) {
-        const drawn = reachOf(fx ? [body, fx] : [body], frame, way.band, way.way);
-        const limb = reachOf([body], frame, way.band, way.way);
-        const where = `frame ${frame} ${way.way}, edge ${way.edge}`;
-        expect(drawn, `${where}: reaches ${drawn}`).toBeGreaterThanOrEqual(way.edge - short);
-        expect(limb, `${where}: limb at ${limb}`).toBeLessThanOrEqual(way.edge + past);
+  for (const strike of STRIKES) {
+    const sheet = strike.sheet as RiffSheet;
+    it.skipIf(AWAITING.has(strike.id))(reachCheck('Riff', strike.id), () => {
+      const { x, y, width, height } = strike.box;
+      const leap = sheet === 'specialAntiAir';
+      const { short, past } = leap ? LEAP : strike.move.guard === 'low' ? LOW_REACH : REACH;
+      const up = ANTI_AIRS.has(sheet);
+      const across = { from: y, to: y + height };
+      const ways: { way: Way; band: Band; edge: number }[] = leap
+        ? []
+        : [{ way: 'forward', band: across, edge: x + width }];
+      if (up) ways.push({ way: 'up', band: { from: x, to: x + width }, edge: y + height });
+      else if (x < 0) ways.push({ way: 'back', band: across, edge: -x });
+      const body = sheetCanvas(sheet);
+      const fx = up ? drawStripEffects(RIFF, sheet) : undefined;
+      for (const frame of strike.frames) {
+        for (const way of ways) {
+          const drawn = reachOf(fx ? [body, fx] : [body], frame, way.band, way.way);
+          const limb = reachOf([body], frame, way.band, way.way);
+          const where = `frame ${frame} ${way.way}, edge ${way.edge}`;
+          expect(drawn, `${where}: reaches ${drawn}`).toBeGreaterThanOrEqual(way.edge - short);
+          expect(limb, `${where}: limb at ${limb}`).toBeLessThanOrEqual(way.edge + past);
+        }
       }
-    }
-  });
+    });
+  }
 });
 
 describe('Riff strips: in and out of the guard', () => {

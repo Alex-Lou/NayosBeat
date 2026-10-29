@@ -207,14 +207,26 @@ describe('P1/P2 symmetry of the moves v2 (§14.7)', () => {
     expect(contactsBy(states, 0)).toMatchObject([{ kind: 'block', damage: 11 }]);
   });
 
-  it('a light never cancels into a normal that steps in: ↓L, then → + L waits', () => {
+  it('the phrase: ↓L, → + L, ↓L, then the Toprock again waits (docs/combos-v3.md §1.2)', () => {
+    // Each button pressed once it can only give the move asked for: ↓L, → + L at once, ↓L
+    // during the Toprock, then → + L during the second Coup bas.
+    const inputs = (tick: number): InputBits => {
+      if (tick < 12) return on([0], Down | Light, tick) || on([2], Right | Light, tick);
+      return tick < 30 ? mash(Down | Light, 12, tick) : mash(Right | Light, 30, tick);
+    };
     const states = expectMirrored(
-      script(60, (tick) => [tick === 0 ? Down | Light : mash(Right | Light, 1, tick), 0]),
+      script(70, (tick) => [inputs(tick), 0]),
       RIFF_VS_NAYO,
       36,
     );
-    const toprock = states.findIndex((state) => state.fighters[0].move === 'forwardLight');
-    expect(states[toprock - 1]?.fighters[0]).toMatchObject({
+    const moves = contactsBy(states, 0).map((contact) => contact.move);
+    expect(moves.slice(0, 3)).toEqual(['crouchLight', 'forwardLight', 'crouchLight']);
+    // The second Toprock is no cancel: it comes out once the Coup bas is over.
+    const starts = states.map(
+      ({ fighters: [riff] }) => riff.move === 'forwardLight' && riff.actionFrame === 0,
+    );
+    const second = starts.lastIndexOf(true);
+    expect(states[second - 1]?.fighters[0]).toMatchObject({
       move: 'crouchLight',
       actionFrame: moveDuration(RIFF.moves.crouchLight) - 1,
     });

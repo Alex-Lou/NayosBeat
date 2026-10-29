@@ -3,7 +3,7 @@ import { has, horizontalDirection, Input } from '../input';
 import { groundMove } from '../moves';
 import { signed } from '../numbers';
 import { sideOf } from '../side';
-import type { FighterState } from '../state';
+import { VICTIM_FLAGS, type FighterState } from '../state';
 import { continueOrEnter, enter } from './action';
 import { startGroundMove } from './move';
 
@@ -25,6 +25,8 @@ export function actOnGround(
     move: null,
     comboCount: 0,
     vx: 0,
+    // On its feet again, the combo it took is over, and its marks with it.
+    flags: fighter.flags & ~VICTIM_FLAGS,
   };
   const input = f.input;
   const crouching = has(input, Input.Down) && !has(input, Input.Up);

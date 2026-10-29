@@ -2,11 +2,13 @@ import type { FighterTemplate } from '../../core/config';
 import { px } from '../../core/constants';
 import { GRAB_HITSTOP } from '../../core/rules';
 import { advance, box, dash, HEAVY_CANCELS, kd, LIGHT_CANCELS, strike, throwMove } from './shared';
+import { NAYO_STRINGS } from './nayo-strings';
 
 /**
  * Nayo, the all-rounder, « le boxeur posé » (docs/combat-v2.md §5.2, §10.1): good range, a
  * projectile and a reliable anti-air; a boxer's straight lines, his chain ends on a wide hook,
- * his overhead is slow and telegraphed.
+ * his overhead is slow and telegraphed. He counts the beats (docs/combos-v3.md §2): the Direct,
+ * the Cross, then the bass on the third, chosen by the direction; few blows, each heavy.
  */
 export const NAYO: FighterTemplate = {
   name: 'Nayo',
@@ -34,58 +36,7 @@ export const NAYO: FighterTemplate = {
   crouchingHurtboxes: [box(-18.5, 0, 32.5, 57)],
   airHurtboxes: [box(-22, 4, 43, 40), box(-11, 44, 29, 42.5)],
   moves: {
-    standLight: strike({
-      name: 'Direct',
-      frames: [4, 3, 7],
-      damage: 30,
-      stun: [14, 10],
-      hitstop: 8,
-      pushbackPx: 2.5,
-      guard: 'mid',
-      hitbox: box(10, 46, 30, 12),
-      cancelInto: LIGHT_CANCELS,
-      chain: 'chainLight',
-    }),
-    // L, L, L (§7.2): the boxer's "two", then a hook that floors. Each steps in (10, then 12 px)
-    // and the cross barely pushes back, so the chain holds wherever the jab hit.
-    chainLight: strike({
-      name: 'Cross',
-      frames: [6, 3, 12],
-      damage: 40,
-      stun: [18, 12],
-      hitstop: 9,
-      pushbackPx: 1.5,
-      guard: 'mid',
-      hitbox: box(10, 46, 36, 14),
-      motion: advance(21, { from: 0, to: 6, distancePx: 10 }),
-      cancelInto: HEAVY_CANCELS,
-      chain: 'lightFinisher',
-    }),
-    lightFinisher: strike({
-      name: 'Mise au tapis',
-      frames: [8, 3, 18],
-      damage: 50,
-      stun: [0, 12],
-      hitstop: 11,
-      pushbackPx: 4,
-      guard: 'mid',
-      hitbox: box(10, 44, 38, 18),
-      motion: advance(29, { from: 0, to: 8, distancePx: 12 }),
-      knockdown: kd(3, 4),
-    }),
-    // → + L: a sliding step and a sharp jab, guard up (−1 on block): starts a combo from afar.
-    forwardLight: strike({
-      name: 'Jab chassé',
-      frames: [7, 3, 10],
-      damage: 35,
-      stun: [15, 11],
-      hitstop: 8,
-      pushbackPx: 2.5,
-      guard: 'mid',
-      hitbox: box(10, 46, 32, 12),
-      motion: advance(20, { from: 0, to: 7, distancePx: 14 }),
-      cancelInto: HEAVY_CANCELS,
-    }),
+    ...NAYO_STRINGS,
     // → + H: up on his toes, the rear fist over the guard onto the head. An overhead, slow (19
     // ticks) and telegraphed: to mix with the sweep.
     forwardHeavy: strike({
@@ -100,8 +51,9 @@ export const NAYO: FighterTemplate = {
       motion: advance(37, { from: 6, to: 14, distancePx: 8 }),
     }),
     // ← + H: a short uppercut, nearly vertical. An anti-air without invincibility, and the
-    // launcher: cancelled into the Uppercut for the juggle. Its box starts above a crouching
-    // body (57 px): it whiffs on a crouching opponent.
+    // launcher: about 60 px up with 4 juggle points (5 on a CONTRE or a PUNITION), cancelled
+    // into a special at once or linked into the phrase again once he has recovered. Its box
+    // starts above a crouching body (57 px): it whiffs on a crouching opponent.
     backHeavy: strike({
       name: 'Remontant',
       frames: [7, 4, 17],
@@ -111,18 +63,8 @@ export const NAYO: FighterTemplate = {
       pushbackPx: 3,
       guard: 'mid',
       hitbox: box(4, 58, 26, 46),
-      knockdown: kd(5, 0.5, { juggle: true }),
-      cancelInto: HEAVY_CANCELS,
-    }),
-    standHeavy: strike({
-      name: 'Crochet',
-      frames: [8, 4, 16],
-      damage: 80,
-      stun: [20, 14],
-      hitstop: 12,
-      pushbackPx: 3.5,
-      guard: 'mid',
-      hitbox: box(10, 44, 42, 18),
+      knockdown: kd(8, 0.5, { juggle: 4 }),
+      counter: { knockdown: kd(8, 0.5, { juggle: 5 }) },
       cancelInto: HEAVY_CANCELS,
     }),
     crouchLight: strike({
@@ -135,6 +77,7 @@ export const NAYO: FighterTemplate = {
       guard: 'low',
       hitbox: box(12, 4, 26, 10),
       cancelInto: LIGHT_CANCELS,
+      crouching: true,
     }),
     crouchHeavy: strike({
       name: 'Balayage',
@@ -147,6 +90,7 @@ export const NAYO: FighterTemplate = {
       hitbox: box(12, 2, 39, 12),
       // Swept off his legs: a low lift, onto the back.
       knockdown: kd(2, 3.5, { trip: true }),
+      crouching: true,
     }),
     jumpLight: strike({
       name: 'Genou sauté',
@@ -185,7 +129,7 @@ export const NAYO: FighterTemplate = {
       frames: [11, 4, 18],
       damage: 75,
       stun: [0, 12],
-      hitstop: 11,
+      hitstop: 14,
       pushbackPx: 3.5,
       guard: 'mid',
       hitbox: box(8, 24, 36, 16),
@@ -199,7 +143,7 @@ export const NAYO: FighterTemplate = {
       frames: [3, 8, 28],
       damage: 110,
       stun: [0, 12],
-      hitstop: 13,
+      hitstop: 16,
       pushbackPx: 3,
       guard: 'mid',
       hitbox: box(4, 30, 20, 70),

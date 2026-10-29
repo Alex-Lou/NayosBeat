@@ -96,9 +96,12 @@ export const STATE_CLIP_IDS = [
 export type StateClipId = (typeof STATE_CLIP_IDS)[number];
 export type ClipId = StateClipId | MoveId;
 
-/** A clip for every state and core move, and for the optional moves the fighter has. */
-export type FighterClips = Readonly<Record<StateClipId | CoreMoveId, Clip>> &
-  Readonly<Partial<Record<OptionalMoveId, Clip>>>;
+/**
+ * A clip for every state and core move, and for the optional moves the fighter has (validation
+ * checks each one defined has its clip). `C`: the fighter's own clips, which name its strips.
+ */
+export type FighterClips<C extends Clip = Clip> = Readonly<Record<StateClipId | CoreMoveId, C>> &
+  Readonly<Partial<Record<OptionalMoveId, C>>>;
 
 export interface FighterArt {
   /** Prefix of the texture keys, unique per fighter. */

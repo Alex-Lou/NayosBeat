@@ -19,20 +19,24 @@ import { facingOff, makeFighter, MIRROR_MATCH, playAlone, repeat } from './helpe
 
 const { Up, Down, Left, Right, Light, Heavy, Special, Grab } = Input;
 
-/** Nayo without any optional move: what a future fighter with only the basics plays. */
+/** `move` without its strings. */
+function stringless(move: MoveData): MoveData {
+  return Object.fromEntries(
+    Object.entries(move).filter(([field]) => field !== 'branches'),
+  ) as unknown as MoveData;
+}
+
+/**
+ * Nayo without any optional move, nor the strings leading to them: what a future fighter with
+ * only the basics plays.
+ */
 const BASIC: FighterTemplate = {
   ...NAYO,
-  moves: {
-    ...(Object.fromEntries(
-      Object.entries(NAYO.moves).filter(
-        ([id]) => !(OPTIONAL_MOVE_IDS as readonly string[]).includes(id),
-      ),
-    ) as FighterMoves),
-    // Its jab has no chain to give.
-    standLight: Object.fromEntries(
-      Object.entries(NAYO.moves.standLight).filter(([field]) => field !== 'chain'),
-    ) as MoveData,
-  },
+  moves: Object.fromEntries(
+    Object.entries(NAYO.moves)
+      .filter(([id]) => !(OPTIONAL_MOVE_IDS as readonly string[]).includes(id))
+      .map(([id, move]) => [id, stringless(move)]),
+  ) as unknown as FighterMoves,
 };
 
 interface Row {
@@ -40,8 +44,6 @@ interface Row {
   /** Directions held, written facing right. */
   readonly held: InputBits;
   readonly motion?: Motion;
-  /** The chain of the move being cancelled. */
-  readonly chain?: MoveId;
   readonly move: MoveId | null;
   /** Without the optional moves. */
   readonly basic?: MoveId;
@@ -55,22 +57,12 @@ const TABLE: readonly Row[] = [
   { command: 'light', held: Down | Right, motion: 'dragonPunch', move: 'specialAntiAir' },
   { command: 'heavy', held: Right, motion: 'quarterCircleForward', move: 'special' },
   { command: 'special', held: Right, motion: 'quarterCircleForward', move: 'special' },
-  {
-    command: 'light',
-    held: 0,
-    motion: 'quarterCircleForward',
-    chain: 'chainLight',
-    move: 'special',
-  },
+  { command: 'light', held: 0, motion: 'quarterCircleForward', move: 'special' },
   // 4. The special button by direction: down (diagonals too), forward, otherwise.
   { command: 'special', held: Down | Left, move: 'specialAntiAir' },
   { command: 'special', held: Right, move: 'specialForward' },
   { command: 'special', held: Left, move: 'special' },
-  { command: 'special', held: 0, chain: 'chainLight', move: 'special' },
-  // 5. L in the cancel of a move with a chain, whatever is held.
-  { command: 'light', held: Down | Right, chain: 'chainLight', move: 'chainLight' },
-  { command: 'light', held: Left, chain: 'lightFinisher', move: 'lightFinisher' },
-  { command: 'heavy', held: 0, chain: 'chainLight', move: 'standHeavy' },
+  // 5. The strings of a move cancelled are read before this table (`branchMove`, below).
   // 6. Down (diagonals too).
   { command: 'light', held: Down | Right, move: 'crouchLight' },
   { command: 'heavy', held: Down | Left, move: 'crouchHeavy' },
@@ -100,14 +92,14 @@ function facing(bits: InputBits, side: Facing): InputBits {
 
 describe('command → move (§2.8)', () => {
   for (const row of TABLE) {
-    const { command, held, motion = null, chain, move, basic = move } = row;
-    const label = `${command}, held ${held}${motion ? `, ${motion}` : ''}${chain ? `, chain ${chain}` : ''}`;
+    const { command, held, motion = null, move, basic = move } = row;
+    const label = `${command}, held ${held}${motion ? `, ${motion}` : ''}`;
     it(`${label}: ${String(move)}`, () => {
       for (const side of [1, -1] as const) {
         const input = facing(held, side);
-        expect(groundMove(command, input, motion, side, NAYO.moves, chain)).toBe(move);
-        expect(groundMove(command, input, motion, side, RIFF.moves, chain)).toBe(move);
-        expect(groundMove(command, input, motion, side, BASIC.moves, chain)).toBe(basic);
+        expect(groundMove(command, input, motion, side, NAYO.moves)).toBe(move);
+        expect(groundMove(command, input, motion, side, RIFF.moves)).toBe(move);
+        expect(groundMove(command, input, motion, side, BASIC.moves)).toBe(basic);
       }
     });
   }
@@ -142,9 +134,9 @@ describe('optional moves', () => {
     expect(back[0]?.move).toBe('standHeavy');
   });
 
-  it('cannot chain into a move the fighter does not have', () => {
+  it('cannot open a string to a move the fighter does not have', () => {
     const broken = { ...BASIC, moves: { ...BASIC.moves, standLight: NAYO.moves.standLight } };
-    expect(validateTemplate(broken).join()).toMatch(/standLight\.chain/);
+    expect(validateTemplate(broken).join()).toMatch(/standLight: a string leads to a normal/);
   });
 
   it('are played by every command that asks for them, in a fight', () => {
@@ -167,7 +159,7 @@ describe('optional moves', () => {
   });
 
   it('give the grab before anything else', () => {
-    expect(groundMove('grab', Right, null, 1, NAYO.moves, 'chainLight')).toBe('grab');
+    expect(groundMove('grab', Right, null, 1, NAYO.moves)).toBe('grab');
     expect(playAlone(NAYO, [Grab | Right])[0]?.move).toBe('grab');
   });
 

@@ -42,8 +42,51 @@ export const HIT_GRAVITY = px(0.5);
  */
 export const PUSHBACK_FRICTION = px(0.25);
 
-/** Upward speed given to a fighter hit in the air. */
+/** Upward speed given to a fighter hit in the air (the most a juggled blow lifts, too). */
 export const AIR_HIT_LIFT = px(3);
+
+/**
+ * The juggle (docs/combos-v3.md §1.5): a launcher gives the body 1 to JUGGLE_POINTS_MAX points,
+ * each blow in the air spends its cost, and lifts the body less as they run out (JUGGLE_LIFT_MIN
+ * plus JUGGLE_LIFT_PER_POINT per point left, AIR_HIT_LIFT at most), carried on slowly
+ * (JUGGLE_CARRY): the juggle dies out by itself.
+ */
+export const JUGGLE_POINTS_MAX = 5;
+export const JUGGLE_LIFT_MIN = px(1.5);
+export const JUGGLE_LIFT_PER_POINT = px(0.5);
+export const JUGGLE_CARRY = px(0.5);
+
+/**
+ * The extenders, once a combo, on a juggled body. Nayo's Rebond: slammed down at REBOND_DOWN,
+ * untouchable as it falls, it bounces back up at BOUNCE_LIFT with BOUNCE_POINTS more. Riff's
+ * Vrille: spun up and away, VRILLE_POINTS more. The blow that sets one off freezes the game
+ * EXTENDER_HITSTOP ticks longer: the combo's second wind.
+ */
+export const REBOND_DOWN = px(5);
+export const BOUNCE_LIFT = px(6);
+export const BOUNCE_POINTS = 2;
+export const VRILLE_LIFT = px(5);
+export const VRILLE_CARRY = px(1);
+export const VRILLE_POINTS = 2;
+export const EXTENDER_HITSTOP = 4;
+
+/**
+ * The phrase runs out of breath (docs/combos-v3.md §1.7): from the DECAY_FROM-th hit of a combo
+ * on, each blow on the ground stuns DECAY_STEP ticks less than the one before, so a loop of
+ * links lets go before the limit.
+ */
+export const DECAY_FROM = 8;
+export const DECAY_STEP = 2;
+
+/**
+ * The hard cap (docs/combos-v3.md §1.7, §1.13): the blow that brings a combo to COMBO_LIMIT
+ * floors, lifting the body COMBO_LIMIT_LIFT at least, and nothing touches it until it lands.
+ */
+export const COMBO_LIMIT = 12;
+export const COMBO_LIMIT_LIFT = px(3);
+
+/** The longest path of strings from a move (docs/combos-v3.md §1.4): a string always ends. */
+export const MAX_BRANCH_DEPTH = 5;
 
 /** Ticks of input history kept to recognize motions. */
 export const DIRECTION_HISTORY_FRAMES = 16;

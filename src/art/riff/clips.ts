@@ -1,4 +1,4 @@
-import type { Clip, ClipId } from '../types';
+import type { Clip, FighterClips } from '../types';
 import type { RiffSheet } from './sheets';
 
 interface RiffClip extends Clip {
@@ -21,7 +21,7 @@ function play(sheet: RiffSheet, ticks: readonly number[], loopFrom?: number): Ri
  * comment). The strips were drawn to these timings; the sprite generator reads them too, to make
  * her fringe and her belt's chain lag behind her (tools/sprites/riff/index.ts).
  */
-export const RIFF_CLIPS: Readonly<Record<ClipId, RiffClip>> = {
+export const RIFF_CLIPS: FighterClips<RiffClip> = {
   // One toprock rock a loop, 48 ticks: the rise eased, the top held, the snap down in 3 ticks.
   idle: play('idle', [7, 4, 5, 5, 7, 3, 9, 8], 0),
   // Two ticks a frame: 38 px a loop forward (1.9 px/tick), 28 px back (1.4), her stride.
@@ -80,10 +80,19 @@ export const RIFF_CLIPS: Readonly<Record<ClipId, RiffClip>> = {
   // Toprock: the dance step on frames 0-2.
   forwardLight: play('forwardLight', [2, 3, 3, 2, 5, 5]), // active: frame 3
   standHeavy: play('standHeavy', [2, 2, 2, 3, 4, 5, 5]), // active: frame 3
+  // Coup de boule, active on frame 3: TEMPORARY, the Coude's strip played in the ticks of its
+  // own until feat/combos-v3-art lands the chainHeavy strip (docs/combos-v3.md §4, §5).
+  chainHeavy: { sheet: 'standHeavy', frames: [0, 1, 2, 3, 5, 6], ticks: [2, 2, 2, 2, 7, 7] },
   // Talon: the leg rises on frames 0-3, the axe comes down on frame 4.
   forwardHeavy: play('forwardHeavy', [4, 4, 4, 5, 3, 4, 5, 5]), // active: frame 4
+  // Hache: the Talon from its leg already high (frames 2-7), the axe on frame 4, the active one
+  // (docs/combos-v3.md §4).
+  chainHigh: { sheet: 'forwardHeavy', frames: [2, 3, 4, 5, 6, 7], ticks: [6, 6, 3, 4, 5, 5] },
   // Retourné: the hopping scorpion, the boot hooked over her head.
   backHeavy: play('backHeavy', [2, 2, 2, 5, 5, 5, 5]), // active: frame 3
+  // Retourné sauté: TEMPORARY, the Retourné's strip in its own ticks until feat/combos-v3-art
+  // lands the chainLaunch strip (its call hop on frames 0-1).
+  chainLaunch: play('backHeavy', [2, 2, 2, 5, 5, 5, 5]), // active: frame 3
   crouchLight: play('crouchLight', [1, 2, 2, 3, 4]), // active: frame 2
   crouchHeavy: play('crouchHeavy', [2, 2, 3, 3, 4, 4, 5, 5]), // active: frame 3
   jumpLight: play('jumpLight', [1, 2, 6, 2, 3]), // active: frame 2

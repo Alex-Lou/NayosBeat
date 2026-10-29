@@ -1,12 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { MatchConfig } from '../../src/core/config';
 import { Input, type InputBits } from '../../src/core/input';
-import { moveDuration } from '../../src/core/moves';
-import type { FighterState } from '../../src/core/state';
 import { NAYO } from '../../src/data/fighters/nayo';
 import { RIFF } from '../../src/data/fighters/riff';
 import { TRAINING_STAGE } from '../../src/data/stages';
-import { damageOf, playCombo, type ComboRun } from './combo-helpers';
+import { damageOf, floored, playCombo, unbroken, type ComboRun } from './combo-helpers';
 import { facingOff, run } from './helpers';
 
 /**
@@ -28,20 +26,6 @@ function combo(
   opponent?: (tick: number) => InputBits,
 ): ComboRun {
   return playCombo(facingOff(distancePx, config), config, steps, opponent);
-}
-
-/** The opponent once it has landed: on the ground (knocked down, or getting up). */
-function floored(run: ComboRun): boolean {
-  return run.states.some((state) => state.fighters[1].action === 'knockdown');
-}
-
-/** Every blow of the combo landed on a fighter that could not act in between. */
-function unbroken(run: ComboRun): boolean {
-  return run.hits.every((hit, index) => {
-    const state = run.states.find((s) => s.contacts.includes(hit));
-    const victim: FighterState | undefined = state?.fighters[1];
-    return victim !== undefined && (index === 0 || victim.comboCount === index + 1);
-  });
 }
 
 function expectCombo(result: ComboRun, damages: readonly number[], knockdown = true): void {
@@ -173,17 +157,10 @@ describe('L, L, L (§7.2)', () => {
   }
 });
 
-describe('no loop without end (§7.1)', () => {
-  it('a light cancelled into a normal never steps in: ↓L, → + L, ↓L... stops', () => {
-    const result = combo(RIFF_VS_NAYO, 36, [Down | Light, Right | Light]);
-    // The Toprock waits for the Coup bas to end, on its last frame: no cancel, no combo.
-    const toprock = result.states.findIndex((state) => state.fighters[0].move === 'forwardLight');
-    const before = result.states[toprock - 1]?.fighters[0];
-    expect(before?.actionFrame).toBe(moveDuration(RIFF.moves.crouchLight) - 1);
-    expect(unbroken(result) && result.hits.length === 2).toBe(false);
-  });
-
-  it("the Toprock still cancels into a normal that stays in place, and Riff's dash into it", () => {
+// The rule « a light cancelled into a normal never steps in » of §7.1 is gone: the phrase bounds
+// the cancels instead (docs/combos-v3.md §1.2, tests/core/strings.test.ts).
+describe('the Toprock (§7.1)', () => {
+  it("still cancels into a normal that stays in place, and Riff's dash into it", () => {
     const result = combo(RIFF_VS_NAYO, 50, [Right | Light, Down | Light]);
     expect(result.hits.map((hit) => hit.move)).toEqual(['forwardLight', 'crouchLight']);
     const dashed = combo(RIFF_VS_NAYO, 90, [Dash, Right | Light]);

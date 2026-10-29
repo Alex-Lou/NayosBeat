@@ -13,6 +13,7 @@ import {
   strike,
   throwMove,
 } from './shared';
+import { RIFF_STRINGS } from './riff-strings';
 
 /**
  * Riff, the rushdown, « la punk qui breake et cogne » (docs/combat-v2.md §5.3, §5.5, §10.2): the
@@ -48,60 +49,7 @@ export const RIFF: FighterTemplate = {
   crouchingHurtboxes: [box(-32, 0, 47, 57.5)],
   airHurtboxes: [box(-28, 4, 46, 40), box(-21, 44, 35.5, 37)],
   moves: {
-    standLight: strike({
-      name: 'Jab',
-      frames: [3, 2, 6],
-      damage: 25,
-      stun: [13, 9],
-      hitstop: 7,
-      pushbackPx: 2.5,
-      guard: 'mid',
-      hitbox: box(9, 42, 24, 12),
-      cancelInto: LIGHT_CANCELS,
-      chain: 'chainLight',
-    }),
-    // L, L, L (§7.2): a spinning backhand, then a circular kick that sweeps the opponent away.
-    // Each steps in 10 px and the backhand barely pushes back: the chain holds wherever the
-    // jab hit.
-    chainLight: strike({
-      name: 'Revers',
-      frames: [5, 3, 10],
-      damage: 30,
-      stun: [16, 11],
-      hitstop: 8,
-      pushbackPx: 1.5,
-      guard: 'mid',
-      hitbox: box(8, 44, 30, 14),
-      motion: advance(18, { from: 0, to: 5, distancePx: 10 }),
-      cancelInto: HEAVY_CANCELS,
-      chain: 'lightFinisher',
-    }),
-    lightFinisher: strike({
-      name: 'Swipe',
-      frames: [7, 3, 18],
-      damage: 45,
-      stun: [0, 11],
-      hitstop: 10,
-      pushbackPx: 4,
-      guard: 'mid',
-      hitbox: box(8, 30, 34, 26),
-      motion: advance(28, { from: 0, to: 7, distancePx: 10 }),
-      knockdown: kd(2.5, 4),
-    }),
-    // → + L: a dance step forward (20 px), then a jab. +1 on block and cancellable into a
-    // normal: her pressure and her traps.
-    forwardLight: strike({
-      name: 'Toprock',
-      frames: [8, 2, 10],
-      damage: 30,
-      stun: [15, 12],
-      hitstop: 8,
-      pushbackPx: 2.5,
-      guard: 'mid',
-      hitbox: box(8, 44, 24, 14),
-      motion: advance(20, { from: 0, to: 8, distancePx: 20 }),
-      cancelInto: LIGHT_CANCELS,
-    }),
+    ...RIFF_STRINGS,
     // → + H: the leg rises straight, then chops down like an axe. An overhead quicker than
     // Nayo's (17 ticks), −4 on block.
     forwardHeavy: strike({
@@ -117,7 +65,8 @@ export const RIFF: FighterTemplate = {
       motion: advance(34, { from: 4, to: 14, distancePx: 15 }),
     }),
     // ← + H: a scorpion kick, the leg over her head, covering behind her too (against
-    // cross-ups). The launcher; it whiffs on a crouching opponent (57 px at most). She hops
+    // cross-ups). The launcher, about 60 px up with 4 juggle points; it whiffs on a crouching
+    // opponent (57 px at most). She hops
     // into it: on its active frames her body is 16 px off the floor (measured, §9.2), and a
     // low blow passes under her feet (§10.2; a default decision, §18.3).
     backHeavy: strike({
@@ -130,19 +79,7 @@ export const RIFF: FighterTemplate = {
       guard: 'mid',
       hitbox: box(-12, 58, 34, 42),
       hurtboxes: [{ frames: { from: 6, to: 11 }, boxes: [box(-15, 16, 30, 80)] }],
-      knockdown: kd(5, 0.5, { juggle: true }),
-      cancelInto: HEAVY_CANCELS,
-    }),
-    standHeavy: strike({
-      name: 'Coup de coude',
-      frames: [6, 3, 14],
-      damage: 70,
-      stun: [19, 13],
-      hitstop: 11,
-      // A short push: the Genou montant (28 px of reach) still catches what it hit (§7.8).
-      pushbackPx: 2,
-      guard: 'mid',
-      hitbox: box(9, 40, 34, 18),
+      knockdown: kd(8, 0.5, { juggle: 4 }),
       cancelInto: HEAVY_CANCELS,
     }),
     crouchLight: strike({
@@ -155,6 +92,7 @@ export const RIFF: FighterTemplate = {
       guard: 'low',
       hitbox: box(10, 4, 22, 10),
       cancelInto: LIGHT_CANCELS,
+      crouching: true,
     }),
     // A breakdance windmill along the floor: it sweeps.
     crouchHeavy: strike({
@@ -167,6 +105,7 @@ export const RIFF: FighterTemplate = {
       guard: 'low',
       hitbox: box(10, 2, 34, 12),
       knockdown: kd(2, 3, { trip: true }),
+      crouching: true,
     }),
     // The splits in the air: the only blow of the duo that hits behind (a cross-up).
     jumpLight: strike({

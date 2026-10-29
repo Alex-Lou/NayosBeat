@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { applyHit, canBeHit } from '../../src/core/combat';
+import { applyHit } from '../../src/core/combat';
 import type { MatchConfig } from '../../src/core/config';
 import { px } from '../../src/core/constants';
-import { moveOf } from '../../src/core/moves';
 import { chipDamage, isCounterHit, scaledDamage } from '../../src/core/damage';
 import { Input, type InputBits } from '../../src/core/input';
 import { COUNTER_HITSTOP, COUNTER_HITSTUN } from '../../src/core/rules';
@@ -15,11 +14,11 @@ import { expectMirrored, facingOff, makeFighter, MIRROR_MATCH, repeat } from './
 import { play } from './hold-helpers';
 
 /**
- * CONTRE and PUNITION (docs/combat-v2.md §7.4), the chip (§7.5) and the juggle (§7.6), on the
- * real engine, and the one damage formula they share (§7.7).
+ * CONTRE and PUNITION (docs/combat-v2.md §7.4) and the chip (§7.5), on the real engine, and the
+ * one damage formula they share (§7.7). The juggle (§7.6, now with points): juggle.test.ts.
  */
 
-const { Light, Heavy, Special, Down, Left, Right, Dash } = Input;
+const { Light, Heavy, Special, Down, Right, Dash } = Input;
 
 const NAYO_VS_RIFF: MatchConfig = { stage: TRAINING_STAGE, fighters: [NAYO, RIFF] };
 
@@ -134,41 +133,5 @@ describe('chip (§7.5)', () => {
     const chipped = applyHit(guard, px(400), NAYO.moves.special);
     expect(chipped).toMatchObject({ action: 'blockstun', health: 1 });
     expect(applyHit({ ...guard, health: 1 }, px(400), NAYO.moves.special).health).toBe(1);
-  });
-});
-
-describe('the juggle (§7.6)', () => {
-  it('lets one blow hit a fighter launched by a launcher, and one only', () => {
-    const sent = applyHit(makeFighter({ health: 900 }), px(370), moveOf(NAYO, 'backHeavy'));
-    expect(sent).toMatchObject({ action: 'airHit', juggle: 1, reaction: 'launch' });
-    // A moment later, in the air.
-    const launched = { ...sent, y: px(20) };
-    expect(canBeHit(launched, RIFF)).toBe(true);
-    const juggled = applyHit(launched, px(370), NAYO.moves.standLight);
-    expect(juggled).toMatchObject({ action: 'airHit', juggle: 0, comboCount: 2 });
-    expect(canBeHit(juggled, RIFF)).toBe(false);
-    // A second launcher on a juggled fighter launches again, without a new juggle.
-    expect(applyHit(launched, px(370), moveOf(NAYO, 'backHeavy')).juggle).toBe(0);
-  });
-
-  it('is not given by any other blow in the air', () => {
-    const jumping = makeFighter({ action: 'air', y: px(40), health: 900 });
-    const hit = applyHit(jumping, px(370), NAYO.moves.standHeavy);
-    expect(hit).toMatchObject({ action: 'airHit', juggle: 0 });
-    expect(canBeHit(hit, RIFF)).toBe(false);
-  });
-
-  it('ends on the ground: the juggle is gone when the fighter lands', () => {
-    const result = playCombo(facingOff(30, NAYO_VS_RIFF), NAYO_VS_RIFF, [Left | Heavy]);
-    const down = result.states.find((s) => s.fighters[1].action === 'knockdown');
-    expect(down?.fighters[1].juggle).toBe(0);
-    expect(result.hits).toHaveLength(1);
-  });
-
-  it('takes the launcher and its follow-up, and nothing more', () => {
-    // ←H, the Uppercut, then a jab as soon as he can: she is out of reach, falling then down.
-    const steps = [Left | Heavy, Down | Special, Light];
-    const result = playCombo(facingOff(30, NAYO_VS_RIFF), NAYO_VS_RIFF, steps);
-    expect(result.hits.map((h) => h.move)).toEqual(['backHeavy', 'specialAntiAir']);
   });
 });

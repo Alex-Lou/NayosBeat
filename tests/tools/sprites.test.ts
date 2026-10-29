@@ -2,12 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { NAYO_CLIPS, NAYO_PROJECTILE } from '../../src/art/nayo/clips';
 import { NAYO_SHEETS } from '../../src/art/nayo/sheets';
 import { ANCHOR, ART_SCALE, CELL_SIZE } from '../../src/art/types';
-import type { MoveId } from '../../src/core/move-data';
 import { toPx } from '../../src/core/constants';
 import { NAYO } from '../../src/data/fighters/nayo';
+import { strikesOf } from '../../tools/sprites/clips';
 import { isV2Sheet, NAYO_POSES, type PosedSheet } from '../../tools/sprites/nayo/poses/index';
 import { crc32, encodeIndexedPng } from '../../tools/sprites/png';
 import { drawSheet } from '../../tools/sprites/sheet';
+import { AWAITING_ART, reachCheck } from './fighters';
 import { eachPixel as eachPixelOf, extent as extentOf, reach } from './strip-pixels';
 
 describe('PNG encoder', () => {
@@ -124,56 +125,49 @@ describe('Nayo strips', () => {
    */
   const REACH = { short: 3, past: 4 } as const;
   const LOW_REACH = { short: 2, past: 3 } as const;
-  const STRIKES = [
-    'standLight',
-    'standHeavy',
-    'crouchLight',
-    'crouchHeavy',
-    'jumpLight',
-    'jumpHeavy',
-    'specialForward',
-    'specialAntiAir',
-    'grab',
-  ] as const satisfies readonly MoveId[];
+  /** Every move that strikes with a v1 strip: some strips are played by more than one move. */
+  const STRIKES = strikesOf(NAYO_CLIPS, NAYO).filter(
+    ({ sheet }) => !isV2Sheet(sheet as PosedSheet),
+  );
+  const AWAITING = AWAITING_ART['Nayo'] ?? new Set();
 
-  function activeFrames(move: (typeof STRIKES)[number]): number[] {
-    const { startup, active } = NAYO.moves[move];
-    const clip = NAYO_CLIPS[move];
-    const frames: number[] = [];
-    let tick = 0;
-    clip.ticks.forEach((ticks, index) => {
-      if (tick < startup + active && tick + ticks > startup) frames.push(clip.frames[index] ?? -1);
-      tick += ticks;
-    });
-    return frames;
-  }
-
-  it.each(STRIKES)('%s: the active frames reach the hitbox, no farther', (move) => {
-    const { hitbox, guard } = NAYO.moves[move];
-    if (!hitbox) throw new Error(`${move} has no hitbox`);
-    const [x = 0, y = 0, width = 0, height = 0] = [
-      hitbox.x,
-      hitbox.y,
-      hitbox.width,
-      hitbox.height,
-    ].map(toPx);
-    const { short, past } = guard === 'low' ? LOW_REACH : REACH;
-    const ways = [{ up: false, band: { from: y, to: y + height }, edge: x + width }];
-    if (move === 'specialAntiAir')
-      ways.push({ up: true, band: { from: x, to: x + width }, edge: y + height });
-    const frames = activeFrames(move);
-    expect(frames.length).toBeGreaterThan(0);
-    // The strip the move plays.
-    const strip = sheetCanvas(NAYO_CLIPS[move].sheet as PosedSheet);
-    for (const frame of frames) {
-      for (const { up, band, edge } of ways) {
-        const reached = reach([strip], frame, band, up);
-        const where = `frame ${frame} ${up ? 'up' : 'forward'} reaches ${reached}, edge ${edge}`;
-        expect(reached, where).toBeGreaterThanOrEqual(edge - short);
-        expect(reached, where).toBeLessThanOrEqual(edge + past);
-      }
-    }
+  it('measures every move that strikes with a v1 strip, those that share one too', () => {
+    expect(STRIKES.map(({ id }) => id)).toEqual([
+      'standLight',
+      'standHeavy',
+      'crouchLight',
+      'crouchHeavy',
+      'jumpLight',
+      'jumpHeavy',
+      'specialForward',
+      'specialAntiAir',
+      // The Direct's strip, and the Crochet's until its own lands. The grab plays a combat v2
+      // strip: nayo-v2-sprites.test.ts measures it with them.
+      'jabRepeat',
+      'chainHeavy',
+    ]);
   });
+
+  for (const { id, move, sheet, frames, box } of STRIKES) {
+    it.skipIf(AWAITING.has(id))(reachCheck('Nayo', id), () => {
+      const { x, y, width, height } = box;
+      const { short, past } = move.guard === 'low' ? LOW_REACH : REACH;
+      const ways = [{ up: false, band: { from: y, to: y + height }, edge: x + width }];
+      if (id === 'specialAntiAir')
+        ways.push({ up: true, band: { from: x, to: x + width }, edge: y + height });
+      expect(frames.length).toBeGreaterThan(0);
+      // The strip the move plays.
+      const strip = sheetCanvas(sheet as PosedSheet);
+      for (const frame of frames) {
+        for (const { up, band, edge } of ways) {
+          const reached = reach([strip], frame, band, up);
+          const where = `frame ${frame} ${up ? 'up' : 'forward'} reaches ${reached}, edge ${edge}`;
+          expect(reached, where).toBeGreaterThanOrEqual(edge - short);
+          expect(reached, where).toBeLessThanOrEqual(edge + past);
+        }
+      }
+    });
+  }
 });
 
 describe('the Vinyle in flight', () => {

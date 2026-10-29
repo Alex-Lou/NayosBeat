@@ -44,7 +44,8 @@ export function box(x: number, y: number, width: number, height: number): Box {
 
 /**
  * Sends the defender flying at `liftPx` up and `speedPx` away (pixels per tick), then down; a
- * sweep trips it onto its back, a launcher allows one more blow in the air (`juggle`).
+ * sweep trips it onto its back, a launcher gives it juggle points for the blows in the air
+ * (`juggle`).
  */
 export function kd(
   liftPx: number,
@@ -181,9 +182,10 @@ export function dash(spec: DashSpec): MoveData {
 /**
  * The cancel table (docs/combat-v2.md §7.1), once a move has hit or been blocked, until its
  * end: lights (L, ↓L, Riff's Toprock) into another normal or a special; heavies, the second hit
- * of the chain, Nayo's Jab chassé and the launchers into a special. Overheads, sweeps, the
- * chain's finishers, air attacks, specials and grabs cancel into nothing (no `cancelInto`).
- * The chain itself is the moves' `chain`.
+ * of the chain, the strings' blows, Nayo's Jab chassé and the launchers into a special.
+ * Overheads, sweeps, the chain's finishers, air attacks, specials and grabs cancel into nothing
+ * (no `cancelInto`). The strings are the moves' `branches`, read first (docs/combos-v3.md §1.4),
+ * and no cancel enters a normal the phrase already played (§1.2).
  */
 export const LIGHT_CANCELS: readonly MoveKind[] = ['normal', 'special'];
 export const HEAVY_CANCELS: readonly MoveKind[] = ['special'];

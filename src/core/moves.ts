@@ -1,14 +1,14 @@
 import type { Command } from './commands';
 import type { FighterMoves, FighterTemplate } from './config';
 import { has, Input, type InputBits } from './input';
-import type { FrameRange, MoveData, MoveId, OptionalMoveId } from './move-data';
+import type { BranchDir, FrameRange, MoveData, MoveId, OptionalMoveId } from './move-data';
 import type { Motion } from './motion';
 import type { Facing } from './state';
 
 /**
  * A move of the fighter. The moves played are always defined (`groundMove` falls back on the
  * standing normal for an optional move a fighter does not have, and validation checks every
- * `chain`): a missing one is a bug.
+ * branch): a missing one is a bug.
  */
 export function moveOf(template: FighterTemplate, id: MoveId): MoveData {
   const move = template.moves[id];
@@ -42,11 +42,11 @@ export function isThrowInvincible(move: MoveData, actionFrame: number): boolean 
 /**
  * Ground move for a command (docs/combat-v2.md §2.8, the first row that applies wins), from the
  * direction held and the motion completed when it was pressed (a buffered press keeps what the
- * player meant, even if they let go since). `chain` is the chain of the move being cancelled,
- * if it has one: L gives it. Null for the jump, which is a state of its own and not a move. A
- * fresh motion comes first, for the special button too: ↓↘→ + S ends holding forward, and still
- * throws the special, not the forward special. An optional move the fighter does not have
- * gives its standing normal.
+ * player meant, even if they let go since). Null for the jump, which is a state of its own and
+ * not a move. A fresh motion comes first, for the special button too: ↓↘→ + S ends holding
+ * forward, and still throws the special, not the forward special. An optional move the fighter
+ * does not have gives its standing normal. The strings of a move being cancelled are read
+ * before this table (`branchMove`).
  */
 export function groundMove(
   command: Command,
@@ -54,7 +54,6 @@ export function groundMove(
   motion: Motion | null,
   facing: Facing,
   moves: FighterMoves,
-  chain?: MoveId,
 ): MoveId | null {
   if (command === 'grab') return 'grab';
   if (command === 'dash') return 'dashForward';
@@ -67,7 +66,6 @@ export function groundMove(
 
   if (command === 'special') return specialFromDirection(input, facing);
   const light = command === 'light';
-  if (light && chain) return chain;
   if (has(input, Input.Down)) return light ? 'crouchLight' : 'crouchHeavy';
   // Back + L stays the jab: the quickest reversal out of a guard.
   if (light)
@@ -102,8 +100,46 @@ export function airMove(command: Command): MoveId | null {
   return null;
 }
 
-export function isCrouchingMove(move: MoveId): boolean {
-  return move === 'crouchLight' || move === 'crouchHeavy';
+/**
+ * The rung of the cancel ladder (docs/combos-v3.md §1.3): 0 a normal or a movement, 1 a special.
+ * A move climbs it, never down: a special cancels into a higher rung only.
+ */
+export function tierOf(move: MoveData): number {
+  return move.kind === 'special' ? 1 : 0;
+}
+
+/**
+ * The direction of a string, read from what was held when the button was pressed, relative to
+ * the side then faced (docs/combos-v3.md §1.1): down (diagonals too), then forward, then back.
+ * Up never chooses: it jumps.
+ */
+export function branchDirOf(input: InputBits, facing: Facing): BranchDir {
+  if (has(input, Input.Down)) return 'down';
+  if (has(input, forwardOf(facing))) return 'forward';
+  return has(input, backOf(facing)) ? 'back' : 'neutral';
+}
+
+/**
+ * The string a command opens during `move` (docs/combos-v3.md §1.4): the first branch of its
+ * button whose directions include the one held, else its branch for any direction. The branches
+ * are data loaded once: the loop allocates nothing.
+ */
+export function branchMove(
+  command: Command,
+  input: InputBits,
+  facing: Facing,
+  move: MoveData,
+): MoveId | null {
+  const { branches } = move;
+  if (!branches || (command !== 'light' && command !== 'heavy')) return null;
+  const dir = branchDirOf(input, facing);
+  let anyDirection: MoveId | null = null;
+  for (const branch of branches) {
+    if (branch.button !== command) continue;
+    if (!branch.dirs) anyDirection ??= branch.move;
+    else if (branch.dirs.includes(dir)) return branch.move;
+  }
+  return anyDirection;
 }
 
 /** Simplified specials: special alone, forward + special, down + special. */
