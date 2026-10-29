@@ -35,18 +35,34 @@ export type Hand = 'fist' | 'open';
  */
 export type Face = 'focus' | 'effort' | 'kiai' | 'smirk' | 'cool' | 'hurt' | 'out' | 'tired';
 
-/** Which of the fighter's two effect colors: sound (energy, rings) or strike (impacts, trails). */
-export type Tone = 'sound' | 'strike';
+/**
+ * Which of the fighter's effect colors: sound (energy, rings) or strike (impacts, trails), or
+ * the Boost's platine (docs/combos-v3.md §1.8.7): an incandescent white, the same for every
+ * fighter and both colorways, for the moves that spend the gauge (the supers, the Remixes).
+ */
+export type Tone = 'sound' | 'strike' | 'platine';
 
 /**
  * Effects of a frame, in character space (not turned by `spin`). Motion trails are drawn
- * behind the body; every other effect goes on the front layer, over both fighters.
+ * behind the body; every other effect goes on the front layer, over both fighters. The kinds
+ * without a `tone` of their own take an optional one: they are drawn in the sound color unless
+ * told otherwise (`tone: 'platine'` for a Boost move).
  */
 export type Effect =
   /** Motion trail of a fast limb: a band through `points`, tail first, `width` at the limb. */
-  | { readonly kind: 'smear'; readonly points: readonly Point[]; readonly width: number }
+  | {
+      readonly kind: 'smear';
+      readonly points: readonly Point[];
+      readonly width: number;
+      readonly tone?: Tone;
+    }
   /** Sound energy gathered or released by the hands. */
-  | { readonly kind: 'energy'; readonly center: Point; readonly radius: number }
+  | {
+      readonly kind: 'energy';
+      readonly center: Point;
+      readonly radius: number;
+      readonly tone?: Tone;
+    }
   /**
    * The Vinyle: a record of light seen face on, `radius` pixels, turned `phase` of a full turn
    * clockwise (0 to 1); in flight, `afterimages` ghosts of it (0 to 3) trail behind.
@@ -57,6 +73,7 @@ export type Effect =
       readonly radius: number;
       readonly phase: number;
       readonly afterimages: number;
+      readonly tone?: Tone;
     }
   /** A star-shaped flash where a strike snaps out. */
   | { readonly kind: 'flash'; readonly center: Point; readonly radius: number; readonly tone: Tone }
@@ -88,6 +105,7 @@ export type Effect =
       readonly height: number;
       readonly width: number;
       readonly progress: number;
+      readonly tone?: Tone;
     }
   /**
    * Shards flying out of an impact along the blow (forward cone), `progress` from 0 to 1.

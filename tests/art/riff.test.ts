@@ -5,6 +5,7 @@ import { RIFF_SHEETS } from '../../src/art/riff/sheets';
 import { playedSheets } from '../../src/art/types';
 import { validateArt } from '../../src/art/validate';
 import { RIFF as RIFF_TEMPLATE } from '../../src/data/fighters/riff';
+import { RIFF_PENDING } from '../../tools/sprites/riff/pending-timing';
 
 describe('Riff art', () => {
   it('matches the frame data of her template, in both colorways', () => {
@@ -17,8 +18,13 @@ describe('Riff art', () => {
     expect(artOf('riff', 'alt')).toBe(RIFF_ALT);
   });
 
-  it('plays all 43 of her strips (docs/combat-v2.md §11.3), each with an image', () => {
-    expect([...playedSheets(RIFF)].sort()).toEqual(Object.keys(RIFF_SHEETS).sort());
+  it('plays all her strips (docs/combat-v2.md §11.3) but the ones drawn ahead, each with an image', () => {
+    // Drawn ahead of their gameplay: the combos v3 strips, until their clips come
+    // (tools/sprites/riff/pending-timing.ts).
+    const played = playedSheets(RIFF);
+    const sheets = Object.keys(RIFF_SHEETS);
+    expect([...played].filter((sheet) => !sheets.includes(sheet))).toEqual([]);
+    expect(sheets.filter((sheet) => !played.has(sheet) && !(sheet in RIFF_PENDING))).toEqual([]);
     for (const art of [RIFF, RIFF_ALT]) {
       expect(Object.keys(art.urls).sort()).toEqual(Object.keys(RIFF_SHEETS).sort());
     }

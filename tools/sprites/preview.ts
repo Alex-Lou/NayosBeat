@@ -1,8 +1,10 @@
 /**
  * Renders strips to look at while drawing them: on the stage background, with the ground line,
- * the pushbox edges (dashed) and, on the active frames of an attack, its hitbox (red frame).
- * Writes tools/sprites/preview/<sheet>.png, tools/sprites/preview/riff/<sheet>.png for Riff
- * (not committed).
+ * the pushbox edges (dashed), the front effects over the body (as the game draws them) and, on
+ * the active frames of an attack, its hitbox (red frame). A strip drawn ahead of its gameplay
+ * takes its timing and hitbox from its fighter's pending table (tools/sprites/<name>/
+ * pending-timing.ts). Writes tools/sprites/preview/<sheet>.png, tools/sprites/preview/riff/
+ * <sheet>.png for Riff (not committed), and prints each frame's ticks, the active ones in [ ].
  *
  *   npm run sprites:preview -- idle standHeavy          # Nayo, main colorway
  *   npm run sprites:preview -- --alt idle               # second colorway
@@ -18,13 +20,15 @@ import type { FighterTemplate } from '../../src/core/config.ts';
 import { toPx } from '../../src/core/constants.ts';
 import { NAYO as NAYO_TEMPLATE } from '../../src/data/fighters/nayo.ts';
 import { RIFF as RIFF_TEMPLATE } from '../../src/data/fighters/riff.ts';
-import { strikeOf, type Clips } from './clips.ts';
+import { strikeOf, type Clips, type PendingStrips } from './clips.ts';
 import type { Fighter, Strike } from './fighter.ts';
 import { NAYO } from './nayo/index.ts';
+import { NAYO_PENDING } from './nayo/pending-timing.ts';
 import type { Colorway } from './palette.ts';
 import { encodeIndexedPng, type Rgba } from './png.ts';
 import { RIFF } from './riff/index.ts';
-import { drawStrip } from './sheet.ts';
+import { RIFF_PENDING } from './riff/pending-timing.ts';
+import { drawStrip, drawStripEffects } from './sheet.ts';
 
 const PREVIEW = new URL('./preview/', import.meta.url);
 const ZOOM = 2;
@@ -42,16 +46,19 @@ interface Guides {
   readonly strike: (sheet: string) => Strike | undefined;
 }
 
-/** A fighter's moves (src/data/fighters/), played by its clips (src/art/<name>/clips.ts). */
-function guidesOf(template: FighterTemplate, clips: Clips): Guides {
+/**
+ * A fighter's moves (src/data/fighters/), played by its clips (src/art/<name>/clips.ts), and
+ * its strips drawn ahead of their gameplay (`pending`).
+ */
+function guidesOf(template: FighterTemplate, clips: Clips, pending: PendingStrips): Guides {
   return {
     pushboxHalf: toPx(template.standingPushbox.width) / 2,
-    strike: (sheet) => strikeOf(clips, template, sheet),
+    strike: (sheet) => strikeOf(clips, template, sheet, pending),
   };
 }
 
-const NAYO_GUIDES = guidesOf(NAYO_TEMPLATE, NAYO_CLIPS);
-const RIFF_GUIDES = guidesOf(RIFF_TEMPLATE, RIFF_CLIPS);
+const NAYO_GUIDES = guidesOf(NAYO_TEMPLATE, NAYO_CLIPS, NAYO_PENDING);
+const RIFF_GUIDES = guidesOf(RIFF_TEMPLATE, RIFF_CLIPS, RIFF_PENDING);
 
 interface Box {
   readonly left: number;
@@ -84,6 +91,8 @@ async function render(
   colorway: Colorway,
 ): Promise<void> {
   const canvas = drawStrip(fighter, sheet);
+  // The front effects go over both fighters in the game: over the body here.
+  const front = drawStripEffects(fighter, sheet);
   const palette = [...fighter.paletteOf(colorway)];
   const slot = (color: Rgba): number => palette.push(color) - 1;
   const background = slot(BACKGROUND);
@@ -98,7 +107,7 @@ async function render(
   for (let y = 0; y < canvas.height; y++) {
     for (let x = 0; x < canvas.width; x++) {
       const index = y * canvas.width + x;
-      const sprite = canvas.pixels[index] ?? 0;
+      const sprite = front?.pixels[index] || canvas.pixels[index] || 0;
       if (sprite !== 0) {
         pixels[index] = sprite;
         continue;
@@ -131,7 +140,10 @@ async function render(
     new URL(`${name}.png`, PREVIEW),
     await encodeIndexedPng(canvas.width, canvas.height, pixels, palette, ZOOM),
   );
-  console.log(`tools/sprites/preview/${name}.png (${canvas.width / CELL_SIZE} frames)`);
+  const { ticks } = fighter.timing(sheet);
+  const timing = ticks.map((tick, frame) => (boxes.has(frame) ? `[${tick}]` : `${tick}`));
+  const frames = canvas.width / CELL_SIZE;
+  console.log(`tools/sprites/preview/${name}.png (${frames} frames, ticks ${timing.join(' ')})`);
 }
 
 async function main(): Promise<void> {

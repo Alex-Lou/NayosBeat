@@ -30,7 +30,8 @@ describe('loadArt', () => {
   });
 
   it('leaves out the strips drawn ahead of their gameplay, that no clip plays', () => {
-    // Every strip of Nayo is played since the combat v2's phase 3: one drawn ahead stands in.
+    // Whatever Nayo has drawn ahead now (the combos v3 strips, until their clips come), one more
+    // stands in, with its effects.
     const ahead: FighterArt = {
       ...NAYO,
       sheets: { ...NAYO.sheets, ahead: { frames: 2 } },
@@ -39,7 +40,7 @@ describe('loadArt', () => {
     };
     const played = new Set([...Object.values(NAYO.clips).map((clip) => clip.sheet), 'projectile']);
     const unplayed = Object.keys(ahead.urls).filter((sheet) => !played.has(sheet));
-    expect(unplayed).toEqual(['ahead']);
+    expect(unplayed).toContain('ahead');
     const keys = loadedKeys(ahead);
     for (const sheet of unplayed) {
       expect(keys).not.toContain(`nayo/${sheet}`);

@@ -7,6 +7,7 @@ import type { Fighter } from '../fighter.ts';
 import { RIFF_BODY } from './body.ts';
 import { drawRiff } from './look.ts';
 import { EFFECTS, paletteOf } from './palette.ts';
+import { RIFF_PENDING } from './pending-timing.ts';
 import { RIFF_POSES } from './poses/index.ts';
 
 const isSheet = (sheet: string): sheet is RiffSheet => sheet in RIFF_SHEETS;
@@ -16,10 +17,11 @@ export const RIFF: Fighter = {
   sheets: RIFF_SHEETS,
   body: RIFF_BODY,
   poses: (sheet) => (isSheet(sheet) ? RIFF_POSES[sheet] : undefined),
-  // Ticks per frame, from the clips that play each strip: the game's timing.
+  // Ticks per frame, from the clips that play each strip: the game's timing (the pending one for
+  // a strip drawn ahead of its gameplay).
   timing: (sheet) =>
     isSheet(sheet)
-      ? timingOf(RIFF_CLIPS, sheet, RIFF_SHEETS[sheet].frames)
+      ? timingOf(RIFF_CLIPS, sheet, RIFF_SHEETS[sheet].frames, RIFF_PENDING)
       : { ticks: [], loops: false },
   // Her hanging parts (look.ts): the magenta fringe rides the first, soft, so its tips trail the
   // neck by about a frame; the belt's chain rides the second, softer still, a frame behind.

@@ -9,6 +9,12 @@
  * the effects read as colored light, not as white blobs. The scatter is seeded by the effect's own
  * world parameters, so a strip always draws the same and an effect that lasts several frames keeps
  * its breaks and sparkles in place.
+ *
+ * A third color, the Boost's platine (docs/combos-v3.md §1.8.7), is the same for every fighter
+ * and both colorways: an incandescent white ramp (#FFFFFF, #F2F6FF, #C9D6E8) with a #20243A rim,
+ * never gold (gold is Riff's second colorway). Any effect drawn with `tone: 'platine'` takes it,
+ * in the same shapes: the moves that spend the gauge (the supers, the Remixes) light up white
+ * whoever plays them, the same in both colorways.
  */
 
 import { ANCHOR, ART_SCALE, CELL_SIZE } from '../../src/art/types.ts';
@@ -59,7 +65,13 @@ export type EffectSlot =
   | 'sandDeep'
   | 'sand'
   | 'sandLight'
-  | 'ink';
+  | 'ink'
+  // The Boost's platine, the same in every palette (../palette.ts): glow, rim, base, light, core.
+  | 'platineGlow'
+  | 'platineRim'
+  | 'platineBase'
+  | 'platineLight'
+  | 'platineCore';
 
 /** How a fighter's effects look: their palette slots, and the shape of the loose sparkles. */
 export interface EffectStyle {
@@ -71,6 +83,8 @@ export interface EffectStyle {
 interface ToneSet {
   readonly sound: Tones;
   readonly strike: Tones;
+  /** The Boost: white, a dark blue-grey rim (and the smoky heart of a heavy spark). */
+  readonly platine: Tones;
   /** Motion trails: the sound color over the trail's own, fainter glow. */
   readonly trail: Tones;
   /** The Vinyle: the sound tones, and its black label in the smoke rank, over every other. */
@@ -96,12 +110,33 @@ function tonesOf(style: EffectStyle): ToneSet {
       fx.strikeCore,
       fx.strikeSmoke,
     ],
+    platine: [
+      fx.platineGlow,
+      fx.platineRim,
+      fx.platineBase,
+      fx.platineLight,
+      fx.platineCore,
+      fx.platineRim,
+    ],
     trail: [fx.trailFaint, fx.soundDeep, fx.sound, fx.soundLight, fx.soundCore, fx.soundDeep],
     vinyl: [fx.soundGlow, fx.soundDeep, fx.sound, fx.soundLight, fx.soundCore, fx.ink],
     dust: [fx.dustLight, fx.sandDeep, fx.sand, fx.sandLight, fx.sandLight, fx.sandDeep],
   };
   TONE_SETS.set(style, set);
   return set;
+}
+
+/**
+ * The tones of an effect drawn in `tone`: the sound color's own variant for a trail or the
+ * Vinyle (`sound`, its usual look), the plain tones of the other colors (the record keeps its
+ * black label).
+ */
+function variantOf(style: EffectStyle, variant: 'trail' | 'vinyl', tone: Tone = 'sound'): Tones {
+  const set = tonesOf(style);
+  if (tone === 'sound') return set[variant];
+  if (variant === 'trail') return set[tone];
+  const [glow, deep, base, light, core] = set[tone];
+  return [glow, deep, base, light, core, style.slots.ink];
 }
 
 /** Where to draw: the canvas, and the world point (character space) to cell pixel mapping. */
@@ -121,13 +156,13 @@ export function inkAt(canvas: PixelCanvas, cellX: number, fx: EffectStyle): Ink 
 export function drawEffect(ink: Ink, effect: Effect): void {
   switch (effect.kind) {
     case 'smear':
-      drawSmear(ink, effect.points, effect.width);
+      drawSmear(ink, effect.points, effect.width, effect.tone);
       return;
     case 'energy':
-      drawEnergy(ink, effect.center, effect.radius);
+      drawEnergy(ink, effect.center, effect.radius, effect.tone);
       return;
     case 'disc':
-      drawDisc(ink, effect.center, effect.radius, effect.phase, effect.afterimages);
+      drawDisc(ink, effect.center, effect.radius, effect.phase, effect.afterimages, effect.tone);
       return;
     case 'flash':
       drawFlash(ink, effect.center, effect.radius, effect.tone);
@@ -146,7 +181,7 @@ export function drawEffect(ink: Ink, effect: Effect): void {
       drawSpeed(ink, effect);
       return;
     case 'column':
-      drawColumn(ink, effect.base, effect.height, effect.width, effect.progress);
+      drawColumn(ink, effect.base, effect.height, effect.width, effect.progress, effect.tone);
       return;
     case 'shards':
       drawShards(ink, effect.center, effect.radius, effect.progress, tonesOf(ink.fx)[effect.tone]);
@@ -172,14 +207,20 @@ export function drawEffect(ink: Ink, effect: Effect): void {
  * like a wake. Sparkles cluster around the limb and spray flies off the bow wave. Curved paths
  * (kicks) make concentric arcs. A trail skimming the floor rides up on it instead of being cut.
  * The bow wave stays a few pixels past the limb: the hitbox tests measure the trail too.
+ * `tone` recolors it (a white trail for a Boost move).
  */
-export function drawSmear(ink: Ink, worldPoints: readonly Point[], width: number): void {
+export function drawSmear(
+  ink: Ink,
+  worldPoints: readonly Point[],
+  width: number,
+  tone?: Tone,
+): void {
   const curve = sampleCurve(worldPoints.map(ink.at));
   const tail = worldPoints[0];
   const limb = worldPoints[worldPoints.length - 1];
   const end = curve.samples[curve.samples.length - 1];
   if (!tail || !limb || !end || curve.length < 2) return;
-  const layer = new Layer(ink, tonesOf(ink.fx).trail, ANCHOR.y);
+  const layer = new Layer(ink, variantOf(ink.fx, 'trail', tone), ANCHOR.y);
   const random = randomFrom(tail.x, tail.y, limb.x, limb.y, width);
   // How fast the limb went: its path's length in world pixels, over one frame.
   const power = clamp01((curve.length / S - 14) / 30);
@@ -333,7 +374,9 @@ export function drawSmear(ink: Ink, worldPoints: readonly Point[], width: number
  * teardrop shards; a big one (radius 6 and up: specials, launchers) adds a cyan splash ring
  * under the gold, Nayo's sound in his biggest hits. The longest spike runs along the blow, the
  * one back over the knuckles is short so they stay visible. Sound flashes are Tazz's spiky
- * cyan splash.
+ * cyan splash. Platine flashes are the strike's shapes all in white, the splash ring of a big
+ * one too: the same whoever strikes, in both colorways (a strip that wants its fighter's color
+ * around a Boost blow adds a sound ring of its own).
  */
 function drawFlash(ink: Ink, center: Point, radius: number, tone: Tone): void {
   const c = pixelCenter(ink.at(center));
@@ -343,17 +386,18 @@ function drawFlash(ink: Ink, center: Point, radius: number, tone: Tone): void {
     drawSplash(ink, c, r, random);
     return;
   }
+  const tones = tonesOf(ink.fx)[tone];
   if (radius < 4.5) {
-    drawTick(ink, c, r, random);
+    drawTick(ink, c, r, random, tones);
     return;
   }
-  if (radius >= 6) drawSoundRing(ink, c, r, random);
-  drawSpark(ink, c, r, random, radius >= 6);
+  if (radius >= 6) drawSoundRing(ink, c, r, random, tone === 'platine' ? tones : undefined);
+  drawSpark(ink, c, r, random, radius >= 6, tones);
 }
 
 /** A light hit: a small, sharp 5-spike tick, one sparkle cross, a few loose pixels. */
-function drawTick(ink: Ink, c: Point, r: number, random: () => number): void {
-  const layer = new Layer(ink, tonesOf(ink.fx).strike);
+function drawTick(ink: Ink, c: Point, r: number, random: () => number, tones: Tones): void {
+  const layer = new Layer(ink, tones);
   const shape: readonly (readonly [angle: number, length: number, width: number])[] = [
     [0, 1.5, 0.4],
     [0.95, 1.2, 0.36],
@@ -384,8 +428,15 @@ function drawTick(ink: Ink, c: Point, r: number, random: () => number): void {
  * inside, orange, dark at the rim; short ")))" arcs ahead of it (three on a big hit), three
  * teardrop shards.
  */
-function drawSpark(ink: Ink, c: Point, r: number, random: () => number, big: boolean): void {
-  const layer = new Layer(ink, tonesOf(ink.fx).strike);
+function drawSpark(
+  ink: Ink,
+  c: Point,
+  r: number,
+  random: () => number,
+  big: boolean,
+  tones: Tones,
+): void {
+  const layer = new Layer(ink, tones);
   const count = big ? 12 : 10;
   const spacing = (2 * Math.PI) / count;
   const spikes = Array.from({ length: count }, (_, i) => {
@@ -417,10 +468,17 @@ function drawSpark(ink: Ink, c: Point, r: number, random: () => number, big: boo
 
 /**
  * The cyan under a big hit: a broken splash ring of sound around the gold star, thin rays
- * shooting between its spikes. Drawn first, so the gold covers it.
+ * shooting between its spikes (in `tones` instead, the platine's under a platine star). Drawn
+ * first, so the star covers it.
  */
-function drawSoundRing(ink: Ink, c: Point, r: number, random: () => number): void {
-  const layer = new Layer(ink, tonesOf(ink.fx).sound);
+function drawSoundRing(
+  ink: Ink,
+  c: Point,
+  r: number,
+  random: () => number,
+  tones: Tones = tonesOf(ink.fx).sound,
+): void {
+  const layer = new Layer(ink, tones);
   const outer = r * 1.22;
   const thickness = 2.5;
   const gaps = Array.from({ length: 4 }, (_, i) => ((i + 0.3 + random() * 0.4) / 4) * 2 * Math.PI);
@@ -499,10 +557,10 @@ function drawSplash(ink: Ink, c: Point, r: number, random: () => number): void {
  * Sound gathered in the hands: a ball, light at its heart, crackling with short spikes, a glow
  * around it and sparks orbiting it.
  */
-function drawEnergy(ink: Ink, center: Point, radius: number): void {
+function drawEnergy(ink: Ink, center: Point, radius: number, tone: Tone = 'sound'): void {
   const c = pixelCenter(ink.at(center));
   const r = radius * S;
-  const layer = new Layer(ink, tonesOf(ink.fx).sound);
+  const layer = new Layer(ink, tonesOf(ink.fx)[tone]);
   const random = randomFrom(center.x, center.y, radius);
   // Stubby bumps around the ball, and a few thin crackles shooting farther out.
   const spikes = Array.from({ length: 10 }, (_, i) => {
@@ -575,10 +633,11 @@ function drawDisc(
   radius: number,
   phase: number,
   afterimages: number,
+  tone?: Tone,
 ): void {
   const c = ink.at(center);
   const r = radius * S;
-  const layer = new Layer(ink, tonesOf(ink.fx).vinyl);
+  const layer = new Layer(ink, variantOf(ink.fx, 'vinyl', tone));
   const spin = phase * 2 * Math.PI;
   // The same breaks and sparkles in every frame: only the phase moves them.
   const random = randomFrom(center.x, center.y, radius);
@@ -835,11 +894,18 @@ function drawSpeed(ink: Ink, effect: Extract<Effect, { kind: 'speed' }>): void {
  * of a level meter, darkening, with its peak hanging above it a moment (the peak hold) and
  * drops raining off. Seeded by its foot, so its streaks and spray stay put from frame to frame.
  */
-function drawColumn(ink: Ink, base: Point, height: number, width: number, progress: number): void {
+function drawColumn(
+  ink: Ink,
+  base: Point,
+  height: number,
+  width: number,
+  progress: number,
+  tone: Tone = 'sound',
+): void {
   const bottom = ink.at(base);
   const top = height * S * (0.4 + 0.6 * progress);
   const half = (width * S) / 2;
-  const layer = new Layer(ink, tonesOf(ink.fx).sound);
+  const layer = new Layer(ink, tonesOf(ink.fx)[tone]);
   const random = randomFrom(base.x, base.y);
   const widthAt = (rise: number): number => half * (1 - 0.18 * Math.min(1, rise / top));
   const dim = progress > 0.8 ? 2 : progress > 0.55 ? 1 : 0;

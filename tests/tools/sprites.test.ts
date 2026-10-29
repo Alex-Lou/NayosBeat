@@ -5,9 +5,15 @@ import { ANCHOR, ART_SCALE, CELL_SIZE } from '../../src/art/types';
 import type { MoveId } from '../../src/core/move-data';
 import { toPx } from '../../src/core/constants';
 import { NAYO } from '../../src/data/fighters/nayo';
+import type { Fighter } from '../../tools/sprites/fighter';
+import { NAYO as NAYO_GENERATOR } from '../../tools/sprites/nayo/index';
 import { isV2Sheet, NAYO_POSES, type PosedSheet } from '../../tools/sprites/nayo/poses/index';
-import { crc32, encodeIndexedPng } from '../../tools/sprites/png';
+import { crc32, encodeIndexedPng, type Rgba } from '../../tools/sprites/png';
+import { PixelCanvas } from '../../tools/sprites/raster';
+import { RIFF as RIFF_GENERATOR } from '../../tools/sprites/riff/index';
 import { drawSheet } from '../../tools/sprites/sheet';
+import type { Effect } from '../../tools/sprites/skeleton';
+import { drawEffect, inkAt } from '../../tools/sprites/vfx';
 import { eachPixel as eachPixelOf, extent as extentOf, reach } from './strip-pixels';
 
 describe('PNG encoder', () => {
@@ -32,6 +38,67 @@ describe('PNG encoder', () => {
     expect([view.getUint32(16), view.getUint32(20)]).toEqual([6, 4]);
     expect(png[25]).toBe(3); // color type: palette
   });
+});
+
+/**
+ * The Boost's platine (docs/combos-v3.md §1.8.7): any effect drawn with `tone: 'platine'` is
+ * the white ramp and its dark rim, never gold, the same for both fighters in both colorways
+ * (the Vinyle keeps its black label). Its slots end every palette, and an image carries them
+ * only if it draws in them: the strips without a Boost effect keep their bytes.
+ */
+describe('the Boost platine', () => {
+  const RAMP = ['#ffffff', '#f2f6ff', '#c9d6e8', '#20243a'];
+  const hex = ({ r, g, b }: Rgba): string =>
+    `#${[r, g, b].map((value) => value.toString(16).padStart(2, '0')).join('')}`;
+  const at = (x: number, y: number) => ({ x, y });
+  const EFFECTS: readonly Effect[] = [
+    { kind: 'smear', width: 4, points: [at(-10, 40), at(10, 44), at(30, 46)], tone: 'platine' },
+    { kind: 'energy', center: at(10, 40), radius: 4, tone: 'platine' },
+    { kind: 'disc', center: at(10, 50), radius: 10, phase: 0.2, afterimages: 2, tone: 'platine' },
+    { kind: 'flash', center: at(30, 46), radius: 3, tone: 'platine' },
+    { kind: 'flash', center: at(30, 46), radius: 7, tone: 'platine' },
+    { kind: 'ring', center: at(30, 45), radius: 30, progress: 0.3, tone: 'platine' },
+    { kind: 'ring', center: at(0, 2), radius: 30, progress: 0.6, tone: 'platine', squash: 0.3 },
+    { kind: 'speed', center: at(0, 50), length: 30, spread: 20, direction: 0, tone: 'platine' },
+    { kind: 'column', base: at(0, 0), height: 80, width: 10, progress: 0.3, tone: 'platine' },
+    { kind: 'shards', center: at(10, 40), radius: 20, progress: 0.4, tone: 'platine' },
+  ];
+  const FIGHTERS: readonly Fighter[] = [NAYO_GENERATOR, RIFF_GENERATOR];
+
+  it.each(FIGHTERS.map((fighter) => [fighter.name, fighter] as const))(
+    '%s: draws it white, the same in both colorways',
+    (_, fighter) => {
+      const [main, alt] = [fighter.paletteOf('main'), fighter.paletteOf('alt')];
+      for (const effect of EFFECTS) {
+        const canvas = new PixelCanvas(CELL_SIZE, CELL_SIZE);
+        drawEffect(inkAt(canvas, 0, fighter.fx), effect);
+        canvas.finish();
+        const used = new Set(canvas.pixels);
+        used.delete(0);
+        expect(used.size, effect.kind).toBeGreaterThan(0);
+        for (const slot of used) {
+          if (effect.kind === 'disc' && slot === fighter.fx.slots.ink) continue;
+          const [color, other] = [main[slot], alt[slot]];
+          if (!color) throw new Error(`${effect.kind}: no color in slot ${slot}`);
+          expect(RAMP, `${effect.kind}: slot ${slot}`).toContain(hex(color));
+          expect(other, `${effect.kind}: slot ${slot}`).toEqual(color);
+        }
+      }
+    },
+  );
+
+  it.each(FIGHTERS.map((fighter) => [fighter.name, fighter] as const))(
+    '%s: an image carries its slots only if it draws in them',
+    (_, fighter) => {
+      const full = fighter.paletteOf('main');
+      const { platineGlow, platineCore } = fighter.fx.slots;
+      expect(full).toHaveLength(platineCore + 1);
+      expect(fighter.paletteOf('main', new Uint8Array([0, 1, 2]))).toEqual(
+        full.slice(0, platineGlow),
+      );
+      expect(fighter.paletteOf('alt', new Uint8Array([0, platineCore]))).toHaveLength(full.length);
+    },
+  );
 });
 
 describe('Nayo strips', () => {

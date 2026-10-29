@@ -81,7 +81,8 @@ async function save(fighter: Fighter, image: Image, file: string): Promise<void>
   const { width, height, pixels } = image;
   const assets = new URL(`${fighter.name}/`, ART);
   for (const colorway of COLORWAYS) {
-    const palette = fighter.paletteOf(colorway);
+    // Only the colors the image may use: the Boost's platine where it draws in it.
+    const palette = fighter.paletteOf(colorway, pixels);
     const path = `${colorway}/${file}`;
     await writeFile(new URL(path, assets), await encodeIndexedPng(width, height, pixels, palette));
     await writeFile(
