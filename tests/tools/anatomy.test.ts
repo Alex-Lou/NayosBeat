@@ -36,7 +36,10 @@ describe('anatomy (tools/sprites/anatomy.ts)', () => {
     expect(anatomyIssues(STANDING, BODY)).toEqual([]);
     // Toes up close the ankle, a pointed foot opens it (the ankle stays put: only the foot turns).
     const up = near({ ...STANDING, nearFoot: { x: BODY.hipSpread, y: BODY.ankle, angle: 30 } });
-    const pointed = near({ ...STANDING, nearFoot: { x: BODY.hipSpread, y: BODY.ankle, angle: -40 } });
+    const pointed = near({
+      ...STANDING,
+      nearFoot: { x: BODY.hipSpread, y: BODY.ankle, angle: -40 },
+    });
     expect(up.ankle).toBeLessThan(standing.ankle - 20);
     expect(pointed.ankle).toBeGreaterThan(standing.ankle + 30);
     // A knee bent backward, a thigh swung far behind the back, a foot folded onto the shin.
