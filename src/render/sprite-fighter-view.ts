@@ -2,13 +2,15 @@ import type Phaser from 'phaser';
 import { clipOf, effectsOf, type FighterArt } from '../art/types';
 import type { FighterTemplate, MatchConfig } from '../core/config';
 import { toPx } from '../core/constants';
-import { isActiveFrame, moveOf } from '../core/moves';
+import { isActiveFrame, moveOf, tierOf } from '../core/moves';
 import type { FighterState, GameState } from '../core/state';
 import { AnchoredSprite } from './anchored-sprite';
 import { clipFrameAt, showFighter, type Shown } from './animation';
 import { BoostEcho } from './boost-echo';
 import { DashTrail } from './dash-trail';
 import { DEPTH } from './depth';
+import type { DissolveStyle } from './dissolve';
+import { FxDissolve } from './fx-dissolve';
 
 const SHADOW_WIDTH = 36;
 const SHADOW_HEIGHT = 6;
@@ -21,7 +23,8 @@ const SHADOW_HALF_HEIGHT = 120;
  * frame counter, move, round, and the opponent holding or throwing it), so the animation always
  * matches the frame data. The strips that
  * have front effects play them in step, over both fighters; a dash leaves afterimages in the
- * fighter's energy color (`trailColor`), a Boost move white echoes (`BoostEcho`). Its boxes show
+ * fighter's energy color (`trailColor`), a Boost move white echoes (`BoostEcho`). What the
+ * effects of a special, a Remix or a super stop showing dissolves (`FxDissolve`). Its boxes show
  * in the debug view (BoxOverlay).
  */
 export class SpriteFighterView {
@@ -30,6 +33,7 @@ export class SpriteFighterView {
   private readonly effects: AnchoredSprite | undefined;
   private readonly trail: DashTrail;
   private readonly echo: BoostEcho;
+  private readonly dissolve: FxDissolve | undefined;
   /** Reused every frame. */
   private readonly shown: Shown = { clip: 'idle', tick: 0, x: 0 };
 
@@ -40,6 +44,8 @@ export class SpriteFighterView {
     private readonly groundY: number,
     trailColor: number,
     private readonly config: MatchConfig,
+    /** How its effects dissolve; `still`: prefers-reduced-motion, they do not drift. */
+    look: { readonly dissolve: DissolveStyle; readonly still: boolean },
   ) {
     this.shadow = scene.add.ellipse(
       0,
@@ -56,6 +62,9 @@ export class SpriteFighterView {
       ? new AnchoredSprite(scene, art, 'fx').setDepth(DEPTH.effects)
       : undefined;
     this.effects?.hide();
+    this.dissolve = art.fx
+      ? new FxDissolve(scene, art, look.dissolve, trailColor, look.still)
+      : undefined;
   }
 
   /** Draws this fighter over the other one, or under it. */
@@ -63,7 +72,8 @@ export class SpriteFighterView {
     this.body.setDepth(front ? DEPTH.fighterFront : DEPTH.fighterBack);
   }
 
-  update(state: GameState): void {
+  /** `frames`: display frames of 1/60 s since the last update (the dissolves go by them). */
+  update(state: GameState, frames = 1): void {
     const fighter = state.fighters[this.player];
     const template = this.config.fighters[this.player];
     const round = state.round;
@@ -91,11 +101,15 @@ export class SpriteFighterView {
     );
     if (this.effects) {
       const effects = effectsOf(clip);
-      if (this.art.fx?.[effects] !== undefined) {
-        this.effects.show(effects, frame, x, this.groundY - height, flip);
-      } else {
-        this.effects.hide();
-      }
+      const shows = this.art.fx?.[effects] !== undefined;
+      if (shows) this.effects.show(effects, frame, x, y, flip);
+      else this.effects.hide();
+      const move = fighter.move ? moveOf(template, fighter.move) : null;
+      this.dissolve?.follow(
+        shows ? { sheet: effects, frame, x, y, flip } : null,
+        move !== null && tierOf(move) >= 1,
+        frames,
+      );
     }
     const shrink = SHADOW_HALF_HEIGHT / (SHADOW_HALF_HEIGHT + height);
     this.shadow.setPosition(x, this.groundY).setScale(shrink);

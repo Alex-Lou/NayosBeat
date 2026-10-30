@@ -23,6 +23,7 @@ import { frontFighter } from './animation';
 import { BoxOverlay } from './box-overlay';
 import { frameFight, MAX_CLOSE_UP, type FramingInput } from './camera-framing';
 import { DebugOverlay, describeGame, isDebugEnabled } from './debug-overlay';
+import { dissolveStyleOf } from './dissolve';
 import { detectEvents, type FightEvent } from './fight-events';
 import { FightFeedback } from './fight-feedback';
 import { FighterView } from './fighter-view';
@@ -56,7 +57,8 @@ type Mutable<T> = { -readonly [K in keyof T]: T[K] };
 
 /** A fighter on screen: sprites when it has art, a grey box otherwise. */
 interface FighterDisplay {
-  update(state: GameState): void;
+  /** `frames`: display frames of 1/60 s since the last update. */
+  update(state: GameState, frames: number): void;
   setFront(front: boolean): void;
 }
 
@@ -166,6 +168,7 @@ export class FightScene extends Phaser.Scene {
     this.cameras.main.setZoom(this.scale.width / VIEW_SIZE.width).setOrigin(0, 0);
     const stageWidth = toPx(this.config.stage.width);
     drawGreyboxStage(this, stageWidth);
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const touch = isTouchDevice()
       ? new TouchControls(document.body, requestLandscapeFullscreen, this.styles[0].energy)
       : undefined;
@@ -175,8 +178,8 @@ export class FightScene extends Phaser.Scene {
       touch,
       pauseInput: new PauseInput(document.body),
       fighterViews: [
-        this.fighterDisplay(0, COLORS.player1),
-        this.fighterDisplay(1, COLORS.player2),
+        this.fighterDisplay(0, COLORS.player1, reducedMotion),
+        this.fighterDisplay(1, COLORS.player2, reducedMotion),
       ],
       projectileView: new ProjectileView(this, this.config, GROUND_Y, this.arts),
       // Touch is player 1's: its phone vibrates when player 1 is grabbed or hit hard. The
@@ -190,7 +193,7 @@ export class FightScene extends Phaser.Scene {
         {
           width: stageWidth,
           colors: GREYBOX_COLORS,
-          shake: !window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+          shake: !reducedMotion,
         },
         touch ? vibrate : undefined,
         (ms, strength) => {
@@ -229,10 +232,14 @@ export class FightScene extends Phaser.Scene {
     }
   }
 
-  private fighterDisplay(player: 0 | 1, color: number): FighterDisplay {
+  private fighterDisplay(player: 0 | 1, color: number, still: boolean): FighterDisplay {
     const art = this.arts[player];
+    const style = this.styles[player];
     return art
-      ? new SpriteFighterView(this, art, player, GROUND_Y, this.styles[player].energy, this.config)
+      ? new SpriteFighterView(this, art, player, GROUND_Y, style.energy, this.config, {
+          dissolve: dissolveStyleOf(style.shape),
+          still,
+        })
       : new FighterView(this, color, GROUND_Y, player, this.config.fighters[player]);
   }
 
@@ -311,8 +318,8 @@ export class FightScene extends Phaser.Scene {
     this.front = frontFighter(this.front, a, b);
     viewA.setFront(this.front === 0);
     viewB.setFront(this.front === 1);
-    viewA.update(this.state);
-    viewB.update(this.state);
+    viewA.update(this.state, elapsed);
+    viewB.update(this.state, elapsed);
     runtime.projectileView.update(this.state.projectiles, this.state.frame);
     runtime.hud.update(this.state);
     runtime.touch?.showBoost(a.boost);
