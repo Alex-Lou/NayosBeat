@@ -57,6 +57,7 @@
 | D21 | Flashs au plus 3 par seconde, option « Flashs réduits » (docs/flashs.md) | revue tactile (WCAG 2.3.1) | Accessibilité photosensible |
 | D22 | Textes d'aide **hors du cœur** (`data/move-texts.ts`) | mk | Le cœur ne porte pas de présentation |
 | D23 | Pas d'interpolation des personnages entre deux tics | sf, mk | La fluidité vient de l'animation et de la réactivité, pas d'une latence de 16 ms |
+| D24 | Le **Finisher** n'est pas une Fatality (§1.2 tient) : la super lancée armée en balle de match, qui se joue pendant le combat, se pare et donne elle-même le KO ; rien n'est infligé après la victoire et le sang reste léger. L'Ultime (la super qui tue sans les voyants) éclate la jauge au contact et la rend au round suivant ; le Finisher l'éclate à la retombée, joue sa scène et finit le match (`docs/finisher.md`) | propriétaire, revue adverse | Une récompense de fin de match qu'on choisit (garder ses 3 barres), lisible des deux côtés, sans rien de gratuit ni de cruel |
 
 ---
 

@@ -1,6 +1,6 @@
 # Finisher : Nayo et Riff
 
-Spec de design, version 2. Elle intègre la revue adverse de la v1 (7 bloquants, 14 importants, 9 mineurs) et doit être validée par le propriétaire (§6).
+Spec de design, version 2. Elle intègre la revue adverse de la v1 (7 bloquants, 14 importants, 9 mineurs). **Validée par le propriétaire le 30 octobre 2026** : les six choix du §6 prennent leur défaut.
 
 - **Sources** : le code de `main` avec la dissolution des effets (`e996dac`), `docs/flashs.md`, `docs/art/direction-hud.md`, `docs/art/dissolution.md`, `docs/combat-v2.md`, `docs/combos-v3.md`.
 - **Déjà livré, pris en compte**
@@ -1088,26 +1088,19 @@ Total : environ 4 à 5 jours-agent. C'est une estimation, pas une mesure.
 
 ---
 
-## 6. À trancher par le propriétaire
+## 6. Décisions du propriétaire
 
-1. **La règle du KO armé.**
-   - **Défaut (v1)** : FINISH s'allume si l'adversaire était à 30 % ou moins au début du combo (`FLAG_DANGER`). Les frappes d'avant s'arrêtent à 1 PV (`floor`), la dernière prend toute la vie (`lethal`).
-   - **Variante** : on garde `floor` seul, pour mettre le KO sur la grosse frappe. FINISH ne s'allume que si la super tuerait à coup sûr au scaling courant : somme entière des `scaledDamage` de ses frappes, sans bonus de contre, ≥ vie, revérifiée au premier contact.
-   - **Ce que la variante change** :
-     - aucun gain de dégâts, là où la v1 ajoute 0 à 6 PV contre Riff et 0 à 27 contre Nayo à vide (36 en miroir sur Nayo) ;
-     - plus de `FLAG_DANGER` ni de mode `lethal` : un cœur plus petit. Les replays ne bougent dans aucun des deux cas (mesuré) ;
-     - FINISH veut dire « ta super tue maintenant » : il s'allume dès qu'un combo tue, même commencé au-dessus de 30 % (E3, `L, L, H, H` puis Mégabasse, tue Riff depuis 36,7 %). À vide : sous 264 PV (Mégabasse) ou 273 (Slam) ;
-     - FINISH peut s'éteindre au milieu d'un combo : chaque coup ôte 29 à 30 PV à la super par le scaling, plus qu'un coup léger scalé n'en prend (Direct 30, Jab 25 de base) ;
-     - en miroir de Riff, FINISH peut s'allumer sur une barre encore jaune (271 à 273 PV) ;
-     - la question 2 disparaît, et l'aide dit « quand ta super peut finir ».
-   - La v1 reste le défaut parce qu'elle tient après A1 à A4 (§1.6).
-2. **Le seuil** (règle v1) : 30 %, celui de la barre orange (par défaut), ou 25 % ? À 25 %, Nayo ≤ 250 PV, Riff ≤ 225 : c'est plus rare, mais la barre orange ne dit plus seule le danger.
-3. **UN, DEUX, TROIS** : sur des noires (par défaut, 14 images tenues après UN et DEUX, plus lisible), ou sur les croches naturelles de la Mégabasse (16 tics) ? Les croches retirent 28 images et rendent le compte plus sec : c'est déjà la version courte.
-4. **Les anneaux de TROIS** : en couleur, comptés comme un flash (par défaut ; Le Quatre en compte 3), ou ternis en énergie sombre avec les silhouettes ? Ternis, Le Quatre retombe à 2 flashs, mais TROIS perd son image, « ))) » d'un coup.
-5. **Les noms et la plaque** : « Le Quatre », « Larsen » et la plaque FINISH (par défaut) ?
-   - « Le Quatre » côtoie le combo « Les Quatre temps » de l'aide de Nayo. Le garder dit que le compte et le combo parlent du même quatre ; renommer le Finisher évite la confusion (la carte « QUATRE. » resterait).
-   - FINAL en repli : 5 lettres, 40 px, la largeur de MAX et de BOOST. `GAUGE_WIDTH` ne bouge pas, mais le mot dit moins le coup.
-6. **Inscrire D24 au journal des décisions** (par défaut : oui) : « Le Finisher n'est pas une Fatality (§1.2 tient) : il se joue pendant le combat, il peut être paré, c'est lui qui donne le KO, rien n'est infligé après la victoire, et le sang reste léger. » Avec le partage qu'il fixe : l'Ultime (la super qui tue sans verrou) éclate la jauge au contact et la rend au round suivant ; le Finisher l'éclate à la retombée, joue sa scène et finit le match. Ne pas l'inscrire laisse ce partage hors du journal.
+Le 30 octobre 2026, le propriétaire a pris le défaut des six choix (« Prends le défaut »).
+
+1. **La règle du KO armé** : celle de la v1.
+   - FINISH s'allume si l'adversaire était à 30 % ou moins au début du combo (`FLAG_DANGER`).
+   - Les frappes d'avant s'arrêtent à 1 PV (`floor`), la dernière prend toute la vie (`lethal`).
+   - La variante « FINISH seulement si la super tue déjà » est écartée. Elle n'apportait aucun gain de dégâts, et FINISH pouvait s'éteindre au milieu d'un combo.
+2. **Le seuil** : 30 %, celui de la barre orange (`FINISHER_DANGER_PERCENT = 30`).
+3. **UN, DEUX, TROIS** : sur des noires, avec 14 images tenues après UN et DEUX. Les croches naturelles restent la version courte.
+4. **Les anneaux de TROIS** : en couleur, comptés comme un flash. Le Quatre en compte 3, Larsen 2.
+5. **Les noms et la plaque** : « Le Quatre » pour Nayo, « Larsen » pour Riff, et la plaque FINISH (48 px, `GAUGE_WIDTH` = 174). « Le Quatre » côtoie « Les Quatre temps » de l'aide de Nayo : le compte et le combo parlent du même quatre.
+6. **D24 est inscrite** au journal des décisions (`docs/combat-v2.md`) : le Finisher n'est pas une Fatality.
 
 ---
 
