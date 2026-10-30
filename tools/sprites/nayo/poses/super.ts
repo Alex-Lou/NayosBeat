@@ -21,9 +21,10 @@ export const ANIMATED: boolean = true;
  * into the Uppercut's coil with that fist still cocked up by his ear, and hammers it straight
  * down into the floor, three times: BOUM, BOUM, BOUUUM. Down on the rear knee, the hips at the
  * bottom, the chest pitched over the lead knee and the head up on the opponent; one line from
- * the rear fist, flung up and back as the counterweight, through the shoulders and down the
- * lead arm to the floor. Between the blows the fist rebounds to knee height and the rear arm
- * pumps down against it. Each blow gives birth to a speaker ring of platine at the fist, a thick
+ * the rear fist, swept back along the back past the hip as the counterweight (never up off the
+ * hunched back, where the arm would seem to grow out of it), through the shoulders and down
+ * the lead arm to the floor. Between the blows the fist rebounds to knee height and the rear
+ * arm stays swept back. Each blow gives birth to a speaker ring of platine at the fist, a thick
  * white-hot ")" that rolls out and thins over the opponent, the older one at the hitbox's edge
  * at once (concentric ")" arcs standing on the floor); the 3rd blow drops him lower, throws the
  * three ")))" at once, the outer one white-hot, and cracks the floor. Under the fist, the
@@ -219,8 +220,8 @@ const COIL: Pose = {
 // s2 · The blow: the lead fist driven down into the floor ahead of the lead foot, the arm
 // slanting forward clear of the knee, the shoulder rolled into it; down on the rear knee (the
 // rear foot pivoting on its toe), the chest pitched over the lead knee, the head up on the
-// opponent; the rear arm flung up and back, nearly straight, the counterweight on the line of
-// action.
+// opponent; the rear arm swept back along the back, nearly straight, the fist out past the
+// hip: the counterweight on the line of action.
 const POUND: Pose = {
   hip: at(-6, 21),
   torso: 55,
@@ -231,14 +232,14 @@ const POUND: Pose = {
   nearFoot: planted(GUARD.nearFoot.x),
   farFoot: onToes(REAR_TOE, -55),
   nearFist: at(22, 7.5),
-  farFist: at(-9.5, 46.5),
+  farFist: at(-14, 28),
   bends: { nearElbow: 'up', farElbow: 'down' },
   face: 'effort',
 };
 
 // s4 · The 3rd blow: s2's pose with the whole weight in it, the hips a notch lower (as low as
 // the rear knee allows, a hair over the floor), the chest pitched a degree further and the lead
-// shoulder sunk into the punch, the rear arm flung higher. The shout.
+// shoulder sunk into the punch, the rear arm swept a notch higher. The shout.
 const SLAM: Pose = {
   ...POUND,
   hip: at(-6, 20.4),
@@ -246,12 +247,12 @@ const SLAM: Pose = {
   head: -37,
   reach: { near: 4 },
   farFoot: onToes(REAR_TOE, -57),
-  farFist: at(-6, 49.5),
+  farFist: at(-15, 31),
   face: 'kiai',
 };
 
 // s3 · The rebound: the fist bounces back up to knee height, the elbow cocked up behind it for
-// the next blow; the body comes up 2 px off the knee and the rear arm pumps down against it.
+// the next blow; the body comes up 2 px off the knee, the rear arm still swept back.
 const REBOUND: Pose = {
   ...POUND,
   hip: at(-6, 23),
@@ -261,7 +262,7 @@ const REBOUND: Pose = {
   twist: -0.2,
   farFoot: onToes(REAR_TOE, -50),
   nearFist: at(21, 20),
-  farFist: at(-12, 38),
+  farFist: at(-13, 31),
 };
 
 // s5 (6 ticks) · The rise: he drives up out of the kneel, the first and biggest part of the way

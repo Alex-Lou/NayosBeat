@@ -68,7 +68,7 @@ export function nayoBoost(plain: PlainSpecials): BoostMoves {
           { frames: { from: 5, to: 8 }, boxes: [box(-25, 0, 38.5, 54.5)] },
           { frames: { from: 8, to: 11 }, boxes: [box(-24, 0, 37.5, 52)] },
           { frames: { from: 11, to: 14 }, boxes: [box(-25, 0, 38.5, 54.5)] },
-          { frames: { from: 14, to: 17 }, boxes: [box(-24, 0, 37.5, 55.5)] },
+          { frames: { from: 14, to: 17 }, boxes: [box(-24, 0, 37.5, 49.5)] },
           { frames: { from: 17, to: 23 }, boxes: [box(-26, 0, 39.5, 69)] },
           { frames: { from: 23, to: 30 }, boxes: [box(-27, 0, 40.5, 89)] },
           { frames: { from: 30, to: 37 }, boxes: [box(-27, 0, 40.5, 80)] },
