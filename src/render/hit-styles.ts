@@ -17,6 +17,12 @@ export interface HitStyle {
   readonly strike: number;
   /** The near-white heart of the flash. */
   readonly core: number;
+  /**
+   * The fighter's color on the HUD (the rim of its bars, the word BOOST, the first Boost bar),
+   * when its energy would not do: a gold one would read as the health's yellow, and the Boost is
+   * never gold (docs/combos-v3.md §1.8.7). The energy otherwise.
+   */
+  readonly hud?: number;
 }
 
 const STYLES: Readonly<Record<FighterId, Readonly<Record<Colorway, HitStyle>>>> = {
@@ -30,10 +36,16 @@ const STYLES: Readonly<Record<FighterId, Readonly<Record<Colorway, HitStyle>>>> 
   // sprites' effects (tools/sprites/riff/palette.ts).
   riff: {
     main: { shape: 'claw', energy: 0xff3ca0, strike: 0xd8e0ec, core: 0xffffff },
-    alt: { shape: 'claw', energy: 0xffc83a, strike: 0xe0283c, core: 0xffe8ea },
+    // On the HUD, her crimson: her gold would be the health bar's yellow.
+    alt: { shape: 'claw', energy: 0xffc83a, strike: 0xe0283c, core: 0xffe8ea, hud: 0xe0283c },
   },
 };
 
 export function hitStyleOf(fighter: FighterId, colorway: Colorway = 'main'): HitStyle {
   return STYLES[fighter][colorway];
+}
+
+/** The fighter's color on the HUD: see HitStyle.hud. */
+export function hudColorOf(style: HitStyle): number {
+  return style.hud ?? style.energy;
 }

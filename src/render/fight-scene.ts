@@ -27,7 +27,7 @@ import { detectEvents, type FightEvent } from './fight-events';
 import { FightFeedback } from './fight-feedback';
 import { FighterView } from './fighter-view';
 import { drawGreyboxStage, GROUND_Y } from './greybox-stage';
-import { hitStyleOf, type HitStyle } from './hit-styles';
+import { hitStyleOf, hudColorOf, type HitStyle } from './hit-styles';
 import { requestLandscapeFullscreen } from './fullscreen';
 import { HoldPrompt } from './hold-prompt';
 import { HoldRing } from './hold-ring';
@@ -186,7 +186,7 @@ export class FightScene extends Phaser.Scene {
         this.styles,
         touch ? vibrate : undefined,
       ),
-      hud: new Hud(this, this.config, [this.styles[0].energy, this.styles[1].energy]),
+      hud: new Hud(this, this.config, [hudColorOf(this.styles[0]), hudColorOf(this.styles[1])]),
       holdRing: new HoldRing(this, GROUND_Y, [this.styles[0].energy, this.styles[1].energy]),
       caption: this.config.training ? new MoveCaption(this, this.config, GROUND_Y) : undefined,
       holdPrompt: this.config.training ? new HoldPrompt(this, this.config, GROUND_Y) : undefined,

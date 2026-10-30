@@ -62,7 +62,7 @@ export class Hud {
   private comboStartHealth = 0;
   private readonly names: readonly [string, string];
 
-  /** `energies`: each fighter's energy color in its colorway, for its gauge. */
+  /** `energies`: each fighter's color on the HUD in its colorway (hudColorOf), for its side. */
   constructor(
     scene: Phaser.Scene,
     private readonly config: MatchConfig,

@@ -6,7 +6,7 @@ import {
   type HdShape,
   type HdShapeName,
 } from '../../src/render/hd-shapes';
-import { hitStyleOf } from '../../src/render/hit-styles';
+import { hitStyleOf, hudColorOf } from '../../src/render/hit-styles';
 import { renderScaleFor } from '../../src/render/view';
 import { ROSTER } from '../../src/data/roster';
 
@@ -34,6 +34,36 @@ describe('hit styles', () => {
     const [cr, cg, cb] = rgb(hitStyleOf('riff', 'alt').strike);
     expect(cr).toBeGreaterThan(200);
     expect(Math.max(cg, cb)).toBeLessThan(80);
+  });
+
+  it('shows every fighter on the HUD in a color apart from the health yellow (never gold)', () => {
+    const hue = (color: number): number => {
+      const [r, g, b] = [(color >> 16) & 0xff, (color >> 8) & 0xff, color & 0xff].map(
+        (c) => c / 255,
+      );
+      const max = Math.max(r ?? 0, g ?? 0, b ?? 0);
+      const min = Math.min(r ?? 0, g ?? 0, b ?? 0);
+      if (max === min) return 0;
+      const d = max - min;
+      const h =
+        max === r
+          ? ((g ?? 0) - (b ?? 0)) / d
+          : max === g
+            ? ((b ?? 0) - (r ?? 0)) / d + 2
+            : ((r ?? 0) - (g ?? 0)) / d + 4;
+      return (h * 60 + 360) % 360;
+    };
+    const healthYellow = hue(0xf0c94a);
+    for (const entry of ROSTER) {
+      for (const colorway of ['main', 'alt'] as const) {
+        const style = hitStyleOf(entry.id, colorway);
+        const apart = Math.abs(hue(hudColorOf(style)) - healthYellow);
+        expect(Math.min(apart, 360 - apart), `${entry.id} ${colorway}`).toBeGreaterThan(20);
+      }
+    }
+    // Riff's second outfit: her crimson there, her gold in her blows.
+    expect(hudColorOf(hitStyleOf('riff', 'alt'))).toBe(hitStyleOf('riff', 'alt').strike);
+    expect(hudColorOf(hitStyleOf('nayo'))).toBe(hitStyleOf('nayo').energy);
   });
 
   it('the two players hit in different energy colors in every pairing', () => {
