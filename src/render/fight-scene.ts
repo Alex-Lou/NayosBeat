@@ -15,7 +15,7 @@ import { step } from '../core/step';
 import { assertValidMatch } from '../core/validate';
 import { connectedGamepads } from '../input/gamepad';
 import { PauseInput } from '../input/pause-input';
-import { vibrate } from '../input/haptics';
+import { rumble, vibrate } from '../input/haptics';
 import { PlayerInputs } from '../input/player-inputs';
 import { isTouchDevice, TouchControls } from '../input/touch-controls';
 import { FixedTimestep } from '../loop/fixed-timestep';
@@ -178,13 +178,17 @@ export class FightScene extends Phaser.Scene {
         this.fighterDisplay(1, COLORS.player2),
       ],
       projectileView: new ProjectileView(this, this.config, GROUND_Y, this.arts),
-      // Touch is player 1's: its phone vibrates when player 1 is grabbed or hit hard.
+      // Touch is player 1's: its phone vibrates when player 1 is grabbed or hit hard. The
+      // gamepads rumble when a KO blows a Boost gauge up.
       feedback: new FightFeedback(
         this,
         GROUND_Y,
         this.sceneData.sfx,
         this.styles,
         touch ? vibrate : undefined,
+        (ms, strength) => {
+          rumble(connectedGamepads(), ms, strength);
+        },
       ),
       hud: new Hud(this, this.config, [hudColorOf(this.styles[0]), hudColorOf(this.styles[1])]),
       holdRing: new HoldRing(this, GROUND_Y, [this.styles[0].energy, this.styles[1].energy]),

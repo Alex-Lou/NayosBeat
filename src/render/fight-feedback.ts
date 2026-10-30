@@ -5,7 +5,7 @@ import { BLEEDS, Blood } from './blood';
 import { Dust } from './dust';
 import { Effects } from './effects';
 import { Graze, type GrazeWeight } from './graze';
-import { vibrationFor, type FightEvent } from './fight-events';
+import { SHATTER_RUMBLE, vibrationFor, type FightEvent } from './fight-events';
 import { HitFx } from './hit-fx';
 import type { HitStyle } from './hit-styles';
 import { Onomatopoeia } from './onomatopoeia';
@@ -53,6 +53,8 @@ export class FightFeedback {
     private readonly sfx: Sfx,
     private readonly styles: readonly [HitStyle, HitStyle],
     private readonly vibrate?: (ms: number) => void,
+    /** The gamepads' rumble (`rumble` in input/haptics.ts), on the KO that blows a gauge up. */
+    private readonly rumble?: (ms: number, strength: number) => void,
   ) {
     this.effects = new Effects(scene);
     this.hitFx = new HitFx(scene, groundY);
@@ -106,8 +108,12 @@ export class FightFeedback {
         if (event.counter) this.stamps.show(STAMP_TEXTS[event.counter], event, viewLeft);
         if (event.low) this.lowBlow(style, 'heavy', event);
         else this.blood.bleed(event.x, event.y, event.away, BLEEDS.ko);
-        // The final blow shakes the screen hard, then dies out over about 0.7 s.
-        effects.shake(42, 6);
+        // The final blow shakes the screen hard, then dies out over about 0.7 s; harder still when
+        // it blows the loser's Boost gauge up (an Ultime), the gamepads rumbling with it.
+        if (event.finish === 'finisher') {
+          effects.shake(48, 8);
+          this.rumble?.(SHATTER_RUMBLE.ms, SHATTER_RUMBLE.strength);
+        } else effects.shake(42, 6);
         // The final flash takes the winner's color, a light tint of it on the whole screen.
         effects.flash(12, style.energy);
         this.slowMotionFrames = KO_SLOW_MOTION_FRAMES;

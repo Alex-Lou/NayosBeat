@@ -275,6 +275,24 @@ describe('vibrationFor', () => {
     for (const event of [grabbed, pummel, thrown, heavy]) expect(vibrationFor(event, 1)).toBe(0);
   });
 
+  it('buzzes both phones, hard, when a KO blows a Boost gauge up (an Ultime)', () => {
+    const ko = {
+      type: 'ko',
+      x: 0,
+      y: 0,
+      away: 1,
+      by: 0,
+      low: false,
+      held: false,
+      counter: null,
+    } as const;
+    expect(vibrationFor({ ...ko, finish: 'finisher' }, 0)).toBe(HAPTICS.shatter);
+    expect(vibrationFor({ ...ko, finish: 'finisher' }, 1)).toBe(HAPTICS.shatter);
+    expect(HAPTICS.shatter).toBeGreaterThan(HAPTICS.heavyHit * 5);
+    expect(vibrationFor({ ...ko, finish: 'combo' }, 0)).toBe(0);
+    expect(vibrationFor({ ...ko, finish: 'combo' }, 1)).toBe(HAPTICS.heavyHit);
+  });
+
   it('leaves light hits, blocks and everything else alone', () => {
     const light: FightEvent = {
       type: 'hit',

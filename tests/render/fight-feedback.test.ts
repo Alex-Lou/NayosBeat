@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Sfx } from '../../src/audio/sfx';
 import { px } from '../../src/core/constants';
 import { FightFeedback } from '../../src/render/fight-feedback';
-import type { FightEvent } from '../../src/render/fight-events';
+import { HAPTICS, SHATTER_RUMBLE, type FightEvent } from '../../src/render/fight-events';
 import { hitStyleOf } from '../../src/render/hit-styles';
 import { STAMP_TEXTS } from '../../src/render/stamps';
 
@@ -181,5 +181,41 @@ describe('the Boost (docs/combos-v3.md §1.8.7)', () => {
     feedback().react({ type: 'super', name: 'Mégabasse', ...at }, 0);
     expect(shown.stamp).toHaveBeenLastCalledWith('MÉGABASSE !', overHead, 0);
     expect(played).toHaveBeenLastCalledWith('super');
+  });
+});
+
+describe('a KO that blows a Boost gauge up (docs/combos-v3.md §1.8.6)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  /** The final blow, landed by player 1, `finish` saying how. */
+  const ko = (finish: 'plain' | 'combo' | 'finisher'): FightEvent => ({
+    type: 'ko',
+    finish,
+    x: px(200),
+    y: px(50),
+    away: 1,
+    by: 0,
+    low: false,
+    held: false,
+    counter: null,
+  });
+  const withHaptics = (vibrate: () => void, rumble: () => void) =>
+    new FightFeedback({} as Phaser.Scene, 400, SILENT, [NAYO_STYLE, NAYO_STYLE], vibrate, rumble);
+
+  it('rumbles the gamepads and buzzes the phone hard, an Ultime only', () => {
+    const vibrate = vi.fn();
+    const rumble = vi.fn();
+    withHaptics(vibrate, rumble).react(ko('finisher'), 0);
+    expect(rumble).toHaveBeenCalledWith(SHATTER_RUMBLE.ms, SHATTER_RUMBLE.strength);
+    // Player 1 landed it: their phone buzzes all the same.
+    expect(vibrate).toHaveBeenCalledWith(HAPTICS.shatter);
+    rumble.mockClear();
+    vibrate.mockClear();
+    withHaptics(vibrate, rumble).react(ko('plain'), 0);
+    withHaptics(vibrate, rumble).react(ko('combo'), 0);
+    expect(rumble).not.toHaveBeenCalled();
+    expect(vibrate).not.toHaveBeenCalled();
   });
 });

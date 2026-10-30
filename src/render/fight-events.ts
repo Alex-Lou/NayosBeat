@@ -95,7 +95,9 @@ export const HEAVY_HIT_DAMAGE = 60;
  * hand), each pummel taken in the hold, and a heavy blow taken (a throw is one). Short: the
  * thumbs play on that screen.
  */
-export const HAPTICS = { grabbed: 30, pummel: 12, heavyHit: 15 } as const;
+export const HAPTICS = { grabbed: 30, pummel: 12, heavyHit: 15, shatter: 180 } as const;
+/** The gamepads' rumble when a KO blows a Boost gauge up (an Ultime's): its length, its strength. */
+export const SHATTER_RUMBLE = { ms: 260, strength: 1 } as const;
 
 const PLAYERS = [0, 1] as const;
 
@@ -197,13 +199,18 @@ function startedNewMove(before: FighterState, after: FighterState): boolean {
   return before.move !== after.move || before.actionFrame > 0;
 }
 
-/** How long `player`'s phone vibrates for an event: what it takes only, 0 for none. */
+/**
+ * How long `player`'s phone vibrates for an event: what it takes only, 0 for none; but a KO that
+ * blows a Boost gauge up (an Ultime's) shakes both phones, the one who lands it too.
+ */
 export function vibrationFor(event: FightEvent, player: 0 | 1): number {
   switch (event.type) {
     case 'grab':
       return event.by === player ? 0 : HAPTICS.grabbed;
-    case 'throw':
     case 'ko':
+      if (event.finish === 'finisher') return HAPTICS.shatter;
+      return event.by === player ? 0 : HAPTICS.heavyHit;
+    case 'throw':
       return event.by === player ? 0 : HAPTICS.heavyHit;
     case 'hit':
       if (event.by === player) return 0;

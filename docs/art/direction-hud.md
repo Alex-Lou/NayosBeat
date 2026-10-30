@@ -60,7 +60,7 @@ Spécification complète : `docs/combos-v3.md` §1.8.6. En bref :
 - **Pleine.** Le mot devient « MAX », comme la plaque MAXIMUM de King of Fighters XV : la jauge change de mot, pas seulement de couleur. Un reflet passe sur le tube.
 - **En jeu.** La jauge monte au lieu de sauter, et une lumière balaie la barre qui vient de se compléter.
 - **Dépense.** Elle se vide vite, le front en blanc : une barre en 10 tics, la super en une demi-seconde, comme la Tension de Guilty Gear Strive.
-- **KO.** Elle dit comment le combattant est tombé : normale après un coup seul, fissurée à la fin d'un combo de 3 coups ou plus, éclatée en carrés (le motif de désintégration de King of Fighters XV) sous l'Ultime ou le Finisher. Elle revient entière au round suivant, avec son Boost.
+- **KO.** Elle dit comment le combattant est tombé : normale après un coup seul, fissurée à la fin d'un combo de 3 coups ou plus, éclatée sous l'Ultime ou le Finisher : elle tremble, ses carrés (le motif de désintégration de King of Fighters XV) sont projetés puis retombent, avec des étincelles, et les téléphones et les manettes vibrent. Elle revient entière au round suivant, avec son Boost.
 
 ## 5. Chrono et rounds (`src/render/hud-discs.ts`)
 

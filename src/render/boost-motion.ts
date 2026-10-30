@@ -20,7 +20,7 @@ export const DRAIN_RATE = BOOST_BAR / 10;
  */
 export type Breakage = 'crack' | 'shatter';
 /** Ticks the gauge takes to shatter, or to crack, at a KO; then it stays so until the next round. */
-export const BREAK_TICKS = 40;
+export const BREAK_TICKS = 48;
 export const CRACK_TICKS = 30;
 const MAX_STEP = 120;
 

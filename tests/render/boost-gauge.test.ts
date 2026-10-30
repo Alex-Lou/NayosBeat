@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { BOOST_BAR, BOOST_MAX } from '../../src/core/rules';
 import {
+  blastShake,
   BLINK_TICKS,
   blinkOn,
   BOOST_WORD,
@@ -128,6 +129,32 @@ describe('the Boost gauge (docs/combos-v3.md §1.8.6)', () => {
     expect(gaugeSpans(motion, LEFT, motion.frame)).toEqual(
       gaugeSpans(freshBoost(motion.frame, 1400), LEFT, motion.frame),
     );
+  });
+
+  it('blows up hard: hot shards of three sizes, sparks, the gauge shaking 2 px then 1', () => {
+    const blast = (ticks: number) => {
+      let motion = stepBoost(freshBoost(0, 1500), 1500, 'shatter', 1);
+      for (let tick = 0; tick < ticks; tick++) {
+        motion = stepBoost(motion, 1500, 'shatter', motion.frame + 1);
+      }
+      return motion;
+    };
+    const early = gaugeSpans(blast(1), LEFT, 0).filter((span) => (span.alpha ?? 1) < 1);
+    expect(
+      new Set(early.map((span) => `${span.width}x${span.height}`)).size,
+    ).toBeGreaterThanOrEqual(3);
+    // Hot at first: the light rim of their bar, never white.
+    expect(early.some((span) => span.color === layersOf(ENERGY)[0]?.[0])).toBe(true);
+    expect(early.some((span) => span.color === 0xffffff)).toBe(false);
+    // They fly well off the tube.
+    const later = gaugeSpans(blast(20), LEFT, 0).filter((span) => (span.alpha ?? 1) < 1);
+    expect(Math.max(...later.map((span) => Math.abs(span.y)))).toBeGreaterThan(15);
+    expect([blastShake(blast(0), LEFT), blastShake(blast(1), LEFT)].sort()).toEqual([-2, 2]);
+    expect(Math.abs(blastShake(blast(8), LEFT))).toBe(1);
+    expect(blastShake(blast(12), LEFT)).toBe(0);
+    expect(blastShake(blast(1), CALM)).toBe(0);
+    // A crack does not shake.
+    expect(blastShake(stepBoost(freshBoost(0, 900), 900, 'crack', 1), LEFT)).toBe(0);
   });
 
   it('repaints only when what it shows changes', () => {

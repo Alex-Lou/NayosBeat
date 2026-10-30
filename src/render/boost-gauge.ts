@@ -89,8 +89,18 @@ const CRACK_REVEAL = 10;
 /** Chips falling from the cracks: where along the cracks list each starts, from which tick. */
 const CHIPS = [2, 7, 14, 20] as const;
 const CHIPS_FROM = 4;
-/** Squares a KO breaks the tube into: 4 pixels by 3 rows. */
+/**
+ * Squares a KO blows the tube into, from cells of 4 pixels by 3 rows, in three sizes; hot (their
+ * bar's light rim) for HOT_TICKS; and sparks. Gravity, in pixels per tick squared (halved).
+ */
 const SHARD = { width: 4, height: 3 } as const;
+const SHARD_SIZES = [SHARD, { width: 6, height: 3 }, { width: 3, height: 2 }] as const;
+const HOT_TICKS = 4;
+const SPARKS = 14;
+const SPARK_TICKS = 18;
+const GRAVITY = 0.07;
+/** Ticks the gauge shakes as it blows up. */
+const BLAST_SHAKE_TICKS = 12;
 
 const OUTLINE = 0x0c0612;
 const BROKEN = 0x3a3448;
@@ -238,31 +248,57 @@ export function gaugeSpans(motion: BoostMotion, look: GaugeLook, frame: number):
 }
 
 /**
- * The tube in squares flying apart, `motion.broken` ticks after the KO: each falls its own way
- * (a fixed spread, the same every time) and fades out over BREAK_TICKS.
+ * The tube blown apart, `motion.broken` ticks after the KO: squares of 3 sizes thrown up and out
+ * (a fixed spread, the same every time), hot for their first ticks (their bar's light rim, never
+ * white), then falling and fading over BREAK_TICKS; and sparks, faster, gone in SPARK_TICKS.
  */
 function shards(motion: BoostMotion, energy: number): Span[] {
   const age = motion.broken;
   const fade = 1 - age / BREAK_TICKS;
   if (fade <= 0) return [];
   const spans: Span[] = [];
+  const hot = age < HOT_TICKS;
   for (let column = 0; column < GAUGE_LENGTH / SHARD.width; column++) {
     for (let band = 0; band < ROWS / SHARD.height; band++) {
-      const vx = (((column * 7 + band * 13) % 5) - 2) * 0.25;
-      const vy = -0.8 - ((column + band * 2) % 3) * 0.35;
+      const seed = column * 7 + band * 13;
+      const vx = ((seed % 7) - 3) * 0.45;
+      const vy = -1.6 - ((column + band * 2) % 4) * 0.5;
+      const size = SHARD_SIZES[seed % SHARD_SIZES.length] ?? SHARD;
       const row = band * SHARD.height;
       const along = column * SHARD.width;
       spans.push({
         x: tubeRowStart(ROWS, row + 1) + along + Math.round(vx * age),
-        y: row + 1 + Math.round(vy * age + 0.06 * age * age),
-        width: SHARD.width,
-        height: SHARD.height,
-        color: inkAt(motion, energy, row + 1, along),
+        y: row + 1 + Math.round(vy * age + GRAVITY * age * age),
+        width: size.width,
+        height: size.height,
+        color: inkAt(motion, energy, hot ? 0 : row + 1, along),
         alpha: fade,
       });
     }
   }
+  if (age < SPARK_TICKS) {
+    for (let spark = 0; spark < SPARKS; spark++) {
+      const along = (spark * 37) % GAUGE_LENGTH;
+      const vx = ((spark % 5) - 2) * 1.1 + (spark % 2 === 0 ? 0.4 : -0.4);
+      const vy = -2.2 - (spark % 3) * 0.8;
+      spans.push({
+        x: tubeRowStart(ROWS, 2) + along + Math.round(vx * age),
+        y: 3 + Math.round(vy * age + GRAVITY * age * age),
+        width: spark % 3 === 0 ? 2 : 1,
+        height: 1,
+        color: spark % 2 === 0 ? PLATINE[2] : mix(energy, 0xffffff, 0.6),
+        alpha: 1 - age / SPARK_TICKS,
+      });
+    }
+  }
   return spans;
+}
+
+/** How far the gauge shakes, side to side, `broken` ticks after it blows up: 2 px, then 1. */
+export function blastShake(motion: BoostMotion, look: GaugeLook): number {
+  if (look.reducedMotion || !isShattered(motion) || motion.broken >= BLAST_SHAKE_TICKS) return 0;
+  const side = motion.broken % 2 === 0 ? 1 : -1;
+  return side * (motion.broken < BLAST_SHAKE_TICKS / 2 ? 2 : 1);
 }
 
 /**
@@ -316,6 +352,8 @@ export class BoostGauge {
   private readonly word: Phaser.GameObjects.Text;
   private motion: BoostMotion = freshBoost(0);
   private painted = '';
+  /** Where the Graphics stands when still (it shakes as the gauge blows up). */
+  private readonly left: number;
 
   /** `x`: the outer end of the gauge (the screen's edge side), `y`: its top. */
   constructor(
@@ -325,8 +363,8 @@ export class BoostGauge {
     private readonly look: GaugeLook,
     textStyle: Phaser.Types.GameObjects.Text.TextStyle,
   ) {
-    const left = look.side === 0 ? x : x - GAUGE_WIDTH;
-    this.graphics = scene.add.graphics({ x: left, y }).setScrollFactor(0).setDepth(10);
+    this.left = look.side === 0 ? x : x - GAUGE_WIDTH;
+    this.graphics = scene.add.graphics({ x: this.left, y }).setScrollFactor(0).setDepth(10);
     const countX = look.side === 0 ? x + 2 : x - CAPSULE.width + 2;
     this.count = scene.add
       .text(countX, y + 1, '0', { ...textStyle, strokeThickness: 0 })
@@ -347,6 +385,7 @@ export class BoostGauge {
   update(boost: number, breakage: Breakage | null, frame: number): void {
     this.motion = stepBoost(this.motion, boost, breakage, frame);
     const motion = this.motion;
+    this.graphics.x = this.left + blastShake(motion, this.look);
     const key = gaugePaintKey(motion, this.look, frame);
     if (key !== this.painted) {
       this.painted = key;

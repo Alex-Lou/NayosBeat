@@ -159,7 +159,7 @@ LT, Select, L3, R3 et le stick droit restent libres (remappage et provocation pl
 - Écarts entre bords voisins de 6 à 16 px. Le bord le plus éloigné est à 265 px du bord droit : dans la zone du pouce, même sur un iPhone SE en paysage (moitié droite de 333 px).
 - **Zones de toucher** : rayon visible + 8 px (cible ≥ 48 dp). Là où deux zones se chevauchent, **le centre le plus proche gagne**. Un seul écouteur `pointerdown` sur la zone droite fait ce test, au lieu d'un écouteur par bouton (moins d'écouteurs, aucun conflit).
 - **Retour d'appui** : échelle 0,92 et bord éclairé, posés par `classList` **seulement quand l'état change**.
-- **Vibration** (Android, réglage « Vibrations », actif par défaut) : 30 ms quand on est saisi (le signal du dégagement arrive dans la main), 15 ms sur un coup lourd reçu. Vibration à chaque appui : option, désactivée par défaut.
+- **Vibration** (Android, réglage « Vibrations », actif par défaut) : 30 ms quand on est saisi (le signal du dégagement arrive dans la main), 15 ms sur un coup lourd reçu, 180 ms pour les deux joueurs quand un KO fait éclater une jauge de Boost (combos-v3 §1.8.6), où les manettes vibrent aussi. Vibration à chaque appui : option, désactivée par défaut.
 - **Stick** :
   - zone morte avec hystérésis : direction prise à 12 px, relâchée sous 8 px ;
   - **haut** plus exigeant, pour supprimer les sauts involontaires en marchant ou en gardant : haut si `ny < −0,5` (plus de 30° au-dessus de l'horizontale) **et** course ≥ 18 px (relâché sous 14 px). Les diagonales de saut à 45° marchent toujours ;
