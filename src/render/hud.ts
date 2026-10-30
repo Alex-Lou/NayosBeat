@@ -4,6 +4,8 @@ import { TICK_RATE } from '../core/constants';
 import { ROUNDS_TO_WIN } from '../core/rules';
 import type { FighterState, GameState, RoundState } from '../core/state';
 import { BoostGauge } from './boost-gauge';
+import type { Breakage } from './boost-motion';
+import type { KoFinish } from './fight-events';
 import { BAR_BOX, EMBER_RISE, HealthBar } from './health-bar';
 import { DISC_SIZE, discSpans, MARK_TICKS, markSpan, PIP_SIZE, pipSpans } from './hud-discs';
 import { paintSpans, spanTexture, type Span } from './hud-paint';
@@ -61,6 +63,8 @@ export class Hud {
   private dummyComboBefore = 0;
   private comboStartHealth = 0;
   private readonly names: readonly [string, string];
+  /** How each fighter was knocked out this round (its Boost gauge shows it), null while up. */
+  private readonly finishes: [KoFinish | null, KoFinish | null] = [null, null];
 
   /** `energies`: each fighter's color on the HUD in its colorway (hudColorOf), for its side. */
   constructor(
@@ -141,7 +145,8 @@ export class Hud {
       // A KO ends the combo: the trail of the last one drains.
       const comboed = fighter.comboCount > 0 && fighter.health > 0;
       this.bars[player]?.update(fighter.health / max, comboed, frame);
-      this.gauges[player]?.update(fighter.boost, fighter.health <= 0, frame);
+      if (fighter.health > 0) this.finishes[player] = null;
+      this.gauges[player]?.update(fighter.boost, breakageOf(this.finishes[player] ?? null), frame);
     });
     this.setPips(round);
     const seconds = Math.ceil(round.timer / TICK_RATE);
@@ -159,6 +164,11 @@ export class Hud {
     const [, b] = fighters;
     if (this.trainingInfo) this.updateTrainingInfo(this.trainingInfo, b);
     setTextIfChanged(this.announcer, announcementOf(state.round, this.names));
+  }
+
+  /** `player` was knocked out on this tick: `finish` says how (fight-events.ts). */
+  knockOut(player: 0 | 1, finish: KoFinish): void {
+    this.finishes[player] = finish;
   }
 
   /** Keeps the last combo's result on screen until the next one starts. */
@@ -192,6 +202,13 @@ export class Hud {
     object.setDepth(10);
     return object;
   }
+}
+
+/** What a KO does to the gauge: a plain one leaves it whole, a combo's cracks it, a super's shatters it. */
+function breakageOf(finish: KoFinish | null): Breakage | null {
+  if (finish === 'combo') return 'crack';
+  if (finish === 'finisher') return 'shatter';
+  return null;
 }
 
 /** The dark band across the top of the screen, fading out at its foot. */

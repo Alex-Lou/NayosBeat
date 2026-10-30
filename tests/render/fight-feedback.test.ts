@@ -88,7 +88,9 @@ function blow(type: 'hit' | 'ko', low: boolean, heavy = false): FightEvent {
     held: false,
     counter: null,
   } as const;
-  return type === 'hit' ? { type, damage: 25, heavy, ...impact } : { type, ...impact };
+  return type === 'hit'
+    ? { type, damage: 25, heavy, ...impact }
+    : { type, finish: 'plain', ...impact };
 }
 
 describe('the spark of a blow (docs/combat-v2.md §9.3)', () => {

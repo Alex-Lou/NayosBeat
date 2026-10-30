@@ -13,7 +13,7 @@ import {
   MAX_WORD,
   type GaugeLook,
 } from '../../src/render/boost-gauge';
-import { BREAK_TICKS, freshBoost, stepBoost } from '../../src/render/boost-motion';
+import { BREAK_TICKS, CRACK_TICKS, freshBoost, stepBoost } from '../../src/render/boost-motion';
 import { fakeScene, pixelOf } from './hud-fakes';
 
 const ENERGY = 0x00e5ff;
@@ -64,7 +64,7 @@ describe('the Boost gauge (docs/combos-v3.md §1.8.6)', () => {
   });
 
   it('sweeps a light over the bar it completes, slanted, end to end; none with reduced motion', () => {
-    let motion = stepBoost(freshBoost(0, BOOST_BAR - 10), BOOST_BAR + 500, false, 1);
+    let motion = stepBoost(freshBoost(0, BOOST_BAR - 10), BOOST_BAR + 500, null, 1);
     const light = (look: GaugeLook) =>
       gaugeSpans(motion, look, motion.frame).filter(
         (span) => span.color === 0xffffff && span.alpha === 0.8,
@@ -79,7 +79,7 @@ describe('the Boost gauge (docs/combos-v3.md §1.8.6)', () => {
         if (row > 0) expect(span.x).toBe((spans[row - 1]?.x ?? 0) - 1);
       });
       reached.push(...spans.map((span) => span.x - ROW.start + 2 + 3));
-      motion = stepBoost(motion, BOOST_BAR + 500, false, motion.frame + 1);
+      motion = stepBoost(motion, BOOST_BAR + 500, null, motion.frame + 1);
     }
     expect(Math.min(...reached)).toBeLessThanOrEqual(5);
     expect(Math.max(...reached)).toBeGreaterThanOrEqual(100);
@@ -93,18 +93,41 @@ describe('the Boost gauge (docs/combos-v3.md §1.8.6)', () => {
   });
 
   it('shatters at a KO, then stays broken until the next round, its Boost kept', () => {
-    let motion = stepBoost(freshBoost(0, 1500), 1500, true, 1);
+    let motion = stepBoost(freshBoost(0, 1500), 1500, 'shatter', 1);
     const shards = (look: GaugeLook) =>
       gaugeSpans(motion, look, motion.frame).filter((span) => (span.alpha ?? 1) < 1);
     expect(shards(LEFT).length).toBeGreaterThan(20);
     expect(shards(CALM)).toEqual([]);
     for (let tick = 0; tick < BREAK_TICKS; tick++) {
-      motion = stepBoost(motion, 1500, true, motion.frame + 1);
+      motion = stepBoost(motion, 1500, 'shatter', motion.frame + 1);
     }
     expect(shards(LEFT)).toEqual([]);
     expect(at(gaugeSpans(motion, LEFT, motion.frame), 10)).not.toBe(ENERGY);
-    motion = stepBoost(motion, 1500, false, motion.frame + 1);
+    motion = stepBoost(motion, 1500, null, motion.frame + 1);
     expect(at(gaugeSpans(motion, LEFT, motion.frame), 80)).toBe(ENERGY);
+  });
+
+  it('cracks at the end of a combo, its Boost still showing; whole again next round', () => {
+    let motion = stepBoost(freshBoost(0, 1400), 1400, 'crack', 1);
+    for (let tick = 0; tick < CRACK_TICKS; tick++) {
+      motion = stepBoost(motion, 1400, 'crack', motion.frame + 1);
+    }
+    const cracked = gaugeSpans(motion, LEFT, motion.frame);
+    // Dark crack pixels inside the tube, the bars under them still in their colors.
+    expect(
+      cracked.filter((span) => span.color === 0x0c0612 && span.width === 1).length,
+    ).toBeGreaterThan(10);
+    expect(cracked.some((span) => span.color === ENERGY)).toBe(true);
+    // Reduced motion: the same cracks at once, no chips falling.
+    const calm = gaugeSpans(stepBoost(freshBoost(0, 1400), 1400, 'crack', 1), CALM, 1);
+    expect(calm.filter((span) => span.color === 0x0c0612 && span.width === 1).length).toBe(
+      cracked.filter((span) => span.color === 0x0c0612 && span.width === 1).length,
+    );
+    expect(calm.some((span) => (span.alpha ?? 1) < 1 && span.width === 2)).toBe(false);
+    motion = stepBoost(motion, 1400, null, motion.frame + 1);
+    expect(gaugeSpans(motion, LEFT, motion.frame)).toEqual(
+      gaugeSpans(freshBoost(motion.frame, 1400), LEFT, motion.frame),
+    );
   });
 
   it('repaints only when what it shows changes', () => {
@@ -126,14 +149,14 @@ function gaugeOn(look: GaugeLook = LEFT) {
 describe('the Boost gauge on the HUD', () => {
   it('fills up, and writes its count of bars, redrawn only when it changes', () => {
     const { gauge, count } = gaugeOn();
-    gauge.update(1500, false, 0);
+    gauge.update(1500, null, 0);
     expect(count.text).toBe('0');
-    for (let frame = 1; frame <= 40; frame++) gauge.update(1500, false, frame);
+    for (let frame = 1; frame <= 40; frame++) gauge.update(1500, null, frame);
     expect(count.text).toBe('1');
     const renders = count.renders;
-    for (let frame = 41; frame < 70; frame++) gauge.update(1500, false, frame);
+    for (let frame = 41; frame < 70; frame++) gauge.update(1500, null, frame);
     expect(count.renders).toBe(renders);
-    for (let frame = 70; frame < 100; frame++) gauge.update(2400, false, frame);
+    for (let frame = 70; frame < 100; frame++) gauge.update(2400, null, frame);
     expect(count.text).toBe('2');
     expect(count.style.color).toBe(`#${(cores[1] ?? 0).toString(16)}`);
   });
@@ -142,10 +165,10 @@ describe('the Boost gauge on the HUD', () => {
     expect(BLINK_TICKS).toBeGreaterThanOrEqual(10);
     const { gauge, word } = gaugeOn();
     // It fills up in a second, then blinks.
-    for (let frame = 0; frame < 60; frame++) gauge.update(BOOST_MAX, false, frame);
+    for (let frame = 0; frame < 60; frame++) gauge.update(BOOST_MAX, null, frame);
     const shown: number[] = [];
     for (let frame = 60; frame < 120; frame++) {
-      gauge.update(BOOST_MAX, false, frame);
+      gauge.update(BOOST_MAX, null, frame);
       shown.push(word.alpha);
     }
     expect(word.text).toBe(MAX_WORD);
@@ -154,24 +177,24 @@ describe('the Boost gauge on the HUD', () => {
     expect(changes).toHaveLength(3);
     expect(blinkOn(BLINK_TICKS)).toBe(false);
     // Spent, it takes its word and color back.
-    for (let frame = 120; frame < 150; frame++) gauge.update(BOOST_MAX - BOOST_BAR, false, frame);
+    for (let frame = 120; frame < 150; frame++) gauge.update(BOOST_MAX - BOOST_BAR, null, frame);
     expect(word.text).toBe(BOOST_WORD);
     expect(word.alpha).toBe(1);
     expect(word.style.color).toBe('#00e5ff');
     const calm = gaugeOn(CALM);
     for (let frame = 0; frame < 120; frame++) {
-      calm.gauge.update(BOOST_MAX, false, frame);
+      calm.gauge.update(BOOST_MAX, null, frame);
       expect(calm.word.alpha).toBe(1);
     }
   });
 
   it('dims its number and word while broken', () => {
     const { gauge, count, word } = gaugeOn();
-    gauge.update(1500, false, 0);
-    gauge.update(1500, true, 1);
+    gauge.update(1500, null, 0);
+    gauge.update(1500, 'shatter', 1);
     expect(count.alpha).toBeLessThan(1);
     expect(word.style.color).not.toBe('#00e5ff');
-    gauge.update(1500, false, 2);
+    gauge.update(1500, null, 2);
     expect(count.alpha).toBe(1);
     expect(word.style.color).toBe('#00e5ff');
   });

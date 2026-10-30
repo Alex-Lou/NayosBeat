@@ -6,9 +6,12 @@ import { step } from '../../src/core/step';
 import { NAYO as P } from '../../src/data/fighters/nayo';
 import { RIFF } from '../../src/data/fighters/riff';
 import { TRAINING_STAGE } from '../../src/data/stages';
+import { BOOST_MAX } from '../../src/core/rules';
 import {
+  COMBO_KO_HITS,
   detectEvents,
   HAPTICS,
+  koFinishOf,
   vibrationFor,
   type FightEvent,
 } from '../../src/render/fight-events';
@@ -78,6 +81,21 @@ describe('detectEvents', () => {
     const events = eventsOf(start, [[Input.Light, 0], ...idle(10)]);
     expect(types(events)).toContain('ko');
     expect(types(events)).not.toContain('hit');
+  });
+
+  it('tells how the KO landed, for the Boost gauge: a blow alone, a combo, a super', () => {
+    expect(koFinishOf(0, 1)).toBe('plain');
+    expect(koFinishOf(1, COMBO_KO_HITS - 1)).toBe('plain');
+    expect(koFinishOf(0, COMBO_KO_HITS)).toBe('combo');
+    expect(koFinishOf(3, 1)).toBe('finisher');
+    // A jab alone.
+    const jab = facingOff(30, MIRROR_MATCH, [{}, { health: 5 }]);
+    const plain = eventsOf(jab, [[Input.Light, 0], ...idle(10)]).find((e) => e.type === 'ko');
+    expect(plain).toMatchObject({ type: 'ko', finish: 'plain' });
+    // The super: BOOST and back, the gauge full.
+    const full = facingOff(30, MIRROR_MATCH, [{ boost: BOOST_MAX }, { health: 5 }]);
+    const events = eventsOf(full, [[Input.Boost | Input.Left, 0], ...idle(120)]);
+    expect(events.find((e) => e.type === 'ko')).toMatchObject({ type: 'ko', finish: 'finisher' });
   });
 
   it('reports projectiles, jumps and landings', () => {

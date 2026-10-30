@@ -336,8 +336,12 @@ Le dessin et ses références sont dans `docs/art/direction-hud.md`.
   - La jauge monte vers la valeur au lieu de sauter : une barre en 20 tics.
   - Une lumière balaie la barre qui vient de se compléter (14 tics).
   - Une dépense se vide vite, le front en blanc : une barre en 10 tics, la super en une demi-seconde (la Tension de Guilty Gear Strive).
-  - Au KO, le tube vole en carrés de 4 × 3 px qui tombent et s'effacent en 40 tics (King of Fighters XV). La jauge reste éteinte jusqu'au round suivant, où elle revient entière avec son Boost.
-- **Mouvement réduit** (`prefers-reduced-motion` du système) : ni balayage, ni reflet, ni éclats, ni clignotement.
+  - Au KO, la jauge du perdant dit comment il est tombé (`koFinishOf`, `src/render/fight-events.ts`) :
+    - **un coup seul** (moins de 3 coups dans le combo) : elle reste normale ;
+    - **la fin d'un combo** de 3 coups ou plus : elle se **fissure**. Le tube s'assombrit, trois fissures le traversent et coupent son liseré, et quatre éclats tombent en 30 tics ; son Boost reste visible au travers ;
+    - **l'Ultime** (la super, et plus tard le Finisher) : elle **éclate** en carrés de 4 × 3 px qui tombent et s'effacent en 40 tics (King of Fighters XV), puis reste éteinte.
+    - Dans tous les cas, elle revient entière au round suivant, avec son Boost.
+- **Mouvement réduit** (`prefers-reduced-motion` du système) : ni balayage, ni reflet, ni éclats, ni clignotement ; les fissures apparaissent d'un coup.
 - **Coût.** Par joueur : 1 Graphics et 2 textes, créés une fois. Le Graphics n'est repeint que quand ce qu'il montre change (longueur en pixels, palier, balayage, éclats) ; les textes, quand leur contenu change.
 - **Crossfader.** Il reste au centre sous le chronomètre (§8.3). Les formes et les places diffèrent : une piste avec un curseur au centre, un tube et sa capsule au bord.
 

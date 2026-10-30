@@ -35,10 +35,25 @@ interface Blow extends Impact {
   readonly counter: CounterHit | null;
 }
 
+/**
+ * How the final blow knocked its fighter out, what the Boost gauge shows of it
+ * (docs/combos-v3.md §1.8.6): `plain`, a blow on its own (the gauge stays whole); `combo`, the end
+ * of a combo of COMBO_KO_HITS blows or more (it cracks); `finisher`, a super (it shatters).
+ */
+export type KoFinish = 'plain' | 'combo' | 'finisher';
+/** Blows of a combo, the final one included, from which its KO cracks the gauge. */
+export const COMBO_KO_HITS = 3;
+
+/** How a KO lands: the final blow's tier (3: a super), the blows of the combo it ends. */
+export function koFinishOf(tier: number, comboHits: number): KoFinish {
+  if (tier >= 3) return 'finisher';
+  return comboHits >= COMBO_KO_HITS ? 'combo' : 'plain';
+}
+
 export type FightEvent =
   | ({ readonly type: 'hit'; readonly damage: number; readonly heavy: boolean } & Blow)
   | ({ readonly type: 'block' } & Impact)
-  | ({ readonly type: 'ko' } & Blow)
+  | ({ readonly type: 'ko'; readonly finish: KoFinish } & Blow)
   /** A grab caught `by`'s opponent; `punish`: caught recovering, it cannot break free. */
   | ({ readonly type: 'grab'; readonly punish: boolean } & Impact)
   /** `by` broke free of a grab (one event for two grabs on the same tick). */
@@ -169,7 +184,10 @@ function contactEvent(contact: Contact, next: GameState, config: MatchConfig): F
   }
   const held = contact.kind !== 'hit';
   const { counter } = contact;
-  if (defender.health === 0) return { type: 'ko', ...impact, held, counter };
+  if (defender.health === 0) {
+    const finish = koFinishOf(tierOf(move), defender.comboCount);
+    return { type: 'ko', ...impact, held, counter, finish };
+  }
   if (contact.kind === 'throw') return { type: 'throw', ...impact, damage: contact.damage };
   const heavy = move.damage >= HEAVY_HIT_DAMAGE;
   return { type: 'hit', ...impact, damage: contact.damage, heavy, held, counter };

@@ -11,13 +11,19 @@ import {
   LEVEL_UP_TICKS,
   stepBoost,
   type BoostMotion,
+  type Breakage,
 } from '../../src/render/boost-motion';
 
 /** Steps `motion` one tick at a time for `ticks` ticks, the fighter on `boost`. */
-function run(motion: BoostMotion, ticks: number, boost: number, knockedOut = false): BoostMotion {
+function run(
+  motion: BoostMotion,
+  ticks: number,
+  boost: number,
+  breakage: Breakage | null = null,
+): BoostMotion {
   let state = motion;
   for (let tick = 0; tick < ticks; tick++) {
-    state = stepBoost(state, boost, knockedOut, state.frame + 1);
+    state = stepBoost(state, boost, breakage, state.frame + 1);
   }
   return state;
 }
@@ -45,7 +51,7 @@ describe('Boost gauge motion', () => {
 
   it('drains fast what a Boost move spends', () => {
     const full = freshBoost(0, BOOST_MAX);
-    const spent = stepBoost(full, BOOST_MAX - BOOST_BAR, false, 1);
+    const spent = stepBoost(full, BOOST_MAX - BOOST_BAR, null, 1);
     expect(spent.shown).toBe(BOOST_MAX - DRAIN_RATE);
     expect(isDraining(spent)).toBe(true);
     const drained = run(spent, BOOST_BAR / DRAIN_RATE, BOOST_MAX - BOOST_BAR);
@@ -56,9 +62,9 @@ describe('Boost gauge motion', () => {
   });
 
   it('shatters at a KO and comes back whole for the next round, its Boost kept', () => {
-    let state = run(freshBoost(0, 1500), 1, 1500, true);
+    let state = run(freshBoost(0, 1500), 1, 1500, 'shatter');
     expect(state.broken).toBe(1);
-    state = run(state, BREAK_TICKS + 30, 1500, true);
+    state = run(state, BREAK_TICKS + 30, 1500, 'shatter');
     expect(state.broken).toBe(BREAK_TICKS);
     state = run(state, 1, 1500);
     expect(state.broken).toBe(-1);
@@ -70,6 +76,6 @@ describe('Boost gauge motion', () => {
   });
 
   it('restarts with a new match', () => {
-    expect(stepBoost(run(freshBoost(0), 50, 2000), 0, false, 0)).toEqual(freshBoost(0));
+    expect(stepBoost(run(freshBoost(0), 50, 2000), 0, null, 0)).toEqual(freshBoost(0));
   });
 });

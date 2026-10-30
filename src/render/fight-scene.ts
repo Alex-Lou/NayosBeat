@@ -263,6 +263,7 @@ export class FightScene extends Phaser.Scene {
         const viewLeft = toPx(this.state.cameraX) - VIEW_SIZE.width / 2;
         runtime.feedback.beginTick();
         for (const event of this.tickEvents) {
+          if (event.type === 'ko') runtime.hud.knockOut(event.by === 0 ? 1 : 0, event.finish);
           runtime.feedback.react(event, viewLeft);
           runtime.caption?.react(event, this.state.frame);
         }

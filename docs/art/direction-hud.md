@@ -60,7 +60,7 @@ Spécification complète : `docs/combos-v3.md` §1.8.6. En bref :
 - **Pleine.** Le mot devient « MAX », comme la plaque MAXIMUM de King of Fighters XV : la jauge change de mot, pas seulement de couleur. Un reflet passe sur le tube.
 - **En jeu.** La jauge monte au lieu de sauter, et une lumière balaie la barre qui vient de se compléter.
 - **Dépense.** Elle se vide vite, le front en blanc : une barre en 10 tics, la super en une demi-seconde, comme la Tension de Guilty Gear Strive.
-- **KO.** Elle vole en carrés qui tombent, le motif de désintégration de King of Fighters XV. Elle revient entière au round suivant, avec son Boost.
+- **KO.** Elle dit comment le combattant est tombé : normale après un coup seul, fissurée à la fin d'un combo de 3 coups ou plus, éclatée en carrés (le motif de désintégration de King of Fighters XV) sous l'Ultime ou le Finisher. Elle revient entière au round suivant, avec son Boost.
 
 ## 5. Chrono et rounds (`src/render/hud-discs.ts`)
 
@@ -159,4 +159,4 @@ La recherche (7 agents, puis une critique qui a rouvert une trentaine de sources
 13. **Sons aux seuils de 50 % et 25 %, et un mode daltonien** pour le trio cyan, magenta et orange (Mortal Kombat 1).
 14. **Les jeux de DJ et de rythme.** Étudier la jauge Euphoria de DJ Hero et la Groove Gauge de beatmania IIDX (seuil à 80 %), pour décider de repères à 1/3 et 2/3 sur le Boost.
 
-**Une variante à trancher.** Au KO d'un round, KOF XV et Dragon Ball FighterZ font plutôt grandir la jauge du perdant, dans un contexte d'équipe. Une variante en deux temps ne fissurerait la jauge qu'aux KO de round et garderait l'éclatement complet pour le KO qui finit le match. Le jeu suit pour l'instant la demande du propriétaire : la jauge éclate à chaque KO et revient entière au round suivant.
+**Tranché par le propriétaire.** La jauge n'éclate pas à chaque KO : elle reste normale après un KO ordinaire, se fissure à la fin d'un combo propre, et n'éclate que sous l'Ultime ou le Finisher (§4).

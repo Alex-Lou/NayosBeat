@@ -3,9 +3,13 @@ import { BOOST_BAR, BOOST_MAX } from '../core/rules';
 import {
   barsOf,
   BREAK_TICKS,
+  CRACK_TICKS,
   freshBoost,
+  isCracked,
   isDraining,
   isFull,
+  isShattered,
+  type Breakage,
   LEVEL_UP_TICKS,
   stepBoost,
   type BoostMotion,
@@ -51,6 +55,40 @@ export const GAUGE_WIDTH = WORD_X + 40;
 /** Ticks of the shine running over a full gauge, and of the wait before the next one. */
 const SHINE_TICKS = 24;
 const SHINE_EVERY = 90;
+/**
+ * The cracks of a gauge cracked at a KO, each a run of pixels along the tube (`along` from its outer
+ * end, `row` from its top), drawn in that order over CRACK_REVEAL ticks: two that cross it, a
+ * short one near its outer end.
+ */
+const CRACKS: readonly (readonly [along: number, row: number])[] = [
+  [66, 0],
+  [65, 1],
+  [64, 1],
+  [64, 2],
+  [66, 2],
+  [63, 3],
+  [67, 3],
+  [62, 3],
+  [68, 3],
+  [62, 4],
+  [70, 4],
+  [61, 5],
+  [33, 0],
+  [32, 1],
+  [33, 2],
+  [31, 3],
+  [30, 3],
+  [31, 4],
+  [30, 5],
+  [12, 1],
+  [11, 2],
+  [13, 2],
+  [12, 3],
+];
+const CRACK_REVEAL = 10;
+/** Chips falling from the cracks: where along the cracks list each starts, from which tick. */
+const CHIPS = [2, 7, 14, 20] as const;
+const CHIPS_FROM = 4;
 /** Squares a KO breaks the tube into: 4 pixels by 3 rows. */
 const SHARD = { width: 4, height: 3 } as const;
 
@@ -92,7 +130,7 @@ export interface GaugeLook {
   /** 0: the left player (the gauge runs right from the screen's edge), 1: the right one. */
   readonly side: 0 | 1;
   readonly energy: number;
-  /** No sweep, no shine, no shards, no blink (prefers-reduced-motion). */
+  /** No sweep, no shine, no shards, no falling chips, no blink (prefers-reduced-motion). */
   readonly reducedMotion: boolean;
 }
 
@@ -117,12 +155,14 @@ function sweepOf(motion: BoostMotion, look: GaugeLook, frame: number): number {
 
 /** What the gauge shows: it is repainted only when this changes. */
 export function gaugePaintKey(motion: BoostMotion, look: GaugeLook, frame: number): string {
-  const broken = motion.broken < 0 ? -1 : look.reducedMotion ? BREAK_TICKS : motion.broken;
+  const lasts = motion.breakage === 'crack' ? CRACK_TICKS : BREAK_TICKS;
+  const broken = motion.broken < 0 ? -1 : look.reducedMotion ? lasts : motion.broken;
   return [
     barsOf(motion.shown),
     partOf(motion.shown),
     isDraining(motion),
     sweepOf(motion, look, frame),
+    motion.breakage,
     broken,
   ].join(' ');
 }
@@ -142,7 +182,7 @@ function inkAt(motion: BoostMotion, energy: number, row: number, along: number):
  */
 export function gaugeSpans(motion: BoostMotion, look: GaugeLook, frame: number): Span[] {
   const bars = barsOf(motion.shown);
-  const broken = motion.broken >= 0;
+  const broken = isShattered(motion);
   const rim = broken ? BROKEN : levelColor(look.energy, bars);
   const spans: Span[] = [
     { x: 0, y: 0, width: CAPSULE.width, height: CAPSULE.height, color: rim },
@@ -192,6 +232,7 @@ export function gaugeSpans(motion: BoostMotion, look: GaugeLook, frame: number):
     }
   }
   if (broken && !look.reducedMotion) tube.push(...shards(motion, look.energy));
+  if (isCracked(motion)) tube.push(...cracks(motion, look));
   spans.push(...moved(tube, TUBE_X, TUBE_Y));
   return look.side === 0 ? spans : spans.map((span) => mirrored(span, GAUGE_WIDTH));
 }
@@ -220,6 +261,46 @@ function shards(motion: BoostMotion, energy: number): Span[] {
         alpha: fade,
       });
     }
+  }
+  return spans;
+}
+
+/**
+ * The tube cracked, `motion.broken` ticks after the KO: its glass darkened, its Boost still
+ * showing through; the cracks run across it, a light pixel after each dark one, and a few chips
+ * fall from them and fade (none with reduced motion, the cracks then drawn at once).
+ */
+function cracks(motion: BoostMotion, look: GaugeLook): Span[] {
+  const spans: Span[] = [];
+  for (let row = 0; row < ROWS; row++) {
+    const x = tubeRowStart(ROWS, row);
+    spans.push({ x, y: row + 1, width: GAUGE_LENGTH, height: 1, color: OUTLINE, alpha: 0.35 });
+  }
+  const age = look.reducedMotion ? CRACK_TICKS : motion.broken;
+  const shown = Math.min(CRACKS.length, Math.ceil((CRACKS.length * age) / CRACK_REVEAL));
+  CRACKS.slice(0, shown).forEach(([along, row]) => {
+    const x = tubeRowStart(ROWS, row) + along;
+    const light = mix(inkAt(motion, look.energy, row, along), 0xffffff, 0.5);
+    spans.push({ x, y: row + 1, width: 1, height: 1, color: OUTLINE });
+    spans.push({ x: x + 1, y: row + 1, width: 1, height: 1, color: light });
+    // A crack from the top cuts the rim over it: the frame itself is broken.
+    if (row === 0) spans.push({ x: x + 1, y: 0, width: 2, height: 1, color: OUTLINE });
+  });
+  if (look.reducedMotion) return spans;
+  for (const from of CHIPS) {
+    const [along, row] = CRACKS[from] ?? [0, 0];
+    const fall = age - CHIPS_FROM - from / 4;
+    if (fall <= 0) continue;
+    const fade = 1 - fall / (CRACK_TICKS - CHIPS_FROM);
+    if (fade <= 0) continue;
+    spans.push({
+      x: tubeRowStart(ROWS, row) + along + (from % 2 === 0 ? -1 : 1) * Math.round(fall / 6),
+      y: row + 1 + Math.round(0.3 * fall + 0.05 * fall * fall),
+      width: 2,
+      height: 1,
+      color: inkAt(motion, look.energy, row, along),
+      alpha: fade,
+    });
   }
   return spans;
 }
@@ -259,9 +340,12 @@ export class BoostGauge {
       .setDepth(10);
   }
 
-  /** `knockedOut`: from the fighter's KO to the next round; `frame`: the match clock. */
-  update(boost: number, knockedOut: boolean, frame: number): void {
-    this.motion = stepBoost(this.motion, boost, knockedOut, frame);
+  /**
+   * `breakage`: how the fighter's KO breaks the gauge, from the KO to the next round (null when it
+   * stays whole); `frame`: the match clock.
+   */
+  update(boost: number, breakage: Breakage | null, frame: number): void {
+    this.motion = stepBoost(this.motion, boost, breakage, frame);
     const motion = this.motion;
     const key = gaugePaintKey(motion, this.look, frame);
     if (key !== this.painted) {
@@ -269,16 +353,18 @@ export class BoostGauge {
       paintSpans(this.graphics, gaugeSpans(motion, this.look, frame));
     }
     const bars = barsOf(motion.shown);
-    const broken = motion.broken >= 0;
+    const broken = isShattered(motion);
     setIfChanged(this.count, String(bars), hex(levelColor(this.look.energy, bars)));
     this.count.setAlpha(broken ? 0.4 : 1);
+    // Cracked, a full gauge still says MAX, without blinking: its fighter is down.
     const full = isFull(motion) && !broken;
+    const blinks = full && motion.broken < 0 && !this.look.reducedMotion;
     setIfChanged(
       this.word,
       full ? MAX_WORD : BOOST_WORD,
       full ? hex(PLATINE[0]) : hex(broken ? BROKEN : this.look.energy),
     );
-    this.word.setAlpha(full && !this.look.reducedMotion && !blinkOn(frame) ? 0.25 : 1);
+    this.word.setAlpha(blinks && !blinkOn(frame) ? 0.25 : 1);
   }
 }
 
