@@ -5,10 +5,19 @@ import {
   EMBER_RISE,
   HealthBar,
   healthBarSpans,
+  healthBlastShake,
   healthPaintKey,
   type HealthBarLook,
 } from '../../src/render/health-bar';
-import { FLASH_TICKS, freshHealth, stepHealth } from '../../src/render/health-motion';
+import {
+  BAR_BREAK_TICKS,
+  BAR_CRACK_TICKS,
+  FLASH_TICKS,
+  freshHealth,
+  stepHealth,
+  type HealthMotion,
+} from '../../src/render/health-motion';
+import type { Breakage } from '../../src/render/boost-motion';
 import { fakeScene, pixelOf } from './hud-fakes';
 
 const ENERGY = 0x30e8ff;
@@ -142,4 +151,62 @@ describe('the health bar (docs/art/direction-hud.md)', () => {
     for (let frame = 1; frame <= 60; frame++) bar.update(1, false, frame);
     expect(inner(graphics[0]?.spans ?? [], BAR_LENGTH - 1)).toBe(CORE.health);
   });
+
+  it('cracks at a KO that ends a combo, its red trail still showing; whole again next round', () => {
+    const cracked = brokenAfter('crack', BAR_CRACK_TICKS);
+    const spans = healthBarSpans(cracked, LEFT, cracked.frame);
+    // The cracks: light over the empty tube, the rim cut over them.
+    expect(spans.filter((span) => span.color === 0x8c7fa6).length).toBeGreaterThan(10);
+    expect(pixelOf(spans, 140 + 2 + 7 + 1, 0)).toBe(0x0c0612);
+    // The red trail of the combo, under the cracks.
+    expect(spans.some((span) => span.color === CORE.trail)).toBe(true);
+    // Reduced motion: the same cracks at once, no chips falling.
+    const calm = healthBarSpans(brokenAfter('crack', 0), CALM, 0);
+    expect(calm.filter((span) => span.color === 0x8c7fa6).length).toBe(
+      spans.filter((span) => span.color === 0x8c7fa6).length,
+    );
+    expect(calm.some((span) => (span.alpha ?? 1) < 1 && span.width === 2)).toBe(false);
+    // A new round: whole again.
+    const next = stepHealth(cracked, 1, false, cracked.frame + 1);
+    expect(next.broken).toBe(-1);
+  });
+
+  it('blows up at an Ultime: shards of glass and of the red trail fly, the frame stays dim', () => {
+    const early = healthBarSpans(brokenAfter('shatter', 2), LEFT, 0);
+    const shards = early.filter((span) => (span.alpha ?? 1) < 1);
+    expect(shards.length).toBeGreaterThan(80);
+    expect(
+      new Set(shards.map((span) => `${span.width}x${span.height}`)).size,
+    ).toBeGreaterThanOrEqual(3);
+    expect(shards.some((span) => span.color === 0xffffff)).toBe(false);
+    // The frame dim, its tube empty: no trail left inside.
+    const after = healthBarSpans(brokenAfter('shatter', BAR_BREAK_TICKS), LEFT, 0);
+    expect(after.every((span) => (span.alpha ?? 1) === 1)).toBe(true);
+    expect(pixelOf(after, 20, 0)).toBe(0x3a3448);
+    expect(inner(after, 0)).toBe(EMPTY_CORE);
+    // Reduced motion: the dim frame at once, nothing flying, no shake.
+    const calm = healthBarSpans(brokenAfter('shatter', 0), CALM, 0);
+    expect(calm.every((span) => (span.alpha ?? 1) === 1)).toBe(true);
+    expect(healthBlastShake(brokenAfter('shatter', 1), CALM)).toBe(0);
+    // It shakes 2 px, then 1, then stops.
+    expect(Math.abs(healthBlastShake(brokenAfter('shatter', 1), LEFT))).toBe(2);
+    expect(Math.abs(healthBlastShake(brokenAfter('shatter', 9), LEFT))).toBe(1);
+    expect(healthBlastShake(brokenAfter('shatter', 12), LEFT)).toBe(0);
+  });
+
+  it('stays whole at a plain KO', () => {
+    const plain = stepHealth(stepHealth(freshHealth(0, 0.1), 0, false, 1), 0, false, 60);
+    expect(plain.broken).toBe(-1);
+    const spans = healthBarSpans(plain, LEFT, 60);
+    expect(spans.some((span) => span.color === 0x3a3448 || span.color === 0x8c7fa6)).toBe(false);
+  });
 });
+
+/** A bar knocked out from 20 % on tick 1, `breakage` breaking it, `ticks` later. */
+function brokenAfter(breakage: Breakage, ticks: number): HealthMotion {
+  let motion = stepHealth(freshHealth(0, 0.2), 0, false, 1, breakage);
+  for (let tick = 0; tick < ticks; tick++) {
+    motion = stepHealth(motion, 0, false, motion.frame + 1, breakage);
+  }
+  return motion;
+}

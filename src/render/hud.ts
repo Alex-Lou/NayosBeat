@@ -144,9 +144,10 @@ export class Hud {
       const max = this.config.fighters[player]?.maxHealth ?? 1;
       // A KO ends the combo: the trail of the last one drains.
       const comboed = fighter.comboCount > 0 && fighter.health > 0;
-      this.bars[player]?.update(fighter.health / max, comboed, frame);
       if (fighter.health > 0) this.finishes[player] = null;
-      this.gauges[player]?.update(fighter.boost, breakageOf(this.finishes[player] ?? null), frame);
+      const breakage = breakageOf(this.finishes[player] ?? null);
+      this.bars[player]?.update(fighter.health / max, comboed, frame, breakage);
+      this.gauges[player]?.update(fighter.boost, breakage, frame);
     });
     this.setPips(round);
     const seconds = Math.ceil(round.timer / TICK_RATE);

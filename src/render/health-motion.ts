@@ -1,9 +1,12 @@
+import type { Breakage } from './boost-motion';
+
 /**
  * How a health bar moves, tick by tick, apart from the health it shows (docs/art/direction-hud.md):
  * the damage trail that waits behind the bar while the combo goes on, then drains into it; the
- * flash of a hit; the shake of a heavy one; the refill of a new round. Pure: the HUD keeps one
- * per fighter and steps it to the match clock (GameState.frame) every frame it draws, so it
- * pauses with the game and plays the same at any frame rate.
+ * flash of a hit; the shake of a heavy one; the refill of a new round; the KO that cracks it (the
+ * end of a combo) or blows it up (an Ultime), like the Boost gauge. Pure: the HUD keeps one per
+ * fighter and steps it to the match clock (GameState.frame) every frame it draws, so it pauses
+ * with the game and plays the same at any frame rate.
  */
 
 /** Ticks the trail waits after the last blow once the combo is over, before it drains. */
@@ -21,6 +24,9 @@ export const SHAKE_TICKS = 8;
 export const DANGER = 0.3;
 /** How much of the bar a refill (a new round) climbs each tick: a full bar in 0.75 s. */
 export const REFILL_RATE = 1 / 45;
+/** Ticks a KO takes to crack the bar, or to blow it up; then it stays so until the next round. */
+export const BAR_CRACK_TICKS = 30;
+export const BAR_BREAK_TICKS = 48;
 /** Ticks stepped at most in one go (a long pause, a dropped tab): the rest is skipped. */
 const MAX_STEP = 120;
 
@@ -42,6 +48,9 @@ export interface HealthMotion {
   readonly flashFrom: number;
   /** Ticks left of the shake. */
   readonly shake: number;
+  /** Ticks since a KO started breaking the bar, -1 while whole; and how it breaks. */
+  readonly broken: number;
+  readonly breakage: Breakage;
   /** The match tick it was stepped to. */
   readonly frame: number;
 }
@@ -57,6 +66,8 @@ export function freshHealth(frame: number, ratio = 1): HealthMotion {
     sinceFlash: FLASH_GAP,
     flashFrom: ratio,
     shake: 0,
+    broken: -1,
+    breakage: 'shatter',
     frame,
   };
 }
@@ -66,18 +77,22 @@ export function freshHealth(frame: number, ratio = 1): HealthMotion {
  * being comboed (the trail waits for the combo to end, so it shows what the whole combo took).
  * Health going up (a new round) fills the bar back up at REFILL_RATE; a new match (the clock
  * going back) starts it empty. The ticks gone by are played first, then the blow seen at `frame`:
- * its flash and shake count that tick as their first, at any frame rate.
+ * its flash and shake count that tick as their first, at any frame rate. `breakage`: how the
+ * fighter's KO breaks the bar, from the KO to the next round (null when it stays whole).
  */
 export function stepHealth(
   motion: HealthMotion,
   ratio: number,
   comboed: boolean,
   frame: number,
+  breakage: Breakage | null = null,
 ): HealthMotion {
   const from = frame < motion.frame ? freshHealth(frame, 0) : motion;
-  let { bar, trail, hold, flash, sinceFlash, flashFrom, shake } = from;
+  let { bar, trail, hold, flash, sinceFlash, flashFrom, shake, broken } = from;
   const ticks = Math.min(frame - from.frame, MAX_STEP);
+  const lasts = breakage === 'crack' ? BAR_CRACK_TICKS : BAR_BREAK_TICKS;
   for (let tick = 0; tick < ticks; tick++) {
+    if (broken >= 0 && broken < lasts) broken++;
     flash = Math.max(0, flash - 1);
     sinceFlash = Math.min(FLASH_GAP, sinceFlash + 1);
     shake = Math.max(0, shake - 1);
@@ -101,7 +116,21 @@ export function stepHealth(
     hold = TRAIL_HOLD;
     bar = ratio;
   }
-  return { health: ratio, bar, trail, hold, flash, sinceFlash, flashFrom, shake, frame };
+  if (breakage === null) broken = -1;
+  else if (broken < 0) broken = 0;
+  return {
+    health: ratio,
+    bar,
+    trail,
+    hold,
+    flash,
+    sinceFlash,
+    flashFrom,
+    shake,
+    broken,
+    breakage: breakage ?? from.breakage,
+    frame,
+  };
 }
 
 /** The bar's sideways offset while it shakes, in view pixels: one pixel, side to side. */

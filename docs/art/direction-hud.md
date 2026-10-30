@@ -50,7 +50,12 @@ Ce que montrent le haut de l'écran de combat et les titres des menus, et pourqu
   - Ce que le dernier coup a pris s'allume **en blanc pendant 4 tics**, au plus une fois tous les 20 tics (3 par seconde).
   - Un coup qui prend 6 % de la barre ou plus la fait trembler d'un pixel, de gauche à droite, pendant 8 tics.
 - **Front.** Le bout de la vie restante est un pixel plus clair, comme le liseré de front de Street Fighter 6.
-- **Nouveau round.** La barre se remplit en 0,75 s au lieu d'apparaître pleine.
+- **KO.** Comme la jauge de Boost (§4), la barre dit comment le combattant est tombé :
+  - **un coup seul** (moins de 3 coups dans le combo) : elle se vide, sans plus ;
+  - **la fin d'un combo** de 3 coups ou plus : elle se **fissure**. Quatre fissures la traversent, claires sur le tube vide et sombres sur la traînée rouge, coupent son liseré, et cinq éclats tombent ;
+  - **l'Ultime** (et plus tard le Finisher) : elle **éclate** en même temps que la jauge. Elle tremble, ses éclats de verre (ceux du haut à la couleur du perso) et de la traînée rouge sont projetés puis retombent sur la scène en 48 tics, avec 18 étincelles jaunes et orange ; son cadre reste éteint.
+  - En mouvement réduit : les fissures apparaissent d'un coup, et l'explosion laisse directement le cadre éteint.
+- **Nouveau round.** La barre se remplit en 0,75 s au lieu d'apparaître pleine, réparée.
 
 ## 4. Jauge de Boost (`src/render/boost-gauge.ts`)
 
