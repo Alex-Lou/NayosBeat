@@ -40,7 +40,7 @@ const GATHER: Pose = {
 // after them, dropping to the collar's height.
 const LUNGE: Pose = {
   ...GUARD,
-  hip: at(-4.8, 34.9),
+  hip: at(-5.4, 34.9),
   torso: 18,
   head: 1,
   shrug: 1.4,
@@ -55,11 +55,11 @@ const LUNGE: Pose = {
 };
 
 // Frame 2 (3 ticks, active): full reach. The hips in over the planted lead foot, its knee bent,
-// the rear heel high; the arms long, the forearms near level, the open hands at the collar (the
-// lead one) and the lapel (the rear one, lower), about to close.
+// the rear heel high; the arms long (the elbows soft, not dropped), the forearms near level, the
+// open hands at the collar (the lead one) and the lapel (the rear one, lower), about to close.
 const REACH: Pose = {
   ...GUARD,
-  hip: at(-3.6, 33.8),
+  hip: at(-4.8, 33.8),
   torso: 20,
   head: 0,
   shrug: 1.2,
@@ -67,19 +67,19 @@ const REACH: Pose = {
   twist: 0.1,
   nearFoot: planted(LEAD_IN),
   farFoot: onToes(REAR_TOE, -30),
-  nearFist: at(27.3, 53),
-  farFist: at(25.8, 50.5),
+  nearFist: at(27.8, 53.6),
+  farFist: at(26.3, 51.2),
   nearHand: 'open',
   farHand: 'open',
   face: 'effort',
 };
 
-// Frame 3 (6 ticks): nothing there. The fists snap shut on air at full stretch, the chest still
-// pitching on over the lead foot while the hips sit back half a pixel, the rear heel at its
-// highest, the eyes on the empty space.
+// Frame 3 (6 ticks): nothing there. The fists snap shut on air at full stretch (the elbows all
+// but straight), the chest still pitching on over the lead foot while the hips sit back half a
+// pixel, the rear heel at its highest, the eyes on the empty space.
 const WHIFF: Pose = {
   ...GUARD,
-  hip: at(-4, 33.9),
+  hip: at(-5.2, 33.9),
   torso: 22.5,
   head: -2.5,
   shrug: 1.6,
@@ -87,15 +87,15 @@ const WHIFF: Pose = {
   twist: 0.05,
   nearFoot: planted(LEAD_IN),
   farFoot: onToes(REAR_TOE, -33),
-  nearFist: at(28.5, 53.5),
-  farFist: at(27, 51),
+  nearFist: at(28.8, 54),
+  farFist: at(27.3, 51.6),
 };
 
 // Frame 4 (7 ticks): the pull-back begins. The fists come back halfway, the rear one rising for
 // the cheek, the chest still pitched over the lead foot, which lifts to step home.
 const RECOVER: Pose = {
   ...GUARD,
-  hip: at(-4.8, 34.8),
+  hip: at(-5.6, 34.8),
   torso: 19,
   head: -0.5,
   shrug: 1.4,

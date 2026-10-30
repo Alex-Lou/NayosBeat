@@ -9,7 +9,7 @@ import { at, type Effect, type Pose } from './common.ts';
  * the sweep kicks the lead leg out from under him, forward and up, nearly straight, the rear
  * foot dragged off its mark low and forward; the hips drop back over nothing, the chest tips
  * back, the chin tucked, and the arms fly apart, the lead one up and forward, the rear one back
- * and out. Then the fall, fast: the body pivots back around the hips, the feet leading the
+ * and down, already reaching for the floor (a shoulder swings no further behind). Then the fall, fast: the body pivots back around the hips, the feet leading the
  * swing up with the knees open (1); he is nearly flat, the legs folding, the arms swinging
  * down for the floor (2), then just above it, the palms out to slap it, the chin tucked like a
  * trained fighter's, the legs riding up (3, held until he lands): the knockdown's impact takes
@@ -29,7 +29,7 @@ export const POSES: readonly Pose[] = [
   // 0 · Swept: the lead leg kicked out from under him, forward and up, nearly straight; the
   // rear foot dragged off its mark, low and forward; the hips dropping back over nothing, the
   // chest tipping back, the chin tucked; the lead arm flung up and forward, the rear one thrown
-  // back and out, hands open.
+  // back and down for the floor, hands open.
   {
     hip: at(-9, 28),
     torso: -36,
@@ -37,9 +37,11 @@ export const POSES: readonly Pose[] = [
     shrug: 0,
     twist: 0.3,
     nearFoot: { x: 25, y: 14.5, angle: 45 },
-    farFoot: { x: -3, y: 4.5, angle: 18 },
-    nearFist: at(-1, 62),
-    farFist: at(-44, 47.5),
+    // Dragged on its heel, the toes up only as far as the ankle flexes.
+    farFoot: { x: -3, y: 5.2, angle: 6 },
+    nearFist: at(-5, 65.1),
+    farFist: at(-25.8, 20.2),
+    bends: { nearElbow: 'down', farElbow: 'up' },
     nearHand: 'open',
     farHand: 'open',
     face: 'hurt',
@@ -56,9 +58,9 @@ export const POSES: readonly Pose[] = [
     twist: 0.2,
     nearFoot: { x: 18, y: 30, angle: 50 },
     farFoot: { x: 14, y: 26, angle: 40 },
-    nearFist: at(-9, 58),
-    farFist: at(-47, 40),
-    bends: { nearKnee: 'up', farKnee: 'up' },
+    nearFist: at(-11.7, 59.5),
+    farFist: at(-24.3, 12.5),
+    bends: { nearElbow: 'down', farElbow: 'down', nearKnee: 'up', farKnee: 'up' },
     nearHand: 'open',
     farHand: 'open',
     face: 'hurt',
@@ -70,11 +72,11 @@ export const POSES: readonly Pose[] = [
     torso: -64,
     head: 26,
     shrug: 0,
-    nearFoot: { x: 8, y: 30, angle: 30 },
-    farFoot: { x: 13, y: 24, angle: 42 },
-    nearFist: at(-8, 30),
-    farFist: at(-50, 30),
-    bends: { nearElbow: 'down', farElbow: 'up', nearKnee: 'up', farKnee: 'up' },
+    nearFoot: { x: 8, y: 30, angle: 51 },
+    farFoot: { x: 13, y: 24, angle: 48 },
+    nearFist: at(-4.4, 28.7),
+    farFist: at(-12.2, 6.4),
+    bends: { nearElbow: 'down', farElbow: 'down', nearKnee: 'up', farKnee: 'up' },
     nearHand: 'open',
     farHand: 'open',
     face: 'hurt',
@@ -87,11 +89,11 @@ export const POSES: readonly Pose[] = [
     torso: -76,
     head: 28,
     shrug: 0,
-    nearFoot: { x: 5, y: 28, angle: 22 },
-    farFoot: { x: 12.5, y: 23, angle: 34 },
-    nearFist: at(-10, 5),
-    farFist: at(-52, 16),
-    bends: { nearElbow: 'down', farElbow: 'up', nearKnee: 'up', farKnee: 'up' },
+    nearFoot: { x: 5, y: 28, angle: 63 },
+    farFoot: { x: 12.5, y: 23, angle: 61 },
+    nearFist: at(-9.7, 4),
+    farFist: at(-7.5, 9.2),
+    bends: { nearElbow: 'down', farElbow: 'down', nearKnee: 'up', farKnee: 'up' },
     nearHand: 'open',
     farHand: 'open',
     face: 'hurt',

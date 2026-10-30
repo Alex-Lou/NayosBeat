@@ -10,10 +10,12 @@ import { onHeel, onToes, skid } from './hitHigh.ts';
  * The blow lands in the belly and folds him: frame 0, held through the hitstop, is the fold at
  * its deepest, the strongest read of the strip: the hips punched back over the rear foot, the
  * chest doubled over the blow, the chin down, the forearms clutched over the belly, the lead
- * leg braced straight. Frame 1 bridges halfway back to the guard, the chest coming up and the
- * gloves climbing, so a light hit flows on into the held frame 4. Heavy hits get two more
- * beats: winded, he sags again, smaller, a hand back on the belly while the head comes up to
- * find the opponent, jaw set (2), then the chest unfolds and the gloves climb (3). Frame 4,
+ * leg braced straight, the rear knee sunk over the ball of its foot (the heel up off the floor:
+ * flat, the ankle would fold past its stop). Frame 1 bridges halfway back to the guard, the
+ * chest coming up and the gloves climbing, so a light hit flows on into the held frame 4. Heavy
+ * hits get two more beats: winded, he sags again, smaller, a hand back on the belly while the
+ * head comes up to find the opponent, jaw set (2), then the chest unfolds and the gloves climb
+ * (3). The rear heel stays up on the ball until the held guard sets it at the guard's. Frame 4,
  * held, is the shaken guard of a body shot: hunched, the elbows pinched in over the ribs, the
  * gloves a little low, eyes squeezed shut. The fold always goes back into the hips, never
  * toward the opponent: above the belly the drawing stays behind the guard's front.
@@ -27,7 +29,7 @@ const FOLD: Pose = {
   shrug: 2.6,
   twist: -0.25,
   nearFoot: onHeel(GUARD.nearFoot, 4),
-  farFoot: onToes(GUARD.farFoot, -3),
+  farFoot: onToes(GUARD.farFoot, -12),
   nearFist: at(-2, 36),
   farFist: at(-4.5, 38.5),
   bends: { nearElbow: 'back', farElbow: 'back' },
@@ -44,7 +46,7 @@ const BRIDGE: Pose = {
   shrug: 2.6,
   twist: -0.1,
   nearFoot: GUARD.nearFoot,
-  farFoot: onToes(GUARD.farFoot, -8),
+  farFoot: onToes(GUARD.farFoot, -17),
   nearFist: at(4, 44.5),
   farFist: at(5, 51.5),
   face: 'hurt',
@@ -62,7 +64,7 @@ const WINDED: Pose = {
   shrug: 2.8,
   twist: -0.2,
   nearFoot: GUARD.nearFoot,
-  farFoot: onToes(GUARD.farFoot, -5),
+  farFoot: onToes(GUARD.farFoot, -17),
   nearFist: at(-0.5, 38.5),
   farFist: at(3, 49),
   bends: { nearElbow: 'back', farElbow: 'down' },
@@ -78,7 +80,7 @@ const UNFOLD: Pose = {
   head: -5,
   shrug: 2.5,
   nearFoot: GUARD.nearFoot,
-  farFoot: onToes(GUARD.farFoot, -10),
+  farFoot: onToes(GUARD.farFoot, -16),
   nearFist: at(6.5, 49),
   farFist: at(7.8, 57),
   face: 'hurt',

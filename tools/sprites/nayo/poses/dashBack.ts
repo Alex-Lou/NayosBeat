@@ -48,9 +48,11 @@ const PUSH: Pose = guard(
   at(-0.2, 0.6),
 );
 
-// 1 - The push-off (4 ticks, the fastest stretch: 19 px): the flick still in the lead leg, long
-// and pointed, the last part of him to leave the floor, its toe just off the canvas; the rear
-// leg already gathered up under the hips, it left first. The chin tucked behind the rolled-up
+// 1 - The push-off (4 ticks, the fastest stretch: 19 px): the flick still in the lead leg, long,
+// the ankle extended off the push (30 degrees past square to the shin: with the leg reaching
+// forward, the foot stays close to the floor's line; pointed farther, the boot stood on its tip
+// like a stiletto), the last part of him to leave the floor, its toe just off the canvas; the
+// rear leg already gathered up under the hips, it left first. The chin tucked behind the rolled-up
 // lead shoulder, the gloves a pixel behind the rise (they have weight). Upright but still
 // leaning in: he leaves, he doesn't run.
 const OFF: Pose = guard(
@@ -59,7 +61,7 @@ const OFF: Pose = guard(
     torso: 11,
     head: 6,
     shrug: 2,
-    nearFoot: lift(onToes(16, -56), 2.5),
+    nearFoot: lift(onToes(15, -23), 2.5),
     farFoot: lift(onToes(-15, -34), 5),
   },
   at(0.3, -0.8),

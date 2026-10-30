@@ -1,4 +1,5 @@
-import { BODY, solve } from '../../skeleton.ts';
+import type { Point } from '../../raster.ts';
+import { add, BODY, scale, solve, sub, type Bend } from '../../skeleton.ts';
 import { at, GUARD, planted, smear, type Effect, type Foot, type Pose } from './common.ts';
 
 /**
@@ -30,6 +31,37 @@ const ring = (x: number, y: number, radius: number, progress: number, squash?: n
   tone: 'sound',
   ...(squash === undefined ? {} : { squash }),
 });
+
+/**
+ * An arm set by its joints, as tools/sprites/anatomy.ts measures them in the torso's frame: the
+ * upper arm `shoulder` degrees from hanging (90 = straight ahead, 180 = overhead, negative =
+ * behind), the elbow flexed `elbow` degrees (0 = straight, always the way an elbow bends). The
+ * pose with that fist in place and the bend that makes the solver pick that elbow.
+ */
+function withArm(pose: Pose, which: 'near' | 'far', shoulder: number, elbow: number): Pose {
+  const s = solve(pose);
+  const root = s[which].shoulder;
+  const turn = (v: Point, degrees: number): Point => {
+    const a = (degrees * Math.PI) / 180;
+    return { x: v.x * Math.cos(a) - v.y * Math.sin(a), y: v.x * Math.sin(a) + v.y * Math.cos(a) };
+  };
+  const upper = turn({ x: -s.up.x, y: -s.up.y }, shoulder);
+  const joint = add(root, scale(upper, BODY.upperArm));
+  const fist = add(joint, scale(turn(upper, elbow), BODY.forearm));
+  // The other elbow the solver could pick: the mirror image across the shoulder-fist line.
+  const line = sub(fist, root);
+  const axis = scale(line, 1 / (Math.hypot(line.x, line.y) || 1));
+  const offset = sub(joint, root);
+  const along = offset.x * axis.x + offset.y * axis.y;
+  const mirror = add(root, sub(scale(axis, 2 * along), offset));
+  const dx = joint.x - mirror.x;
+  const dy = joint.y - mirror.y;
+  const bend: Bend =
+    Math.abs(dy) >= Math.abs(dx) ? (dy < 0 ? 'down' : 'up') : dx > 0 ? 'front' : 'back';
+  return which === 'near'
+    ? { ...pose, nearFist: at(fist.x, fist.y), bends: { ...pose.bends, nearElbow: bend } }
+    : { ...pose, farFist: at(fist.x, fist.y), bends: { ...pose.bends, farElbow: bend } };
+}
 
 /** Where the guard's rear toe touches the floor (heel up). */
 const REAR_TOE = solve(GUARD).far.toe.x;
@@ -83,7 +115,7 @@ const DIP: Pose = {
   shrug: 0.2,
   twist: 0.5,
   nearFoot: planted(6.35),
-  farFoot: onToes(REAR_TOE, -22),
+  farFoot: onToes(REAR_TOE, -40),
   nearFist: at(-3, 30),
   farFist: at(16, 49),
   bends: { nearElbow: 'back', farElbow: 'down' },
@@ -91,8 +123,9 @@ const DIP: Pose = {
 
 // 1 - The launch (3 ticks, active): uncoiled in one line from the back toe (still pivoting on
 // the floor) to the fist above the head; the lead knee starts driving up, the chin tucked behind
-// the rising lead shoulder, the rear arm flung down and back behind the hip.
-const LAUNCH: Pose = {
+// the rising lead shoulder, the rear arm flung down and back behind the hip, long, the elbow
+// pointing back (never the forearm folded back the wrong way out of the hip).
+const LAUNCH_BODY: Pose = {
   hip: at(-4.6, 44),
   torso: 13,
   head: 3,
@@ -106,10 +139,11 @@ const LAUNCH: Pose = {
   bends: { nearElbow: 'front', farElbow: 'down' },
   face: 'effort',
 };
+const LAUNCH = withArm(LAUNCH_BODY, 'far', -30, 25);
 
 // 2 - The peak (5 ticks, active): off the floor, lead knee high, toes pointed, the body arched
 // a touch back under the fist, chin up on what he hit. The shout.
-const PEAK: Pose = {
+const PEAK_BODY: Pose = {
   hip: at(-1.6, 47.5),
   torso: -4,
   head: -20,
@@ -123,10 +157,11 @@ const PEAK: Pose = {
   bends: { nearElbow: 'front', farElbow: 'down' },
   face: 'kiai',
 };
+const PEAK = withArm(PEAK_BODY, 'far', -34, 28);
 
 // 3 - The apex (4 ticks): still carried up a hair past the hit, the arm relaxing at the top,
 // the knee starting to drop, the eyes back on the opponent.
-const HANG: Pose = {
+const HANG_BODY: Pose = {
   hip: at(-1.5, 49),
   torso: -2,
   head: -8,
@@ -139,6 +174,7 @@ const HANG: Pose = {
   farFist: at(-11, 51.5),
   bends: { nearElbow: 'front', farElbow: 'down' },
 };
+const HANG = withArm(HANG_BODY, 'far', -26, 34);
 
 // 4 - The hang breaks (4 ticks): he starts to drop, the fist folds down in front of the face,
 // the lead knee drops, the rear arm swings forward under the chest (on its way up to the
@@ -173,7 +209,8 @@ const FALL: Pose = {
 };
 
 // 6 - The heavy landing: both feet back on their guard marks, the knees soaking up the whole
-// drop, the lean pitching past the guard's, the gloves coming back up.
+// drop (the rear one on its ball, the heel up under the sunk knee), the lean pitching past the
+// guard's, the gloves coming back up.
 const LAND: Pose = {
   ...GUARD,
   hip: at(-6.4, 29.5),
@@ -182,7 +219,7 @@ const LAND: Pose = {
   shrug: 1.8,
   twist: 0,
   nearFoot: planted(6.35),
-  farFoot: onToes(REAR_TOE, -22),
+  farFoot: onToes(REAR_TOE, -42),
   nearFist: at(13, 48.5),
   farFist: at(11.5, 54.5),
 };

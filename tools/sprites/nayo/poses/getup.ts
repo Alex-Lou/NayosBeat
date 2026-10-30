@@ -1,4 +1,5 @@
 import { at, GUARD, planted, smear, type Effect, type Pose } from './common.ts';
+import { onToes } from './hitHigh.ts';
 
 /**
  * getup (docs/combat-v2.md §3.8, §11.1): 5 frames, 2 ticks each (10), the last 10 ticks of the
@@ -27,10 +28,12 @@ const CHAMBER: Pose = {
   torso: -105,
   head: 5,
   shrug: 0,
-  nearFoot: { x: -26, y: 44, angle: 90 },
-  farFoot: { x: -30, y: 42, angle: 85 },
+  // The toes pointed past the shins, as far as an ankle extends (not folded flat along them).
+  nearFoot: { x: -26, y: 44, angle: 128 },
+  farFoot: { x: -30, y: 42, angle: 143 },
+  // The far palm just clear of the back of the head (it shows past the skull, not through it).
   nearFist: at(-56.5, 4),
-  farFist: at(-52, 3.5),
+  farFist: at(-53.5, 3.8),
   bends: { nearElbow: 'up', farElbow: 'up', nearKnee: 'back', farKnee: 'back' },
   nearHand: 'open',
   farHand: 'open',
@@ -63,11 +66,13 @@ export const POSES: readonly Pose[] = [
     head: 25,
     shrug: 0,
     nearFoot: { x: 0, y: 9, angle: -10 },
-    farFoot: { x: -12, y: 11, angle: -25 },
-    // The arms straighten back down toward the floor they just shoved off.
-    nearFist: at(-34, 21),
-    farFist: at(-37, 21),
-    bends: { nearElbow: 'down', farElbow: 'down', nearKnee: 'front', farKnee: 'front' },
+    // The rear toes reaching down for the floor (the ankle no longer cocked up past its stop).
+    farFoot: { x: -12, y: 11, angle: -55 },
+    // The arms straighten back down toward the floor they just shoved off, the elbows nearly
+    // locked the right way, the shoulders swung back as far as they go.
+    nearFist: at(-27, 18.3),
+    farFist: at(-28.8, 16.7),
+    bends: { nearElbow: 'up', farElbow: 'up', nearKnee: 'front', farKnee: 'front' },
     nearHand: 'open',
     farHand: 'open',
     face: 'focus',
@@ -84,8 +89,9 @@ export const POSES: readonly Pose[] = [
     head: -6,
     shrug: 1.5,
     nearFoot: GUARD.nearFoot,
-    farFoot: planted(GUARD.farFoot.x, -22),
-    nearFist: at(9, 45),
+    // The rear knee low, the foot up on its ball (where the guard's will turn on it).
+    farFoot: onToes(planted(GUARD.farFoot.x, -22), -60),
+    nearFist: at(9.6, 44),
     farFist: at(10.5, 52),
     bends: { nearElbow: 'down', farElbow: 'down' },
     face: 'focus',

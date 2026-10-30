@@ -11,11 +11,15 @@ import { at, GUARD, planted, type Effect, type Foot, type Pose } from './common.
  * guard knocked up and open, hands open, the lead toes popping up as the weight slams onto the
  * rear heel. Frame 1 rebounds: the chest swings back past the hips while the head still lags
  * behind it, the rear arm trailing long behind him, the lead one hanging limp in front, the
- * knees soak it up and the feet skid under the pushback. Heavy hits get two more beats: the
- * head overshoots, the chin dropping (past 20 degrees: the head is turned) as the body sags on
- * loose arms (2), then he gathers himself, the gloves climbing (3). Frame 4, held, is the shaken high
- * guard: hunched behind gloves held higher than usual, eyes squeezed shut, the jaw clenched, one
- * small step from the guard. Every beat moves away from the opponent, never into him.
+ * knees soak it up and the feet skid under the pushback, the rear heel springing back up as
+ * its knee sinks over it (a flat foot under that knee would fold the ankle past its stop,
+ * tools/sprites/anatomy.ts: the foot rolls on its ball, the toes keep their mark). Heavy hits
+ * get two more beats: the head overshoots, the chin dropping (past 20 degrees: the head is
+ * turned) as the body sags on loose arms, the rear heel highest under the sunk knee (2), then he
+ * gathers himself, the gloves climbing, the heel settling (3). Frame 4, held, is the shaken
+ * high guard: hunched behind gloves held higher than usual, eyes squeezed shut, the jaw
+ * clenched, one small step from the guard. Every beat moves away from the opponent, never into
+ * him.
  */
 
 /** Dust kicked up by a foot sliding back under the blow. */
@@ -54,9 +58,11 @@ const SNAP: Pose = {
   twist: 0.4,
   nearFoot: onHeel(GUARD.nearFoot, 13),
   farFoot: onToes(GUARD.farFoot, -3),
-  nearFist: at(6, 51.5),
-  farFist: at(-28, 62),
-  bends: { nearElbow: 'down', farElbow: 'down' },
+  // The near forearm knocked up in front of the chest; the rear arm flung back and down past
+  // the hip, as far as a shoulder swings behind (55 degrees), the elbow soft.
+  nearFist: at(9.5, 53.7),
+  farFist: at(-22.5, 36.5),
+  bends: { nearElbow: 'down', farElbow: 'up' },
   nearHand: 'open',
   farHand: 'open',
   face: 'hurt',
@@ -75,10 +81,10 @@ const REBOUND: Pose = {
   shrug: 0.4,
   twist: 0.25,
   nearFoot: onHeel(GUARD.nearFoot, 4),
-  farFoot: onToes(GUARD.farFoot, -7),
-  nearFist: at(5.5, 46),
-  farFist: at(-20, 40),
-  bends: { nearElbow: 'down', farElbow: 'back' },
+  farFoot: onToes(GUARD.farFoot, -19),
+  nearFist: at(7.5, 36),
+  farFist: at(-22.4, 39),
+  bends: { nearElbow: 'down', farElbow: 'up' },
   nearHand: 'open',
   farHand: 'open',
   face: 'hurt',
@@ -93,9 +99,9 @@ const SAG: Pose = {
   shrug: 1.6,
   twist: 0.1,
   nearFoot: GUARD.nearFoot,
-  farFoot: onToes(GUARD.farFoot, -9),
-  nearFist: at(4, 42.5),
-  farFist: at(-6.5, 43),
+  farFoot: onToes(GUARD.farFoot, -24),
+  nearFist: at(7.5, 32.9),
+  farFist: at(3, 32.3),
   nearHand: 'open',
   farHand: 'open',
   face: 'hurt',
@@ -109,7 +115,7 @@ const GATHER: Pose = {
   head: 3,
   shrug: 2.4,
   nearFoot: GUARD.nearFoot,
-  farFoot: onToes(GUARD.farFoot, -12),
+  farFoot: onToes(GUARD.farFoot, -19),
   nearFist: at(7, 51),
   farFist: at(7.8, 58.8),
   face: 'hurt',

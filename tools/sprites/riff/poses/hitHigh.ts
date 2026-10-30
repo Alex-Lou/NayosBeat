@@ -9,6 +9,7 @@ import {
   type Foot,
   type Pose,
 } from './common.ts';
+import { figure } from './knockdown.ts';
 
 export const ANIMATED: boolean = true;
 
@@ -24,20 +25,24 @@ export const ANIMATED: boolean = true;
  * - 0, held through the hitstop: the back-bend. The head flung back (37 degrees on screen: the
  *   head turns) and the shoulders after it, the hips thrust forward and down under them, the
  *   lead knee buckling forward: one bow from the lead knee to the crown, the lead toes popping
- *   up. The loaded rear fist is whipped off her ear, up and back, the arm near straight, the
- *   hand open; the lead hand left out in front, open. The strongest read of the strip.
+ *   up. The rear fist is ripped from under her chin and flung back and down behind her, the
+ *   elbow soft, the hand open: the upper arm 55 degrees behind the chest, about as far as a
+ *   shoulder opens backward (thrown up behind the head, it read as an arm growing out of her
+ *   back). The lead hand left out in front, open. The strongest read of the strip.
  * - 1: the rebound: the hips swing back past the feet's middle and the chest comes back in over
- *   them while the head still lags back (22 degrees, turned); the rear arm falls and drags low
- *   behind her hip, the lead one hangs in front; the feet scrape back under the pushback. She
+ *   them while the head still lags back (22 degrees, turned); the rear arm falls and hangs
+ *   behind her hip, the elbow soft, the lead one hangs in front; the feet scrape back under the
+ *   pushback. She
  *   glares through it (`effort`: the eye open, the jaw set). A light hit flows from here into
  *   the held frame 4.
  * - 2 (heavy): the sag: the head overshoots, the chin on the chest (turned the other way), the
- *   hips drop low into the plié, the knees opening wide, the arms loose: the whole body rocked.
+ *   hips drop low into the plié, the knees opening wide, the arms hanging loose from the
+ *   shoulders, the elbows soft: the whole body rocked.
  * - 3 (heavy): the punk beat, halfway up to frame 4: the back of the rear glove wipes her chin
  *   (under the lips, the face stays readable), the jaw set: that all you got?
  * - 4, held: still rocked back, not her guard yet: the chest up (10 degrees of lean against the
  *   guard's 19), the chin up with it, the hips back over her rear leg, the lead toes still up;
- *   the rear fist down from the ear to under the chin, the lead fist low and loose, the rear
+ *   the rear fist back under the chin (the elbow down), the lead fist low and loose, the rear
  *   shoulder shrugged into the collar. One step out of the guard, so the hand-off at the end of
  *   the stun reads as her taking her stance back.
  *
@@ -69,8 +74,8 @@ export const BENDS = GUARD.bends ?? {};
 export const LEAD_TOE = toeOf(GUARD.farFoot);
 export const REAR_TOE = toeOf(GUARD.nearFoot);
 
-/** 0, through the hitstop: the back-bend, the hips thrust forward, the rear arm whipped up. */
-const SNAP: Pose = {
+/** 0, through the hitstop: the back-bend, the hips thrust forward, the rear arm flung back. */
+const SNAP: Pose = figure({
   hip: at(-3, 31.5),
   torso: -19,
   head: -18,
@@ -78,16 +83,16 @@ const SNAP: Pose = {
   twist: 0.75,
   nearFoot: onToes(GUARD.nearFoot, -1),
   farFoot: onHeel(GUARD.farFoot, 14),
-  nearFist: at(-27, 64),
+  nearArm: { upper: -126, lower: -110 },
   farFist: at(6.5, 48.5),
   bends: BENDS,
   nearHand: 'open',
   farHand: 'open',
   face: 'hurt',
-};
+});
 
-/** 1: the hips swing back, the chest comes in, the head still back, the rear arm dragging. */
-const REBOUND: Pose = {
+/** 1: the hips swing back, the chest comes in, the head still back, the rear arm hanging. */
+const REBOUND: Pose = figure({
   hip: at(-9, 30.1),
   torso: 8,
   head: -30,
@@ -95,17 +100,17 @@ const REBOUND: Pose = {
   twist: 0.55,
   nearFoot: onToes(GUARD.nearFoot, REAR_HEEL + 5),
   farFoot: onHeel(GUARD.farFoot, 4),
-  nearFist: at(-24, 35),
+  nearArm: { upper: -116, lower: -100 },
   farFist: at(4, 35),
   bends: BENDS,
   nearHand: 'open',
   farHand: 'open',
   face: 'effort',
   effects: [skid(LEAD_TOE, 2.6, 0.45), skid(REAR_TOE, 1.8, 0.4)],
-};
+});
 
 /** 2, heavy hits: the sag, the chin on the chest, the hips low in the plié, the arms loose. */
-const SAG: Pose = {
+const SAG: Pose = figure({
   hip: at(-9.2, 30),
   torso: 22,
   head: 4,
@@ -113,14 +118,14 @@ const SAG: Pose = {
   twist: 0.3,
   nearFoot: onToes(GUARD.nearFoot, REAR_HEEL - 2),
   farFoot: GUARD.farFoot,
-  nearFist: at(-15, 31),
+  nearArm: { upper: -114, lower: -98 },
   farFist: at(4, 30),
   bends: { ...BENDS, farElbow: 'back' },
   nearHand: 'open',
   farHand: 'open',
   face: 'hurt',
   effects: [skid(LEAD_TOE + 0.5, 2.4, 0.8), skid(REAR_TOE - 0.5, 1.7, 0.75)],
-};
+});
 
 /** 4, held to the end of the stun: rocked back, the chin up, the rear fist under the chin. */
 const SHAKEN: Pose = {

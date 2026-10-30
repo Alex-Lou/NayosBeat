@@ -8,11 +8,18 @@ import { POSES as CROUCH_STRIP } from './crouch.ts';
  * sweeps along the ground in a wide arc, the foot hooked, the trail skimming the floor and the
  * dust following the foot. Then he pushes off the hand and folds back into the crouch. The lead
  * glove keeps a boxer's guard in front of the chin throughout, the eyes stay on the opponent.
+ *
+ * The rear foot stays on its toes the whole way, upright off the ball of the foot, the sole facing
+ * back: the rear shin lies along the floor (in the split, under the thigh in the crouch), so a
+ * foot laid forward would fold the toes in toward the knee, an ankle bent up 50 to 70 degrees.
+ * The sweeping foot is turned up, the sole leading, never pointed in line with the leg.
  */
 
 /** The crouch at rest (first frame of its loop): where the move starts and lands. */
 const REST: Pose = CROUCH_STRIP[3] ?? CROUCH;
 const REST_HEAD = solve(REST).head;
+/** How high the crouch holds the rear heel (degrees, negative: up). */
+const REST_HEEL = REST.farFoot.angle ?? 0;
 
 /** The crouch's high guard, both gloves carried with the head, nudged (world px). */
 function guarded(pose: Pose, lead = at(0, 0), rear = at(0, 0)): Pose {
@@ -54,8 +61,11 @@ const dust = (x: number, size: number, progress: number): Effect => ({
 
 /** The open rear hand flat on the floor, under the far shoulder. */
 const PALM = at(16, 4);
-/** The rear foot on its toes at the far end of the split. */
-const SPLIT = planted(-34, -40);
+/**
+ * The rear foot on its toes at the far end of the split, upright, the sole facing back; the leg
+ * long but not locked (the hips never pull it past its length).
+ */
+const SPLIT = planted(-31.8, -88);
 
 /**
  * Rocks back onto the rear toes, coiling against the dive to come: the hips sink back over the
@@ -70,7 +80,7 @@ const LOAD: Pose = guarded(
     head: 1,
     shrug: 3,
     twist: -0.8,
-    farFoot: onToes(REST.farFoot, -38),
+    farFoot: onToes(REST.farFoot, REST_HEEL - 4),
   },
   // The lead glove tucked up under the chin, carried forward as the chest straightens so the
   // elbow stays under its shoulder (the sleeve's square upright, no chicken wing).
@@ -79,8 +89,9 @@ const LOAD: Pose = guarded(
 );
 
 /**
- * Dives: the rear leg slides back skimming the floor, the rear hand reaching for it; the lead
- * foot pivots on its toes, the last support before the sweep.
+ * Dives: the rear leg slides back skimming the floor (its trail and the dust where it left show
+ * the slide), the rear hand reaching down past the lead knee for the floor, the elbow soft; the
+ * lead foot pivots on its toes, the last support before the sweep.
  */
 const DIVE: Pose = leadGuard({
   ...REST,
@@ -90,15 +101,18 @@ const DIVE: Pose = leadGuard({
   shrug: 3,
   twist: -0.7,
   nearFoot: onToes(REST.nearFoot, -24),
-  farFoot: planted(-32, -40),
-  farFist: at(14.5, 10),
+  farFoot: planted(-32, -94),
+  farFist: at(17, 12),
   farHand: 'open',
   bends: { farKnee: 'down' },
+  effects: [smear(3, [-13, 9.5], [-21, 9.5], [-29, 9.5]), dust(-12, 2.2, 0.05)],
 });
 
 /**
  * Hand and rear toes hit the floor; the hips lead, the lead leg whips out low, most of the way
- * (the last of it snaps out on the hit).
+ * (the last of it snaps out on the hit): already opening out past the knee, so the thigh swings
+ * clear of the belly the chest is folded over (tools/sprites/anatomy.ts: tucked in tighter, the
+ * hip folds past its stop).
  */
 const SWING: Pose = leadGuard({
   ...REST,
@@ -107,36 +121,42 @@ const SWING: Pose = leadGuard({
   head: -38,
   shrug: 3,
   twist: -0.2,
-  nearFoot: { x: 28, y: 7, angle: 10 },
+  nearFoot: { x: 31.5, y: 6.5, angle: 11 },
   farFoot: SPLIT,
   farFist: PALM,
   farHand: 'open',
   bends: { nearKnee: 'up', farKnee: 'down', farElbow: 'back' },
   effects: [
-    smear(5, [7, 6], [14, 4.5], [21, 4.8], [27, 6.5]),
+    smear(5, [8, 6], [16, 4.5], [24, 4.8], [30.5, 6.3]),
     dust(PALM.x, 3, 0.15),
     dust(-35, 3, 0.1),
   ],
 });
 
-/** Contact: the leg long along the floor, the foot hooked, the trail sweeping in low. */
+/**
+ * Contact: the leg long along the floor, the foot turned up (the heel skims the floor, the sole
+ * leads), the trail sweeping in low.
+ */
 const SWEEP: Pose = leadGuard({
   ...REST,
-  hip: at(4, 12.6),
+  hip: at(5.5, 12.6),
   torso: 51,
   head: -36,
   shrug: 3.2,
   twist: 0.35,
-  nearFoot: { x: 42.5, y: 6, angle: 22 },
+  nearFoot: { x: 43.1, y: 6, angle: 47 },
   farFoot: SPLIT,
   farFist: PALM,
   farHand: 'open',
   bends: { nearKnee: 'up', farKnee: 'down', farElbow: 'back' },
   face: 'effort',
   effects: [
-    smear(5, [4, 7.4], [13, 4.6], [24, 3.9], [34, 4.4], [43, 6.6]),
-    { kind: 'flash', center: at(47.8, 5.5), radius: 4.5, tone: 'strike' },
-    dust(43, 4, 0.15),
+    // Short, thin and riding just over the floor, led by the sole (just ahead of the ankle): a
+    // long trail flares so wide that drawSmear lifts the whole band off the floor, up to the
+    // chest, where it reads as the lead glove's trail.
+    smear(4, [22, 6.5], [33, 5.6], [45, 5]),
+    { kind: 'flash', center: at(49.3, 5.5), radius: 4.5, tone: 'strike' },
+    dust(44.5, 4, 0.15),
     dust(PALM.x, 3, 0.4),
     dust(-35, 3, 0.4),
   ],
@@ -149,12 +169,12 @@ const SWEEP: Pose = leadGuard({
 const HOLD: Pose = leadGuard(
   {
     ...SWEEP,
-    hip: at(4.2, 12.4),
+    hip: at(5.7, 12.4),
     torso: 52,
     head: -37,
     twist: 0.45,
-    nearFoot: { x: 42.2, y: 5.9, angle: 18 },
-    effects: [dust(44, 5, 0.45), dust(PALM.x, 3, 0.65), dust(-35, 3, 0.7)],
+    nearFoot: { x: 43.1, y: 5.9, angle: 49 },
+    effects: [dust(45.5, 5, 0.45), dust(PALM.x, 3, 0.65), dust(-35, 3, 0.7)],
   },
   8.8,
 );
@@ -170,7 +190,7 @@ const PULL: Pose = leadGuard({
   head: -34,
   twist: 0.2,
   nearFoot: { x: 23.5, y: 6.5, angle: 4 },
-  farFoot: planted(-30.5, -40),
+  farFoot: planted(-30.5, -92),
   farFist: at(19.5, 16),
   face: 'focus',
   effects: [dust(44, 5, 0.75), dust(PALM.x, 3, 0.9)],
@@ -188,9 +208,10 @@ const RISE: Pose = guarded(
     head: -16,
     shrug: 2.6,
     twist: 0.1,
-    farFoot: { x: -12, y: 8.5, angle: -28 },
+    farFoot: planted(-12.5, -98),
     bends: { ...REST.bends, farKnee: 'down' },
-    effects: [dust(44, 5, 0.95)],
+    // The rear foot has slid in from the split: a puff where it left.
+    effects: [dust(44, 5, 0.95), dust(-30, 2.2, 0.35)],
   },
   at(1, -1.2),
   at(-1.5, -6),
@@ -200,11 +221,11 @@ const RISE: Pose = guarded(
 const SETTLE: Pose = guarded(
   {
     ...REST,
-    hip: at(REST.hip.x - 0.2, REST.hip.y - 0.8),
+    hip: at(REST.hip.x - 0.2, REST.hip.y - 0.6),
     torso: REST.torso + 1,
     head: REST.head,
     shrug: 2.2,
-    farFoot: onToes(REST.farFoot, -33),
+    farFoot: onToes(REST.farFoot, REST_HEEL - 4),
   },
   at(0.3, 0.5),
   at(0.2, 0.4),

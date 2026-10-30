@@ -14,6 +14,7 @@ import {
 } from './common.ts';
 import { dust, IDLE_SETTLE, stageOf } from './dashForward.ts';
 import { guarded } from './jump.ts';
+import { pointed } from './jumpLight.ts';
 
 export const ANIMATED: boolean = true;
 
@@ -25,9 +26,8 @@ export const ANIMATED: boolean = true;
  *
  * A back tuck, the guard kept: she does not jump away, she shows off. A short dip, then the set:
  * the lead foot flicks her off the floor, the body long and straight from the pointed toes to the
- * crown, tipped back only 20 degrees, the chest up, the cocked rear arm flung up and back over
- * her head to lead the turn, the lead fist at the chin, the eyes on the opponent (the head the
- * drawing). Nothing hangs limp: it is a take-off, never a knock-back (airHit). Then she balls up
+ * crown, tipped back only 20 degrees, the chest up, both arms thrown up over her head to lead
+ * the turn, the eyes on the opponent (the head the drawing). Nothing hangs limp: it is a take-off, never a knock-back (airHit). Then she balls up
  * and goes over the top, the boots sweeping a magenta arc that carries the half turn; she comes
  * round with the knees still tucked, the shoulders already pitched forward, opens out onto the
  * guard's marks and soaks the landing into her plié, dust out from both boots, and rises into
@@ -35,10 +35,10 @@ export const ANIMATED: boolean = true;
  *
  * - 0 (1 tick): the dip: the hips sink and the heels lift, the fists sink with the weight.
  * - 1 (4 ticks): the set: tipped back 20 degrees, the legs long under her, the lead toe just off
- *   the floor, the rear arm flung back over the head; the push-off puff left where she stood.
+ *   the floor, both arms thrown up over the head; the push-off puff left where she stood.
  * - 2 (4 ticks): over the top, upside down, balled up; the boots' arc.
  * - 3 (3 ticks): coming round: upright again, the chest forward, the knees tucked, the boots
- *   reaching for the floor.
+ *   reaching for the floor, the guard back on.
  * - 4 (3 ticks): the landing, on the guard's marks: low in the plié, dust at both boots.
  * - 5 (5 ticks): the idle's last frame, the dust thinning.
  *
@@ -108,6 +108,52 @@ function spun(pose: Pose, spin: number): Pose {
   };
 }
 
+/**
+ * `pose` with one arm raised from its shoulder `shoulder` degrees off hanging (90: level in front,
+ * 180: along the torso over the head) and the elbow bent `elbow` degrees, as it shows on screen:
+ * the fist is turned back into the body's own frame for a spun pose.
+ */
+function raised(pose: Pose, side: 'near' | 'far', shoulder: number, elbow: number): Pose {
+  const s = solve(pose, RIFF_BODY);
+  const a = rad(shoulder);
+  const upper = at(
+    -s.up.x * Math.cos(a) + s.front.x * Math.sin(a),
+    -s.up.y * Math.cos(a) + s.front.y * Math.sin(a),
+  );
+  const e = rad(elbow);
+  const fore = at(
+    upper.x * Math.cos(e) - upper.y * Math.sin(e),
+    upper.x * Math.sin(e) + upper.y * Math.cos(e),
+  );
+  const { shoulder: root } = s[side];
+  const fist = at(
+    root.x + upper.x * RIFF_BODY.upperArm + fore.x * RIFF_BODY.forearm,
+    root.y + upper.y * RIFF_BODY.upperArm + fore.y * RIFF_BODY.forearm,
+  );
+  const local = turn(fist, -(pose.spin ?? 0), pose.hip);
+  return side === 'near' ? { ...pose, nearFist: local } : { ...pose, farFist: local };
+}
+
+/**
+ * A leg folded from its hip joint (hips at the origin leaning `torso` degrees): the thigh along
+ * `thigh` degrees, the knee bent `knee` degrees, the shin folding back under the thigh the way a
+ * knee bends, the foot `ankle` degrees off the shin (90 square; a combat boot points to about 60).
+ */
+function tucked(torso: number, side: 'near' | 'far', thigh: number, knee: number, ankle: number) {
+  const across = (side === 'near' ? 1 : -1) * RIFF_BODY.hipSpread;
+  const joint = at(Math.cos(rad(torso)) * across, -Math.sin(rad(torso)) * across);
+  const kneeAt = at(
+    joint.x + Math.cos(rad(thigh)) * RIFF_BODY.thigh,
+    joint.y + Math.sin(rad(thigh)) * RIFF_BODY.thigh,
+  );
+  const shin = thigh - knee;
+  return {
+    x: kneeAt.x + Math.cos(rad(shin)) * RIFF_BODY.shin,
+    y: kneeAt.y + Math.sin(rad(shin)) * RIFF_BODY.shin,
+    angle: shin + ankle,
+  };
+}
+
 // 0 · The dip (1 tick).
 const DIP: Pose = guarded(
   {
@@ -128,9 +174,11 @@ const SET = -20;
 
 // 1 · The takeoff (4 ticks), the set of the back tuck, placed as it shows on screen: tipped back
 // only 20 degrees, one long line from the pointed lead toe (just leaving the floor) through the
-// hips to the crown, the chest up; the cocked rear arm flung up and back over the head, leading
-// the turn; the lead fist at the chin, the look still on the opponent.
-const LAUNCH: Pose = spun(
+// hips to the crown, the chest up; both arms thrown up over the head to lead the turn, the rear
+// one in front of the face (raised forward, the way a shoulder lifts an arm overhead: flung back
+// behind the head, it would come out of the back of the shoulder), the look still on the
+// opponent.
+const SET_BODY: Pose = spun(
   {
     ...GUARD,
     hip: at(-6.5, 40),
@@ -146,22 +194,33 @@ const LAUNCH: Pose = spun(
   },
   SET,
 );
+const LAUNCH: Pose = pointed(raised(raised(SET_BODY, 'near', 125, 30), 'far', 145, 34));
 
-/** The ball, upright with the hip at the origin: the knees at the chest, the arms round them. */
+/** The ball's lean, upright with the hip at the origin. */
+const BALLED = 14;
+
+/**
+ * The ball, upright with the hip at the origin: the knees up at the chest, each folded 150
+ * degrees (the heel under the seat, never the shin through the thigh), the toes softly pointed;
+ * the hands round the shins below the knees, the elbows at the sides.
+ */
 const TUCK: Pose = {
   ...GUARD,
   hip: at(0, 0),
-  torso: 14,
+  torso: BALLED,
   head: 6,
   shrug: 2.6,
   twist: 0.3,
-  nearFoot: { x: 0.8, y: -1.2, angle: -110 },
-  farFoot: { x: 5.4, y: -3.2, angle: -110 },
-  nearFist: at(9, 3),
-  farFist: at(13, 1),
-  bends: { nearKnee: 'up', farKnee: 'up', nearElbow: 'down', farElbow: 'down' },
+  nearFoot: tucked(BALLED, 'near', 40, 150, 62),
+  farFoot: tucked(BALLED, 'far', 34, 150, 62),
+  nearFist: at(11, 6),
+  farFist: at(14, 3),
+  bends: { nearKnee: 'front', farKnee: 'front', nearElbow: 'down', farElbow: 'down' },
 };
-/** The middle of the ball, from the hip (upright). */
+/**
+ * The point of the ball (from the hip, upright) that goes over the top at APEX: low in the ball,
+ * so that upside down the head comes within her hurtbox of these ticks (src/data/fighters/riff.ts).
+ */
 const BALL = at(6, 7);
 /** Where the middle of the ball goes over the top. */
 const APEX = at(-7, 47);
@@ -174,23 +233,23 @@ const OVER: Pose = (() => {
 })();
 
 // 3 · Coming round (3 ticks): the body upright again (40 degrees past a full turn, the chest
-// forward), the knees still tucked, the boots reaching down for the floor, the fists out in
-// front for the landing.
-const ROUND: Pose = spun(
+// forward), the knees still tucked, the boots reaching down for the floor; the guard back on for
+// the landing (the rear fist under the chin, the lead one low in front, both turned with the
+// chest).
+const ROUND: Pose = guarded(
   {
     ...GUARD,
     hip: at(-5, 37),
-    torso: -12,
+    torso: 28,
     head: -10,
     shrug: 2.4,
     twist: 0.4,
     nearFoot: { x: -18, y: 14, angle: -40 },
     farFoot: { x: -6, y: 12, angle: -30 },
-    nearFist: at(-2, 56),
-    farFist: at(10, 52),
     bends: { nearKnee: 'front', farKnee: 'front', nearElbow: 'down', farElbow: 'down' },
   },
-  40,
+  at(0.6, 0.4),
+  at(1.6, 1.2),
 );
 
 // 4 · The landing (3 ticks), on the guard's marks (the game carries her about a pixel more).

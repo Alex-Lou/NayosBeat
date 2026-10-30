@@ -12,7 +12,7 @@ export const ANIMATED: boolean = true;
  * lands: it must read « she covers » at 1x. The first is the impact: the cover rocked back by the
  * blow, held through the hitstop; the second springs back a hair past the cover.
  *
- * Her guard, shut: the loaded rear fist drops out of its cock and the forearm comes up as a bar,
+ * Her guard, shut: the rear fist rises from under the chin and the forearm comes up as a bar,
  * the lead forearm rises across the ribs with the glove up under the chin, the rear shoulder
  * shrugs into the popped collar and the chin sinks behind it, the body hunched in over the
  * knees. On contact the whole shell is driven back into her: the chest snaps back, the hips give
@@ -24,9 +24,13 @@ export const ANIMATED: boolean = true;
  * proximity guard (the hold, the last frame), not on her open guard, which the strip leaves at
  * once (tests/tools/riff-sprites.test.ts does not ask its first frame to start from the guard).
  *
- * Crouching, the same shell: the rear forearm up before the face, the lead forearm across the
- * top of the lead knee and the chest, the chest folded deeper over the knees, the shoulders up. Its impact rocks the chest back 8 degrees, the hips a
- * couple of pixels back and down, the rear heel down.
+ * Crouching, the same shell on the crouch's legs (the rear knee forward and low, floating over
+ * the floor, the rear boot on its ball): the rear forearm up before the face, the lead forearm
+ * across the chest over the lead knee, the chest folded deeper over the knees, the shoulders up.
+ * Its impact rocks the chest back 8 degrees and drives the hips back over the rear foot, the
+ * rear knee lifting with them and the heel easing down; never lower, or the knee would touch
+ * the floor. The rear glove keeps clear of the face's middle (it covers the cheek and the jaw,
+ * in front of the head, never through it), its elbow open enough not to crush the biceps.
  *
  * The face is the source drawing (the head under 20 degrees on screen), its look a hair more
  * chin-down than the guard's; effort on the impact and the rebound. Everything stays inside her
@@ -139,55 +143,63 @@ const SHELL_RECOIL: Pose = aroundHead(
 
 // Crouching: the crouching shell -------------------------------------------------------------
 
+/** The crouch's rear heel: high on its ball, its knee floating forward over the floor. */
 const LOW_HEEL = CROUCH.nearFoot.angle ?? 0;
 
-/** Held: folded deeper over the knees, the rear forearm before the face, the lead one on a knee. */
+/**
+ * Held: folded deeper over the lead knee, the rear forearm upright before the face (the glove at
+ * the cheek, the elbow down before the ribs), the lead forearm across the chest over the knee.
+ */
 const LOW_SHELL: Pose = aroundHead(
   stance(CROUCH, {
-    hip: at(-10.4, 12.9),
-    torso: 30.5,
+    hip: at(-14.2, 17.2),
+    torso: 38.5,
     look: 14,
     shrug: 5.6,
     twist: 0.22,
-    heel: LOW_HEEL,
+    heel: LOW_HEEL - 1,
     lead: -1.5,
   }),
-  at(-1.7, -3.8),
-  at(3.8, -12),
+  at(1, -5),
+  at(4.2, -12.4),
 );
 
-/** Contact: the chest rocked back 8 degrees, the hips back and down, the rear heel down. */
+/**
+ * Contact: the chest rocked back 8 degrees and the hips driven back over the rear foot, the
+ * rear knee coming up off the floor with them, the heel easing down; the lead toes peel up.
+ */
 const LOW_IMPACT: Pose = aroundHead(
   stance(CROUCH, {
-    hip: at(-12.4, 12.1),
-    torso: 22.5,
+    hip: at(-15, 17.4),
+    torso: 31,
     look: 12,
     shrug: 6,
     twist: 0.3,
-    heel: LOW_HEEL + 12,
+    heel: LOW_HEEL + 4,
     tap: 7,
     lead: -1.5,
     face: 'effort',
   }),
-  at(-2.4, -4),
-  at(3.2, -12.4),
+  at(0.4, -5.2),
+  at(3.6, -12.8),
 );
 
+/** The rebound, a pixel past the hold: the hips lead, the fists a beat behind. */
 const LOW_RECOIL: Pose = aroundHead(
   stance(CROUCH, {
-    hip: at(-10.6, 13.3),
-    torso: 31.2,
+    hip: at(-14.3, 17.1),
+    torso: 39,
     look: 14,
     shrug: 6,
     twist: 0.18,
-    heel: LOW_HEEL - 4,
+    heel: LOW_HEEL - 2,
     tap: 2,
     lead: -1.5,
     face: 'effort',
     effects: [scuff(14, 2.4, 0.55), scuff(-20, 1.8, 0.5)],
   }),
-  at(-1.4, -4.2),
-  at(3.8, -11.6),
+  at(1.2, -4.8),
+  at(4.4, -12),
 );
 
 export const POSES: readonly Pose[] = [

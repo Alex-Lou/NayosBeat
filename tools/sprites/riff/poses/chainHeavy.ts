@@ -24,29 +24,34 @@ export const ANIMATED: boolean = true;
  * backward, and her only lunge that leaves the floor behind her.
  *
  * - 0 (2 ticks): the recoil off the elbow, half the Coude's unwind: the hips rise and draw back
- *   under her, the torso comes back to 23 degrees, the chest half open; the rear elbow still up
- *   from its wheel but drawn back to the shoulder, the forearm folded across the chest; the
- *   lead fist at the ribs. The chin goes up and back (the head 22 degrees back on screen, past
+ *   under her, the torso comes back to 23 degrees, the chest half open; the rear arm unfolds out
+ *   of its elbow and drops in front of her, the elbow down at her side, the fist low in front of
+ *   the chest (with the chin thrown up, a fist left folded at the collar sat on her face; folded
+ *   under the elbow's line, it read as an arm bent the wrong way); the lead hand pulled back to
+ *   the hip, its elbow behind. The chin goes up and back (the head 22 degrees back on screen, past
  *   stamp.ts's upright tolerance: she looks down her nose at him). The lead foot stays where the
  *   Coude stamped it, the rear one pushes on its ball.
  * - 1 (2 ticks): the bow, the deepest load: the hips drive in and down under the shoulders, which
- *   lean back, the chest pushed out (the open jacket wide), the chin still up; both arms drawn
- *   back past her spine, the elbows bent; the rear leg straight, pushing on its ball, the lead
- *   foot reaching out a long step.
+ *   lean back, the chest pushed out (the open jacket wide), the chin still up; both arms swung
+ *   back and down behind her, the elbows soft (the shoulders 50 to 55 degrees back, as far as
+ *   they open: higher, the arms would come out of her back); the rear leg straight, pushing on
+ *   its ball, the lead foot reaching out a long step.
  * - 2 (2 ticks): the drive: the bow snaps, the torso pitches 32 degrees and the head comes
  *   through (a magenta trail behind it), the lead heel strikes the floor (dust), the rear toe
  *   peels off the floor, the leg trailing straight; the arms sweep on back; `effort`.
  * - 3 (2 ticks, the hitstop holds it): impact. One line from the rear boot, off the floor behind
  *   her, to the forehead: the torso at 52 degrees, the chin tucked so the brow leads (the head
  *   turned 28 degrees forward: RotSprite, as on her pummel's impact), the shoulders hunched, the
- *   arms flung back over her back like wings. The forehead at the hitbox's far edge, a big
+ *   arms flung back like wings (as far as the shoulders open), the trailing boot pointed down
+ *   off the push, its ankle 30 degrees past square (a boot does not point further). The forehead at the hitbox's far edge, a big
  *   silver star bursting off the tip of the brow, clear of the eye, and a tall shockwave pushed
  *   forward off it: a string's heavy hit, not the pummel's tap. The trail closes on the head.
  * - 4 (7 ticks): the rebound: the head snaps back off the contact, the chin jerked up (« come
  *   on »: the cocky beat), while the body still hangs forward over the blow (the torso at 27
  *   degrees) and the hips stay in; the rear boot lands under her, up on its ball, the lead foot
- *   easing back; the arms come back to her guard's. The game's own hit spark carries the
- *   contact, the dust of the stamp settles.
+ *   easing back; the arms snap back to her guard's, the rear elbow down on the ribs and the fist
+ *   under the chin. The game's own hit spark carries the contact, the dust of the stamp
+ *   settles.
  * - 5 (7 ticks): her guard, the hips a pixel low.
  *
  * The fringe and the belt chain are springs (index.ts): they stream back on the drive and the
@@ -78,6 +83,20 @@ interface Angles {
 const angles = (upper: number, lower: number, foot?: number): Angles =>
   foot === undefined ? { upper, lower } : { upper, lower, foot };
 
+/**
+ * An arm by its angles on the torso, as a body measures them: the upper arm `shoulder` degrees
+ * from hanging (90 straight out in front, 180 overhead, negative behind the back: never past
+ * 60 there, the shoulder does not open further), the elbow flexed `elbow` degrees (the forearm
+ * folding toward the front of the upper arm, never past 150; never negative, the arm bent the
+ * wrong way).
+ */
+interface Arm {
+  readonly shoulder: number;
+  readonly elbow: number;
+}
+
+const arm = (shoulder: number, elbow: number): Arm => ({ shoulder, elbow });
+
 interface Key {
   readonly hip: readonly [number, number];
   readonly torso: number;
@@ -91,10 +110,10 @@ interface Key {
   readonly near: Foot | Angles;
   /** The lead foot. */
   readonly far: Foot;
-  /** The rear arm (camera side): its fist, or its angles from the shoulder. */
-  readonly rear: Point | Angles;
-  /** The lead fist. */
-  readonly lead: Point;
+  /** The rear arm (camera side): its fist, or its angles on the torso. */
+  readonly rear: Point | Arm;
+  /** The lead arm: its fist, or its angles on the torso. */
+  readonly lead: Point | Arm;
   readonly bends?: Bends;
   readonly face?: Face;
   readonly effects?: readonly Effect[];
@@ -135,8 +154,8 @@ function key(k: Key): Pose {
     twist: k.twist,
     nearFoot: 'upper' in k.near ? GUARD.nearFoot : k.near,
     farFoot: k.far,
-    nearFist: 'upper' in k.rear ? GUARD.nearFist : k.rear,
-    farFist: k.lead,
+    nearFist: 'shoulder' in k.rear ? GUARD.nearFist : k.rear,
+    farFist: 'shoulder' in k.lead ? GUARD.farFist : k.lead,
     bends: { ...GUARD.bends, ...k.bends },
     ...(k.face ? { face: k.face } : {}),
     ...(k.effects ? { effects: k.effects } : {}),
@@ -154,25 +173,35 @@ function key(k: Key): Pose {
       joint,
     );
   }
-  if ('upper' in k.rear) {
-    // The rear arm by its angles, so the elbow, not the fist, sits where it is meant to.
-    const arm = k.rear;
-    const shoulder = solve(pose, RIFF_BODY).near.shoulder;
-    const { joint, end } = chain(
-      shoulder,
-      RIFF_BODY.upperArm,
-      RIFF_BODY.forearm,
-      arm.upper,
-      arm.lower,
-    );
-    const base = pose;
-    pose = nearest(
-      BENDS.map((bend) => ({ ...base, nearFist: end, bends: { ...base.bends, nearElbow: bend } })),
-      (trial) => solve(trial, RIFF_BODY).near.elbow,
-      joint,
-    );
-  }
+  if ('shoulder' in k.lead) pose = armAt(pose, 'far', k.lead);
+  if ('shoulder' in k.rear) pose = armAt(pose, 'near', k.rear);
   return pose;
+}
+
+/**
+ * `pose` with one arm placed by its angles on the torso (forward kinematics), with the elbow
+ * bend that keeps the elbow where the angles put it.
+ */
+function armAt(pose: Pose, side: 'near' | 'far', angles: Arm): Pose {
+  const s = solve(pose, RIFF_BODY);
+  const down = (Math.atan2(-s.up.y, -s.up.x) * 180) / Math.PI;
+  const upper = down + angles.shoulder;
+  const { joint, end } = chain(
+    s[side].shoulder,
+    RIFF_BODY.upperArm,
+    RIFF_BODY.forearm,
+    upper,
+    upper + angles.elbow,
+  );
+  return nearest(
+    BENDS.map((bend): Pose =>
+      side === 'near'
+        ? { ...pose, nearFist: end, bends: { ...pose.bends, nearElbow: bend } }
+        : { ...pose, farFist: end, bends: { ...pose.bends, farElbow: bend } },
+    ),
+    (trial) => solve(trial, RIFF_BODY)[side].elbow,
+    joint,
+  );
 }
 
 const dust = (x: number, size: number, progress: number): Effect => ({
@@ -184,7 +213,7 @@ const dust = (x: number, size: number, progress: number): Effect => ({
 
 const headOf = (k: Key) => solve(key(k), RIFF_BODY).head;
 
-// 0: the recoil off the elbow, chin up, the elbow drawn back to the shoulder.
+// 0: the recoil off the elbow, chin up, the rear arm unfolding and dropping in front of her.
 const RECOIL: Key = {
   hip: [-0.5, 31],
   torso: 23,
@@ -194,8 +223,8 @@ const RECOIL: Key = {
   turn: 4,
   near: onBall(TOE - CARRY[0], -40),
   far: planted(STAMP - CARRY[0]),
-  rear: angles(-12, 178),
-  lead: at(7, 40),
+  rear: arm(40, 120),
+  lead: arm(-30, 110),
 };
 
 // 1: the bow, the deepest load: the hips in, the shoulders and the chin back, the arms behind.
@@ -208,9 +237,8 @@ const BOW: Key = {
   turn: -1,
   near: onBall(TOE - CARRY[1], -55),
   far: lifted(planted(LANDING - CARRY[1] - 1.5, -6), 2),
-  rear: at(-20, 44),
-  lead: at(-14, 42),
-  bends: { nearElbow: 'up', farElbow: 'up' },
+  rear: arm(-55, 30),
+  lead: arm(-50, 35),
 };
 
 // 2: the drive: the head comes through, the lead heel strikes, the rear toe peels off.
@@ -235,7 +263,7 @@ const IMPACT: Key = {
   look: 28,
   shrug: 3.6,
   twist: -0.15,
-  near: angles(220, 216, -110),
+  near: angles(220, 216, -84),
   far: planted(LANDING - CARRY[3]),
   rear: at(-2.3, 46.8),
   lead: at(0, 38),
@@ -252,8 +280,8 @@ const REBOUND: Key = {
   twist: 0.5,
   near: onBall(TOE, -48),
   far: lifted(planted(8.6, -8), 1),
-  rear: at(-6, 56),
-  lead: at(10, 45),
+  rear: arm(40, 124),
+  lead: arm(18, 140),
 };
 
 // 5: the guard, a pixel low.
@@ -265,7 +293,7 @@ const SETTLE: Key = {
   twist: 0.45,
   near: onBall(TOE, -13),
   far: planted(GUARD.farFoot.x),
-  rear: at(-12, 57.5),
+  rear: arm(39, 128),
   lead: at(9.5, 45.6),
 };
 

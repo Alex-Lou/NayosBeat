@@ -1,4 +1,5 @@
-import { BODY, solve } from '../../skeleton.ts';
+import type { Point } from '../../raster.ts';
+import { add, BODY, scale, solve, sub, type Bend } from '../../skeleton.ts';
 import {
   at,
   ease,
@@ -24,10 +25,76 @@ import {
  * back toe in one long diagonal (toe, hips, head), the lead knee driving up; at the top the knee
  * is chambered, aimed at the target with the heel cocked under it, and the hips turn over; then
  * the lead heel drives out on one flat line while the torso lays back against it (one long line
- * from the flung-back rear arm to the heel), the face still upright on the target. The leg snaps
+ * from the head through the hips to the heel), the face still upright on the target, both
+ * gloves up in front of it: laid back this far, a rear arm flung back behind him would have to
+ * come out of the back. The feet in the air hang off the shins as ankles allow. The leg snaps
  * back, the rear foot reaches straight down for its floor mark first, a deep landing in the wide
  * stance, a bounce up past the guard, and he settles into the idle's last frame.
  */
+
+type Body = Omit<Pose, 'nearFist' | 'farFist'>;
+
+/**
+ * An arm set by its joints, as tools/sprites/anatomy.ts measures them in the torso's frame: the
+ * upper arm `shoulder` degrees from hanging (90 = straight ahead, 180 = overhead, negative =
+ * behind), the elbow flexed `elbow` degrees (0 = straight, always the way an elbow bends). Gives
+ * the fist it puts in place and the bend that makes the solver pick that elbow, not its mirror.
+ */
+function arm(
+  body: Body,
+  which: 'near' | 'far',
+  shoulder: number,
+  elbow: number,
+): { fist: Point; bend: Bend } {
+  const s = solve({ ...body, nearFist: GUARD.nearFist, farFist: GUARD.farFist });
+  const root = s[which].shoulder;
+  const turn = (v: Point, degrees: number): Point => {
+    const a = (degrees * Math.PI) / 180;
+    return { x: v.x * Math.cos(a) - v.y * Math.sin(a), y: v.x * Math.sin(a) + v.y * Math.cos(a) };
+  };
+  const upper = turn({ x: -s.up.x, y: -s.up.y }, shoulder);
+  const joint = add(root, scale(upper, BODY.upperArm));
+  const fist = add(joint, scale(turn(upper, elbow), BODY.forearm));
+  // The other elbow the solver could pick: the mirror image across the shoulder-fist line.
+  const line = sub(fist, root);
+  const axis = scale(line, 1 / (Math.hypot(line.x, line.y) || 1));
+  const offset = sub(joint, root);
+  const along = offset.x * axis.x + offset.y * axis.y;
+  const mirror = add(root, sub(scale(axis, 2 * along), offset));
+  const dx = joint.x - mirror.x;
+  const dy = joint.y - mirror.y;
+  const bend: Bend =
+    Math.abs(dy) >= Math.abs(dx) ? (dy < 0 ? 'down' : 'up') : dx > 0 ? 'front' : 'back';
+  return { fist: at(fist.x, fist.y), bend };
+}
+
+/** A pose of `body` with its rear arm set by its joints, `[shoulder, elbow]` (see arm). */
+function withRear(body: Body & Partial<Pose>, far: readonly [number, number]): Pose {
+  const rear = arm(body, 'far', far[0], far[1]);
+  return {
+    ...body,
+    nearFist: body.nearFist ?? GUARD.nearFist,
+    farFist: rear.fist,
+    bends: { ...body.bends, farElbow: rear.bend },
+  };
+}
+
+/**
+ * The angle of a foot hanging off the leg in the air, `flex` degrees between the shin and the
+ * top of the foot (90 = at rest, less = toes pulled up, more = pointed), for a pose whose knee
+ * is solved: a foot in the air never bends past what an ankle can do.
+ */
+function hanging(pose: Pose, which: 'near' | 'far', flex: number): number {
+  const side = solve(pose)[which];
+  const toKnee = Math.atan2(side.knee.y - side.ankle.y, side.knee.x - side.ankle.x);
+  return (toKnee * 180) / Math.PI - flex;
+}
+
+/** `pose` with a foot turned to `flex` (see hanging), its ankle where it was. */
+function flexed(pose: Pose, which: 'near' | 'far', flex: number): Pose {
+  const key = which === 'near' ? 'nearFoot' : 'farFoot';
+  return { ...pose, [key]: { ...pose[key], angle: hanging(pose, which, flex) } };
+}
 
 /** Where the guard's rear toe touches the floor (heel up). */
 const REAR_TOE = solve(GUARD).far.toe.x;
@@ -48,7 +115,7 @@ function onToes(toe: number, angle: number): Foot {
 const TRAVEL = [0, 5, 12.5, 19] as const;
 
 // 0 - Dip: he sinks into the springy stance, both knees loading, the lean deepening, gloves
-// tight, chin down on the target.
+// tight, chin down on the target; the rear heel climbs as its knee sinks, loading the ball.
 const DIP: Pose = {
   ...GUARD,
   hip: at(-6.2, 31.2),
@@ -57,7 +124,7 @@ const DIP: Pose = {
   shrug: 1.8,
   twist: -0.15,
   nearFoot: GUARD.nearFoot,
-  farFoot: onToes(REAR_TOE, -24),
+  farFoot: onToes(REAR_TOE, -36),
   nearFist: at(11, 49.5),
   farFist: at(11.6, 57.4),
 };
@@ -79,66 +146,89 @@ const TAKEOFF: Pose = {
 // 2 - Top of the jump: the side-kick chamber, the lead knee pulled up and aimed at the target
 // with the heel cocked under it (it then drives out on one flat line), back leg tucked, the hips
 // turning over and the torso tipping back; the rear arm starts its swing back. The coiled spring.
-const CHAMBER: Pose = {
+const CHAMBER_BODY: Pose = {
   hip: at(-2, 48.5),
   torso: -8,
   head: 22,
   shrug: 2.6,
   twist: -0.5,
-  nearFoot: { x: 10, y: 42, angle: 80 },
-  farFoot: { x: -11, y: 31.5, angle: -25 },
+  nearFoot: { x: 10, y: 42, angle: 0 },
+  farFoot: { x: -11, y: 31.5, angle: 0 },
   nearFist: at(4, 65),
-  farFist: at(-16, 59),
+  farFist: GUARD.farFist,
   bends: { nearKnee: 'up' },
 };
+// The feet hang off the knees as ankles allow: the lead one pulled up (the heel cocked toward
+// the target), the tucked rear one pointed down and back off its shin.
+const CHAMBER: Pose = flexed(flexed(withRear(CHAMBER_BODY, [46, 112]), 'near', 76), 'far', 118);
 
 // 4 - The kick (active): lead leg locked out heel first, sole to the target, the body laid
-// back against it, rear arm flung back as a counterweight, lead fist guarding the chin. Jaw set
+// back against it, both gloves up guarding the face (laid back this far, a rear arm flung back
+// would have to come out of the back), the tucked rear foot pointed. Jaw set
 // (the effort face): laid back this far, the headphone cup sits on the jaw and would hide a
 // shout's open mouth; the lead shoulder rolls only a little so the cheek stays clear.
-const KICK: Pose = {
+const KICK_BODY: Pose = {
   hip: at(2.5, 44.5),
   torso: -40,
   head: 26,
   shrug: 0.6,
   twist: -0.6,
   nearFoot: { x: 39, y: 35.5, angle: 84 },
-  farFoot: { x: -8, y: 28, angle: -25 },
+  farFoot: { x: -8, y: 28, angle: 0 },
   nearFist: at(-2, 60),
-  farFist: at(-33, 49),
+  farFist: GUARD.farFist,
   bends: { nearKnee: 'up' },
   face: 'effort',
 };
+const KICK: Pose = flexed(withRear(KICK_BODY, [44, 122]), 'far', 118);
 
 // 3 - The leg shoots out (2 ticks): most of the way already, the knee aimed at the target.
-const EXTEND: Pose = {
-  ...tween(CHAMBER, KICK, 0.55, ease.out),
-  hip: at(1, 47),
-  nearFoot: { x: 28, y: 41, angle: 85 },
-  farFist: at(-29, 53),
-  face: 'effort',
-};
+const EXTEND: Pose = flexed(
+  flexed(
+    withRear(
+      {
+        ...tween(CHAMBER, KICK, 0.55, ease.out),
+        hip: at(1, 47),
+        nearFoot: { x: 28, y: 41, angle: 0 },
+        face: 'effort',
+      },
+      [50, 118],
+    ),
+    'near',
+    66,
+  ),
+  'far',
+  118,
+);
 
 // 5 - The leg snaps back as he drops, the hips turning back square, the rear foot reaching for
-// the floor first.
-const RETRACT: Pose = {
-  hip: at(-3, 38.5),
-  torso: -10,
-  head: 22,
-  shrug: 2.2,
-  twist: -0.35,
-  nearFoot: { x: 9, y: 21, angle: 15 },
-  // Right above its toe mark: the foot drops straight onto it (no slide back on touchdown).
-  farFoot: { x: -20.5, y: 11, angle: -32 },
-  nearFist: at(5, 58),
-  farFist: at(-14, 54),
-  bends: { nearKnee: 'up' },
-  face: 'effort',
-};
+// the floor first, the rear glove coming forward to the chest for the landing.
+const RETRACT: Pose = flexed(
+  withRear(
+    {
+      hip: at(-3, 38.5),
+      torso: -10,
+      head: 22,
+      shrug: 2.2,
+      twist: -0.35,
+      nearFoot: { x: 9, y: 21, angle: 0 },
+      // Right above its toe mark: the foot drops straight onto it (no slide back on
+      // touchdown), its toes reaching down for the floor first.
+      farFoot: { x: -18.6, y: 12, angle: -48 },
+      nearFist: at(5, 58),
+      bends: { nearKnee: 'up' },
+      face: 'effort',
+    },
+    [34, 104],
+  ),
+  'near',
+  80,
+);
 
-// 6 - Landing: both feet down on their guard marks, the knees soaking up the drop, the chest
-// pitching forward past the guard's lean, the gloves coming back up.
-const LAND: Pose = {
+// 6 - Landing: both feet down on their guard marks, the knees soaking up the drop (the rear one
+// on its ball, the heel up under the sunk knee), the chest pitching forward past the guard's
+// lean, the gloves coming back up.
+const LAND_BODY: Pose = {
   ...GUARD,
   hip: at(-6, 30.5),
   torso: 23,
@@ -146,10 +236,11 @@ const LAND: Pose = {
   shrug: 1.6,
   twist: -0.1,
   nearFoot: planted(6.35),
-  farFoot: onToes(REAR_TOE, -22),
+  farFoot: onToes(REAR_TOE, -38),
   nearFist: at(12, 46.5),
-  farFist: at(6, 52),
+  farFist: GUARD.farFist,
 };
+const LAND: Pose = withRear(LAND_BODY, [48, 124]);
 
 // 7 - Bouncing back up a hair past the guard, the lead shoulder rolling up to the chin.
 const RISE: Pose = {

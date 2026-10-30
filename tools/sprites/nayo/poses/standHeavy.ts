@@ -9,11 +9,12 @@ import { at, GUARD, lifted, planted, smear, type Effect, type Foot, type Pose } 
  * Everything goes the other way first: the weight sinks back onto the rear foot, the lead
  * shoulder dips and the chest opens toward us, the glove drawn back with it. Then the lead foot
  * steps in, the lead elbow lifting off the ribs, and the hips lead: they turn in, the shoulders
- * follow, the arm comes last, elbow up at shoulder height, sweeping round in one arc. At impact
- * one long line from the raised rear heel through the hips to the bent arm, the chin buried
- * behind the rolled lead shoulder, the rear glove up at the chin. The arm carries through
- * across, the weight comes back, the lead foot steps home and the shoulder rolls up into the
- * guard.
+ * follow, the arm comes last, sweeping round in one arc, the elbow low and out, the forearm
+ * rising into the jaw (a shovel hook: side on, the elbow folds the way an arm does). At impact
+ * one long line from the raised rear heel through the hips to the fist, the arm opened out but
+ * still bent, the chin buried behind the rolled lead shoulder, the rear glove up at the temple.
+ * The arm carries through across, folding back, the weight comes back, the lead foot steps
+ * home and the shoulder rolls up into the guard.
  */
 
 /** Where the toe tip of a foot touches the floor (a foot on the ball pivots around it). */
@@ -78,9 +79,8 @@ function glove(pose: Pose): { middle: Point; knuckles: Point } {
 /**
  * The hook's trail: the lower half of a flat ellipse (a horizontal swing seen from a little
  * above), from behind the lead shoulder, dipping under the arm where the glove swung out toward
- * us, and rising forward into the glove; `width` px wide at the fist. It ends moving forward,
- * not upward: a hook, not a shovel. It ends in the middle of the glove, so its rounded end hides
- * under it instead of bulging past it.
+ * us, and rising forward into the glove, as the forearm does; `width` px wide at the fist. It
+ * ends in the middle of the glove, so its rounded end hides under it instead of bulging past it.
  */
 function hookArc(pose: Pose, radius: number, depth: number, width: number, from = -105): Effect {
   const end = glove(pose).middle;
@@ -93,9 +93,22 @@ function hookArc(pose: Pose, radius: number, depth: number, width: number, from 
   return smear(width, ...points);
 }
 
-const HOOK_ARM = { nearElbow: 'up', farElbow: 'down' } as const;
-/** The rear glove up from the cheek to cover the chin while the hook lands. */
-const CHIN = at(0.7, 4.6);
+/**
+ * The hook's arm, seen side on: the elbow low and out, under the line from the shoulder to the
+ * fist, the forearm rising into the target (a shovel hook), bent all through the swing (70 to
+ * 75 degrees on the way in and out, 40 at impact). An elbow lifted over that line, the forearm
+ * coming down into the jaw, folds the arm backward on the picture (tools/sprites/anatomy.ts,
+ * elbowReversed): it reads as a broken arm.
+ */
+const HOOK_ARM = { nearElbow: 'down', farElbow: 'down' } as const;
+/**
+ * The rear glove rides up from the cheek to the temple while the hook goes, a high guard that
+ * peeks over the lead arm, its elbow down and tucked behind the lead arm. The shoulders turn
+ * with the hips, the rear one back (`reach.far` < 0), which tucks that elbow in further.
+ */
+const TEMPLE = at(1.5, 3);
+/** Higher still while the lead upper arm sits lower (the swing, the follow-through). */
+const TEMPLE_HIGH = at(2.2, 4.5);
 
 // Frame 0 (3 ticks): the load. The weight sinks back onto the rear foot (its heel coming
 // down), the lead heel unweights, the lead shoulder dips and the chest opens toward us; the
@@ -137,41 +150,41 @@ const STEP: Pose = {
 };
 
 // Frame 2 (2 ticks): the foot lands, the hips turn through, the arm whips round behind them,
-// elbow up at shoulder height.
+// bent, the elbow out and down, the forearm turning from upright toward the jaw.
 const SWING_BODY: Body = {
   ...GUARD,
   hip: at(-1.8, 34.3),
   torso: 29,
   head: -10,
   shrug: 3,
-  reach: { near: 2 },
+  reach: { near: 2, far: -2.2 },
   twist: -0.4,
   nearFoot: planted(STEP_X),
   farFoot: onToes(REAR_TOE, -26),
   bends: HOOK_ARM,
 };
-const SWING_ARM = arms(SWING_BODY, 23.5, 0, at(0.3, 2.4));
+const SWING_ARM = arms(SWING_BODY, 20, 12, TEMPLE_HIGH);
 const SWING: Pose = { ...SWING_ARM, effects: [hookArc(SWING_ARM, 17, 7, 4.5)] };
 
 // Frame 3 (4 ticks, active, held through the hitstop): impact. The lead heel turned out (on
 // the ball), the rear leg long behind, the chin buried behind the lead shoulder, jaw set.
 const IMPACT_BODY: Body = {
   ...GUARD,
-  hip: at(-0.6, 34),
-  torso: 38,
+  hip: at(0.2, 34),
+  torso: 39,
   head: -19,
   shrug: 4,
-  reach: { near: 3 },
+  reach: { near: 3.6, far: -1.8 },
   twist: -0.8,
   nearFoot: onToes(STEP_X + 7, -7),
   farFoot: onToes(REAR_TOE, -31),
   bends: HOOK_ARM,
   face: 'effort',
 };
-// The elbow bent (about 140 degrees), the forearm coming in from above toward the jaw. The rear
-// glove rides up to the chin: it covers the jaw and tucks the rear elbow up behind the punching
-// arm instead of hanging under it.
-const IMPACT_ARM = arms(IMPACT_BODY, 23.6, 2, CHIN);
+// The arm opened out (40 degrees of bend), the elbow just under the line, the forearm rising
+// into the jaw, the wrist straight behind the knuckles; the rear glove up at the temple, its
+// elbow hidden behind the punching arm.
+const IMPACT_ARM = arms(IMPACT_BODY, 23.5, 5, TEMPLE);
 const IMPACT_KNUCKLES = glove(IMPACT_ARM).knuckles;
 const IMPACT: Pose = {
   ...IMPACT_ARM,
@@ -188,21 +201,22 @@ const IMPACT: Pose = {
 };
 
 // Frame 4 (3 ticks): follow-through. The fist carries on across the body (it comes back toward
-// us in the picture), the elbow still up, the chest turned away; still set.
+// us in the picture, the arm folding again), the elbow still out and low, the chest turned away;
+// still set.
 const THROUGH_BODY: Body = {
   ...GUARD,
   hip: at(-0.9, 34.2),
   torso: 33,
   head: -14,
   shrug: 3.6,
-  reach: { near: 2 },
+  reach: { near: 2, far: -1.6 },
   twist: -0.9,
   nearFoot: onToes(STEP_X + 7, -5),
   farFoot: onToes(REAR_TOE, -28),
   bends: HOOK_ARM,
   face: 'effort',
 };
-const THROUGH = arms(THROUGH_BODY, 23, -3, CHIN);
+const THROUGH = arms(THROUGH_BODY, 20.5, 4, TEMPLE_HIGH);
 
 // Frame 5 (3 ticks): the weight comes back over the hips, the elbow drops, the glove heads home.
 const BACK_BODY: Body = {
@@ -231,7 +245,7 @@ const STEP_BACK_BODY: Body = {
 };
 const STEP_BACK: Pose = {
   ...STEP_BACK_BODY,
-  nearFist: at(10.5, 54.8),
+  nearFist: at(11.6, 54.2),
   farFist: atCheek(STEP_BACK_BODY),
 };
 

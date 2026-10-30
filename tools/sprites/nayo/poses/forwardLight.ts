@@ -85,6 +85,14 @@ function jab(body: Body, length: number, angle: number, cheek: Point = at(0, 0))
 }
 
 /**
+ * As the jab goes out the shoulders turn (the rear one back, `reach.far` < 0) and the rear glove
+ * tucks in from the cheek to the chin: its elbow folds down onto the ribs, behind the chest,
+ * instead of hanging in front of it as a lump under the extended lead arm.
+ */
+const TUCK = at(-1.4, -1.6);
+const TUCK_HALF = at(-1.1, -1.2);
+
+/**
  * Dust off the rear foot's push, left on the floor behind him: drawn where that spot of floor
  * is while the game slides him `slid` px past it.
  */
@@ -106,7 +114,7 @@ const PUSH_BODY: Body = {
 };
 const PUSH: Pose = {
   ...PUSH_BODY,
-  nearFist: at(10.6, 54.6),
+  nearFist: at(11.3, 54),
   farFist: atCheek(PUSH_BODY, 0, -0.3),
 };
 
@@ -126,7 +134,7 @@ const GLIDE_BODY: Body = {
 };
 const GLIDE: Pose = {
   ...GLIDE_BODY,
-  nearFist: at(14.2, 55.4),
+  nearFist: at(14.8, 54.6),
   farFist: atCheek(GLIDE_BODY, 0, -0.3),
   effects: [pushDust(7, 0.25)],
 };
@@ -140,12 +148,12 @@ const LAND_BODY: Body = {
   torso: 20.5,
   head: -2.5,
   shrug: 2.6,
-  reach: { near: 2 },
+  reach: { near: 2, far: -2.2 },
   twist: -0.3,
   nearFoot: lifted(onToes(LEAD_TOE + 0.3, 0), 0.35),
   farFoot: lifted(onToes(REAR_TOE - 3, -24), 0.8),
 };
-const LAND_ARM = jab(LAND_BODY, 20.5, -3);
+const LAND_ARM = jab(LAND_BODY, 20.5, -3, TUCK_HALF);
 const LAND: Pose = {
   ...LAND_ARM,
   effects: [
@@ -157,20 +165,20 @@ const LAND: Pose = {
 // Frame 3 (3 ticks, active, held through the hitstop): the lunge. The rear foot snaps in onto
 // its mark, heel high, as the jab lands: the hips dropped low and forward, the lead knee over
 // the toes, the whole body leaning into the punch (lower and longer than the standing jab);
-// full extension, long but not locked, the lead shoulder up behind the chin, the rear glove at
-// the cheek.
+// full extension, long but not locked, the lead shoulder up behind the chin, the rear glove
+// tucked at the chin.
 const STRIKE_BODY: Body = {
   ...GUARD,
   hip: at(-1.6, 33.3),
   torso: 24,
   head: -4.5,
   shrug: 3,
-  reach: { near: 1.6 },
+  reach: { near: 1.6, far: -2.2 },
   twist: -0.42,
   nearFoot: onToes(LEAD_TOE + 0.3, -1),
   farFoot: onToes(REAR_TOE + 0.2, -30),
 };
-const STRIKE_ARM = jab(STRIKE_BODY, 24.6, -4);
+const STRIKE_ARM = jab(STRIKE_BODY, 24.6, -4, TUCK);
 const KNUCKLES = glove(STRIKE_ARM).knuckles;
 const ELBOW = solve(STRIKE_ARM).near.elbow;
 const STRIKE: Pose = {
@@ -196,12 +204,12 @@ const RETRACT_BODY: Body = {
   torso: 18.5,
   head: -0.5,
   shrug: 2.4,
-  reach: { near: 1.2 },
+  reach: { near: 1.2, far: -1.2 },
   twist: -0.22,
   nearFoot: onToes(LEAD_TOE + 0.3, -1),
   farFoot: onToes(REAR_TOE + 0.2, -19),
 };
-const RETRACT = jab(RETRACT_BODY, 14.5, -14);
+const RETRACT = jab(RETRACT_BODY, 14.5, -14, at(-0.4, -0.6));
 
 // Frame 5 (6 ticks): home a hair past the guard, the lead shoulder rolling up, settling.
 const HOME: Pose = {

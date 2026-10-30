@@ -1,5 +1,4 @@
 import type { Point } from '../../raster.ts';
-import { solve } from '../../skeleton.ts';
 import { RIFF_BODY } from '../body.ts';
 import { at, GUARD, onBall, onHeel, planted, toeOf, type Pose } from './common.ts';
 
@@ -17,13 +16,15 @@ export const ANIMATED: boolean = true;
  * - 0, the strain: she sits back against the pull, the hips back over the rear foot, flat, the
  *   lead leg braced long in front, the heel dug in and the toes up, the knee behind the boot (the
  *   shin slopes back to the hips); the torso one long diagonal from the hips up to the collar in
- *   his fists, the chest opened to the viewer. The lead hand clamps his wrist; the rear fist is
- *   her guard's haymaker, cocked by the ear and wound 3 px further back and up: let go, or else.
+ *   his fists, the chest opened to the viewer. The lead hand clamps his wrist; the rear arm hangs
+ *   from its shoulder, the elbow down at her waist, the forearm aimed forward under his arms, the
+ *   fist balled low in front of her ribs: a hook to his body, loaded. Let go, or else.
  * - 1, yanked in: the collar hauled down and in, the hips jerked forward and under it, the knees
  *   buckling over the toes, up on the balls of both feet; the shoulders hunched up into the
- *   popped collar, the chin tucked. The haymaker never leaves the screen: the yank jerks the
- *   cocked fist 4 to 5 px forward and down, and the strain winds it back up (a pump, never a
- *   flap). The knee's (or the headbutt's) flash, hitstop and shake sell the hit on this frame.
+ *   popped collar, the chin tucked. The loaded fist never leaves the screen, under his forearms:
+ *   the yank jerks it 4 to 5 px forward, the elbow still down, and the strain draws it back in
+ *   (a pump, never a flap). The knee's (or the headbutt's) flash, hitstop and shake sell the hit
+ *   on this frame.
  * Effort on both frames (a wince alternating with it at 7.5 a second would only blink).
  *
  * The collar stays pinned in his fists: the base of her neck at (2.5, 51.5) and (4, 50), within
@@ -46,18 +47,6 @@ export function byNeck(neck: Point, torso: number): Point {
   return at(neck.x - RIFF_BODY.neck * Math.sin(r), neck.y - RIFF_BODY.neck * Math.cos(r));
 }
 
-/** Where the guard's cocked rear fist sits from the rear shoulder. */
-const COCKED = (() => {
-  const shoulder = solve(GUARD, RIFF_BODY).near.shoulder;
-  return at(GUARD.nearFist.x - shoulder.x, GUARD.nearFist.y - shoulder.y);
-})();
-
-/** The rear fist cocked by the ear of `pose`, wound `dx`, `dy` past the guard's. */
-function cocked(pose: Pose, dx: number, dy: number): Point {
-  const shoulder = solve(pose, RIFF_BODY).near.shoulder;
-  return at(shoulder.x + COCKED.x + dx, shoulder.y + COCKED.y + dy);
-}
-
 /** Where her rear foot stands while she is held, flat (thrownBack lifts her off its toe). */
 const REAR_FOOT = planted(-24);
 export const REAR_TOE = toeOf(REAR_FOOT);
@@ -67,8 +56,9 @@ const LEAD_TOE = toeOf(LEAD_FOOT);
 
 // Frame 0 (4 ticks): the strain. Sitting back against the grip: the hips back over the flat rear
 // foot, the lead leg braced long in front on its dug-in heel, the torso a long diagonal up to the
-// collar, the chest open; the lead hand clamps his wrist, the rear fist cocked back past the ear.
-const STRAIN_BODY: Pose = {
+// collar, the chest open; the lead hand clamps his wrist, the rear fist balled low in front of the
+// ribs, the elbow down at the waist, drawn back in.
+const STRAIN: Pose = {
   ...GUARD,
   hip: byNeck(at(2.5, 51.5), 40),
   torso: 40,
@@ -77,17 +67,17 @@ const STRAIN_BODY: Pose = {
   twist: 0.4,
   nearFoot: REAR_FOOT,
   farFoot: onHeel(LEAD_FOOT, 18),
+  nearFist: at(5.5, 40),
   farFist: at(8.5, 52),
   farHand: 'open',
   face: 'effort',
 };
-const STRAIN: Pose = { ...STRAIN_BODY, nearFist: cocked(STRAIN_BODY, -3, 3) };
 
 // Frame 1 (4 ticks, and from the impact tick of every pummel): yanked in. The collar hauled down
 // and in, the hips jerked forward under it, the knees over the toes, up on the balls of both
-// feet; the shoulders hunched into the collar, the chest turned away; the cocked fist jerked
-// forward and down, still loaded, the lead hand still on his wrist.
-const YANKED_BODY: Pose = {
+// feet; the shoulders hunched into the collar, the chest turned away; the low fist jerked forward
+// under his arms, still loaded, the elbow down; the lead hand still on his wrist.
+const YANKED: Pose = {
   ...GUARD,
   hip: byNeck(at(4, 50), 32),
   torso: 32,
@@ -96,13 +86,10 @@ const YANKED_BODY: Pose = {
   twist: 0.15,
   nearFoot: onBall(REAR_TOE, -20),
   farFoot: onBall(LEAD_TOE, -16),
+  nearFist: at(10, 41),
   farFist: at(9.5, 50),
   farHand: 'open',
   face: 'effort',
-};
-const YANKED: Pose = {
-  ...YANKED_BODY,
-  nearFist: cocked(YANKED_BODY, -1.5, 1.5),
 };
 
 export const POSES: readonly Pose[] = [STRAIN, YANKED];

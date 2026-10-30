@@ -35,7 +35,7 @@ export const ANIMATED: boolean = true;
  * UPRIGHT_TOLERANCE): it moves with the torso's lean (a degree is about 0.6 px of head travel)
  * and acts through the face patches only.
  *
- * Overlap: the cocked rear fist rides the rear shoulder `lag` of a frame late, with its own
+ * Overlap: the loaded rear fist rides the rear shoulder `lag` of a frame late, with its own
  * offsets (it rises on the rock, lands late on the downbeat, overshoots on the settle); the
  * fringe and the belt's chain swing on their springs (index.ts). The feet never slide: the rear
  * foot only pumps its heel 6 degrees on a fixed ball (more and the turned-out boot reads as a
@@ -49,8 +49,8 @@ const GUARD_HEEL = GUARD.nearFoot.angle ?? 0;
 const GUARD_SHRUG = GUARD.shrug ?? 0;
 /** The lead toes lifted at the top of the rock (degrees). */
 const TAP = 8;
-/** Where the cocked rear fist sits from the rear shoulder in the guard. */
-const COCKED = (() => {
+/** Where the rear fist sits from the rear shoulder in the guard (under the chin). */
+const REAR_FIST = (() => {
   const shoulder = solve(GUARD, RIFF_BODY).near.shoulder;
   return { x: GUARD.nearFist.x - shoulder.x, y: GUARD.nearFist.y - shoulder.y };
 })();
@@ -195,7 +195,7 @@ export const POSES: readonly Pose[] = BODIES.map((pose, i) => {
   const before = SHOULDERS[i - 1];
   if (!b || !now || !before) return pose;
   // The loaded rear fist follows its shoulder `lag` of a frame late.
-  const x = now.x + (before.x - now.x) * b.lag + COCKED.x + b.near[0];
-  const y = now.y + (before.y - now.y) * b.lag + COCKED.y + b.near[1];
+  const x = now.x + (before.x - now.x) * b.lag + REAR_FIST.x + b.near[0];
+  const y = now.y + (before.y - now.y) * b.lag + REAR_FIST.y + b.near[1];
   return { ...pose, nearFist: at(x, y) };
 });

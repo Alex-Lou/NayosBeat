@@ -60,6 +60,14 @@ function pose(body: Body, length: number, angle: number, cheek: Point = at(0, 0)
   return { ...body, nearFist: lead(body, length, angle), farFist: atCheek(body, cheek.x, cheek.y) };
 }
 
+/**
+ * As the jab goes out the shoulders turn (the rear one back, `reach.far` < 0) and the rear glove
+ * tucks in from the cheek to the chin: its elbow folds down onto the ribs, behind the chest,
+ * instead of hanging in front of it as a lump under the extended lead arm.
+ */
+const TUCK = at(-1.4, -1.6);
+const TUCK_HALF = at(-1.1, -1.2);
+
 // Frame 0 (2 ticks): the glove leaves the chin. The hips start in off the rear foot (its heel
 // rising), the lead shoulder starts to roll; the glove already a third of the way out.
 const START: Pose = {
@@ -83,12 +91,12 @@ const SNAP_BODY: Body = {
   torso: 17.5,
   head: 0,
   shrug: 2.5,
-  reach: { near: 2 },
+  reach: { near: 2, far: -2.2 },
   twist: -0.28,
   nearFoot: onToes(LEAD_TOE, 0),
   farFoot: onToes(REAR_TOE, -21),
 };
-const SNAP_ARM = pose(SNAP_BODY, 21.5, -4);
+const SNAP_ARM = pose(SNAP_BODY, 21.5, -4, TUCK_HALF);
 const SNAP_KNUCKLES = knucklesOf(SNAP_ARM);
 const SNAP: Pose = {
   ...SNAP_ARM,
@@ -97,7 +105,7 @@ const SNAP: Pose = {
 };
 
 // Frame 2 (3 ticks, active): full extension, the arm long but not locked, the lead shoulder up
-// behind the chin, the rear glove at the cheek. A thin trail down the line into the knuckles,
+// behind the chin, the rear glove tucked at the chin. A thin trail down the line into the knuckles,
 // a small flash on them.
 const STRIKE_BODY: Body = {
   ...GUARD,
@@ -105,12 +113,12 @@ const STRIKE_BODY: Body = {
   torso: 19,
   head: -1,
   shrug: 3,
-  reach: { near: 3 },
+  reach: { near: 3, far: -2.2 },
   twist: -0.4,
   nearFoot: onToes(LEAD_TOE, 0),
   farFoot: onToes(REAR_TOE, -24),
 };
-const STRIKE_ARM = pose(STRIKE_BODY, 24.6, -6);
+const STRIKE_ARM = pose(STRIKE_BODY, 24.6, -6, TUCK);
 const KNUCKLES = knucklesOf(STRIKE_ARM);
 const STRIKE: Pose = {
   ...STRIKE_ARM,
@@ -129,12 +137,12 @@ const RETRACT_BODY: Body = {
   torso: 17.5,
   head: 0.5,
   shrug: 2.6,
-  reach: { near: 1.6 },
+  reach: { near: 1.6, far: -1.2 },
   twist: -0.25,
   nearFoot: onToes(LEAD_TOE, -0.5),
   farFoot: onToes(REAR_TOE, -20),
 };
-const RETRACT = pose(RETRACT_BODY, 17.5, -9);
+const RETRACT = pose(RETRACT_BODY, 17.5, -9, at(-0.4, -0.6));
 
 // Frame 4 (2 ticks): home a hair past the guard: the glove tucked in under the chin, the
 // shoulder still rolled up, the hips sinking back a pixel.

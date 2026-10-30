@@ -12,7 +12,7 @@ import {
 } from './common.ts';
 import { POSES as IDLE } from './idle.ts';
 import { guarded } from './jump.ts';
-import { legAt } from './jumpLight.ts';
+import { legAt, pointed } from './jumpLight.ts';
 
 export const ANIMATED: boolean = true;
 
@@ -28,19 +28,19 @@ export const ANIMATED: boolean = true;
  * like a kick-out (a sweep could come out of it), the only thing touching it, on a magenta streak;
  * the rear leg trails long behind, off the floor, the toes pointed, one sweep of line from that
  * toe up through the hips to the head; the low lead fist leads the way over the knee, the rear one
- * stays loaded by the ear. Then she gathers: the rear knee scoops through high in front (the
+ * stays tucked under the chin. Then she gathers: the rear knee scoops through high in front (the
  * plié's knee), the hips start up; and she bites the floor, the brake overshooting past her guard
  * (the hips low, the chest pitched in, the lead knee driven over the toe, the rear heel high),
- * before she rebounds up into it, loaded: the rear fist cocked deeper by the ear, the look from
- * under the brows. She settles into the guard on the idle's last frame.
+ * before she rebounds up into it, loaded: the rear fist drawn back tight against the jaw, the look
+ * from under the brows. She settles into the guard on the idle's last frame.
  *
  * - 0 (1 tick): the push: the hips dip in, the rear heel snaps up on the ball; a puff of dust.
  * - 1 (3 ticks, 28 px): the slide-in, the lowest frame; the floor streak under the lead heel.
  * - 2 (3 ticks, 20 px): the gather, the hips rising; the streak thins.
  * - 3 (3 ticks, 12 px): the bite, the brake's overshoot: both feet down, the knees soaking up the
  *   stop, the chest pitched in past the guard; dust at both feet. Cancellable from its second tick.
- * - 4 (3 ticks, 4 px): loaded, the rebound to the guard's height, the rear fist pulled back
- *   (`cool`).
+ * - 4 (3 ticks, 4 px): loaded, the rebound to the guard's height, the rear fist drawn back to
+ *   the jaw (`cool`).
  * - 5 (3 ticks): the idle's last frame: its own 7 -> 0 beat carries her on into the loop.
  *
  * What touches the floor is placed on the stage (`stageOf`): a foot skids on with the travel
@@ -131,7 +131,7 @@ const PUSH = pose(
     nearFoot: onBall(REAR_TOE, -34),
     farFoot: LEAD,
   },
-  at(0.4, -0.4),
+  at(-0.2, -0.2),
   at(-0.6, -0.6),
 );
 
@@ -140,10 +140,11 @@ const SLIDE_HIP = at(-4, 22);
 const SLIDE_LEAN = 32;
 
 // 1 · The slide-in (3 ticks), the lowest frame: one sweep of line from the trailing rear toe
-// through the hips to the head. The rear leg long behind her, 4 px off the floor, the toes
-// pointed; the lead boot far out in front on its heel, the only thing on the floor; the low lead
-// fist out over the knee, the rear one loaded by the ear.
-const SLIDE = pose(
+// through the hips to the head. The rear leg long behind her, the knee 4 px off the floor, the
+// toes dragging along it (the boot square to the shin: a foot does not stretch flat along a
+// shin lying level); the lead boot far out in front on its heel, the weight on it; the low lead
+// fist out over the knee, the rear one under the chin.
+const SLIDE_BODY = pose(
   {
     ...GUARD,
     hip: SLIDE_HIP,
@@ -159,10 +160,11 @@ const SLIDE = pose(
   at(0, 0),
   at(21, 27),
 );
+const SLIDE = pointed(SLIDE_BODY, 80, ['near']);
 
 // 2 · The gather (3 ticks): the rear knee scoops through high in front, the lead heel
 // still gliding; the hips start up, the chest stays over the knee.
-const GATHER = pose(
+const GATHER_BODY = pose(
   {
     ...GUARD,
     hip: at(-4.5, 27.5),
@@ -176,8 +178,9 @@ const GATHER = pose(
   },
   at(0.6, -0.8),
   at(0, 0),
-  at(10, 38),
+  at(13, 37),
 );
+const GATHER = pointed(GATHER_BODY, 64, ['near']);
 
 // 3 · The bite (3 ticks), the brake's overshoot: the lead knee driven on over the toe, the rear
 // heel high on its ball, the chest and the head pitched in past the guard. A tick of travel
@@ -199,7 +202,7 @@ const BITE = pose(
 
 // 4 · Loaded (3 ticks), on the guard's marks (the game carries her no farther after it): the
 // rebound, the hips back up to the guard's height and the chest a little behind it, the rear
-// fist pulled deeper by the ear.
+// fist drawn back tight against the jaw (the elbow still down on the ribs).
 const LOADED = pose(
   {
     ...GUARD,
@@ -212,7 +215,7 @@ const LOADED = pose(
     farFoot: LEAD,
     face: 'cool',
   },
-  at(-2.8, -0.2),
+  at(-1.6, -0.4),
   at(0.8, -0.4),
 );
 

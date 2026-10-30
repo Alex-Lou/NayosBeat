@@ -2,7 +2,7 @@ import { at, ease, GUARD, lifted, planted, tween, type Effect, type Pose } from 
 
 /**
  * victory: 8 frames, 6,6,6,6 then 8x4 looping from frame 4. He comes out of the guard (the rear
- * foot steps in, the gloves come down), chambers the rear fist low at his belt, the knees
+ * foot steps in, the gloves come down), drops the rear fist low in front of his hip, the knees
  * loading, and drives it up to the sky on his toes, a flash of sound at the knuckles; then he
  * holds it up, standing tall and easy, the lead hand hooked at his pocket, and bounces on the
  * beat: a dip of the knees on each beat (frame 4) while the raised fist pumps up against it (a
@@ -54,16 +54,18 @@ const STEP: Pose = {
   face: 'cool',
 };
 
-// 1 · The rear foot lands; the coil: the far fist chambers low at the belt behind him, the
-// knees load deep, the chest coils a touch forward over them.
+// 1 · The rear foot lands; the coil: the far fist drops low in front of the lead hip, the arm
+// loose under the shoulder (the elbow hidden in the torso, never poking out of the back), the
+// knees load deep, the chest coils a touch forward over them; the lead fist stays up at the
+// belly, to pull down as the rear one drives up.
 const COCK: Pose = {
   ...UP,
   hip: at(-3.6, 37.6),
   torso: 8,
   head: 2,
   shrug: 1,
-  nearFist: at(6, 44),
-  farFist: at(3, 47),
+  nearFist: at(7.5, 49),
+  farFist: at(7, 39),
   bends: { nearElbow: 'back', farElbow: 'down' },
 };
 

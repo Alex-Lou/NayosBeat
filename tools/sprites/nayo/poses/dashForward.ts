@@ -187,7 +187,7 @@ const GLIDE: Pose = guard(
  * skid forward with the stop and take over frame 4 (on the marks) exactly where they left off.
  */
 const BITE_LEAD = planted(stage(LEAD.x, 4, 3), LEAD.angle);
-const BITE_REAR = onToes(stage(REAR_TOE, 4, 3), -22);
+const BITE_REAR = onToes(stage(REAR_TOE, 4, 3), -36);
 /** Where the toes bite on the landing. */
 const SKID = toeOf(BITE_LEAD);
 const REAR_SKID = toeOf(BITE_REAR);
@@ -212,9 +212,10 @@ const CHASE: Pose = guard(
 
 // 3 - Réception (3 ticks): both feet bite (a step ahead of the guard's marks in the cell: the
 // game still carries him on, they skid forward with the stop and run straight into the next
-// frame, never back), the knees soak up the stop, the chest leans on over the lead knee and
-// carries on forward; the rear glove sinks with the weight, the lead one carried on a hair by
-// the stop.
+// frame, never back), the rear one on its ball with the heel well up over the dropped knee
+// (flatter, the shin would fold down over the foot), the knees soak up the stop, the chest
+// leans on over the lead knee and carries on forward; the rear glove sinks with the weight, the
+// lead one carried on a hair by the stop.
 const LAND: Pose = guard(
   {
     hip: at(-6.5, 30.4),
@@ -238,7 +239,7 @@ const RISE: Pose = guard(
     head: 0,
     shrug: 2,
     nearFoot: LEAD,
-    farFoot: onToes(REAR_TOE, -17),
+    farFoot: onToes(REAR_TOE, -20),
   },
   at(0.2, 0.6),
   at(0.2, 0.5),

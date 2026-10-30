@@ -2,7 +2,6 @@ import type { Point } from '../../raster.ts';
 import { solve, type Bend } from '../../skeleton.ts';
 import { RIFF_BODY } from '../body.ts';
 import { at, GUARD, onBall, smear, toeOf, type Effect, type Foot, type Pose } from './common.ts';
-import { POSES as JUMP_FORWARD } from './jumpForward.ts';
 import { POSES as ANGE } from './specialForward.ts';
 
 export const ANIMATED: boolean = true;
@@ -29,45 +28,56 @@ function borrowed(poses: readonly Pose[], frame: number): Pose {
  * second blow); carried 30 px forward over ticks 2-11, stopped by the first blow. The poses stay
  * over her feet, the height comes from the engine: the airborne frames from the flash on are
  * drawn with their soles 5 to 9 px up in the cell, so that on screen her hips keep falling, 83
- * at the flash, 70 on the first blow, 48 on its last tick, 34 on the stomp, 22.5 in the plié.
+ * at the flash, 70 on the first blow, 48 on its last tick, 34 on the stomp, 26 on the landing.
  *
  * A punk's stage dive that ends in a double stomp. Out of a deep load (pitched in over the lead
- * knee, both arms swung down behind her hips) she springs off on the diagonal, the arms flung
+ * knee, both arms swung back) she springs off on the diagonal, the arms flung
  * open, then flies out flat over the opponent like a dart, the chest leading, the back arched,
  * the lead arm reaching for him and the rear one swept back over her, the boots trailing high: a
  * body thrown into a crowd. At the top she pitches over at him, and that is the pose the flash
  * freezes: the chest and the eye on the target, both boots cocked under her hips and aimed down
  * at his chest, both arms swept back behind her shoulders like wings, open hands, clear of her
  * head; a platine swoop under her where the boots swung through, a magenta streak inside it, a
- * white-hot glint on their toes. Then the legs drive down together into him while both arms
- * fling up into a V (the crowd surfer's, action and reaction), the kiai, a white-hot star at the
- * soles; she rides him down onto the floor and slams both boots on it, the legs long, the arms
- * thrown back: the shockwave shoots up his body in rays of light, platine over magenta, and runs
- * out on the floor ahead of her. She sinks into the plié and rises out of it through her Saut de
- * l'ange's landing while the wave runs on past him, the rays rise off it, and it fades.
+ * white-hot glint on their toes. Then the legs drive down together into him while the lead arm
+ * flings up beside her head and the rear one back and down (action and reaction: seen three
+ * quarters, her rear arm cannot rise behind the head without leaving its shoulder), the kiai, a
+ * white-hot star at the soles; she rides him down onto the floor and slams both boots on it,
+ * the legs long, both arms thrown back and down: the shockwave shoots up his body in rays of
+ * light, platine over magenta, and runs out on the floor ahead of her. She sinks low and rises
+ * through her Saut de l'ange's landing while the wave runs on past him, the rays rise off it,
+ * and it fades.
  *
  * Nothing like her Saut de l'ange (a corkscrew, two straight heels chopped down from above, the
  * body pitched over them, the fists slammed down by the hips), her j.H (one leg), her front flip,
  * nor Nayo's Mégabasse (fists into the floor, tall speaker rings) or Pied fendu (a one-leg flying
- * side kick leaning back): a flat flying dart, a dive-bomb with wings, a two-boot stomp under a V
- * of arms, a geyser of light.
+ * side kick leaning back): a flat flying dart, a dive-bomb with wings, a two-boot stomp under a
+ * thrown fist, a geyser of light.
  *
- * - 0 (2 ticks): the load, on the floor: deep in the plié (hips 23), pitched in 35 degrees, both
- *   arms swung down behind the hips; dust off both boots.
- * - 1 (3 ticks): her jump's take-off, tipped onto the launch diagonal (34 degrees of spin where
- *   hers has 22), the arms flung open, the rear one back, the lead one thrown forward under the
+ * - 0 (2 ticks): the load, on the floor: deep (hips 25.5), the rear knee driven forward and down
+ *   over its high heel (her crouch's sprinter's set, the knees bending toward the toes), pitched
+ *   in 35 degrees, both arms swung back as far as shoulders go (the pitch lays them level);
+ *   dust off both boots.
+ * - 1 (3 ticks): her jump's take-off (copied here as it was drawn for this strip, so that a
+ *   change to her jump does not move the Slam), tipped onto the launch diagonal (34 degrees of
+ *   spin where hers has 22), the arms flung open, the rear one back, the lead one thrown forward under the
  *   chin (both up would cross her face); set down so that the push-off toes just leave the
  *   floor; a short trail under the boots.
- * - 2 (5 ticks, the top): the dart.
+ * - 2 (5 ticks, the top): the dart, the boots trailing pointed back (35 degrees off square to the
+ *   shin at most: a combat boot).
  * - 3 (2 ticks, the flash): the dive-bomb, the hero pose.
- * - 4 (4 ticks, active): the double stomp into his chest, the V, the white-hot star at the soles.
+ * - 4 (4 ticks, active): the double stomp into his chest, the knees soft and bending the way
+ *   knees bend, the lead fist thrown up by her head, the white-hot star at the soles.
  * - 5 (4 ticks, active): the contact: both boots slammed on their guard marks, the legs as long
  *   as that wide stance allows (the hips 34, the guard's 32: both legs straight would only give
- *   35), the arms thrown back; the floor wave and the rays are what reach the hitbox's edge.
+ *   35), both arms thrown back and down; the floor wave and the rays are what reach the hitbox's
+ *   edge.
  * - 6-8: her Saut de l'ange's frames 6 to 8 (the plié, the rise, the guard), the lead foot kept
  *   flat (it already stamped), the wave running on past the hitbox, thinning, and fading.
  *
- * The head stays the source drawing (under stamp.ts's 20 degrees on screen) on every frame.
+ * The head stays the source drawing (under stamp.ts's 20 degrees on screen) on every frame. The
+ * arms are thrown nearly straight, never locked past their length (an arm out of reach is
+ * drawn rigid, a robot's), each elbow bending the way an elbow bends, and a shoulder swings 60
+ * degrees behind the chest at most.
  */
 
 const TOE = toeOf(GUARD.nearFoot);
@@ -147,8 +157,14 @@ function legs(pose: Pose, near: Leg, far: Leg): Pose {
   };
 }
 
-/** An arm thrown straight from its shoulder along `degrees` (0 forward, 90 up). */
-function flung(pose: Pose, side: 'near' | 'far', degrees: number, reach = 24): Point {
+/**
+ * How far a thrown arm reaches from its shoulder: nearly straight (its elbow about 20 degrees
+ * off), never locked out past its length (an arm placed out of reach is drawn rigid, a robot's).
+ */
+const REACH = 21.4;
+
+/** An arm thrown from its shoulder along `degrees` (0 forward, 90 up). */
+function flung(pose: Pose, side: 'near' | 'far', degrees: number, reach = REACH): Point {
   const shoulder = solve(pose, RIFF_BODY)[side].shoulder;
   return at(
     shoulder.x + Math.cos(rad(degrees)) * reach,
@@ -160,7 +176,7 @@ function flung(pose: Pose, side: 'near' | 'far', degrees: number, reach = 24): P
  * Both arms of `pose` thrown along `near` and `far` degrees, on screen: for a spun pose (the
  * borrowed take-off) the targets are turned back, so that the spin lands them there.
  */
-function arms(pose: Pose, near: number, far: number, reach = 24): Pose {
+function arms(pose: Pose, near: number, far: number, reach = REACH): Pose {
   const back = rad(pose.spin ?? 0);
   const unspun = (p: Point): Point => {
     const dx = p.x - pose.hip.x;
@@ -170,11 +186,32 @@ function arms(pose: Pose, near: number, far: number, reach = 24): Pose {
       pose.hip.y + dx * Math.sin(back) + dy * Math.cos(back),
     );
   };
-  return {
+  return elbowsBent({
     ...pose,
     nearFist: unspun(flung(pose, 'near', near, reach)),
     farFist: unspun(flung(pose, 'far', far, reach)),
-  };
+  });
+}
+
+const BENDS: readonly Bend[] = ['down', 'up', 'front', 'back'];
+
+/** The elbow's bend seen side on, counterclockwise from the upper arm (positive: the way it folds). */
+function flexion(pose: Pose, side: 'near' | 'far'): number {
+  const { shoulder, elbow, wrist } = solve(pose, RIFF_BODY)[side];
+  const a = at(elbow.x - shoulder.x, elbow.y - shoulder.y);
+  const b = at(wrist.x - elbow.x, wrist.y - elbow.y);
+  return (Math.atan2(a.x * b.y - a.y * b.x, a.x * b.x + a.y * b.y) * 180) / Math.PI;
+}
+
+/** `pose` with each elbow folding the way an elbow folds (the forearm toward the arm's front). */
+function elbowsBent(pose: Pose): Pose {
+  let bent = pose;
+  for (const side of ['near', 'far'] as const) {
+    const key = side === 'near' ? 'nearElbow' : 'farElbow';
+    const trials = BENDS.map((bend) => ({ ...bent, bends: { ...bent.bends, [key]: bend } }));
+    bent = trials.find((trial) => flexion(trial, side) >= 0) ?? bent;
+  }
+  return bent;
 }
 
 const dust = (x: number, size: number, progress: number): Effect => ({
@@ -220,25 +257,39 @@ const hot = (center: Point, radius: number): Effect => ({
 // 0 · The load (2 ticks): deep in the plié, pitched in over the lead knee, both arms swung down
 // behind the hips to throw the leap; the floor puffs under both boots.
 const LOAD_BODY: Pose = {
-  ...borrowed(JUMP_FORWARD, 0),
-  hip: at(-7.5, 23),
+  ...GUARD,
+  hip: at(-7.5, 25.5),
   torso: 35,
   head: LOOK + 4 - 35,
   shrug: 2.4,
   twist: 0.35,
-  nearFoot: onBall(TOE, -30),
+  nearFoot: onBall(TOE, -56),
   farFoot: GUARD.farFoot,
-  nearFist: at(-20, 30),
-  farFist: at(-12, 28),
-  bends: { nearElbow: 'down', farElbow: 'down', nearKnee: 'back' },
+  bends: { nearElbow: 'down', farElbow: 'down', nearKnee: 'front', farKnee: 'front' },
 };
-const LOAD: Pose = { ...LOAD_BODY, effects: [dust(9, 4.5, 0.12), dust(-17, 4, 0.12)] };
+// Both arms swung back, as far back as shoulders go (the pitch of the chest lays them level).
+const LOAD: Pose = {
+  ...arms(LOAD_BODY, 192, 195),
+  effects: [dust(9, 4.5, 0.12), dust(-17, 4, 0.12)],
+};
 
 // 1 · The take-off (3 ticks): her jump's, tipped onto the launch diagonal, the arms flung open
 // (the rear one back, the lead one forward under the chin); set down so that the push-off toes
 // just leave the floor (the game is already lifting her). A short trail under the boots.
-const JUMP_TAKEOFF = borrowed(JUMP_FORWARD, 1);
-const TIPPED: Pose = arms({ ...JUMP_TAKEOFF, spin: 34, head: JUMP_TAKEOFF.head - 12 }, 182, 10);
+// Her jump's take-off (jumpForward.ts, frame 1, as it was drawn for this strip): long, the rear
+// leg pushing straight behind, the lead knee driving.
+const JUMP_TAKEOFF: Pose = {
+  ...GUARD,
+  hip: at(-3, 38),
+  torso: 4,
+  head: -8,
+  shrug: 1.4,
+  twist: 0.5,
+  nearFoot: { x: -11, y: 8, angle: -58 },
+  farFoot: { x: 3, y: 16, angle: -50 },
+  bends: { ...GUARD.bends, nearKnee: 'down' },
+};
+const TIPPED: Pose = arms({ ...JUMP_TAKEOFF, spin: 34, head: JUMP_TAKEOFF.head - 12 }, 190, 10);
 const TAKEOFF: Pose = {
   ...moved(TIPPED, 0, 0.6 - soles(TIPPED)),
   effects: [smear(3, [-10, 4], [-4, 8], [3, 13])],
@@ -259,7 +310,7 @@ const DART_BODY: Pose = {
   farHand: 'open',
   bends: { nearElbow: 'up', farElbow: 'up' },
 };
-const DART: Pose = arms(legs(DART_BODY, [-95, -118, 150], [-80, -100, 160]), 170, 18);
+const DART: Pose = arms(legs(DART_BODY, [-95, -118, -148], [-80, -100, -130]), 170, 18);
 
 // 3 · The dive-bomb (2 ticks, the 20-tick freeze flash): pitched over at the target (50
 // degrees: the head stays upright, so the torso carries the pitch), both boots cocked under the
@@ -278,7 +329,7 @@ const BOMB_BODY: Pose = {
   bends: { nearElbow: 'down', farElbow: 'down' },
 };
 const BOMB: Pose = {
-  ...arms(legs(BOMB_BODY, [40, -10, -35], [50, -2, -30]), 140, 172),
+  ...arms(legs(BOMB_BODY, [40, -10, -35], [50, -2, -30]), 174, 178),
   effects: [
     smear(1.5, [-14, 22], [-3, 15], [10, 13]),
     platine(5, [-30, 38], [-22, 23], [-9, 14], [4, 11], [13, 12]),
@@ -302,7 +353,7 @@ const STOMP_BODY: Pose = {
   face: 'kiai',
 };
 const STOMP: Pose = {
-  ...arms(legs(STOMP_BODY, [18, 30, 22], [24, 36, 26]), 122, 50),
+  ...arms(legs(STOMP_BODY, [26, 16, 22], [32, 22, 26]), 216, 62),
   effects: [smear(5, [10, 30], [16, 22], [22, 15], [27, 10]), hot(at(28, 10), 8)],
 };
 
@@ -327,7 +378,7 @@ const SLAM_BODY: Pose = {
   face: 'effort',
 };
 const SLAM: Pose = {
-  ...arms(SLAM_BODY, 138, 152),
+  ...arms(SLAM_BODY, 216, 222),
   effects: [
     ring(at(12, 4), 18, 0.3, 'sound', 0.35),
     ring(at(23, 5), 36, 0.3, 'platine', 0.35),

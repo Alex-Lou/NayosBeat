@@ -8,19 +8,22 @@ import { LEAD_TOE, onToes, REAR_TOE } from './held.ts';
  * the thrower's throwBack up to the release (tick 14): 3, 3, 4, 4 ticks (ticks 0-2, 3-5, 6-9,
  * 10-13). Frames 0 and 1 are drawn in front of the thrower, facing him (centers 28 px apart,
  * the bodies touching); frames 2 and 3 behind him, 28 px back, from their first tick (tick 6,
- * the start of the heave, when the collar goes over his head). He keeps facing the same way (the game turns
- * fighters only on their feet, in neutral), so the thrower is then on his back side, toward -x.
+ * the start of the heave, when the collar goes over his head). He keeps facing the same way
+ * (the game turns fighters only on their feet, in neutral), so the thrower is then on his back
+ * side, toward -x.
  * The thrower (not drawn) is drawn over him and holds his collar: the neck sits in the
- * thrower's fists on every tick, at (23.5, 51.5), (6.5, 64), (-5, 65) and (-25.5, 25) in the
- * thrower's space (hauled down in front, up over his back, on top of his shoulders behind his
- * neck, down behind his rear hip).
+ * thrower's fists on every tick, at (23.5, 51.5), (6.5, 64), (-3, 62) and (-26, 25) in the
+ * thrower's space (hauled down in front, hoisted over his head, behind his neck, down behind
+ * him).
  *
  * One forward somersault around the collar, head first: yanked forward and down onto his toes,
- * the hands still fighting the grip; heaved face down across the thrower's back, the legs
- * trailing; upside down across the top of his shoulders, the legs splayed over; then dumped down
- * his back, on his back in the air, the head hanging clear behind the thrower's rear hip, the
- * legs whipping over and away. Arms and legs flail, never tucked: he is thrown, he does not
- * flip.
+ * the hands still fighting the grip; hoisted face down across above the thrower's head, the
+ * legs trailing; upside down across the top of his shoulders, the legs splayed over; then dumped
+ * down behind him, on his back in the air, the head hanging clear below the thrower's fists, the
+ * legs whipping over and away, the arms flung up as airHit's are. Arms and legs flail, never
+ * tucked: he is thrown, he does not flip. Every joint stays a human one (tools/sprites/
+ * anatomy.ts): the elbows fold no further than 140 degrees, no arm goes behind the back, the
+ * feet keep a live ankle (pointed at most 35 degrees, never folded up onto the shin).
  *
  * Frame 3 is low, and the thrown flight goes on from it. It lies where the knockdown lands him
  * (the knockdown's body reaches 35 px back toward the thrower from its feet anchor, which lands
@@ -71,7 +74,8 @@ function airborne(body: Airborne): Pose {
 // Frame 0 (3 ticks, the thrower's dip, in front of him): the collar hauled down, he is yanked
 // forward and down onto his toes, the knees buckling, his head going in past the thrower's over
 // the lead shoulder; the hands still fight the grip, the near one clutching the thrower's
-// forearm, the far one his elbow, the shoulders hunched: the pull goes through the collar.
+// forearm (the arm hanging down the body, the forearm forward to it), the far one his elbow,
+// the shoulders hunched: the pull goes through the collar.
 const YANKED: Pose = {
   hip: at(-14.3, 33.8),
   torso: 46,
@@ -80,7 +84,7 @@ const YANKED: Pose = {
   twist: 0.2,
   nearFoot: onToes(LEAD_TOE, -24),
   farFoot: onToes(REAR_TOE, -36),
-  nearFist: at(7.5, 44.5),
+  nearFist: at(9.5, 41.5),
   farFist: at(13.5, 42),
   nearHand: 'open',
   farHand: 'open',
@@ -89,7 +93,7 @@ const YANKED: Pose = {
 
 // Frame 1 (3 ticks, the load, in front of him): heaved up face down across the thrower's back,
 // the arms hanging over it; the feet leave the floor (a puff where the rear one pushed off), one
-// leg hanging, the other trailing out behind.
+// leg hanging, the other trailing out behind, its foot loose along the shin.
 const LOADED: Pose = airborne({
   neck: at(21, 64),
   turn: 72,
@@ -99,7 +103,7 @@ const LOADED: Pose = airborne({
   nearFist: at(34, 48),
   farFist: at(27, 57),
   nearFoot: { x: -21, y: 33, angle: -75 },
-  farFoot: { x: -36, y: 57, angle: -20 },
+  farFoot: { x: -36, y: 57, angle: -135 },
   nearHand: 'open',
   farHand: 'open',
   face: 'hurt',
@@ -108,17 +112,17 @@ const LOADED: Pose = airborne({
 
 // Frame 2 (4 ticks, the heave, drawn behind him): upside down across the top of the thrower's
 // shoulders, the collar in his fists behind his neck, the head hanging down his back, the legs
-// splayed up over the top.
+// splayed up over the top in a V, the far arm flung out wide.
 const OVER: Pose = airborne({
-  neck: at(-22.5, 65),
+  neck: at(-25, 62),
   turn: 138,
   torso: 5,
   head: -30,
   shrug: 1,
-  nearFist: at(-12, 50),
-  farFist: at(-30, 66),
-  nearFoot: { x: -36, y: 111, angle: 100 },
-  farFoot: { x: -54, y: 97, angle: 60 },
+  nearFist: at(-14.5, 47),
+  farFist: at(-38.5, 60.5),
+  nearFoot: { x: -38.5, y: 108, angle: 100 },
+  farFoot: { x: -52, y: 110, angle: 165 },
   nearHand: 'open',
   farHand: 'open',
   face: 'hurt',
@@ -126,18 +130,19 @@ const OVER: Pose = airborne({
 
 // Frame 3 (4 ticks, over and down, drawn behind him; the thrown flight goes on from it): dumped
 // down the thrower's back, on his back in the air, the collar down behind the thrower's rear
-// hip, the head hanging clear below his fists; the legs still whipping over and away, the arms
-// flung toward the floor.
+// hip, the head hanging clear below his fists; the legs still whipping over and away, the feet
+// pointed; the arms flung up and out off the chest (airHit's, which takes over from it): the
+// near one up, the far one up past the head.
 const DOWN: Pose = airborne({
   neck: at(-2, 25),
   turn: 252,
   torso: 0,
   head: -20,
   shrug: 1,
-  nearFist: at(2, 7),
-  farFist: at(-6, 10),
-  nearFoot: { x: 38, y: 62, angle: 200 },
-  farFoot: { x: 46, y: 50, angle: 220 },
+  nearFist: at(-9.7, 49.1),
+  farFist: at(-20.1, 34.4),
+  nearFoot: { x: 38, y: 62, angle: 98 },
+  farFoot: { x: 46, y: 50, angle: 70 },
   nearHand: 'open',
   farHand: 'open',
   face: 'hurt',

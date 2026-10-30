@@ -47,7 +47,10 @@ export const ANIMATED: boolean = true;
  * put it, the rear ball where it was). While the game carries him, nothing touches the floor:
  * the lead foot skims in low ahead of the slide and comes down heel first as it ends, flat
  * once it has stopped (frame 3); the rear foot pushes off its ball and is dragged up behind,
- * just off the floor. In the world, every foot only ever goes forward.
+ * just off the floor. In the world, every foot only ever goes forward. Down in the glide the
+ * rear shin lies low behind him, the knee sunk forward over its foot: the rear heel rides high,
+ * the foot almost upright on its ball like a lunge's (tools/sprites/anatomy.ts: flatter, the
+ * ankle folds past its stop), and comes back down to the guard's as he rises.
  */
 
 /** Where the toe tip of a foot touches the floor (a foot on the ball pivots around it). */
@@ -132,7 +135,7 @@ const DROP_BODY: Body = {
   shrug: 1.4,
   twist: -0.3,
   nearFoot: planted(LEAD_TOE - 7, 0),
-  farFoot: onToes(REAR_TOE, -27),
+  farFoot: onToes(REAR_TOE, -32),
 };
 const DROP: Pose = {
   ...DROP_BODY,
@@ -142,7 +145,8 @@ const DROP: Pose = {
 
 // Frame 1 (3 ticks): the glide. Down into both knees, the lead foot skimming in low ahead of
 // the slide, the rear one pushing off its ball; the lead shoulder drops back and the chest
-// coils open toward us, the fist cocked at the hip, elbow back; the rear glove at the jaw.
+// coils open toward us, the fist cocked low in front of the hip, the elbow back by the ribs
+// (the upper arm along the side, not swung out behind the back); the rear glove at the jaw.
 const GLIDE_BODY: Body = {
   ...GUARD,
   hip: at(-2.4, 29.6),
@@ -152,12 +156,12 @@ const GLIDE_BODY: Body = {
   reach: { near: -1 },
   twist: 0.45,
   nearFoot: lifted(planted(13.5, 5), 1.3),
-  farFoot: lifted(onToes(REAR_TOE - 3.8, -31), 0.8),
+  farFoot: lifted(onToes(REAR_TOE - 3.8, -46), 0.8),
   bends: { nearElbow: 'back', farElbow: 'down' },
 };
 const GLIDE: Pose = {
   ...GLIDE_BODY,
-  nearFist: at(7, 33.5),
+  nearFist: at(12.2, 34.4),
   farFist: atCheek(GLIDE_BODY, TUCK.x, TUCK.y),
   // The push-off: a puff where the rear ball drives off the floor.
   effects: [{ kind: 'dust', x: toeOf(GLIDE_BODY.farFoot) - 2, size: 2.2, progress: 0.25 }],
@@ -175,7 +179,7 @@ const SWEEP_BODY: Body = {
   reach: { near: 1.5 },
   twist: -0.35,
   nearFoot: lifted(planted(LANDING - 0.3, 6), 0.8),
-  farFoot: lifted(onToes(REAR_TOE - 4.7, -33), 0.5),
+  farFoot: lifted(onToes(REAR_TOE - 4.7, -46), 0.5),
 };
 const SWEEP_ARM: Pose = {
   ...SWEEP_BODY,
@@ -198,7 +202,7 @@ const IMPACT_BODY: Body = {
   reach: { near: 3 },
   twist: -0.9,
   nearFoot: planted(LANDING, -4),
-  farFoot: onToes(REAR_TOE - 4.5, -35),
+  farFoot: onToes(REAR_TOE - 4.5, -47),
   face: 'effort',
 };
 const IMPACT_ARM: Pose = {
@@ -265,7 +269,7 @@ const RISE_BODY: Body = {
   shrug: 2.2,
   twist: -0.4,
   nearFoot: lifted(planted(8, 2), 0.6),
-  farFoot: onToes(REAR_TOE - 1.2, -20),
+  farFoot: onToes(REAR_TOE - 1.2, -25),
 };
 const RISE: Pose = {
   ...RISE_BODY,

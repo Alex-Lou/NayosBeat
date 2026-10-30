@@ -1,4 +1,4 @@
-import { at, type Pose } from './common.ts';
+import { at, onBall, toeOf, type Pose } from './common.ts';
 import { BRACED, dust, figure } from './knockdown.ts';
 
 export const ANIMATED: boolean = true;
@@ -10,14 +10,16 @@ export const ANIMATED: boolean = true;
  *
  * - 0, through the hitstop: the legs go. The sweep kicks the lead leg out from under her,
  *   forward and up, nearly straight, the boot flipped toes up; the rear knee buckles forward and
- *   down under her, the rear boot left on its mark, its toe dragging on the floor where the dust
- *   rises; the hips drop back over nothing, the chest tips back, the chin tucked (the head stays
+ *   down under her, the rear boot left on its mark, rolled up onto its toe (the heel 55 degrees
+ *   up, the toe on its pixel: flatter, the shin would crush the ankle shut under the knee), the
+ *   toe dragging on the floor where the dust rises; the hips drop back over nothing, the chest tips back, the chin tucked (the head stays
  *   the source drawing, hurt). The arms fly the other way for balance: the lead one forward, the
  *   rear one back and down.
  * - 1: off her feet: the body pivots back around the hips, both boots swinging up after the
- *   hooked ankle, the knees bent, the lead arm flung straight up, the rear one reaching back.
+ *   hooked ankle, the knees bent, the lead arm flung up in front of the face, the rear one
+ *   reaching down behind her hip.
  * - 2: still turning back as she drops: the head lagging back (RotSprite past 20 degrees), the
- *   legs rising on, the rear arm flung back level, the lead one still up.
+ *   legs rising on, the rear hand going down for the floor, the lead arm still up.
  * - 3, held: BRACED (knockdown.ts), the last pixels before the seat hits: the chin tucked for
  *   the landing, the rear hand reaching down for the floor, the lead arm thrown forward.
  *
@@ -26,8 +28,11 @@ export const ANIMATED: boolean = true;
  * while the boots hold their height as she drops: they never fall and kick up again. Only the
  * swept lead foot goes out in front, on the frame the sweep takes it; once she falls, the poses
  * stretch back (the head toward negative x) and the legs swing up, never out into the attacker.
- * The lead arm stays clear of the head (never a few pixels of skin by the hair). The height of
- * the flight comes from the engine: the poses stay anchored.
+ * The lead arm stays clear of the head (never a few pixels of skin by the hair), up and in
+ * front of the face. The rear arm swings down toward the floor as she tips back, never back
+ * past what a shoulder allows (about 60 degrees behind the chest), and the boots keep about the
+ * angle of a relaxed foot to the shin. The height of the flight comes from the engine: the
+ * poses stay anchored.
  */
 
 /** 0: the lead leg swept out from under her, the rear knee buckling, the hips dropping back. */
@@ -37,11 +42,12 @@ const SWEPT: Pose = figure({
   head: 18,
   shrug: 0,
   twist: 0.6,
-  nearFoot: { x: -18.5, y: 8, angle: -35 },
+  // The rear boot rolled up onto its toe, which keeps its pixel on the mark.
+  nearFoot: onBall(toeOf({ x: -18.5, y: 8, angle: -35 }), -55),
   bends: { nearKnee: 'front' },
-  nearArm: { upper: 220, lower: 250 },
+  nearArm: { upper: -122, lower: -98 },
   farArm: { upper: 22, lower: 45 },
-  farLeg: { upper: 12, lower: 4, toes: 60 },
+  farLeg: { upper: 12, lower: 4, toes: 78 },
   nearHand: 'open',
   farHand: 'open',
   face: 'hurt',
@@ -55,10 +61,10 @@ const OFF: Pose = figure({
   head: 20,
   shrug: 0,
   twist: 0.5,
-  nearArm: { upper: 215, lower: 250 },
-  farArm: { upper: 88, lower: 108 },
-  nearLeg: { upper: 35, lower: 20, toes: 50 },
-  farLeg: { upper: 45, lower: 30, toes: 60 },
+  nearArm: { upper: -106, lower: -80 },
+  farArm: { upper: 72, lower: 96 },
+  nearLeg: { upper: 35, lower: 20, toes: 85 },
+  farLeg: { upper: 45, lower: 30, toes: 95 },
   nearHand: 'open',
   farHand: 'open',
   face: 'hurt',
@@ -72,10 +78,10 @@ const FALLING: Pose = figure({
   head: 14,
   shrug: 0,
   twist: 0.45,
-  nearArm: { upper: 195, lower: 212 },
-  farArm: { upper: 96, lower: 118 },
-  nearLeg: { upper: 50, lower: 22, toes: 40 },
-  farLeg: { upper: 54, lower: 25, toes: 45 },
+  nearArm: { upper: -96, lower: -70 },
+  farArm: { upper: 82, lower: 104 },
+  nearLeg: { upper: 50, lower: 22, toes: 87 },
+  farLeg: { upper: 54, lower: 25, toes: 90 },
   nearHand: 'open',
   farHand: 'open',
   face: 'hurt',

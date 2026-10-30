@@ -32,7 +32,9 @@ function guarded(pose: Pose, near = at(0, 0), far = at(0, 0)): Pose {
 /**
  * Held through the hitstop: the rock is in the hips (thrown back onto the rear knee), the chest
  * snapped upright and the head whipped back over it, the arms flung apart, hands open: the lead
- * one up off the knee, the rear one trailing out behind.
+ * one up off the knee, the rear one trailing out behind and down, the elbow soft and bending the
+ * way an elbow bends (the hand below the line of the upper arm). Flung out level with the
+ * shoulder, the arm would have to hinge the wrong way at the elbow, a wing.
  */
 const LOW_SNAP: Pose = {
   ...REST,
@@ -44,9 +46,10 @@ const LOW_SNAP: Pose = {
   nearFoot: onHeel(REST.nearFoot, 10),
   farFoot: onToes(REST.farFoot, Math.min(0, (REST.farFoot.angle ?? 0) + 12)),
   nearFist: at(8, 33),
-  farFist: at(-34, 35),
+  farFist: at(-32.8, 20),
   nearHand: 'open',
   farHand: 'open',
+  bends: { ...REST.bends, farElbow: 'up' },
   face: 'hurt',
 };
 
@@ -64,8 +67,10 @@ const LOW_REBOUND: Pose = guarded(
     face: 'hurt',
     effects: [skid(14.5, 2.6, 0.5), skid(-15, 1.8, 0.45)],
   },
-  at(-3, -4.5),
-  at(-7, -6),
+  // The hands come back in low, open, in front of the chest, the elbows under the shoulders
+  // (pulled in any tighter, the rear forearm would fold flat onto the biceps).
+  at(1, -4.5),
+  at(-3, -6.5),
 );
 
 const LOW_SHAKEN: Pose = guarded(

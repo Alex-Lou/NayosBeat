@@ -1,7 +1,8 @@
 import type { Point } from '../../raster.ts';
 import { solve, type Bend, type Bends } from '../../skeleton.ts';
 import { RIFF_BODY } from '../body.ts';
-import { at, GUARD, onBall, planted, toeOf, type Effect, type Foot, type Pose } from './common.ts';
+import { at, GUARD, onBall, toeOf, type Effect, type Foot, type Pose } from './common.ts';
+import { atChin } from './crouch.ts';
 
 export const ANIMATED: boolean = true;
 
@@ -17,30 +18,42 @@ export const ANIMATED: boolean = true;
  *
  * - 0 (3): the seat hits. The hips slam onto the floor (a puff under them) while the upper body
  *   is still on its way down, the chin tucked like a trained fighter's (the head the source
- *   drawing, hurt); the legs fly on up from the momentum, the rear palm reaching back for the
- *   floor, the lead arm still up from the fall.
+ *   drawing, hurt); the legs fly on up from the momentum, the rear palm slapping down on the
+ *   floor by her hip, the lead arm still up from the fall.
  * - 1 (3): the back slams flat a frame later (overlap: the hips land, then the spine, then the
  *   head, which whips back onto the floor), the legs whipped up high over the hips, the rear arm
- *   slapping the floor at her side, the lead one flopping down across her; a second puff under
+ *   flat on the floor at her side, the lead one flopping down across her; a second puff under
  *   the shoulders.
- * - 2 (4): the rebound: the whole body pops off the floor, the limbs lagging, the head lifting.
- * - 3 (6): the attitude, in the body: propped up on the rear elbow, the boots planted, the knees
- *   up, she holds the lead palm up at the opponent (« come on ») and looks at him from under a
- *   heavy lid (`cool`). The torso and the head add up to 18 degrees on screen: the face is the
- *   source drawing. No grin.
- * - 4 (6): she rocks back onto her shoulders, balled up, the knees to the chest, the rear arm
- *   hugging the shins, the head tucked aside (RotSprite, on the floor).
- * - 5 (8): and rolls up out of it onto her feet, into a low three-point prowl held for a beat:
- *   the rear foot on its ball on the guard's mark, the rear knee turned out behind her as in her
- *   plié and her crouch, the lead foot flat under the chest, the rear palm flat on the floor in
- *   front, the lead fist low and loose; the torso pitched 64 degrees forward and the head lifted
- *   against it (18 degrees on screen): the source face, glaring at the opponent (`focus`). A
- *   puff where the palm and the lead boot landed. getup drives off that palm.
+ * - 2 (4): the rebound: the whole body pops off the floor, the arms left lying on it, the head
+ *   lifting.
+ * - 3 (6): the attitude, in the body: propped up on the rear elbow (the upper arm straight down
+ *   under the shoulder to the floor, the forearm along it), the boots planted, the knees up, she
+ *   holds the lead palm up at the opponent (« come on ») and looks at him from under a heavy lid
+ *   (`cool`). The torso and the head add up to 18 degrees on screen: the face is the source
+ *   drawing. No grin.
+ * - 4 (6): she rocks back onto her shoulders, balled up, the knees to the chest, the arms along
+ *   her sides, the hands hooked under the shins, the head tucked aside (RotSprite, on the floor).
+ * - 5 (8): and rolls up out of it onto her feet, into a low three-point prowl held for a beat,
+ *   her crouch gone lower: the rear foot on its ball on the guard's mark, the heel high, the
+ *   rear knee driven forward and low under her, floating over the floor; the lead foot flat on
+ *   the guard's mark, the knee up over it; the lead palm flat on the floor in front of the boot,
+ *   the arm braced; the rear arm as in the guard, the elbow down on the ribs and the fist
+ *   tucked under the chin, the face clear (atChin, crouch.ts); the torso pitched 55 degrees
+ *   forward and the head lifted against it (16 degrees on screen): the source face, glaring at
+ *   the opponent (`focus`). Pitched any further, the chest would close on the lead thigh past
+ *   what a hip folds (tools/sprites/anatomy.ts); the lead shoulder reaches down after the palm
+ *   instead. A puff where the palm and the lead boot landed. getup drives off that palm.
  *
- * The prowl keeps the rear knee turned out (`back`) like her crouch: in front, this low, it would
- * be a knee down on the floor (and a kneel is Nayo's landing). It comes forward once, as she
- * springs out of the getup into the guard (getup.ts). The rock and the prowl give the strip its turn
- * (torso -115 degrees, then 64 forward): seen at speed, she rolls back and comes up facing him.
+ * Both knees bend toward the toes in the prowl, as in her crouch (crouch.ts): turned out behind
+ * her, the rear knee read on screen as a knee bent backward. Both feet already stand on the
+ * guard's marks, so the getup only rises out of it. The rock and the prowl give the strip its
+ * turn (torso -115 degrees, then 60 forward): seen at speed, she rolls back and comes up facing
+ * him.
+ *
+ * The joints stay where a body can put them (tools/sprites/anatomy.ts): falling back, the rear
+ * arm reaches down for the floor beside her, never back over her head (a shoulder opens about
+ * 60 degrees behind the chest); flying or lying, the boots keep about the angle of a relaxed
+ * foot to the shin, never pointed on in the line of the leg.
  *
  * Lying poses stretch backward (the head toward negative x), so the boots stay off the
  * opponent; the head turns past 20 degrees on screen (RotSprite) only on the floor. Her near
@@ -155,8 +168,9 @@ const REAR_TOE = toeOf(GUARD.nearFoot);
 
 /**
  * Falling back the last pixels before the floor, seat first: the legs up in front, the rear arm
- * reaching back and down for the floor, the lead one thrown up and forward for balance, clear of
- * the head; the chin tucked for the landing (the head the source drawing, hurt). The falls
+ * reaching straight down for the floor by her hip, the lead one thrown up and forward for
+ * balance, clear of the head; the chin tucked for the landing (the head the source drawing,
+ * hurt). The falls
  * (trip, airHit) end here and the knockdown lands from it; airHit holds it through a long fall.
  */
 export const BRACED: Pose = figure({
@@ -165,10 +179,10 @@ export const BRACED: Pose = figure({
   head: 36,
   shrug: 0,
   twist: 0.45,
-  nearArm: { upper: 240, lower: 205 },
+  nearArm: { upper: -80, lower: -25 },
   farArm: { upper: 60, lower: 85 },
-  nearLeg: { upper: 56, lower: 26, toes: 40 },
-  farLeg: { upper: 60, lower: 28, toes: 40 },
+  nearLeg: { upper: 56, lower: 26, toes: 91 },
+  farLeg: { upper: 60, lower: 28, toes: 93 },
   ...OPEN,
   face: 'hurt',
 });
@@ -180,10 +194,10 @@ const SEAT: Pose = figure({
   head: 42,
   shrug: 0,
   twist: 0.45,
-  nearArm: { upper: 172, lower: 245 },
+  nearArm: { upper: -55, lower: 3 },
   farArm: { upper: 48, lower: 72 },
-  nearLeg: { upper: 66, lower: 30, toes: 45 },
-  farLeg: { upper: 64, lower: 26, toes: 38 },
+  nearLeg: { upper: 66, lower: 30, toes: 95 },
+  farLeg: { upper: 64, lower: 26, toes: 91 },
   ...OPEN,
   face: 'hurt',
   effects: [dust(-11, 5, 0.05)],
@@ -196,26 +210,26 @@ const SLAM: Pose = figure({
   head: -6,
   shrug: 0,
   twist: 0.35,
-  nearArm: { upper: 10, lower: 0 },
-  farArm: { upper: 20, lower: 10 },
-  nearLeg: { upper: 88, lower: 40, toes: 50 },
-  farLeg: { upper: 76, lower: 26, toes: 40 },
+  nearArm: { upper: 4, lower: 10 },
+  farArm: { upper: 20, lower: 22 },
+  nearLeg: { upper: 88, lower: 40, toes: 105 },
+  farLeg: { upper: 76, lower: 26, toes: 91 },
   ...OPEN,
   face: 'hurt',
   effects: [dust(-34, 5, 0.05), dust(-11, 5, 0.4)],
 });
 
-/** 2: the rebound, off the floor, the limbs lagging. */
+/** 2: the rebound, off the floor, the arms left on it. */
 const REBOUND: Pose = figure({
   hip: at(-10, 9),
   torso: -78,
   head: 20,
   shrug: 0,
   twist: 0.4,
-  nearArm: { upper: 15, lower: 340 },
-  farArm: { upper: 10, lower: 350 },
-  nearLeg: { upper: 70, lower: 10, toes: 20 },
-  farLeg: { upper: 55, lower: 355, toes: 25 },
+  nearArm: { upper: -18, lower: 0 },
+  farArm: { upper: -4, lower: 12 },
+  nearLeg: { upper: 70, lower: 10, toes: 75 },
+  farLeg: { upper: 55, lower: -5, toes: 60 },
   ...OPEN,
   face: 'hurt',
   effects: [dust(-34, 5, 0.45), dust(-11, 5, 0.75)],
@@ -231,44 +245,44 @@ const LOOK: Pose = figure({
   nearFoot: { x: 4, y: 6.5, angle: 0 },
   farFoot: { x: 12, y: 5.6, angle: 20 },
   bends: { nearKnee: 'up', farKnee: 'up' },
-  nearArm: { upper: 236, lower: 6 },
+  nearArm: { upper: -92, lower: 2 },
   farArm: { upper: 10, lower: 40 },
   ...OPEN,
   face: 'cool',
   effects: [dust(-34, 5, 0.85), dust(13, 3.5, 0.2)],
 });
 
-/** 4: rocked back onto her shoulders, balled up, the rear arm round the shins. */
+/** 4: rocked back onto her shoulders, balled up, the hands hooked under the shins. */
 const ROCK: Pose = figure({
   hip: at(-14, 21.5),
   torso: -115,
   head: 45,
   shrug: 0,
   twist: 0.3,
-  nearArm: { upper: 80, lower: 40 },
-  farArm: { upper: 75, lower: 35 },
-  nearLeg: { upper: 165, lower: 30, toes: 20 },
-  farLeg: { upper: 155, lower: 20, toes: 10 },
+  nearArm: { upper: 30, lower: 100 },
+  farArm: { upper: 40, lower: 110 },
+  nearLeg: { upper: 165, lower: 30, toes: 95 },
+  farLeg: { upper: 155, lower: 20, toes: 85 },
   ...OPEN,
   face: 'effort',
 });
 
-/** 5, held: rolled up onto her feet into a low prowl, the rear palm on the floor, the glare. */
-const PROWL: Pose = {
-  hip: at(-17.5, 11.5),
-  torso: 64,
-  head: -46,
-  shrug: 1,
-  reach: { near: 2.5 },
+/** 5, held: rolled up onto her feet into a low prowl, the lead palm on the floor, the glare. */
+const PROWL: Pose = atChin({
+  hip: at(-12.5, 17.5),
+  torso: 55,
+  head: -39,
+  shrug: 1.5,
+  reach: { far: 2.6 },
   twist: 0.4,
-  nearFoot: onBall(REAR_TOE, -35),
-  farFoot: planted(-2),
-  nearFist: at(6, 2.2),
-  farFist: at(12, 12),
-  bends: { nearKnee: 'back', farKnee: 'front', nearElbow: 'back', farElbow: 'down' },
-  nearHand: 'open',
+  nearFoot: onBall(REAR_TOE, -70),
+  farFoot: GUARD.farFoot,
+  nearFist: at(0, 0),
+  farFist: at(16.2, 2.6),
+  bends: { nearKnee: 'front', farKnee: 'front', nearElbow: 'down', farElbow: 'down' },
+  farHand: 'open',
   face: 'focus',
-  effects: [dust(9, 3.5, 0.1), dust(-1, 3.5, 0.15)],
-};
+  effects: [dust(17, 3.5, 0.1), dust(9, 3.5, 0.15)],
+});
 
 export const POSES: readonly Pose[] = [SEAT, SLAM, REBOUND, LOOK, ROCK, PROWL];

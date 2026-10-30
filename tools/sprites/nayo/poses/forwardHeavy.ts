@@ -1,5 +1,5 @@
 import type { Point } from '../../raster.ts';
-import { BODY, solve } from '../../skeleton.ts';
+import { add, BODY, scale, solve, sub, type Bend } from '../../skeleton.ts';
 import { at, GUARD, lifted, planted, smear, type Effect, type Foot, type Pose } from './common.ts';
 
 /**
@@ -9,15 +9,16 @@ import { at, GUARD, lifted, planted, smear, type Effect, type Foot, type Pose } 
  * ball, the poses stay anchored.
  *
  * Slow and telegraphed on purpose (19 ticks), then a hammer. The weight sinks back, the chest
- * turns away and the rear glove cocks back behind the ear, clear of the head, while the lead
- * glove reaches out to measure. He steps in and rises, the bent arm climbing up and back in a
- * loop that a cyan arc already traces; up on the balls of his feet the hips come in under it,
- * the arm loaded high behind the head, for a beat. Then he drops: the chest pitches over, the
- * elbow comes through over the top with the fist trailing above the head, the lead heel slams
- * down and the fist lands on the head at the end of the arm, the elbow high and the knuckles
- * turned down, the lead glove tucked under the chin. The fist carries on down across the body,
- * then he rocks back, the lead foot steps home and the gloves come back up into the guard,
- * handing over to the idle's breath.
+ * turns away and the rear arm rises the way a hammer is raised, the elbow climbing in front of
+ * the face and the glove going up past the brow, while the lead glove reaches out to measure.
+ * He steps in and rises, the arm opening steadily on its way up while a cyan arc already traces
+ * it; up on the balls of his feet the hips come in, the fist loaded high over the crown, for a
+ * beat. Then he drops: the chest pitches over, the elbow leads the arm down over the top with
+ * the fist trailing above it, the lead heel slams down and the fist lands on the head at the
+ * end of the long arm, coming down, the lead glove tucked under the chin. The fist carries on
+ * down across the body, then he rocks back, the lead foot steps home and the gloves come back
+ * up into the guard, handing over to the idle's breath. The rear elbow never goes back past the
+ * shoulder line (it would fold the wrong way and the arm would seem to grow out of the back).
  *
  * Line of action: bowed back over the rear leg on the cock, tall on the toes at the top, one
  * long diagonal from the raised rear heel through the hips to the fist on the impact.
@@ -47,33 +48,39 @@ const sketch = (body: Body): Pose => ({
   farFist: GUARD.farFist,
 });
 
-/** The rear wrist `length` px from the rear shoulder, `angle` degrees above horizontal. */
-function rear(body: Body, length: number, angle: number): Point {
-  const { shoulder } = solve(sketch(body)).far;
-  const a = (angle * Math.PI) / 180;
-  return at(shoulder.x + Math.cos(a) * length, shoulder.y + Math.sin(a) * length);
-}
-
 /**
- * The rear wrist of an arm set by its two angles, in degrees above the horizontal toward the
- * opponent: the upper arm out of the shoulder, then the forearm out of the elbow. The wind-up
+ * An arm set by its joints, as tools/sprites/anatomy.ts measures them in the torso's frame: the
+ * upper arm `shoulder` degrees from hanging (90 = straight ahead, 180 = overhead), the elbow
+ * flexed `elbow` degrees (0 = straight, always the way an elbow bends). Gives the fist it puts
+ * in place and the bend that makes the solver pick that elbow, not its mirror image. The wind-up
  * reads as a bend opening steadily, never an arm that straightens and folds again.
  */
-function rearArm(body: Body, upper: number, forearm: number): Point {
-  const { shoulder } = solve(sketch(body)).far;
-  const u = (upper * Math.PI) / 180;
-  const f = (forearm * Math.PI) / 180;
-  return at(
-    shoulder.x + Math.cos(u) * BODY.upperArm + Math.cos(f) * BODY.forearm,
-    shoulder.y + Math.sin(u) * BODY.upperArm + Math.sin(f) * BODY.forearm,
-  );
-}
-
-/** The lead glove tucked under the chin, in front of the neck, wherever the head goes. */
-const CHIN = at(3, -8);
-function atChin(body: Body): Point {
-  const { head } = solve(sketch(body));
-  return at(head.x + CHIN.x, head.y + CHIN.y);
+function arm(
+  body: Body,
+  which: 'near' | 'far',
+  shoulder: number,
+  elbow: number,
+): { fist: Point; bend: Bend } {
+  const s = solve(sketch(body));
+  const root = s[which].shoulder;
+  const turn = (v: Point, degrees: number): Point => {
+    const a = (degrees * Math.PI) / 180;
+    return { x: v.x * Math.cos(a) - v.y * Math.sin(a), y: v.x * Math.sin(a) + v.y * Math.cos(a) };
+  };
+  const upper = turn({ x: -s.up.x, y: -s.up.y }, shoulder);
+  const joint = add(root, scale(upper, BODY.upperArm));
+  const fist = add(joint, scale(turn(upper, elbow), BODY.forearm));
+  // The other elbow the solver could pick: the mirror image across the shoulder-fist line.
+  const line = sub(fist, root);
+  const axis = scale(line, 1 / (Math.hypot(line.x, line.y) || 1));
+  const offset = sub(joint, root);
+  const along = offset.x * axis.x + offset.y * axis.y;
+  const mirror = add(root, sub(scale(axis, 2 * along), offset));
+  const dx = joint.x - mirror.x;
+  const dy = joint.y - mirror.y;
+  const bend: Bend =
+    Math.abs(dy) >= Math.abs(dx) ? (dy < 0 ? 'down' : 'up') : dx > 0 ? 'front' : 'back';
+  return { fist: at(fist.x, fist.y), bend };
 }
 
 /** A point of the rear arm `distance` px past the wrist along the forearm (back up it if < 0). */
@@ -107,10 +114,27 @@ const dust = (x: number, size: number, progress: number): Effect => ({
   progress,
 });
 
+/** A pose of `body` with both arms set by their joints, `[shoulder, elbow]` each (see arm). */
+function posed(body: Body, near: readonly [number, number], far: readonly [number, number]): Pose {
+  const lead = arm(body, 'near', near[0], near[1]);
+  const rearHand = arm(body, 'far', far[0], far[1]);
+  return {
+    ...body,
+    nearFist: lead.fist,
+    farFist: rearHand.fist,
+    bends: { ...body.bends, nearElbow: lead.bend, farElbow: rearHand.bend },
+  };
+}
+
+// The rear arm never goes behind the back: seen side on, an elbow pulled back past the
+// shoulder line folds the wrong way and the arm seems to grow out of the back. It loads the
+// overhead the way a hammer is raised, the elbow climbing in front of the face and opening
+// steadily, the glove going up past the brow to stand high over the head; the face stays clear
+// in front of it and the elbow always shows, so the arm reads from the shoulder to the glove.
+
 // Frame 0 (4 ticks): the tell, readable at once. The weight sinks back a touch onto the rear
-// foot (its heel coming down), the chest turns away and the rear elbow flares out behind the
-// back, the glove cocked behind the ear with clear air between it and the hair; the lead glove
-// eases forward.
+// foot (its heel coming down), the chest turns away and the rear elbow starts to climb, the
+// glove rising off the cheek past the brow; the lead glove eases forward.
 const LOAD_BODY: Body = {
   ...GUARD,
   hip: at(-8, 35.4),
@@ -121,133 +145,106 @@ const LOAD_BODY: Body = {
   nearFoot: GUARD.nearFoot,
   farFoot: onToes(REAR_TOE, -10),
 };
-const LOAD: Pose = {
-  ...LOAD_BODY,
-  nearFist: at(11.2, 56),
-  farFist: rearArm(LOAD_BODY, 172, 72),
-  bends: { nearElbow: 'down', farElbow: 'back' },
-};
+const LOAD = posed(LOAD_BODY, [37, 118], [98, 96]);
 
 // Frame 1 (4 ticks): cocked. Coiled back over the rear leg, the chest turned away, the rear
-// elbow back at shoulder height and the glove up behind the head; the lead glove reaching out
-// to measure, the lead foot unweighted, its toe leaving the floor as the step starts.
+// elbow up at chin height in front of the face and the glove up over the brow; the lead glove
+// reaching out to measure, the lead foot unweighted, its toe leaving the floor as the step
+// starts.
 const COCK_BODY: Body = {
   ...GUARD,
   hip: at(-9, 35.8),
   torso: 7,
-  head: 8,
+  head: 6,
   shrug: 2.2,
   twist: -0.8,
   nearFoot: lifted(onToes(LEAD_TOE, -9), 0.8),
   farFoot: onToes(REAR_TOE, -12),
 };
-const COCK: Pose = {
-  ...COCK_BODY,
-  nearFist: at(13, 60),
-  farFist: rearArm(COCK_BODY, 148, 70),
-  bends: { nearElbow: 'down', farElbow: 'back' },
-};
+const COCK = posed(COCK_BODY, [55, 95], [110, 82]);
 
 // Frame 2 (4 ticks): the step in (the game carries him), rising: the lead foot reaches in low,
-// the rear foot drives off its ball; the chest bows back, the arm climbs up and back still bent,
-// the glove behind the crown, and the arc lights up.
+// the rear foot drives off its ball; the chest bows back, the arm climbs on, the elbow at the
+// eyes and the glove over the forehead, and the arc lights up.
 const STEP_BODY: Body = {
   ...GUARD,
   hip: at(-8, 39),
-  torso: 5,
-  head: 10,
+  torso: 4,
+  head: 6,
   shrug: 2.4,
   twist: -0.85,
+  reach: { far: 1 },
   nearFoot: lifted(planted(LEAD_TOE + STEP - 7.6, 5), 2.4),
   farFoot: onToes(REAR_TOE, -24),
 };
-const CLIMB: Pose = {
-  ...STEP_BODY,
-  nearFist: at(12.5, 61.5),
-  farFist: rearArm(STEP_BODY, 143, 70),
-  bends: { nearElbow: 'down', farElbow: 'back' },
-};
+const CLIMB = posed(STEP_BODY, [44, 99], [137, 48]);
 
 // Frame 3 (4 ticks): high on the balls of both feet, the hang before the drop: the hips come in
-// under the arm, the chest leans over the lead leg and the arm stays loaded back, the elbow
-// behind the head and the glove up behind the crown, background all round it.
+// over the lead foot, the chest leans over the lead leg and the arm stands loaded overhead, the
+// elbow up by the brow, the glove high over the crown, background all round it.
 const TOP_BODY: Body = {
   ...GUARD,
-  hip: at(-5.2, 41.2),
-  torso: 14,
-  head: 3,
+  hip: at(-3.6, 41),
+  torso: 12,
+  head: 2,
   shrug: 2.2,
   twist: -0.5,
-  nearFoot: onToes(LEAD_TOE + STEP, -28),
+  reach: { far: 1.5 },
+  nearFoot: onToes(LEAD_TOE + STEP, -22),
   farFoot: onToes(REAR_TOE, -42),
 };
-const TOP: Pose = {
-  ...TOP_BODY,
-  nearFist: at(12.5, 62),
-  farFist: rearArm(TOP_BODY, 142, 84),
-  bends: { nearElbow: 'down', farElbow: 'back' },
-};
+const TOP = posed(TOP_BODY, [33, 128], [151, 46]);
 
 // Frame 4 (3 ticks): still on the toes, the drop starts: the chest pitches over, the rear
-// shoulder comes through and the arm whips over the top, the elbow leading and the fist
-// trailing above the head, the face clear; the lead glove pulls in under the chin.
+// shoulder comes through and the elbow leads the arm down over the top, the glove trailing high
+// above it, the face clear; the lead glove pulls in under the chin.
 const OVER_BODY: Body = {
   ...GUARD,
   hip: at(-3.6, 40.5),
   torso: 20,
   head: -3,
   shrug: 1.6,
-  reach: { far: 1.5 },
+  reach: { far: 2 },
   twist: 0.35,
   nearFoot: onToes(LEAD_TOE + STEP, -26),
   farFoot: onToes(REAR_TOE, -40),
 };
-const OVER: Pose = {
-  ...OVER_BODY,
-  nearFist: atChin(OVER_BODY),
-  farFist: rearArm(OVER_BODY, 66, 108),
-  bends: { nearElbow: 'down', farElbow: 'front' },
-};
+const OVER = posed(OVER_BODY, [62, 142], [128, 62]);
 
 // Frame 5 (3 ticks, active): the hammer lands. The lead heel slams down, the hips and the chest
-// pitch over the lead knee, the rear shoulder thrown through, the arm long, the elbow high and
-// the fist turned down on the head; the lead glove tucked under the chin, the jaw set. The trail
-// comes down from above the head: the whole loop in one stroke.
+// pitch over the lead knee, the rear shoulder thrown through, the arm long and coming down, the
+// fist dropping onto the head at the end of it; the lead glove tucked under the chin, the jaw
+// set. The trail comes down from above the head: the whole loop in one stroke.
 const IMPACT_BODY: Body = {
   ...GUARD,
   hip: at(-1.3, 36.8),
   torso: 31,
   head: -12,
   shrug: 1.2,
-  reach: { far: 3 },
+  reach: { far: 1 },
   twist: 0.85,
   nearFoot: planted(LEAD_TOE + STEP - 7),
   farFoot: onToes(REAR_TOE, -30),
   face: 'effort',
 };
-const IMPACT_ARM: Pose = {
-  ...IMPACT_BODY,
-  nearFist: atChin(IMPACT_BODY),
-  farFist: rear(IMPACT_BODY, 23, 5),
-  bends: { nearElbow: 'down', farElbow: 'up' },
-};
+const IMPACT_ARM = posed(IMPACT_BODY, [68, 142], [106, 12]);
 const IMPACT_KNUCKLES = rearAlong(IMPACT_ARM, KNUCKLES);
 const IMPACT: Pose = {
   ...IMPACT_ARM,
   effects: [
-    // Into the wrist, not the glove: the bow wave and the spray ahead of a stroke this long
-    // would burst well past the knuckles, and the fist itself is what lands at the edge.
+    // Into the forearm, short of the wrist: the bow wave and the spray ahead of a stroke this
+    // long would burst well past the knuckles, and the fist itself is what lands at the edge.
     arc(
       IMPACT_ARM,
       5,
       [
-        [-4, 88],
-        [4, 93],
-        [15, 92],
-        [24, 85],
-        [29, 75],
+        [-1, 86],
+        [7, 90],
+        [16, 88],
+        [22, 81],
+        [26, 71],
       ],
-      0,
+      -3,
     ),
     {
       kind: 'flash',
@@ -259,8 +256,8 @@ const IMPACT: Pose = {
   ],
 };
 
-// Frame 6 (5 ticks): follow-through. The fist carries on down across the body, the weight deep
-// on the lead leg, still set, the lead glove still at the chin.
+// Frame 6 (5 ticks): follow-through. The fist carries on down across the body, the arm long,
+// the weight deep on the lead leg, still set, the lead glove still at the chin.
 const THROUGH_BODY: Body = {
   ...GUARD,
   hip: at(-1.2, 34.2),
@@ -274,10 +271,7 @@ const THROUGH_BODY: Body = {
   face: 'effort',
 };
 const THROUGH: Pose = {
-  ...THROUGH_BODY,
-  nearFist: atChin(THROUGH_BODY),
-  farFist: at(18, 37.5),
-  bends: { nearElbow: 'down', farElbow: 'front' },
+  ...posed(THROUGH_BODY, [70, 140], [62, 22]),
   effects: [dust(LEAD_TOE + STEP - 2, 2.6, 0.55)],
 };
 
@@ -293,12 +287,7 @@ const BACK_BODY: Body = {
   nearFoot: lifted(planted(GUARD.nearFoot.x + 1.4, 2), 1.2),
   farFoot: onToes(REAR_TOE, -17),
 };
-const BACK: Pose = {
-  ...BACK_BODY,
-  nearFist: at(8, 54.5),
-  farFist: at(13.5, 53.5),
-  bends: { nearElbow: 'down', farElbow: 'down' },
-};
+const BACK = posed(BACK_BODY, [12, 145], [40, 119]);
 
 /**
  * The idle's last frame (the lead shoulder up on the breath): the idle's own 9 -> 0 beat
@@ -318,8 +307,8 @@ export const POSES: readonly Pose[] = [
     ...CLIMB,
     effects: [
       arc(CLIMB, 3, [
-        [-17, 70],
-        [-16, 77],
+        [5, 67],
+        [1.5, 75],
       ]),
     ],
   },
@@ -327,8 +316,8 @@ export const POSES: readonly Pose[] = [
     ...TOP,
     effects: [
       arc(TOP, 3.5, [
-        [-17, 76],
-        [-14, 82],
+        [0, 78],
+        [1.5, 85],
       ]),
     ],
   },
@@ -336,9 +325,9 @@ export const POSES: readonly Pose[] = [
     ...OVER,
     effects: [
       arc(OVER, 5, [
-        [-12, 84],
-        [-6, 89],
-        [1, 91],
+        [0, 82],
+        [4, 88],
+        [11, 89],
       ]),
     ],
   },

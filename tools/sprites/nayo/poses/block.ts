@@ -9,8 +9,8 @@ import { POSES as CROUCH_STRIP } from './crouch.ts';
  * The high guard, tightened: the gloves are already up, so the block closes them, the far glove
  * pulled in to the temple, the near one up over the chin, elbows on the ribs, the lead shoulder
  * rolled up and the chin tucked behind the gloves. The body takes the blow: frame 0, held
- * through the hitstop, carries the extreme (the lean rocked back, the knees sinking, the rear
- * heel dropping to brace, the lead toes peeling up); frame 1 springs back, the feet scuffing
+ * through the hitstop, carries the extreme (the lean rocked back, the knees sinking onto the
+ * ball of the rear foot, the lead toes peeling up); frame 1 springs back, the feet scuffing
  * the floor as the pushback slides him; frame 2 is the shell held while the blockstun lasts,
  * one breath from the guard (or the crouch) it returns to.
  *
@@ -59,24 +59,35 @@ function shell(pose: Omit<Pose, 'nearFist' | 'farFist'>, near: Point, far: Point
 
 // Standing ----------------------------------------------------------------------------------
 
-/** The gloves in the closed shell: near over the chin, far at the temple (from the head). */
-const NEAR = at(6, -11);
+/**
+ * The gloves in the closed shell: near in front of the chin, far at the temple (from the head).
+ * The near glove sits a hand's width forward of the shoulder, not on it: closer, the forearm
+ * would fold flat onto the biceps (an elbow shut past 150 degrees).
+ */
+const NEAR = at(7.5, -11);
 const FAR = at(7.1, -4.4);
 
-/** Contact, held through the hitstop: rocked back onto the rear foot, knees giving. */
+/**
+ * Contact, held through the hitstop: rocked back onto the rear foot, knees giving, the lead toes
+ * peeling up. The rear heel stays up on the ball of the foot, a little higher than in the guard:
+ * the rear knee sinks forward over it, and a heel let down under a shin leaning that far would
+ * bend the ankle some 55 degrees. The upright chest brings the lead shoulder up under the chin:
+ * the near glove rides forward of it (a folded forearm otherwise), the far glove stays clear of
+ * the jaw (behind it, it would vanish for the whole hitstop).
+ */
 const IMPACT = shell(
   {
-    hip: at(-9.4, 33.1),
+    hip: at(-10.4, 33.9),
     torso: 6,
     head: 12,
     shrug: 3.4,
     twist: -0.25,
     nearFoot: onHeel(GUARD.nearFoot, 8),
-    farFoot: onToes(GUARD.farFoot, -4),
+    farFoot: onToes(GUARD.farFoot, -19),
     face: 'effort',
   },
-  at(NEAR.x - 1, NEAR.y + 0.5),
-  at(FAR.x - 1.1, FAR.y - 0.3),
+  at(NEAR.x + 1, NEAR.y + 0.8),
+  at(FAR.x - 0.1, FAR.y - 0.3),
 );
 
 /** Settled in the shell, held while the blockstun lasts: the guard, closed and sunk. */
@@ -127,10 +138,16 @@ const upright = (torso: number, head: number): number => Math.min(head, 19 - tor
 const LOW_NEAR = at(REST.nearFist.x - REST_HEAD.x - 1.2, REST.nearFist.y - REST_HEAD.y + 1.4);
 const LOW_FAR = at(REST.farFist.x - REST_HEAD.x - 1.0, REST.farFist.y - REST_HEAD.y + 0.6);
 
+/**
+ * The crouching contact: rocked back over the rear heel more than down onto it (sitting lower
+ * on a knee folded that far would crush the calf into the thigh); the rear heel drops a touch to
+ * brace. The chest straightening lifts the lead shoulder toward the gloves: the near glove rides
+ * forward so the elbow stays open.
+ */
 const LOW_IMPACT = shell(
   {
     ...REST,
-    hip: at(REST.hip.x - 1.8, REST.hip.y - 1.0),
+    hip: at(REST.hip.x - 2.2, REST.hip.y - 0.4),
     torso: REST.torso - 7,
     head: upright(REST.torso - 7, REST.head + 6),
     shrug: (REST.shrug ?? 0) + 1.2,
@@ -139,7 +156,7 @@ const LOW_IMPACT = shell(
     farFoot: onToes(REST.farFoot, Math.min(0, (REST.farFoot.angle ?? 0) + 10)),
     face: 'effort',
   },
-  at(LOW_NEAR.x - 0.9, LOW_NEAR.y + 0.6),
+  at(LOW_NEAR.x + 1.5, LOW_NEAR.y + 0.6),
   at(LOW_FAR.x - 1.0, LOW_FAR.y - 0.3),
 );
 
@@ -167,7 +184,7 @@ const LOW_RECOIL = shell(
     face: 'effort',
     effects: [scuff(14.5, 2.2, 0.55), scuff(-15, 1.6, 0.5)],
   },
-  at(LOW_NEAR.x - 0.5, LOW_NEAR.y + 0.3),
+  at(LOW_NEAR.x + 0.6, LOW_NEAR.y + 0.3),
   at(LOW_FAR.x - 0.5, LOW_FAR.y - 0.2),
 );
 

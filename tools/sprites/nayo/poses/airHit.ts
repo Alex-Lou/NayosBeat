@@ -11,7 +11,8 @@ import { at, type Pose } from './common.ts';
  *
  * The blow whips the head back and throws the arms apart; the body tips over backward, the
  * limbs dragging behind the rotation: the lead arm flung loose up and forward, the rear arm
- * trailing over the head, the lead knee tucked, the rear leg trailing, then swinging up. The
+ * flung up over the head (clear of it, never through it), the lead knee tucked, the rear leg
+ * trailing, then swinging up. The ankles keep the feet loosely pointed, never folded flat. The
  * legs swing up, not out, so they never kick into the attacker.
  */
 
@@ -113,13 +114,15 @@ export const POSES: readonly Pose[] = [
     nearFoot: { x: 7.4, y: 6.2, angle: 14 },
     farFoot: { x: -17.5, y: 7.4, angle: -26 },
     nearFist: at(5, 44.5),
-    farFist: at(-28, 60),
+    // The rear arm flung back and down past the hip, as far as a shoulder swings behind.
+    farFist: at(-22.4, 35.7),
+    bends: { farElbow: 'up' },
     nearHand: 'open',
     farHand: 'open',
     face: 'hurt',
   },
-  // 1 · Launched: tipping over backward, the arms flung wide (the lead one up, the rear one out
-  // behind the head), the lead knee tucking, the rear leg trailing below.
+  // 1 · Launched: tipping over backward, the arms flung wide (the lead one up and forward, the
+  // rear one straight up off its shoulder), the lead knee tucking, the rear leg trailing below.
   tumble({
     hip: at(-6.5, 22),
     torso: -10,
@@ -128,9 +131,9 @@ export const POSES: readonly Pose[] = [
     shrug: 0,
     twist: 0.7,
     nearArm: { upper: 35, lower: 62 },
-    farArm: { upper: 172, lower: 138 },
-    nearLeg: { upper: 58, lower: -80, toes: -35 },
-    farLeg: { upper: 16, lower: -98, toes: -45 },
+    farArm: { upper: 80, lower: 120 },
+    nearLeg: { upper: 58, lower: -80, toes: -15 },
+    farLeg: { upper: 16, lower: -98, toes: -30 },
     nearHand: 'open',
     farHand: 'open',
     face: 'hurt',
@@ -146,17 +149,17 @@ export const POSES: readonly Pose[] = [
     shrug: 0,
     twist: 0.2,
     nearArm: { upper: 60, lower: 95 },
-    farArm: { upper: 168, lower: 150 },
-    nearLeg: { upper: 100, lower: -5, toes: 10 },
-    farLeg: { upper: 60, lower: -60, toes: -25 },
+    farArm: { upper: 110, lower: 140 },
+    nearLeg: { upper: 100, lower: -5, toes: 60 },
+    farLeg: { upper: 60, lower: -60, toes: 5 },
     nearHand: 'open',
     farHand: 'open',
     face: 'hurt',
   }),
   // 3 · Falling flat on his back, legs up (the rear thigh rocked back, toes in), the lead arm
-  // limp, bent, the rear arm reaching for the floor behind the head, the head lifted off it,
-  // wincing (held until the landing: the face reads, the knockdown's impact then slams the head
-  // back).
+  // limp, bent, the rear arm still up over the face (the knockdown slaps both down), the head
+  // lifted off the floor, wincing (held until the landing: the face reads, the knockdown's
+  // impact then slams the head back).
   tumble({
     hip: at(-8.5, 6.8),
     torso: -4,
@@ -165,9 +168,9 @@ export const POSES: readonly Pose[] = [
     shrug: 0,
     twist: -0.3,
     nearArm: { upper: 65, lower: 110 },
-    farArm: { upper: 162, lower: 198 },
-    nearLeg: { upper: 105, lower: 15, toes: 20 },
-    farLeg: { upper: 80, lower: 50, toes: 50 },
+    farArm: { upper: 102, lower: 150 },
+    nearLeg: { upper: 105, lower: 15, toes: 80 },
+    farLeg: { upper: 80, lower: 50, toes: 115 },
     nearHand: 'open',
     farHand: 'open',
     face: 'hurt',

@@ -14,9 +14,12 @@ import { at, GUARD, planted, type Foot, type Pose } from './common.ts';
  * rear leg, the lead leg braced long in front, the chin up, the rear hand shoving the holder's
  * belly at arm's length, the lead one tearing at the wrist; then the grip yanks him back in: the
  * chest tips over the collar, the shoulders hunch, the rear arm gives, the heels come up onto
- * the balls. Effort on both frames, the eyes on the holder; the knee's flash, hitstop and shake
- * sell the hit on frame 1. The neon holds still: the lead shoulder moves by whole sprite pixels
- * and the upper arm keeps its angle (the sleeve emblem only slides), the torso turns 7 degrees.
+ * the balls. The rear knee bends forward over its foot on both frames (the collar holds the
+ * hips ahead of it): its heel stays up off the floor, the foot rolled on its ball, so the ankle
+ * never folds past its stop (tools/sprites/anatomy.ts). Effort on both frames, the eyes on the
+ * holder; the knee's flash, hitstop and shake sell the hit on frame 1. The neon holds still:
+ * the lead shoulder moves by whole sprite pixels and the upper arm keeps its angle (the sleeve
+ * emblem only slides), the torso turns 7 degrees.
  */
 
 /** Where the toe tip of a foot touches the floor (a foot on the ball pivots around it). */
@@ -35,8 +38,11 @@ export function onToes(toe: number, angle: number): Foot {
 export const LEAD_TOE = toeOf(planted(3.5));
 export const REAR_TOE = toeOf(GUARD.farFoot) - 3;
 
-/** The lead upper arm hangs down and a little back, the forearm up across to the wrist. */
-const UPPER = -100;
+/**
+ * The lead upper arm hangs down and a little forward, the elbow in front of the ribs, the forearm
+ * up and forward to the holder's wrist: folded about 135 degrees, never into the biceps.
+ */
+const UPPER = -80;
 
 interface Upper {
   /** Where the lead shoulder goes (on the half-pixel grid, so the emblem never re-rasterizes). */
@@ -71,18 +77,18 @@ function placed({ shoulder, torso, shrug, forearm }: Upper): Pick<Pose, 'hip' | 
   return { hip, nearFist };
 }
 
-// Frame 0 (4 ticks): the strain. He sits back away from the grip: the hips back and low over
-// the rear foot, flat, the rear knee bent; the lead leg braced long in front; the chin up and
-// back. The rear hand shoves the holder's belly at arm's length, the lead one tears at the
-// wrist on his collar.
+// Frame 0 (4 ticks): the strain. He sits back away from the grip: the hips back and low toward
+// the rear foot, the rear knee bent, its heel up on the ball; the lead leg braced long in front;
+// the chin up and back. The rear hand shoves the holder's belly at arm's length, the lead one,
+// its elbow in front of the ribs, tears at the wrist on his collar.
 const STRAIN: Pose = {
-  ...placed({ shoulder: at(-2.5, 56), torso: 14, shrug: 1.6, forearm: 62 }),
+  ...placed({ shoulder: at(-2.5, 56), torso: 14, shrug: 1.6, forearm: 55 }),
   torso: 14,
   head: -10,
   shrug: 1.6,
   twist: -0.2,
   nearFoot: planted(3.5),
-  farFoot: onToes(REAR_TOE, -2),
+  farFoot: onToes(REAR_TOE, -22),
   farFist: at(16.5, 47),
   farHand: 'open',
   face: 'effort',
@@ -93,13 +99,13 @@ const STRAIN: Pose = {
 // all told); the rear arm gives, the lead hand keeps its hold on the wrist; the heels come up
 // onto the balls of the feet.
 const YANKED: Pose = {
-  ...placed({ shoulder: at(0, 55.5), torso: 21, shrug: 3, forearm: 66 }),
+  ...placed({ shoulder: at(0, 55.5), torso: 21, shrug: 3, forearm: 58 }),
   torso: 21,
   head: -7,
   shrug: 3,
   twist: 0,
   nearFoot: onToes(LEAD_TOE, -9),
-  farFoot: onToes(REAR_TOE, -15),
+  farFoot: onToes(REAR_TOE, -27),
   farFist: at(13, 44),
   farHand: 'open',
   face: 'effort',

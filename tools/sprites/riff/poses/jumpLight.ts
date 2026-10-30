@@ -2,7 +2,7 @@ import type { Point } from '../../raster.ts';
 import { solve, type Bend } from '../../skeleton.ts';
 import { RIFF_BODY } from '../body.ts';
 import { at, GUARD, smear, type Effect, type Foot, type Pose } from './common.ts';
-import { FALL } from './jump.ts';
+import { FALL, guarded } from './jump.ts';
 
 export const ANIMATED: boolean = true;
 
@@ -14,14 +14,17 @@ export const ANIMATED: boolean = true;
  *
  * A pair of scissors snapping open under her. The legs gather long and crossed under the seat,
  * then swing open around the hips like two blades, the front one long out in front of her, the
- * rear one driven down under her seat, the toes pointed: 70 degrees apart, each boot on its edge
+ * rear one driven down under her seat, the toes pointed: 60 degrees apart, each boot on its edge
  * of the hitbox, held through the six active ticks; then the blades swing shut, the boots
  * closing on each other under her, before the legs reach down into the fall. The rear boot
  * stops on the hitbox's back edge (-14, §9.5's -3 / +4 like the front one): flung back long, it
  * swept through an opponent 50 px behind her that the cross-up only hits up to 27 px. The in-between stays close to the cross so the split snaps open. A
  * b-girl's air split with a brawler on top, a star at 1x: the hips dropped through the legs, the
- * chest tipped back, the cocked rear arm flung up and back, the lead arm out low along the front
- * leg, the look down at the target, the face focused (a light).
+ * chest tipped back, the rear fist kept tucked under the chin, the elbow down along the ribs (the
+ * guard turned with the chest, the glove sunk as the chest tips back and brings the chin down to
+ * it: the face stays clear; Riff's rear shoulder sits at the back of her silhouette, three
+ * quarters on, so that arm flung up and back would read as coming out of her back), the lead arm out low along the front leg, the look down at the target, the face
+ * focused (a light). The boots point along the shins as far as a combat boot lets them.
  *
  * - 0 (1 tick): the blades cross: both legs long under her, the lead boot swung behind the rear
  *   one, the back over them, the fists drawn in. It follows any jump frame.
@@ -98,25 +101,65 @@ interface Key {
   /** The rear (near) and lead (far) legs: angle from the hip joint, length to the ankle. */
   readonly rear: readonly [number, number];
   readonly lead: readonly [number, number];
-  readonly nearFist: Point;
-  readonly farFist: Point;
+  /**
+   * The fists: nudged off the guard's (the rear under the chin, the lead low, both turned with
+   * the chest: jump.ts's `guarded`), or the lead one placed outright.
+   */
+  readonly rearFist: Point;
+  readonly leadFist: Point | { readonly at: Point };
   readonly knees: { readonly nearKnee: Bend; readonly farKnee: Bend };
 }
 
-function key(k: Key): Pose {
+/**
+ * The angle a pointed boot keeps between the shin and the sole (90: square), in degrees: the toes
+ * follow the leg, but a combat boot does not let the foot stretch flat along the shin.
+ */
+export const POINTED = 58;
+
+/**
+ * `pose` with its feet (both, or those of `sides`) pointed along their shins, `ankle` degrees
+ * between the shin and the sole (each foot turned on its ankle: the knees and the ankles stay
+ * where they are).
+ */
+export function pointed(
+  pose: Pose,
+  ankle = POINTED,
+  sides: readonly ('near' | 'far')[] = ['near', 'far'],
+): Pose {
+  const s = solve(pose, RIFF_BODY);
+  const along = (side: 'near' | 'far', foot: Foot): Foot => {
+    if (!sides.includes(side)) return foot;
+    const { knee, ankle: a } = s[side];
+    // The skeleton is solved turned by the spin: the foot's own angle is taken before it.
+    const shin = (Math.atan2(a.y - knee.y, a.x - knee.x) * 180) / Math.PI;
+    return { ...foot, angle: shin + ankle + (pose.spin ?? 0) };
+  };
   return {
+    ...pose,
+    nearFoot: along('near', pose.nearFoot),
+    farFoot: along('far', pose.farFoot),
+  };
+}
+
+function key(k: Key): Pose {
+  const rear = legAt(k.hip, k.torso, 'near', k.rear[0], k.rear[1]);
+  const lead = legAt(k.hip, k.torso, 'far', k.lead[0], k.lead[1]);
+  const body: Pose = {
     ...FALL,
     hip: k.hip,
     torso: k.torso,
     head: LOOK + k.chin - k.torso,
     shrug: k.shrug,
     twist: k.twist,
-    nearFoot: legAt(k.hip, k.torso, 'near', k.rear[0], k.rear[1]),
-    farFoot: legAt(k.hip, k.torso, 'far', k.lead[0], k.lead[1]),
-    nearFist: k.nearFist,
-    farFist: k.farFist,
+    nearFoot: rear,
+    farFoot: lead,
     bends: { ...k.knees, nearElbow: 'down', farElbow: 'down' },
   };
+  const { leadFist } = k;
+  if ('at' in leadFist) {
+    return pointed({ ...guarded(body, k.rearFist), farFist: leadFist.at });
+  }
+  return pointed(guarded(body, k.rearFist, leadFist));
 }
 
 /**
@@ -130,7 +173,7 @@ const OPEN_KNEES = { nearKnee: 'down', farKnee: 'up' } as const;
 /** The blades' angles from the hip joints: crossed under her, opening, then split open. */
 const CROSSED = { rear: -74, lead: -103 } as const;
 const OPENING = { rear: -89, lead: -73 } as const;
-const SPLIT_OPEN = { rear: -104, lead: -34 } as const;
+const SPLIT_OPEN = { rear: -104, lead: -44 } as const;
 
 // 0 · The blades cross (1 tick).
 const CROSS = key({
@@ -141,8 +184,8 @@ const CROSS = key({
   twist: 0.45,
   rear: [CROSSED.rear, 27.5],
   lead: [CROSSED.lead, 28],
-  nearFist: at(-12, 62),
-  farFist: at(5, 54),
+  rearFist: at(0, -1.5),
+  leadFist: at(1, 0.5),
   knees: { nearKnee: 'front', farKnee: 'front' },
 });
 
@@ -156,14 +199,15 @@ const OPEN = key({
   twist: 0.58,
   rear: [OPENING.rear, 30.4],
   lead: [OPENING.lead, 30.4],
-  nearFist: at(-16, 66),
-  farFist: at(8, 52),
-  knees: OPEN_KNEES,
+  rearFist: at(-1.5, -2),
+  leadFist: at(1.5, -0.5),
+  knees: { nearKnee: 'front', farKnee: 'up' },
 });
 
-// 2 · The split (6 ticks, active): a star. The hips dropped through the legs, the front boot on
-// the far edge of the hitbox, the rear one driven down on its back edge, the knee soft; the
-// cocked arm flung up and back, the lead arm out low along the front leg, the chest tipped back.
+// 2 · The split (6 ticks, active). The hips dropped through the legs, the front boot on the far
+// edge of the hitbox, the rear one driven down on its back edge, both knees soft; the rear fist
+// tucked under the chin, the lead arm out low along the front leg (the elbow soft, never locked),
+// the chest tipped back.
 const SPLIT = key({
   hip: at(-2, 35.8),
   torso: -8,
@@ -171,9 +215,9 @@ const SPLIT = key({
   shrug: 2.8,
   twist: 0.75,
   rear: [SPLIT_OPEN.rear, 29],
-  lead: [SPLIT_OPEN.lead, 29.5],
-  nearFist: at(-24, 73),
-  farFist: at(17.5, 41),
+  lead: [SPLIT_OPEN.lead, 29],
+  rearFist: at(-2.5, -4),
+  leadFist: { at: at(16, 42.5) },
   knees: OPEN_KNEES,
 });
 
@@ -187,8 +231,8 @@ const SHUT = key({
   twist: 0.52,
   rear: [-101, 30],
   lead: [-80, 30],
-  nearFist: at(-17, 66),
-  farFist: at(7, 53),
+  rearFist: at(-0.5, -1),
+  leadFist: at(0, 0.5),
   knees: { nearKnee: 'front', farKnee: 'front' },
 });
 

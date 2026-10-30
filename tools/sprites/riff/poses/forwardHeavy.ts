@@ -21,22 +21,31 @@ export const ANIMATED: boolean = true;
  * floor and draws it back to its mark. Slow and readable on purpose (17 ticks of startup): the
  * leg up there is the warning.
  *
- * - 0: the load: the weight rocks back onto the rear foot, the lead heel lifts, the chest opens.
+ * - 0: the load: the weight rocks back onto the rear foot, the lead heel lifts, the chest opens;
+ *   the rear fist stays under the chin, a hair lower, carried back with the chest (the elbow
+ *   down on the ribs): its swing back starts on the skip.
  * - 1: the skip: off the rear foot (the game carries her), the straight lead leg swings up off
- *   the floor, its trail rising; the arms swing back against it.
+ *   the floor, the foot flexed (the heel leads the whole kick), its trail rising; the arms
+ *   swing back against it, the rear one hanging back off its shoulder, its elbow soft.
  * - 2: the rise: still in the air, the leg high and straight, the body leaning back, the arms
- *   wide for balance.
+ *   out for balance.
  * - 3: the hang (5 ticks): a balanced standing split, the rear foot landed on its toes right
- *   under the hips, the lead leg vertical in front of her face, the foot flexed, the look up.
+ *   under the hips, the lead leg vertical in front of her face (the knee soft, never locked
+ *   back), the foot flexed, the look up.
  * - 4: the axe: the crunch on the hit: the hips drive in and drop, the lean 22 degrees, the chin
- *   tucked, both fists driving down by the hips; the heel leads, the sole down, the leg lower
- *   (the boot about 51-57 px up at the front of the hitbox); the trail falls from over her head
- *   into the heel, a gold spark there.
+ *   tucked, both fists driving down by the hips (the lead elbow back, the forearm forward); the
+ *   heel leads, the foot flexed, its toes up, the leg lower (the boot about 51-57 px up at the
+ *   front of the hitbox); the trail falls from over her head into the heel, a gold spark there.
  * - 5: the slam: the heel drives on through to the floor, the crunch deeper, dust and a flat
  *   ring.
  * - 6: the lead foot draws back to its mark, the body comes up past the guard: the hips 1.6 px
- *   below it, the lean 2.5 degrees short of it, the cocked fist a touch high.
+ *   below it, the lean 2.5 degrees short of it, the rear fist a touch high under the chin.
  * - 7: the guard, settled.
+ *
+ * Anatomy (tools/sprites/anatomy.ts): the kicking foot stays within 35 degrees of square to the
+ * shin, flexed rather than pointed (a pointed combat boot along the leg read as a broken
+ * ankle); a rear arm swung back keeps its shoulder under 60 degrees behind the chest, the
+ * elbow bending the way elbows bend.
  *
  * The kicking leg is placed by its angles from the hip (forward kinematics); the lead leg kicks
  * so the stance never switches (she lands on her own guard). The rear foot is in the air from
@@ -48,8 +57,8 @@ export const ANIMATED: boolean = true;
 const TOE = toeOf(GUARD.nearFoot);
 const BENDS: readonly Bend[] = ['down', 'up', 'front', 'back'];
 
-/** Where the cocked rear fist sits from the rear shoulder in the guard. */
-const COCKED = (() => {
+/** Where the rear fist sits from the rear shoulder in the guard: under the chin. */
+const CHIN = (() => {
   const shoulder = solve(GUARD, RIFF_BODY).near.shoulder;
   return at(GUARD.nearFist.x - shoulder.x, GUARD.nearFist.y - shoulder.y);
 })();
@@ -73,8 +82,8 @@ interface Key {
   readonly twist: number;
   readonly near: Foot;
   readonly far: Foot | Kick;
-  /** The rear fist: a point, or offsets from its cocked place on the rear shoulder. */
-  readonly rear: Point | { readonly cocked: readonly [number, number] };
+  /** The rear fist: a point, or offsets from its guard place under the chin (from the shoulder). */
+  readonly rear: Point | { readonly chin: readonly [number, number] };
   readonly lead: readonly [number, number];
   readonly hands?: { readonly near?: Hand; readonly far?: Hand };
   readonly bends?: Bends;
@@ -101,10 +110,10 @@ function key(k: Key): Pose {
     ...(k.effects ? { effects: k.effects } : {}),
   };
   if ('thigh' in k.far) pose = farLeg(pose, k.far);
-  if ('cocked' in k.rear) {
+  if ('chin' in k.rear) {
     const shoulder = solve(pose, RIFF_BODY).near.shoulder;
-    const [dx, dy] = k.rear.cocked;
-    return { ...pose, nearFist: at(shoulder.x + COCKED.x + dx, shoulder.y + COCKED.y + dy) };
+    const [dx, dy] = k.rear.chin;
+    return { ...pose, nearFist: at(shoulder.x + CHIN.x + dx, shoulder.y + CHIN.y + dy) };
   }
   return { ...pose, nearFist: k.rear };
 }
@@ -144,7 +153,8 @@ const dust = (x: number, size: number, progress: number): Effect => ({
 });
 
 const KEYS: readonly Key[] = [
-  // 0: the load: the weight rocks back onto the rear foot, the lead heel lifts, the chest opens.
+  // 0: the load: the weight rocks back onto the rear foot, the lead heel lifts, the chest opens,
+  // the rear fist still under the chin.
   {
     hip: [-7.6, 31.4],
     torso: 15,
@@ -153,7 +163,7 @@ const KEYS: readonly Key[] = [
     twist: 0.6,
     near: onBall(TOE, -10),
     far: onBall(GUARD.farFoot.x + 6.8, -14),
-    rear: at(-13, 56.5),
+    rear: { chin: [-0.2, -0.8] },
     lead: [8, 44],
   },
   // 1: the skip: off the rear foot, the lead leg swings up straight.
@@ -163,10 +173,11 @@ const KEYS: readonly Key[] = [
     look: -2,
     shrug: 1.4,
     twist: 0.8,
-    near: lifted(onBall(-12, -30), 3.5),
-    far: kick(30, 32, 60),
-    rear: at(-20, 44),
+    near: { ...lifted(onBall(-12, -30), 3.5), angle: -62 },
+    far: kick(30, 32, 97),
+    rear: at(-22, 38.8),
     lead: [4, 42],
+    bends: { nearElbow: 'back' },
     effects: [smear(3, [10, 9], [16, 24], [21, 38], [24.5, 50])],
   },
   // 2: the rise: still in the air, the leg high and straight, the arms wide.
@@ -177,8 +188,9 @@ const KEYS: readonly Key[] = [
     shrug: 0.8,
     twist: 0.9,
     near: lifted(onBall(-13.5, -40), 2),
-    far: kick(64, 66, 50),
-    rear: at(-25, 48),
+    far: kick(64, 66, 136),
+    rear: at(-24.7, 36.1),
+    bends: { nearElbow: 'back' },
     lead: [0, 57],
     hands: { near: 'open' },
     effects: [smear(4, [23, 44], [23, 55], [20, 64], [14, 71])],
@@ -191,8 +203,9 @@ const KEYS: readonly Key[] = [
     shrug: 0.6,
     twist: 0.9,
     near: onBall(-15.5, -62),
-    far: kick(82, 88, 150),
-    rear: at(-28, 47),
+    far: kick(84, 80, 160),
+    rear: at(-28.2, 35.6),
+    bends: { nearElbow: 'back' },
     lead: [-4, 56],
     hands: { near: 'open' },
   },
@@ -204,9 +217,10 @@ const KEYS: readonly Key[] = [
     shrug: 2.6,
     twist: 0.5,
     near: onBall(TOE + 0.5, -32),
-    far: kick(44, 38, -10),
-    rear: at(-10, 34),
+    far: kick(44, 38, 103),
+    rear: at(-8.1, 37.3),
     lead: [8, 34],
+    bends: { nearElbow: 'back', farElbow: 'back' },
     face: 'effort',
     effects: [
       smear(6, [-4, 86], [10, 85], [19, 76], [24, 59]),
@@ -224,6 +238,7 @@ const KEYS: readonly Key[] = [
     far: planted(13),
     rear: at(-6, 33),
     lead: [10, 30],
+    bends: { nearElbow: 'back' },
     face: 'effort',
     effects: [
       dust(16, 3.5, 0.15),
@@ -239,7 +254,7 @@ const KEYS: readonly Key[] = [
     twist: 0.5,
     near: onBall(TOE, -16),
     far: lifted(planted(9), 1.5),
-    rear: { cocked: [0.3, 1.6] },
+    rear: { chin: [0.3, 1.6] },
     lead: [8.6, 45.4],
     effects: [dust(16, 3.5, 0.55)],
   },
@@ -252,7 +267,7 @@ const KEYS: readonly Key[] = [
     twist: 0.45,
     near: GUARD.nearFoot,
     far: planted(GUARD.farFoot.x),
-    rear: { cocked: [0, 0] },
+    rear: { chin: [0, 0] },
     lead: [9.5, 46],
   },
 ];

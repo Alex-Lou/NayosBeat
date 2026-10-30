@@ -47,7 +47,7 @@ const RIFF_PLAIN: FighterTemplate = {
   // the fringe. In the air the knees drive 3.5 px ahead of the chest: legs and torso get a box
   // each.
   standingHurtboxes: [box(-29, 0, 44, 75)],
-  crouchingHurtboxes: [box(-32, 0, 47, 57.5)],
+  crouchingHurtboxes: [box(-25, 0, 40, 57.5)],
   airHurtboxes: [box(-28, 4, 46, 40), box(-21, 44, 35.5, 37)],
   moves: {
     ...RIFF_STRINGS,

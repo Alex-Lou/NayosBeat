@@ -85,6 +85,7 @@ const UPPER = { nearElbow: 'front', farElbow: 'down' } as const;
 
 // Frame 0 (2 ticks): the dip. Down an inch into both knees, curled over the lead knee, the lead
 // shoulder dropped and the glove sunk to the chest, elbow in; the rear glove stays at the cheek.
+// The rear heel rises off the guard's as its knee sinks over it (the ball loaded to drive).
 const DIP_BODY: Body = {
   ...GUARD,
   hip: at(-7, 33.8),
@@ -92,7 +93,7 @@ const DIP_BODY: Body = {
   head: -2,
   shrug: 0.2,
   twist: -0.2,
-  farFoot: onToes(REAR_TOE, -12),
+  farFoot: onToes(REAR_TOE, -22),
 };
 const DIP: Pose = {
   ...DIP_BODY,
@@ -109,7 +110,7 @@ const DRIVE_BODY: Body = {
   head: 0,
   shrug: 1.2,
   twist: 0.1,
-  farFoot: onToes(REAR_TOE, -24),
+  farFoot: onToes(REAR_TOE, -27),
 };
 const DRIVE: Pose = {
   ...DRIVE_BODY,

@@ -1,13 +1,21 @@
+import { NAYO_CLIPS } from '../../../../src/art/nayo/clips.ts';
+import { toPx } from '../../../../src/core/constants.ts';
+import { NAYO as TEMPLATE } from '../../../../src/data/fighters/nayo.ts';
 import { solve } from '../../skeleton.ts';
 import { at, GUARD, type Foot, type Pose } from './common.ts';
 
 /**
- * walkBack: 12 frames of 2 ticks, looping (0.4 s, 24 px), a boxer's retreat twice per loop in
- * Tazz's high guard. The lead foot pushes off its ball and the rear foot pops back, landing on
- * its ball; he sits back onto it (the heel settling), and the lead foot is drawn back low,
- * slowing into its landing, to restore the stance. The hips lead the retreat. The feet never
- * cross; a foot on the floor stays put on the stage: in the cell it slides forward at the
- * walking speed.
+ * walkBack: 12 frames, looping, a boxer's retreat twice per loop in Tazz's high guard. The lead
+ * foot pushes off its ball and the rear foot pops back, landing on its ball; he sits back onto
+ * it (the heel settling), and the lead foot is drawn back low, slowing into its landing, to
+ * restore the stance. The hips lead the retreat. The feet never cross.
+ *
+ * A foot on the floor stays put on the stage: in the cell it slides forward by exactly what the
+ * game carries him back while the previous frame showed (the walking speed times that frame's
+ * ticks, both read from the game: src/data/fighters/nayo.ts, src/art/nayo/clips.ts), so a
+ * planted ball never skates or jitters, whatever the clip's timing. A foot in the air is placed
+ * on the stage too, eased along its step in time (not in frames), then brought back into the
+ * cell.
  *
  * The upper body is GUARD's, pixel-locked like the idle: it moves by whole sprite pixels (0.5
  * world px), the torso and the upper arms never turn (only the lead forearm trails the bounce,
@@ -17,8 +25,9 @@ import { at, GUARD, type Foot, type Pose } from './common.ts';
 
 const FRAMES = 12;
 const HALF = 6;
-/** How far a planted foot travels forward in the cell each frame: 1 px/tick, 2 ticks. */
-const SLIDE = 2;
+/** The game's walking speed backward (px per tick) and how long it shows each frame (ticks). */
+const SPEED = toPx(TEMPLATE.walkBackSpeed);
+const TICKS = NAYO_CLIPS.walkBack.ticks;
 
 const radians = (degrees: number): number => (degrees * Math.PI) / 180;
 
@@ -47,28 +56,55 @@ const lead = (x: number, angle: number, lift = 0): Foot => onBall(GUARD.nearFoot
 /** The rear ball sits a quarter pixel up: its raised toe cap never dips into the floor. */
 const rear = (x: number, angle: number, lift = 0.25): Foot => onBall(GUARD.farFoot, x, angle, lift);
 
-// One retreat step, frame by frame (frames 0-5, then again 6-11), in the cell:
-//   0 set (GUARD)  1 the lead pushes off its ball, the rear pops back  2 the rear lands on its
-//   ball  3 he sits back onto it, the lead drawn back low  4-5 the lead slows into its landing.
-const LEAD_STEP: readonly Foot[] = [
-  GUARD.nearFoot,
-  // Its toe cap tipped down rounds a sprite pixel forward: 0.4 back keeps GUARD's floor pixels.
-  lead(LEAD + SLIDE - 0.4, -10),
-  lead(LEAD + 2.1, -9, 1.2),
-  lead(LEAD + 1.0, -6, 2.0),
-  lead(LEAD - 0.5, -4, 1.8),
-  lead(LEAD - 1.0, -3, 0.9),
-];
-const REAR_STEP: readonly Foot[] = [
-  GUARD.farFoot,
-  // Popping back, toes reaching for the floor.
-  rear(REAR - 5.5, -22, 2.4),
-  // On its ball from here, the heel settling as he sits back onto it.
-  rear(REAR - 4 * SLIDE, -24),
-  rear(REAR - 3 * SLIDE, -20),
-  rear(REAR - 2 * SLIDE, -17),
-  rear(REAR - SLIDE, -15),
-];
+/**
+ * A step through the air, `t` from 0 (off the floor) to 1 (landed), in time: out of the floor
+ * quickly enough, slowing into the landing.
+ */
+const glide = (t: number): number => (1 - Math.cos(Math.PI * t ** 0.8)) / 2;
+
+/**
+ * One retreat step (frames 0-5 of a half loop, `ticks` its six durations), in the cell:
+ *   0 set (GUARD)  1 the lead pushes off its ball, the rear pops back  2 the rear lands on its
+ *   ball  3 he sits back onto it, the lead drawn back low  4-5 the lead slows into its landing.
+ */
+function stride(ticks: readonly number[]): { lead: Foot[]; rear: Foot[] } {
+  // How far back the game has carried him when each frame comes up (px), over the whole step.
+  const start: number[] = [0];
+  ticks.forEach((tick, k) => start.push((start[k] ?? 0) + tick));
+  const travel = (k: number): number => SPEED * (start[k] ?? 0);
+  const step = travel(HALF);
+  // The lead leaves the floor after frame 1 and lands on frame 0 of the next step: placed on
+  // the stage along that flight, in ticks, then seen from the cell.
+  const flight = (k: number): number =>
+    glide(((start[k] ?? 0) - (start[1] ?? 0)) / ((start[HALF] ?? 1) - (start[1] ?? 0)));
+  const air = (k: number): number => LEAD - step * flight(k) + travel(k);
+  return {
+    lead: [
+      GUARD.nearFoot,
+      // Pushing off, the ball pinned on the stage, the heel up.
+      lead(LEAD + travel(1), -10),
+      lead(air(2), -9, 1.2),
+      lead(air(3), -6, 2.0),
+      lead(air(4), -4, 1.8),
+      lead(air(5), -3, 0.9),
+    ],
+    rear: [
+      GUARD.farFoot,
+      // Popping back, toes reaching for the floor: 60% of its step on the stage.
+      rear(REAR - 0.6 * step + travel(1), -22, 2.4),
+      // On its ball from here, pinned on the stage where it lands (a step behind GUARD's mark),
+      // the heel settling as he sits back onto it.
+      rear(REAR - step + travel(2), -24),
+      rear(REAR - step + travel(3), -20),
+      rear(REAR - step + travel(4), -17),
+      rear(REAR - step + travel(5), -15),
+    ],
+  };
+}
+
+/** Each half loop's feet, from its own ticks. */
+const STRIDES = [stride(TICKS.slice(0, HALF)), stride(TICKS.slice(HALF, FRAMES))];
+
 /**
  * Upper body offset from GUARD, in whole sprite pixels (0.5 world px), the hips leading the
  * retreat: light on the push, dropping onto the rear foot as it lands, rising as the lead is
@@ -127,6 +163,7 @@ function nearGlove(dx: number, dy: number, roll: number, turn: number): { x: num
 
 function walk(frame: number): Pose {
   const k = frame % HALF;
+  const feet = STRIDES[Math.floor(frame / HALF)];
   const [dx, dy] = BODY[k] ?? [0, 0];
   const [fx, fy] = FAR_LAG[k] ?? [0, 0];
   const roll = SHRUG[frame] ?? 0;
@@ -136,8 +173,8 @@ function walk(frame: number): Pose {
     shrug: (GUARD.shrug ?? 0) + roll,
     nearFist: nearGlove(dx, dy, roll, NEAR_TRAIL[k] ?? 0),
     farFist: at(GUARD.farFist.x + fx, GUARD.farFist.y + fy),
-    nearFoot: LEAD_STEP[k] ?? GUARD.nearFoot,
-    farFoot: REAR_STEP[k] ?? GUARD.farFoot,
+    nearFoot: feet?.lead[k] ?? GUARD.nearFoot,
+    farFoot: feet?.rear[k] ?? GUARD.farFoot,
   };
 }
 

@@ -15,7 +15,9 @@ import { at, GUARD, planted, type Pose } from './common.ts';
  * jacket, the sleeve emblem and the headphone ring never boil; the legs flex under the heave.
  * Both palms press on the lead knee (the rear one beside the lead one, behind it, in reach).
  * The head stays under 20 degrees (drawn upright, see head.ts). The lead foot stays where GUARD
- * put it: out of the guard he sinks back onto his heels, the rear foot flat. Bent over, the
+ * put it: out of the guard he sinks back onto his heels, the rear foot flat, drawn in under the
+ * hips (the rear knee bent over a flat foot farther back would fold the ankle past its stop,
+ * tools/sprites/anatomy.ts: resting, the shin stands over it). Bent over, the
  * head goes forward, so the whole pose sits back for nothing in front to pass the pushbox (the
  * winner may stand at point blank).
  */
@@ -27,7 +29,7 @@ const WINDED: Pose = {
   head: -22,
   shrug: 0,
   nearFoot: planted(GUARD.nearFoot.x),
-  farFoot: planted(-17),
+  farFoot: planted(-14),
   // The hands go on the lead knee (breathing, below).
   nearFist: at(0, 0),
   farFist: at(0, 0),

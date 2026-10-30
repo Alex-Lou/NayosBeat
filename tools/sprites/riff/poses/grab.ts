@@ -9,24 +9,26 @@ export const ANIMATED: boolean = true;
  * nothing (the missed grab) and come back to the guard; on a catch the game goes on with hold.
  * From and back to the guard.
  *
- * A predator's one-handed snatch, nothing like Nayo's two-handed reach: the cocked rear fist by
- * the ear is the hand that grabs (the guard keeps it there for this). It opens, cocks back and
- * rises over the head, the fingers spread like a claw, while the hips drive in over the lead
- * foot (it skims in) and the chin goes out; then it rakes down and forward onto the collar at
- * full stretch, a short magenta arc from over her ear to the collar behind it. The lead hand
- * stays low and late at his belt, a fist: one hand takes him, the other waits. The near arm is
- * drawn over the head, so the claw passes over the top of the head, never across the face, and
- * reaches the collar under the chin.
+ * A predator's one-handed snatch, nothing like Nayo's two-handed reach: the rear fist at her
+ * chin is the hand that grabs (the guard keeps it there for this). It opens into a claw under
+ * the chin, the fingers spread, while the hips drive in over the lead foot (it skims in) and the
+ * chin goes out; then it shoots out and up from under the chin onto the collar at full stretch,
+ * the rear shoulder driving in behind it, a short magenta trail from her chin to his collar. The
+ * arm unfolds the way it folds in the guard: the elbow comes up from the ribs in front of her,
+ * under the hand, and the forearm points at the collar, so the claw passes under the face, never
+ * across it. The lead hand stays low and late at his belt, a fist: one hand takes him, the other
+ * waits.
  *
  * On a catch the hold closes it there and draws him in. On a whiff it shuts on air and drops a
  * few pixels, the chest still pitching over the lead foot; the punish window shows it: she is
- * still out over her feet while the empty hand comes back, shaken out, past the ribs, the lead
- * hand still out, the hips coming back; only the last frame is the guard again, the rear fist a
- * hair past its mark by the ear.
+ * still out over her feet while the empty hand comes back, shaken out, the elbow dropping onto
+ * the ribs, the lead hand still out, the hips coming back; only the last frame is the guard
+ * again, the rear fist a hair past its mark under the chin.
  */
 
-// Frame 0 (2 ticks): the gather. The hips dip, the rear heel rises, the rear fist by the ear
-// opens and cocks back; the lead fist drops a hair.
+// Frame 0 (2 ticks): the gather. The hips dip, the rear heel rises, the rear fist opens into a
+// claw under the chin, drawn a hair in to the throat, the elbow still on the ribs; the lead fist
+// drops a hair.
 const GATHER: Pose = {
   ...GUARD,
   hip: at(-7.4, 30.8),
@@ -35,34 +37,35 @@ const GATHER: Pose = {
   shrug: 3,
   twist: 0.55,
   nearFoot: onBall(REAR_TOE, -34),
-  nearFist: at(-13.5, 59.5),
+  nearFist: at(4.6, 51.6),
   farFist: at(8.5, 44.5),
   nearHand: 'open',
 };
 
 // Frame 1 (3 ticks): the lunge. The hips drive in, the lead foot skims in off the floor, the
-// chin out; the open rear hand rises over the head, the elbow up behind it, the claw cocked
-// above the brow; the lead fist low and late.
+// chin out; the claw shoots out from under the chin, halfway: the elbow up off the ribs in front
+// of her chest, under the hand, the forearm pointing up at the collar, the hand below the jaw;
+// the rear shoulder starting in behind it; the lead fist low and late.
 const LUNGE: Pose = {
   ...GUARD,
   hip: at(-5.6, 31.2),
   torso: 24,
   head: -13,
   shrug: 2.4,
-  reach: { near: 1.5, far: 0.4 },
+  reach: { near: 0.5, far: 0.4 },
   twist: 0.6,
   nearFoot: onBall(REAR_TOE, -38),
   farFoot: lifted(planted(LEAD_IN - 2, 6), 1.8),
-  nearFist: at(7, 71),
+  nearFist: at(14.5, 53.5),
   farFist: at(12, 42),
   nearHand: 'open',
-  bends: { nearElbow: 'up', farElbow: 'down', nearKnee: 'front' },
+  bends: { nearElbow: 'down', farElbow: 'down', nearKnee: 'front' },
 };
 
 // Frame 2 (3 ticks, active): the claw on the collar. The lead foot planted where the hold
-// keeps it, the rear heel high, the chest pitched in; the open rear hand raked down onto the
-// collar at full stretch under the chin (a short arc behind it, from over her ear), the lead
-// fist low at his belt.
+// keeps it, the rear heel high, the chest pitched in; the open rear hand at full stretch on the
+// collar, the shoulder driven in behind it (a short trail from under her chin), the lead fist low
+// at his belt.
 const REACH: Pose = {
   ...GUARD,
   hip: at(-4.4, 31),
@@ -78,7 +81,7 @@ const REACH: Pose = {
   nearHand: 'open',
   bends: { nearElbow: 'down', farElbow: 'down', nearKnee: 'front' },
   face: 'effort',
-  effects: [smear(3, [6, 67], [15, 66.5], [21, 62.5], [25, 58.5])],
+  effects: [smear(3, [9, 52.5], [15, 54], [20.5, 55.5], [25, 56.5])],
 };
 
 // Frame 3 (6 ticks): nothing there. The claw shuts on air and drops, the chest still pitching
@@ -99,8 +102,9 @@ const WHIFF: Pose = {
 };
 
 // Frame 4 (6 ticks): the pull-back, halfway. The chest still over the lead foot, the hips
-// coming back, the lead foot lifting to step home; the empty rear hand drawn back past the ribs
-// and shaken out, the lead fist still out.
+// coming back, the lead foot lifting to step home; the empty rear hand drawn back in, open,
+// shaken out, the elbow dropping onto the ribs under it, the forearm slanting up to the hand in
+// front of her chest; the lead fist still out.
 const RECOVER: Pose = {
   ...GUARD,
   hip: at(-5, 31.6),
@@ -111,20 +115,21 @@ const RECOVER: Pose = {
   twist: 0.45,
   nearFoot: onBall(REAR_TOE, -37),
   farFoot: lifted(planted(LEAD_IN - 2, 5), 1.4),
-  nearFist: at(7, 51),
+  nearFist: at(13, 49),
   farFist: at(16, 46),
   nearHand: 'open',
+  bends: { nearElbow: 'down', farElbow: 'down', nearKnee: 'front' },
 };
 
 // Frame 5 (7 ticks): the guard, the hips a hair low and back, the rear fist a hair past its
-// mark by the ear; idle settles it.
+// mark, tucked in under the chin; idle settles it.
 const SETTLE: Pose = {
   ...GUARD,
   hip: at(-7.1, 31.3),
   torso: 18,
   head: -10.5,
   shrug: 2.6,
-  nearFist: at(-13, 59),
+  nearFist: at(5.4, 52.4),
   farFist: at(9.2, 46.4),
 };
 

@@ -7,7 +7,13 @@ import { POSES as CROUCH_STRIP } from './crouch.ts';
  * Economical: the high guard stays shut (near glove under the chin, far glove by the cheek) and
  * rides with the head; the weight rocks back onto the rear toes, the hips slide in behind the
  * kick and the torso tips back against it, one line from the head down to the toes; only the
- * lead leg snaps out flat along the floor and back.
+ * lead leg snaps out low along the floor and back.
+ *
+ * The ankles stay within what an ankle does: the kicking foot hangs pointed as it leaves the
+ * floor and turns up as it lands, the sole into the shin (a foot drawn in line with a leg that
+ * long would be pointed some 75 degrees, a dancer's, and read as a stick); the rear heel rises
+ * as the weight rocks back onto the ball of that foot, never drops (the shin lies almost flat
+ * under the thigh: a lower heel would fold the toes in toward the knee).
  */
 
 /** The crouch at rest (first frame of its loop): where the move starts and lands. */
@@ -25,6 +31,9 @@ function guarded(pose: Pose, lead = at(0, 0)): Pose {
     at(head.x + fist.x - REST_HEAD.x + nudge.x, head.y + fist.y - REST_HEAD.y + nudge.y);
   return { ...pose, nearFist: carry(REST.nearFist, lead), farFist: carry(REST.farFist) };
 }
+
+/** How high the crouch holds the rear heel (degrees, negative: up). */
+const REST_HEEL = REST.farFoot.angle ?? 0;
 
 /** The rear foot pivoting on its toes, its heel `angle` degrees up (the toes stay put). */
 function onToes(angle: number): Foot {
@@ -45,14 +54,17 @@ const CHAMBER: Pose = guarded(
     torso: REST.torso - 4,
     head: REST.head + 2,
     shrug: 2.4,
-    nearFoot: { x: 9, y: 8.4, angle: -24 },
-    farFoot: onToes(-36),
+    nearFoot: { x: 9, y: 8.4, angle: -20 },
+    farFoot: onToes(REST_HEEL - 2),
     bends: { ...REST.bends, nearKnee: 'up' },
   },
   at(1.6, -0.3),
 );
 
-/** Contact: the leg long and flat, toes into the shin; the torso tipped back, eyes level. */
+/**
+ * Contact: the leg long and low, the foot turned up and the sole into the shin; the torso tipped
+ * back, eyes level.
+ */
 const STRIKE: Pose = guarded(
   {
     ...REST,
@@ -61,8 +73,8 @@ const STRIKE: Pose = guarded(
     head: 4,
     shrug: 3,
     twist: 0.15,
-    nearFoot: { x: 30.6, y: 9.4, angle: -8 },
-    farFoot: onToes(-44),
+    nearFoot: { x: 30.1, y: 9.4, angle: 34 },
+    farFoot: onToes(REST_HEEL - 12),
     bends: { ...REST.bends, nearKnee: 'up' },
     effects: [
       smear(4, [11, 10.5], [19, 10.6], [27, 9.9], [33.5, 8.5]),
@@ -78,7 +90,8 @@ const SNAP: Pose = {
   ...SNAPPING,
   // The lead glove a hair forward of the in-between: the sleeve's square lands on whole pixels.
   nearFist: at(SNAPPING.nearFist.x + 0.6, SNAPPING.nearFist.y),
-  nearFoot: { x: 23, y: 10.4, angle: -14 },
+  nearFoot: { x: 23, y: 10.4, angle: 6 },
+  farFoot: onToes(REST_HEEL - 10),
   bends: { ...REST.bends, nearKnee: 'up' },
   effects: [smear(4, [10, 10], [16.5, 11], [25, 10.4])],
 };
@@ -91,8 +104,8 @@ const RECOIL: Pose = guarded(
     torso: 16,
     head: 1,
     shrug: 2.6,
-    nearFoot: { x: 15.6, y: 9.8, angle: -20 },
-    farFoot: onToes(-38),
+    nearFoot: { x: 15.6, y: 9.8, angle: -10 },
+    farFoot: onToes(REST_HEEL - 8),
     bends: { ...REST.bends, nearKnee: 'up' },
   },
   at(2.1, -0.3),
@@ -106,7 +119,7 @@ const LAND: Pose = guarded(
     torso: REST.torso + 1,
     head: REST.head,
     shrug: 2.2,
-    farFoot: onToes(-33),
+    farFoot: onToes(REST_HEEL - 2),
   },
   at(1, -0.5),
 );

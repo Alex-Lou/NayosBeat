@@ -30,7 +30,7 @@ export const ANIMATED: boolean = true;
  * long and straight before she sits into the plié. The upper body
  * counters the legs: the chest opens to the viewer and the rear shoulder rolls back as the lead
  * leg goes back, closes and rolls up into the collar as the rear one does; the lean goes back
- * against the retreat, furthest on the closed stance. The cocked rear fist rides its shoulder a
+ * against the retreat, furthest on the closed stance. The loaded rear fist rides its shoulder a
  * frame late and bounces after each step, the lead fist swings against the lead leg, inside the
  * no-clinch line.
  */
@@ -106,13 +106,19 @@ interface Beat {
   /** The rear shoulder into the collar, from the guard's. */
   readonly shrug: number;
   /**
-   * The cocked rear fist from its place on the rear shoulder, `lag` of the way back to where
+   * The loaded rear fist from its place on the rear shoulder, `lag` of the way back to where
    * that shoulder was the frame before (the loop wraps).
    */
   readonly near: readonly [number, number];
   readonly lag: number;
   /** The lead fist from the guard's, riding the hips. */
   readonly far: readonly [number, number];
+  /**
+   * The lead arm swung back from its shoulder instead (degrees from the guard's upper arm, and
+   * the elbow's bend): with the shoulders over the lead foot, a fist kept inside the no-clinch
+   * line would fold the forearm into the biceps; the elbow goes back instead.
+   */
+  readonly swing?: readonly [number, number];
   /** The on-screen head angle from the guard's (chin up: negative). */
   readonly chin?: number;
   readonly face?: Face;
@@ -131,25 +137,44 @@ const BEATS: readonly Beat[] = [
   // 4: the stance closed on the lead toes, the hip cocked: the chest right back, the chin up,
   // the lid half down: come on then.
   { hip: [-2.0, 1.6], lean: -11, twist: 0.72, shrug: -1.8, near: [0.2, 0.2], lag: 0.8, far: [1.4, 0.4], chin: -6, face: 'cool' },
-  // 5: held a breath, the rear foot already off the floor; the cocked fist lands late, low.
+  // 5: held a breath, the rear foot already off the floor; the rear fist lands late, low.
   { hip: [-2.2, 1.8], lean: -10, twist: 0.66, shrug: -1.4, near: [-0.4, -1.6], lag: 0.7, far: [1.8, 0.2], chin: -5, face: 'cool' },
   // 6-7: the rear foot reaching far back, the chest closing, the rear shoulder rolling up.
   { hip: [-2.6, 1.4], lean: -6, twist: 0.48, shrug: -0.2, near: [0, -0.4], lag: 0.6, far: [0.4, 0] },
   { hip: [-2.2, 1.2], lean: -3, twist: 0.3, shrug: 0.9, near: [0.4, 0.4], lag: 0.5, far: [-0.8, -0.2] },
   // 8: down on the rear ball, the leg long and straight.
-  { hip: [-0.6, 1.0], lean: 0, twist: 0.22, shrug: 1.6, near: [0.6, 0.8], lag: 0.5, far: [-1.6, -0.2] },
+  { hip: [-0.6, 1.0], lean: 0, twist: 0.22, shrug: 1.6, near: [0.6, -0.7], lag: 0.5, far: [0, 0], swing: [14, 144] },
   // 9: sitting back into the plié, the chest dropping in over the lead leg.
-  { hip: [-0.8, -0.6], lean: 1.5, twist: 0.32, shrug: 1.0, near: [-0.6, -1.0], lag: 0.6, far: [-1.2, -0.6] },
+  { hip: [-0.8, -0.6], lean: 1.5, twist: 0.32, shrug: 1.0, near: [-0.6, -1.5], lag: 0.6, far: [0, 0], swing: [8, 146] },
 ];
 
 const GUARD_SHRUG = GUARD.shrug ?? 0;
 /** The guard's head angle on screen: the source drawing, the sideways look. */
 const HEAD = GUARD.torso + GUARD.head;
-/** Where the cocked rear fist sits from the rear shoulder in the guard. */
-const COCKED = (() => {
+/** Where the rear fist sits from the rear shoulder in the guard (under the chin). */
+const REAR_FIST = (() => {
   const shoulder = solve(GUARD, RIFF_BODY).near.shoulder;
   return { x: GUARD.nearFist.x - shoulder.x, y: GUARD.nearFist.y - shoulder.y };
 })();
+/** The direction of the guard's lead upper arm (radians): it hangs from the shoulder. */
+const LEAD_UPPER = (() => {
+  const { shoulder, elbow } = solve(GUARD, RIFF_BODY).far;
+  return Math.atan2(elbow.y - shoulder.y, elbow.x - shoulder.x);
+})();
+
+/** The lead fist of `pose` with its arm swung `back` degrees from the guard's, bent `bend`. */
+function swungLead(pose: Pose, back: number, bend: number): Pose {
+  const { shoulder } = solve(pose, RIFF_BODY).far;
+  const upper = LEAD_UPPER - (back * Math.PI) / 180;
+  const fore = upper + (bend * Math.PI) / 180;
+  return {
+    ...pose,
+    farFist: at(
+      shoulder.x + RIFF_BODY.upperArm * Math.cos(upper) + RIFF_BODY.forearm * Math.cos(fore),
+      shoulder.y + RIFF_BODY.upperArm * Math.sin(upper) + RIFF_BODY.forearm * Math.sin(fore),
+    ),
+  };
+}
 
 function body(b: Beat, frame: number): Pose {
   const torso = GUARD.torso + b.lean;
@@ -167,7 +192,10 @@ function body(b: Beat, frame: number): Pose {
   };
 }
 
-const BODIES: readonly Pose[] = BEATS.map(body);
+const BODIES: readonly Pose[] = BEATS.map((b, frame) => {
+  const pose = body(b, frame);
+  return b.swing ? swungLead(pose, b.swing[0], b.swing[1]) : pose;
+});
 const SHOULDERS = BODIES.map((pose) => solve(pose, RIFF_BODY).near.shoulder);
 
 export const POSES: readonly Pose[] = BODIES.map((pose, i) => {
@@ -176,7 +204,7 @@ export const POSES: readonly Pose[] = BODIES.map((pose, i) => {
   const before = SHOULDERS[(i + BEATS.length - 1) % BEATS.length];
   if (!b || !now || !before) return pose;
   // The loaded rear fist follows its shoulder `lag` of a frame late.
-  const x = now.x + (before.x - now.x) * b.lag + COCKED.x + b.near[0];
-  const y = now.y + (before.y - now.y) * b.lag + COCKED.y + b.near[1];
+  const x = now.x + (before.x - now.x) * b.lag + REAR_FIST.x + b.near[0];
+  const y = now.y + (before.y - now.y) * b.lag + REAR_FIST.y + b.near[1];
   return { ...pose, nearFist: at(x, y) };
 });

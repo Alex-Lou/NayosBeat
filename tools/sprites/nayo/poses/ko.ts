@@ -1,4 +1,5 @@
 import { at, GUARD, planted, type Pose } from './common.ts';
+import { onToes } from './hitHigh.ts';
 
 /**
  * ko: 8 frames, 4,4,4,4,4,4,6 ticks then the last frame held. The blow snaps his head back out
@@ -9,8 +10,9 @@ import { at, GUARD, planted, type Pose } from './common.ts';
  */
 
 /**
- * Out cold: flat on his back, head lolled, the rear arm flung over his head, the lead one dead
- * weight on the floor at his side (in reach, so it keeps a soft bend), legs limp.
+ * Out cold: flat on his back, head lolled, both arms dead weight on the floor at his sides (in
+ * reach, so they keep a soft bend; seen side on, an arm flung over the head would go through
+ * it), legs limp.
  */
 const OUT: Pose = {
   hip: at(-14, 6),
@@ -20,8 +22,8 @@ const OUT: Pose = {
   nearFoot: { x: 15, y: 5.6, angle: 66 },
   farFoot: { x: 19.5, y: 5, angle: 76 },
   nearFist: at(-13, 5),
-  farFist: at(-54, 6),
-  bends: { nearElbow: 'down', farElbow: 'up', nearKnee: 'up', farKnee: 'up' },
+  farFist: at(-11, 4.3),
+  bends: { nearElbow: 'down', farElbow: 'down', nearKnee: 'up', farKnee: 'up' },
   nearHand: 'open',
   farHand: 'open',
   face: 'out',
@@ -40,16 +42,18 @@ export const POSES: readonly Pose[] = [
     nearFoot: planted(GUARD.nearFoot.x, 8),
     farFoot: GUARD.farFoot,
     nearFist: at(8.5, 49),
-    // The rear arm blown back below the head line, a slight bend left in it.
-    farFist: at(-33, 50),
-    bends: { nearElbow: 'down', farElbow: 'down' },
+    // The rear arm blown back and down past the hip, as far as a shoulder swings behind, a
+    // slight bend left in it.
+    farFist: at(-25.4, 33),
+    bends: { nearElbow: 'down', farElbow: 'up' },
     nearHand: 'open',
     farHand: 'open',
     face: 'hurt',
   },
-  // 1 · Toppling back over the rear leg, which buckles: the lead foot kicks up off the floor.
-  // The arms lag: the lead hand still drifting forward from the blow, the rear one trailing
-  // back below the shoulders.
+  // 1 · Toppling back over the rear leg, which buckles (its heel comes up as the knee drops):
+  // the lead foot kicks up off the floor. The arms lag: the lead hand still drifting forward
+  // from the blow, the rear one swinging down and forward under the shoulder as the chest
+  // falls away from it.
   {
     hip: at(-12, 31),
     torso: -32,
@@ -57,9 +61,9 @@ export const POSES: readonly Pose[] = [
     shrug: 0,
     twist: 0.2,
     nearFoot: { x: 9, y: 9, angle: 20 },
-    farFoot: planted(GUARD.farFoot.x, -4),
+    farFoot: onToes(GUARD.farFoot, -35),
     nearFist: at(1, 54),
-    farFist: at(-32, 49),
+    farFist: at(-1.6, 39.8),
     bends: { nearElbow: 'down', farElbow: 'down' },
     nearHand: 'open',
     farHand: 'open',
@@ -73,25 +77,26 @@ export const POSES: readonly Pose[] = [
     shrug: 0,
     nearFoot: { x: 14, y: 20, angle: 30 },
     farFoot: { x: 1, y: 10, angle: 15 },
-    nearFist: at(-14, 54),
-    farFist: at(-27, 50),
-    bends: { nearElbow: 'up', farElbow: 'up', nearKnee: 'up', farKnee: 'up' },
+    // Both arms flung up past the head by the fall, loose at the elbows.
+    nearFist: at(-24.8, 57.1),
+    farFist: at(-40.4, 53.8),
+    bends: { nearElbow: 'down', farElbow: 'up', nearKnee: 'up', farKnee: 'up' },
     nearHand: 'open',
     farHand: 'open',
     face: 'hurt',
   },
-  // 3 · Slams onto his back: legs whip up, the rear arm flung back over his head, the lead one
-  // whipped down across the body by the impact and draped there, the hand dangling: dead weight.
+  // 3 · Slams onto his back: legs whip up, both arms slammed down onto the floor at his sides
+  // by the impact: dead weight.
   {
     hip: at(-14, 6),
     torso: -80,
     head: -14,
     shrug: 0,
-    nearFoot: { x: -1, y: 30, angle: 20 },
-    farFoot: { x: 7, y: 25, angle: 30 },
-    nearFist: at(-17, 17),
-    farFist: at(-52, 12),
-    bends: { nearElbow: 'up', farElbow: 'up', nearKnee: 'up', farKnee: 'up' },
+    nearFoot: { x: -1, y: 30, angle: 82 },
+    farFoot: { x: 7, y: 25, angle: 76 },
+    nearFist: at(-11.5, 3.8),
+    farFist: at(-11, 4.4),
+    bends: { nearElbow: 'down', farElbow: 'down', nearKnee: 'up', farKnee: 'up' },
     nearHand: 'open',
     farHand: 'open',
     face: 'out',
@@ -106,11 +111,11 @@ export const POSES: readonly Pose[] = [
     torso: -76,
     head: 14,
     shrug: 0,
-    nearFoot: { x: 5, y: 31, angle: 10 },
-    farFoot: { x: 12, y: 26, angle: 25 },
-    nearFist: at(-17, 21),
-    farFist: at(-50, 20),
-    bends: { nearElbow: 'up', farElbow: 'up', nearKnee: 'up', farKnee: 'up' },
+    nearFoot: { x: 5, y: 31, angle: 65 },
+    farFoot: { x: 12, y: 26, angle: 68 },
+    nearFist: at(-14, 28.5),
+    farFist: at(-12.2, 8.3),
+    bends: { nearElbow: 'down', farElbow: 'down', nearKnee: 'up', farKnee: 'up' },
     nearHand: 'open',
     farHand: 'open',
     face: 'out',
@@ -129,8 +134,8 @@ export const POSES: readonly Pose[] = [
     nearFoot: { x: 8, y: 14, angle: 30 },
     farFoot: { x: 15, y: 9.5, angle: 50 },
     nearFist: at(-14, 6),
-    farFist: at(-53, 8),
-    bends: { nearElbow: 'down', farElbow: 'up', nearKnee: 'up', farKnee: 'up' },
+    farFist: at(-11, 4.3),
+    bends: { nearElbow: 'down', farElbow: 'down', nearKnee: 'up', farKnee: 'up' },
     nearHand: 'open',
     farHand: 'open',
     face: 'out',

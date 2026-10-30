@@ -26,28 +26,34 @@ export const ANIMATED: boolean = true;
  * her front flip (tucked, rolling over) nor her Talon (one leg, standing), nor Nayo's Pied fendu
  * (a flying side kick leaning back): two heels coming down from above, no somersault.
  *
- * - 0 (3 ticks): the coil: the hips dip, the rear heel pops, the cocked fist lags; dust off
- *   both boots and a small ring squashed on the floor (the push-off, the last ticks on it).
- * - 1 (3 ticks): the takeoff: long, the rear knee driving up (a short trail under it), the arms
- *   wrapping across.
- * - 2 (3 ticks): the corkscrew: crossed and turned away (`twist`), the spiral round her.
- * - 3 (3 ticks): the angel at the top: the wings open, the legs piked in front, the end of the
- *   spiral swinging round under her hips.
- * - 4 (4 ticks): the jackknife: the heels raised over the opponent's head, the hands reaching
- *   for them; the legs' trail rising.
+ * - 0 (3 ticks): the coil: the hips dip, the rear heel pops, the rear fist lags under the chin;
+ *   dust off both boots and a small ring squashed on the floor (the push-off, the last ticks on
+ *   it).
+ * - 1 (3 ticks): the takeoff: long, the rear knee driving up (a short trail under it), the rear
+ *   fist wrapping across in front, the lead arm swung back to wind the spin.
+ * - 2 (3 ticks): the corkscrew: turned away (`twist`), both fists hugged in to the chest, the
+ *   elbows down at her sides, the spiral round her.
+ * - 3 (3 ticks): the angel at the top: the arms open on a diagonal, the lead one flung up ahead
+ *   of her, the rear one swept back and down (a shoulder goes no farther behind the chest), the
+ *   legs piked in front, the boots flexed, the end of the spiral swinging round under her hips.
+ * - 4 (4 ticks): the jackknife: the heels raised over the opponent's head, the knees soft and
+ *   bending the way knees bend, the hands reaching for the shins; the legs' trail rising.
  * - 5 (4 ticks, active): the stomp: the legs 30 degrees off straight down, the heels together,
  *   the trail arcing over and down into the hitbox, a silver spark and diamonds at the heels;
  *   the line of action runs from the shoulders down the body to the heels; the jaw set.
- * - 6 (4 ticks): the touchdown, wide and low in the plié: the lead heel down with its toes
- *   coming down after it, the rear foot landing on its ball on its guard mark (its knee turned
- *   out in the plié; it comes forward as she rises), the rear fist snapping back toward the ear, the lead hand open
- *   low in front; dust off both boots and a flat ring.
+ * - 6 (4 ticks): the touchdown, wide and low: the lead foot down, its toes a hair up, the rear
+ *   foot landing high on its ball on its guard mark, the rear knee driven forward and down
+ *   under her, floating over the floor (her crouch's sprinter's set: both knees bend toward the
+ *   toes), the rear fist snapping back up toward the chin, the lead hand open low in front; dust
+ *   off both boots and a flat ring.
  * - 7 (5 ticks): she rises, the feet fixed (the lead toes down, the rear heel pivoting on the
  *   ball), the fists coming back; the fringe and the chain fall.
  * - 8 (5 ticks): the guard, settling.
  *
  * The body never turns past 40 degrees: the head stays the source drawing (under stamp.ts's 20
- * degrees on screen) the whole way, chin down over the heels on the stomp.
+ * degrees on screen) the whole way, chin down over the heels on the stomp. In the air the boots
+ * point no more than 35 degrees off square to the shin (a combat boot), and the legs, long as
+ * they are, keep a soft knee that bends the way knees bend.
  */
 
 const TOE = toeOf(GUARD.nearFoot);
@@ -55,16 +61,16 @@ const TOE = toeOf(GUARD.nearFoot);
 const LOOK = GUARD.torso + GUARD.head;
 const LEG = RIFF_BODY.thigh + RIFF_BODY.shin;
 
-/** Where the cocked rear fist sits from the rear shoulder in the guard. */
-const COCKED = (() => {
+/** Where the rear fist sits from the rear shoulder in the guard: under the chin. */
+const TUCKED = (() => {
   const shoulder = solve(GUARD, RIFF_BODY).near.shoulder;
   return at(GUARD.nearFist.x - shoulder.x, GUARD.nearFist.y - shoulder.y);
 })();
 
-/** The loaded rear fist carried by its shoulder, nudged by (dx, dy). */
-function cocked(pose: Pose, dx = 0, dy = 0): Pose {
+/** The rear fist home under the chin, carried by its shoulder, nudged by (dx, dy). */
+function tucked(pose: Pose, dx = 0, dy = 0): Pose {
   const shoulder = solve(pose, RIFF_BODY).near.shoulder;
-  return { ...pose, nearFist: at(shoulder.x + COCKED.x + dx, shoulder.y + COCKED.y + dy) };
+  return { ...pose, nearFist: at(shoulder.x + TUCKED.x + dx, shoulder.y + TUCKED.y + dy) };
 }
 
 /** A leg by its angle from straight down (toward the front), its length fraction, its foot. */
@@ -114,7 +120,7 @@ function spiral(x: number, from: number, to: number, end: Point): Effect {
 }
 
 // 0 · The coil (3 ticks).
-const COIL: Pose = cocked(
+const COIL: Pose = tucked(
   {
     ...GUARD,
     hip: at(-6.5, 30.2),
@@ -140,11 +146,11 @@ const LAUNCH: Pose = {
       shrug: 2.6,
       twist: 0.2,
       nearFist: at(6, 58),
-      farFist: at(-14, 46),
-      bends: { nearElbow: 'down', farElbow: 'down', nearKnee: 'front' },
+      farFist: at(-12.8, 48.5),
+      bends: { nearElbow: 'down', farElbow: 'up', nearKnee: 'front' },
     },
     [34, 0.74, -45],
-    [-10, 0.99, -62],
+    [-10, 0.99, -52],
   ),
   effects: [smear(3, [5, 22], [8.5, 30], [11, 38])],
 };
@@ -160,11 +166,11 @@ const CORK: Pose = {
       shrug: 3,
       twist: -0.9,
       nearFist: at(2, 58),
-      farFist: at(-7, 60),
-      bends: { nearElbow: 'down', farElbow: 'down' },
+      farFist: at(5, 57),
+      bends: { nearElbow: 'down', farElbow: 'back' },
     },
-    [8, 0.99, -65],
-    [-2, 0.99, -65],
+    [8, 0.99, -33],
+    [-2, 0.99, -43],
   ),
   effects: [spiral(-2, 14, 70, at(5, 14))],
 };
@@ -179,14 +185,14 @@ const ANGEL: Pose = {
       head: LOOK - 14 + 18,
       shrug: 1.4,
       twist: 0.85,
-      nearFist: at(-33, 68),
+      nearFist: at(-24, 42.3),
       nearHand: 'open',
-      farFist: at(18, 74),
+      farFist: at(9.5, 79),
       farHand: 'open',
-      bends: { nearElbow: 'down', farElbow: 'down' },
+      bends: { nearElbow: 'up', farElbow: 'down' },
     },
-    [80, 0.99, -15],
-    [84, 0.99, -15],
+    [80, 0.99, 40],
+    [84, 0.99, 45],
   ),
   effects: [smear(3, [-14, 40], [-4, 30], [10, 30], [18, 38])],
 };
@@ -206,10 +212,10 @@ const JACKKNIFE: Pose = {
       nearHand: 'open',
       farFist: at(10, 63),
       farHand: 'open',
-      bends: { nearElbow: 'down', farElbow: 'down' },
+      bends: { nearElbow: 'down', farElbow: 'down', nearKnee: 'up', farKnee: 'up' },
     },
-    [148, 0.99, 10],
-    [152, 0.99, 10],
+    [148, 0.99, 125],
+    [152, 0.99, 128],
   ),
   effects: [smear(4, [30, 38], [30, 50], [24, 62], [15, 68])],
 };
@@ -225,9 +231,9 @@ const CHOP: Pose = {
       head: LOOK + 6 - 12,
       shrug: 3.2,
       twist: 0.35,
-      nearFist: at(-12, 49),
+      nearFist: at(-10, 51.5),
       farFist: at(17, 50),
-      bends: { nearElbow: 'back', farElbow: 'front' },
+      bends: { nearElbow: 'back', farElbow: 'back' },
       face: 'effort',
     },
     [30, 0.99, 30],
@@ -242,19 +248,19 @@ const CHOP: Pose = {
 
 // 6 · The touchdown (4 ticks): wide and heavy, straight into the plié, the lead heel down with
 // its toes coming down, the rear foot landing on its ball on its mark.
-const TOUCHDOWN: Pose = cocked(
+const TOUCHDOWN: Pose = tucked(
   {
     ...GUARD,
-    hip: at(-5, 22.5),
+    hip: at(-7, 26),
     torso: 26,
     head: LOOK - 26,
     shrug: 2.8,
     twist: 0.5,
-    nearFoot: onBall(TOE, -25),
-    farFoot: onHeel(GUARD.farFoot, 12),
-    farFist: at(14, 23),
+    nearFoot: onBall(TOE, -56),
+    farFoot: onHeel(GUARD.farFoot, 4),
+    farFist: at(14, 26),
     farHand: 'open',
-    bends: { nearKnee: 'back', farKnee: 'front' },
+    bends: { nearKnee: 'front', farKnee: 'front' },
     effects: [dust(10, 4.5, 0.2), dust(-18, 4, 0.2), ring(at(-4, 2), 20, 0.2, 0.3)],
   },
   -2,
@@ -262,7 +268,7 @@ const TOUCHDOWN: Pose = cocked(
 );
 
 // 7 · Rising out of the plié, the feet fixed (5 ticks).
-const STEP: Pose = cocked(
+const STEP: Pose = tucked(
   {
     ...GUARD,
     hip: at(-6.2, 29.5),
@@ -278,7 +284,7 @@ const STEP: Pose = cocked(
 );
 
 // 8 · The guard, settling (5 ticks).
-const SETTLE: Pose = cocked(
+const SETTLE: Pose = tucked(
   {
     ...GUARD,
     hip: at(-6.8, 31.2),

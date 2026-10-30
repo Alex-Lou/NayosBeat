@@ -1,7 +1,6 @@
-import { solve, type Effect } from '../../skeleton.ts';
-import { RIFF_BODY } from '../body.ts';
+import type { Bend, Effect } from '../../skeleton.ts';
 import { at, GUARD, onBall, planted, smear, toeOf, type Pose } from './common.ts';
-import { ANIMATED as CROUCH_ANIMATED, POSES as CROUCH_STRIP } from './crouch.ts';
+import { atChin, ANIMATED as CROUCH_ANIMATED, POSES as CROUCH_STRIP } from './crouch.ts';
 
 export const ANIMATED: boolean = true;
 
@@ -9,51 +8,44 @@ export const ANIMATED: boolean = true;
  * crouchLight (Coup bas): 5 frames, 1, 2, 2, 3, 4 ticks (12), the kick on frame 2 (ticks 3-4),
  * hitbox 10..32 / 4..14. A b-girl's kick-out « sur une main »: out of the crouch she pounces
  * forward onto her rear hand, slapped flat on the floor under her chest, and the lead boot
- * fires out low at the shin like a piston, heel first; the head stays up, the eyes on the
- * opponent, the lead fist up by the chin. Then the boot snaps back, the hand pushes off the
- * floor and she sits back into the crouch. Her fastest low (3 ticks): no wind-up beyond the dip
- * of the shoulder, the whole body going forward and down at once.
+ * fires out low at the shin like a piston; the head stays up, the eyes on the opponent, the lead
+ * fist up by the chin. Then the boot snaps back, the hand pushes off the floor and she sits back
+ * into the crouch. Her fastest low (3 ticks): no wind-up beyond the dip of the shoulder, the
+ * whole body going forward and down at once.
  *
- * - 0 (1 tick): the dip: the rear shoulder rolls forward and the cocked fist drops for the
- *   floor, the hips go, the lead heel comes off the floor.
+ * - 0 (1 tick): the dip: the rear shoulder rolls forward and the open rear hand drops for the
+ *   floor, the hips go forward over the rear knee, the lead heel comes off the floor.
  * - 1: the hand slaps the floor, the chest pitched over it, the lead knee coming through, the
  *   boot half way out.
- * - 2: the kick: the leg long and low, the boot flexed up, the heel leading and the sole at the
- *   shin (a stomp, not a toe poke); a short trail skimming the floor, a tick of a flash, dust
- *   under the hand.
+ * - 2: the kick: the leg long and low, the boot cocked up 50 degrees, the ball and the sole into
+ *   the shin; a short trail skimming the floor, a tick of a flash, dust under the hand. The rear
+ *   arm, straight under the shoulder (the elbow soft, its crook forward), carries her.
  * - 3: the boot snaps back, the knee folding; the hand has pushed off the floor and comes up
- *   open, half way to the ear.
- * - 4: back in the crouch, the hand closed into the cocked fist by the ear: the crouch's loop
- *   (or its restart) follows without a pop.
+ *   open, the elbow down, half way back to the chin.
+ * - 4: back in the crouch, the hand closed into the fist under the chin, the elbow down on the
+ *   ribs (atChin, crouch.ts): the crouch's loop (or its restart) follows without a pop.
  *
- * The rear foot never leaves its ball (the heel pumps), the lead foot leaves the floor on the
- * dip and lands back on its own print.
+ * The rear leg keeps the crouch's: the knee forward and low over the floor, never on it, the
+ * boot on its ball, its heel only as low as the ankle lets it come (MIN_ANKLE, common.ts): the
+ * hand reaches the floor because the chest pitches over it (55 to 60 degrees) and the rear
+ * shoulder rolls down after it, not because the hips sink, which would drive the rear knee into
+ * the floor. While the lead knee comes through (1), the chest stays at 55 and the boot already
+ * low and long: a steeper chest over a higher knee would fold the thigh into the belly. The rear foot never leaves its ball (the
+ * heel pumps), the lead foot leaves the floor on the dip and lands back on its own print.
  */
 
 const TOE = toeOf(GUARD.nearFoot);
 
-/** Where the cocked rear fist sits from the rear shoulder in the guard. */
-const COCKED = (() => {
-  const shoulder = solve(GUARD, RIFF_BODY).near.shoulder;
-  return at(GUARD.nearFist.x - shoulder.x, GUARD.nearFist.y - shoulder.y);
-})();
-
-/** The loaded rear fist carried by its shoulder, nudged by (dx, dy). */
-function cocked(pose: Pose, dx = 0, dy = 0): Pose {
-  const shoulder = solve(pose, RIFF_BODY).near.shoulder;
-  return { ...pose, nearFist: at(shoulder.x + COCKED.x + dx, shoulder.y + COCKED.y + dy) };
-}
-
 /** Her crouch as crouch.ts draws it, for as long as that strip is not animated. */
-const FALLBACK: Pose = cocked({
+const FALLBACK: Pose = atChin({
   ...GUARD,
-  hip: at(-8.5, 15.5),
-  torso: 26,
-  head: -15,
+  hip: at(-13, 17.5),
+  torso: 35,
+  head: -24,
   shrug: 2.6,
-  nearFoot: onBall(TOE, -20),
+  nearFoot: onBall(TOE, -70),
   farFoot: GUARD.farFoot,
-  farFist: at(8.5, 24.5),
+  farFist: at(10, 29),
   twist: 0.4,
 });
 
@@ -69,10 +61,12 @@ const dust = (x: number, size: number, progress: number): Effect => ({
   progress,
 });
 
-/** Where the rear hand lands, flat on the floor under the chest. */
-const PALM = at(3, 3);
+/** Where the rear hand lands, flat on the floor under her chest, below the rear shoulder. */
+const PALM = at(11.5, 2.6);
 
-type Hand = { readonly at: ReturnType<typeof at> } | { readonly cocked: readonly [number, number] };
+type Hand =
+  | { readonly at: ReturnType<typeof at>; readonly elbow?: Bend }
+  | { readonly chin: readonly [number, number] };
 
 interface Key {
   readonly hip: readonly [number, number];
@@ -84,7 +78,7 @@ interface Key {
   readonly roll: number;
   readonly heel: number;
   readonly lead: Pose['farFoot'];
-  /** The rear hand: open at a point (on the floor), or cocked by the ear (nudged). */
+  /** The rear hand: open at a point (on the floor), or the fist under the chin (nudged). */
   readonly hand: Hand;
   readonly fist: readonly [number, number];
   readonly twist: number;
@@ -110,81 +104,86 @@ function key(k: Key): Pose {
       ...pose,
       nearFist: k.hand.at,
       nearHand: 'open',
-      bends: { ...REST.bends, nearElbow: 'back' },
+      bends: { ...REST.bends, nearElbow: k.hand.elbow ?? 'back' },
     };
   }
-  return cocked(pose, k.hand.cocked[0], k.hand.cocked[1]);
+  return atChin(pose, k.hand.chin[0], k.hand.chin[1]);
 }
 
 const KEYS: readonly Key[] = [
-  // 0: the dip.
+  // 0: the dip: the rear shoulder rolls forward, the open rear hand drops for the floor, the
+  // hips go forward and down over the floating rear knee, the lead heel comes off the floor.
   {
-    hip: [-7.6, 14.6],
-    torso: 32,
+    hip: [-12.4, 16.6],
+    torso: 46,
     look: 1,
-    shrug: 2.2,
-    roll: 2.5,
-    heel: -24,
+    shrug: 2,
+    roll: 3,
+    heel: -76,
     lead: { x: 7.9, y: 6.6, angle: 8 },
-    hand: { at: at(-8.5, 27) },
-    fist: [10.5, 29],
+    hand: { at: at(5, 14), elbow: 'back' },
+    fist: [9.5, 33],
     twist: 0.3,
   },
-  // 1: the hand slaps down, the boot comes through.
+  // 1: the hand slaps the floor under the chest, the chest pitched over it, the lead knee
+  // coming through, the boot half way out.
   {
-    hip: [-6.8, 11.8],
-    torso: 38,
+    hip: [-11.4, 16.4],
+    torso: 55,
     look: 2,
-    shrug: 1.2,
-    roll: 7,
-    heel: -30,
-    lead: { x: 17, y: 9, angle: 24 },
+    shrug: 1,
+    roll: 10.5,
+    heel: -80,
+    lead: { x: 17.2, y: 7.8, angle: 44 },
     hand: { at: PALM },
-    fist: [11.5, 34],
+    fist: [14.5, 28],
     twist: 0.15,
-    effects: [smear(3, [9, 8], [13, 9.5], [18, 9.5]), dust(PALM.x, 2, 0.05)],
+    effects: [smear(3, [9, 8], [12, 9.5], [16.5, 10]), dust(PALM.x, 2, 0.05)],
   },
-  // 2: the kick.
+  // 2: the kick: the lead leg long and low, the boot cocked up 50 degrees, the ball and the sole
+  // driven into the shin; a short trail skimming the floor, a tick of a flash, dust under the
+  // hand. The rear arm straight under the shoulder carries her, the elbow soft.
   {
-    hip: [-6.2, 11.2],
-    torso: 40,
+    hip: [-11, 16.5],
+    torso: 61,
     look: 2,
-    shrug: 0.8,
-    roll: 7.5,
-    heel: -32,
-    lead: { x: 23.6, y: 8, angle: 40 },
+    shrug: 0.6,
+    roll: 9.5,
+    heel: -82,
+    lead: { x: 21.6, y: 8.2, angle: 50 },
     hand: { at: PALM },
-    fist: [12, 34],
+    fist: [16, 27],
     twist: 0.1,
     effects: [
-      smear(4, [9, 9], [16, 9], [23, 8.5], [27, 7.5]),
-      { kind: 'flash', center: at(33.5, 7), radius: 2.5, tone: 'strike' },
+      smear(4, [9, 9], [15, 9], [21, 8.5], [26, 8]),
+      { kind: 'flash', center: at(32.5, 9), radius: 2.5, tone: 'strike' },
       dust(PALM.x, 2.5, 0.2),
     ],
   },
-  // 3: the boot snaps back, the hand comes up off the floor.
+  // 3: the boot snaps back, the knee folding; the hand has pushed off the floor and comes up
+  // open, half way back to the chin.
   {
-    hip: [-7.4, 13.8],
-    torso: 34,
+    hip: [-12.2, 16.8],
+    torso: 47,
     look: 1,
     shrug: 1.8,
     roll: 3.5,
-    heel: -27,
-    lead: { x: 12, y: 7.4, angle: 6 },
-    hand: { at: at(-5, 24) },
-    fist: [11, 29],
+    heel: -76,
+    lead: { x: 11.5, y: 7.4, angle: 6 },
+    hand: { at: at(5, 23), elbow: 'back' },
+    fist: [10.5, 32.5],
     twist: 0.25,
     effects: [dust(PALM.x, 2.5, 0.55)],
   },
   // 4: back in the crouch.
   {
-    hip: [REST.hip.x + 0.2, REST.hip.y - 0.5],
+    hip: [REST.hip.x + 0.2, REST.hip.y - 0.3],
     torso: REST.torso + 1.5,
     shrug: (REST.shrug ?? 0) + 0.2,
     roll: 0.4,
-    heel: -21,
+    heel: (REST.nearFoot.angle ?? 0) - 1,
     lead: planted(GUARD.farFoot.x),
-    hand: { cocked: [0.3, -0.8] },
+    hand: { chin: [0.3, -0.8] },
     fist: [REST.farFist.x + 0.2, REST.farFist.y - 0.4],
     twist: (REST.twist ?? 0) - 0.04,
     effects: [dust(PALM.x, 2.5, 0.85)],

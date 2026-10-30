@@ -28,8 +28,8 @@ export const ANIMATED: boolean = true;
  * knee pulled up to the chest and the rear leg folded back under her (a hurdler's tuck, not a
  * cannonball); then both legs open for the floor, the lead foot reaching, the rear leg long and
  * straight behind, and the landing absorbs into the knees with the feet on the guard's spots and
- * dust puffing out. The guard never breaks for long: the rear fist stays loaded by the ear, the
- * lead fist comes up to the chin in the air.
+ * dust puffing out. The guard never breaks for long: the rear fist stays tucked under the chin,
+ * the elbow down on the ribs, the lead fist comes up in front of the chest in the air.
  *
  * In the air her hips ride 36 to 39 px over her feet, the knees bent (the game lifts her): the
  * drawing stays as close as it can to her air boxes.
@@ -44,23 +44,37 @@ function shouldersOf(body: Body): { near: Point; far: Point } {
 }
 
 const GUARD_SHOULDERS = shouldersOf(GUARD);
-/** Where the guard holds the fists from their shoulders: the rear cocked, the lead low. */
-const COCKED = at(
+/** Where the guard holds the fists from their shoulders: the rear under the chin, the lead low. */
+const REAR_FIST = at(
   GUARD.nearFist.x - GUARD_SHOULDERS.near.x,
   GUARD.nearFist.y - GUARD_SHOULDERS.near.y,
 );
 const LEAD = at(GUARD.farFist.x - GUARD_SHOULDERS.far.x, GUARD.farFist.y - GUARD_SHOULDERS.far.y);
 
+/** `p` turned `degrees` counterclockwise (a lean back). */
+function turned(p: Point, degrees: number): Point {
+  const a = (degrees * Math.PI) / 180;
+  return at(p.x * Math.cos(a) - p.y * Math.sin(a), p.x * Math.sin(a) + p.y * Math.cos(a));
+}
+
 /**
  * The guard's fists on the shoulders of `body`, moved by `near` and `far` (world px): wherever
- * the body goes, the rear fist stays cocked by the ear and the lead fist where the guard holds it.
+ * the body goes, the rear fist stays under the chin, the elbow down, and the lead fist where the
+ * guard holds it. The arms turn with the chest: a torso more upright than the guard's carries
+ * both fists back with it, one pitched further in carries them forward. The head does not turn
+ * with the chest (its drawing stays within 20 degrees of upright), so a chest laid back brings
+ * the chin down onto the rear glove: those frames nudge it down (`near`) to keep the face clear
+ * above it.
  */
 export function guarded(body: Body, near: Point = at(0, 0), far: Point = at(0, 0)): Pose {
   const { near: n, far: f } = shouldersOf(body);
+  const lean = GUARD.torso - body.torso;
+  const rear = turned(REAR_FIST, lean);
+  const lead = turned(LEAD, lean);
   return {
     ...body,
-    nearFist: at(n.x + COCKED.x + near.x, n.y + COCKED.y + near.y),
-    farFist: at(f.x + LEAD.x + far.x, f.y + LEAD.y + far.y),
+    nearFist: at(n.x + rear.x + near.x, n.y + rear.y + near.y),
+    farFist: at(f.x + lead.x + far.x, f.y + lead.y + far.y),
   };
 }
 
@@ -89,7 +103,7 @@ const LOAD: Pose = {
   head: HEAD + 1 - 21,
   shrug: 2.6,
   nearFoot: onBall(TOE, -28),
-  nearFist: at(GUARD.nearFist.x + 0.6, GUARD.nearFist.y - 1.6),
+  nearFist: at(GUARD.nearFist.x + 0.6, GUARD.nearFist.y - 3.1),
   farFist: at(GUARD.farFist.x - 0.4, GUARD.farFist.y - 2.2),
   effects: [puff(-15, 3, 0.1), puff(10, 3.4, 0.1)],
 };
@@ -108,7 +122,7 @@ const RISE: Pose = guarded(
     farFoot: { x: 0.4, y: 12, angle: -52 },
     bends: { nearKnee: 'front' },
   },
-  at(1.4, 4.6),
+  at(0.9, -0.2),
   at(1, 5),
 );
 
@@ -125,12 +139,12 @@ const GATHER: Pose = guarded(
     farFoot: air(4, 12, -48),
     bends: { nearKnee: 'down' },
   },
-  at(0.8, 2.4),
+  at(0.3, -0.1),
   at(0.4, 3),
 );
 
 // 3 · The top, the hitch: the lead knee high at the chest, the rear leg folded back under her, the
-// chest over the knee, the cocked fist up, the lead fist at the chin.
+// chest over the knee, the rear fist under the chin, the lead fist up in front of the chest.
 const HITCH: Pose = guarded(
   {
     ...GUARD,
@@ -143,7 +157,7 @@ const HITCH: Pose = guarded(
     farFoot: air(5.5, 17, -40),
     bends: { nearKnee: 'down' },
   },
-  at(0.4, 0.6),
+  at(0.4, -0.4),
   at(0, 1.4),
 );
 

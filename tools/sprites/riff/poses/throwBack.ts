@@ -1,4 +1,4 @@
-import { at, GUARD, onBall, planted, smear, type Pose } from './common.ts';
+import { at, GUARD, onBall, planted, smear, toeOf, type Pose } from './common.ts';
 import { HOLD, LEAD_IN, REAR_TOE } from './hold.ts';
 import { dust, SETTLE, shown } from './throwForward.ts';
 
@@ -24,7 +24,7 @@ export const ANIMATED: boolean = true;
  * down ahead of the hips; the kick-up and the kip bring her back over her feet.
  *
  * - 0: the sit. She hauls the collar down and sits back off the lead foot, the rear boot rising
- *   sole first for his belly, the knee turned out.
+ *   sole first for his belly, the knee lifted in front of the hip.
  * - 1: the load. Squatting under him, the torso tipped back, both fists up at his collar, the
  *   rear boot planted in his belly, the knee bent under it: he comes over face down.
  * - 2: the kick (the sides switch). The torso tips back further and the rear leg drives up
@@ -47,26 +47,28 @@ export const ANIMATED: boolean = true;
  */
 
 // Frame 0 (3 ticks): the sit. The fists haul the collar down, the hips sit back and down off the
-// lead foot, the torso tips back upright; the rear boot rises sole first for his belly, its knee
-// turned out (folded back over the boot).
+// lead foot, the torso tips back upright; the rear boot rises sole first for his belly, the knee
+// lifted in front of the hip, the thigh about 60 degrees up (over an upright chest, a knee any
+// higher would fold the thigh into the belly), the shin slanting down to the boot.
 const SIT: Pose = {
   ...HOLD,
-  hip: at(-6, 24),
+  hip: at(-2.5, 24),
   torso: 1,
   head: 0,
   shrug: 3,
   twist: 0.5,
   reach: { near: 3, far: 1 },
-  nearFoot: { x: 10, y: 30, angle: 75 },
+  nearFoot: { x: 16.5, y: 28.5, angle: 62 },
   farFoot: planted(LEAD_IN),
   nearFist: at(18.5, 50),
   farFist: at(20.5, 46.5),
-  bends: { nearKnee: 'back', farKnee: 'front' },
+  bends: { nearKnee: 'up', farKnee: 'front' },
   face: 'effort',
 };
 
 // Frame 1 (3 ticks): the load. Squatting deep under him, the torso tipped back, both fists up
-// at his collar; the rear boot in his belly, the knee bent under it.
+// at his collar; the rear knee drawn up to her chest, the shin rising from it to the boot planted
+// sole up in his belly (the knee bends the right way, the ankle square).
 const LOAD: Pose = {
   ...HOLD,
   hip: at(-1, 22.5),
@@ -79,13 +81,15 @@ const LOAD: Pose = {
   farFoot: planted(LEAD_IN),
   nearFist: at(4.5, 61.5),
   farFist: at(6, 62.5),
-  bends: { nearKnee: 'down', farKnee: 'front' },
+  bends: { nearKnee: 'up', farKnee: 'front' },
   face: 'effort',
 };
 
 // Frame 2 (4 ticks, the sides switch on tick 8): the kick. The hips drive in under him, the
-// torso tips back, the rear leg straight up into him (a trail on the boot's arc); the lead fist
-// keeps the collar, the rear hand lets go and swings back for the floor.
+// torso tips back, the rear leg drives up into him, the sole flat under his belly (a trail on
+// the boot's arc); the lead heel comes up, the knee over the toes; the lead fist keeps the collar overhead, the elbow soft; the rear hand lets go
+// and reaches down and back for the floor, the arm long (behind her hip, never up behind her
+// back).
 const KICK: Pose = {
   ...HOLD,
   hip: at(10, 19),
@@ -94,19 +98,19 @@ const KICK: Pose = {
   shrug: 3,
   twist: 0.5,
   reach: { near: 3, far: 1.5 },
-  nearFoot: { x: 17, y: 50, angle: 105 },
-  farFoot: planted(LEAD_IN),
-  nearFist: at(-15, 31),
-  farFist: at(-4, 63),
+  nearFoot: { x: 16.5, y: 48.3, angle: 158 },
+  farFoot: onBall(toeOf(planted(LEAD_IN)), -50),
+  nearFist: at(-6, 17.8),
+  farFist: at(-3, 58),
   nearHand: 'open',
-  bends: { nearKnee: 'front', farKnee: 'front', nearElbow: 'up' },
+  bends: { nearKnee: 'up', farKnee: 'front', nearElbow: 'back', farElbow: 'front' },
   face: 'effort',
   effects: [smear(5, [14, 40], [19, 48], [19, 56])],
 };
 
 // Frame 3 (4 ticks): the roll. On her back in a tight back-rock, the knees to the chest, the
-// chin tucked, the head on the floor below his; the lead fist on his collar, the rear hand flat on
-// the floor by her side. Dust where her back lands.
+// chin tucked, the head on the floor below his; the lead fist on his collar, the rear arm along
+// her side, the elbow on the floor and the hand flat by her hip. Dust where her back lands.
 const ROLL: Pose = shown({
   ...GUARD,
   hip: at(19, 11),
@@ -117,16 +121,16 @@ const ROLL: Pose = shown({
   twist: 0.3,
   nearFoot: { x: 15, y: 32, angle: 120 },
   farFoot: { x: 20, y: 30, angle: 110 },
-  nearFist: at(6, 3.5),
+  nearFist: at(18.5, 4.5),
   farFist: at(-21, 19),
   nearHand: 'open',
-  bends: { nearKnee: 'up', farKnee: 'up' },
+  bends: { nearKnee: 'up', farKnee: 'up', nearElbow: 'up' },
   face: 'effort',
   effects: [dust(6, 4, 0.15)],
 });
 
 // Frame 4 (1 tick, the release): rocked over onto the shoulders, the hips and legs up, the hands
-// flying open behind her head; speed lines where he leaves.
+// flung open after him, up and back past her head, the arms long; speed lines where he leaves.
 const RELEASE: Pose = shown({
   ...GUARD,
   hip: at(14, 29),
@@ -137,18 +141,20 @@ const RELEASE: Pose = shown({
   twist: 0.3,
   nearFoot: { x: 3, y: 47, angle: 150 },
   farFoot: { x: 8, y: 49, angle: 140 },
-  nearFist: at(-20, 13),
-  farFist: at(-17, 20),
+  nearFist: at(-17.5, 25),
+  farFist: at(-21.5, 32.5),
   nearHand: 'open',
   farHand: 'open',
-  bends: { nearKnee: 'up', farKnee: 'up' },
+  bends: { nearKnee: 'up', farKnee: 'up', nearElbow: 'down', farElbow: 'down' },
   effects: [
     { kind: 'speed', center: at(-42, 30), length: 12, spread: 8, direction: 160, tone: 'strike' },
   ],
 });
 
-// Frame 5 (8 ticks): the kip's thrust. Hands and shoulders on the floor, the hips arched up,
-// the legs snapping forward and down.
+// Frame 5 (8 ticks): the kip's thrust. Sprung off the shoulders, the hips arched up, the legs
+// snapping forward and down, the boots flexed for the landing; both arms whipped forward past
+// her head to throw the kip (a b-girl's no-hands kip-up: on her back the arms cannot reach the
+// floor beyond the head without going through it).
 const KIP: Pose = shown({
   ...GUARD,
   hip: at(10.5, 34.5),
@@ -157,32 +163,33 @@ const KIP: Pose = shown({
   head: 25,
   shrug: 2.4,
   twist: 0.4,
-  nearFoot: { x: 30, y: 23, angle: -60 },
-  farFoot: { x: 34, y: 28, angle: -50 },
-  nearFist: at(-9, 4.5),
-  farFist: at(-5, 4.5),
+  nearFoot: { x: 30, y: 23, angle: -13 },
+  farFoot: { x: 34, y: 28, angle: 15 },
+  nearFist: at(-18.5, 27),
+  farFist: at(-24.5, 30.5),
   nearHand: 'open',
   farHand: 'open',
-  bends: { nearKnee: 'front', farKnee: 'front' },
+  bends: { nearKnee: 'front', farKnee: 'front', nearElbow: 'down', farElbow: 'down' },
   face: 'effort',
   effects: [smear(5, [6, 47], [22, 41], [30, 25])],
 });
 
-// Frame 6 (8 ticks): the landing. On her feet in a deep plié, the chest still coming up from
-// the kip, the fists thrown forward; a trail up from the floor, dust under the boots.
+// Frame 6 (8 ticks): the landing. On her feet in a deep plié, the rear heel high and the rear
+// knee driven forward over its toes as in her crouch, the chest still coming up from the kip,
+// the fists thrown forward; a trail up from the floor, dust under the boots.
 const LAND: Pose = shown({
   ...GUARD,
-  hip: at(0, 15),
+  hip: at(0, 21),
   turn: -18,
   torso: 0,
   head: 10,
   shrug: 2.6,
   twist: 0.4,
-  nearFoot: onBall(REAR_TOE + 12, -20),
+  nearFoot: onBall(REAR_TOE + 10, -75),
   farFoot: planted(11),
   nearFist: at(6, 30),
   farFist: at(13, 31),
-  bends: { nearKnee: 'back', farKnee: 'front' },
+  bends: { nearKnee: 'front', farKnee: 'front' },
   face: 'effort',
   effects: [smear(5, [-14, 8], [-12, 20], [-6, 30]), dust(11, 4, 0.2), dust(-7, 3, 0.2)],
 });

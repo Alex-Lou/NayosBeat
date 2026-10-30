@@ -4,6 +4,7 @@ import {
   GUARD,
   lifted,
   onBall,
+  onHeel,
   planted,
   smear,
   toeOf,
@@ -98,8 +99,9 @@ export const SETTLE: Pose = {
 const LEAD_TOE = toeOf(planted(LEAD_IN));
 
 // Frame 0 (3 ticks): the set. The lead fist yanks the lapel in, the hips dip, the rear heel up;
-// the rear hand lets go of the collar and swings back past her ribs, open, the elbow trailing
-// (a faint trail from the collar).
+// the rear hand lets go of the collar and swings down and back past her hip, open, the arm long
+// and the elbow soft (a faint trail from the collar): it is the hand that will post on the
+// floor.
 const SET: Pose = {
   ...HOLD,
   hip: at(-3.6, 29.6),
@@ -108,17 +110,18 @@ const SET: Pose = {
   shrug: 3.2,
   twist: 0.5,
   nearFoot: onBall(REAR_TOE, -30),
-  nearFist: at(0, 45),
+  nearFist: at(-11, 37),
   farFist: at(18.5, 46),
   nearHand: 'open',
-  bends: { nearElbow: 'up', farElbow: 'down', nearKnee: 'front' },
+  bends: { nearElbow: 'back', farElbow: 'down', nearKnee: 'front' },
   face: 'effort',
-  effects: [smear(3, [17, 55], [9, 51], [2, 46])],
+  effects: [smear(3, [17, 55], [8, 49], [-2, 42], [-9, 38])],
 };
 
 // Frame 1 (3 ticks): the leap. Off the lead foot's toes, the body tipping back and turning
-// sideways, the rear leg swung up nearly straight and level across his belly (a trail after it),
-// the lead fist still in his lapel, the rear hand swung back.
+// sideways, the rear leg swung up nearly straight and level across his belly, the boot flexed
+// (a trail after it); the lead foot leaves the floor pointed, as far as a boot points; the lead
+// fist still in his lapel, the rear arm reaching back and down for the floor.
 const LEAP: Pose = shown({
   ...GUARD,
   hip: at(3, 37),
@@ -127,18 +130,20 @@ const LEAP: Pose = shown({
   head: 22,
   shrug: 2.6,
   twist: 0.2,
-  nearFoot: { x: 32, y: 45, angle: 0 },
-  farFoot: lifted(onBall(LEAD_TOE, -55), 1.5),
-  nearFist: at(-18, 38),
-  farFist: at(17, 52),
+  nearFoot: { x: 32, y: 45, angle: 76 },
+  farFoot: lifted(onBall(LEAD_TOE, -32), 2.5),
+  nearFist: at(-10, 31),
+  farFist: at(14, 52),
   nearHand: 'open',
-  bends: { nearKnee: 'up', farKnee: 'front', nearElbow: 'down' },
+  bends: { nearKnee: 'up', farKnee: 'front', nearElbow: 'back', farElbow: 'down' },
   face: 'effort',
   effects: [smear(4, [4, 22], [18, 36], [30, 44])],
 });
 
 // Frame 2 (4 ticks): the scissor set. Flat on her back in the air at his belt, the near leg high
-// across it, the far leg low at his heels; the hands reaching for the floor.
+// across it, the far leg low at his heels; both arms reaching down for the floor under her
+// shoulders, long, the elbows soft (an arm swings back no further than 60 degrees: the hands
+// post under the shoulders, never behind the head).
 const CLAMP: Pose = shown({
   ...GUARD,
   hip: at(6, 26),
@@ -147,18 +152,19 @@ const CLAMP: Pose = shown({
   head: 10,
   shrug: 2,
   twist: 0.2,
-  nearFoot: { x: 34, y: 37, angle: 0 },
+  nearFoot: { x: 34, y: 37, angle: 78 },
   farFoot: { x: 26, y: 7, angle: -10 },
-  nearFist: at(-14, 16),
-  farFist: at(-20, 12),
+  nearFist: at(-0.5, 7.3),
+  farFist: at(1.5, 15.3),
   nearHand: 'open',
   farHand: 'open',
-  bends: { nearKnee: 'up', farKnee: 'down' },
+  bends: { nearKnee: 'up', farKnee: 'down', nearElbow: 'back', farElbow: 'back' },
   face: 'effort',
 });
 
 // Frame 3 (1 tick, the release): the snap. The high leg drives through his belly, the low one
-// reaps his heels back toward her: the blades cross, a star where the boot sinks in.
+// reaps his heels back toward her: the blades cross, a star where the boot sinks in; the hands
+// land flat on the floor under her shoulders.
 const SNAP: Pose = shown({
   ...GUARD,
   hip: at(5, 23),
@@ -167,13 +173,13 @@ const SNAP: Pose = shown({
   head: 10,
   shrug: 2,
   twist: 0.2,
-  nearFoot: { x: 38, y: 33, angle: -10 },
+  nearFoot: { x: 36, y: 32, angle: 86 },
   farFoot: { x: 22.5, y: 7, angle: -10 },
-  nearFist: at(-14, 8),
-  farFist: at(-19, 6),
+  nearFist: at(2, 3),
+  farFist: at(1.8, 11.5),
   nearHand: 'open',
   farHand: 'open',
-  bends: { nearKnee: 'up', farKnee: 'down' },
+  bends: { nearKnee: 'up', farKnee: 'down', nearElbow: 'back', farElbow: 'back' },
   face: 'effort',
   effects: [
     smear(5, [25, 45], [32, 41], [38, 35]),
@@ -182,10 +188,10 @@ const SNAP: Pose = shown({
   ],
 });
 
-// Frame 4 (7 ticks): down. Landed sitting up, b-girl style: the rear leg tucked under her, the
-// knee up, the boot planted by her hip; the lead leg long toward him, its wrist on the knee; the
-// rear hand propping her on the floor behind; unimpressed. Dust under her, the blow's ring fading
-// where he was.
+// Frame 4 (7 ticks): down. Landed sitting up, b-girl style: the rear knee drawn up in front of
+// her, the boot planted flat just ahead of the hips; the lead leg long toward him on its heel,
+// the lead arm wrapped round the raised knee; the rear arm propping her on the floor behind, the
+// elbow soft; unimpressed. Dust under her, the blow's ring fading where he was.
 const DOWN: Pose = {
   ...GUARD,
   hip: at(-2, 8),
@@ -193,12 +199,12 @@ const DOWN: Pose = {
   head: 14,
   shrug: 2.6,
   twist: 0.4,
-  nearFoot: planted(-10),
-  farFoot: { x: 24, y: 5.4, angle: 12 },
-  nearFist: at(-17, 3.6),
-  farFist: at(10, 16),
+  nearFoot: planted(3),
+  farFoot: onHeel(planted(32), 30),
+  nearFist: at(-14.5, 5.5),
+  farFist: at(10, 14),
   nearHand: 'open',
-  bends: { nearKnee: 'up', farKnee: 'up', nearElbow: 'down', farElbow: 'down' },
+  bends: { nearKnee: 'up', farKnee: 'up', nearElbow: 'back', farElbow: 'down' },
   face: 'cool',
   effects: [
     dust(-4, 4, 0.25),
@@ -206,22 +212,23 @@ const DOWN: Pose = {
   ],
 };
 
-// Frame 5 (7 ticks): the pop. Up over the tucked foot into a deep plié, the rear foot a step
-// back, the lead one in, the weight going forward, the arms swinging up from the floor; dust
-// under the boots. The guard's marks come in the settle.
+// Frame 5 (7 ticks): the pop. Up over the rear foot into a deep plié, the rear foot a step back
+// on its ball, the heel high and the knee driven forward over the toes as in her crouch, the lead
+// one in, the weight going forward, the arms swinging up from the floor; dust under the boots.
+// The guard's marks come in the settle.
 const POP: Pose = {
   ...GUARD,
-  hip: at(-5, 19.5),
+  hip: at(-5, 21),
   torso: 22,
   head: -10,
   shrug: 3,
   twist: 0.5,
-  nearFoot: onBall(REAR_TOE + 4, -14),
+  nearFoot: onBall(REAR_TOE + 10, -62),
   farFoot: planted(10),
-  nearFist: at(-14, 33),
-  farFist: at(8, 33),
+  nearFist: at(-7, 24),
+  farFist: at(13.5, 29),
   nearHand: 'open',
-  bends: { ...GUARD.bends, nearKnee: 'back' },
+  bends: { nearElbow: 'back', farElbow: 'down', nearKnee: 'front' },
   effects: [dust(12, 4, 0.3), dust(-13, 3.5, 0.3)],
 };
 

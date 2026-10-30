@@ -9,9 +9,10 @@ export const ANIMATED: boolean = true;
  * 9..33 / 42..54. Not a boxer's jab out of a shell: a street flicker out of her low, loose lead
  * hand. The hand is already out in front of her belly; it whips up and out on a rising line, the
  * knuckles snapping in at chest height, the lead shoulder rolled in over the chin (« l'épaule
- * rentrée »), and comes back on a lower loop to where it hangs. The loaded rear fist stays
- * cocked by the ear and pumps a hair back and up as the jab goes out: the jab is the bait, the
- * tightening haymaker the threat.
+ * rentrée »), and comes back on a lower loop to where it hangs. The rear arm stays home, the
+ * way a boxer's does: the elbow down on the ribs, the fist glued under the chin, tucking in a
+ * hair as the jab goes out (never up over the mouth): the jab is the bait, the rear hand the
+ * threat.
  *
  * - 0 (1 tick): the tell: the lead wrist drops and draws back a hair (the flick loads), the rear
  *   heel pops, the hips start in.
@@ -19,7 +20,7 @@ export const ANIMATED: boolean = true;
  *   out and rising, the elbow under it; a short trail.
  * - 2: the jab: the arm long (the elbow all but straight, the forearm level), the lead shoulder
  *   rolled in and the chin tucked behind it, the chest turned to profile, the rear heel high,
- *   the rear fist drawn back; the trail and a tick of a flash on the knuckles.
+ *   the rear fist tucked under the chin; the trail and a tick of a flash on the knuckles.
  * - 3: the fist snaps back low, the body still in a beat behind it (the hips leave last).
  * - 4: settled back in the guard, the lead hand a touch low and in (it overshoots its place):
  *   the idle's first frame, the guard, is a hair away.
@@ -30,8 +31,8 @@ export const ANIMATED: boolean = true;
 
 const TOE = toeOf(GUARD.nearFoot);
 
-/** Where the cocked rear fist sits from the rear shoulder in the guard. */
-const COCKED = (() => {
+/** Where the rear fist sits from the rear shoulder in the guard: under the chin. */
+const TUCKED = (() => {
   const shoulder = solve(GUARD, RIFF_BODY).near.shoulder;
   return at(GUARD.nearFist.x - shoulder.x, GUARD.nearFist.y - shoulder.y);
 })();
@@ -50,7 +51,7 @@ interface Key {
   readonly heel: number;
   /** The lead fist. */
   readonly fist: readonly [number, number];
-  /** The cocked rear fist from its place on the rear shoulder. */
+  /** The rear fist from its place under the chin (carried by the rear shoulder). */
   readonly rear: readonly [number, number];
   readonly twist: number;
   readonly effects?: readonly Effect[];
@@ -72,7 +73,7 @@ function key(k: Key): Pose {
   const shoulder = solve(pose, RIFF_BODY).near.shoulder;
   return {
     ...pose,
-    nearFist: at(shoulder.x + COCKED.x + k.rear[0], shoulder.y + COCKED.y + k.rear[1]),
+    nearFist: at(shoulder.x + TUCKED.x + k.rear[0], shoulder.y + TUCKED.y + k.rear[1]),
   };
 }
 
@@ -85,7 +86,7 @@ const KEYS: readonly Key[] = [
     shrug: 2.2,
     reach: -0.5,
     heel: -16,
-    fist: [7.8, 44.4],
+    fist: [8.8, 43.4],
     rear: [-0.3, -0.2],
     twist: 0.4,
   },
@@ -98,7 +99,7 @@ const KEYS: readonly Key[] = [
     reach: 1.6,
     heel: -21,
     fist: [22, 47.9],
-    rear: [-0.5, 0.6],
+    rear: [-0.2, -0.6],
     twist: 0.22,
     effects: [smear(3, [8, 44.5], [14, 46.6], [20.5, 47.8])],
   },
@@ -111,7 +112,7 @@ const KEYS: readonly Key[] = [
     reach: 1.5,
     heel: -24,
     fist: [31.6, 47.5],
-    rear: [-1.8, 1.8],
+    rear: [-0.4, -1.2],
     twist: 0.02,
     effects: [
       smear(4, [12, 46], [19, 47.4], [25, 47.8], [29.5, 47.6]),
@@ -127,7 +128,7 @@ const KEYS: readonly Key[] = [
     reach: 1.2,
     heel: -20,
     fist: [15, 45.4],
-    rear: [-0.7, 0.8],
+    rear: [-0.3, -0.6],
     twist: 0.28,
   },
   // 4: settled, the lead hand a touch low.

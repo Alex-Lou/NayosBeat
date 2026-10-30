@@ -90,7 +90,7 @@ const IMPACT_BODY = {
   farFist: at(18.5, 45),
   face: 'effort',
 } as const;
-const IMPACT_POSE: Pose = { ...IMPACT_BODY, nearFoot: kneeUp(IMPACT_BODY, 12, 12, -55) };
+const IMPACT_POSE: Pose = { ...IMPACT_BODY, nearFoot: kneeUp(IMPACT_BODY, 12, 12, -45) };
 const KNEE = kneeFront(IMPACT_POSE);
 const impactEffects: Effect[] = [
   smear(5, [4, 20], [9, 30], [13, 37], [KNEE.x - 3, KNEE.y]),

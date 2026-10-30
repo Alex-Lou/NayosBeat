@@ -11,19 +11,21 @@ export const ANIMATED: boolean = true;
  * toward the floor as she turns over, so the landing reads as an impact, never as a teleport.
  *
  * - 0, through the hitstop: the jolt. The head whipped back (past 20 degrees: the face turns,
- *   hurt), the body bowed back after it, the chest thrown open; the loaded rear fist ripped off
- *   her ear and flung back, the lead hand flung forward, both open; the knees buckle forward
- *   with the shins trailing under her.
- * - 1: launched, tipping back: the arms windmill on (the rear one comes over the top and trails
- *   up in front of her, the lead one is flung straight up, clear of the head), the lead knee
- *   tucks, the rear leg trails below.
+ *   hurt), the body bowed back after it, the chest thrown open; the rear fist ripped from under
+ *   her chin and flung back and down behind her (the elbow soft: thrown back level or higher,
+ *   the shoulder would open past what it can), the lead hand flung forward, both open; the
+ *   knees buckle forward with the shins trailing under her, the feet hanging.
+ * - 1: launched, tipping back: the arms windmill on (the rear one swings through and up in
+ *   front of her chest, the lead one is flung up in front of the face, clear of it), the lead
+ *   knee tucks, the rear leg trails below.
  * - 2: turning over: the legs swing up in front of her, the rear hand already reaching down for
  *   the floor along her side, the lead arm still up.
  * - 3, held: BRACED (knockdown.ts): falling back seat first, the legs up, the rear arm braced
  *   for the floor, the lead one thrown forward, the chin tucked.
  *
  * Every limb is written by its silhouette (`figure`): the arms flail on one continuous arc,
- * never popping from side to side, and the legs swing up, never out into the attacker. The lead
+ * never popping from side to side, every elbow bent the way an elbow bends, and the legs swing
+ * up, never out into the attacker, the boots at about the angle of a relaxed foot. The lead
  * arm, drawn behind the body and the head, never goes back over the head: a hand peeking out
  * by the skull reads as a growth.
  *
@@ -38,10 +40,10 @@ const JOLT: Pose = figure({
   head: -18,
   shrug: -1,
   twist: 0.75,
-  nearArm: { upper: 172, lower: 222 },
-  farArm: { upper: 28, lower: 358 },
-  nearLeg: { upper: 300, lower: 240, toes: 270 },
-  farLeg: { upper: 328, lower: 272, toes: 310 },
+  nearArm: { upper: -118, lower: -100 },
+  farArm: { upper: 20, lower: 38 },
+  nearLeg: { upper: -60, lower: -120, toes: -55 },
+  farLeg: { upper: -32, lower: -88, toes: -23 },
   nearHand: 'open',
   farHand: 'open',
   face: 'hurt',
@@ -54,10 +56,10 @@ const LAUNCHED: Pose = figure({
   head: -10,
   shrug: 0,
   twist: 0.6,
-  nearArm: { upper: 60, lower: 30 },
-  farArm: { upper: 100, lower: 115 },
-  nearLeg: { upper: 340, lower: 315, toes: 340 },
-  farLeg: { upper: 20, lower: 290, toes: 320 },
+  nearArm: { upper: 40, lower: 55 },
+  farArm: { upper: 86, lower: 102 },
+  nearLeg: { upper: -20, lower: -45, toes: 20 },
+  farLeg: { upper: 20, lower: -70, toes: -5 },
   nearHand: 'open',
   farHand: 'open',
   face: 'hurt',
@@ -70,10 +72,10 @@ const TURNING: Pose = figure({
   head: 0,
   shrug: 0,
   twist: 0.45,
-  nearArm: { upper: 330, lower: 300 },
+  nearArm: { upper: -60, lower: -35 },
   farArm: { upper: 76, lower: 98 },
-  nearLeg: { upper: 48, lower: 355, toes: 15 },
-  farLeg: { upper: 64, lower: 10, toes: 30 },
+  nearLeg: { upper: 48, lower: -5, toes: 60 },
+  farLeg: { upper: 64, lower: 10, toes: 75 },
   nearHand: 'open',
   farHand: 'open',
   face: 'hurt',

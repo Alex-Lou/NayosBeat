@@ -18,17 +18,19 @@ export const ANIMATED: boolean = true;
  *   degrees on screen: the head turns), both forearms clutched over the belly, hands open.
  * - 1: the bridge: the chest comes halfway back up, the head first (upright again, eyes on the
  *   opponent), both forearms still across the stomach; the feet scrape back under the pushback.
- *   A light hit flows from here into the held frame 4: the rear fist goes up to the cheek, the
+ *   A light hit flows from here into the held frame 4: the rear fist goes up to the jaw, the
  *   lead forearm stays on the belly.
  * - 2 (heavy): winded, she sags again, smaller: the chest dips back over the blow while the hips
  *   barely move, the head drops (turned), both hands back on the belly, the elbows tucked
  *   behind the ribs (never jutting at the opponent like an elbow strike).
  * - 3 (heavy): halfway to frame 4, she shakes it off: the chest straightens up on a roll of the
  *   rear shoulder (shrugged up, the chest turned open), the jaw set, the rear fist climbing up
- *   behind the cheek.
+ *   the chest toward the jaw.
  * - 4, held: still hunched over the blow (31 degrees of lean against the guard's 19), the hips
  *   back over the rear foot, the lead forearm pinned across the belly (the hand open on it, the
- *   elbow tucked behind), the rear fist dropped from the ear to the cheek; the eyes open, the
+ *   elbow tucked behind), the rear fist pulled in under the chin to cover the jaw, the forearm
+ *   up across the chest, the elbow bent the way an elbow bends (left behind the collar with its
+ *   elbow dropped under it, the forearm folded back up like a broken wing); the eyes open, the
  *   jaw set: she glares through it. One step out of the guard, so the hand-off at the end of
  *   the stun reads as her straightening up into it.
  *
@@ -98,7 +100,7 @@ const SHAKEN: Pose = {
   twist: 0.36,
   nearFoot: onToes(GUARD.nearFoot, REAR_HEEL - 2),
   farFoot: GUARD.farFoot,
-  nearFist: at(-9, 52.5),
+  nearFist: at(4, 48.5),
   farFist: at(1, 37),
   bends: { ...BENDS, farElbow: 'back' },
   farHand: 'open',
@@ -113,7 +115,7 @@ const ROLL: Pose = {
   shrug: 4,
   twist: 0.6,
   reach: { near: 1.2 },
-  nearFist: at(-9, 49),
+  nearFist: at(0.5, 45),
   bends: { ...BENDS, farElbow: 'back' },
   effects: [],
 };

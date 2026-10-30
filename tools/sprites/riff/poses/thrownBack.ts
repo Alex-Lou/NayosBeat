@@ -23,7 +23,7 @@ export const ANIMATED: boolean = true;
  * fighting until the floor comes up:
  * - 0, hauled: pitched forward over the collar onto the tips of her toes, the knees buckling,
  *   the rear toe where it stood, the lead boot dragged on its tip under the thrower; one hand
- *   still clamped on his wrist, the rear arm flung back for her balance.
+ *   still clamped on his wrist, the rear arm flung back and down past her hip for her balance.
  * - 1, loaded: heaved face down across his back, and still at it: the rear hand clawing at the
  *   grip on her collar, the lead arm reaching down his side, a knee driving in, the other leg
  *   kicking out long behind; a puff where the rear foot left the floor. `effort`, not `hurt`.
@@ -89,9 +89,11 @@ function dust(x: number, size: number, progress: number): Effect {
 }
 
 // Frame 0 (3 ticks, the thrower's dip, in front of him): hauled forward over the collar onto the
-// tips of her toes, the knees buckling: the rear toe on the spot it held, the heel up; the lead
-// boot dragged forward under him on its tip. The lead hand still clamps his wrist; the rear arm
-// is flung back, open, for her balance. The head keeps upright (20 degrees on screen), set.
+// balls of her feet, the knees buckling: the rear toe on the spot it held, the heel up; the lead
+// boot dragged in under him on its ball, the knee over it (a boot points no further). The lead
+// hand still clamps his wrist; the rear arm trails back and down past her hip, open, for her
+// balance, the elbow soft (never up behind her at shoulder height).
+// The head keeps upright (20 degrees on screen), set.
 const HAULED: Pose = {
   ...GUARD,
   hip: byNeck(at(3, 50), 38),
@@ -100,18 +102,19 @@ const HAULED: Pose = {
   shrug: 3,
   twist: 0.3,
   nearFoot: onBall(REAR_TOE, -38),
-  farFoot: onBall(11, -62),
-  nearFist: at(-24, 50),
-  farFist: at(9, 47),
+  farFoot: onBall(9, -30),
+  nearFist: at(-19.5, 43),
+  farFist: at(10, 48.5),
   nearHand: 'open',
   farHand: 'open',
+  bends: { nearElbow: 'back', farElbow: 'down', nearKnee: 'front' },
   face: 'effort',
 };
 
 // Frame 1 (3 ticks, the load, in front of him): heaved up face down across his back, still
 // fighting: the rear hand claws at the grip on her collar, the lead arm reaches down his side,
-// the rear knee drives in under her, the lead leg kicks out long behind; a puff where the rear
-// foot pushed off the floor.
+// the rear knee drives in under her, the lead leg kicks out long behind, the boot pointed back
+// along it as far as a boot points; a puff where the rear foot pushed off the floor.
 const LOADED: Pose = airborne({
   ...GUARD,
   neck: at(19, 65),
@@ -123,7 +126,7 @@ const LOADED: Pose = airborne({
   nearFist: at(22, 61),
   farFist: at(28, 47),
   nearFoot: { x: -8, y: 42, angle: -40 },
-  farFoot: { x: -32, y: 60, angle: -10 },
+  farFoot: { x: -32, y: 60, angle: -140 },
   nearHand: 'open',
   farHand: 'open',
   bends: { nearKnee: 'front' },
@@ -133,8 +136,10 @@ const LOADED: Pose = airborne({
 
 // Frame 2 (4 ticks, the heave, drawn behind him): upside down over the top of his shoulders, the
 // collar in his fists behind his neck, the head hanging down his back; the legs flung into a
-// wide inverted V, the boots far apart and pointed, the leading one already over the top on a
-// short trail; the arms flung wide.
+// wide inverted V, the boots far apart, square to the shins (a combat boot does not point), the
+// leading one already over the top on a short trail; the arms flung wide, the lead one out in
+// front of her, the rear one back along her side toward the hips (never up over the head behind
+// her back).
 const OVER: Pose = airborne({
   ...GUARD,
   neck: at(-23.5, 64),
@@ -143,21 +148,22 @@ const OVER: Pose = airborne({
   head: -25,
   shrug: 1,
   twist: 0.2,
-  nearFist: at(-3, 54),
+  nearFist: at(-14, 88.5),
   farFist: at(-44, 54),
-  nearFoot: { x: -11, y: 108, angle: 55 },
-  farFoot: { x: -53, y: 107, angle: 125 },
+  nearFoot: { x: -11, y: 108, angle: 92 },
+  farFoot: { x: -53, y: 107, angle: 168 },
   nearHand: 'open',
   farHand: 'open',
-  bends: {},
+  bends: { nearElbow: 'back' },
   face: 'effort',
   effects: [smear(4, [-30, 110], [-20, 109.5], [-11, 107])],
 });
 
 // Frame 3 (4 ticks, over and down, drawn behind him; the thrown flight goes on from it): dumped
 // down his back, on her back in the air, the collar down behind his rear hip, the head hanging
-// below it; the rear hand posting for the floor (the freeze reflex), the lead arm flung up; the
-// knees open, the lead leg reaching long toward where she flies.
+// below it; the rear arm reaching down under her for the floor (the freeze reflex), the lead arm
+// flung up, the elbow soft; the knees open, the lead leg reaching long toward where she flies,
+// the toes up.
 const DOWN: Pose = airborne({
   ...GUARD,
   neck: at(-1.8, 26),
@@ -166,13 +172,13 @@ const DOWN: Pose = airborne({
   head: -20,
   shrug: 1,
   twist: 0.2,
-  nearFist: at(-6, 4),
-  farFist: at(-4, 34),
-  nearFoot: { x: 41, y: 49, angle: 200 },
-  farFoot: { x: 51, y: 37, angle: 225 },
+  nearFist: at(21, 14),
+  farFist: at(-13, 48),
+  nearFoot: { x: 41, y: 49, angle: 80 },
+  farFoot: { x: 51, y: 37, angle: 75 },
   nearHand: 'open',
   farHand: 'open',
-  bends: {},
+  bends: { nearElbow: 'back', farElbow: 'down' },
   face: 'hurt',
 });
 

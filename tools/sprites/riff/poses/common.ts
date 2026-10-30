@@ -128,11 +128,13 @@ export function toeOf(foot: Foot): number {
  *
  * The arms: a street brawler's guard, nothing like Nayo's high shell. The lead hand low and
  * loose, out in front of the belly, the forearm angled about 45 degrees at the opponent, the
- * knuckles forward, the chin left open (the provocation). The rear arm loaded: the elbow out and
- * back (the « wing » that sets her silhouette apart), the fist cocked by the ear, about 11 px
- * behind the face, the knuckles aimed forward: a haymaker, a backfist or a spinning elbow
- * waiting to go, close enough to the face for her block and grab to start from it. At 1x it
- * reads « low hand, cocked fist », never a walk, a wave or a fan at a gig. She stands about
+ * knuckles forward, the chin left open on that side (the provocation). The rear arm hangs from
+ * its shoulder: the elbow down on the ribs, the forearm up across the chest, the fist under the
+ * chin, the knuckles forward, the face clear above it. The backfist, the spinning elbow and the
+ * haymaker start from it, and her block and grab. (It used to be cocked by the ear, the elbow
+ * out and back, a « wing »: on the picture it read as an arm folded backward, and the owner
+ * turned it down.) At 1x it reads « low hand, fist at the chin », never a walk, a wave or a fan
+ * at a gig. She stands about
  * 72 px tall, 0.91 of Nayo's 79.
  *
  * Her low poses keep the plié, the rear knee turned out and folded back over the heel
@@ -153,7 +155,7 @@ export const GUARD: Pose = {
   shrug: 2.2,
   nearFoot: onBall(-17.5, -32),
   farFoot: planted(7.4, 0),
-  nearFist: at(-12, 58),
+  nearFist: at(6, 52),
   farFist: at(9.5, 46),
   bends: { nearElbow: 'down', farElbow: 'down', nearKnee: 'front' },
   twist: 0.45,

@@ -29,11 +29,13 @@ export const ANIMATED: boolean = true;
  * - 0 (new, 2 ticks): the hop: both boots off the floor (the lead one 14 px up, under its knee,
  *   the rear one tucked under her seat, toes down), the hips 6.5 px over her guard's, the body
  *   pitched 37 degrees; the rear fist folded across the chest on its way down from the
- *   backfist, the lead fist back at the ribs; a puff of dust where she pushed off.
+ *   backfist, the lead fist pulled back to the ribs (its elbow back behind her, the forearm
+ *   forward: a sprinter's back arm); a puff of dust where she pushed off.
  * - 1 (new, 2 ticks): the landing, loaded: the lead foot flat where the Retourné takes off (14 px
  *   ahead of the Revers' on the screen), the knee sunk (the hips 4 px under her guard's), the
- *   body pitched 32 degrees over it, the rear leg swung down and back off the floor, the sole up,
- *   both arms swinging down in front against the pitch; a bigger landing dust. The Retourné's own
+ *   body pitched 32 degrees over it, the rear leg swung down and back off the floor, the toes
+ *   pointed down, both arms swinging down in front against the pitch (the lead fist low by the
+ *   knee, its elbow open, not folded shut); a bigger landing dust. The Retourné's own
  *   launch (its frame 1), taken from the air, deeper, its lead toe on the same spot.
  * - 2-6: the Retourné's frames 2 to 6 (the take-off, the scorpion, the landing, the settle,
  *   the guard), with their effects.
@@ -158,7 +160,8 @@ const HOP: Key = {
   near: kick(-72, -128, -50),
   far: kick(-10, -95, -15),
   rear: at(12 - BACK, 50),
-  lead: at(3 - BACK, 42),
+  lead: at(4.5 - BACK, 40.5),
+  bends: { farElbow: 'back' },
   effects: [dust(PUSH_OFF - CARRY[0], 2.5, 0.2)],
 };
 
@@ -169,10 +172,10 @@ const LAND: Key = {
   look: 9,
   shrug: 2.2,
   twist: 0.3,
-  near: kick(235, 190, 150),
+  near: kick(235, 190, 255),
   far: planted(TAKE_OFF - CARRY[1] - RIFF_BODY.foot),
   rear: at(10.5 - BACK, 41),
-  lead: at(16.5 - BACK, 39),
+  lead: at(15.5 - BACK, 26),
   effects: [dust(TAKE_OFF - CARRY[1] - 4, 4, 0.1)],
 };
 

@@ -1,4 +1,5 @@
 import { at, GUARD, onBall, onHeel, planted, smear, type Effect, type Pose } from './common.ts';
+import { guarded } from './jump.ts';
 
 export const ANIMATED: boolean = true;
 
@@ -10,7 +11,7 @@ export const ANIMATED: boolean = true;
  *
  * Not a boxer stripping a grip (Nayo's forearm sweep): a punk tearing loose, and her rear arm
  * carries the move from start to end.
- * - 0, the break: the cocked rear fist chops down through his wrists and whips on, open, down
+ * - 0, the break: the rear fist chops down from under the chin through his wrists and whips on, open, down
  *   and back past her hip (a short magenta trail behind the hand); the lead palm shoves him off
  *   at arm's length, the arm straight and level with her chest. The hips thrown back and down,
  *   the torso leaning away from him, the legs flung wide, the lead heel driving in with the toes
@@ -18,10 +19,10 @@ export const ANIMATED: boolean = true;
  *   on him, `effort`. Mirrored, the two shoving palms meet halfway (13.5 px out, at contact 26
  *   to 27 apart) on one slap, her magenta star over his (the « deux claques » of §4.5).
  * - 1, the skid: the recoil drops her into her b-girl base, wide and low, the knees open, the
- *   rear heel up, the lead heel braking with its toes up; the rear arm swings on up behind her
- *   for balance, the lead hand drops low in front of the knee; dust off both feet.
+ *   rear heel up, the lead heel braking with its toes up; the rear arm swings on behind her for
+ *   balance, the lead hand drops low in front of the knee; dust off both feet.
  * - 2, the reload: rising out of the plié as the slide dies, the rear fist coming back to its
- *   place by the ear, the lead fist to its, the look from under the lid (`cool`: nice try).
+ *   place under the chin, the lead fist to its, the look from under the lid (`cool`: nice try).
  * - 3: rocked forward into the guard, popped up a hair high and back, where the idle takes over
  *   (its first frame is the guard).
  *
@@ -52,7 +53,8 @@ const KICKED = 15;
 const kicked = (tick: number): number => KICKED + slid(tick) - slid(3);
 
 // Frame 0 (3 ticks): the break. The rear hand chopped down through his wrists and whipped on
-// down and back past the hip, open, a trail behind it; the lead palm shoves him off, the arm
+// down and back past the hip, open, a trail behind it, the arm long and the elbow soft (bent
+// the way an elbow bends: the forearm trails a touch under the upper arm); the lead palm shoves him off, the arm
 // straight and level, the slap where the two palms meet. The hips back and down, the torso
 // leaning away, the legs wide, the lead heel in with its toes up; the chin down, eyes on him.
 const BREAK: Pose = {
@@ -65,20 +67,23 @@ const BREAK: Pose = {
   twist: 0.55,
   nearFoot: planted(-30, -6),
   farFoot: onHeel(planted(6.5), 16),
-  nearFist: at(-30, 33),
+  nearFist: at(-32, 32),
   farFist: at(11.2, 52.8),
   nearHand: 'open',
   farHand: 'open',
   face: 'effort',
+  bends: { ...GUARD.bends, nearElbow: 'up' },
   effects: [
-    smear(4, [-12, 37], [-22, 30.5], [-31, 31]),
+    smear(4, [-12, 37], [-22, 30.5], [-32, 32]),
     { kind: 'flash', center: at(13, 53), radius: 4, tone: 'sound' },
   ],
 };
 
 // Frame 1 (3 ticks): the skid. Dropped into her b-girl base, wide and low, the knees open, the
 // rear heel up, the lead heel braking with its toes up, the upper body still carried back; the
-// rear arm swung on up behind her, the lead hand low in front of the knee; dust off both feet.
+// rear arm swung on behind her for balance, long, as far back as a shoulder takes it (swung up
+// behind her, it would wrench out of the back of the shoulder), the lead hand low in front of
+// the knee, the elbow soft; dust off both feet.
 const SKID: Pose = {
   ...GUARD,
   hip: at(-14, 31),
@@ -88,27 +93,33 @@ const SKID: Pose = {
   twist: 0.5,
   nearFoot: onBall(-24, -16),
   farFoot: onHeel(planted(9), 14),
-  nearFist: at(-38, 46),
-  farFist: at(6, 31),
+  nearFist: at(-34.7, 35.6),
+  farFist: at(3, 35),
   nearHand: 'open',
   farHand: 'open',
+  bends: { ...GUARD.bends, nearElbow: 'up' },
   effects: [skid(kicked(3), 3, 0.15), skid(-25, 2.4, 0.15)],
 };
 
-// Frame 2 (4 ticks): rising out of the plié as the slide dies, the rear fist back up by the
-// ear, the lead fist coming to its place, the look from under the lid: nice try.
+// Frame 2 (4 ticks): rising out of the plié as the slide dies, the rear fist back up under
+// the chin (the guard's, turned with the chest), the lead fist coming to its place, the lead heel
+// still braking, the toes a touch up; the look from under the lid: nice try.
 const GATHER: Pose = {
-  ...GUARD,
-  hip: at(-15.5, 30.5),
-  torso: -1.5,
-  head: 5,
-  shrug: 2.6,
-  twist: 0.5,
-  nearFoot: onBall(-23, -12),
-  farFoot: planted(7),
-  nearFist: at(-26, 57),
-  farFist: at(2, 40),
-  face: 'cool',
+  ...guarded(
+    {
+      ...GUARD,
+      hip: at(-15.5, 30.5),
+      torso: -1.5,
+      head: 5,
+      shrug: 2.6,
+      twist: 0.5,
+      nearFoot: onBall(-23, -12),
+      farFoot: onHeel(planted(6), 6),
+      face: 'cool',
+    },
+    at(-0.5, -1),
+    at(2, -2),
+  ),
   effects: [skid(kicked(6), 3, 0.55), skid(-24, 2.2, 0.35)],
 };
 

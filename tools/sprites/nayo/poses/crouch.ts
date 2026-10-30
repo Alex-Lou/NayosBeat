@@ -27,9 +27,15 @@ function onToes(flatX: number, angle: number): Foot {
   return { ...planted(flatX, angle), x: flatX + 7 - 2.3 * Math.sin(a) - 7 * Math.cos(a) };
 }
 
-const REAR_HEEL = -30;
+/**
+ * The rear foot on its toes, the heel high: the shin lies almost flat under the thigh (he sits
+ * on that heel), so the foot stands nearly upright off its ball, the sole facing back. A lower
+ * heel would turn the toes in under the shin, toward the knee: an ankle bent up some 60
+ * degrees, which no ankle does (the boot then read as a wedge pointing back, its heel for a toe).
+ */
+const REAR_HEEL = -64;
 /** Where the rear foot sits in the crouch: drawn in under the hips from the guard's wide stance. */
-const REAR_X = -13.5;
+const REAR_X = -15;
 
 /** One sprite pixel, in world pixels: the step of every move of the loop. */
 const PIXEL = 0.5;

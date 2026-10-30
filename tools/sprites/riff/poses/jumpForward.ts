@@ -1,18 +1,7 @@
 import type { Point } from '../../raster.ts';
 import { solve } from '../../skeleton.ts';
 import { RIFF_BODY } from '../body.ts';
-import {
-  at,
-  ease,
-  GUARD,
-  onBall,
-  smear,
-  toeOf,
-  tween,
-  type Effect,
-  type Foot,
-  type Pose,
-} from './common.ts';
+import { at, GUARD, onBall, smear, toeOf, type Effect, type Foot, type Pose } from './common.ts';
 import { FALL, guarded } from './jump.ts';
 
 export const ANIMATED: boolean = true;
@@ -23,17 +12,18 @@ export const ANIMATED: boolean = true;
  * lands, then the jump's landing frame.
  *
  * She loads into the plié already tipping in, springs up and forward long, snaps into a tight
- * ball (the chest folded onto the thighs, the chin to the knees, the heels to the seat, the near
- * forearm across the face), whips over, and opens out of it cocky: a split in the air, the lead
- * leg reaching forward for the floor, the rear one trailing long behind, the toes pointed, the
- * rear arm flung out wide; then the legs come together for the jump's own fall.
+ * ball (the chest over the thighs, the chin down, the knees folded with the heels under the
+ * seat, both hands round the shins, the elbows at her sides), whips over, and opens out of it
+ * cocky: a split in the air, the lead leg reaching forward for the floor, the rear one trailing
+ * long behind, the toes pointed as far as the boots let them, the guard snapping back on (the
+ * rear fist under the chin, the lead one up in front); then the legs come together for the
+ * jump's own fall.
  *
  * The turn is paced by the tuck, as a body's would be: slow while she is open, fast once balled
  * up, slow again as she opens: 22, 115, 215, 300 and 340 degrees, then upright (the fall). The
  * tucked body turns around its own center, which stays put in the cell (the game carries her
  * along the jump's arc), so the flip has no wobble. Tucked, the head is turned by RotSprite past
- * 20 degrees: the near forearm across the face hides the eye; upright frames keep the head under
- * 20 degrees, the face as drawn.
+ * 20 degrees; upright frames keep the head under 20 degrees, the face as drawn.
  *
  * Her trail is not Nayo's boot swoosh: a crescent along the arc her head and fringe sweep, on the
  * fast tucked frames; the fringe and the belt's chain whip around by themselves.
@@ -117,7 +107,7 @@ const LOAD: Pose = guarded(
 // Key poses, drawn upright with the hip at the origin; roll() turns and places them.
 
 // The leap: long, up and forward, the rear leg pushing straight behind, the lead knee driving,
-// the chin up; the cocked fist rides up by the ear, the lead fist reaches out ahead.
+// the chin up; the rear fist stays under the chin, the lead fist reaches out ahead.
 const LAUNCH: Pose = guarded(
   {
     ...GUARD,
@@ -126,19 +116,32 @@ const LAUNCH: Pose = guarded(
     head: -8,
     shrug: 1.4,
     twist: 0.5,
-    nearFoot: { x: -8, y: -30, angle: -70 },
+    nearFoot: { x: -8, y: -30, angle: -58 },
     farFoot: { x: 6, y: -22, angle: -50 },
     bends: { nearKnee: 'down' },
   },
-  at(1, 2),
+  at(1, 1),
   at(2.5, 3),
 );
 
-/** The tuck's lean: the chest folded down onto the thighs. */
-const CURL = 50;
+/**
+ * A leg folded from its hip joint: the thigh along `thigh` degrees, the knee bent `knee` degrees
+ * (the shin folding back under the thigh, the way a knee bends), the foot `ankle` degrees off the
+ * shin (90 square, less pointed: 60 is a relaxed point a combat boot allows).
+ */
+function tucked(torso: number, side: 'near' | 'far', thigh: number, knee: number, ankle: number) {
+  const shin = thigh - knee;
+  return folded(hipJoint(torso, side), thigh, shin, shin + ankle);
+}
 
-// The ball: the chest on the thighs, the chin to the knees, the knees snapped up to the chest,
-// the heels at the seat; the lead hand round the shins, the near forearm across the face.
+/** The tuck's lean: the chest folded down over the thighs. */
+const CURL = 45;
+
+// The ball: the chest over the thighs, the knees snapped up to the chest, the heels under the
+// seat, the toes softly pointed; both hands round the shins below the knees, the elbows tucked
+// in at the sides (the arms bend the way arms do: the forearms reach forward from the elbows to
+// the shins), the chin down to the knees. Each knee folds 150 degrees: tight, the heel under the
+// seat, never the shin through the thigh.
 const TUCK: Pose = {
   ...GUARD,
   hip: at(0, 0),
@@ -146,32 +149,59 @@ const TUCK: Pose = {
   head: 14,
   shrug: 2.6,
   twist: 0.3,
-  nearFoot: folded(hipJoint(CURL, 'near'), 24, 196, -150),
-  farFoot: folded(hipJoint(CURL, 'far'), 18, 192, -150),
-  nearFist: at(26, 17),
-  farFist: at(13, 2),
-  bends: { nearKnee: 'front', farKnee: 'front', nearElbow: 'down', farElbow: 'down' },
+  nearFoot: tucked(CURL, 'near', 12, 150, 62),
+  farFoot: tucked(CURL, 'far', 6, 150, 62),
+  nearFist: at(13, 2),
+  farFist: at(17, -1),
+  bends: { nearKnee: 'front', farKnee: 'front', nearElbow: 'back', farElbow: 'back' },
+};
+
+/** The lean while balling up. */
+const BALLING = 40;
+
+// Balling up: the knees coming up to the chest, half folded, the arms reaching down for the
+// shins, the chin tucking in.
+const BALL_UP: Pose = {
+  ...GUARD,
+  hip: at(0, 0),
+  torso: BALLING,
+  head: 10,
+  shrug: 2.4,
+  twist: 0.36,
+  nearFoot: tucked(BALLING, 'near', 4, 136, 64),
+  farFoot: tucked(BALLING, 'far', -3, 130, 64),
+  nearFist: at(14, 4),
+  farFist: at(18, 1),
+  bends: { nearKnee: 'front', farKnee: 'front', nearElbow: 'back', farElbow: 'back' },
 };
 
 /** The split's lean before its turn (it is drawn turned back 20 degrees). */
 const PROUD = 6;
 
+/** A long leg reaching along `angle` degrees, `length` px, the foot `ankle` degrees off it. */
+function long(side: 'near' | 'far', angle: number, length: number, ankle: number): Foot {
+  return { ...reaching(PROUD, side, angle, length), angle: angle + ankle };
+}
+
 // Out of the ball, cocky: the legs scissor open, the lead one reaching forward and down for the
-// floor, the rear one trailing long behind, the toes pointed; the rear arm flung out wide, the
-// lead fist at the chin, the head up on the opponent.
-const SPLIT: Pose = {
-  ...GUARD,
-  hip: at(0, 0),
-  torso: PROUD,
-  head: 14 - PROUD,
-  shrug: 1.6,
-  twist: 0.6,
-  nearFoot: reaching(PROUD, 'near', -160, 30.8),
-  farFoot: reaching(PROUD, 'far', -72, 30.2),
-  nearFist: at(-17, 31),
-  farFist: at(8.5, 18),
-  bends: { nearKnee: 'down', farKnee: 'up', nearElbow: 'down', farElbow: 'down' },
-};
+// floor, the rear one trailing long behind, the toes pointed as far as the boots let them; the
+// guard snaps back on over it (the rear fist under the chin, sunk a touch as the chest comes up),
+// the lead fist up at the chin, the head up on the opponent.
+const SPLIT: Pose = guarded(
+  {
+    ...GUARD,
+    hip: at(0, 0),
+    torso: PROUD,
+    head: 14 - PROUD,
+    shrug: 1.6,
+    twist: 0.6,
+    nearFoot: long('near', -160, 30.8, 46),
+    farFoot: long('far', -72, 30.2, 44),
+    bends: { nearKnee: 'down', farKnee: 'up', nearElbow: 'down', farElbow: 'down' },
+  },
+  at(-1.5, -0.5),
+  at(2.5, 6),
+);
 
 /** Center of the tucked body, from the hip (upright). */
 const BALL = (() => {
@@ -224,7 +254,7 @@ export const POSES: readonly Pose[] = [
   // 1 · Takeoff, long and already tipping forward.
   moved(LAUNCH, -3, 38, 22),
   // 2 · Balling up: the knees snap to the chest, the arms come down round the shins.
-  roll(tween(LAUNCH, TUCK, 0.9, ease.out), 115),
+  roll(BALL_UP, 115),
   // 3-4 · Balled up, over the top, the fastest frames: the crescent of her head and fringe.
   trailed(roll(TUCK, 215), crescent(140, 215)),
   trailed(roll(TUCK, 300), crescent(235, 300)),

@@ -36,23 +36,30 @@ export const ANIMATED: boolean = true;
  * arch and a burst of silver diamonds.
  *
  * - 0 (2 ticks): the drop: the hips sink over the lead knee, the rear heel pops off the floor;
- *   the loaded rear fist and the lead fist hang a beat behind (they stay put while she sinks).
- * - 1 (2 ticks): the launch: the lead leg stretched long, its toes the last thing on the floor,
+ *   the rear fist under the chin and the lead fist hang a beat behind (they stay put while she
+ *   sinks).
+ * - 1 (2 ticks): the launch: the lead leg stretched long, its toes just off the floor they
+ *   pushed (pointed as far as a combat boot lets them),
  *   the rear knee driving up through the front, the rear fist ripping down past the hip, the
  *   lead fist whipping up and out in front of her face (the face stays clear, the arm leads the
  *   rise); a magenta shockwave squashed on the floor, dust, the knee's trail.
  * - 2 (3 ticks, active): the freeze, kiai: arched back, the knee high in front of the chest (it
- *   must clear the torso, which the renderer draws over the near thigh), the arms flung back;
+ *   must clear the torso, which the renderer draws over the near thigh), the rear arm flung
+ *   back and down behind her, the lead one thrown up over her head (behind it), open: the tail
+ *   and the crest of the arch;
  *   the knee's trail up its path, a silver spark at the top of the knee, the diamonds bursting.
  * - 3 (3 ticks, active): the freeze held a hair higher (the follow-through), the jaw set; the
  *   diamonds fly out.
  * - 4 (6 ticks): the hang just past the top, 10 px under it: the freeze breaks, the knee drops,
  *   the legs start to switch for the floor (the rear foot reaching back, the lead leg swinging
- *   under her), the fists come in. The fall is all ahead of her: it snaps into the next frame.
- * - 5 (6 ticks): the landing, hard: 40 px down at once, low and wide on the guard's marks, the
- *   hips 9 px under the guard's, the rear heel up on its ball, the lead fist low, the rear one
- *   trailing down a beat; dust under both boots and a flat magenta ring.
- * - 6 (6 ticks): the overshoot: the hips over the guard's, the fists a touch high.
+ *   under her), the fists come in, the rear one back under the chin as in the guard (turned with
+ *   the chest). The fall is all ahead of her: it snaps into the next frame.
+ * - 5 (6 ticks): the landing, hard: 38 px down at once, low and wide on the guard's marks, the
+ *   hips 6 px under the guard's, the rear heel high on its ball and the rear knee driven forward
+ *   and down, floating over the floor (her crouch's sprinter's set), the lead fist low, the rear
+ *   one trailing down a beat; dust under both boots and a flat magenta ring.
+ * - 6 (6 ticks): the overshoot: the hips over the guard's, the lead fist a touch high, the rear
+ *   one at the chin (any higher, it covers the mouth).
  * - 7 (6 ticks): the guard.
  *
  * The head stays the source drawing (under stamp.ts's 20 degrees on screen) and acts with the
@@ -64,16 +71,16 @@ const LEAD_TOE = toeOf(GUARD.farFoot);
 /** The guard's head angle on screen. */
 const LOOK = GUARD.torso + GUARD.head;
 
-/** Where the cocked rear fist sits from the rear shoulder in the guard. */
-const COCKED = (() => {
+/** Where the rear fist sits from the rear shoulder in the guard: under the chin. */
+const TUCKED = (() => {
   const shoulder = solve(GUARD, RIFF_BODY).near.shoulder;
   return at(GUARD.nearFist.x - shoulder.x, GUARD.nearFist.y - shoulder.y);
 })();
 
-/** The loaded rear fist carried by its shoulder, nudged by (dx, dy). */
-function cocked(pose: Pose, dx = 0, dy = 0): Pose {
+/** The rear fist home under the chin, carried by its shoulder, nudged by (dx, dy). */
+function tucked(pose: Pose, dx = 0, dy = 0): Pose {
   const shoulder = solve(pose, RIFF_BODY).near.shoulder;
-  return { ...pose, nearFist: at(shoulder.x + COCKED.x + dx, shoulder.y + COCKED.y + dy) };
+  return { ...pose, nearFist: at(shoulder.x + TUCKED.x + dx, shoulder.y + TUCKED.y + dy) };
 }
 
 /** A leg by forward kinematics from its hip joint: thigh, shin and foot angles (degrees). */
@@ -96,6 +103,24 @@ function legs(pose: Pose, near: Leg, far: Leg): Pose {
     nearFoot: { ...ankle(pose, 'near', near), angle: near[2] },
     farFoot: { ...ankle(pose, 'far', far), angle: far[2] },
   };
+}
+
+/**
+ * An arm thrown from its shoulder `degrees` off hanging (relative to the chest: 90 in front,
+ * negative behind), nearly straight (its elbow about 20 degrees off, the way it bends): flung
+ * back, a shoulder goes 60 degrees behind the chest at most.
+ */
+function swung(pose: Pose, side: 'near' | 'far', degrees: number): Point {
+  const { shoulder } = solve(pose, RIFF_BODY)[side];
+  const lean = (pose.torso * Math.PI) / 180;
+  const down = at(-Math.sin(lean), -Math.cos(lean));
+  const front = at(Math.cos(lean), -Math.sin(lean));
+  const r = (degrees * Math.PI) / 180;
+  const reach = 21.4;
+  return at(
+    shoulder.x + reach * (Math.cos(r) * down.x + Math.sin(r) * front.x),
+    shoulder.y + reach * (Math.cos(r) * down.y + Math.sin(r) * front.y),
+  );
 }
 
 const dust = (x: number, size: number, progress: number): Effect => ({
@@ -133,7 +158,7 @@ const shockwave = (radius: number, progress: number): Effect => ({
 });
 
 // 0 · The drop (2 ticks).
-const DROP: Pose = cocked(
+const DROP: Pose = tucked(
   {
     ...GUARD,
     hip: at(-6.5, 30),
@@ -141,10 +166,10 @@ const DROP: Pose = cocked(
     head: LOOK - 21.5,
     shrug: 2.8,
     nearFoot: onBall(TOE, -22),
-    farFist: at(9.6, 44.6),
+    farFist: at(10, 44.8),
   },
   0.4,
-  0.6,
+  -0.3,
 );
 
 // 1 · The launch (2 ticks).
@@ -156,7 +181,8 @@ const LAUNCH: Pose = {
   shrug: 3,
   twist: 0.3,
   nearFoot: { x: -1, y: 35, angle: -50 },
-  farFoot: onBall(LEAD_TOE + 1.5, -66),
+  // The lead foot just off the floor, pointed as far as the boot lets it (it pushed off).
+  farFoot: { x: LEAD_TOE - 4.4, y: 13.2, angle: -16 },
   nearFist: at(-16, 46),
   farFist: at(13, 75),
   bends: { nearKnee: 'front', farKnee: 'front', nearElbow: 'back', farElbow: 'down' },
@@ -169,23 +195,30 @@ const LAUNCH: Pose = {
 };
 
 /** The freeze's body: arched back, the head thrown back, the arms flung back. */
-const ARCH: Pose = {
+const ARCH_BODY: Pose = {
   ...GUARD,
   hip: at(1, 73),
   torso: -30,
   head: -12 + 30,
   shrug: 3.4,
   twist: 0.55,
-  nearFist: at(-22, 64),
-  farFist: at(-30, 96),
   farHand: 'open',
-  bends: { nearKnee: 'up', farKnee: 'front', nearElbow: 'down', farElbow: 'down' },
+  bends: { nearKnee: 'up', farKnee: 'front', nearElbow: 'back', farElbow: 'front' },
   face: 'kiai',
 };
 
+/**
+ * The arms of the freeze: the rear one flung back and down behind her, the lead one thrown up
+ * over her head (behind it), open: the tail and the crest of the arch.
+ */
+function flungBack(pose: Pose): Pose {
+  return { ...pose, nearFist: swung(pose, 'near', -42), farFist: swung(pose, 'far', 165) };
+}
+const ARCH: Pose = flungBack(ARCH_BODY);
+
 // 2 · The freeze (3 ticks, active).
 const FREEZE: Pose = {
-  ...legs(ARCH, [50, -95, -70], [-108, -104, -65]),
+  ...legs(ARCH, [50, -95, -35], [-108, -104, -44]),
   effects: [
     smear(5, [-10, 46], [-2, 62], [5, 76], [9, 88]),
     spark(at(16, 95), 5),
@@ -197,9 +230,9 @@ const FREEZE: Pose = {
 // 3 · Held a hair higher (3 ticks, active).
 const HELD: Pose = {
   ...legs(
-    { ...ARCH, hip: at(1, 74), torso: -31, head: 19, face: 'effort' },
-    [52, -93, -70],
-    [-106, -102, -65],
+    flungBack({ ...ARCH_BODY, hip: at(1, 74), torso: -31, head: 19, face: 'effort' }),
+    [52, -93, -33],
+    [-106, -102, -42],
   ),
   effects: [diamonds(12, 0.55), shockwave(26, 0.75)],
 };
@@ -207,7 +240,7 @@ const HELD: Pose = {
 // 4 · The hang just past the top (6 ticks): the freeze breaks, the knee drops, the legs start
 // to switch for the floor (the rear foot reaching back, the lead leg swinging under her), the
 // fists come in.
-const HANG: Pose = cocked(
+const HANG: Pose = tucked(
   {
     ...GUARD,
     hip: at(-2, 64),
@@ -221,23 +254,23 @@ const HANG: Pose = cocked(
     bends: { nearKnee: 'front', farKnee: 'front' },
     effects: [diamonds(13, 0.9)],
   },
-  1,
-  4,
+  -0.6,
+  -1.7,
 );
 
 // 5 · The landing (6 ticks): hard, low, wide, on the guard's marks; the lead fist low, the rear
 // one trailing down a beat; dust under both boots and a flat ring.
-const LAND: Pose = cocked(
+const LAND: Pose = tucked(
   {
     ...GUARD,
-    hip: at(-6, 22.5),
+    hip: at(-7, 26),
     torso: 28,
     head: LOOK - 28,
     shrug: 2.8,
     twist: 0.5,
-    nearFoot: onBall(TOE, -30),
-    farFist: at(12, 29),
-    bends: { nearElbow: 'down', farElbow: 'down', nearKnee: 'back' },
+    nearFoot: onBall(TOE, -56),
+    farFist: at(12, 31),
+    bends: { nearElbow: 'down', farElbow: 'down', nearKnee: 'front' },
     effects: [
       dust(12, 4.5, 0.2),
       dust(-20, 4, 0.2),
@@ -248,8 +281,8 @@ const LAND: Pose = cocked(
   -8,
 );
 
-// 6 · Rising past the guard (6 ticks): the hips over it, the fists a touch high.
-const RISE: Pose = cocked(
+// 6 · Rising past the guard (6 ticks): the hips over it, the lead fist a touch high.
+const RISE: Pose = tucked(
   {
     ...GUARD,
     hip: at(-6.7, 33.5),
@@ -260,8 +293,8 @@ const RISE: Pose = cocked(
     farFist: at(9.8, 48),
     effects: [dust(12, 4.5, 0.65), dust(-20, 4, 0.65)],
   },
-  0.2,
-  2,
+  0.4,
+  -0.4,
 );
 
 export const POSES: readonly Pose[] = [DROP, LAUNCH, FREEZE, HELD, HANG, LAND, RISE, GUARD];

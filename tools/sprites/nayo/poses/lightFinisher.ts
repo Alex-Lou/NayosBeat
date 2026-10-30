@@ -19,14 +19,14 @@ import {
  * L, L, L chain, out of the cross (chainLight); the game carries him 12 px over ticks 0-7, a
  * step in sells it while the poses stay anchored.
  *
- * The cross left his chest open: that is the coil. The rear glove snaps home to the chin, the
- * lead shoulder dips and turns away, the lead glove drops to the belt, the hips sink, while the
- * lead foot steps in. It lands and everything unwinds from the floor up: the hips whip round,
- * the shoulders after them, the arm last, rising out of the dip and swinging round in a wide
- * arc, elbow up, the whole weight dropping through it. At impact one long line from the raised
- * rear heel to the fist, the chin buried behind the lead shoulder, jaw set. The fist carries on
- * through and down, driving the opponent to the mat, then he rises out of it unhurried and
- * rolls back into the guard.
+ * The cross left his chest open: that is the coil. The rear glove snaps home to the chin, the lead
+ * shoulder dips and turns away, the lead glove drops to the belt, the hips sink, while the lead
+ * foot steps in. It lands and everything unwinds from the floor up: the hips whip round, the
+ * shoulders after them, the arm last: it swings up out of the dip and cocks high, the glove above
+ * his head and the elbow in front, then comes over the top and down, nearly long, the whole weight
+ * dropping through it. At impact one long line from the raised rear heel to the fist, the chin
+ * buried behind the lead shoulder, jaw set. The fist carries on through and down, driving the
+ * opponent to the mat, then he rises out of it unhurried and rolls back into the guard.
  *
  * Feet against the slide: while the game carries him, a foot planted on the floor drifts back
  * in his own space. The rear foot holds its spot through the coil, then skims in behind the
@@ -99,32 +99,63 @@ function onGlove(pose: Pose, distance: number): Point {
 const knucklesOf = (pose: Pose): Point => onGlove(pose, 5.4);
 
 /**
- * The hook's trail (as the Crochet's, wider): the lower half of a flat ellipse, a horizontal
- * swing seen from a little above, from behind the lead shoulder, dipping under the arm where
- * the glove swung out toward us, and rising forward into the glove. It ends inside the glove,
- * `into` px past the wrist: its bow wave wraps the knuckles instead of running ahead of them.
+ * The upswing's trail: from the belt, up in front of the chest and the face into the middle of
+ * the glove, cocked above his head (its rounded end hides under the glove).
  */
-function hookArc(
+function riseArc(pose: Pose, width: number): Effect {
+  const end = onGlove(pose, 2.6);
+  return smear(
+    width,
+    [end.x - 10.5, end.y - 30],
+    [end.x - 5.5, end.y - 23],
+    [end.x - 1.5, end.y - 15],
+    [end.x + 0.6, end.y - 7],
+    [end.x, end.y],
+  );
+}
+
+/**
+ * The finisher's trail at impact: the upper half of the ellipse this time, from behind the lead
+ * shoulder, over the top and down into the glove: the blow lands from above, where the
+ * Crochet's rises into the jaw. It ends inside the glove, `into` px past the wrist: its bow wave
+ * wraps the knuckles instead of running ahead of them.
+ */
+function overArc(
   pose: Pose,
   radius: number,
-  depth: number,
+  rise: number,
   width: number,
   into = 2.6,
-  from = -110,
+  from = 110,
 ): Effect {
   const end = onGlove(pose, into);
   const points: [number, number][] = [];
-  for (let degrees = from; degrees <= -3; degrees += 10) {
+  for (let degrees = from; degrees >= 10; degrees -= 10) {
     const a = (degrees * Math.PI) / 180;
-    points.push([end.x - radius + Math.cos(a) * radius, end.y + Math.sin(a) * depth]);
+    points.push([end.x - radius + Math.cos(a) * radius, end.y + Math.sin(a) * rise]);
   }
-  points.push([end.x, end.y - 0.1]);
+  points.push([end.x, end.y + 0.1]);
   return smear(width, ...points);
 }
 
-const HOOK_ARM = { nearElbow: 'up', farElbow: 'down' } as const;
-/** The rear glove up from the cheek to cover the chin while the hook goes. */
-const CHIN = at(0.7, 4.6);
+/**
+ * The looping arm, seen side on, its elbow always folding the way an arm does: cocked, the elbow
+ * in front at the height of the face, the forearm upright, the glove above the head; at impact
+ * nearly long (25 degrees of bend), the elbow a little under the line from the shoulder to the
+ * fist, the forearm level onto the target, the over-the-top trail telling where it came from;
+ * then on down, long. An elbow lifted over that line, the forearm coming down into the target,
+ * folds the arm backward on the picture (tools/sprites/anatomy.ts, elbowReversed): it reads as
+ * a broken arm.
+ */
+const LOOP_ARM = { nearElbow: 'down', farElbow: 'down' } as const;
+/**
+ * The rear glove up at the temple while the blow lands, a high guard that peeks over the lead
+ * arm, its elbow down and tucked behind the lead arm. The shoulders turn with the hips, the rear
+ * one back (`reach.far` < 0).
+ */
+const TEMPLE = at(1.5, 3);
+/** The rear glove at the jaw while the lead arm is cocked high: hidden behind its upper arm. */
+const JAW = at(-1.5, -1.5);
 
 // Frame 0 (2 ticks): the turn back. The rear glove snaps home from the cross, the chest stays
 // open toward us and the lead glove starts down off the chin; the lead foot lifts to step in,
@@ -142,13 +173,13 @@ const TURN_BODY: Body = {
 };
 const TURN: Pose = {
   ...TURN_BODY,
-  nearFist: at(12, 51.4),
+  nearFist: at(15, 49.5),
   farFist: atCheek(TURN_BODY, 2.4, -0.6),
 };
 
 // Frame 1 (3 ticks): the dip, the wind-up held a beat. The lead foot reaching in low, the hips
 // sunk over the rear foot (still on its spot, the leg long), the lead shoulder dropped and
-// turned away, the lead glove down at the belt, the rear glove up at the chin; the head level,
+// turned away, the lead glove down at the belt, the rear glove at the cheek; the head level,
 // eyes on the target.
 const DIP_BODY: Body = {
   ...GUARD,
@@ -163,51 +194,54 @@ const DIP_BODY: Body = {
 };
 const DIP: Pose = {
   ...DIP_BODY,
-  nearFist: at(7.4, 45),
-  farFist: atCheek(DIP_BODY, 0.4, 3.6),
+  nearFist: at(9.5, 42),
+  farFist: atCheek(DIP_BODY, 0.2, 0.6),
 };
 
 // Frame 2 (3 ticks): the hips whip round, the shoulders after them, both feet skimming in low as
-// the slide runs out; the arm comes last, rising out of the dip and swinging out wide at
-// shoulder height, elbow up, the forearm angled down into the glove. The trail opens.
+// the slide runs out; the arm comes last, swinging up out of the dip in front of him and
+// cocking high, the elbow forward at the height of the face, the forearm upright, the glove
+// above his head; the rear glove tucked at the jaw behind it. The trail rises with it from the
+// belt.
 const SWING_BODY: Body = {
   ...GUARD,
   hip: at(-2.4, 33.6),
   torso: 28,
   head: -9,
   shrug: 2.6,
-  reach: { near: 1.6 },
+  reach: { near: 1.6, far: -2.2 },
   twist: -0.3,
   nearFoot: lifted(onToes(LEAD_TOE + 1.3, -3), 0.4),
   farFoot: lifted(onToes(REAR_TOE - 4.7, -31), 0.8),
-  bends: HOOK_ARM,
+  bends: LOOP_ARM,
 };
-const SWING_ARM = arms(SWING_BODY, 22.5, 4.5, CHIN);
-const SWING: Pose = { ...SWING_ARM, effects: [hookArc(SWING_ARM, 18, 9, 4.5)] };
+const SWING_ARM = arms(SWING_BODY, 21.5, 66, JAW);
+const SWING: Pose = { ...SWING_ARM, effects: [riseArc(SWING_ARM, 4.5)] };
 
 // Frame 3 (3 ticks, active, held through the hitstop): impact. The weight dropped through the
-// punch, the lead heel turned out on the ball, the rear leg long behind on its toes, the arm
-// long and bent, elbow up; the chin behind the rolled lead shoulder, jaw set. A wide cyan arc
-// into the glove and a gold spark at the contact point.
+// punch, the hips low, the lead heel turned out on the ball, the rear leg long behind on its toes,
+// the arm over the top and down, nearly long, the fist falling onto the target; the chin behind the
+// rolled lead shoulder, jaw set. A wide cyan arc over the top into the glove and a gold spark at
+// the contact point.
 const IMPACT_BODY: Body = {
   ...GUARD,
-  hip: at(-0.8, 33),
-  torso: 36,
-  head: -17,
+  hip: at(-0.6, 32.2),
+  torso: 38,
+  head: -18,
   shrug: 3.8,
-  reach: { near: 3 },
+  reach: { near: 2, far: -1.8 },
   twist: -0.95,
   nearFoot: onToes(LEAD_TOE + 1.3, -8),
   farFoot: onToes(REAR_TOE - 1, -33),
-  bends: HOOK_ARM,
+  bends: LOOP_ARM,
   face: 'effort',
 };
-const IMPACT_ARM = arms(IMPACT_BODY, 22.6, 5, CHIN);
+const IMPACT_ARM = arms(IMPACT_BODY, 24.4, -4, TEMPLE);
 const IMPACT_KNUCKLES = knucklesOf(IMPACT_ARM);
 const IMPACT: Pose = {
   ...IMPACT_ARM,
   effects: [
-    hookArc(IMPACT_ARM, 30, 11, 6, 0),
+    overArc(IMPACT_ARM, 17, 12, 6, -1, 125),
     {
       kind: 'flash',
       center: at(IMPACT_KNUCKLES.x + 4.2, IMPACT_KNUCKLES.y + 0.4),
@@ -217,26 +251,26 @@ const IMPACT: Pose = {
   ],
 };
 
-// Frame 4 (5 ticks): follow-through. The fist carries on across and down (it comes back toward
-// us in the picture), the chest turned away, the hips dipping; still set.
+// Frame 4 (5 ticks): follow-through. The fist carries on down through the target, the arm
+// opening long toward the floor, the chest turned away, the hips dipping; still set.
 const THROUGH_BODY: Body = {
   ...GUARD,
-  hip: at(-1.2, 32.6),
-  torso: 37,
-  head: -18,
+  hip: at(-1, 31.8),
+  torso: 39,
+  head: -19,
   shrug: 3.4,
-  reach: { near: 2 },
+  reach: { near: 2.6, far: -1.6 },
   twist: -1,
   nearFoot: onToes(LEAD_TOE + 1.3, -6),
   farFoot: onToes(REAR_TOE - 1, -31),
-  bends: HOOK_ARM,
+  bends: LOOP_ARM,
   face: 'effort',
 };
-const THROUGH = arms(THROUGH_BODY, 19.5, -12, CHIN);
+const THROUGH = arms(THROUGH_BODY, 24.6, -28, TEMPLE);
 
 // Frame 5 (6 ticks): he rises out of it, unhurried, half way home: the hips coming up and back,
 // the chest turning back toward us, the head level again; the lead elbow drops under the
-// glove as it comes back up the line, the rear glove still on the chin, the lead foot drawn in.
+// glove as it comes back up the line, the rear glove back at the cheek, the lead foot drawn in.
 const RISE_BODY: Body = {
   ...GUARD,
   hip: at(-2.8, 34),
@@ -251,7 +285,7 @@ const RISE_BODY: Body = {
 const RISE: Pose = {
   ...RISE_BODY,
   nearFist: leadTo(RISE_BODY, at(27.5, 50.5)),
-  farFist: atCheek(RISE_BODY, CHIN.x, CHIN.y),
+  farFist: atCheek(RISE_BODY, 0.3, 0.4),
 };
 
 // Frame 6 (7 ticks): the hips sit back into the guard and the lead shoulder rolls up as in the

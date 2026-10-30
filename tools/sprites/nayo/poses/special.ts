@@ -1,5 +1,54 @@
-import { BODY, solve } from '../../skeleton.ts';
+import type { Point } from '../../raster.ts';
+import { add, BODY, scale, solve, sub, type Bend } from '../../skeleton.ts';
 import { at, GUARD, lifted, planted, smear, type Effect, type Foot, type Pose } from './common.ts';
+
+type Body = Omit<Pose, 'nearFist' | 'farFist'>;
+
+/**
+ * An arm set by its joints, as tools/sprites/anatomy.ts measures them in the torso's frame: the
+ * upper arm `shoulder` degrees from hanging (90 = straight ahead, 180 = overhead, negative =
+ * behind), the elbow flexed `elbow` degrees (0 = straight, always the way an elbow bends). Gives
+ * the hand it puts in place and the bend that makes the solver pick that elbow, not its mirror.
+ */
+function arm(
+  body: Body,
+  which: 'near' | 'far',
+  shoulder: number,
+  elbow: number,
+): { fist: Point; bend: Bend } {
+  const s = solve({ ...body, nearFist: GUARD.nearFist, farFist: GUARD.farFist });
+  const root = s[which].shoulder;
+  const turn = (v: Point, degrees: number): Point => {
+    const a = (degrees * Math.PI) / 180;
+    return { x: v.x * Math.cos(a) - v.y * Math.sin(a), y: v.x * Math.sin(a) + v.y * Math.cos(a) };
+  };
+  const upper = turn({ x: -s.up.x, y: -s.up.y }, shoulder);
+  const joint = add(root, scale(upper, BODY.upperArm));
+  const fist = add(joint, scale(turn(upper, elbow), BODY.forearm));
+  // The other elbow the solver could pick: the mirror image across the shoulder-hand line.
+  const line = sub(fist, root);
+  const axis = scale(line, 1 / (Math.hypot(line.x, line.y) || 1));
+  const offset = sub(joint, root);
+  const along = offset.x * axis.x + offset.y * axis.y;
+  const mirror = add(root, sub(scale(axis, 2 * along), offset));
+  const dx = joint.x - mirror.x;
+  const dy = joint.y - mirror.y;
+  const bend: Bend =
+    Math.abs(dy) >= Math.abs(dx) ? (dy < 0 ? 'down' : 'up') : dx > 0 ? 'front' : 'back';
+  return { fist: at(fist.x, fist.y), bend };
+}
+
+/** A pose of `body` with both arms set by their joints, `[shoulder, elbow]` each (see arm). */
+function posed(body: Body, near: readonly [number, number], far: readonly [number, number]): Pose {
+  const lead = arm(body, 'near', near[0], near[1]);
+  const rear = arm(body, 'far', far[0], far[1]);
+  return {
+    ...body,
+    nearFist: lead.fist,
+    farFist: rear.fist,
+    bends: { ...body.bends, nearElbow: lead.bend, farElbow: rear.bend },
+  };
+}
 
 /**
  * The record in his hands at `(x, y)`, before it lights up into the flying Vinyle: smaller,
@@ -32,9 +81,14 @@ function onToes(toe: number, angle: number): Foot {
 // Startup (frames 0-3, 3 ticks each): out of the high guard, the rear hand pulls a record out
 // of the jacket and the weight rocks back onto the rear leg; hunched over it at the rear hip
 // like a DJ over the decks, he gives it a scratch, then coils for a flat sidearm throw.
+//
+// The rear knee sinks forward over its foot as he coils (the hips stay between the feet): the
+// rear heel climbs with it, the foot rolling onto its ball around the toes, which keep their
+// mark (tools/sprites/anatomy.ts: a flat foot under that knee would fold the ankle past its
+// stop); the coil is a spring loaded on the ball of the rear foot, the throw drives off it.
 
 // Frame 0: the rear hand slips inside the open jacket, the lead glove holds the flap open; the
-// chest starts turning away, the hips rock back.
+// chest starts turning away, the hips rock back; the rear heel where the guard holds it.
 const DRAW: Pose = {
   ...GUARD,
   hip: at(-7.8, 35.4),
@@ -47,66 +101,74 @@ const DRAW: Pose = {
   nearHand: 'open',
   farHand: 'open',
   nearFoot: onToes(LEAD_TOE, -4),
-  farFoot: onToes(REAR_TOE, -11),
+  farFoot: onToes(REAR_TOE, -15),
   bends: { nearElbow: 'down', farElbow: 'down' },
 };
 
 // Frame 1: the record comes out and sweeps down to the rear hip, coiled on the rear leg (its
-// heel sinks), chest turned away, the lead shoulder up at the chin; the palms hold the record
-// by its rim (lead palm on top, rear one under it).
-const COIL: Pose = {
+// heel up on the ball), chest turned away, the lead shoulder up at the chin; the palms hold the
+// record by its rim at the hip (lead palm on top, rear one under it). Both arms hang to it, the
+// lead elbow bent back behind the hip the way a hand goes to a back pocket: never an arm folded
+// the wrong way across the belly.
+const COIL_BODY: Body = {
   ...GUARD,
   hip: at(-9.2, 34),
   torso: 7,
   head: 8,
   shrug: 2.8,
   twist: -0.8,
-  nearFist: at(-9.5, 47),
-  farFist: at(-14, 37.5),
   nearHand: 'open',
   farHand: 'open',
   nearFoot: onToes(LEAD_TOE, -8),
-  farFoot: onToes(REAR_TOE, -7),
-  bends: { nearElbow: 'front', farElbow: 'front' },
-  effects: [smear(2.5, [1, 56], [-5, 51], [-13, 40]), record(-12, 42, 0)],
+  farFoot: onToes(REAR_TOE, -22),
+};
+const COIL_ARMS = posed(COIL_BODY, [-44, 78], [-8, 14]);
+const COIL: Pose = {
+  ...COIL_ARMS,
+  effects: [smear(2.5, [1, 56], [-4, 49], [-10, 40]), record(-10.5, 34.5, 0)],
 };
 
 // Frame 2: the scratch: the lead palm drags the record back hard, the head nods down on the
-// beat.
-const SCRATCH: Pose = {
-  ...COIL,
+// beat; the rear hand lets it ride back under the palm.
+const SCRATCH_BODY: Body = {
+  ...COIL_BODY,
   hip: at(-9.9, 33.1),
   torso: 8,
   head: 11,
-  nearFist: at(-15, 48.5),
-  farFist: at(-15.5, 37.5),
   nearFoot: onToes(LEAD_TOE, -10),
-  farFoot: onToes(REAR_TOE, -6),
-  effects: [record(-14.2, 42.8, -0.15)],
+  farFoot: onToes(REAR_TOE, -26),
+};
+const SCRATCH: Pose = {
+  ...posed(SCRATCH_BODY, [-50, 75], [-16, 12]),
+  effects: [record(-13.5, 34, -0.15)],
 };
 
 // Frame 3: the scratch back and the deepest coil, low on the rear leg, the chest turned right
-// away, lead heel up; the rear hand cocks the record behind the hip, flat, ready to whip.
-const LOAD: Pose = {
-  ...COIL,
+// away, both heels up; the rear arm swings the record back past the hip, long and loose, flat,
+// ready to whip, and the lead hand comes off it, back up in front of the chest.
+const LOAD_BODY: Body = {
+  ...COIL_BODY,
   hip: at(-11, 32),
   torso: 6,
   head: 6,
   shrug: 3.2,
   twist: -0.95,
-  nearFist: at(-8.5, 46),
-  farFist: at(-15.5, 37),
   nearFoot: onToes(LEAD_TOE, -13),
-  farFoot: onToes(REAR_TOE, -6),
-  effects: [record(-12.5, 41, 0.05)],
+  farFoot: onToes(REAR_TOE, -30),
+};
+const LOAD_ARMS = posed(LOAD_BODY, [8, 112], [-26, 14]);
+const LOAD: Pose = {
+  ...LOAD_ARMS,
+  nearHand: 'fist',
+  effects: [record(LOAD_ARMS.farFist.x - 2.4, LOAD_ARMS.farFist.y + 0.8, 0.05)],
 };
 
 // Frame 4 (8 ticks, the Vinyle leaves at x 24, y 42): the hips drive through off the rear toe,
 // the lead foot stamps a short step, chest squared; one line from the rear toe through the hips
 // and the leaning back to the head. The rear arm whips out flat at chest height, the palm open
-// just behind the record it let go of, the lead glove pulled back to the chest; speed lines
-// stream behind the throwing hand, dust under the stamp.
-const THROW: Pose = {
+// just behind the record it let go of, the lead glove pulled back to the ribs, elbow back;
+// speed lines stream behind the throwing hand, dust under the stamp.
+const THROW_BODY: Body = {
   ...GUARD,
   hip: at(-5.5, 33),
   torso: 17,
@@ -114,13 +176,16 @@ const THROW: Pose = {
   shrug: 0.6,
   reach: { near: 0, far: 3.5 },
   twist: 0.6,
-  nearFist: at(4, 52),
-  farFist: at(19, 43),
   farHand: 'open',
   nearFoot: planted(10),
-  farFoot: onToes(REAR_TOE, -28),
-  bends: { nearElbow: 'down', farElbow: 'down' },
+  farFoot: onToes(REAR_TOE, -32),
   face: 'effort',
+};
+const THROW: Pose = {
+  ...THROW_BODY,
+  ...posed(THROW_BODY, [-24, 138], [0, 0]),
+  farFist: at(19, 43),
+  bends: { nearElbow: arm(THROW_BODY, 'near', -24, 138).bend, farElbow: 'down' },
   effects: [
     { kind: 'speed', center: at(17, 43), length: 9, spread: 4, direction: 0, tone: 'sound' },
     { kind: 'dust', x: 11.5, size: 2.6, progress: 0.15 },
@@ -131,12 +196,12 @@ const THROW: Pose = {
 
 // Frame 5: follow-through, the throwing arm still out, the whole pose drifting on half a pixel;
 // the speed lines thin out.
+const HOLD_BODY: Body = { ...THROW_BODY, hip: at(-5.2, 33.2), torso: 18, head: 0 };
 const HOLD: Pose = {
   ...THROW,
-  hip: at(-5.2, 33.2),
-  torso: 18,
-  head: 0,
-  nearFist: at(4.5, 52.5),
+  ...HOLD_BODY,
+  nearFist: arm(HOLD_BODY, 'near', -22, 136).fist,
+  bends: { nearElbow: arm(HOLD_BODY, 'near', -22, 136).bend, farElbow: 'down' },
   farFist: at(19.5, 43.6),
   effects: [
     { kind: 'speed', center: at(17, 44), length: 6, spread: 3, direction: 0, tone: 'sound' },

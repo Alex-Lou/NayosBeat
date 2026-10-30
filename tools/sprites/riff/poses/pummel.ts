@@ -34,6 +34,9 @@ const REAR: Pose = {
   torso: 9,
   head: -24,
   shrug: 3.2,
+  // The shoulders dragged forward by the grip as the chest tips away: the arms stretch, the
+  // elbows never lock.
+  reach: { near: 3, far: 0.8 },
   twist: 0.55,
   nearFoot: onBall(REAR_TOE, -14),
   nearFist: at(20.5, 55),
@@ -49,7 +52,7 @@ const DRIVE_BODY: Pose = {
   head: -16,
   shrug: 2.8,
   twist: 0.3,
-  nearFoot: onBall(REAR_TOE, -30),
+  nearFoot: onBall(REAR_TOE, -34),
   nearFist: at(21, 54),
   farFist: at(20.5, 48.5),
   face: 'effort',
@@ -66,8 +69,8 @@ const IMPACT_BODY: Pose = {
   shrug: 2.6,
   twist: 0.15,
   nearFoot: onBall(REAR_TOE, -38),
-  nearFist: at(20.5, 52.5),
-  farFist: at(21.5, 47),
+  nearFist: at(20.5, 51),
+  farFist: at(21.5, 46),
   face: 'effort',
 };
 

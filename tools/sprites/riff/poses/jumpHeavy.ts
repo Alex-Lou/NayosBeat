@@ -2,8 +2,8 @@ import type { Point } from '../../raster.ts';
 import { solve, type Bend, type Face } from '../../skeleton.ts';
 import { RIFF_BODY } from '../body.ts';
 import { at, GUARD, type Effect, type Pose } from './common.ts';
-import { FALL } from './jump.ts';
-import { legAt, sweep } from './jumpLight.ts';
+import { FALL, guarded } from './jump.ts';
+import { legAt, pointed, POINTED, sweep } from './jumpLight.ts';
 
 export const ANIMATED: boolean = true;
 
@@ -17,15 +17,20 @@ export const ANIMATED: boolean = true;
  * sole to the sky, then chops it down through a wide arc to the front-bottom, the whole body
  * folding over it, the rear leg thrown long behind as a counterweight: one long diagonal from the
  * rear boot through the hips to the heel, the chest pitched in over the strike and the loaded
- * rear fist still cocked by the ear. The foot flexed, toes up: the heel and the lugged sole lead.
+ * rear fist still tucked under the chin. The foot flexed, toes up: the heel and the lugged sole lead.
  *
  * - 0 (3 ticks): the chamber: the lead knee snaps up to the chest, the shoulders start back.
  * - 1 (3 ticks): the axe up, an aerial layout (nothing like the ground Talon's standing raise):
  *   the body laid 30 degrees back, the lead leg straight up past her face, the sole to the sky,
- *   the rear knee tucked up under her, the cocked arm out behind for balance; a trail along the
- *   swing up.
+ *   the rear knee tucked up under her, the rear fist sunk to the collar as the chest lays back (the
+ *   chin comes down toward it: the face stays clear); a trail along the swing up.
  * - 2 (5 ticks, active): the chop: the heel on the far edge of the hitbox, a trail along the arc
- *   it came down, the heavy spark (as her other heavies) on the heel; the jaw set (`effort`).
+ *   it came down, the heavy spark (as her other heavies) on the heel, the lead fist yanked back to
+ *   the hip to drive it, the rear boot pointed behind; the jaw set (`effort`).
+ *
+ * Every arm keeps the guard's shape turned with the chest (jump.ts's `guarded`) unless it moves
+ * on its own; on the laid-back raise the rear glove sinks to the collar, under the chin that the
+ * head brings down to it.
  * - 3 (3 ticks): the follow-through: the heel sinks on, the shape held through the impact.
  * - 4 (3 ticks): the lead knee folds back up under her, the shoulders come upright.
  * - 5 (3 ticks, held): the airborne guard (the jump's FALL).
@@ -46,18 +51,28 @@ interface Key {
   readonly twist: number;
   /** The lead (far) leg: angle from its hip joint, length to the ankle, the foot's angle. */
   readonly lead: readonly [number, number, number];
-  /** The rear (near) ankle and the foot's angle. */
-  readonly rear: readonly [number, number, number];
-  readonly nearFist: Point;
-  readonly farFist: Point;
+  /** The rear (near) ankle and the foot's angle, or `pointed` along the shin. */
+  readonly rear: readonly [number, number, number | 'pointed'];
+  /**
+   * The fists: nudged off the guard's (the rear under the chin, the lead low, both turned with
+   * the chest: jump.ts's `guarded`), or placed outright.
+   */
+  readonly rearFist: Point | { readonly at: Point };
+  readonly leadFist: Point | { readonly at: Point };
   readonly face?: Face;
   readonly leadKnee?: Bend;
   readonly rearKnee?: Bend;
+  readonly leadElbow?: Bend;
 }
+
+/** A fist placed outright, or the nudge off the guard's (none for a fist placed outright). */
+const placed = (fist: Point | { readonly at: Point }): Point | undefined =>
+  'at' in fist ? fist.at : undefined;
+const nudge = (fist: Point | { readonly at: Point }): Point => ('at' in fist ? at(0, 0) : fist);
 
 function key(k: Key): Pose {
   const lead = legAt(k.hip, k.torso, 'far', k.lead[0], k.lead[1]);
-  return {
+  const body: Pose = {
     ...FALL,
     hip: k.hip,
     torso: k.torso,
@@ -65,17 +80,22 @@ function key(k: Key): Pose {
     shrug: k.shrug,
     twist: k.twist,
     farFoot: { ...lead, angle: k.lead[2] },
-    nearFoot: { x: k.rear[0], y: k.rear[1], angle: k.rear[2] },
-    nearFist: k.nearFist,
-    farFist: k.farFist,
+    nearFoot: { x: k.rear[0], y: k.rear[1], angle: k.rear[2] === 'pointed' ? 0 : k.rear[2] },
     face: k.face ?? 'focus',
     bends: {
       nearKnee: k.rearKnee ?? 'front',
       farKnee: k.leadKnee ?? 'up',
       nearElbow: 'down',
-      farElbow: 'down',
+      farElbow: k.leadElbow ?? 'down',
     },
   };
+  const guard = guarded(body, nudge(k.rearFist), nudge(k.leadFist));
+  const pose = {
+    ...guard,
+    nearFist: placed(k.rearFist) ?? guard.nearFist,
+    farFist: placed(k.leadFist) ?? guard.farFist,
+  };
+  return k.rear[2] === 'pointed' ? pointed(pose, POINTED, ['near']) : pose;
 }
 
 // 0 · The chamber (3 ticks).
@@ -87,8 +107,8 @@ const CHAMBER = key({
   twist: 0.4,
   lead: [-30, 12, -40],
   rear: [-11, 17, -55],
-  nearFist: at(-15, 63),
-  farFist: at(2, 50),
+  rearFist: at(-1, -2.5),
+  leadFist: at(0, 0),
 });
 
 /** The raised leg's angle from its hip joint: straight up, a little toward the opponent. */
@@ -104,8 +124,8 @@ const RAISE = key({
   twist: 0.55,
   lead: [RAISE_ANGLE, 31.5, 160],
   rear: [-6, 22, -50],
-  nearFist: at(-31, 58),
-  farFist: at(-6, 50),
+  rearFist: at(0, -5.5),
+  leadFist: at(0, 0),
 });
 
 // 2 · The chop (5 ticks, active).
@@ -116,9 +136,10 @@ const CHOP = key({
   shrug: 2.6,
   twist: 0.35,
   lead: [-54, 31.5, 36],
-  rear: [-28.5, 41, -175],
-  nearFist: at(-10, 62),
-  farFist: at(-6, 42),
+  rear: [-28.5, 41, 'pointed'],
+  rearFist: at(0, 0),
+  leadFist: { at: at(2.9, 37.5) },
+  leadElbow: 'up',
   face: 'effort',
   rearKnee: 'down',
 });
@@ -131,9 +152,10 @@ const FOLLOW = key({
   shrug: 2.6,
   twist: 0.37,
   lead: [-58, 30.5, 30],
-  rear: [-27.5, 37.5, -168],
-  nearFist: at(-10, 61),
-  farFist: at(-5, 42),
+  rear: [-27.5, 37.5, 'pointed'],
+  rearFist: at(0, 0),
+  leadFist: { at: at(2.6, 37.5) },
+  leadElbow: 'up',
   face: 'effort',
   rearKnee: 'down',
 });
@@ -147,8 +169,8 @@ const RECOIL = key({
   twist: 0.42,
   lead: [-40, 22, -20],
   rear: [-14, 12, -45],
-  nearFist: at(-13, 61),
-  farFist: at(3, 49),
+  rearFist: at(0, -0.8),
+  leadFist: at(0, 0),
   rearKnee: 'front',
 });
 

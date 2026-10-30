@@ -11,19 +11,21 @@ export const ANIMATED: boolean = true;
  *
  * - 0: lights out: the head snaps aside, the chin dropping (past 20 degrees: the eyes already
  *   shut, `out`), the fringe whipping over the face; the knees unlock (the hips 3 px down), the
- *   cocked rear fist falls off her ear and the lead hand drops, both arms hanging open.
+ *   rear fist drops from under her chin and the lead hand drops, both arms hanging open.
  * - 1: out on her feet: she sways back over her rear foot, the chest falling back, the head lolling
  *   back after it, the arms hanging dead from the shoulders, the lead hand still drifting down
  *   in front of her, the lead toes up on the heel.
  * - 2: the legs give: the hips drop and back, and she folds forward over them, the chest 35
- *   degrees down, the shoulders sagging, the head hanging, both arms dangling straight down in
- *   front of the knees.
- * - 3: she sinks: the hips nearly to the floor, the body tipping back out of the fold, the head
- *   whipping back the other way, the limp rear arm flung up behind by the drop.
+ *   degrees down, the shoulders sagging, the head hanging, both arms dangling down in front of
+ *   the knees; the rear knee dropped forward and low under her, as in her crouch, the heel
+ *   high.
+ * - 3: she sinks: the hips low over the rear heel, the rear knee floating just over the floor,
+ *   the body tipping back out of the fold, the head whipping back the other way, the limp rear
+ *   arm lagging forward over her lap.
  * - 4: the seat hits (a puff), the legs sliding out along the floor, the torso falling back, the
  *   lead arm lagging up from the drop.
  * - 5: the back slams flat, the head bouncing off the floor, the legs thrown up, the rear arm
- *   on the floor at her side, the lead one flopping down across her.
+ *   lying flat on the floor at her side, the lead one flopping down across her.
  * - 6: the last rebound: the head and shoulders lift off the floor, the chin dropping, the
  *   boots flopping down.
  * - 7, held: out cold on her back, the head lolled, the rear knee up, the lead leg stretched
@@ -31,8 +33,11 @@ export const ANIMATED: boolean = true;
  *
  * Lying poses stretch back (the head toward negative x), the boots off the opponent. The lead
  * arm, drawn behind the body and the head, never ends by the skull (a few pixels of skin at the
- * hair line read as a growth): it lags up in the air or lies across her. While she stands, the
- * feet never slide: the rear foot stays on its ball, the lead one pivots on its heel. The slow
+ * hair line read as a growth): it lags up in the air or lies across her. On the floor the rear
+ * arm lies flat along her side (its elbow raised off the floor, the hand down by the hip, it
+ * read as an elbow bent backward), and the knees bend toward the toes even as she buckles (the
+ * rear one forward and low, as in her crouch, never turned out behind her). While she stands,
+ * the feet never slide: the rear foot stays on its ball, the lead one pivots on its heel. The slow
  * drop also keeps the belt's chain off the floor in the held frame: its spring's tip still lags
  * above the belt when the last frame comes (see knockdown.ts).
  *
@@ -57,7 +62,7 @@ const SNAP: Pose = figure({
   farFoot: GUARD.farFoot,
   bends: { nearKnee: 'front' },
   nearArm: { upper: 232, lower: 262 },
-  farArm: { upper: 300, lower: 282 },
+  farArm: { upper: -82, lower: -65 },
   ...LIMP,
   face: 'out',
 });
@@ -73,7 +78,7 @@ const OUT_STANDING: Pose = figure({
   farFoot: onHeel(GUARD.farFoot, 22),
   bends: { nearKnee: 'front' },
   nearArm: { upper: 255, lower: 262 },
-  farArm: { upper: 290, lower: 272 },
+  farArm: { upper: -76, lower: -62 },
   ...LIMP,
   face: 'out',
 });
@@ -85,26 +90,26 @@ const BUCKLE: Pose = figure({
   head: 25,
   shrug: -1.5,
   twist: 0.35,
-  nearFoot: onBall(REAR_TOE, -22),
+  nearFoot: onBall(REAR_TOE, -68),
   farFoot: GUARD.farFoot,
-  bends: { nearKnee: 'back' },
-  nearArm: { upper: 285, lower: 280 },
-  farArm: { upper: 290, lower: 285 },
+  bends: { nearKnee: 'front' },
+  nearArm: { upper: -78, lower: -70 },
+  farArm: { upper: -72, lower: -64 },
   ...LIMP,
   face: 'out',
 });
 
 /** 3: sinking to the floor, tipping back, the head whipping back. */
 const SINK: Pose = figure({
-  hip: at(-12, 12.5),
+  hip: at(-13, 18),
   torso: -28,
   head: -12,
   shrug: 0,
   twist: 0.45,
-  nearFoot: onBall(REAR_TOE, -30),
+  nearFoot: onBall(REAR_TOE, -74),
   farFoot: onHeel(GUARD.farFoot, 10),
-  bends: { nearKnee: 'back' },
-  nearArm: { upper: 225, lower: 190 },
+  bends: { nearKnee: 'front' },
+  nearArm: { upper: -35, lower: -15 },
   farArm: { upper: 300, lower: 340 },
   ...LIMP,
   face: 'out',
@@ -119,8 +124,8 @@ const SEAT: Pose = figure({
   twist: 0.45,
   nearArm: { upper: 315, lower: 350 },
   farArm: { upper: 55, lower: 80 },
-  nearLeg: { upper: 40, lower: 350, toes: 10 },
-  farLeg: { upper: 25, lower: 330, toes: 0 },
+  nearLeg: { upper: 40, lower: -10, toes: 55 },
+  farLeg: { upper: 25, lower: -30, toes: 35 },
   ...LIMP,
   face: 'out',
   effects: [dust(-12, 5, 0.05)],
@@ -133,11 +138,10 @@ const SLAM: Pose = figure({
   head: -8,
   shrug: 0,
   twist: 0.35,
-  nearFist: at(-14, 3.5),
-  farArm: { upper: 25, lower: 0 },
-  bends: { nearElbow: 'up' },
-  nearLeg: { upper: 80, lower: 28, toes: 40 },
-  farLeg: { upper: 64, lower: 12, toes: 30 },
+  nearArm: { upper: 0, lower: 6 },
+  farArm: { upper: 5, lower: 12 },
+  nearLeg: { upper: 80, lower: 28, toes: 93 },
+  farLeg: { upper: 64, lower: 12, toes: 77 },
   ...LIMP,
   face: 'out',
   effects: [dust(-36, 5, 0.05), dust(-12, 5, 0.45)],
@@ -152,9 +156,9 @@ const REBOUND: Pose = figure({
   twist: 0.4,
   nearFoot: { x: 3, y: 9, angle: 15 },
   farFoot: { x: 15, y: 7, angle: 50 },
-  nearFist: at(-15, 6),
-  farArm: { upper: 18, lower: 355 },
-  bends: { nearElbow: 'up', nearKnee: 'up', farKnee: 'up' },
+  nearArm: { upper: -15, lower: 0 },
+  farArm: { upper: 2, lower: 14 },
+  bends: { nearKnee: 'up', farKnee: 'up' },
   ...LIMP,
   face: 'out',
   effects: [dust(-36, 5, 0.5), dust(-12, 5, 0.85), dust(15, 3.5, 0.15)],
@@ -169,9 +173,9 @@ const OUT_COLD: Pose = figure({
   twist: 0.35,
   nearFoot: planted(2),
   farFoot: { x: 18.5, y: 5.2, angle: 70 },
-  nearFist: at(-14, 3.5),
-  farArm: { upper: 12, lower: 345 },
-  bends: { nearElbow: 'up', nearKnee: 'up', farKnee: 'up' },
+  nearArm: { upper: 0, lower: 6 },
+  farArm: { upper: -4, lower: 6 },
+  bends: { nearKnee: 'up', farKnee: 'up' },
   ...LIMP,
   face: 'out',
 });
