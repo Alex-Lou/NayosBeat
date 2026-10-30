@@ -1,4 +1,4 @@
-import type { MatchConfig } from '../core/config';
+import type { FighterTemplate, MatchConfig } from '../core/config';
 import type { MoveId } from '../core/move-data';
 import { moveOf, tierOf } from '../core/moves';
 import type { Contact, CounterHit, FighterState, GameState, RoundPhase } from '../core/state';
@@ -28,11 +28,13 @@ interface Spender {
 
 /**
  * A blow that went through the guard: `held` when it landed in a hold (a pummel, a throw);
- * `counter` when it caught the defender attacking or recovering (the core's `isCounterHit`).
+ * `counter` when it caught the defender attacking or recovering (the core's `isCounterHit`);
+ * `pulse`, a blow of a super before its last (BOOM, BOOM, BOOOOM: docs/flashs.md §2).
  */
 interface Blow extends Impact {
   readonly held: boolean;
   readonly counter: CounterHit | null;
+  readonly pulse: boolean;
 }
 
 /**
@@ -74,11 +76,16 @@ export type FightEvent =
   /**
    * `by` spends its Boost gauge (docs/combos-v3.md §1.8.7), standing at `x`, `y` (its feet,
    * stage sub-pixels): a Remix, its special in platine; the Rewind (its own name, Riff's Pogo),
-   * a step toward `toward`; the super (its name), as its flash freezes the game.
+   * a step toward `toward`; the super (its name), as it starts.
    */
   | ({ readonly type: 'boost' } & Spender)
   | ({ readonly type: 'rewind'; readonly name: string; readonly toward: 1 | -1 } & Spender)
   | ({ readonly type: 'super'; readonly name: string } & Spender)
+  /**
+   * The super's flash freezes the whole game (Nayo's on its first frame, Riff's at the top of
+   * her dive), `by` facing `toward`: once, never if the super was cut short before it.
+   */
+  | ({ readonly type: 'freeze'; readonly toward: 1 | -1 } & Spender)
   | { readonly type: 'projectile' }
   | { readonly type: 'jump' }
   | { readonly type: 'land' }
@@ -141,6 +148,9 @@ export function detectEvents(
         if (tier === 3) events.push({ type: 'super', by: player, name: move.name, x, y });
       }
     }
+    if (reachedSuperFlash(before, after, config.fighters[player])) {
+      events.push({ type: 'freeze', by: player, x: after.x, y: after.y, toward: after.facing });
+    }
     if (after.action === 'air' && before.action === 'preJump') events.push({ type: 'jump' });
     if (after.action === 'landing' && before.action !== 'landing') events.push({ type: 'land' });
     if (after.action === 'knockdown' && before.action === 'airHit') {
@@ -186,17 +196,35 @@ function contactEvent(contact: Contact, next: GameState, config: MatchConfig): F
   }
   const held = contact.kind !== 'hit';
   const { counter } = contact;
+  // A super's blow before its last: its attacker is still in it, short of the last pulse.
+  const last = tierOf(move) === 3 ? move.pulses?.[move.pulses.length - 1]?.frame : undefined;
+  const pulse = last !== undefined && attacker.move === contact.move && attacker.actionFrame < last;
   if (defender.health === 0) {
     const finish = koFinishOf(tierOf(move), defender.comboCount);
-    return { type: 'ko', ...impact, held, counter, finish };
+    return { type: 'ko', ...impact, held, counter, pulse, finish };
   }
   if (contact.kind === 'throw') return { type: 'throw', ...impact, damage: contact.damage };
   const heavy = move.damage >= HEAVY_HIT_DAMAGE;
-  return { type: 'hit', ...impact, damage: contact.damage, heavy, held, counter };
+  return { type: 'hit', ...impact, damage: contact.damage, heavy, held, counter, pulse };
 }
 
 function startedNewMove(before: FighterState, after: FighterState): boolean {
   return before.move !== after.move || before.actionFrame > 0;
+}
+
+/**
+ * A super reached the frame its flash freezes the game on: on that tick only, the freeze holding
+ * its frame the ticks after.
+ */
+function reachedSuperFlash(
+  before: FighterState,
+  after: FighterState,
+  template: FighterTemplate,
+): boolean {
+  if (after.action !== 'attack' || !after.move) return false;
+  const move = moveOf(template, after.move);
+  if (tierOf(move) !== 3 || move.flash?.frame !== after.actionFrame) return false;
+  return before.move !== after.move || before.actionFrame !== after.actionFrame;
 }
 
 /**

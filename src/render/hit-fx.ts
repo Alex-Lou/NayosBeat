@@ -15,7 +15,8 @@ import {
 import type { HitStyle } from './hit-styles';
 import { VIEW_SIZE } from './view';
 
-export type HitKind = 'light' | 'heavy' | 'block' | 'ko';
+/** `pulse`: a super's blow before its last (BOOM, BOOM, BOOOOM), smaller, without the flash. */
+export type HitKind = 'light' | 'heavy' | 'block' | 'ko' | 'pulse';
 
 type FlipbookName = keyof typeof HD_FLIPBOOKS;
 /** What a piece draws: a shape of its own, or a flipbook of several. */
@@ -130,6 +131,8 @@ const BURSTS: Readonly<Record<Exclude<HitKind, 'block'>, Burst>> = {
   light: { glow: 36, core: 14, blades: 1, blade: 32, ring: 0, sparks: 8, shards: 3, life: 1 },
   heavy: { glow: 52, core: 20, blades: 2, blade: 50, ring: 58, sparks: 18, shards: 8, life: 1.25 },
   ko: { glow: 74, core: 28, blades: 3, blade: 64, ring: 86, sparks: 30, shards: 14, life: 1.6 },
+  // Her heavy blow is already under a flash's area (docs/flashs.md §2).
+  pulse: { glow: 52, core: 20, blades: 2, blade: 50, ring: 58, sparks: 18, shards: 8, life: 1.25 },
 };
 
 /** Nayo's hit for one kind of blow: its size (world pixels), its timing and what flies out. */
@@ -161,6 +164,10 @@ interface Star {
    * through the slow motion that follows.
    */
   readonly linger: number;
+  /** The aura's alpha (0.85), its size (AURA_SCALE), the warm glow's alpha (0.35): less on a pulse. */
+  readonly aura?: number;
+  readonly auraScale?: number;
+  readonly warm?: number;
 }
 
 const STARS: Readonly<Record<Exclude<HitKind, 'block'>, Star>> = {
@@ -211,6 +218,26 @@ const STARS: Readonly<Record<Exclude<HitKind, 'block'>, Star>> = {
     fronts: 2,
     splash: true,
     linger: 14,
+  },
+  // A heavy blow's silhouette without its flash (no first key) nor its splash: under a flash's
+  // area (docs/flashs.md §2), the super's last blow keeps the big one.
+  pulse: {
+    size: 46,
+    keys: [0, 2, 2, 3, 2],
+    life: 1,
+    streaks: 4,
+    drops: 4,
+    twinkles: 4,
+    specks: 10,
+    arcs: 3,
+    farArcs: 2,
+    lines: 2,
+    fronts: 0,
+    splash: false,
+    linger: 0,
+    aura: 0.45,
+    auraScale: 1.3,
+    warm: 0.2,
   },
 };
 
@@ -444,6 +471,7 @@ export class HitFx {
    */
   private star(style: HitStyle, star: Star, x: number, y: number, direction: number): void {
     const { size, life, keys } = star;
+    const auraScale = star.auraScale ?? AURA_SCALE;
     const mirror = direction !== 0;
     const tilt = random(-0.15, 0.15);
     const ahead = Math.cos(direction);
@@ -461,7 +489,7 @@ export class HitFx {
         life: keys[0] + keys[1],
         from: stretch(1.1),
         to: stretch(1.35),
-        alpha: 0.35,
+        alpha: star.warm ?? 0.35,
         fade: 1.5,
       },
       x,
@@ -473,9 +501,9 @@ export class HitFx {
         color: energy,
         life: burstLife,
         ...grow,
-        from: stretch(0.78 * AURA_SCALE),
-        to: stretch(1.06 * AURA_SCALE),
-        alpha: 0.85,
+        from: stretch(0.78 * auraScale),
+        to: stretch(1.06 * auraScale),
+        alpha: star.aura ?? 0.85,
         hold: 0.15,
         fade: 4,
       },

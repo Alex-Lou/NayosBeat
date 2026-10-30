@@ -1,6 +1,6 @@
 import type Phaser from 'phaser';
 import type { Sfx } from '../audio/sfx';
-import { px } from '../core/constants';
+import { px, toPx } from '../core/constants';
 import { BLEEDS, Blood } from './blood';
 import { Dust } from './dust';
 import { Effects } from './effects';
@@ -9,14 +9,16 @@ import { SHATTER_RUMBLE, vibrationFor, type FightEvent } from './fight-events';
 import { HitFx } from './hit-fx';
 import type { HitStyle } from './hit-styles';
 import { Onomatopoeia } from './onomatopoeia';
+import { TRAUMA } from './shake';
 import { boostStamp, STAMP_TEXTS, Stamps } from './stamps';
+import { koVeil, superDim, superHalo, type VeilLook } from './veils';
 
 /** The final blow plays in slow motion for a moment (display only: the simulation is intact). */
 const KO_SLOW_MOTION_FRAMES = 50;
 const KO_SLOW_MOTION_SCALE = 0.35;
 
-/** The super's flash: the Boost's platine, the same whoever lets it go. */
-const SUPER_FLASH = 0xf2f6ff;
+/** The super's halo glows behind the body of the one who lets it go: this high over its feet. */
+const BODY_HEIGHT = 40;
 /**
  * A Boost stamp stands over the head of the one who spends (its feet + this, sub-pixels), above
  * the name of its move that training writes there (move-caption.ts), whoever spends.
@@ -28,11 +30,22 @@ function overHead(at: { readonly by: 0 | 1; readonly x: number; readonly y: numb
   return { by: at.by, x: at.x, y: at.y + HEAD_HEIGHT };
 }
 
+/** The fight's stage, as the veils and the shake need it. */
+export interface FeedbackStage {
+  /** World pixels. */
+  readonly width: number;
+  /** Its large colors (sky, ground): no veil changes any of them by more than its luminance bound. */
+  readonly colors: readonly number[];
+  /** The screen shakes (not with prefers-reduced-motion). */
+  readonly shake: boolean;
+}
+
 /**
  * Turns fight events into what the player sees, hears and feels: hit effects in the attacker's
  * own style, comic words with the running tally of hits, the stamps (the hold's, CONTRE and
- * PUNITION, the Boost's), blood, dust,
- * shake, flash, sounds, and player 1's vibrations (`vibrate`, given only where a device can). A low blow lands at the
+ * PUNITION, the Boost's), blood, dust, the shake and the veils (never a flash over the whole
+ * screen: docs/flashs.md), sounds, and player 1's vibrations (`vibrate`, given only where a
+ * device can). A low blow lands at the
  * feet (docs/combat-v2.md §9.3): instead of the burst, which would sink through the floor, a
  * grazing spark skims it and dust flies, without blood, which stays for heavy blows higher up.
  * A low KO keeps its burst, the mark of the final blow, lifted above the floor by HitFx.
@@ -45,18 +58,23 @@ export class FightFeedback {
   private readonly graze: Graze;
   private readonly words: Onomatopoeia;
   private readonly stamps: Stamps;
+  private readonly superDim: VeilLook;
+  private readonly superHalo: VeilLook;
   private slowMotionFrames = 0;
 
   constructor(
     scene: Phaser.Scene,
-    groundY: number,
+    private readonly groundY: number,
     private readonly sfx: Sfx,
     private readonly styles: readonly [HitStyle, HitStyle],
+    private readonly stage: FeedbackStage,
     private readonly vibrate?: (ms: number) => void,
     /** The gamepads' rumble (`rumble` in input/haptics.ts), on the KO that blows a gauge up. */
     private readonly rumble?: (ms: number, strength: number) => void,
   ) {
-    this.effects = new Effects(scene);
+    this.effects = new Effects(scene, { stageWidth: stage.width, shake: stage.shake });
+    this.superDim = superDim(stage.colors);
+    this.superHalo = superHalo(stage.colors);
     this.hitFx = new HitFx(scene, groundY);
     this.blood = new Blood(scene, groundY);
     this.dust = new Dust(scene, groundY);
@@ -84,12 +102,14 @@ export class FightFeedback {
         const heavy = event.heavy || counter !== null;
         const style = this.styles[event.by];
         const weight = heavy ? 'heavy' : 'light';
+        // A super's blows before its last: a smaller spark and a small BOUM, the big ones kept
+        // for the last (BOOM, BOOM, BOOOOM), never three flashes in a second.
         if (event.low) this.lowBlow(style, weight, event);
-        else hitFx.play(style, weight, event.x, event.y, event.away);
-        this.words.blow(weight, event, viewLeft);
+        else hitFx.play(style, event.pulse ? 'pulse' : weight, event.x, event.y, event.away);
+        this.words.blow(event.pulse ? 'pulse' : weight, event, viewLeft);
         if (counter) this.stamps.show(STAMP_TEXTS[counter], event, viewLeft);
         if (heavy) {
-          effects.shake(10, 3);
+          effects.kick(TRAUMA.heavy, event.away);
           if (!event.low) this.blood.bleed(event.x, event.y, event.away, BLEEDS.heavyHit);
         }
         sfx.play(event.held ? 'pummel' : heavy ? 'heavyHit' : 'lightHit');
@@ -110,12 +130,12 @@ export class FightFeedback {
         else this.blood.bleed(event.x, event.y, event.away, BLEEDS.ko);
         // The final blow shakes the screen hard, then dies out over about 0.7 s; harder still when
         // it blows the loser's Boost gauge up (an Ultime), the gamepads rumbling with it.
-        if (event.finish === 'finisher') {
-          effects.shake(48, 8);
-          this.rumble?.(SHATTER_RUMBLE.ms, SHATTER_RUMBLE.strength);
-        } else effects.shake(42, 6);
-        // The final flash takes the winner's color, a light tint of it on the whole screen.
-        effects.flash(12, style.energy);
+        effects.kick(TRAUMA.ko[event.finish], event.away);
+        if (event.finish === 'finisher') this.rumble?.(SHATTER_RUMBLE.ms, SHATTER_RUMBLE.strength);
+        // How it fell, in the winner's energy: nothing more for a blow on its own, a vignette for
+        // a combo's end, the éclat for an Ultime (docs/flashs.md §2).
+        const veil = koVeil(event.finish, style.energy, this.stage.colors);
+        if (veil) effects.veil(veil, this.inWorld(event.x, event.y));
         this.slowMotionFrames = KO_SLOW_MOTION_FRAMES;
         sfx.play('ko');
         break;
@@ -134,12 +154,12 @@ export class FightFeedback {
       case 'throw':
         // Let go: the word and the rush of air now, the impact when the body lands.
         this.words.blow('heavy', event, viewLeft);
-        effects.shake(6, 2);
+        effects.kick(TRAUMA.throw, event.away);
         sfx.play('throw');
         break;
       case 'fall':
         this.dust.kick(event.x, event.away);
-        effects.shake(8, 2);
+        effects.kick(TRAUMA.fall, event.away);
         sfx.play('fall');
         break;
       case 'attack':
@@ -160,12 +180,18 @@ export class FightFeedback {
         sfx.play('rewind');
         break;
       case 'super':
-        // The whole game freezes on the cue (the core's flash): the screen flashes platine.
         this.stamps.show(boostStamp(event.name), overHead(event), viewLeft);
-        effects.flash(10, SUPER_FLASH);
-        effects.shake(12, 3);
         sfx.play('super');
         break;
+      case 'freeze': {
+        // The whole game freezes on the cue (the core's flash): the stage goes dark under both
+        // fighters, who stay lit, a platine halo behind the one who lets it go (docs/flashs.md §2).
+        effects.veil(this.superDim);
+        const at = this.inWorld(event.x, event.y);
+        effects.veil(this.superHalo, { x: at.x, y: at.y - BODY_HEIGHT });
+        effects.kick(TRAUMA.super, event.toward);
+        break;
+      }
       case 'projectile':
         sfx.play('projectile');
         break;
@@ -183,6 +209,11 @@ export class FightFeedback {
         if (event.phase === 'fight') sfx.play('fight');
         break;
     }
+  }
+
+  /** Where stage sub-pixels `x`, `y` (above the ground) are, in world pixels. */
+  private inWorld(x: number, y: number): { x: number; y: number } {
+    return { x: toPx(x), y: this.groundY - toPx(y) };
   }
 
   /** A blow landed at the feet: the spark skims the floor, the dust flies. */

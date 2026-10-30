@@ -26,7 +26,7 @@ import { DebugOverlay, describeGame, isDebugEnabled } from './debug-overlay';
 import { detectEvents, type FightEvent } from './fight-events';
 import { FightFeedback } from './fight-feedback';
 import { FighterView } from './fighter-view';
-import { drawGreyboxStage, GROUND_Y } from './greybox-stage';
+import { drawGreyboxStage, GREYBOX_COLORS, GROUND_Y } from './greybox-stage';
 import { hitStyleOf, hudColorOf, type HitStyle } from './hit-styles';
 import { requestLandscapeFullscreen } from './fullscreen';
 import { HoldPrompt } from './hold-prompt';
@@ -164,7 +164,8 @@ export class FightScene extends Phaser.Scene {
     // Everything is placed in world pixels; the canvas is finer (see renderScaleFor). With the
     // origin at the top left, the scroll stays the world x of the screen's left edge.
     this.cameras.main.setZoom(this.scale.width / VIEW_SIZE.width).setOrigin(0, 0);
-    drawGreyboxStage(this, toPx(this.config.stage.width));
+    const stageWidth = toPx(this.config.stage.width);
+    drawGreyboxStage(this, stageWidth);
     const touch = isTouchDevice()
       ? new TouchControls(document.body, requestLandscapeFullscreen, this.styles[0].energy)
       : undefined;
@@ -179,12 +180,18 @@ export class FightScene extends Phaser.Scene {
       ],
       projectileView: new ProjectileView(this, this.config, GROUND_Y, this.arts),
       // Touch is player 1's: its phone vibrates when player 1 is grabbed or hit hard. The
-      // gamepads rumble when a KO blows a Boost gauge up.
+      // gamepads rumble when a KO blows a Boost gauge up. The screen keeps still for those who
+      // asked their system for less motion.
       feedback: new FightFeedback(
         this,
         GROUND_Y,
         this.sceneData.sfx,
         this.styles,
+        {
+          width: stageWidth,
+          colors: GREYBOX_COLORS,
+          shake: !window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+        },
         touch ? vibrate : undefined,
         (ms, strength) => {
           rumble(connectedGamepads(), ms, strength);

@@ -54,7 +54,7 @@
 | D18 | Un **Remix** (la version Boost d'un spécial) **ne touche jamais au timing** de son spécial (règle validée au chargement) | mk, combos v3 | Les clips restent valides : seuls les effets changent (blanc platine) |
 | D19 | Pas d'air dash, pas de double saut, pas de course, pas de roulade au réveil | sf, mk | Lisibilité sur téléphone ; l'annulation du dash de Riff donne l'élan sans nouvel état |
 | D20 | Riff frappe en **magenta et argent** (tenue 2 : or et cramoisi) ; c'était violet et jaune avant qu'elle devienne la punk de Zen-Tazzer (phase 4) | sf, mk, lf | Nayo est cyan : les deux joueurs se distinguent d'un coup d'œil ; le magenta est celui de sa frange |
-| D21 | Flashs au plus 3 par seconde, option « Flashs réduits » | revue tactile (WCAG 2.3.1) | Accessibilité photosensible |
+| D21 | Flashs au plus 3 par seconde, option « Flashs réduits » (docs/flashs.md) | revue tactile (WCAG 2.3.1) | Accessibilité photosensible |
 | D22 | Textes d'aide **hors du cœur** (`data/move-texts.ts`) | mk | Le cœur ne porte pas de présentation |
 | D23 | Pas d'interpolation des personnages entre deux tics | sf, mk | La fluidité vient de l'animation et de la réactivité, pas d'une latence de 16 ms |
 

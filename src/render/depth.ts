@@ -1,9 +1,12 @@
 /**
- * Draw order of the fight, back to front (Phaser depth). A dash's afterimages and the ring of a
+ * Draw order of the fight, back to front (Phaser depth). The super's dark over the stage, a
+ * glow (the super's halo, a KO's éclat) over it, behind everything else. A dash's afterimages and the ring of a
  * hold behind both fighters; the fighter attacking is drawn over the other one; effects, projectiles and dust over
  * both; blood, then sparks, then the comic words of the blows; debug boxes on top.
  */
 export const DEPTH = {
+  dim: 0.25,
+  backdrop: 0.3,
   trail: 0.5,
   holdRing: 0.75,
   fighterBack: 1,

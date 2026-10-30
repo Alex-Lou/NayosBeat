@@ -144,7 +144,7 @@ La recherche (7 agents, puis une critique qui a rouvert une trentaine de sources
 6. **Options de confort et budget de flashs.**
    - Deux options : « Effets de flash : normaux, réduits, aucun » et « Tremblement de l'écran ». Leur valeur par défaut vient du système. SF6 et Tekken 8 en ont ([Digistatement](https://digistatement.com/street-fighter-sf-6-how-to-disable-screen-shake/), [Can I Play That](https://caniplaythat.com/2024/02/28/tekken-8-accessibility-review/)).
    - Un `FlashBudget` pur accorde au plus 3 flashs par seconde glissante.
-   - Les voiles plein écran du KO et de la super (`effects.ts`, 10 à 12 tics à 70 %) couvrent bien plus que la surface à partir de laquelle un flash compte pour le W3C ([WCAG 2.3.1](https://www.w3.org/WAI/WCAG22/Understanding/three-flashes-or-below-threshold.html)) : ils doivent passer par ce budget.
+   - Les voiles plein écran du KO et de la super couvraient bien plus que la surface à partir de laquelle un flash compte pour le W3C ([WCAG 2.3.1](https://www.w3.org/WAI/WCAG22/Understanding/three-flashes-or-below-threshold.html)). Ils sont remplacés par la mise au noir, la vignette et l'éclat (docs/flashs.md §2) ; le budget et les options suivent (§4).
 7. **Début de round sur le temps** (90 tics, soit 3 temps à 120 BPM).
    - « ROUND n » entre d'un coup sec, d'abord en contour seul, puis plein, comme dans KOF XV.
    - « COMBAT ! » tombe sur le 3e temps : c'est l'entrée de SF6, ramenée à 4 tics.

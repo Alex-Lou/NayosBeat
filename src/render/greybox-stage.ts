@@ -14,6 +14,9 @@ const COLORS = {
   border: 0x8888aa,
 } as const;
 
+/** Its large colors, the sky and the ground: what a veil over it must not change too much. */
+export const GREYBOX_COLORS: readonly number[] = [COLORS.background, COLORS.ground];
+
 /**
  * The static grey-box stage, `stageWidth` world pixels wide (until the stages of phase 6): drawn
  * once, never redrawn. The 1 px screen border makes scaling artifacts easy to spot.

@@ -390,6 +390,7 @@ Le dessin et ses références sont dans `docs/art/direction-hud.md`.
 - **Règle de validation.** Pour une super, il faut `startup − flash.frame ≤ 2` : le coup frappe 2 tics au plus après le gel.
 - **Mesuré.** Un saut, un backdash ou un Genou montant appuyés pendant le flash n'échappent pas à la Mégabasse : 264 dégâts dans les trois cas ; le Genou montant se fait même prendre en CONTRE, pour 280.
 - **Chronomètre.** Le flash étant un hitstop, le chronomètre du round s'arrête pendant le gel ; c'est à tester (§6).
+- **À l'écran.** Le gel d'une super n'éclaire plus tout l'écran : sur son tic (événement `freeze`), le décor passe au noir sous les deux combattants, avec un halo platine derrière le lanceur (docs/flashs.md §2).
 
 ### 1.10 Le Scratch, signature de Nayo (couche 5, sa propre PR)
 
@@ -1103,7 +1104,7 @@ Chaque couche ajoute des champs d'état hachés : `phrase`, `phraseTwice` et `fl
 **Écarts, choisis dans le dépôt** :
 1. Le Pogo a le même flash que le Rewind, `{ frame: 0, ticks: 6 }` (le §1.9 ne nommait que le Rewind) : les deux Boost cancels se voient de la même façon.
 2. En entraînement, la jauge est « pleine » par défaut ; l'option tourne entre pleine, infinie et normale (menu du mannequin).
-3. Le jeu n'a pas encore d'option « Flashs réduits ». En attendant, le HUD suit le réglage « réduire les animations » du système (`prefers-reduced-motion`) : la jauge pleine ne clignote plus, la barre de vie ne flashe ni ne tremble. Les rémanences, elles, n'ont pas encore de variante réduite : elle viendra avec l'option.
+3. Le jeu n'a pas encore d'option « Flashs réduits ». En attendant, le HUD et la secousse suivent le réglage « réduire les animations » du système (`prefers-reduced-motion`) : la jauge pleine ne clignote plus, la barre de vie ne flashe ni ne tremble, l'écran ne tremble plus. Les rémanences, elles, n'ont pas encore de variante réduite : elle viendra avec l'option (docs/flashs.md §4).
 4. Les tampons sont lettrés dans la police BD, comme « CONTRE ! » et « PUNITION ! », au lieu d'images générées : « REMIX ! », et le nom du coup pour le Rewind, le Pogo et les supers.
 5. Le disque inversé du Rewind n'est pas dessiné : ses rémanences blanches et son flash le marquent.
 6. **Recherche en faisceau.** Celle du prototype jetait toute branche qui ne gagnait pas de coup, donc toutes celles du Rewind : ses maxima avec jauge ne le comptaient jamais. Celle du dépôt joue le Rewind (il s'annule aussitôt par la commande suivante). Elle trouve, sur Riff (900 PV) :

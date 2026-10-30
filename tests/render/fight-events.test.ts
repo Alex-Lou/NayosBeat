@@ -238,6 +238,47 @@ describe('detectEvents', () => {
     expect(slam.spent).toMatchObject([{ type: 'super', name: 'Slam' }]);
   });
 
+  it("reports a super's freeze on the tick its flash freezes the game, once (docs/flashs.md §2)", () => {
+    /** The tick of each event of player 1's super, its gauge full, `defense` played by player 2. */
+    const ticksOf = (config: MatchConfig, defense = 0) => {
+      let state = facingOff(40, config, [{ boost: BOOST_MAX }, {}]);
+      const at: { type: string; tick: number }[] = [];
+      const ticks: [number, number][] = [[Input.Left | Input.Boost, defense], ...idle(120)];
+      ticks.forEach((inputs, tick) => {
+        const next = step(state, inputs, config);
+        const events: FightEvent[] = [];
+        detectEvents(state, next, config, events);
+        for (const event of events) at.push({ type: event.type, tick });
+        state = next;
+      });
+      return (type: string) => at.filter((event) => event.type === type).map(({ tick }) => tick);
+    };
+    // Nayo's Mégabasse freezes on its first frame, Riff's Slam at the top of her dive.
+    const nayo = ticksOf(MIRROR_MATCH);
+    expect(nayo('freeze')).toEqual(nayo('super'));
+    const riff = ticksOf({ stage: TRAINING_STAGE, fighters: [RIFF, P] });
+    expect(riff('freeze')).toEqual(riff('super').map((tick) => tick + 10));
+    // Cut short before its flash: spent, never frozen.
+    const cut = ticksOf({ stage: TRAINING_STAGE, fighters: [RIFF, P] }, Input.Light);
+    expect(cut('super')).toHaveLength(1);
+    expect(cut('hit').length).toBeGreaterThan(0);
+    expect(cut('freeze')).toEqual([]);
+  });
+
+  it("tells a super's blows before its last from its last, and from any other blow", () => {
+    const pulses = (config: MatchConfig) =>
+      eventsOf(
+        facingOff(40, config, [{ boost: BOOST_MAX }, {}]),
+        [[Input.Left | Input.Boost, 0], ...idle(120)],
+        config,
+      ).flatMap((event) => (event.type === 'hit' || event.type === 'ko' ? [event.pulse] : []));
+    // BOOM, BOOM, BOOOOM; Riff's Slam lands twice.
+    expect(pulses(MIRROR_MATCH)).toEqual([true, true, false]);
+    expect(pulses({ stage: TRAINING_STAGE, fighters: [RIFF, P] })).toEqual([true, false]);
+    const jab = eventsOf(facingOff(30, MIRROR_MATCH), [[Input.Light, 0], ...idle(30)]);
+    expect(jab.find((event) => event.type === 'hit')).toMatchObject({ pulse: false });
+  });
+
   it('reports no Boost for a plain special nor a dash', () => {
     const plain = eventsOf(facingOff(200, MIRROR_MATCH), [[Input.Special, 0], ...idle(30)]);
     expect(types(plain)).not.toContain('boost');
@@ -258,6 +299,7 @@ describe('vibrationFor', () => {
       heavy: false,
       held: true,
       counter: null,
+      pulse: false,
     };
     const thrown: FightEvent = { type: 'throw', ...blow, damage: 100 };
     const heavy: FightEvent = {
@@ -267,6 +309,7 @@ describe('vibrationFor', () => {
       heavy: true,
       held: false,
       counter: null,
+      pulse: false,
     };
     expect(vibrationFor(grabbed, 0)).toBe(HAPTICS.grabbed);
     expect(vibrationFor(pummel, 0)).toBe(HAPTICS.pummel);
@@ -285,6 +328,7 @@ describe('vibrationFor', () => {
       low: false,
       held: false,
       counter: null,
+      pulse: false,
     } as const;
     expect(vibrationFor({ ...ko, finish: 'finisher' }, 0)).toBe(HAPTICS.shatter);
     expect(vibrationFor({ ...ko, finish: 'finisher' }, 1)).toBe(HAPTICS.shatter);
@@ -301,6 +345,7 @@ describe('vibrationFor', () => {
       heavy: false,
       held: false,
       counter: null,
+      pulse: false,
     };
     expect(vibrationFor(light, 0)).toBe(0);
     expect(vibrationFor({ type: 'block', ...blow }, 0)).toBe(0);

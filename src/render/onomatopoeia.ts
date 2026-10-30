@@ -6,20 +6,22 @@ import { DEPTH } from './depth';
 import type { HitStyle } from './hit-styles';
 import { VIEW_SIZE } from './view';
 
-export type BlowKind = 'light' | 'heavy' | 'ko';
+/** `pulse`: a super's blow before its last, a small BOUM before the big one (docs/flashs.md §2). */
+export type BlowKind = 'light' | 'heavy' | 'ko' | 'pulse';
 
 /** Words are picked in turn, so a string of blows never repeats the same one. */
 const WORDS: Readonly<Record<BlowKind, readonly string[]>> = {
   light: ['PAF', 'BIM', 'POK', 'TCHAC'],
   heavy: ['BAM', 'VLAN', 'CRAC', 'SBAM'],
   ko: ['BOUM'],
+  pulse: ['BOUM'],
 };
 
 /** Sizes in world pixels: the tally is drawn at 70% of its word. */
-const SIZES: Readonly<Record<BlowKind, number>> = { light: 13, heavy: 17, ko: 26 };
+const SIZES: Readonly<Record<BlowKind, number>> = { light: 13, heavy: 17, ko: 26, pulse: 13 };
 const TALLY_SCALE = 0.7;
 /** Display frames a word stays on screen (it pops, holds, then rises and fades). */
-const LIFE: Readonly<Record<BlowKind, number>> = { light: 30, heavy: 38, ko: 80 };
+const LIFE: Readonly<Record<BlowKind, number>> = { light: 30, heavy: 38, ko: 80, pulse: 30 };
 const POP_FRAMES = 6;
 /** The largest scale of the pop, at its second frame. */
 const POP_PEAK = 1.24;
@@ -146,6 +148,7 @@ export class Onomatopoeia {
       light: { ...probe.setFontSize(sizeOf('light')).getTextMetrics() },
       heavy: { ...probe.setFontSize(sizeOf('heavy')).getTextMetrics() },
       ko: { ...probe.setFontSize(sizeOf('ko')).getTextMetrics() },
+      pulse: { ...probe.setFontSize(sizeOf('pulse')).getTextMetrics() },
     });
     this.wordMetrics = metricsOf((kind) => SIZES[kind]);
     this.tallyMetrics = metricsOf(tallySize);

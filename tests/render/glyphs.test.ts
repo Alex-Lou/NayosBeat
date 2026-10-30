@@ -103,7 +103,7 @@ describe('glyphs', () => {
   });
 
   it('of every comic word, its tally and the stamps are in the comic font', async () => {
-    const kinds: BlowKind[] = ['light', 'heavy', 'ko'];
+    const kinds: BlowKind[] = ['light', 'heavy', 'ko', 'pulse'];
     const words = kinds.flatMap((kind) =>
       Array.from({ length: 8 }, (_, count) => `${wordFor(kind, count + 1)} !`),
     );

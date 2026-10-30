@@ -51,4 +51,9 @@ describe('comic words of the blows', () => {
     expect(wordFor('ko', 1)).toBe('BOUM');
     expect(wordFor('ko', 7)).toBe('BOUM');
   });
+
+  it("booms on a super's blows before its last, too: BOUM, BOUM, then the big word", () => {
+    expect(wordFor('pulse', 1)).toBe('BOUM');
+    expect(wordFor('pulse', 2)).toBe('BOUM');
+  });
 });
