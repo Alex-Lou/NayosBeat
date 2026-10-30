@@ -18,9 +18,13 @@ export class TitleScreen {
     this.root = document.createElement('div');
     this.root.className = 'menu title-screen';
 
+    // The logo, its O a vinyl turning (Nayo's record, title-vinyl.png): read whole.
     const title = document.createElement('h1');
     title.className = 'title-logo';
-    title.textContent = 'NAYOSBEAT';
+    title.setAttribute('aria-label', 'NAYOSBEAT');
+    const vinyl = document.createElement('span');
+    vinyl.className = 'title-vinyl';
+    title.append(logoPart('NAY'), vinyl, logoPart('SBEAT'));
     const prompt = document.createElement('p');
     prompt.className = 'title-prompt';
     prompt.textContent = 'Appuie sur une touche';
@@ -74,4 +78,12 @@ function anyPadButtonHeld(): boolean {
 function buildDate(): string {
   const date = new Date(__BUILD_DATE__);
   return `${date.toLocaleDateString('fr-FR')} ${date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
+}
+
+/** Letters of the logo around its vinyl, hidden from screen readers (the title has its label). */
+function logoPart(text: string): HTMLSpanElement {
+  const part = document.createElement('span');
+  part.textContent = text;
+  part.setAttribute('aria-hidden', 'true');
+  return part;
 }

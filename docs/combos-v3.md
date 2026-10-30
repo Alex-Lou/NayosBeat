@@ -316,19 +316,30 @@ Les zones de BOOST et de S se chevauchent de 2 px ; le centre le plus proche gag
 - sous 1 barre, le bouton est grisé (opacité 0,45) ;
 - à 3 barres, les trois arcs passent en blanc platine et la bague brille : la super est prête.
 
-#### 1.8.6 HUD (`src/render/hud.ts`, vue 480 × 270)
+#### 1.8.6 HUD (`src/render/boost-gauge.ts`, vue 480 × 270)
 
-- **Place.** Sous chaque barre de vie, côté extérieur, sur la ligne y = 30 (sous le nom).
-  - D'abord le mot « BOOST » en Press Start 2P de 8 px, puis 3 segments de **40 × 4 px**, espacés de 3 px.
-  - Joueur 1 : x = 8 pour le mot, segments à x = 52, 95 et 138. Joueur 2 : en miroir.
-  - Sur un téléphone de 667 px de large, cela fait environ 56 × 5,6 px CSS.
-- **Couleurs.**
-  - Segment vide : #2a2a3a, bord de 1 px blanc à 25 %.
-  - Segment en cours : la couleur d'énergie du perso dans **sa tenue** (cyan ou magenta pour Nayo, magenta ou cramoisi pour Riff).
-  - Segment plein : **blanc platine** (#FFFFFF, liseré de 1 px de la couleur d'énergie).
-  - À 3 barres, le mot « BOOST » passe en blanc et clignote à 2 Hz (≤ 3 Hz, D21) ; il reste fixe en « Flashs réduits ».
-- **Coût.** Par joueur : 1 texte et 6 rectangles, créés une fois. On ne repeint que quand `floor(boost / 50)` change : largeur du segment en cours, couleurs.
-- **Crossfader.** Il reste au centre sous le chronomètre (§8.3). Les formes et les places diffèrent : une piste avec un curseur au centre, des segments au bord.
+Le dessin et ses références sont dans `docs/art/direction-hud.md`.
+
+- **Place.** Sous le nom de chaque joueur, côté extérieur, sur la ligne y = 29.
+  - D'abord une **capsule** de 12 × 10 px avec le nombre de barres pleines (0 à 3).
+  - Puis **un seul tube** de 100 px sur 6 rangées, en biais vers le chrono comme la barre de vie.
+  - Puis le mot « BOOST » en Press Start 2P de 8 px.
+  - Joueur 1 : capsule à x = 8. Joueur 2 : en miroir.
+- **Barres empilées** (Marvel vs. Capcom 2, Dragon Ball FighterZ). Chaque barre se remplit par-dessus la précédente, depuis le bord de l'écran, dans sa couleur :
+  - 1re barre : la couleur d'énergie du perso dans **sa tenue** (cyan ou magenta pour Nayo, magenta ou cramoisi pour Riff) ;
+  - 2e : la même, éclaircie vers le platine ;
+  - 3e : le **platine** (#FFFFFF, #F2F6FF, #C9D6E8), jamais l'or (§1.8.7).
+  - Le chiffre et le cadre de la capsule prennent la couleur de la dernière barre pleine, gris à 0.
+  - Ces couleurs sont proches en clarté : un pixel clair puis un pixel sombre marquent où la barre qui se remplit rejoint celle du dessous.
+- **Pleine.** Le mot devient « MAX » (King of Fighters XV), en blanc, et clignote à 2 Hz (≤ 3 Hz, D21). Un reflet passe sur le tube toutes les 1,5 s.
+- **Mouvements** (`src/render/boost-motion.ts`, sur l'horloge du match : ils s'arrêtent avec la pause).
+  - La jauge monte vers la valeur au lieu de sauter : une barre en 20 tics.
+  - Une lumière balaie la barre qui vient de se compléter (14 tics).
+  - Une dépense se vide vite, le front en blanc : une barre en 10 tics, la super en une demi-seconde (la Tension de Guilty Gear Strive).
+  - Au KO, le tube vole en carrés de 4 × 3 px qui tombent et s'effacent en 40 tics (King of Fighters XV). La jauge reste éteinte jusqu'au round suivant, où elle revient entière avec son Boost.
+- **Mouvement réduit** (`prefers-reduced-motion` du système) : ni balayage, ni reflet, ni éclats, ni clignotement.
+- **Coût.** Par joueur : 1 Graphics et 2 textes, créés une fois. Le Graphics n'est repeint que quand ce qu'il montre change (longueur en pixels, palier, balayage, éclats) ; les textes, quand leur contenu change.
+- **Crossfader.** Il reste au centre sous le chronomètre (§8.3). Les formes et les places diffèrent : une piste avec un curseur au centre, un tube et sa capsule au bord.
 
 #### 1.8.7 Repère visuel, sons, tampons
 
@@ -964,7 +975,7 @@ Soit environ 3 heures-agent.
 **Rendu, entrées, aide**
 - `touch.test.ts` : 7 boutons ; écarts de 6 à 16 px ; aucun chevauchement en 667×375 et en 844×390 ; le bord le plus loin toujours à 265 ; le libellé BOOST tient.
 - La bague n'écrit dans le DOM que quand le nombre de barres change.
-- `hud.test.ts` : le VU ne repeint que quand `floor(boost / 50)` change ; il clignote à 2 Hz au plus.
+- `boost-gauge.test.ts` : la jauge ne se repeint que quand ce qu'elle montre change (longueur en pixels, palier, balayage, éclats) ; pleine, « MAX » clignote à 2 Hz (D21), fixe en mouvement réduit. `boost-motion.test.ts` : la montée, la vidange d'une dépense et les éclats au KO suivent l'horloge du match.
 - `glyphs.test.ts` : « BOOST » et les noms neufs (Double direct, Crochet au foie, Marteau, Remontant chassé, Vinyle platine, Pied fendu platine, Montée platine, Mégabasse, Rewind, Scratch ; Hache, Coup de boule, Retourné sauté, Pogo, Glissade à fond, Saut de l'ange à fond, Genou à fond, Slam) n'ont pas de capitale accentuée.
 - `controls-content.test.ts` : `MOVE_ORDER` vaut `MOVE_IDS`, et chaque texte fait plus de 20 caractères.
 - `fight-events.test.ts` : événements `boost`, `rewind`, `super`, `rebond` et `limit`.
@@ -1084,7 +1095,7 @@ Chaque couche ajoute des champs d'état hachés : `phrase`, `phraseTwice` et `fl
 **Écarts, choisis dans le dépôt** :
 1. Le Pogo a le même flash que le Rewind, `{ frame: 0, ticks: 6 }` (le §1.9 ne nommait que le Rewind) : les deux Boost cancels se voient de la même façon.
 2. En entraînement, la jauge est « pleine » par défaut ; l'option tourne entre pleine, infinie et normale (menu du mannequin).
-3. Le jeu n'a pas encore d'option « Flashs réduits » : le clignotement de la jauge pleine (2 Hz, sous la limite de D21) et les rémanences n'ont donc pas de variante réduite. Elle viendra avec l'option.
+3. Le jeu n'a pas encore d'option « Flashs réduits ». En attendant, le HUD suit le réglage « réduire les animations » du système (`prefers-reduced-motion`) : la jauge pleine ne clignote plus, la barre de vie ne flashe ni ne tremble. Les rémanences, elles, n'ont pas encore de variante réduite : elle viendra avec l'option.
 4. Les tampons sont lettrés dans la police BD, comme « CONTRE ! » et « PUNITION ! », au lieu d'images générées : « REMIX ! », et le nom du coup pour le Rewind, le Pogo et les supers.
 5. Le disque inversé du Rewind n'est pas dessiné : ses rémanences blanches et son flash le marquent.
 6. **Recherche en faisceau.** Celle du prototype jetait toute branche qui ne gagnait pas de coup, donc toutes celles du Rewind : ses maxima avec jauge ne le comptaient jamais. Celle du dépôt joue le Rewind (il s'annule aussitôt par la commande suivante). Elle trouve, sur Riff (900 PV) :

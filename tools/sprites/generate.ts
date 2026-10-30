@@ -2,8 +2,9 @@
  * Draws every fighter's sprite strips into src/art/<fighter>/<colorway>/ (game assets), their
  * front effects into src/art/<fighter>/<colorway>/fx/, the size and anchor of their cropped
  * cells into src/art/<fighter>/cells.ts, enlarged copies into tools/sprites/preview/ (to look at,
- * not committed), and the installed game's icons into public/icons/. Run with `npm run sprites`;
- * `npm run sprites -- riff` draws one fighter only (Nayo's run also draws the icons).
+ * not committed), the installed game's icons into public/icons/ and the title's vinyl into
+ * src/ui/title-vinyl.png. Run with `npm run sprites`; `npm run sprites -- riff` draws one
+ * fighter only (Nayo's run also draws the icons and the vinyl).
  */
 
 import { mkdir, rm, writeFile } from 'node:fs/promises';
@@ -16,6 +17,7 @@ import { encodeIndexedPng } from './png.ts';
 import type { PixelCanvas } from './raster.ts';
 import { RIFF } from './riff/index.ts';
 import { drawStrip, drawStripEffects, toPlatine } from './sheet.ts';
+import { drawVinyl } from './vinyl.ts';
 
 const FIGHTERS: readonly Fighter[] = [NAYO, RIFF];
 const ART = new URL('../../src/art/', import.meta.url);
@@ -158,7 +160,10 @@ async function main(): Promise<void> {
   }
   const chosen = names.length === 0 ? FIGHTERS : FIGHTERS.filter((f) => names.includes(f.name));
   for (const fighter of chosen) await generate(fighter);
-  if (chosen.includes(NAYO)) await drawIcons();
+  if (chosen.includes(NAYO)) {
+    await drawIcons();
+    await drawVinyl();
+  }
 }
 
 await main();

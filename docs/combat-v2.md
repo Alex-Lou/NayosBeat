@@ -715,7 +715,7 @@ L'inspiration avouée est le GRD d'Under Night In-Birth (un tug-of-war qui réco
 
 ### 8.3 Interface (lisible sur téléphone)
 
-- Sous le chronomètre : une **piste de 96 × 4 px** avec un **curseur de 8 × 12 px**. La moitié du côté du meneur se remplit dans sa couleur (cyan ou magenta). Les jauges de Boost, elles, sont sous les barres de vie, côté extérieur (combos v3 §1.8.6) : une piste au centre, des segments au bord, on ne les confond pas.
+- Sous le chronomètre : une **piste de 96 × 4 px** avec un **curseur de 8 × 12 px**. La moitié du côté du meneur se remplit dans sa couleur (cyan ou magenta). Les jauges de Boost, elles, sont sous les barres de vie, côté extérieur (combos v3 §1.8.6) : une piste au centre, un tube et sa capsule au bord, on ne les confond pas.
 - La piste **pulse sur chaque temps** (1 px de lueur, 2 Hz à 120 BPM, toujours sous 3 Hz).
 - **Montée** : le curseur clignote sur chaque temps restant (« 3 · 2 · 1 ») ; le son monte (filtre qui s'ouvre).
 - **DROP** : tampon « DROP ! » ; les lumières du stage passent à la couleur du joueur ; la foule saute ; aura additive autour du joueur (sprite de pool) ; petite lampe « DROP » sous sa barre de vie tant qu'il dure.
