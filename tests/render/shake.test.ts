@@ -3,7 +3,7 @@ import { MAX_SHAKE, Shake, SHAKE_STEP, TRAUMA, TRAUMA_DECAY } from '../../src/re
 
 /** The camera's offsets, frame by frame, after a kick of `trauma` toward `away`. */
 function run(trauma: number, away: 1 | -1 = 1, frames = 60, seed = 1) {
-  const shake = new Shake(true, seed);
+  const shake = new Shake(1, seed);
   shake.kick(trauma, away);
   return Array.from({ length: frames }, () => {
     shake.update();
@@ -48,7 +48,7 @@ describe('the screen shake (docs/flashs.md §1.3)', () => {
     const settle = Math.ceil(1 / TRAUMA_DECAY);
     expect(run(1, 1, settle + 1).at(-1)).toEqual({ x: 0, y: 0 });
     // A throw during a KO's shake changes nothing of it.
-    const shake = new Shake(true);
+    const shake = new Shake(1);
     shake.kick(1);
     const xs = Array.from({ length: 20 }, (_, frame) => {
       if (frame === 4) shake.kick(TRAUMA.throw, -1);
@@ -58,9 +58,31 @@ describe('the screen shake (docs/flashs.md §1.3)', () => {
     expect(xs).toEqual(run(1, 1, 20));
   });
 
+  it('shakes half as far reduced, at once', () => {
+    const peak = (strength: number) => {
+      const shake = new Shake(strength);
+      shake.kick(1, 1);
+      return Math.max(
+        ...Array.from({ length: 40 }, () => {
+          shake.update();
+          return Math.abs(shake.x);
+        }),
+      );
+    };
+    expect(peak(0.5)).toBeGreaterThanOrEqual(Math.floor(peak(1) / 2));
+    expect(peak(0.5)).toBeLessThanOrEqual(Math.ceil(peak(1) / 2));
+    const switched = new Shake(1);
+    switched.kick(1, 1);
+    for (let frame = 0; frame < 4; frame++) switched.update();
+    expect(switched.x).not.toBe(0);
+    switched.strength = 0;
+    switched.update();
+    expect([switched.x, switched.y]).toEqual([0, 0]);
+  });
+
   it('plays the same for the same events, and keeps still when switched off', () => {
     expect(run(0.9, 1, 40, 7)).toEqual(run(0.9, 1, 40, 7));
-    const still = new Shake(false);
+    const still = new Shake(0);
     still.kick(1, 1);
     for (let frame = 0; frame < 10; frame++) {
       still.update();

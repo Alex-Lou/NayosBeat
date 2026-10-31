@@ -34,6 +34,12 @@ export const BAR_ROWS = 8;
 export const BAR_LENGTH = 176;
 /** The box the bar is drawn in: its rows slant one pixel each, outlined with one pixel. */
 export const BAR_BOX = tubeBox(BAR_ROWS, BAR_LENGTH);
+/**
+ * View px² the HUD lights at once (ΔL ≥ 0.1) as an Ultime's KO blows a bar and its Boost gauge
+ * up, at the most (docs/flashs.md §4): with their hot shards (the flashes normal), and without.
+ * Measured by tests/render/health-bar.test.ts.
+ */
+export const SHATTER_VIEW = { hot: 1700, plain: 580 } as const;
 
 /** Each tube, top row first: a light rim, the core, the edge, the shadow. */
 const TUBES = {
@@ -111,13 +117,23 @@ export const EMBER_RISE = 5;
 const EMBER_START = BAR_ROWS - 2;
 const EMBER_COLORS = [0xffe08a, 0xff9a2e, 0xd8401a] as const;
 
-export interface HealthBarLook {
+export interface HealthBarLook extends HudComfort {
   /** 0: the left player (the timer on the bar's right), 1: the right one (mirrored). */
   readonly side: 0 | 1;
   /** The fighter's energy color: the rim on top of the bar. */
   readonly energy: number;
-  /** No shake, no flash, no embers (prefers-reduced-motion). */
-  readonly reducedMotion: boolean;
+}
+
+/**
+ * What the player's comfort options leave the HUD (docs/flashs.md §4): `flashes`, the white of a
+ * hit, MAX's blink, the light sweeping over a gauge, the hot glow of the shards of a KO (the
+ * flashes normal); `motion`, the shakes, the shards and chips of a KO, the embers, the vinyl
+ * turning (the screen not kept still). With the flashes reduced, the shards stay, in their own
+ * colors.
+ */
+export interface HudComfort {
+  readonly flashes: boolean;
+  readonly motion: boolean;
 }
 
 /** Pixels of the bar a ratio fills: one at least while there is any health left. */
@@ -127,16 +143,18 @@ function lengthOf(ratio: number): number {
 }
 
 function embersOn(motion: HealthMotion, look: HealthBarLook): boolean {
-  return inDanger(motion) && !look.reducedMotion;
+  return inDanger(motion) && look.motion;
 }
 
 /** What the bar shows: it is repainted only when this changes. */
 export function healthPaintKey(motion: HealthMotion, look: HealthBarLook, frame: number): string {
-  const flash = motion.flash > 0 && !look.reducedMotion ? lengthOf(motion.flashFrom) : '';
+  const flash = motion.flash > 0 && look.flashes ? lengthOf(motion.flashFrom) : '';
   const embers = embersOn(motion, look) ? frame : '';
   const lasts = motion.breakage === 'crack' ? BAR_CRACK_TICKS : BAR_BREAK_TICKS;
-  const broken = motion.broken < 0 ? -1 : look.reducedMotion ? lasts : motion.broken;
+  const broken = motion.broken < 0 ? -1 : look.motion ? motion.broken : lasts;
   return [
+    look.flashes,
+    look.motion,
     lengthOf(motion.bar),
     lengthOf(motion.trail),
     flash,
@@ -156,9 +174,9 @@ function cracked(motion: HealthMotion): boolean {
   return motion.broken >= 0 && motion.breakage === 'crack';
 }
 
-/** How far the bar shakes, side to side, as it blows up: 2 px, then 1; none with reduced motion. */
+/** How far the bar shakes, side to side, as it blows up: 2 px, then 1; none kept still. */
 export function healthBlastShake(motion: HealthMotion, look: HealthBarLook): number {
-  if (look.reducedMotion || !shattered(motion) || motion.broken >= BLAST_SHAKE_TICKS) return 0;
+  if (!look.motion || !shattered(motion) || motion.broken >= BLAST_SHAKE_TICKS) return 0;
   const side = motion.broken % 2 === 0 ? 1 : -1;
   return side * (motion.broken < BLAST_SHAKE_TICKS / 2 ? 2 : 1);
 }
@@ -188,10 +206,7 @@ export function healthBarSpans(motion: HealthMotion, look: HealthBarLook, frame:
   const fill = lengthOf(motion.bar);
   const trail = Math.max(fill, lengthOf(motion.trail));
   // What the last blow took, lit up white the instant it lands.
-  const flash =
-    motion.flash > 0 && !look.reducedMotion
-      ? Math.min(trail, Math.max(fill, lengthOf(motion.flashFrom)))
-      : fill;
+  const flash = motion.flash > 0 && look.flashes ? flashEnd(motion) : fill;
   const tube = inDanger(motion) ? TUBES.danger : TUBES.health;
   for (let row = 0; row < BAR_ROWS; row++) {
     const start = rowStart(row);
@@ -212,6 +227,18 @@ export function healthBarSpans(motion: HealthMotion, look: HealthBarLook, frame:
   return mirroredFor(look, spans);
 }
 
+/** Where the white of the last blow ends, from the bar's inner end: what it took, in the trail. */
+function flashEnd(motion: HealthMotion): number {
+  const fill = lengthOf(motion.bar);
+  const trail = Math.max(fill, lengthOf(motion.trail));
+  return Math.min(trail, Math.max(fill, lengthOf(motion.flashFrom)));
+}
+
+/** View px² the white of a blow lights, as it lands. */
+export function hitFlashArea(motion: HealthMotion): number {
+  return (flashEnd(motion) - lengthOf(motion.bar)) * BAR_ROWS;
+}
+
 function mirroredFor(look: HealthBarLook, spans: Span[]): Span[] {
   return look.side === 0 ? spans : spans.map((span) => mirrored(span, BAR_BOX.width));
 }
@@ -219,8 +246,8 @@ function mirroredFor(look: HealthBarLook, spans: Span[]): Span[] {
 /**
  * The bar cracked, `motion.broken` ticks after the KO: its glass darkened, the cracks running
  * across it (light over the empty tube, dark over the red trail, a pixel of the other after
- * each), cutting its rim; a few chips fall from them and fade (none with reduced motion, the
- * cracks then drawn at once).
+ * each), cutting its rim; a few chips fall from them and fade (none kept still, the cracks then
+ * drawn at once).
  */
 function cracks(motion: HealthMotion, look: HealthBarLook): Span[] {
   const spans: Span[] = [];
@@ -228,7 +255,7 @@ function cracks(motion: HealthMotion, look: HealthBarLook): Span[] {
     const x = rowStart(row);
     spans.push({ x, y: row + 1, width: BAR_LENGTH, height: 1, color: OUTLINE, alpha: 0.3 });
   }
-  const age = look.reducedMotion ? BAR_CRACK_TICKS : motion.broken;
+  const age = look.motion ? motion.broken : BAR_CRACK_TICKS;
   const shown = Math.min(CRACKS.length, Math.ceil((CRACKS.length * age) / CRACK_REVEAL));
   CRACKS.slice(0, shown).forEach(([along, row]) => {
     const x = rowStart(row) + along;
@@ -239,7 +266,7 @@ function cracks(motion: HealthMotion, look: HealthBarLook): Span[] {
     spans.push({ x: x + 1, y: row + 1, width: 1, height: 1, color: bright ? light : OUTLINE });
     if (row === 0) spans.push({ x: x + 1, y: 0, width: 2, height: 1, color: OUTLINE });
   });
-  if (look.reducedMotion) return spans;
+  if (!look.motion) return spans;
   for (const from of CHIPS) {
     const [along, row] = CRACKS[from] ?? [0, 0];
     const fall = age - CHIPS_FROM - from / 5;
@@ -261,9 +288,9 @@ function cracks(motion: HealthMotion, look: HealthBarLook): Span[] {
 /**
  * The bar blown up, `motion.broken` ticks after the KO: its frame left dim and empty until the
  * next round; its tube in shards of three sizes thrown up and out (the empty tube as glass, its
- * top band in the rim's color, the red trail red; hot, lighter, for their first ticks, never
- * white), then falling and fading over BAR_BREAK_TICKS; and sparks in the
- * titles' yellow and orange, gone in SPARK_TICKS. With reduced motion, the dim frame alone.
+ * top band in the rim's color, the red trail red; hot, lighter, for their first ticks with the
+ * flashes normal), then falling and fading over BAR_BREAK_TICKS; and sparks in the titles'
+ * yellow and orange, gone in SPARK_TICKS. Kept still, the dim frame alone.
  */
 function blownUp(motion: HealthMotion, look: HealthBarLook): Span[] {
   const spans = tubeOutline(BAR_ROWS, BAR_LENGTH, BROKEN, BROKEN);
@@ -273,8 +300,8 @@ function blownUp(motion: HealthMotion, look: HealthBarLook): Span[] {
   }
   const age = motion.broken;
   const fade = 1 - age / BAR_BREAK_TICKS;
-  if (look.reducedMotion || fade <= 0) return spans;
-  const hot = age < HOT_TICKS;
+  if (!look.motion || fade <= 0) return spans;
+  const hot = look.flashes && age < HOT_TICKS;
   for (let column = 0; column < BAR_LENGTH / SHARD.width; column++) {
     for (let band = 0; band < BAR_ROWS / SHARD.height; band++) {
       const seed = column * 7 + band * 13;
@@ -345,33 +372,62 @@ function embers(fill: number, frame: number): Span[] {
   return spans;
 }
 
-/** One fighter's health bar on the HUD: one Graphics, repainted when what it shows changes. */
+/**
+ * One fighter's health bar on the HUD: one Graphics, repainted when what it shows changes. The
+ * white of a hit asks the fight's flash budget first (`lights`, in view px²): refused, the blow
+ * shows red at once.
+ */
 export class HealthBar {
   private readonly graphics: Phaser.GameObjects.Graphics;
   private motion = freshHealth(0, 0);
   private painted = '';
+  /** Its look, and the same kept still (a KO the budget left no room to blow up). */
+  private still: HealthBarLook;
 
   /** (`x`, `y`): the top left of the bar's box (BAR_BOX). */
   constructor(
     scene: Phaser.Scene,
     private readonly x: number,
     y: number,
-    private readonly look: HealthBarLook,
+    private look: HealthBarLook,
+    private readonly lights: (view: number) => boolean = () => true,
   ) {
     this.graphics = scene.add.graphics({ x, y }).setScrollFactor(0).setDepth(10);
+    this.still = { ...look, motion: false };
   }
 
   /**
    * `comboed`: while the fighter is being comboed; `frame`: the match clock; `breakage`: how the
-   * fighter's KO breaks the bar, from the KO to the next round (null when it stays whole).
+   * fighter's KO breaks the bar, from the KO to the next round (null when it stays whole);
+   * `still`: it breaks without its shards.
    */
-  update(ratio: number, comboed: boolean, frame: number, breakage: Breakage | null = null): void {
-    this.motion = stepHealth(this.motion, ratio, comboed, frame, breakage);
-    const shake = this.look.reducedMotion ? 0 : shakeOffset(this.motion);
-    this.graphics.x = this.x + (healthBlastShake(this.motion, this.look) || shake);
-    const key = healthPaintKey(this.motion, this.look, frame);
+  update(
+    ratio: number,
+    comboed: boolean,
+    frame: number,
+    breakage: Breakage | null = null,
+    still = false,
+  ): void {
+    const before = this.motion;
+    let motion = stepHealth(before, ratio, comboed, frame, breakage);
+    const look = still ? this.still : this.look;
+    // A blow lands: its white asks the budget, unless the bar blows up (it shows no white then).
+    const hit = motion.sinceFlash === 0 && motion.frame !== before.frame;
+    if (hit && look.flashes && !shattered(motion) && !this.lights(hitFlashArea(motion))) {
+      motion = { ...motion, flash: 0 };
+    }
+    this.motion = motion;
+    const shake = look.motion ? shakeOffset(motion) : 0;
+    this.graphics.x = this.x + (healthBlastShake(motion, look) || shake);
+    const key = healthPaintKey(motion, look, frame);
     if (key === this.painted) return;
     this.painted = key;
-    paintSpans(this.graphics, healthBarSpans(this.motion, this.look, frame));
+    paintSpans(this.graphics, healthBarSpans(motion, look, frame));
+  }
+
+  /** The player's comfort options, from the next update on (the pause's options). */
+  setComfort(comfort: HudComfort): void {
+    this.look = { ...this.look, ...comfort };
+    this.still = { ...this.look, motion: false };
   }
 }

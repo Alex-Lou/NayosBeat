@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { ART_SCALE, cellOf, type FighterArt } from '../art/types';
 import { anchorOrigin } from './anchor-origin';
 import { playedUrls, stripName, textureKey, type Layer } from './art-textures';
+import { FX_DARK } from './veils';
 
 /** A sprite placed by its feet anchor, which changes texture and frame only when needed. */
 export class AnchoredSprite {
@@ -10,6 +11,7 @@ export class AnchoredSprite {
   private shownKey = '';
   private shownFrame = -1;
   private shownFlip = false;
+  private darkened = false;
   /** Texture key of each strip, computed once. */
   private readonly keys: Readonly<Record<string, string>>;
 
@@ -50,6 +52,15 @@ export class AnchoredSprite {
 
   setAlpha(alpha: number): this {
     this.sprite.setAlpha(alpha);
+    return this;
+  }
+
+  /** Draws front effects in their dark look (docs/flashs.md §4), or back in their colors. */
+  dark(dark: boolean): this {
+    if (dark === this.darkened) return this;
+    this.darkened = dark;
+    if (dark) this.sprite.setTint(FX_DARK);
+    else this.sprite.clearTint();
     return this;
   }
 

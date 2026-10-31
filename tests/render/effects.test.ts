@@ -82,7 +82,7 @@ function effects(): {
     add: { rectangle: make, image: make },
     textures: { exists: () => false, createCanvas: () => texture },
   } as unknown as Phaser.Scene;
-  const fx = new Effects(scene, { stageWidth: 640, shake: true });
+  const fx = new Effects(scene, { stageWidth: 640, shake: 1 });
   const [dim, halo, eclat, vignette] = made;
   if (!dim || !halo || !eclat || !vignette) throw new Error('Missing layers');
   return { effects: fx, dim, halo, eclat, vignette };

@@ -1,23 +1,31 @@
 import { readFileSync } from 'node:fs';
 
 /**
- * The characters a font has, read from its cmap: from a WOFF file (version 1, each table
- * zlib-compressed or stored), as the game ships it through @fontsource. Enough to answer "does
- * this font draw this letter", nothing more.
+ * The tables of a font, read from a WOFF file (version 1, each table zlib-compressed or stored),
+ * as the game ships it through @fontsource: enough to answer "does this font draw this letter"
+ * (its cmap) and "how much does it cover" (font-outlines.ts).
  */
-export async function glyphsOf(file: URL): Promise<ReadonlySet<number>> {
+export async function fontTables(file: URL): Promise<Map<string, DataView>> {
   const woff = readFileSync(file);
   const view = new DataView(woff.buffer, woff.byteOffset, woff.byteLength);
-  const tables = view.getUint16(12);
-  for (let entry = 0; entry < tables; entry++) {
+  const tables = new Map<string, DataView>();
+  const count = view.getUint16(12);
+  for (let entry = 0; entry < count; entry++) {
     const at = 44 + entry * 20;
-    if (new TextDecoder().decode(woff.subarray(at, at + 4)) !== 'cmap') continue;
+    const tag = new TextDecoder().decode(woff.subarray(at, at + 4));
     const offset = view.getUint32(at + 4);
     const stored = woff.subarray(offset, offset + view.getUint32(at + 8));
-    const cmap = stored.length < view.getUint32(at + 12) ? await inflate(stored) : stored;
-    return codePoints(new DataView(cmap.buffer, cmap.byteOffset, cmap.byteLength));
+    const table = stored.length < view.getUint32(at + 12) ? await inflate(stored) : stored;
+    tables.set(tag, new DataView(table.buffer, table.byteOffset, table.byteLength));
   }
-  throw new Error(`${file.pathname}: no cmap`);
+  return tables;
+}
+
+/** The characters a font has, read from its cmap. */
+export async function glyphsOf(file: URL): Promise<ReadonlySet<number>> {
+  const cmap = (await fontTables(file)).get('cmap');
+  if (!cmap) throw new Error(`${file.pathname}: no cmap`);
+  return new Set(glyphIndices(cmap).keys());
 }
 
 async function inflate(bytes: Uint8Array): Promise<Uint8Array> {
@@ -26,9 +34,9 @@ async function inflate(bytes: Uint8Array): Promise<Uint8Array> {
   return new Uint8Array(await new Response(inflated).arrayBuffer());
 }
 
-/** The code points of the Unicode BMP subtable (format 4) that map to a glyph. */
-function codePoints(cmap: DataView): Set<number> {
-  const found = new Set<number>();
+/** The glyph of each code point of the Unicode BMP subtable (format 4) that maps to one. */
+export function glyphIndices(cmap: DataView): Map<number, number> {
+  const found = new Map<number, number>();
   const subtables = cmap.getUint16(2);
   for (let index = 0; index < subtables; index++) {
     const platform = cmap.getUint16(4 + index * 8);
@@ -47,11 +55,10 @@ function codePoints(cmap: DataView): Set<number> {
       const delta = cmap.getUint16(deltas + s * 2);
       const range = cmap.getUint16(ranges + s * 2);
       for (let code = start; code <= end && code !== 0xffff; code++) {
-        const glyph =
-          range === 0
-            ? (code + delta) & 0xffff
-            : cmap.getUint16(ranges + s * 2 + range + (code - start) * 2);
-        if (glyph !== 0) found.add(code);
+        const indexed =
+          range === 0 ? code : cmap.getUint16(ranges + s * 2 + range + (code - start) * 2);
+        const glyph = range !== 0 && indexed === 0 ? 0 : (indexed + delta) & 0xffff;
+        if (glyph !== 0) found.set(code, glyph);
       }
     }
     return found;

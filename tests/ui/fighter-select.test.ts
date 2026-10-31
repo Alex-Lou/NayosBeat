@@ -155,10 +155,8 @@ describe('FighterSelect', () => {
     ]);
   });
 
-  it('stands still on its first frame when the player asks for less motion', () => {
-    const page = installFakePage();
-    Object.assign(page.window, { matchMedia: () => ({ matches: true }) });
-    const { figure } = open(page);
+  it('stands still on its first frame when the player keeps the screen still', () => {
+    const { figure } = setup({ still: true });
     expect(figure.style.backgroundPositionX).toBe('0%');
     expect(figure.animations).toHaveLength(0);
   });

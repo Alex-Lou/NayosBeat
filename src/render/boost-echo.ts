@@ -10,16 +10,20 @@ const ECHOES = [
   { back: 3, alpha: 0.35 },
   { back: 6, alpha: 0.18 },
 ] as const;
+/** Calm (the flashes reduced or off: docs/flashs.md §4), one fainter echo: ΔL under 0.1. */
+const CALM_ECHOES = [{ back: 3, alpha: 0.22 }] as const;
 /** Poses remembered: as far back as the last echo. */
 const HISTORY = 7;
 
 /**
  * The two echoes of a Boost move: white silhouettes of the fighter as it was 3 and 6 ticks
  * before, while it plays a move that spends the gauge (a Remix, the Rewind, the super). They
- * count the match clock's ticks, so they freeze with the hitstop and the flash. Everything is
- * created up front, and a frame without a Boost move only hides them.
+ * count the match clock's ticks, so they freeze with the hitstop and the flash. Calm, a single
+ * fainter one. Everything is created up front, and a frame without a Boost move only hides them.
  */
 export class BoostEcho {
+  /** Read every frame, so the pause's options apply at once. */
+  calm = false;
   private readonly images: readonly AnchoredSprite[];
   /** The poses of the last ticks, by clock tick modulo HISTORY, and the tick each one is of. */
   private readonly ticks = new Array<number>(HISTORY).fill(-1);
@@ -58,10 +62,15 @@ export class BoostEcho {
     this.ys[slot] = y;
     this.flips[slot] = flip;
 
-    for (let index = 0; index < ECHOES.length; index++) {
+    const echoes = this.calm ? CALM_ECHOES : ECHOES;
+    for (let index = 0; index < this.images.length; index++) {
       const image = this.images[index];
-      const echo = ECHOES[index];
-      if (!image || !echo) continue;
+      const echo = echoes[index];
+      if (!image) continue;
+      if (!echo) {
+        image.hide();
+        continue;
+      }
       const tick = clock - echo.back;
       const past = tick % HISTORY;
       // Only a pose of that very tick: nothing older shows (a new round restarts the clock).

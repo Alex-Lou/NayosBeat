@@ -15,8 +15,12 @@ import {
 import type { HitStyle } from './hit-styles';
 import { VIEW_SIZE } from './view';
 
-/** `pulse`: a super's blow before its last (BOOM, BOOM, BOOOOM), smaller, without the flash. */
-export type HitKind = 'light' | 'heavy' | 'block' | 'ko' | 'pulse';
+/**
+ * `pulse`: a super's blow before its last (BOOM, BOOM, BOOOOM), smaller, without the flash; it is
+ * also what a heavy blow plays when the flash budget mutes it, `koMuted` what a KO plays then
+ * (docs/flashs.md §4).
+ */
+export type HitKind = 'light' | 'heavy' | 'block' | 'ko' | 'pulse' | 'koMuted';
 
 type FlipbookName = keyof typeof HD_FLIPBOOKS;
 /** What a piece draws: a shape of its own, or a flipbook of several. */
@@ -131,8 +135,19 @@ const BURSTS: Readonly<Record<Exclude<HitKind, 'block'>, Burst>> = {
   light: { glow: 36, core: 14, blades: 1, blade: 32, ring: 0, sparks: 8, shards: 3, life: 1 },
   heavy: { glow: 52, core: 20, blades: 2, blade: 50, ring: 58, sparks: 18, shards: 8, life: 1.25 },
   ko: { glow: 74, core: 28, blades: 3, blade: 64, ring: 86, sparks: 30, shards: 14, life: 1.6 },
-  // Her heavy blow is already under a flash's area (docs/flashs.md §2).
+  // Her heavy blow is already under a flash's area (docs/flashs.md §2); her muted KO, about as
+  // big, throws more and lingers.
   pulse: { glow: 52, core: 20, blades: 2, blade: 50, ring: 58, sparks: 18, shards: 8, life: 1.25 },
+  koMuted: {
+    glow: 44,
+    core: 16,
+    blades: 2,
+    blade: 46,
+    ring: 54,
+    sparks: 22,
+    shards: 10,
+    life: 1.4,
+  },
 };
 
 /** Nayo's hit for one kind of blow: its size (world pixels), its timing and what flies out. */
@@ -235,6 +250,26 @@ const STARS: Readonly<Record<Exclude<HitKind, 'block'>, Star>> = {
     fronts: 0,
     splash: false,
     linger: 0,
+    aura: 0.45,
+    auraScale: 1.3,
+    warm: 0.2,
+  },
+  // A KO the flash budget mutes: the pulse's silhouette, a beat longer, its embers and smoke
+  // drifting on through the slow motion (docs/flashs.md §4).
+  koMuted: {
+    size: 38,
+    keys: [0, 3, 2, 3, 3],
+    life: 1.2,
+    streaks: 5,
+    drops: 5,
+    twinkles: 5,
+    specks: 12,
+    arcs: 3,
+    farArcs: 2,
+    lines: 2,
+    fronts: 0,
+    splash: false,
+    linger: 14,
     aura: 0.45,
     auraScale: 1.3,
     warm: 0.2,
@@ -430,7 +465,8 @@ export class HitFx {
     paintAtlas(Infinity);
     const px = toPx(x);
     // The KO of a sweep lands at the feet: its burst rises above the floor, not through it.
-    const py = this.groundY - Math.max(toPx(y), kind === 'ko' ? KO_LIFT : 0);
+    const ko = kind === 'ko' || kind === 'koMuted';
+    const py = this.groundY - Math.max(toPx(y), ko ? KO_LIFT : 0);
     const direction = away > 0 ? 0 : Math.PI;
     if (style.shape === 'slash') {
       if (kind === 'block') this.guard(style, px, py, direction);

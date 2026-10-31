@@ -56,6 +56,8 @@ export interface FighterSelectOptions<Id extends string> {
   readonly onBack?: () => void;
   /** Called on navigation, e.g. to play a sound. */
   readonly feedback?: (action: MenuFeedback) => void;
+  /** The screen kept still (the player's « Tremblement », src/app/comfort.ts): no idle plays. */
+  readonly still?: boolean;
 }
 
 /** What the panel says of a tile that holds no fighter. */
@@ -79,8 +81,7 @@ export class FighterSelect<Id extends string> {
   private frameRequest = 0;
   /** The idle of the fighter shown, while it plays. */
   private playing: Animation | undefined;
-  /** Read once: the fighter then stands still on its first frame. */
-  private readonly reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
   /** Gamepad buttons held on the previous poll; starts with what is held right now. */
   private previousPad = readMenuPad();
 
@@ -234,7 +235,8 @@ export class FighterSelect<Id extends string> {
     figure.style.backgroundSize = `${percent(frames)} 100%`;
     figure.style.backgroundPositionX = stripPosition(idle[0]?.frame ?? 0, frames);
     figure.style.aspectRatio = `${width} / ${height}`;
-    if (idle.length < 2 || this.reducedMotion) return;
+    // Kept still, the fighter stands on its first frame.
+    if (idle.length < 2 || this.options.still === true) return;
     const { keyframes, duration } = idleKeyframes(look);
     this.playing = figure.animate(keyframes, { duration, iterations: Infinity });
   }

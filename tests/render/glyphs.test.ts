@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { FLASH_LABELS, NOTICE, SHAKE_LABELS } from '../../src/app/comfort';
 import { helpPages, withArrows } from '../../src/app/controls-content';
 import type { RoundState } from '../../src/core/state';
 import { ROSTER } from '../../src/data/roster';
@@ -100,6 +101,23 @@ describe('glyphs', () => {
     );
     expect(texts.some((text) => text.includes('↘'))).toBe(true);
     expect(missing(await glyphsOf(PIXEL), shown)).toEqual([]);
+  });
+
+  it('of the options and the notice are in the pixel font, without a capital accented', async () => {
+    const texts = [
+      NOTICE.title,
+      NOTICE.text,
+      ...Object.values(FLASH_LABELS).flatMap(({ label, hint }) => [
+        `Effets de flash : ${label}`,
+        hint,
+      ]),
+      ...Object.values(SHAKE_LABELS).flatMap(({ label, hint }) => [
+        `Tremblement de l'écran : ${label}`,
+        hint,
+      ]),
+    ];
+    expect(missing(await glyphsOf(PIXEL), texts)).toEqual([]);
+    expect(texts.filter((text) => CAPITAL_ACCENTED.test(text))).toEqual([]);
   });
 
   it('of every comic word, its tally and the stamps are in the comic font', async () => {

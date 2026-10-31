@@ -78,6 +78,7 @@ function setup() {
   vi.stubGlobal('document', {
     createElement: () => ({
       getContext: () => ({
+        canvas: { width: 0, height: 0 },
         drawImage: (_: unknown, cutX: number) => {
           drawn = cutX / 20;
         },

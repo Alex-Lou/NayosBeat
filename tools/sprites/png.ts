@@ -81,6 +81,8 @@ export interface IndexedImage {
   readonly pixels: Uint8Array;
   /** Alpha of each palette slot (opaque when the file has no transparency). */
   readonly alpha: readonly number[];
+  /** Color of each palette slot, 0xRRGGBB. */
+  readonly colors: readonly number[];
 }
 
 /**
@@ -92,6 +94,7 @@ export async function decodeIndexedPng(png: Uint8Array): Promise<IndexedImage> {
   let width = 0;
   let height = 0;
   let alpha: number[] = [];
+  let colors: number[] = [];
   const data: Uint8Array[] = [];
   for (let offset = SIGNATURE.length; offset < png.length;) {
     const length = view.getUint32(offset);
@@ -105,6 +108,13 @@ export async function decodeIndexedPng(png: Uint8Array): Promise<IndexedImage> {
       }
     } else if (type === 'PLTE') {
       alpha = Array.from({ length: length / 3 }, () => 255);
+      colors = Array.from(
+        { length: length / 3 },
+        (_, slot) =>
+          ((body[slot * 3] ?? 0) << 16) |
+          ((body[slot * 3 + 1] ?? 0) << 8) |
+          (body[slot * 3 + 2] ?? 0),
+      );
     } else if (type === 'tRNS') {
       body.forEach((value, slot) => (alpha[slot] = value));
     } else if (type === 'IDAT') {
@@ -119,7 +129,7 @@ export async function decodeIndexedPng(png: Uint8Array): Promise<IndexedImage> {
     if (raw[row] !== 0) throw new Error('Only unfiltered rows are supported');
     pixels.set(raw.subarray(row + 1, row + 1 + width), y * width);
   }
-  return { width, height, pixels, alpha };
+  return { width, height, pixels, alpha, colors };
 }
 
 /** zlib stream (what PNG expects), compressed by the runtime. */

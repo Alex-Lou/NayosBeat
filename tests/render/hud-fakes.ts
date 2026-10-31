@@ -70,6 +70,19 @@ export class FakeText {
   }
 }
 
+/** An engine image standing in for the real one (the HUD's painted textures). */
+class FakeImage {
+  setOrigin(): this {
+    return this;
+  }
+  setScrollFactor(): this {
+    return this;
+  }
+  setDepth(): this {
+    return this;
+  }
+}
+
 /** A scene whose `add` makes fakes, kept in the order they were made. */
 export function fakeScene(): {
   scene: Phaser.Scene;
@@ -90,7 +103,10 @@ export function fakeScene(): {
         texts.push(made);
         return made;
       },
+      image: () => new FakeImage(),
     },
+    // Painted once by the HUD: already there.
+    textures: { exists: () => true },
   } as unknown as Phaser.Scene;
   return { scene, graphics, texts };
 }

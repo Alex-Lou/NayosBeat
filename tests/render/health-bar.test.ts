@@ -1,14 +1,22 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import { gaugeSpans, type GaugeLook } from '../../src/render/boost-gauge';
+import { freshBoost, stepBoost } from '../../src/render/boost-motion';
 import {
   BAR_BOX,
   BAR_LENGTH,
+  BAR_ROWS,
   EMBER_RISE,
   HealthBar,
   healthBarSpans,
   healthBlastShake,
   healthPaintKey,
+  hitFlashArea,
+  SHATTER_VIEW,
   type HealthBarLook,
 } from '../../src/render/health-bar';
+import { hitStyleOf, hudColorOf } from '../../src/render/hit-styles';
+import type { Span } from '../../src/render/hud-paint';
+import { over, relativeLuminance } from '../../src/render/luminance';
 import {
   BAR_BREAK_TICKS,
   BAR_CRACK_TICKS,
@@ -21,9 +29,9 @@ import type { Breakage } from '../../src/render/boost-motion';
 import { fakeScene, pixelOf } from './hud-fakes';
 
 const ENERGY = 0x30e8ff;
-const LEFT: HealthBarLook = { side: 0, energy: ENERGY, reducedMotion: false };
+const LEFT: HealthBarLook = { side: 0, energy: ENERGY, flashes: true, motion: true };
 const RIGHT: HealthBarLook = { ...LEFT, side: 1 };
-const CALM: HealthBarLook = { ...LEFT, reducedMotion: true };
+const CALM: HealthBarLook = { ...LEFT, flashes: false, motion: false };
 /** The core of each tube (its third row). */
 const CORE = { health: 0xf0c94a, danger: 0xff7a1e, trail: 0xb80200, flash: 0xffffff };
 const EMPTY_CORE = 0x1c1228;
@@ -210,3 +218,161 @@ function brokenAfter(breakage: Breakage, ticks: number): HealthMotion {
   }
   return motion;
 }
+
+describe("the health bar under the player's options (docs/flashs.md §4)", () => {
+  const NO_FLASHES: HealthBarLook = { ...LEFT, flashes: false };
+  const STILL: HealthBarLook = { ...LEFT, motion: false };
+
+  it('drops the white of a hit with the flashes reduced, keeping its embers and shards', () => {
+    const hit = stepHealth(freshHealth(0, 1), 0.75, false, 1);
+    const lost = Math.round(BAR_LENGTH * 0.8);
+    expect(inner(healthBarSpans(hit, NO_FLASHES, 1), lost)).toBe(CORE.trail);
+    const low = freshHealth(0, 0.2);
+    expect(healthBarSpans(low, NO_FLASHES, 40).some((span) => span.y < 0)).toBe(true);
+    const shards = (look: HealthBarLook) =>
+      healthBarSpans(brokenAfter('shatter', 2), look, 0).filter((span) => (span.alpha ?? 1) < 1);
+    expect(shards(NO_FLASHES).length).toBeGreaterThan(20);
+    expect(shards(STILL)).toEqual([]);
+  });
+
+  it('keeps the white of a hit when only the motion stops, without shake nor embers', () => {
+    const hit = stepHealth(freshHealth(0, 1), 0.75, false, 1);
+    const lost = Math.round(BAR_LENGTH * 0.8);
+    expect(inner(healthBarSpans(hit, STILL, 1), lost)).toBe(CORE.flash);
+    expect(healthBarSpans(freshHealth(0, 0.2), STILL, 40).some((span) => span.y < 0)).toBe(false);
+    expect(healthBlastShake(brokenAfter('shatter', 1), STILL)).toBe(0);
+  });
+
+  it('keeps the shards in their own colors with the flashes reduced: hot only when normal', () => {
+    const colors = (look: HealthBarLook, ticks: number) =>
+      new Set(
+        healthBarSpans(brokenAfter('shatter', ticks), look, 0)
+          .filter((span) => (span.alpha ?? 1) < 1 && span.width > 2)
+          .map((span) => span.color),
+      );
+    // Hot (lighter) for their first ticks with the flashes normal, as they cool down otherwise.
+    expect(colors(LEFT, 1)).not.toEqual(colors(LEFT, 6));
+    expect(colors(NO_FLASHES, 1)).toEqual(colors(LEFT, 6));
+  });
+
+  it('asks the budget for the white of a hit: refused, the blow shows red at once', () => {
+    const { scene, graphics } = fakeScene();
+    const lights = vi.fn(() => false);
+    const bar = new HealthBar(scene, 8, 6, LEFT, lights);
+    for (let frame = 0; frame <= 60; frame++) bar.update(1, false, frame);
+    expect(lights).not.toHaveBeenCalled();
+    bar.update(0.75, false, 61);
+    // What the blow took: a quarter of the bar, on its 8 rows.
+    expect(lights).toHaveBeenCalledWith(Math.round(BAR_LENGTH * 0.25) * BAR_ROWS);
+    expect((graphics[0]?.spans ?? []).some((span) => span.color === 0xffffff)).toBe(false);
+    // Asked once a blow, not again while it shows.
+    bar.update(0.75, false, 62);
+    expect(lights).toHaveBeenCalledTimes(1);
+    expect(hitFlashArea(stepHealth(freshHealth(0, 1), 0.5, false, 1))).toBe(88 * BAR_ROWS);
+  });
+
+  it('breaks still when told so: no shards fly, the frame dims at once', () => {
+    const { scene, graphics } = fakeScene();
+    const bar = new HealthBar(scene, 8, 6, LEFT);
+    for (let frame = 0; frame <= 60; frame++) bar.update(0.2, false, frame);
+    bar.update(0, false, 61, 'shatter', true);
+    bar.update(0, false, 63, 'shatter', true);
+    expect((graphics[0]?.spans ?? []).every((span) => (span.alpha ?? 1) === 1)).toBe(true);
+  });
+
+  it('follows a new choice from the next update on', () => {
+    const { scene, graphics } = fakeScene();
+    const bar = new HealthBar(scene, 8, 6, LEFT);
+    // A new match: the bar fills up first.
+    for (let frame = 0; frame <= 60; frame++) bar.update(1, false, frame);
+    bar.update(0.75, false, 61);
+    const white = (graphics[0]?.spans ?? []).some((span) => span.color === 0xffffff);
+    expect(white).toBe(true);
+    bar.setComfort({ flashes: false, motion: true });
+    bar.update(0.75, false, 62);
+    expect((graphics[0]?.spans ?? []).some((span) => span.color === 0xffffff)).toBe(false);
+  });
+});
+
+/** The HUD band over the sky (hud.ts), behind the bars and the gauges. */
+const SKY = 0x1b1b2f;
+const BAND = over(0x0c0614, SKY, 0.55);
+/** Where they are painted: their boxes, with room around for what flies at first. */
+const ROOM = { width: 220, height: 40, x: 10, y: 15 } as const;
+
+/** The luminance of each pixel of `spans` painted over `backdrop`, around them. */
+function luminances(spans: readonly Span[], backdrop: number): Float64Array {
+  const colors = new Int32Array(ROOM.width * ROOM.height).fill(backdrop);
+  for (const { x, y, width, height, color, alpha = 1 } of spans) {
+    for (let row = 0; row < height; row++) {
+      for (let column = 0; column < width; column++) {
+        const px = x + column + ROOM.x;
+        const py = y + row + ROOM.y;
+        if (px < 0 || py < 0 || px >= ROOM.width || py >= ROOM.height) continue;
+        const at = py * ROOM.width + px;
+        colors[at] = over(color, colors[at] ?? backdrop, alpha);
+      }
+    }
+  }
+  const known = new Map<number, number>();
+  return Float64Array.from(colors, (color) => {
+    let luminance = known.get(color);
+    if (luminance === undefined) known.set(color, (luminance = relativeLuminance(color)));
+    return luminance;
+  });
+}
+
+/** Pixels that rise by ΔL 0.1 or more from `before` to `after` (a flash starting). */
+function rising(before: readonly Span[], after: readonly Span[], backdrop: number): number {
+  const from = luminances(before, backdrop);
+  const to = luminances(after, backdrop);
+  return to.reduce((count, value, at) => count + (value - (from[at] ?? 0) >= 0.1 ? 1 : 0), 0);
+}
+
+describe("what an Ultime's KO lights on the HUD (docs/flashs.md §4)", () => {
+  const energies = (['nayo', 'riff'] as const).flatMap((fighter) =>
+    (['main', 'alt'] as const).map((colorway) => hudColorOf(hitStyleOf(fighter, colorway))),
+  );
+
+  it('blows a bar and its gauge up on SHATTER_VIEW px² at most, hot or not', () => {
+    for (const [flashes, most] of [
+      [true, SHATTER_VIEW.hot],
+      [false, SHATTER_VIEW.plain],
+    ] as const) {
+      let bar = 0;
+      let gauge = 0;
+      for (const backdrop of [SKY, BAND]) {
+        for (const energy of energies) {
+          const look: HealthBarLook = { side: 0, energy, flashes, motion: true };
+          for (const health of [0.02, 0.05, 0.1, 0.3, 0.5]) {
+            for (const trail of [health, health + 0.1, health + 0.3, 0.9]) {
+              // Comboed down from `trail` to `health`: the trail waits, then the KO.
+              let motion = stepHealth(freshHealth(0, Math.min(1, trail)), health, true, 1);
+              motion = stepHealth(motion, health, true, 25);
+              const knocked = stepHealth(motion, 0, true, 26, 'shatter');
+              const lit = rising(
+                healthBarSpans(motion, look, 25),
+                healthBarSpans(knocked, look, 26),
+                backdrop,
+              );
+              bar = Math.max(bar, lit);
+            }
+          }
+          const gaugeLook: GaugeLook = { side: 0, energy, flashes, motion: true };
+          for (let boost = 0; boost <= 3000; boost += 100) {
+            const whole = freshBoost(0, boost);
+            const blown = stepBoost(whole, boost, 'shatter', 1);
+            const lit = rising(
+              gaugeSpans(whole, gaugeLook, 0),
+              gaugeSpans(blown, gaugeLook, 1),
+              backdrop,
+            );
+            gauge = Math.max(gauge, lit);
+          }
+        }
+      }
+      expect(bar + gauge, `flashes ${flashes}`).toBeLessThanOrEqual(most);
+      expect(bar + gauge, `flashes ${flashes}`).toBeGreaterThan(most * 0.9);
+    }
+  });
+});

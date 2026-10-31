@@ -24,6 +24,7 @@ import {
   tubeRowStart,
   type Span,
 } from './hud-paint';
+import type { HudComfort } from './health-bar';
 
 /**
  * One fighter's Boost gauge on the HUD, under its name (docs/combos-v3.md §1.8.6,
@@ -91,7 +92,8 @@ const CHIPS = [2, 7, 14, 20] as const;
 const CHIPS_FROM = 4;
 /**
  * Squares a KO blows the tube into, from cells of 4 pixels by 3 rows, in three sizes; hot (their
- * bar's light rim) for HOT_TICKS; and sparks. Gravity, in pixels per tick squared (halved).
+ * bar's light rim) for HOT_TICKS, with the flashes normal; and sparks. Gravity, in pixels per
+ * tick squared (halved).
  */
 const SHARD = { width: 4, height: 3 } as const;
 const SHARD_SIZES = [SHARD, { width: 6, height: 3 }, { width: 3, height: 2 }] as const;
@@ -136,12 +138,14 @@ export function blinkOn(frame: number): boolean {
   return Math.floor(frame / BLINK_TICKS) % 2 === 0;
 }
 
-export interface GaugeLook {
+/**
+ * `flashes` off: no sweep, no shine, no blink, no hot shards; `motion` off: no shards, no falling
+ * chips, no shake (see HudComfort).
+ */
+export interface GaugeLook extends HudComfort {
   /** 0: the left player (the gauge runs right from the screen's edge), 1: the right one. */
   readonly side: 0 | 1;
   readonly energy: number;
-  /** No sweep, no shine, no shards, no falling chips, no blink (prefers-reduced-motion). */
-  readonly reducedMotion: boolean;
 }
 
 /** Pixels of the tube that `boost` fills within its bar. */
@@ -152,7 +156,7 @@ function partOf(shown: number): number {
 
 /** Where a light sweeps on tick `frame`, from the outer end, or -1: a bar just completed, a full gauge's shine. */
 function sweepOf(motion: BoostMotion, look: GaugeLook, frame: number): number {
-  if (look.reducedMotion || motion.broken >= 0) return -1;
+  if (!look.flashes || motion.broken >= 0) return -1;
   // From the outer end to the inner one, the light (3 px) all inside the tube.
   const course = GAUGE_LENGTH - 3;
   if (motion.levelUp > 0) {
@@ -166,8 +170,10 @@ function sweepOf(motion: BoostMotion, look: GaugeLook, frame: number): number {
 /** What the gauge shows: it is repainted only when this changes. */
 export function gaugePaintKey(motion: BoostMotion, look: GaugeLook, frame: number): string {
   const lasts = motion.breakage === 'crack' ? CRACK_TICKS : BREAK_TICKS;
-  const broken = motion.broken < 0 ? -1 : look.reducedMotion ? lasts : motion.broken;
+  const broken = motion.broken < 0 ? -1 : look.motion ? motion.broken : lasts;
   return [
+    look.flashes,
+    look.motion,
     barsOf(motion.shown),
     partOf(motion.shown),
     isDraining(motion),
@@ -241,7 +247,7 @@ export function gaugeSpans(motion: BoostMotion, look: GaugeLook, frame: number):
       tube.push({ x, y: row + 1, width: 3, height: 1, color: 0xffffff, alpha: 0.8 });
     }
   }
-  if (broken && !look.reducedMotion) tube.push(...shards(motion, look.energy));
+  if (broken && look.motion) tube.push(...shards(motion, look));
   if (isCracked(motion)) tube.push(...cracks(motion, look));
   spans.push(...moved(tube, TUBE_X, TUBE_Y));
   return look.side === 0 ? spans : spans.map((span) => mirrored(span, GAUGE_WIDTH));
@@ -249,15 +255,17 @@ export function gaugeSpans(motion: BoostMotion, look: GaugeLook, frame: number):
 
 /**
  * The tube blown apart, `motion.broken` ticks after the KO: squares of 3 sizes thrown up and out
- * (a fixed spread, the same every time), hot for their first ticks (their bar's light rim, never
- * white), then falling and fading over BREAK_TICKS; and sparks, faster, gone in SPARK_TICKS.
+ * (a fixed spread, the same every time), hot for their first ticks with the flashes normal (their
+ * bar's light rim: white at 3 bars), then falling and fading over BREAK_TICKS; and sparks,
+ * faster, gone in SPARK_TICKS.
  */
-function shards(motion: BoostMotion, energy: number): Span[] {
+function shards(motion: BoostMotion, look: GaugeLook): Span[] {
+  const { energy } = look;
   const age = motion.broken;
   const fade = 1 - age / BREAK_TICKS;
   if (fade <= 0) return [];
   const spans: Span[] = [];
-  const hot = age < HOT_TICKS;
+  const hot = look.flashes && age < HOT_TICKS;
   for (let column = 0; column < GAUGE_LENGTH / SHARD.width; column++) {
     for (let band = 0; band < ROWS / SHARD.height; band++) {
       const seed = column * 7 + band * 13;
@@ -296,7 +304,7 @@ function shards(motion: BoostMotion, energy: number): Span[] {
 
 /** How far the gauge shakes, side to side, `broken` ticks after it blows up: 2 px, then 1. */
 export function blastShake(motion: BoostMotion, look: GaugeLook): number {
-  if (look.reducedMotion || !isShattered(motion) || motion.broken >= BLAST_SHAKE_TICKS) return 0;
+  if (!look.motion || !isShattered(motion) || motion.broken >= BLAST_SHAKE_TICKS) return 0;
   const side = motion.broken % 2 === 0 ? 1 : -1;
   return side * (motion.broken < BLAST_SHAKE_TICKS / 2 ? 2 : 1);
 }
@@ -304,7 +312,7 @@ export function blastShake(motion: BoostMotion, look: GaugeLook): number {
 /**
  * The tube cracked, `motion.broken` ticks after the KO: its glass darkened, its Boost still
  * showing through; the cracks run across it, a light pixel after each dark one, and a few chips
- * fall from them and fade (none with reduced motion, the cracks then drawn at once).
+ * fall from them and fade (none kept still, the cracks then drawn at once).
  */
 function cracks(motion: BoostMotion, look: GaugeLook): Span[] {
   const spans: Span[] = [];
@@ -312,7 +320,7 @@ function cracks(motion: BoostMotion, look: GaugeLook): Span[] {
     const x = tubeRowStart(ROWS, row);
     spans.push({ x, y: row + 1, width: GAUGE_LENGTH, height: 1, color: OUTLINE, alpha: 0.35 });
   }
-  const age = look.reducedMotion ? CRACK_TICKS : motion.broken;
+  const age = look.motion ? motion.broken : CRACK_TICKS;
   const shown = Math.min(CRACKS.length, Math.ceil((CRACKS.length * age) / CRACK_REVEAL));
   CRACKS.slice(0, shown).forEach(([along, row]) => {
     const x = tubeRowStart(ROWS, row) + along;
@@ -322,7 +330,7 @@ function cracks(motion: BoostMotion, look: GaugeLook): Span[] {
     // A crack from the top cuts the rim over it: the frame itself is broken.
     if (row === 0) spans.push({ x: x + 1, y: 0, width: 2, height: 1, color: OUTLINE });
   });
-  if (look.reducedMotion) return spans;
+  if (!look.motion) return spans;
   for (const from of CHIPS) {
     const [along, row] = CRACKS[from] ?? [0, 0];
     const fall = age - CHIPS_FROM - from / 4;
@@ -354,13 +362,15 @@ export class BoostGauge {
   private painted = '';
   /** Where the Graphics stands when still (it shakes as the gauge blows up). */
   private readonly left: number;
+  /** Its look kept still (a KO the flash budget left no room to blow it up). */
+  private still: GaugeLook;
 
   /** `x`: the outer end of the gauge (the screen's edge side), `y`: its top. */
   constructor(
     scene: Phaser.Scene,
     x: number,
     y: number,
-    private readonly look: GaugeLook,
+    private look: GaugeLook,
     textStyle: Phaser.Types.GameObjects.Text.TextStyle,
   ) {
     this.left = look.side === 0 ? x : x - GAUGE_WIDTH;
@@ -376,20 +386,22 @@ export class BoostGauge {
       .setOrigin(look.side === 0 ? 0 : 1, 0)
       .setScrollFactor(0)
       .setDepth(10);
+    this.still = { ...look, motion: false };
   }
 
   /**
    * `breakage`: how the fighter's KO breaks the gauge, from the KO to the next round (null when it
-   * stays whole); `frame`: the match clock.
+   * stays whole); `frame`: the match clock; `still`: it breaks without its shards.
    */
-  update(boost: number, breakage: Breakage | null, frame: number): void {
+  update(boost: number, breakage: Breakage | null, frame: number, still = false): void {
     this.motion = stepBoost(this.motion, boost, breakage, frame);
     const motion = this.motion;
-    this.graphics.x = this.left + blastShake(motion, this.look);
-    const key = gaugePaintKey(motion, this.look, frame);
+    const look = still ? this.still : this.look;
+    this.graphics.x = this.left + blastShake(motion, look);
+    const key = gaugePaintKey(motion, look, frame);
     if (key !== this.painted) {
       this.painted = key;
-      paintSpans(this.graphics, gaugeSpans(motion, this.look, frame));
+      paintSpans(this.graphics, gaugeSpans(motion, look, frame));
     }
     const bars = barsOf(motion.shown);
     const broken = isShattered(motion);
@@ -397,13 +409,19 @@ export class BoostGauge {
     this.count.setAlpha(broken ? 0.4 : 1);
     // Cracked, a full gauge still says MAX, without blinking: its fighter is down.
     const full = isFull(motion) && !broken;
-    const blinks = full && motion.broken < 0 && !this.look.reducedMotion;
+    const blinks = full && motion.broken < 0 && this.look.flashes;
     setIfChanged(
       this.word,
       full ? MAX_WORD : BOOST_WORD,
       full ? hex(PLATINE[0]) : hex(broken ? BROKEN : this.look.energy),
     );
     this.word.setAlpha(blinks && !blinkOn(frame) ? 0.25 : 1);
+  }
+
+  /** The player's comfort options, from the next update on (the pause's options). */
+  setComfort(comfort: HudComfort): void {
+    this.look = { ...this.look, ...comfort };
+    this.still = { ...this.look, motion: false };
   }
 }
 

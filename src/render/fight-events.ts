@@ -27,13 +27,16 @@ interface Spender {
 }
 
 /**
- * A blow that went through the guard: `held` when it landed in a hold (a pummel, a throw);
- * `counter` when it caught the defender attacking or recovering (the core's `isCounterHit`);
- * `pulse`, a blow of a super before its last (BOOM, BOOM, BOOOOM: docs/flashs.md §2).
+ * A blow that went through the guard, the `damage` it really took: `held` when it landed in a
+ * hold (a pummel, a throw); `counter` when it caught the defender attacking or recovering (the
+ * core's `isCounterHit`); `tier`, its move's (3: a super); `pulse`, a blow of a super before its
+ * last (BOOM, BOOM, BOOOOM: docs/flashs.md §2).
  */
 interface Blow extends Impact {
+  readonly damage: number;
   readonly held: boolean;
   readonly counter: CounterHit | null;
+  readonly tier: number;
   readonly pulse: boolean;
 }
 
@@ -53,7 +56,7 @@ export function koFinishOf(tier: number, comboHits: number): KoFinish {
 }
 
 export type FightEvent =
-  | ({ readonly type: 'hit'; readonly damage: number; readonly heavy: boolean } & Blow)
+  | ({ readonly type: 'hit'; readonly heavy: boolean } & Blow)
   | ({ readonly type: 'block' } & Impact)
   | ({ readonly type: 'ko'; readonly finish: KoFinish } & Blow)
   /** A grab caught `by`'s opponent; `punish`: caught recovering, it cannot break free. */
@@ -195,17 +198,17 @@ function contactEvent(contact: Contact, next: GameState, config: MatchConfig): F
     default:
   }
   const held = contact.kind !== 'hit';
-  const { counter } = contact;
+  const { counter, damage } = contact;
+  const tier = tierOf(move);
   // A super's blow before its last: its attacker is still in it, short of the last pulse.
-  const last = tierOf(move) === 3 ? move.pulses?.[move.pulses.length - 1]?.frame : undefined;
+  const last = tier === 3 ? move.pulses?.[move.pulses.length - 1]?.frame : undefined;
   const pulse = last !== undefined && attacker.move === contact.move && attacker.actionFrame < last;
+  const blow = { ...impact, damage, held, counter, tier, pulse };
   if (defender.health === 0) {
-    const finish = koFinishOf(tierOf(move), defender.comboCount);
-    return { type: 'ko', ...impact, held, counter, pulse, finish };
+    return { type: 'ko', ...blow, finish: koFinishOf(tier, defender.comboCount) };
   }
-  if (contact.kind === 'throw') return { type: 'throw', ...impact, damage: contact.damage };
-  const heavy = move.damage >= HEAVY_HIT_DAMAGE;
-  return { type: 'hit', ...impact, damage: contact.damage, heavy, held, counter, pulse };
+  if (contact.kind === 'throw') return { type: 'throw', ...impact, damage };
+  return { type: 'hit', ...blow, heavy: move.damage >= HEAVY_HIT_DAMAGE };
 }
 
 function startedNewMove(before: FighterState, after: FighterState): boolean {

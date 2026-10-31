@@ -11,6 +11,7 @@ import {
   SATURATED_RED,
 } from '../../src/render/luminance';
 import {
+  CALM_DELTA,
   DIM_COLOR,
   ECLAT_DELTA,
   GLOW_SIZE,
@@ -93,6 +94,31 @@ describe('the veils (docs/flashs.md §1.2, §2)', () => {
     for (const backdrop of GREYBOX_COLORS) {
       expect(flashArea(halo, GLOW_SIZE.halo, backdrop)).toBeLessThan(FLASH_AREA);
       expect(flashArea(halo, GLOW_SIZE.halo, backdrop)).toBeGreaterThan(0);
+    }
+  });
+
+  it("softens a KO's veils with the flashes reduced, and inks them off or refused", () => {
+    for (const energy of ENERGIES) {
+      const calm = koVeil('combo', energy, GREYBOX_COLORS, 'reduced');
+      if (!calm) throw new Error('No vignette');
+      expect(peakDelta(calm)).toBeLessThanOrEqual(CALM_DELTA);
+      const eclat = koVeil('finisher', energy, GREYBOX_COLORS, 'reduced');
+      if (!eclat) throw new Error('No éclat');
+      expect(peakDelta(eclat)).toBeLessThanOrEqual(VEIL_DELTA);
+      for (const [finish, mode, lit] of [
+        ['combo', 'off', true],
+        ['finisher', 'off', true],
+        ['finisher', 'normal', false],
+      ] as const) {
+        const ink = koVeil(finish, energy, GREYBOX_COLORS, mode, lit);
+        expect(ink, `${finish} ${mode}`).toMatchObject({ color: DIM_COLOR });
+        if (!ink) continue;
+        // It darkens: drawn over the stage, it never makes it lighter.
+        for (const backdrop of GREYBOX_COLORS) {
+          const after = relativeLuminance(over(ink.color, backdrop, ink.alpha));
+          expect(after).toBeLessThanOrEqual(relativeLuminance(backdrop));
+        }
+      }
     }
   });
 

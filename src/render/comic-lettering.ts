@@ -12,7 +12,7 @@ export const COMIC_FONT = 'Bangers, Impact, sans-serif';
 /** The outline of the letters. */
 export const INK = '#150b24';
 /** The top of the letters' fill. */
-const PAPER = '#fffbe8';
+export const PAPER = '#fffbe8';
 
 /** The letters' fill for `style`, `size` world pixels high: light on top, its strike color below. */
 export function comicFill(

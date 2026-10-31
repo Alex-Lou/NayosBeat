@@ -26,7 +26,9 @@ class FakeArc {
     this.visible = value;
     return this;
   }
-  setStrokeStyle(): this {
+  stroke = 0;
+  setStrokeStyle(_width: number, color: number): this {
+    this.stroke = color;
     return this;
   }
   setDepth(): this {
@@ -99,5 +101,22 @@ describe('the hold ring (docs/combat-v2.md §4.5)', () => {
     ring.update(at12);
     ring.update(throwing);
     expect(arcs.map((arc) => arc.visible)).toEqual([false, false]);
+  });
+
+  it('blinks white in the clinch; calm, it stays white, then turns the holder color once', () => {
+    const colors = (calm: boolean) => {
+      const { ring, arcs } = ringOn();
+      ring.calm = calm;
+      return Array.from({ length: 40 }, (_, tick) => {
+        ring.update(atHoldTick(grabbed(), tick));
+        return arcs[1]?.stroke;
+      });
+    };
+    const changes = (strokes: (number | undefined)[]) =>
+      strokes.filter((stroke, tick) => tick > 0 && stroke !== strokes[tick - 1]).length;
+    expect(changes(colors(false))).toBeGreaterThan(1);
+    const calm = colors(true);
+    expect(calm[0]).toBe(0xffffff);
+    expect(changes(calm)).toBe(1);
   });
 });

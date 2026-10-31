@@ -24,8 +24,8 @@ const VIGNETTE_DEPTH = 9;
 export interface EffectsOptions {
   /** The stage's width, world pixels: the dark covers it all. */
   readonly stageWidth: number;
-  /** The screen shakes (not with prefers-reduced-motion). */
-  readonly shake: boolean;
+  /** How far the screen shakes (SHAKE_STRENGTH of the player's « Tremblement »). */
+  readonly shake: number;
 }
 
 interface Layer {
@@ -78,6 +78,11 @@ export class Effects {
       eclat: layer(eclat, (look, at) => eclat.setTint(look.color).setPosition(at.x, at.y)),
       vignette: layer(vignette, (look) => vignette.setTint(look.color)),
     };
+  }
+
+  /** The player's « Tremblement », at once (the pause's options). */
+  setShake(strength: number): void {
+    this.shake.strength = strength;
   }
 
   /** Adds trauma (the strongest wins); `away`: the picture first jolts with the blow. */

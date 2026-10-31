@@ -10,6 +10,13 @@ export const MAX_SHAKE = 8;
 export const TRAUMA_DECAY = 1 / 48;
 /** Display frames between two targets: the camera turns back 7.5 times a second at most. */
 export const SHAKE_STEP = 4;
+/** The player's « Tremblement de l'écran » (src/app/comfort.ts): reduced, half as far. */
+export type ShakeMode = 'normal' | 'reduced' | 'off';
+export const SHAKE_STRENGTH: Readonly<Record<ShakeMode, number>> = {
+  normal: 1,
+  reduced: 0.5,
+  off: 0,
+};
 /** What each event adds (the strongest wins): an Ultime's KO shakes 8 px, a plain one about 6. */
 export const TRAUMA = {
   heavy: 0.65,
@@ -32,7 +39,8 @@ export class Shake {
   y = 0;
 
   constructor(
-    private readonly enabled: boolean,
+    /** How far it shakes (SHAKE_STRENGTH): 0, it keeps still. Read every frame. */
+    public strength = 1,
     private seed = 1,
   ) {}
 
@@ -41,7 +49,7 @@ export class Shake {
    * way (the camera's scroll the other).
    */
   kick(trauma: number, away: 1 | -1 = 1): void {
-    if (!this.enabled || trauma <= this.trauma) return;
+    if (this.strength === 0 || trauma <= this.trauma) return;
     this.trauma = Math.min(1, trauma);
     this.fromX = this.x / MAX_SHAKE;
     this.fromY = this.y / MAX_SHAKE;
@@ -52,7 +60,7 @@ export class Shake {
 
   /** One display frame. */
   update(): void {
-    if (this.trauma === 0) {
+    if (this.trauma === 0 || this.strength === 0) {
       this.x = 0;
       this.y = 0;
       return;
@@ -68,7 +76,7 @@ export class Shake {
     }
     const t = (this.age % SHAKE_STEP) / SHAKE_STEP;
     const eased = t * t * (3 - 2 * t);
-    const amplitude = MAX_SHAKE * this.trauma ** 2;
+    const amplitude = MAX_SHAKE * this.strength * this.trauma ** 2;
     this.x = Math.round(amplitude * (this.fromX + (this.toX - this.fromX) * eased));
     this.y = Math.round((amplitude / 2) * (this.fromY + (this.toY - this.fromY) * eased));
   }

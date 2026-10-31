@@ -7,14 +7,30 @@ import type { FightScene, FightSceneData } from '../render/fight-scene';
 import { requestLandscapeFullscreen } from '../render/fullscreen';
 import { isTouchDevice } from '../input/touch-controls';
 import { FighterSelect } from '../ui/fighter-select';
-import { Menu, type MenuFeedback, type MenuItem, type MenuOptions } from '../ui/menu';
+import { element, Menu, type MenuFeedback, type MenuItem, type MenuOptions } from '../ui/menu';
 import { TitleScreen } from '../ui/title-screen';
+import {
+  FLASH_LABELS,
+  isCalm,
+  isStill,
+  loadComfort,
+  markNoticeSeen,
+  nextMode,
+  NOTICE,
+  noticeSeen,
+  saveComfort,
+  SHAKE_LABELS,
+  watchReducedMotion,
+  type Comfort,
+} from './comfort';
 import { controlsContent, currentDevices, helpPages } from './controls-content';
 import { installMethod, onInstallChange, promptInstall } from './install';
 import { DEFAULT_SETUP, type DummyBehavior, type GameMode, type MatchSetup } from './match-setup';
 import { SELECT_COLUMNS, SELECT_SLOTS, selectFighters } from './select-fighters';
 
 const FIGHT_SCENE = 'fight';
+/** The notice of the first launch ignores what is pressed this soon: it was meant for the title. */
+const NOTICE_GRACE_MS = 1000;
 
 const LEVELS: readonly {
   readonly level: CpuLevel;
@@ -44,12 +60,17 @@ const GAUGES: readonly { readonly gauge: TrainingGauge; readonly label: string }
 ];
 
 /**
- * Screen flow: title → main menu → fighter selection → fight → results, with pause.
- * Owns the current screen and the match setup; the fight itself runs in the Phaser scene.
+ * Screen flow: title → (the notice, the first time) → main menu → fighter selection → fight →
+ * results, with pause; the options from the main menu and the pause. Owns the current screen,
+ * the match setup and the player's comfort options; the fight itself runs in the Phaser scene.
  */
 export class App {
   private screen: { dispose(): void } | undefined;
   private setup: MatchSetup = DEFAULT_SETUP;
+  /** « Effets de flash » and « Tremblement de l'écran » (src/app/comfort.ts). */
+  private comfort: Comfort = loadComfort();
+  /** What the player chose this session: it holds even where the storage refuses it. */
+  private chosen: Partial<Comfort> = {};
   /** The main menu is on screen (it is redrawn when installing becomes possible). */
   private onMainMenu = false;
   private onTitle = false;
@@ -65,6 +86,12 @@ export class App {
     // The browser tells late (after the page loaded) that the game can be installed.
     onInstallChange(() => {
       if (this.onMainMenu) this.showMainMenu();
+    });
+    this.applyComfortClasses();
+    // What the player did not choose follows the system's setting, even when it changes.
+    watchReducedMotion(() => {
+      this.comfort = { ...loadComfort(), ...this.chosen };
+      this.applyComfort();
     });
     this.showTitle();
   }
@@ -88,23 +115,61 @@ export class App {
         this.sfx.unlock();
         this.sfx.play('menuConfirm');
         if (isTouchDevice()) requestLandscapeFullscreen();
-        this.showMainMenu();
+        if (noticeSeen()) this.showMainMenu();
+        else this.showNotice();
       }),
     );
     this.onTitle = true;
   }
 
-  private showMainMenu(initialIndex = 0): void {
+  /**
+   * The notice of the first launch (docs/flashs.md §4), after the title (a gesture): read once,
+   * then to the main menu, or to the options. A press in its first NOTICE_GRACE_MS was meant for
+   * the title (pressed twice): it does nothing. Back goes to the title, the notice still unread.
+   */
+  private showNotice(): void {
+    const shownAt = performance.now();
+    const then = (next: () => void) => () => {
+      if (performance.now() - shownAt < NOTICE_GRACE_MS) return;
+      markNoticeSeen();
+      next();
+    };
+    const toMenu = () => {
+      this.showMainMenu();
+    };
+    this.showMenu({
+      title: NOTICE.title,
+      content: element('p', 'menu-notice', NOTICE.text),
+      items: [
+        { label: 'Jouer', onSelect: then(toMenu) },
+        {
+          label: 'Options',
+          onSelect: then(() => {
+            this.showOptions(false, () => {
+              this.showMainMenu('options');
+            });
+          }),
+        },
+      ],
+      onBack: () => {
+        if (performance.now() - shownAt >= NOTICE_GRACE_MS) this.showTitle();
+      },
+    });
+  }
+
+  /** `initial`: the item selected, by its index, or the options' (coming back from them). */
+  private showMainMenu(initial: number | 'options' = 0): void {
     const choose = (mode: GameMode) => () => {
       this.setup = { ...this.setup, mode };
       this.chooseFighter(0);
     };
-    const soundItem: MenuItem = {
-      label: `Son : ${this.sfx.isEnabled ? 'oui' : 'non'}`,
+    const optionsItem: MenuItem = {
+      label: 'Options',
+      hint: 'Son, effets de flash, tremblement',
       onSelect: () => {
-        this.sfx.setEnabled(!this.sfx.isEnabled);
-        // Re-shown with the toggle still selected.
-        this.showMainMenu(items.indexOf(soundItem));
+        this.showOptions(false, () => {
+          this.showMainMenu('options');
+        });
       },
     };
     const items: MenuItem[] = [
@@ -117,7 +182,7 @@ export class App {
           this.showControls(0, false);
         },
       },
-      soundItem,
+      optionsItem,
     ];
     const install = installMethod();
     if (install === 'prompt') {
@@ -143,9 +208,74 @@ export class App {
       onBack: () => {
         this.showTitle();
       },
-      initialIndex,
+      initialIndex: initial === 'options' ? items.indexOf(optionsItem) : initial,
     });
     this.onMainMenu = true;
+  }
+
+  /**
+   * The « Options » screen: the sound, « Effets de flash », « Tremblement de l'écran », each
+   * cycled in place (the screen comes back with it still selected), kept at once and applied at
+   * once, to a fight under the pause menu too (`paused`). `back`: where « Retour » goes.
+   */
+  private showOptions(paused: boolean, back: () => void, initialIndex = 0): void {
+    const { flashes, shake } = this.comfort;
+    const items: MenuItem[] = [];
+    const again = (item: MenuItem) => {
+      this.showOptions(paused, back, items.indexOf(item));
+    };
+    const sound: MenuItem = {
+      label: `Son : ${this.sfx.isEnabled ? 'oui' : 'non'}`,
+      onSelect: () => {
+        this.sfx.setEnabled(!this.sfx.isEnabled);
+        again(sound);
+      },
+    };
+    const flash: MenuItem = {
+      label: `Effets de flash : ${FLASH_LABELS[flashes].label}`,
+      hint: FLASH_LABELS[flashes].hint,
+      onSelect: () => {
+        this.changeComfort({ flashes: nextMode(flashes) });
+        again(flash);
+      },
+    };
+    const tremble: MenuItem = {
+      label: `Tremblement de l'écran : ${SHAKE_LABELS[shake].label}`,
+      hint: SHAKE_LABELS[shake].hint,
+      onSelect: () => {
+        this.changeComfort({ shake: nextMode(shake) });
+        again(tremble);
+      },
+    };
+    items.push(sound, flash, tremble, { label: 'Retour', onSelect: back });
+    this.showMenu({ title: 'Options', overlay: paused, items, onBack: back, initialIndex });
+  }
+
+  /** The player changed an option: kept (that one alone), then applied everywhere. */
+  private changeComfort(changed: Partial<Comfort>): void {
+    this.chosen = { ...this.chosen, ...changed };
+    this.comfort = { ...this.comfort, ...changed };
+    saveComfort(changed);
+    this.applyComfort();
+  }
+
+  /** The comfort options on the menus (their classes) and on the fight, if one is on. */
+  private applyComfort(): void {
+    this.applyComfortClasses();
+    (this.game.scene.getScene(FIGHT_SCENE) as FightScene | null)?.applyComfort(this.comfort);
+  }
+
+  /**
+   * The menus' own animations (styles.css): `calm`, nothing blinks or glows on and off (the
+   * prompt, the frame of the tile chosen); `still`, nothing turns (the title's vinyl).
+   */
+  private applyComfortClasses(): void {
+    const set = (name: string, on: boolean) => {
+      if (on) this.root.classList.add(name);
+      else this.root.classList.remove(name);
+    };
+    set('calm', isCalm(this.comfort));
+    set('still', isStill(this.comfort));
   }
 
   /**
@@ -223,6 +353,7 @@ export class App {
           else this.chooseFighter(0);
         },
         feedback: this.menuFeedback,
+        still: isStill(this.comfort),
       }),
     );
   }
@@ -299,6 +430,7 @@ export class App {
     const data: FightSceneData = {
       setup: this.setup,
       sfx: this.sfx,
+      comfort: this.comfort,
       onPause: () => {
         this.showPause();
       },
@@ -316,43 +448,50 @@ export class App {
     this.game.loop.sleep();
   }
 
-  private showPause(): void {
+  /** `initialIndex`: the item selected (the options', coming back from them). */
+  private showPause(initialIndex = 0): void {
     const fight = this.game.scene.getScene(FIGHT_SCENE) as FightScene;
     const resume = () => {
       this.screen?.dispose();
       this.screen = undefined;
       fight.resumeMatch();
     };
-    this.showMenu({
-      title: 'Pause',
-      overlay: true,
-      items: [
-        { label: 'Reprendre', onSelect: resume },
-        {
-          label: 'Recommencer',
-          onSelect: () => {
-            this.startFight();
-          },
+    // Over the fight: what is chosen there applies to it at once, before it resumes.
+    const optionsItem: MenuItem = {
+      label: 'Options',
+      onSelect: () => {
+        this.showOptions(true, () => {
+          this.showPause(items.indexOf(optionsItem));
+        });
+      },
+    };
+    const items: MenuItem[] = [
+      { label: 'Reprendre', onSelect: resume },
+      {
+        label: 'Recommencer',
+        onSelect: () => {
+          this.startFight();
         },
-        {
-          label: 'Commandes',
-          // Opens on the page of player 1's fighter: the moves they are playing with.
-          onSelect: () => {
-            const pages = helpPages(currentDevices());
-            const own = pages.findIndex((page) => page.fighter === this.setup.fighters[0]);
-            this.showControls(Math.max(0, own), true);
-          },
+      },
+      {
+        label: 'Commandes',
+        // Opens on the page of player 1's fighter: the moves they are playing with.
+        onSelect: () => {
+          const pages = helpPages(currentDevices());
+          const own = pages.findIndex((page) => page.fighter === this.setup.fighters[0]);
+          this.showControls(Math.max(0, own), true);
         },
-        {
-          label: 'Quitter',
-          hint: 'Retour au menu principal',
-          onSelect: () => {
-            this.quitToMenu();
-          },
+      },
+      optionsItem,
+      {
+        label: 'Quitter',
+        hint: 'Retour au menu principal',
+        onSelect: () => {
+          this.quitToMenu();
         },
-      ],
-      onBack: resume,
-    });
+      },
+    ];
+    this.showMenu({ title: 'Pause', overlay: true, items, onBack: resume, initialIndex });
   }
 
   private showResults(winner: 0 | 1 | null): void {

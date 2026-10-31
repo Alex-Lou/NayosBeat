@@ -4,6 +4,7 @@ import { artOf } from '../art';
 import type { FighterArt } from '../art/types';
 import { assertValidArt } from '../art/validate';
 import type { Sfx } from '../audio/sfx';
+import { hudComfortOf, isCalm, isStill, type Comfort } from '../app/comfort';
 import { matchConfigOf, player2Behavior, type MatchSetup } from '../app/match-setup';
 import type { MatchConfig } from '../core/config';
 import { TICK_RATE, toPx } from '../core/constants';
@@ -26,6 +27,7 @@ import { DebugOverlay, describeGame, isDebugEnabled } from './debug-overlay';
 import { dissolveStyleOf } from './dissolve';
 import { detectEvents, type FightEvent } from './fight-events';
 import { FightFeedback } from './fight-feedback';
+import { FlashBudget } from './flash-budget';
 import { FighterView } from './fighter-view';
 import { drawGreyboxStage, GREYBOX_COLORS, GROUND_Y } from './greybox-stage';
 import { hitStyleOf, hudColorOf, type HitStyle } from './hit-styles';
@@ -48,6 +50,8 @@ const COLORS = { player1: 0xd9574a, player2: 0x4a8fd9 } as const;
 export interface FightSceneData {
   readonly setup: MatchSetup;
   readonly sfx: Sfx;
+  /** The player's comfort options as the fight starts (then `applyComfort`). */
+  readonly comfort: Comfort;
   readonly onPause: () => void;
   /** Called once, a moment after the final KO, with the winner's index. */
   readonly onMatchEnd: (winner: 0 | 1 | null) => void;
@@ -60,6 +64,8 @@ interface FighterDisplay {
   /** `frames`: display frames of 1/60 s since the last update. */
   update(state: GameState, frames: number): void;
   setFront(front: boolean): void;
+  /** The comfort options (sprites only): `calm`, the flashes not normal; `still`, no motion. */
+  setComfort?(calm: boolean, still: boolean): void;
 }
 
 /** Everything that exists only while the scene runs, created in `create`, freed on shutdown. */
@@ -70,6 +76,8 @@ interface Runtime {
   readonly pauseInput: PauseInput;
   readonly fighterViews: readonly [FighterDisplay, FighterDisplay];
   readonly projectileView: ProjectileView;
+  /** How many flashes the fight may still show (docs/flashs.md §4): the effects ask it. */
+  readonly budget: FlashBudget;
   readonly feedback: FightFeedback;
   readonly hud: Hud;
   /** The time a hold has left, around the fighter held. */
@@ -168,23 +176,32 @@ export class FightScene extends Phaser.Scene {
     this.cameras.main.setZoom(this.scale.width / VIEW_SIZE.width).setOrigin(0, 0);
     const stageWidth = toPx(this.config.stage.width);
     drawGreyboxStage(this, stageWidth);
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const { comfort } = this.sceneData;
+    const budget = new FlashBudget(comfort.flashes);
     const touch = isTouchDevice()
       ? new TouchControls(document.body, requestLandscapeFullscreen, this.styles[0].energy)
       : undefined;
+    const hud = new Hud(
+      this,
+      this.config,
+      [hudColorOf(this.styles[0]), hudColorOf(this.styles[1])],
+      hudComfortOf(comfort),
+      budget,
+    );
 
     this.runtime = {
       inputs: new PlayerInputs(window, touch, connectedGamepads()),
       touch,
       pauseInput: new PauseInput(document.body),
       fighterViews: [
-        this.fighterDisplay(0, COLORS.player1, reducedMotion),
-        this.fighterDisplay(1, COLORS.player2, reducedMotion),
+        this.fighterDisplay(0, COLORS.player1, budget),
+        this.fighterDisplay(1, COLORS.player2, budget),
       ],
       projectileView: new ProjectileView(this, this.config, GROUND_Y, this.arts),
+      budget,
       // Touch is player 1's: its phone vibrates when player 1 is grabbed or hit hard. The
       // gamepads rumble when a KO blows a Boost gauge up. The screen keeps still for those who
-      // asked their system for less motion.
+      // chose so (Options, or their system's « reduce motion »).
       feedback: new FightFeedback(
         this,
         GROUND_Y,
@@ -193,14 +210,18 @@ export class FightScene extends Phaser.Scene {
         {
           width: stageWidth,
           colors: GREYBOX_COLORS,
-          shake: !reducedMotion,
+          budget,
+          comfort,
+          knockOut: (player, finish, still) => {
+            hud.knockOut(player, finish, still);
+          },
         },
         touch ? vibrate : undefined,
         (ms, strength) => {
           rumble(connectedGamepads(), ms, strength);
         },
       ),
-      hud: new Hud(this, this.config, [hudColorOf(this.styles[0]), hudColorOf(this.styles[1])]),
+      hud,
       holdRing: new HoldRing(this, GROUND_Y, [this.styles[0].energy, this.styles[1].energy]),
       caption: this.config.training ? new MoveCaption(this, this.config, GROUND_Y) : undefined,
       holdPrompt: this.config.training ? new HoldPrompt(this, this.config, GROUND_Y) : undefined,
@@ -208,11 +229,27 @@ export class FightScene extends Phaser.Scene {
       boxOverlay: debug ? new BoxOverlay(this, this.config, GROUND_Y) : undefined,
     };
 
+    this.applyComfort(comfort);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.dispose();
     });
     this.addScreenCamera();
     this.syncViews(this.runtime, 0);
+  }
+
+  /**
+   * The player's comfort options, at once (changed in the pause's options): the flash budget's
+   * mode, the shake, the HUD, the hold's ring, the fighters' echoes, the words and stamps, all
+   * read again every frame.
+   */
+  applyComfort(comfort: Comfort): void {
+    const runtime = this.runtime;
+    if (!runtime) return;
+    runtime.budget.setMode(comfort.flashes);
+    runtime.feedback.setComfort(comfort);
+    runtime.hud.setComfort(hudComfortOf(comfort));
+    runtime.holdRing.calm = isCalm(comfort);
+    for (const view of runtime.fighterViews) view.setComfort?.(isCalm(comfort), isStill(comfort));
   }
 
   /**
@@ -232,13 +269,14 @@ export class FightScene extends Phaser.Scene {
     }
   }
 
-  private fighterDisplay(player: 0 | 1, color: number, still: boolean): FighterDisplay {
+  private fighterDisplay(player: 0 | 1, color: number, budget: FlashBudget): FighterDisplay {
     const art = this.arts[player];
     const style = this.styles[player];
     return art
       ? new SpriteFighterView(this, art, player, GROUND_Y, style.energy, this.config, {
           dissolve: dissolveStyleOf(style.shape),
-          still,
+          stage: GREYBOX_COLORS,
+          budget,
         })
       : new FighterView(this, color, GROUND_Y, player, this.config.fighters[player]);
   }
@@ -265,6 +303,10 @@ export class FightScene extends Phaser.Scene {
     }
 
     const visualFrames = this.visualClock.advance(deltaMs);
+    // Everything that lights up during this display frame asks the budget at the same moment,
+    // at the zoom it shows at (the last frame's: it eases slowly).
+    runtime.budget.advance(visualFrames);
+    runtime.budget.setZoom(this.closeUp);
     const ticks = this.timestep.advance(deltaMs * runtime.feedback.timeScale());
     const startMs = runtime.debugOverlay ? performance.now() : 0;
 
@@ -281,10 +323,10 @@ export class FightScene extends Phaser.Scene {
         const viewLeft = toPx(this.state.cameraX) - VIEW_SIZE.width / 2;
         runtime.feedback.beginTick();
         for (const event of this.tickEvents) {
-          if (event.type === 'ko') runtime.hud.knockOut(event.by === 0 ? 1 : 0, event.finish);
           runtime.feedback.react(event, viewLeft);
           runtime.caption?.react(event, this.state.frame);
         }
+        runtime.feedback.endTick();
       }
     }
     runtime.feedback.update(visualFrames);

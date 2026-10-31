@@ -18,8 +18,8 @@ import { BREAK_TICKS, CRACK_TICKS, freshBoost, stepBoost } from '../../src/rende
 import { fakeScene, pixelOf } from './hud-fakes';
 
 const ENERGY = 0x00e5ff;
-const LEFT: GaugeLook = { side: 0, energy: ENERGY, reducedMotion: false };
-const CALM: GaugeLook = { ...LEFT, reducedMotion: true };
+const LEFT: GaugeLook = { side: 0, energy: ENERGY, flashes: true, motion: true };
+const CALM: GaugeLook = { ...LEFT, flashes: false, motion: false };
 /** The tube's third row, for the left player: where it starts, its y. */
 const ROW = { start: 19, y: 4 } as const;
 const PLATINE = 0xf2f6ff;
@@ -143,7 +143,7 @@ describe('the Boost gauge (docs/combos-v3.md §1.8.6)', () => {
     expect(
       new Set(early.map((span) => `${span.width}x${span.height}`)).size,
     ).toBeGreaterThanOrEqual(3);
-    // Hot at first: the light rim of their bar, never white.
+    // Hot at first: the light rim of their bar (white only at 3 bars, the platine's).
     expect(early.some((span) => span.color === layersOf(ENERGY)[0]?.[0])).toBe(true);
     expect(early.some((span) => span.color === 0xffffff)).toBe(false);
     // They fly well off the tube.
@@ -224,5 +224,48 @@ describe('the Boost gauge on the HUD', () => {
     gauge.update(1500, null, 2);
     expect(count.alpha).toBe(1);
     expect(word.style.color).toBe('#00e5ff');
+  });
+});
+
+describe("the Boost gauge under the player's options (docs/flashs.md §4)", () => {
+  const NO_FLASHES: GaugeLook = { ...LEFT, flashes: false };
+  const STILL: GaugeLook = { ...LEFT, motion: false };
+
+  it('keeps its shards with the flashes reduced, not hot, nor its sweep', () => {
+    const blown = stepBoost(freshBoost(0, 1500), 1500, 'shatter', 1);
+    const shards = (look: GaugeLook) =>
+      gaugeSpans(blown, look, blown.frame).filter((span) => (span.alpha ?? 1) < 1);
+    expect(shards(NO_FLASHES).length).toBeGreaterThan(20);
+    expect(shards(STILL)).toEqual([]);
+    // Their bar's light rim only with the flashes normal (hot); the sparks keep it.
+    const rim = layersOf(ENERGY)[0]?.[0];
+    const hot = (look: GaugeLook) =>
+      shards(look).some((span) => span.width > 2 && span.color === rim);
+    expect(hot(LEFT)).toBe(true);
+    expect(hot(NO_FLASHES)).toBe(false);
+    expect(blastShake(blown, STILL)).toBe(0);
+    const filling = stepBoost(freshBoost(0, BOOST_BAR - 10), BOOST_BAR + 500, null, 1);
+    const sweep = (look: GaugeLook) =>
+      gaugeSpans(filling, look, 1).filter((span) => span.color === 0xffffff && span.alpha === 0.8);
+    expect(sweep(NO_FLASHES)).toEqual([]);
+    expect(sweep(STILL)).toHaveLength(6);
+  });
+
+  it('breaks still when told so: no shards, no shake', () => {
+    const { gauge, view } = gaugeOn();
+    gauge.update(1500, null, 0);
+    gauge.update(1500, 'shatter', 1, true);
+    gauge.update(1500, 'shatter', 2, true);
+    expect(view?.spans.every((span) => (span.alpha ?? 1) === 1)).toBe(true);
+    expect(view?.x).toBe(8);
+  });
+
+  it('stops MAX blinking at once, from the pause', () => {
+    const { gauge, word } = gaugeOn();
+    gauge.setComfort({ flashes: false, motion: true });
+    for (let frame = 0; frame < 60; frame++) {
+      gauge.update(BOOST_MAX, null, frame);
+      expect(word.alpha).toBe(1);
+    }
   });
 });

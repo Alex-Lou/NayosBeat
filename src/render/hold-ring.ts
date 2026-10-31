@@ -40,10 +40,13 @@ export function pendingHold(state: GameState): HoldState | null {
  * The ring of a hold (docs/combat-v2.md §4.5), behind the pair, around the held fighter: in the
  * holder's color, it drains until the holder must throw; each press of the held fighter makes it
  * jump (the limit shrinks, the ring swells a moment). While the tech is possible (the clinch,
- * not on a PUNITION), it blinks white: now is the time to press PRISE. Two shapes made up front,
- * their arc reset only when it changes: nothing is allocated per frame.
+ * not on a PUNITION), it blinks white: now is the time to press PRISE; calm (the flashes reduced
+ * or off: docs/flashs.md §4), it stays white, without blinking. Two shapes made up front, their
+ * arc reset only when it changes: nothing is allocated per frame.
  */
 export class HoldRing {
+  /** Read every frame, so the pause's options apply at once. */
+  calm = false;
   private readonly track: Phaser.GameObjects.Arc;
   private readonly ring: Phaser.GameObjects.Arc;
   private shownEnd = Number.NaN;
@@ -91,7 +94,7 @@ export class HoldRing {
       this.shownEnd = end;
     }
     const clinch = hold.techable && hold.frame < GRAB_TECH_FRAMES;
-    const blink = clinch && Math.floor(state.frame / BLINK_TICKS) % 2 === 0;
+    const blink = clinch && (this.calm || Math.floor(state.frame / BLINK_TICKS) % 2 === 0);
     const color = blink ? BLINK_COLOR : this.colors[hold.holder];
     const pop = 1 + POP * Math.max(0, 1 - (state.frame - this.poppedAt) / POP_TICKS);
     this.ring.setStrokeStyle(WIDTH, color, RING_ALPHA).setPosition(x, y).setScale(pop);

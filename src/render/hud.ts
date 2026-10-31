@@ -1,4 +1,4 @@
-import Phaser from 'phaser';
+import type Phaser from 'phaser';
 import type { MatchConfig } from '../core/config';
 import { TICK_RATE } from '../core/constants';
 import { ROUNDS_TO_WIN } from '../core/rules';
@@ -6,10 +6,12 @@ import type { FighterState, GameState, RoundState } from '../core/state';
 import { BoostGauge } from './boost-gauge';
 import type { Breakage } from './boost-motion';
 import type { KoFinish } from './fight-events';
-import { BAR_BOX, EMBER_RISE, HealthBar } from './health-bar';
+import type { FlashBudget } from './flash-budget';
+import { BAR_BOX, EMBER_RISE, HealthBar, type HudComfort } from './health-bar';
 import { DISC_SIZE, discSpans, MARK_TICKS, markSpan, PIP_SIZE, pipSpans } from './hud-discs';
 import { paintSpans, spanTexture, type Span } from './hud-paint';
 import { announcementOf, comboText, NO_TIMER } from './hud-text';
+import { FX_DARK } from './veils';
 import { VIEW_SIZE } from './view';
 
 const MARGIN = 8;
@@ -30,6 +32,13 @@ const BAND_COLOR = 0x0c0614;
 /** At or under this many seconds, the timer turns orange (steady: no blink). */
 const LOW_TIME = 10;
 const TIMER_COLORS = { normal: '#ffffff', low: '#ffa04a' } as const;
+/**
+ * View px² of white a character of the announcer lights at most, at its 24 px (the widest, « M »:
+ * tests/render/glyphs.test.ts); refused by the flash budget, it is drawn in the dark of the
+ * effects instead (ΔL ≤ 0.073 over the stage).
+ */
+export const ANNOUNCE_LETTER_AREA = 305;
+const ANNOUNCE_DARK = `#${FX_DARK.toString(16).padStart(6, '0')}`;
 
 /** Pixel font designed on an 8 px grid: sizes are kept to multiples of 8 to stay crisp. */
 export const PIXEL_FONT = '"Press Start 2P", monospace';
@@ -43,7 +52,9 @@ const TEXT_STYLE: Phaser.Types.GameObjects.Text.TextStyle = {
 
 /**
  * Health bars, Boost gauges, timer, round wins and announcements (docs/art/direction-hud.md).
- * Fixed on screen, above the stage, on a dark band; everything is made once.
+ * Fixed on screen, above the stage, on a dark band; everything is made once. What lights up at
+ * once (the white of a hit on a bar, a new announcement) asks the fight's flash budget first
+ * (docs/flashs.md §4), in view px² (the zoom does not enlarge the HUD).
  */
 export class Hud {
   private readonly bars: readonly [HealthBar, HealthBar];
@@ -53,7 +64,8 @@ export class Hud {
   /** The mark turning on the timer's vinyl, and the step it was painted at. */
   private readonly mark: Phaser.GameObjects.Graphics;
   private shownSpin = Number.NaN;
-  private readonly reducedMotion: boolean;
+  /** The vinyl turns (the screen not kept still). */
+  private motion: boolean;
   private readonly announcer: Phaser.GameObjects.Text;
   /** Training only: hits and damage of player 1's last combo on the dummy. */
   private readonly trainingInfo: Phaser.GameObjects.Text | undefined;
@@ -65,16 +77,25 @@ export class Hud {
   private readonly names: readonly [string, string];
   /** How each fighter was knocked out this round (its Boost gauge shows it), null while up. */
   private readonly finishes: [KoFinish | null, KoFinish | null] = [null, null];
+  /** Whether each fighter's gauges break still (no room left in the flash budget for shards). */
+  private readonly stills: [boolean, boolean] = [false, false];
+  /** Whether `view` px² of the HUD may light up now (the fight's flash budget). */
+  private readonly lights: (view: number) => boolean;
 
-  /** `energies`: each fighter's color on the HUD in its colorway (hudColorOf), for its side. */
+  /**
+   * `energies`: each fighter's color on the HUD in its colorway (hudColorOf), for its side;
+   * `comfort`: what the player's options leave it (HudComfort); `budget`: the fight's flashes.
+   */
   constructor(
     scene: Phaser.Scene,
     private readonly config: MatchConfig,
     energies: readonly [number, number],
+    comfort: HudComfort,
+    budget: FlashBudget,
   ) {
     const { width } = VIEW_SIZE;
-    this.reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const reducedMotion = this.reducedMotion;
+    this.motion = comfort.motion;
+    this.lights = (view) => budget.request(budget.toWorld(view)) === 'lit';
     this.names = [config.fighters[0].name, config.fighters[1].name];
     const leftX = MARGIN;
     const rightX = width - MARGIN - BAR_BOX.width;
@@ -85,8 +106,20 @@ export class Hud {
     this.fixed(scene.add.image(discX, DISC_TOP, DISC_TEXTURE).setOrigin(0, 0));
 
     this.bars = [
-      new HealthBar(scene, leftX, BAR_TOP, { side: 0, energy: energies[0], reducedMotion }),
-      new HealthBar(scene, rightX, BAR_TOP, { side: 1, energy: energies[1], reducedMotion }),
+      new HealthBar(
+        scene,
+        leftX,
+        BAR_TOP,
+        { side: 0, energy: energies[0], ...comfort },
+        this.lights,
+      ),
+      new HealthBar(
+        scene,
+        rightX,
+        BAR_TOP,
+        { side: 1, energy: energies[1], ...comfort },
+        this.lights,
+      ),
     ];
     // At each bar's inner end, toward the timer: the first win nearest to it.
     this.pips = [
@@ -100,14 +133,14 @@ export class Hud {
         scene,
         leftX,
         GAUGE_Y,
-        { side: 0, energy: energies[0], reducedMotion },
+        { side: 0, energy: energies[0], ...comfort },
         smallText(),
       ),
       new BoostGauge(
         scene,
         width - MARGIN,
         GAUGE_Y,
-        { side: 1, energy: energies[1], reducedMotion },
+        { side: 1, energy: energies[1], ...comfort },
         smallText(),
       ),
     ];
@@ -146,8 +179,9 @@ export class Hud {
       const comboed = fighter.comboCount > 0 && fighter.health > 0;
       if (fighter.health > 0) this.finishes[player] = null;
       const breakage = breakageOf(this.finishes[player] ?? null);
-      this.bars[player]?.update(fighter.health / max, comboed, frame, breakage);
-      this.gauges[player]?.update(fighter.boost, breakage, frame);
+      const still = breakage !== null && this.stills[player];
+      this.bars[player]?.update(fighter.health / max, comboed, frame, breakage, still);
+      this.gauges[player]?.update(fighter.boost, breakage, frame, still);
     });
     this.setPips(round);
     const seconds = Math.ceil(round.timer / TICK_RATE);
@@ -157,19 +191,40 @@ export class Hud {
     if (this.timer.style.color !== timerColor) this.timer.setColor(timerColor);
     // The vinyl turns while the timer runs (all along in training, where it does not).
     const clock = training ? frame : -round.timer;
-    const spin = this.reducedMotion ? 0 : Math.floor(clock / MARK_TICKS);
+    const spin = this.motion ? Math.floor(clock / MARK_TICKS) : 0;
     if (spin !== this.shownSpin) {
       this.shownSpin = spin;
       paintSpans(this.mark, [markSpan(spin)]);
     }
     const [, b] = fighters;
     if (this.trainingInfo) this.updateTrainingInfo(this.trainingInfo, b);
-    setTextIfChanged(this.announcer, announcementOf(state.round, this.names));
+    this.announce(announcementOf(state.round, this.names));
   }
 
-  /** `player` was knocked out on this tick: `finish` says how (fight-events.ts). */
-  knockOut(player: 0 | 1, finish: KoFinish): void {
+  /** A new announcement lights its letters at once: white if the budget lets it, dark if not. */
+  private announce(text: string): void {
+    if (this.announcer.text === text) return;
+    const letters = text.replace(/ /g, '').length;
+    const lit = letters === 0 || this.lights(ANNOUNCE_LETTER_AREA * letters);
+    const color = lit ? TIMER_COLORS.normal : ANNOUNCE_DARK;
+    if (this.announcer.style.color !== color) this.announcer.setColor(color);
+    this.announcer.setText(text);
+  }
+
+  /** The player's comfort options, from the next frame on (the pause's options). */
+  setComfort(comfort: HudComfort): void {
+    this.motion = comfort.motion;
+    for (const bar of this.bars) bar.setComfort(comfort);
+    for (const gauge of this.gauges) gauge.setComfort(comfort);
+  }
+
+  /**
+   * `player` was knocked out on this tick: `finish` says how (fight-events.ts); `still`, its
+   * gauges break without their shards (FightFeedback found no room for them in the budget).
+   */
+  knockOut(player: 0 | 1, finish: KoFinish, still = false): void {
     this.finishes[player] = finish;
+    this.stills[player] = still;
   }
 
   /** Keeps the last combo's result on screen until the next one starts. */

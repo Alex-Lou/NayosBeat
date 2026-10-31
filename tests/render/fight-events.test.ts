@@ -279,6 +279,27 @@ describe('detectEvents', () => {
     expect(jab.find((event) => event.type === 'hit')).toMatchObject({ pulse: false });
   });
 
+  it('carries the tier of the move that landed, and the damage it took (docs/flashs.md §4)', () => {
+    const tiers = (config: MatchConfig) =>
+      eventsOf(
+        facingOff(40, config, [{ boost: BOOST_MAX }, {}]),
+        [[Input.Left | Input.Boost, 0], ...idle(120)],
+        config,
+      ).flatMap((event) =>
+        event.type === 'hit' || event.type === 'ko' ? [[event.tier, event.damage > 0]] : [],
+      );
+    expect(tiers(MIRROR_MATCH)).toEqual([
+      [3, true],
+      [3, true],
+      [3, true],
+    ]);
+    const jab = eventsOf(facingOff(30, MIRROR_MATCH), [[Input.Light, 0], ...idle(30)]);
+    expect(jab.find((event) => event.type === 'hit')).toMatchObject({
+      tier: 0,
+      damage: P.moves.standLight.damage,
+    });
+  });
+
   it('reports no Boost for a plain special nor a dash', () => {
     const plain = eventsOf(facingOff(200, MIRROR_MATCH), [[Input.Special, 0], ...idle(30)]);
     expect(types(plain)).not.toContain('boost');
@@ -299,6 +320,7 @@ describe('vibrationFor', () => {
       heavy: false,
       held: true,
       counter: null,
+      tier: 0,
       pulse: false,
     };
     const thrown: FightEvent = { type: 'throw', ...blow, damage: 100 };
@@ -309,6 +331,7 @@ describe('vibrationFor', () => {
       heavy: true,
       held: false,
       counter: null,
+      tier: 0,
       pulse: false,
     };
     expect(vibrationFor(grabbed, 0)).toBe(HAPTICS.grabbed);
@@ -326,8 +349,10 @@ describe('vibrationFor', () => {
       away: 1,
       by: 0,
       low: false,
+      damage: 90,
       held: false,
       counter: null,
+      tier: 1,
       pulse: false,
     } as const;
     expect(vibrationFor({ ...ko, finish: 'finisher' }, 0)).toBe(HAPTICS.shatter);
@@ -345,6 +370,7 @@ describe('vibrationFor', () => {
       heavy: false,
       held: false,
       counter: null,
+      tier: 0,
       pulse: false,
     };
     expect(vibrationFor(light, 0)).toBe(0);

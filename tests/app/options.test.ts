@@ -1,0 +1,185 @@
+import type Phaser from 'phaser';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { App } from '../../src/app/app';
+import type { Sfx } from '../../src/audio/sfx';
+import { installFakePage, type FakeElement } from '../render/fake-dom';
+
+/** The elements under `node` that have the class `name`, in page order. */
+function byClass(node: FakeElement, name: string): FakeElement[] {
+  const own = node.className.split(' ').includes(name) ? [node] : [];
+  return own.concat(...node.children.map((child) => byClass(child, name)));
+}
+
+/**
+ * The app on a fake page, its storage `stored`, the system asking for less motion or not, a
+ * fight scene that records what it is given.
+ */
+function launch(stored: Record<string, string> = {}, reducedMotion = false) {
+  const page = installFakePage();
+  if (reducedMotion) {
+    Object.assign(page.window, {
+      matchMedia: (media: string) => ({
+        matches: media.includes('reduced-motion'),
+        addEventListener: () => undefined,
+      }),
+    });
+  }
+  const kept = new Map(Object.entries(stored));
+  vi.stubGlobal('localStorage', {
+    getItem: (key: string) => kept.get(key) ?? null,
+    setItem: (key: string, value: string) => kept.set(key, value),
+  });
+  const fight = { applyComfort: vi.fn(), resumeMatch: vi.fn() };
+  const game = {
+    loop: { sleep: vi.fn(), wake: vi.fn() },
+    scene: { getScene: () => fight, start: vi.fn(), stop: vi.fn() },
+  } as unknown as Phaser.Game;
+  let sound = true;
+  const sfx = {
+    get isEnabled() {
+      return sound;
+    },
+    setEnabled: (enabled: boolean) => {
+      sound = enabled;
+    },
+    unlock: vi.fn(),
+    play: vi.fn(),
+  } as unknown as Sfx;
+  // What the title screen tells a key press by.
+  class KeyboardEvent extends Event {}
+  vi.stubGlobal('KeyboardEvent', KeyboardEvent);
+  const app = new App(page.body as unknown as HTMLElement, game, sfx);
+  app.start();
+  const press = (code: string) => {
+    page.window.dispatchEvent(Object.assign(new KeyboardEvent('keydown'), { code, repeat: false }));
+  };
+  const screen = () => {
+    const [root] = page.body.children;
+    if (!root) throw new Error('Nothing on screen');
+    return {
+      title: byClass(root, 'menu-title')[0]?.textContent,
+      items: byClass(root, 'menu-item').map((item) => item.textContent),
+      selected: byClass(root, 'menu-item').findIndex((item) => item.classList.contains('selected')),
+      notice: byClass(root, 'menu-notice')[0]?.textContent,
+    };
+  };
+  /** Clicks the item whose label starts with `label`. */
+  const choose = (label: string) => {
+    const [root] = page.body.children;
+    const item = byClass(root as FakeElement, 'menu-item').find((button) =>
+      button.textContent.startsWith(label),
+    );
+    if (!item) throw new Error(`No item ${label}`);
+    item.dispatchEvent(new Event('click'));
+  };
+  return { page, app, fight, kept, press, screen, choose, root: page.body };
+}
+
+describe('the options (docs/flashs.md §4)', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  it('shows the notice once, after the title, then the main menu', () => {
+    vi.useFakeTimers();
+    const first = launch();
+    first.press('Enter');
+    expect(first.screen().title).toBe('Avant de jouer');
+    expect(first.screen().notice).toContain('crises convulsives');
+    // What to watch for, and what to do then.
+    expect(first.screen().notice).toContain('arrête tout de suite de jouer et consulte un médecin');
+    expect(first.screen().items).toEqual(['Jouer', 'Options']);
+    vi.advanceTimersByTime(1000);
+    first.choose('Jouer');
+    expect(first.screen().title).toBe('NAYOSBEAT');
+    expect(first.kept.get('nayosbeat.notice')).toBe('seen');
+    const again = launch({ 'nayosbeat.notice': 'seen' });
+    again.press('Enter');
+    expect(again.screen().title).toBe('NAYOSBEAT');
+  });
+
+  it('keeps the notice through a title pressed twice, and back to the title unread', () => {
+    vi.useFakeTimers();
+    const { press, screen, kept } = launch();
+    press('Enter');
+    // The second press of a title passed in a hurry: the notice stays.
+    vi.advanceTimersByTime(150);
+    press('Enter');
+    expect(screen().title).toBe('Avant de jouer');
+    expect(kept.has('nayosbeat.notice')).toBe(false);
+    // Back: to the title, the notice still to read, and shown again on the next press.
+    vi.advanceTimersByTime(1000);
+    press('Escape');
+    expect(screen().items).toEqual([]);
+    expect(kept.has('nayosbeat.notice')).toBe(false);
+    press('Enter');
+    expect(screen().title).toBe('Avant de jouer');
+  });
+
+  it('moves the sound from the main menu into the options screen', () => {
+    const { press, screen, choose } = launch({ 'nayosbeat.notice': 'seen' });
+    press('Enter');
+    expect(screen().items.some((item) => item.startsWith('Son'))).toBe(false);
+    choose('Options');
+    expect(screen().title).toBe('Options');
+    expect(screen().items).toEqual([
+      'Son : oui',
+      'Effets de flash : normaux',
+      "Tremblement de l'écran : normal",
+      'Retour',
+    ]);
+    choose('Son');
+    expect(screen().items[0]).toBe('Son : non');
+    expect(screen().selected).toBe(0);
+  });
+
+  it('cycles « Effets de flash » in place, keeps that choice alone, and marks the menus calm', () => {
+    const { press, screen, choose, kept, root } = launch({ 'nayosbeat.notice': 'seen' });
+    press('Enter');
+    choose('Options');
+    choose('Effets de flash');
+    expect(screen().items[1]).toBe('Effets de flash : réduits');
+    expect(screen().selected).toBe(1);
+    expect(kept.get('nayosbeat.flashes')).toBe('reduced');
+    expect(kept.has('nayosbeat.shake')).toBe(false);
+    expect(root.classList.contains('calm')).toBe(true);
+    choose('Effets de flash');
+    expect(screen().items[1]).toBe('Effets de flash : aucun');
+    choose('Effets de flash');
+    expect(screen().items[1]).toBe('Effets de flash : normaux');
+    expect(root.classList.contains('calm')).toBe(false);
+    choose('Tremblement');
+    choose('Tremblement');
+    expect(screen().items[2]).toBe("Tremblement de l'écran : aucun");
+    expect(root.classList.contains('still')).toBe(true);
+    // Back to the main menu, on the options.
+    choose('Retour');
+    expect(screen().title).toBe('NAYOSBEAT');
+    expect(screen().items[screen().selected]).toBe('Options');
+  });
+
+  it('opens from the pause, applies at once to the fight, and goes back to the pause', () => {
+    const { app, screen, choose, fight } = launch({ 'nayosbeat.notice': 'seen' });
+    (app as unknown as { showPause(): void }).showPause();
+    expect(screen().items).toContain('Options');
+    choose('Options');
+    choose('Tremblement');
+    expect(fight.applyComfort).toHaveBeenLastCalledWith({ flashes: 'normal', shake: 'reduced' });
+    choose('Retour');
+    expect(screen().title).toBe('Pause');
+    expect(screen().items[screen().selected]).toBe('Options');
+  });
+
+  it('starts from what the system asks when nothing was chosen: less motion', () => {
+    const { press, screen, choose, root } = launch({ 'nayosbeat.notice': 'seen' }, true);
+    expect(root.classList.contains('calm')).toBe(true);
+    expect(root.classList.contains('still')).toBe(true);
+    press('Enter');
+    choose('Options');
+    expect(screen().items.slice(1, 3)).toEqual([
+      'Effets de flash : réduits',
+      "Tremblement de l'écran : aucun",
+    ]);
+  });
+});

@@ -10,7 +10,9 @@ import { BoostEcho } from './boost-echo';
 import { DashTrail } from './dash-trail';
 import { DEPTH } from './depth';
 import type { DissolveStyle } from './dissolve';
+import { FxGate, type FlashBudget } from './flash-budget';
 import { FxDissolve } from './fx-dissolve';
+import { FxPixels } from './fx-pixels';
 
 const SHADOW_WIDTH = 36;
 const SHADOW_HEIGHT = 6;
@@ -18,14 +20,24 @@ const SHADOW_ALPHA = 0.35;
 /** Jump height (px) at which the shadow has shrunk to half its size. */
 const SHADOW_HALF_HEIGHT = 120;
 
+export interface SpriteFighterLook {
+  /** How its effects dissolve. */
+  readonly dissolve: DissolveStyle;
+  /** The stage's large colors: what its effects light, what its calm afterimages stay under. */
+  readonly stage: readonly number[];
+  /** The fight's flash budget, which its front effects ask (docs/flashs.md §4). */
+  readonly budget: FlashBudget;
+}
+
 /**
  * A fighter drawn with its sprites. The frame comes from the simulation state alone (action,
  * frame counter, move, round, and the opponent holding or throwing it), so the animation always
  * matches the frame data. The strips that
  * have front effects play them in step, over both fighters; a dash leaves afterimages in the
  * fighter's energy color (`trailColor`), a Boost move white echoes (`BoostEcho`). What the
- * effects of a special, a Remix or a super stop showing dissolves (`FxDissolve`). Its boxes show
- * in the debug view (BoxOverlay).
+ * effects of a special, a Remix or a super stop showing dissolves (`FxDissolve`). A clip of
+ * effects that would flash beyond the budget plays dark (`FxGate`, docs/flashs.md §4). Its boxes
+ * show in the debug view (BoxOverlay).
  */
 export class SpriteFighterView {
   private readonly shadow: Phaser.GameObjects.Ellipse;
@@ -34,8 +46,13 @@ export class SpriteFighterView {
   private readonly trail: DashTrail;
   private readonly echo: BoostEcho;
   private readonly dissolve: FxDissolve | undefined;
+  private readonly pixels: FxPixels;
+  private readonly gate = new FxGate();
+  private readonly budget: FlashBudget;
   /** Reused every frame. */
   private readonly shown: Shown = { clip: 'idle', tick: 0, x: 0 };
+  /** Where the body stood the frame before: its effects' pixels compare only in place. */
+  private readonly before = { x: Number.NaN, y: Number.NaN, flip: false };
 
   constructor(
     scene: Phaser.Scene,
@@ -44,9 +61,10 @@ export class SpriteFighterView {
     private readonly groundY: number,
     trailColor: number,
     private readonly config: MatchConfig,
-    /** How its effects dissolve; `still`: prefers-reduced-motion, they do not drift. */
-    look: { readonly dissolve: DissolveStyle; readonly still: boolean },
+    look: SpriteFighterLook,
   ) {
+    this.budget = look.budget;
+    this.pixels = new FxPixels(scene, art, look.stage);
     this.shadow = scene.add.ellipse(
       0,
       groundY,
@@ -55,7 +73,7 @@ export class SpriteFighterView {
       0x000000,
       SHADOW_ALPHA,
     );
-    this.trail = new DashTrail(scene, art, trailColor);
+    this.trail = new DashTrail(scene, art, trailColor, look.stage);
     this.echo = new BoostEcho(scene, art);
     this.body = new AnchoredSprite(scene, art).setDepth(DEPTH.fighterBack);
     this.effects = art.fx
@@ -63,8 +81,19 @@ export class SpriteFighterView {
       : undefined;
     this.effects?.hide();
     this.dissolve = art.fx
-      ? new FxDissolve(scene, art, look.dissolve, trailColor, look.still)
+      ? new FxDissolve(scene, art, look.dissolve, trailColor, false, this.pixels)
       : undefined;
+  }
+
+  /**
+   * The player's comfort options, at once (the pause's options): `calm`, the flashes reduced or
+   * off (one fainter echo, fainter afterimages); `still`, the screen keeping still (the
+   * dissolving effects do not drift).
+   */
+  setComfort(calm: boolean, still: boolean): void {
+    this.echo.calm = calm;
+    this.trail.calm = calm;
+    if (this.dissolve) this.dissolve.still = still;
   }
 
   /** Draws this fighter over the other one, or under it. */
@@ -80,7 +109,8 @@ export class SpriteFighterView {
     const shown = this.shown;
     showFighter(state, this.player, this.config, this.art, shown);
     const clip = clipOf(this.art, shown.clip);
-    const frame = clip.frames[clipFrameAt(clip, shown.tick)] ?? 0;
+    const index = clipFrameAt(clip, shown.tick);
+    const frame = clip.frames[index] ?? 0;
 
     const x = toPx(shown.x);
     const height = toPx(fighter.y);
@@ -102,15 +132,26 @@ export class SpriteFighterView {
     if (this.effects) {
       const effects = effectsOf(clip);
       const shows = this.art.fx?.[effects] !== undefined;
-      if (shows) this.effects.show(effects, frame, x, y, flip);
+      // Whether they would flash is asked of the frame shown, contact or not (a super blocked):
+      // what it lights anew over the frame before, all it lights if the body moved or turned.
+      const before = this.before;
+      const still = before.x === x && before.y === y && before.flip === flip;
+      const lit = (from: number): number =>
+        this.pixels.lightsAnew(effects, still ? from : -1, frame) ?? 0;
+      const dark = this.gate.show(this.budget, shows ? effects : null, index, frame, lit);
+      if (shows) this.effects.dark(dark).show(effects, frame, x, y, flip);
       else this.effects.hide();
       const move = fighter.move ? moveOf(template, fighter.move) : null;
       this.dissolve?.follow(
         shows ? { sheet: effects, frame, x, y, flip } : null,
         move !== null && tierOf(move) >= 1,
         frames,
+        dark,
       );
     }
+    this.before.x = x;
+    this.before.y = y;
+    this.before.flip = flip;
     const shrink = SHADOW_HALF_HEIGHT / (SHADOW_HALF_HEIGHT + height);
     this.shadow.setPosition(x, this.groundY).setScale(shrink);
   }

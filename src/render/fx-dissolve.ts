@@ -1,19 +1,19 @@
 import type Phaser from 'phaser';
 import { ART_SCALE, cellOf, type Cell, type FighterArt } from '../art/types';
 import { anchorOrigin } from './anchor-origin';
-import { stripName, textureKey } from './art-textures';
+import { stripName } from './art-textures';
 import { DEPTH } from './depth';
 import {
   DISSOLVE_FRAMES,
   MIN_GHOST_PIXELS,
-  opaqueCount,
   paintGhost,
   SHRINK,
   vanishing,
   type DissolveStyle,
   type Ghost,
-  type Pixels,
 } from './dissolve';
+import { FxPixels } from './fx-pixels';
+import { FX_DARK } from './veils';
 
 /** Ghosts going at once, per fighter: the oldest is reused. */
 const POOL = 4;
@@ -41,34 +41,34 @@ interface Slot {
   cell: Cell;
   age: number;
   painted: number;
-}
-
-/** A frame of a strip, its pixels and how many it shows. */
-interface Source {
-  readonly pixels: Pixels;
-  readonly count: number;
+  /** In the effects' dark look (docs/flashs.md §4), as the frame it is the ghost of was. */
+  dark: boolean;
 }
 
 /**
  * The ghosts of a fighter's effects (docs/art/dissolution.md): when a frame of the effects of a
  * special, a Remix or a super gives way to one that no longer shows some of it (or to none, the
- * move over or cut short), what goes dissolves where it was (src/render/dissolve.ts). The
- * pixels of each frame are read once from its strip, then kept.
+ * move over or cut short), what goes dissolves where it was (src/render/dissolve.ts), in the
+ * look it had (lit, or dark). The pixels of each frame are read once from its strip (FxPixels).
  */
 export class FxDissolve {
   private readonly slots: Slot[];
-  private readonly sources = new Map<string, Source>();
   private previous: ShownFrame | null = null;
   private previousStylish = false;
+  private previousDark = false;
 
   constructor(
-    private readonly scene: Phaser.Scene,
+    scene: Phaser.Scene,
     private readonly art: FighterArt,
     private readonly style: DissolveStyle,
     /** The fighter's energy: the rim of the dissolve. */
     private readonly rim: number,
-    /** prefers-reduced-motion: the pixels go where they are, without drifting. */
-    private readonly still: boolean,
+    /**
+     * The screen keeps still (« Tremblement » off): the pixels go where they are, without
+     * drifting. Read at each repaint, so the pause's options apply at once.
+     */
+    public still: boolean,
+    private readonly pixels: FxPixels = new FxPixels(scene, art),
   ) {
     const size = largestCell(art);
     const width = size.width + 2 * MARGIN;
@@ -94,23 +94,24 @@ export class FxDissolve {
         cell: size,
         age: 0,
         painted: 0,
+        dark: false,
       };
     });
   }
 
   /**
-   * The frame of effects shown now (null: none), and whether it is stylish (a special, a Remix,
-   * a super: what dissolves). Call once per display frame, `frames` of 1/60 s after the last.
-   * What dissolves: the effects of a stylish move when they stop (the move over or cut short),
-   * or when they fade out (a frame keeping less than SHRINK of the last one's pixels).
+   * The frame of effects shown now (null: none), whether it is stylish (a special, a Remix, a
+   * super: what dissolves) and drawn dark. Call once per display frame, `frames` of 1/60 s after
+   * the last. What dissolves: the effects of a stylish move when they stop (the move over or cut
+   * short), or when they fade out (a frame keeping less than SHRINK of the last one's pixels).
    */
-  follow(shown: ShownFrame | null, stylish: boolean, frames: number): void {
+  follow(shown: ShownFrame | null, stylish: boolean, frames: number, dark = false): void {
     this.advance(frames);
     const before = this.previous;
     if (before && this.previousStylish && !sameFrame(before, shown)) {
       const sameCell = shown !== null && shown.sheet === before.sheet && shown.flip === before.flip;
-      if (!sameCell) this.spawn(before, null);
-      else if (this.shrinks(before, shown)) this.spawn(before, shown);
+      if (!sameCell) this.spawn(before, null, this.previousDark);
+      else if (this.shrinks(before, shown)) this.spawn(before, shown, this.previousDark);
     }
     if (shown) {
       for (const slot of this.slots) {
@@ -120,12 +121,13 @@ export class FxDissolve {
     }
     this.previous = shown ? { ...shown } : null;
     this.previousStylish = stylish;
+    this.previousDark = dark;
   }
 
   /** `to` keeps less than SHRINK of `from`'s pixels: the effect fades out. */
   private shrinks(from: ShownFrame, to: ShownFrame): boolean {
-    const a = this.sourceOf(from.sheet, from.frame);
-    const b = this.sourceOf(to.sheet, to.frame);
+    const a = this.pixels.of(from.sheet, from.frame);
+    const b = this.pixels.of(to.sheet, to.frame);
     return a !== undefined && b !== undefined && b.count < SHRINK * a.count;
   }
 
@@ -135,11 +137,11 @@ export class FxDissolve {
     this.previous = null;
   }
 
-  private spawn(from: ShownFrame, to: ShownFrame | null): void {
-    const source = this.sourceOf(from.sheet, from.frame);
+  private spawn(from: ShownFrame, to: ShownFrame | null, dark: boolean): void {
+    const source = this.pixels.of(from.sheet, from.frame);
     if (!source) return;
     const cell = cellOf(this.art, stripName(from.sheet, 'fx'));
-    const remaining = to ? (this.sourceOf(to.sheet, to.frame)?.pixels ?? null) : null;
+    const remaining = to ? (this.pixels.of(to.sheet, to.frame)?.pixels ?? null) : null;
     const ghost = vanishing(source.pixels, remaining, this.style, cell.anchor.x);
     if (ghost.count < MIN_GHOST_PIXELS) return;
     // A free slot, else the ghost furthest gone.
@@ -158,6 +160,11 @@ export class FxDissolve {
       from.flip,
     );
     slot.image.setOrigin(origin.x, origin.y).setPosition(from.x, from.y).setFlipX(from.flip);
+    if (dark !== slot.dark) {
+      if (dark) slot.image.setTint(FX_DARK);
+      else slot.image.clearTint();
+      slot.dark = dark;
+    }
     this.paint(slot);
   }
 
@@ -203,38 +210,6 @@ export class FxDissolve {
     slot.ghost = null;
     slot.from = null;
     slot.image.setVisible(false);
-  }
-
-  /** The pixels of a frame of a strip, read from its image once. */
-  private sourceOf(sheet: string, frame: number): Source | undefined {
-    const key = textureKey(this.art, sheet, 'fx');
-    const id = `${key}#${frame}`;
-    const known = this.sources.get(id);
-    if (known) return known;
-    if (!this.scene.textures.exists(key)) return undefined;
-    const texture = this.scene.textures.get(key);
-    const cut = texture.get(frame);
-    const image = texture.getSourceImage() as CanvasImageSource;
-    const canvas = document.createElement('canvas');
-    canvas.width = cut.cutWidth;
-    canvas.height = cut.cutHeight;
-    const context = canvas.getContext('2d', { willReadFrequently: true });
-    if (!context) return undefined;
-    context.drawImage(
-      image,
-      cut.cutX,
-      cut.cutY,
-      cut.cutWidth,
-      cut.cutHeight,
-      0,
-      0,
-      cut.cutWidth,
-      cut.cutHeight,
-    );
-    const pixels = context.getImageData(0, 0, cut.cutWidth, cut.cutHeight);
-    const source = { pixels, count: opaqueCount(pixels) };
-    this.sources.set(id, source);
-    return source;
   }
 }
 

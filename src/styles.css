@@ -274,6 +274,14 @@ body {
   font-size: 8px;
   color: #778;
 }
+/* The notice of the first launch: a paragraph to read, on the grid of 8. */
+.menu-notice {
+  margin: 0 0 14px;
+  font-size: 8px;
+  line-height: 2;
+  color: #dde;
+  text-align: left;
+}
 .title-screen {
   flex-direction: column;
   gap: 28px;
@@ -589,11 +597,15 @@ body {
     box-shadow: 0 0 14px 3px rgba(240, 201, 74, 0.9);
   }
 }
-@media (prefers-reduced-motion: reduce) {
-  .select-tile.selected,
-  .title-vinyl {
-    animation: none;
-  }
+/* The player's comfort options on the menus' root (src/app/comfort.ts, docs/flashs.md §4), the
+   system's « reduce motion » choosing them until the player does: calm, nothing blinks or glows on
+   and off; still, nothing turns. */
+.calm .title-prompt,
+.calm .select-tile.selected {
+  animation: none;
+}
+.still .title-vinyl {
+  animation: none;
 }
 .rotate-hint {
   display: none;

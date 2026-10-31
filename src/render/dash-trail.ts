@@ -2,6 +2,7 @@ import type Phaser from 'phaser';
 import type { FighterArt } from '../art/types';
 import { AnchoredSprite } from './anchored-sprite';
 import { DEPTH } from './depth';
+import { alphaOver, VEIL_DELTA } from './veils';
 
 /** Afterimages per fighter: a fixed pool, the oldest one recycled. */
 const AFTERIMAGES = 3;
@@ -14,16 +15,23 @@ const ALPHA = 0.45;
 /**
  * The afterimages a dash leaves behind it: silhouettes of the fighter in its energy color, left
  * on the frames the dash glides and fading out. They count the match clock's ticks, so they
- * freeze with the hitstop, and a quiet frame writes nothing.
+ * freeze with the hitstop, and a quiet frame writes nothing. Calm (the flashes reduced or off:
+ * docs/flashs.md §4), fainter: they change the stage by less than VEIL_DELTA.
  */
 export class DashTrail {
+  /** Read every frame, so the pause's options apply at once. */
+  calm = false;
+  /** The calm afterimages' opacity, from their color and the stage's. */
+  private readonly calmAlpha: number;
   private readonly images: readonly AnchoredSprite[];
   /** Clock tick each afterimage was left on; null once it has faded. */
   private readonly born: (number | null)[];
   private next = 0;
   private lastLeft: number | null = null;
 
-  constructor(scene: Phaser.Scene, art: FighterArt, color: number) {
+  /** `stage`: the stage's large colors. */
+  constructor(scene: Phaser.Scene, art: FighterArt, color: number, stage: readonly number[]) {
+    this.calmAlpha = Math.min(ALPHA, alphaOver(color, stage, VEIL_DELTA));
     this.images = Array.from({ length: AFTERIMAGES }, () => {
       const image = new AnchoredSprite(scene, art).setDepth(DEPTH.trail).fill(color);
       image.hide();
@@ -64,7 +72,7 @@ export class DashTrail {
         image?.hide();
         this.born[i] = null;
       } else {
-        image?.setAlpha(ALPHA * (1 - age / LIFE_TICKS));
+        image?.setAlpha((this.calm ? this.calmAlpha : ALPHA) * (1 - age / LIFE_TICKS));
       }
     }
   }
