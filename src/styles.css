@@ -160,6 +160,15 @@ body {
 .touch-boost.full {
   box-shadow: 0 0 10px 2px rgba(255, 255, 255, 0.6);
 }
+/*
+ * The Finisher ready (docs/finisher.md §1.2), set from src/input/touch-controls.ts over `.full`:
+ * a plain, steady mark, nothing pulsing. Its fill turns to the energy at 35 % instead of the white
+ * at 15 %, its label to the energy instead of the platine; the label keeps its text.
+ */
+.touch-boost.finisher {
+  background: color-mix(in srgb, var(--boost-energy) 35%, transparent);
+  color: var(--boost-energy);
+}
 /* Keyboard and gamepad players pause with Escape / Start; the button is for touch. */
 .pause-button {
   display: none;

@@ -20,8 +20,9 @@ import {
 import { FLASH_MARGIN, FLASH_RULES } from '../../src/render/flash-budget';
 import { GREYBOX_COLORS } from '../../src/render/greybox-stage';
 import type { HitKind } from '../../src/render/hit-fx';
-import { hitStyleOf } from '../../src/render/hit-styles';
+import { hitStyleOf, hudColorOf } from '../../src/render/hit-styles';
 import { ANNOUNCE_LETTER_AREA } from '../../src/render/hud';
+import { BOOST_WORD, FINISH_PLATE_AREA, FINISH_WORD, MAX_WORD } from '../../src/render/boost-gauge';
 import { announcementOf } from '../../src/render/hud-text';
 import { freshPixels, litPixels, luminanceDelta } from '../../src/render/luminance';
 import {
@@ -225,6 +226,29 @@ describe('what the words and the stamps light (docs/flashs.md §4)', () => {
       expect(area, characters[index]).toBeLessThanOrEqual(ANNOUNCE_LETTER_AREA);
     }
     expect(Math.max(...areas)).toBeGreaterThan(ANNOUNCE_LETTER_AREA * 0.95);
+  });
+
+  it("lights no more with the gauge's word than the FINISH plate: its letters and rim", async () => {
+    const pixel = await outlinesOf(PIXEL);
+    /** The gauge's 8 px word, its stroke of 2 dark (it lights nothing) or `rim`. */
+    const word = (text: string, fill: number, rim = 0) =>
+      litArea(
+        pixel,
+        text,
+        { size: 8, stroke: 2, drop: 0, fill: { top: fill, bottom: fill }, ink: rim, energy: 0 },
+        GREYBOX_COLORS,
+      );
+    const platine = 0xf2f6ff;
+    const plates = STYLES.map((style) => word(FINISH_WORD, platine, hudColorOf(style)));
+    for (const plate of plates) expect(plate).toBeLessThanOrEqual(FINISH_PLATE_AREA);
+    expect(Math.max(...plates)).toBeGreaterThan(FINISH_PLATE_AREA * 0.95);
+    // BOOST in the energy, MAX in white: less than the plate.
+    for (const style of STYLES) {
+      expect(word(BOOST_WORD, hudColorOf(style))).toBeLessThan(FINISH_PLATE_AREA);
+    }
+    expect(word(MAX_WORD, 0xffffff)).toBeLessThan(FINISH_PLATE_AREA);
+    // Never a flash on its own, even with the flashes reduced: room for as much again beside it.
+    expect(FINISH_PLATE_AREA * 2).toBeLessThan(FLASH_RULES.reduced.area * FLASH_MARGIN);
   });
 });
 

@@ -39,6 +39,25 @@ export function bitsFromStick(dx: number, dy: number, previous: InputBits): Inpu
   return bits;
 }
 
+/**
+ * With FINISH lit, back reads down to this angle under the horizontal as BOOST is pressed
+ * (docs/finisher.md §1.3), instead of the 22.5° from which down joins it.
+ */
+export const FINISHER_BACK_DEGREES = 35;
+const FINISHER_BACK_SLOPE = Math.sin((FINISHER_BACK_DEGREES * Math.PI) / 180);
+
+/**
+ * The stick's `bits`, for a thumb `dx`, `dy` from its center, read as BOOST is pressed with
+ * FINISH lit (docs/finisher.md §1.3): a thumb pulling `back` (Left or Right: the fighter's back)
+ * a little low, down to FINISHER_BACK_DEGREES under the horizontal, reads back alone, the
+ * Finisher's command, rather than down-back, the anti-air's Remix (1 bar: the Finisher lost). A
+ * clear down-back (45°) stays one; the forward side and every other direction read as always.
+ */
+export function finisherBack(bits: InputBits, dx: number, dy: number, back: InputBits): InputBits {
+  if (!has(bits, back) || !has(bits, Input.Down)) return bits;
+  return dy <= Math.hypot(dx, dy) * FINISHER_BACK_SLOPE ? bits & ~Input.Down : bits;
+}
+
 export interface Point {
   x: number;
   y: number;

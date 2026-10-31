@@ -6,6 +6,7 @@ Spec de design, version 2. Elle intègre la revue adverse de la v1 (7 bloquants,
 - **Déjà livré, pris en compte**
   - **Flashs, étape 1** : `veils.ts`, `luminance.ts`, `shake.ts`, l'événement `freeze`, le drapeau `pulse`. Les étapes 2 (le budget, `flash-budget.ts`) et 3 (les options « Effets de flash » et « Tremblement ») n'étaient pas codées à l'écriture de la spec : c'était la PR 0 (§5.10), **livrée depuis** (`ac05999`, voir `docs/flashs.md`).
   - **Finisher, PR 1 (le cœur)** : livrée, voir §5.11.
+  - **Finisher, PR 2 (le signal)** : livrée, voir §5.11.
   - **Bras arrière de Nayo sur la Mégabasse** (PR #48) : sur s2, s3 et s4, il est balayé le long du dos, poing passé la hanche ; la boîte de corps de la 3e frappe (tics 14 à 17) descend de 55,5 à 49,5 px.
   - **Dissolution des effets** (`dissolve.ts`, `fx-dissolve.ts`) : la mise en scène s'en sert (§1.14, §4.3).
   - **En cours** : la reprise de l'anatomie de toutes les poses ; les poses citées ici peuvent encore bouger.
@@ -187,6 +188,7 @@ Touches vérifiées dans `keyboard.ts` (positions physiques, `KeyboardEvent.code
 - Un pouce qui tire « arrière » un peu bas donne la Montée platine (1 barre) : le Finisher devient impossible.
 - **Correction** : quand FINISH est allumé, à l'appui de BOOST, le stick lit « arrière » jusqu'à 35° sous l'horizontale, côté dos seulement. ↙ franc (45°) reste bas.
 - Choix : c'est l'option la plus simple et la plus sûre, car rien ne change hors de l'état armé. Avancer « Ultime en un appui » ajouterait un bouton.
+  - Dans l'état armé, la garde ne change pas non plus : en blockstun et en tech, où l'appui n'est que mis en buffer et où la garde lit le stick tenu, le stick se lit comme d'habitude (§5.11).
 - Le seuil est à mesurer sur téléphone.
 
 **D'où il part** : exactement d'où part la super (`cancelMove`, `tierOf`).
@@ -1097,14 +1099,16 @@ Estimation : environ 1 h pour le moteur, environ 1 h par perso.
 |---|---|---|---|
 | 0 | Flashs, étapes 2 et 3 (**prérequis**, **livrée**) | `flash-budget.ts` (compté en images de `visualClock`, sur la surface affichée, fx de planche compris) ; écran Options (« Effets de flash », « Tremblement ») ; persistance comme le son ; accès depuis la pause, appliqué à chaud ; avis au premier lancement ; drapeaux `flashes` et `motion` du HUD | 0,5 à 1 jour |
 | 1 | Finisher : cœur (**livrée**, §5.11) | `finisher.ts`, drapeaux, verrou (prise, échanges, paire intouchable, fin), frappe mortelle, chrono, renommage de `KoFinish` et de `FINISHER`, options d'entraînement dans `Replay`, `finisher.json`, tests 1 à 11 et 19 | 1 jour |
-| 2 | Finisher : signal | FINISH, `.finisher`, lecture d'arrière à 35°, halo, sirène, tests 12 et 13 | 0,25 jour |
+| 2 | Finisher : signal (**livrée**, §5.11) | FINISH, `.finisher`, lecture d'arrière à 35°, halo, sirène, tests 12 et 13 | 0,25 jour |
 | 3 | Finisher : mise en scène | `finisher-scene.ts`, piste de tics, horloges, bus `fight`, avance rapide, passage, caméra et textes à ×2,0, effets × 0,725, `Shake` à axe, scripts, cartes, foule, option « Mise en scène », tests 14 et 15 (avec les poses de repli) | 0,75 à 1 jour |
 | 4 | Finisher : art et sons | casque de Nayo (nouvelle attache) et 3 poses, 2 poses de Riff, revue du propriétaire ; 10 sons, moteur `sfx.ts`. Part de main, après la tâche 52 (livrée) | 0,75 à 1,25 jour |
 | 5 | Finisher : CPU, entraînement, aide | plans, défense, options d'entraînement, textes, docs, D24, re-mesure de l'IA, tests 16 à 18 | 0,5 jour |
 
 Total : environ 4 à 5 jours-agent. C'est une estimation, pas une mesure.
 
-### 5.11 Livré : la PR 1, « Finisher : cœur »
+### 5.11 Livré : les PR 1 et 2
+
+#### La PR 1, « Finisher : cœur »
 
 **Ce qui est fait** (le détail de §5.1, plus le `KoFinish` de §5.2 et §5.9)
 - **`src/core/finisher.ts`** : `FINISHER_DANGER_PERCENT = 30`, `inDanger`, `finisherState` (`'ready' | 'blocked' | 'off'`), `finisherReady`, `finisherLocked`, et ce que `step.ts` en tire : `locks` (le verrou sur une paire d'états), `finisherBlowOf` (le mode d'une frappe : `'floor'`, `'lethal'` ou rien), qui relit au premier contact la garantie (`everyBlowLands`, §1.6), et `dangerMarked` (le drapeau du 1er coup). En entiers, sans allocation.
@@ -1142,8 +1146,45 @@ Total : environ 4 à 5 jours-agent. C'est une estimation, pas une mesure.
 - **Test 9** : les tests `infinite*` et les combos de référence de `combos.test.ts` passent sans changement ; la matrice vérifie en plus qu'un Finisher ne prend jamais plus que les 30 % de départ.
 - **La garantie est prudente hors du milieu de la scène** (§1.6) : au coin, le verrou refuse jusqu'à un demi-pixel trop tôt, et une frappe qui toucherait un tic après son image ne compte pas. Le balayage compte 1 200 refus de ce genre, tous au coin ou sur un saut en miroir Nayo contre Nayo : ce sont des supers ordinaires.
 
-**Ce qui reste** (PR 2 à 5)
-- La plaque FINISH, `.finisher`, la lecture d'arrière à 35°, le halo et la sirène (PR 2) ; la mise en scène et le passage du KO `finale` par elle (PR 3) ; l'art et les sons (PR 4) ; l'IA, l'aide, le menu d'entraînement et les docs du §5.6 (PR 5).
+#### La PR 2, « Finisher : signal »
+
+**Ce qui est fait** (le signal du §1.2, l'entrée tactile du §1.3, la sirène du §5.4)
+- **Une lecture par image** (`src/render/finisher-signal.ts`) : `finisherSignalOf(state, player, config)` lit `finisherState` sur l'état affiché, et `FinisherSignal` garde les deux états pour tout ce qui les montre : la plaque, le bouton tactile, les halos et la sirène. `FightScene` le lit au début de `syncViews`. `SIGNAL_FADE_TICKS = 6`.
+- **La plaque** (`boost-gauge.ts`) : `FINISH_WORD`, `WORD_WIDTH = 48`, `GAUGE_WIDTH = WORD_X + 48 = 174`. `wordOf` donne le mot de chaque état :
+  - `ready` : FINISH en platine `#F2F6FF`, cerné de 1 px dans la couleur de HUD du perso (un trait de 2, comme le noir d'aujourd'hui), fixe ;
+  - `blocked` : le même à `BLOCKED_ALPHA = 0.4`, fixe ;
+  - `off` : comme avant, MAX qui clignote à 2 Hz, BOOST en dessous. Une jauge fissurée ou éclatée ne montre aucun signal.
+- **Le fondu de 6 tics** (`fadedWord`) : le même mot qui baisse va d'une opacité à l'autre sur les 6 tics ; le même mot qui monte (de `blocked` à `ready`) attend 3 tics, puis monte en 3, de 0,2 par tic ; un mot nouveau efface l'ancien en 3 tics, puis apparaît en 3. Ce qui s'allume s'allume donc sur la seconde moitié, à partir de `LIGHTS_AT = 4`, la première image où le mot se voit (un tiers). Jamais les deux à la fois, jamais plus d'un tiers d'opacité par tic.
+- **La plaque passe par le budget de flashs** : le changement part tout de suite, mais un mot qui s'allume demande au budget d'admettre `FINISH_PLATE_AREA = 380` px² de vue à `LIGHTS_AT`, pas à l'image où le signal change. La place que garde le budget couvre ainsi les images où le mot s'allume (les âges 4 à 6, dans `FLASH_MERGE`). Refusé, le mot attend là sans rien montrer (l'ancien déjà effacé, ou le même mot à son opacité d'avant) et redemande à chaque image (`admit` : la plaque ne prend jamais de créneau). Mesuré sur les lettres (Press Start 2P à 8 px, trait de 2) : 373 px² pour FINISH cerné, 139 pour BOOST, 92 pour MAX. De `ready` à `blocked`, le mot ne fait que baisser : rien à demander. `Hud.update(state, finisher)` passe à chaque jauge le signal de son perso.
+- **Le halo** (`finisher-halo.ts`, dans `SpriteFighterView` et dans `FighterView`, les boîtes grises) : une ellipse de 44 × 6 px du monde dans l'énergie du perso, sous son ombre.
+  - Son alpha vient d'`alphaOver(énergie, scène, VEIL_DELTA)` : 0,27 en cyan, 0,47 pour Nayo en tenue 2, 0,53 pour Riff, 0,28 pour Riff en tenue 2 (son or). Il n'allume rien à ΔL 0,10 : rien à demander au budget.
+  - Il respire sur 120 tics (un cosinus), de cet alpha au plus faible qui reste à ΔL 0,05 de lui sur chaque couleur de la scène.
+  - Il est fixe, à son plus clair, avec les effets de flash réduits ou le tremblement à « aucun », donc aussi avec `prefers-reduced-motion`. Il apparaît et part en 6 tics.
+- **Le bouton tactile** : `showFinisher(signal, facing, action)` (`touch-controls.ts`) pose `.finisher` en `ready` seulement ; en `blocked`, il reste `.full`. `.touch-boost.finisher` (`styles.css`) : fond `color-mix(in srgb, var(--boost-energy) 35%, transparent)`, libellé `var(--boost-energy)`, rien qui pulse. Aucun bouton de plus.
+- **La lecture d'arrière à 35°** (`finisherBack`, `touch-stick.ts`) : sur la lecture où BOOST est appuyé, FINISH allumé, un stick tiré entre 22,5° et 35° sous l'horizontale, côté dos (selon `facing`), perd son bas. Au-delà de 35°, ↙ reste bas ; côté avant, rien ne change ; BOOST tenu ensuite, le stick se lit comme d'habitude. C'est la direction que le cœur garde avec la commande (`bufferedInput`). Pas en blockstun ni en tech (`GUARDING_STUNS`, voir les écarts).
+- **La sirène** (`sfx.ts`, `finisherReady`) : elle part au front montant de `ready`, au plus une fois par round et par joueur (`round.number`). `play(name, pitch)` multiplie les fréquences : `sirenPitchOf` vaut 1 pour Nayo, 330/262 pour Riff (mi → si, à 0,3 Hz près).
+- **Tests** (§5.8)
+  - 12 : `tests/render/boost-gauge.test.ts` (48 px, les trois états, jamais de clignotement, le fondu, l'attente du budget à `LIGHTS_AT`, à 30 Hz aussi) et `tests/render/hud.test.ts` (ni le disque ni la piste du Crossfader, 38 px du disque de chaque côté ; le HUD suit le prédicat pour J1 et J2 sur de vrais états ; rien entre les rounds ; la plaque attend le budget, et sa place compte sur les images où FINISH s'allume, pas sur celle où le signal change).
+  - 13 : `tests/input/touch.test.ts` (`.finisher` change le fond et le libellé de `.full`, la classe seulement en `ready`, arrière lu jusqu'à 35° côté dos et à l'appui seulement, jamais en blockstun ni en tech, la grappe à 7 boutons).
+  - En plus : `tests/render/finisher-signal.test.ts` (le signal éteint hors du combat, la sirène une fois par round et par joueur), `tests/render/finisher-halo.test.ts` (ΔL ≤ 0,08, respiration ≤ 0,05, fixe au calme, fondu), `tests/audio/sfx.test.ts` (0,8 s, do → sol, 9 dB sous `heavyHit`), la surface de la plaque (`flash-areas.test.ts`) et ses lettres dans la police (`glyphs.test.ts`).
+
+**Écarts à la spec, et pourquoi**
+- **Le signal est éteint hors du combat** (`finisherSignalOf`) : entre deux rounds, les quatre voyants peuvent être allumés (le gagnant du round 1 passe à la balle de match, plein, face à un perdant à 0 PV), alors que personne ne peut jouer. Le prédicat du cœur ne change pas : c'est le rendu qui se tait.
+- **Le fondu se compte en tics** (`state.frame`), comme tout le HUD (direction-hud §1) : 6 images à vitesse normale, arrêté par la pause.
+- **Un mot nouveau passe par le vide** au lieu d'un fondu enchaîné : un seul texte par jauge, comme le compte le coût du HUD (direction-hud §6).
+- **FINISH bloqué garde son liseré d'énergie** : le même mot, à 40 %.
+- **La plaque passe par le budget**, ce que la spec ne demande pas (« ce n'est pas un flash ») : seule, elle ne flashe jamais (380 px² de vue, moins de la moitié des 990 des effets réduits), mais elle pourrait s'additionner à une gerbe étouffée qui part pendant qu'elle s'allume. Par exemple, Riff à 30 % sort d'un combo, Nayo passe à `ready` en balle de match, et son lourd touche 4 ou 5 images plus tard : 904 px² de vue (430 du monde à ×1,45), plus les 373 de FINISH, font 1 277 px² en 3 images, au-dessus des 990 que le budget laisse aux effets réduits. Sa place est donc gardée sur les images où FINISH s'allume, et c'est la gerbe qui prend un créneau, ou reste étouffée. Si la gerbe part avant, la plaque attend une ou deux images sans rien montrer.
+- **Le halo est fixe aussi avec les effets de flash réduits**, pas seulement en mouvement réduit : comme l'anneau de prise, blanc fixe au calme.
+- **Le halo de Riff en tenue 2 est or**, son énergie (comme ses traînées), alors que son HUD passe au cramoisi.
+- **En entraînement, la sirène sonne une fois par séance** : l'entraînement ne joue qu'un round.
+- **La sirène est un remplaçant** fait avec le moteur actuel : trois ondes carrées qui tirent vers la quinte (262 → 320, 320 → 392, puis 392 tenu), 0,8 s, à 9 dB sous le carré de `heavyHit` (0,35 × 10^(−9/20) ≈ 0,124). Ni passe-bas à 2 kHz ni vibrato de 6 Hz : la PR 4 fera la vraie.
+- **`.finisher` utilise `color-mix`** (Chrome 111, Safari 16.2) : un navigateur plus ancien ignore ce fond et garde celui de `.full`, mais le libellé passe quand même à l'énergie.
+- **« FINISH allumé » se lit `ready`**, pour la lecture à 35° comme pour `.finisher` : en `blocked`, arrière + BOOST ne donne qu'une super ordinaire, et élargir l'arrière y changerait des Remix d'anti-air en supers.
+- **Pas de lecture à 35° en blockstun ni en tech** (`GUARDING_STUNS`, `touch-controls.ts`) : la garde y lit le stick tenu à chaque tic, et l'appui de BOOST n'y est que mis en buffer. Sans son bas, la garde basse se levait sur la lecture de l'appui (1 tic, 2 à 30 i/s) et un coup bas passait, ce que le clavier et la manette ne font pas. Un reversal mis en buffer depuis la garde, pouce entre 22,5° et 35°, donne donc le Remix, comme avant la PR. Ailleurs (debout, accroupi, en marche arrière, en garde), l'appui lance la super sur son tic : la garde n'y est plus lue. Faire mieux demanderait au cœur de séparer la direction gardée avec la commande de celle que lit la garde, et le cœur est figé par la PR 1. `.finisher` suit toujours `ready` seul.
+- **Le seuil de 35° reste à mesurer sur téléphone** (§1.3).
+
+#### Ce qui reste (PR 3 à 5)
+- La mise en scène et le passage du KO `finale` par elle (PR 3) ; l'art et les sons, dont la vraie sirène (PR 4) ; l'IA, l'aide, le menu d'entraînement et les docs du §5.6, dont la plaque FINISH dans direction-hud (PR 5).
 - En entraînement avec « Toujours prêt », la ligne « Combo » montre aujourd'hui toute la vie prise par la dernière frappe ; la PR 5 doit y afficher les dégâts ordinaires de la super, et la raison d'un refus (test 16).
 
 ---

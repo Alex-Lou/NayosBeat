@@ -3,7 +3,7 @@ import { FLASH_LABELS, NOTICE, SHAKE_LABELS } from '../../src/app/comfort';
 import { helpPages, withArrows } from '../../src/app/controls-content';
 import type { RoundState } from '../../src/core/state';
 import { ROSTER } from '../../src/data/roster';
-import { BOOST_WORD } from '../../src/render/boost-gauge';
+import { BOOST_WORD, FINISH_WORD, MAX_WORD } from '../../src/render/boost-gauge';
 import { announcementOf, comboText, HOLD_PROMPT, NO_TIMER } from '../../src/render/hud-text';
 import { wordFor, type BlowKind } from '../../src/render/onomatopoeia';
 import { boostStamp, STAMP_TEXTS } from '../../src/render/stamps';
@@ -63,8 +63,11 @@ function hudTexts(): string[] {
     '↑',
     comboText(1, 30),
     comboText(12, 345),
-    // The Boost gauge under each health bar (docs/combos-v3.md §1.8.6).
+    // The Boost gauge under each health bar (docs/combos-v3.md §1.8.6), and the Finisher's
+    // plate (docs/finisher.md §1.2).
     BOOST_WORD,
+    MAX_WORD,
+    FINISH_WORD,
     ...ROSTER.flatMap(({ template }) => [
       template.name,
       ...Object.values(template.moves).map((move) => move.name),

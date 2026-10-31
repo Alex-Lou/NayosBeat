@@ -1,4 +1,5 @@
 import type Phaser from 'phaser';
+import type { FinisherState } from '../core/finisher';
 import { BOOST_BAR, BOOST_MAX } from '../core/rules';
 import {
   barsOf,
@@ -14,6 +15,7 @@ import {
   stepBoost,
   type BoostMotion,
 } from './boost-motion';
+import { SIGNAL_FADE_TICKS } from './finisher-signal';
 import {
   mirrored,
   mix,
@@ -33,14 +35,35 @@ import type { HudComfort } from './health-bar';
  * fighter's energy, lighter, then the Boost's platine. Full, the word turns from BOOST to MAX
  * (King of Fighters XV) and a shine runs over the tube. It fills rather than jumps, a light sweeps
  * over the bar it completes, a spend drains fast, and a KO shatters it into squares (King of
- * Fighters XV) until the next round, its Boost kept.
+ * Fighters XV) until the next round, its Boost kept. With the Finisher's lights on, the word turns
+ * to FINISH and holds still (docs/finisher.md §1.2).
  */
 
 /** What the gauge writes: no accented capital, the pixel font has none. */
 export const BOOST_WORD = 'BOOST';
 export const MAX_WORD = 'MAX';
+/**
+ * The Finisher's plate (docs/finisher.md §1.2): FINISH in place of MAX, platine rimmed in the
+ * energy, still. It is MAX's blink stopping that signals: the calm before the blow.
+ */
+export const FINISH_WORD = 'FINISH';
+/** The pixel font's letters are 8 px wide: the longest word, FINISH, takes 48 px. */
+export const WORD_WIDTH = FINISH_WORD.length * 8;
+/** FINISH blocked (every light on but the room for the super's blows): dimmed, still. */
+export const BLOCKED_ALPHA = 0.4;
+/**
+ * View px² the FINISH plate lights at ΔL ≥ 0.1 at most, its letters and their rim
+ * (tests/render/flash-areas.test.ts), more than BOOST or MAX: a change of the signal that lights
+ * the word waits, on LIGHTS_AT, until the flash budget admits this much. The plate never makes a
+ * flash.
+ */
+export const FINISH_PLATE_AREA = 380;
+/** The rim of FINISH: a stroke of 2, 1 px around its letters. */
+const FINISH_RIM_WIDTH = 2;
 /** Full, the word blinks at 2 Hz (D21: 3 Hz at most): on, then off, for this many ticks. */
 export const BLINK_TICKS = 15;
+/** MAX blinking, off: barely there. */
+const BLINK_ALPHA = 0.25;
 
 const ROWS = 6;
 /** The tube's length: each bar fills all of it, the next stacking over it (a pixel for 10 Boost). */
@@ -51,8 +74,8 @@ const CAPSULE = { width: 12, height: 10 } as const;
 const TUBE_X = CAPSULE.width + 2;
 const TUBE_Y = 1;
 export const WORD_X = TUBE_X + BOX.width + 3;
-/** The whole gauge, from its outer end. */
-export const GAUGE_WIDTH = WORD_X + 40;
+/** The whole gauge, from its outer end, to the end of its longest word (FINISH): 174 px. */
+export const GAUGE_WIDTH = WORD_X + WORD_WIDTH;
 /** Ticks of the shine running over a full gauge, and of the wait before the next one. */
 const SHINE_TICKS = 24;
 const SHINE_EVERY = 90;
@@ -136,6 +159,87 @@ export function levelColor(energy: number, bars: number): number {
 /** Whether the word of a full gauge shows on tick `frame`: it blinks. */
 export function blinkOn(frame: number): boolean {
   return Math.floor(frame / BLINK_TICKS) % 2 === 0;
+}
+
+/** What the word shows, its opacity aside. */
+export interface WordFace {
+  readonly text: string;
+  /** Its letters' color (a CSS color, as a text takes it). */
+  readonly color: string;
+  /** Its rim's color: the energy around FINISH, null for the HUD's dark stroke. */
+  readonly rim: string | null;
+}
+
+/** The word as it shows on a frame. */
+export interface ShownWord {
+  readonly face: WordFace;
+  readonly alpha: number;
+}
+
+/** The faces of one gauge's word, made once. */
+export interface WordFaces {
+  readonly boost: WordFace;
+  readonly broken: WordFace;
+  readonly max: WordFace;
+  readonly finish: WordFace;
+}
+
+export function wordFacesOf(energy: number): WordFaces {
+  return {
+    boost: { text: BOOST_WORD, color: hex(energy), rim: null },
+    broken: { text: BOOST_WORD, color: hex(BROKEN), rim: null },
+    max: { text: MAX_WORD, color: hex(PLATINE[0]), rim: null },
+    finish: { text: FINISH_WORD, color: hex(PLATINE[2]), rim: hex(energy) },
+  };
+}
+
+/**
+ * The word the gauge settles on at tick `frame`, for its fighter's Finisher `signal`
+ * (docs/finisher.md §1.2): FINISH, still, when ready; the same at BLOCKED_ALPHA when blocked;
+ * otherwise as ever: BOOST, then MAX once full, blinking (steady with the flashes reduced, or
+ * cracked: its fighter is down), and BOOST dimmed while shattered. A broken gauge shows no signal.
+ */
+export function wordOf(
+  faces: WordFaces,
+  motion: BoostMotion,
+  look: GaugeLook,
+  frame: number,
+  signal: FinisherState,
+): ShownWord {
+  if (motion.broken < 0 && signal !== 'off') {
+    return { face: faces.finish, alpha: signal === 'ready' ? 1 : BLOCKED_ALPHA };
+  }
+  const broken = isShattered(motion);
+  if (!isFull(motion) || broken) return { face: broken ? faces.broken : faces.boost, alpha: 1 };
+  const blinks = motion.broken < 0 && look.flashes;
+  return { face: faces.max, alpha: blinks && !blinkOn(frame) ? BLINK_ALPHA : 1 };
+}
+
+/**
+ * The age, in a change of the signal, at which the word it lights first shows (a third of the
+ * way): the first half of the fade only fades the old word out, or holds it; the second lights
+ * the new one, from this tick to SIGNAL_FADE_TICKS, within FLASH_MERGE ticks. The gauge asks the
+ * flash budget on this tick, so the place the budget keeps covers the ticks the word lights on.
+ */
+export const LIGHTS_AT = SIGNAL_FADE_TICKS / 2 + 1;
+
+/**
+ * The word `age` ticks into a change of the signal, from what it showed (`from`) to where it
+ * settles (`to`), over SIGNAL_FADE_TICKS: the same face dims from one opacity to the other over
+ * all of it, or holds and brightens over its second half; a new one fades the old out, then
+ * itself in, never both at once. Whatever lights, lights from LIGHTS_AT on. Never a jump: no
+ * flash, no blink.
+ */
+export function fadedWord(from: ShownWord, to: ShownWord, age: number): ShownWord {
+  if (age < 0 || age >= SIGNAL_FADE_TICKS) return to;
+  const progress = age / SIGNAL_FADE_TICKS;
+  if (from.face === to.face) {
+    const share = to.alpha > from.alpha ? Math.max(0, 2 * progress - 1) : progress;
+    return { face: to.face, alpha: from.alpha + (to.alpha - from.alpha) * share };
+  }
+  return progress < 0.5
+    ? { face: from.face, alpha: from.alpha * (1 - 2 * progress) }
+    : { face: to.face, alpha: to.alpha * (2 * progress - 1) };
 }
 
 /**
@@ -352,7 +456,9 @@ function cracks(motion: BoostMotion, look: GaugeLook): Span[] {
 /**
  * The gauge's view: one Graphics for the capsule and the tube, two texts (the number, the word),
  * made once; the Graphics is repainted only when what it shows changes, the texts only when
- * their content does.
+ * their content does. A change of the Finisher's signal that lights the word asks the flash
+ * budget (`admit`) on the tick it starts to light, LIGHTS_AT, and waits there, none of the word
+ * showing yet, while it would add up into a flash.
  */
 export class BoostGauge {
   private readonly graphics: Phaser.GameObjects.Graphics;
@@ -364,15 +470,37 @@ export class BoostGauge {
   private readonly left: number;
   /** Its look kept still (a KO the flash budget left no room to blow it up). */
   private still: GaugeLook;
+  private readonly faces: WordFaces;
+  /** The HUD's dark stroke, which FINISH's rim replaces. */
+  private readonly darkRim: { readonly color: string; readonly width: number };
+  /** The signal the word shows, and the word shown last. */
+  private signal: FinisherState = 'off';
+  private shown: ShownWord;
+  /** The word the last change faded from, and the tick it started on (null: settled). */
+  private fadeFrom: ShownWord | null = null;
+  private fadedAt = 0;
+  /** The fade lights its word, and the budget has not admitted it yet. */
+  private asks = false;
+  private rim: string | null = null;
 
-  /** `x`: the outer end of the gauge (the screen's edge side), `y`: its top. */
+  /**
+   * `x`: the outer end of the gauge (the screen's edge side), `y`: its top; `admit`: whether
+   * `view` px² more of the HUD may light now without a flash (the fight's flash budget).
+   */
   constructor(
     scene: Phaser.Scene,
     x: number,
     y: number,
     private look: GaugeLook,
     textStyle: Phaser.Types.GameObjects.Text.TextStyle,
+    private readonly admit: (view: number) => boolean = () => true,
   ) {
+    this.faces = wordFacesOf(look.energy);
+    this.shown = { face: this.faces.boost, alpha: 1 };
+    this.darkRim = {
+      color: typeof textStyle.stroke === 'string' ? textStyle.stroke : '#000000',
+      width: textStyle.strokeThickness ?? 0,
+    };
     this.left = look.side === 0 ? x : x - GAUGE_WIDTH;
     this.graphics = scene.add.graphics({ x: this.left, y }).setScrollFactor(0).setDepth(10);
     const countX = look.side === 0 ? x + 2 : x - CAPSULE.width + 2;
@@ -391,9 +519,16 @@ export class BoostGauge {
 
   /**
    * `breakage`: how the fighter's KO breaks the gauge, from the KO to the next round (null when it
-   * stays whole); `frame`: the match clock; `still`: it breaks without its shards.
+   * stays whole); `frame`: the match clock; `still`: it breaks without its shards; `finisher`:
+   * its fighter's Finisher signal (finisher-signal.ts).
    */
-  update(boost: number, breakage: Breakage | null, frame: number, still = false): void {
+  update(
+    boost: number,
+    breakage: Breakage | null,
+    frame: number,
+    still = false,
+    finisher: FinisherState = 'off',
+  ): void {
     this.motion = stepBoost(this.motion, boost, breakage, frame);
     const motion = this.motion;
     const look = still ? this.still : this.look;
@@ -407,15 +542,49 @@ export class BoostGauge {
     const broken = isShattered(motion);
     setIfChanged(this.count, String(bars), hex(levelColor(this.look.energy, bars)));
     this.count.setAlpha(broken ? 0.4 : 1);
-    // Cracked, a full gauge still says MAX, without blinking: its fighter is down.
-    const full = isFull(motion) && !broken;
-    const blinks = full && motion.broken < 0 && this.look.flashes;
-    setIfChanged(
-      this.word,
-      full ? MAX_WORD : BOOST_WORD,
-      full ? hex(PLATINE[0]) : hex(broken ? BROKEN : this.look.energy),
-    );
-    this.word.setAlpha(blinks && !blinkOn(frame) ? 0.25 : 1);
+    this.showWord(this.wordAt(motion, frame, finisher));
+  }
+
+  /**
+   * The word on tick `frame`: where it settles for the signal it shows, or on its way there. A
+   * new signal starts the fade at once. Unless it only dims (FINISH ready, then blocked), the
+   * fade asks the budget on LIGHTS_AT, the first tick its word would show: the place the budget
+   * keeps then is where the word lights, not where the signal turned. Refused, it holds on the
+   * tick before, the old word gone (or the same word as it was), and asks again on the next.
+   */
+  private wordAt(motion: BoostMotion, frame: number, finisher: FinisherState): ShownWord {
+    const signal = motion.broken < 0 ? finisher : 'off';
+    if (signal !== this.signal) {
+      const next = wordOf(this.faces, motion, this.look, frame, signal);
+      this.asks = next.face !== this.shown.face || next.alpha > this.shown.alpha;
+      this.signal = signal;
+      this.fadeFrom = this.shown;
+      this.fadedAt = frame;
+    }
+    const settled = wordOf(this.faces, motion, this.look, frame, this.signal);
+    const from = this.fadeFrom;
+    if (from === null) return settled;
+    // `>=`: at 30 Hz, or after a hitch, the ticks shown may step over LIGHTS_AT.
+    if (this.asks && frame - this.fadedAt >= LIGHTS_AT) {
+      this.asks = !this.admit(FINISH_PLATE_AREA);
+      this.fadedAt = frame - (this.asks ? LIGHTS_AT - 1 : LIGHTS_AT);
+    }
+    const age = frame - this.fadedAt;
+    if (age < 0 || age >= SIGNAL_FADE_TICKS) this.fadeFrom = null;
+    return fadedWord(from, settled, age);
+  }
+
+  /** Writes the word to its text, each part only when it changes (rendering a text is costly). */
+  private showWord(word: ShownWord): void {
+    this.shown = word;
+    const { face } = word;
+    setIfChanged(this.word, face.text, face.color);
+    if (face.rim !== this.rim) {
+      this.rim = face.rim;
+      if (face.rim === null) this.word.setStroke(this.darkRim.color, this.darkRim.width);
+      else this.word.setStroke(face.rim, FINISH_RIM_WIDTH);
+    }
+    this.word.setAlpha(word.alpha);
   }
 
   /** The player's comfort options, from the next update on (the pause's options). */
