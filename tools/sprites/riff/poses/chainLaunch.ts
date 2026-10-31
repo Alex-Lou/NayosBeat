@@ -21,7 +21,8 @@ export const ANIMATED: boolean = true;
  * backfist she bounds forward pitched over it, the lead knee driven up in front, the rear leg
  * tucked under her and snapping up after it (a chassé, nothing like the flat skip of her
  * Revers, which is on its back with the elbow leading); the backfist's arm folds in across the
- * chest, the lead one swings back against the lead knee. She lands on the lead foot, deep, and
+ * chest, the lead fist tucks in at the chest, a boxer's reflex in the air. She lands on the lead
+ * foot, deep, and
  * lets the rear leg swing down and back behind her, the pendulum's wind-up that whips it over
  * her head on the next frame, while both arms swing down in front. Hop, squash, stretch: the
  * bounce sells the 14 px the game carries her.
@@ -29,8 +30,10 @@ export const ANIMATED: boolean = true;
  * - 0 (new, 2 ticks): the hop: both boots off the floor (the lead one 14 px up, under its knee,
  *   the rear one tucked under her seat, toes down), the hips 6.5 px over her guard's, the body
  *   pitched 37 degrees; the rear fist folded across the chest on its way down from the
- *   backfist, the lead fist pulled back to the ribs (its elbow back behind her, the forearm
- *   forward: a sprinter's back arm); a puff of dust where she pushed off.
+ *   backfist, the lead fist tucked in at the chest, its elbow down in front of the ribs (the
+ *   guard's fold, hidden behind the chest but for the glove: pulled back to the ribs, a
+ *   sprinter's back arm, its elbow stuck out of her back and read as a broken arm, the owner's
+ *   call); a puff of dust where she pushed off.
  * - 1 (new, 2 ticks): the landing, loaded: the lead foot flat where the Retourné takes off (14 px
  *   ahead of the Revers' on the screen), the knee sunk (the hips 4 px under her guard's), the
  *   body pitched 32 degrees over it, the rear leg swung down and back off the floor, the toes
@@ -160,8 +163,7 @@ const HOP: Key = {
   near: kick(-72, -128, -50),
   far: kick(-10, -95, -15),
   rear: at(12 - BACK, 50),
-  lead: at(4.5 - BACK, 40.5),
-  bends: { farElbow: 'back' },
+  lead: at(18.5 - BACK, 45.5),
   effects: [dust(PUSH_OFF - CARRY[0], 2.5, 0.2)],
 };
 

@@ -44,7 +44,11 @@ export const ANIMATED: boolean = true;
  * as drawn): shut on the lock and on each beat, open on the three frames between.
  *
  * The support is the lead arm: its shoulder sits on the low side of the body, so its upper arm
- * runs back along the belly to the elbow and the forearm stands under it; the free rear arm,
+ * runs back along the belly to the elbow and the forearm stands under it. The shoulder is drawn
+ * in 1.5 px toward the spine (SUPPORT_REACH), the shoulder blade sunk into the press: from where
+ * the guard holds it, the upper arm rose off the belly up to 15 degrees behind the line of the
+ * chest, the elbow folded square, and seen three quarters it read as the far arm pulled back and
+ * folded out of her back (the owner's call); drawn in, it lies along the belly. The free rear arm,
  * drawn over the body, keeps its hand on the hip in view. The palm never moves from PALM once
  * down (frames 1-7) and the arm is never clamped; the head center stays inside the pushbox (at
  * most 7 px forward), the legs inside the cell. In the loop the body moves by whole sprite
@@ -54,6 +58,12 @@ export const ANIMATED: boolean = true;
 
 /** Where the lead palm lands, flat on the floor under her belly. */
 const PALM = at(-15.5, 1.6);
+
+/**
+ * The support shoulder drawn in toward the spine (Pose.reach, negative), so the upper arm lies
+ * along the belly instead of rising off it behind the line of the chest.
+ */
+const SUPPORT_REACH = -1.5;
 
 /**
  * The free rear hand on the hip, knuckles down on the small of the back (4.5 px up the spine
@@ -125,6 +135,7 @@ const FREEZE: Pose = handOnHip(
       farFoot: GUARD.farFoot,
       nearFist: at(0, 0),
       farFist: PALM,
+      reach: { far: SUPPORT_REACH },
       farHand: 'open',
       bends: { nearElbow: 'up', farElbow: 'up', nearKnee: 'back', farKnee: 'down' },
       twist: 0.3,

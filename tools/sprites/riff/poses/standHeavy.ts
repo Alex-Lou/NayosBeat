@@ -15,8 +15,11 @@ export const ANIMATED: boolean = true;
  * folded back under the chin: a wheel round the chest, nothing like the Revers' whip (and no
  * overhead tell: it hits mid). The power is the turn, not a wind-up of the arm: the elbow never
  * goes behind her (seen side on, an elbow drawn back level with the forearm standing read as an
- * arm folded backward). The lead hand tears back to the hip, its elbow driving back (the pull
- * that turns the shoulders). A street brawler's blow, with a dancer's turn.
+ * arm folded backward). The lead hand comes home to cover, a boxer's reflex: the fist up in
+ * front of the chest under the striking arm, the elbow low in front of the body, hidden behind
+ * the torso. (It used to tear back to the hip, the shoulder pulled back and the elbow folded
+ * square out of her back: seen three quarters, that far arm read as a broken one, and the owner
+ * turned it down.) A street brawler's blow, with a dancer's turn.
  *
  * - 0: the coil: the weight sits back, the chest opens to the viewer, the rear shoulder draws
  *   back a little, the arm still home (the elbow on the ribs, the fist under the chin), the lead
@@ -174,7 +177,7 @@ const KEYS: readonly Key[] = [
     twist: -0.15,
     heel: -32,
     lead: planted(STAMP),
-    far: [-30, 110],
+    far: [50, 135],
     arm: [65, 105],
     effects: [smear(5, [-10, 47], [-2, 45], [7, 43.2], [15, 42.4]), dust(STAMP + 1, 3, 0.1)],
   },
@@ -188,7 +191,7 @@ const KEYS: readonly Key[] = [
     twist: -0.65,
     heel: -42,
     lead: planted(STAMP),
-    far: [-45, 105],
+    far: [75, 140],
     arm: [146, 148],
     face: 'effort',
     effects: [
@@ -207,7 +210,7 @@ const KEYS: readonly Key[] = [
     twist: -0.85,
     heel: -41,
     lead: planted(STAMP),
-    far: [-40, 105],
+    far: [70, 140],
     arm: [72, 140],
     face: 'effort',
     effects: [dust(STAMP + 1, 3, 0.6)],
@@ -222,7 +225,7 @@ const KEYS: readonly Key[] = [
     twist: 0.15,
     heel: -24,
     lead: { x: 11, y: 7.6, angle: 6 },
-    far: [12, 135],
+    far: [25, 138],
     arm: [35, 125],
     effects: [dust(STAMP + 1, 3, 0.85)],
   },

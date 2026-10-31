@@ -123,6 +123,9 @@ export const POSES: readonly Pose[] = [
   },
   // 1 · Launched: tipping over backward, the arms flung wide (the lead one up and forward, the
   // rear one straight up off its shoulder), the lead knee tucking, the rear leg trailing below.
+  // The lead heel folds in under its thigh, the boot by the hip, clear of the rear knee; the
+  // rear thigh comes out level past it and the shin hangs from the knee, a 4: two legs, never
+  // one shin with the rear boot stacked under the lead one's sole.
   tumble({
     hip: at(-6.5, 22),
     torso: -10,
@@ -132,8 +135,8 @@ export const POSES: readonly Pose[] = [
     twist: 0.7,
     nearArm: { upper: 35, lower: 62 },
     farArm: { upper: 80, lower: 120 },
-    nearLeg: { upper: 58, lower: -80, toes: -15 },
-    farLeg: { upper: 16, lower: -98, toes: -30 },
+    nearLeg: { upper: 58, lower: -105, toes: -20 },
+    farLeg: { upper: 12, lower: -85, toes: -20 },
     nearHand: 'open',
     farHand: 'open',
     face: 'hurt',

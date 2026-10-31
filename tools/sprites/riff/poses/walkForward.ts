@@ -124,7 +124,10 @@ interface Beat {
   /**
    * The lead arm swung back from its shoulder instead (degrees from the guard's upper arm, and
    * the elbow's bend): a fist kept inside the no-clinch line while the hips pass over the lead
-   * foot would fold the forearm into the biceps; the elbow goes back instead.
+   * foot would fold the forearm into the biceps; the elbow goes back instead, a little: folded
+   * like that, the upper arm stays within 15 degrees behind the chest (past it, the far arm's
+   * elbow sticks out of her back, seen three quarters: tools/sprites/anatomy.ts), the forearm
+   * folded tighter to keep the fist in.
    */
   readonly swing?: readonly [number, number];
   /** The on-screen head angle from the guard's (chin up: negative). */
@@ -152,9 +155,9 @@ const BEATS: readonly Beat[] = [
   // 6: driving off the crossed foot, the lead leg whipping through; the chest closing.
   { hip: [0.4, 1.8], lean: -2.5, twist: 0.5, shrug: -0.2, near: [0, -0.4], lag: 0.5, far: [0, 0], swing: [12, 146] },
   // 7: the lead foot reaching out, the hips first, the lead fist swung back against it.
-  { hip: [1.2, 2.0], lean: -3.5, twist: 0.3, shrug: 1.0, near: [0.4, 0.6], lag: 0.5, far: [0, 0], swing: [24, 142] },
+  { hip: [1.2, 2.0], lean: -3.5, twist: 0.3, shrug: 1.0, near: [0.4, 0.6], lag: 0.5, far: [0, 0], swing: [20, 145] },
   // 8: the rear leg long and straight behind her.
-  { hip: [2.5, 2.0], lean: -4.5, twist: 0.22, shrug: 1.6, near: [0.6, 0], lag: 0.5, far: [0, 0], swing: [30, 140] },
+  { hip: [2.5, 2.0], lean: -4.5, twist: 0.22, shrug: 1.6, near: [0.6, 0], lag: 0.5, far: [0, 0], swing: [24, 149] },
   // 9: down on the lead heel, the big beat, the chest dropping in, the knees opening into the
   // plié.
   { hip: [-0.8, -0.1], lean: 1.5, twist: 0.32, shrug: 0.6, near: [-0.8, -2.1], lag: 0.6, far: [0, 0], swing: [12, 145] },

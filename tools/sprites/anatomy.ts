@@ -10,7 +10,9 @@
  * - a hip swings the thigh up in front of the belly (positive) and only a little behind;
  * - an ankle stands square to the shin (90), toes up closes it, a pointed foot opens it.
  * Even on an arm raised out to the side, seen three quarters, an elbow that folds the other way
- * on the picture reads as a broken arm: that is a hard limit too.
+ * on the picture reads as a broken arm: that is a hard limit too. So does, on a fighter seen three
+ * quarters, the far arm (behind the body) pulled back and folded: its elbow sticks out of the
+ * back at a right angle (the owner's call).
  */
 
 import type { Point } from './raster.ts';
@@ -28,6 +30,11 @@ export const LIMITS = {
   elbowReversed: -10,
   /** Arm raised behind the back, from hanging (shoulder extension). */
   shoulderBehind: -60,
+  /**
+   * Seen three quarters, the far arm pulled back past this (shoulder extension) while folded
+   * past FOLDED_ARM: an elbow that sticks out of the back.
+   */
+  farArmBack: -15,
   /** Thigh swung behind the torso, from hanging (hip extension): past the splits. */
   hipBehind: -100,
   /** Thigh folded tighter than this against the torso (hip flexion): through the belly. */
@@ -41,6 +48,9 @@ export const LIMITS = {
   /** An elbow or a wrist this close to the head's center (in head radii) is inside the head. */
   inHead: 0.8,
 } as const;
+
+/** How far an elbow folds (degrees) before an arm pulled back reads as folded. */
+const FOLDED_ARM = 45;
 
 /** Warnings, to judge on the picture. */
 export const WARNINGS = {
@@ -134,6 +144,10 @@ export function anatomyIssues(pose: Pose, body: Body): Issue[] {
     if (j.knee < LIMITS.kneeFolded) add('kneeFolded', true, j.knee);
     if (j.elbow > LIMITS.elbowFolded) add('elbowFolded', true, j.elbow);
     if (j.shoulder < LIMITS.shoulderBehind) add('shoulderBehind', true, j.shoulder);
+    const threeQuarters = body.shoulderSpread < 0;
+    if (threeQuarters && name === 'far' && j.shoulder < LIMITS.farArmBack && j.elbow > FOLDED_ARM) {
+      add('farArmBack', true, j.shoulder);
+    }
     if (j.hip < LIMITS.hipBehind) add('hipBehind', true, j.hip);
     else if (j.hip < WARNINGS.hipBehind) add('hipBehind', false, j.hip);
     if (j.hip > LIMITS.hipFolded) add('hipFolded', true, j.hip);

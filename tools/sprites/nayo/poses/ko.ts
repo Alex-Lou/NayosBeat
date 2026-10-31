@@ -10,14 +10,17 @@ import { onToes } from './hitHigh.ts';
  */
 
 /**
- * Out cold: flat on his back, head lolled, both arms dead weight on the floor at his sides (in
- * reach, so they keep a soft bend; seen side on, an arm flung over the head would go through
- * it), legs limp.
+ * Out cold: flat on his back, the head lolled back, chin in the air, the back of the skull on
+ * the floor (a head kept up off it reads as a sit-up, not a knockout), both arms dead weight on
+ * the floor at his sides (in reach, so they keep a soft bend; seen side on, an arm flung over the
+ * head would go through it), legs limp. The hips sit a little higher than the slam's so that
+ * the flatter back (the padded jacket is thicker at the shoulder blades) rests on the floor
+ * without sinking into it.
  */
 const OUT: Pose = {
-  hip: at(-14, 6),
-  torso: -80,
-  head: 12,
+  hip: at(-14, 6.9),
+  torso: -84,
+  head: -40,
   shrug: 0,
   nearFoot: { x: 15, y: 5.6, angle: 66 },
   farFoot: { x: 19.5, y: 5, angle: 76 },
@@ -145,10 +148,11 @@ export const POSES: readonly Pose[] = [
       { kind: 'dust', x: 16, size: 4, progress: 0.1 },
     ],
   },
-  // 6 · Settles: the last of the bounce goes out of the limbs.
+  // 6 · Settles: the last of the bounce goes out of the limbs, the head rolling back onto the
+  // floor.
   {
     ...OUT,
-    head: 0,
+    head: -30,
     nearFoot: { x: 13, y: 8.5, angle: 50 },
     farFoot: { x: 19, y: 5.6, angle: 66 },
     effects: [{ kind: 'dust', x: 16, size: 4, progress: 0.55 }],

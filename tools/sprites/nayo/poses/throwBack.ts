@@ -87,22 +87,25 @@ const DIP: Pose = {
 
 // Frame 1 (3 ticks): the hoist. He sinks under him, upright, the hips low between the feet,
 // the rear heel high; the arms come up in front of his face, elbows forward and the forearms up,
-// and lift the collar over his head: the opponent comes up across above him.
+// and lift the collar over his head: the opponent comes up across above him. Both fists
+// together above the front of his forehead, the rear one just over and behind the lead one:
+// a rear fist straight over the skull would hide its whole arm behind the head and read as a
+// bump on the crown.
 const LOAD: Pose = gripping(
   {
     ...HOLD,
     hip: at(-6, 28.5),
-    torso: 16,
+    torso: 8,
     head: -2,
     shrug: 1.5,
     reach: { near: 0, far: 0 },
     twist: 0.45,
     farFoot: onToes(REAR_TOE, -48),
-    effects: [smear(4, [22, 51], [17, 57], [12.5, 62])],
+    effects: [smear(4, [22, 51], [17, 57.5], [11, 63.5])],
     face: 'effort',
   },
-  at(12, 62),
-  at(5.5, 69),
+  at(10.5, 63.5),
+  at(7.5, 67.5),
 );
 
 // Frame 2 (4 ticks, the sides switch on its first, tick 6): the heave. The legs drive him up out

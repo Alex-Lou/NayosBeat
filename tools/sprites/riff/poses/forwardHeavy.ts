@@ -25,19 +25,21 @@ export const ANIMATED: boolean = true;
  *   the rear fist stays under the chin, a hair lower, carried back with the chest (the elbow
  *   down on the ribs): its swing back starts on the skip.
  * - 1: the skip: off the rear foot (the game carries her), the straight lead leg swings up off
- *   the floor, the foot flexed (the heel leads the whole kick), its trail rising; the arms
- *   swing back against it, the rear one hanging back off its shoulder, its elbow soft.
+ *   the floor, the foot flexed (the heel leads the whole kick), its trail rising; the rear arm
+ *   swings back against it, hanging back off its shoulder, its elbow soft; the lead hand stays
+ *   up in its guard, in front of the chest.
  * - 2: the rise: still in the air, the leg high and straight, the body leaning back, the arms
  *   out for balance.
  * - 3: the hang (5 ticks): a balanced standing split, the rear foot landed on its toes right
  *   under the hips, the lead leg vertical in front of her face (the knee soft, never locked
  *   back), the foot flexed, the look up.
  * - 4: the axe: the crunch on the hit: the hips drive in and drop, the lean 22 degrees, the chin
- *   tucked, both fists driving down by the hips (the lead elbow back, the forearm forward); the
+ *   tucked, the rear fist driving down by the hip, the lead one covering in its guard (the fist
+ *   in front of the chest, the elbow low in front of the body, behind the leg); the
  *   heel leads, the foot flexed, its toes up, the leg lower (the boot about 51-57 px up at the
  *   front of the hitbox); the trail falls from over her head into the heel, a gold spark there.
- * - 5: the slam: the heel drives on through to the floor, the crunch deeper, dust and a flat
- *   ring.
+ * - 5: the slam: the heel drives on through to the floor, the crunch deeper, the lead fist
+ *   still covering the chest; dust and a flat ring.
  * - 6: the lead foot draws back to its mark, the body comes up past the guard: the hips 1.6 px
  *   below it, the lean 2.5 degrees short of it, the rear fist a touch high under the chin.
  * - 7: the guard, settled.
@@ -45,7 +47,9 @@ export const ANIMATED: boolean = true;
  * Anatomy (tools/sprites/anatomy.ts): the kicking foot stays within 35 degrees of square to the
  * shin, flexed rather than pointed (a pointed combat boot along the leg read as a broken
  * ankle); a rear arm swung back keeps its shoulder under 60 degrees behind the chest, the
- * elbow bending the way elbows bend.
+ * elbow bending the way elbows bend. The lead arm, behind the body, never goes back folded: its
+ * fist driven down by the hip with the elbow square out of her back read as a broken arm, seen
+ * three quarters (the owner turned it down); it covers in its guard instead.
  *
  * The kicking leg is placed by its angles from the hip (forward kinematics); the lead leg kicks
  * so the stance never switches (she lands on her own guard). The rear foot is in the air from
@@ -176,7 +180,7 @@ const KEYS: readonly Key[] = [
     near: { ...lifted(onBall(-12, -30), 3.5), angle: -62 },
     far: kick(30, 32, 97),
     rear: at(-22, 38.8),
-    lead: [4, 42],
+    lead: [7.2, 50.7],
     bends: { nearElbow: 'back' },
     effects: [smear(3, [10, 9], [16, 24], [21, 38], [24.5, 50])],
   },
@@ -209,7 +213,8 @@ const KEYS: readonly Key[] = [
     lead: [-4, 56],
     hands: { near: 'open' },
   },
-  // 4: the axe: the heel chops down onto the head, the body crunches over it, the fists drive down.
+  // 4: the axe: the heel chops down onto the head, the body crunches over it, the rear fist
+  // drives down, the lead one covers.
   {
     hip: [-2.5, 33.5],
     torso: 22,
@@ -219,8 +224,8 @@ const KEYS: readonly Key[] = [
     near: onBall(TOE + 0.5, -32),
     far: kick(44, 38, 103),
     rear: at(-8.1, 37.3),
-    lead: [8, 34],
-    bends: { nearElbow: 'back', farElbow: 'back' },
+    lead: [16.7, 44.9],
+    bends: { nearElbow: 'back' },
     face: 'effort',
     effects: [
       smear(6, [-4, 86], [10, 85], [19, 76], [24, 59]),
@@ -237,7 +242,7 @@ const KEYS: readonly Key[] = [
     near: onBall(TOE + 0.5, -24),
     far: planted(13),
     rear: at(-6, 33),
-    lead: [10, 30],
+    lead: [16.5, 37.8],
     bends: { nearElbow: 'back' },
     face: 'effort',
     effects: [

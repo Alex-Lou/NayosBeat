@@ -15,12 +15,13 @@ export const ANIMATED: boolean = true;
  *
  * - 0 · the pose (10 ticks): the reference's stance, the weight back on the rear leg, the lead
  *   leg long in front, the hips pushed forward and the shoulders back, the rear fist on the hip
- *   (akimbo, the elbow out at the waist), the lead arm hanging loose (a soft elbow); chin up, the
- *   lid half down: unimpressed.
+ *   (akimbo, the elbow out at the waist), the lead arm hanging loose in front of the hip (a soft
+ *   elbow, under the shoulder); chin up, the lid half down: unimpressed.
  * - 1 · the dip, the lowest point: the hips drop 4.4 px with both knees giving, the chest
  *   pitches in 27 degrees, so the whole head goes 6 px down and 15 px forward (the chin tuck,
  *   read by the head's travel: the drawing stays upright, at 19 degrees on screen); the fringe
- *   falls forward over the face. The rear fist rides the hip.
+ *   falls forward over the face. The rear fist rides the hip, the lead arm swings loose with the
+ *   pitch.
  * - 2 · the toss, the whip out of it: the hips thrown 3 px forward and back up, the chest arched
  *   back, the rear heel popping off the floor, the head whipped back past 20 degrees (RotSprite,
  *   a single frame: a fast move hides it); the fringe flies off the face with the snap of the
@@ -56,6 +57,12 @@ export const ANIMATED: boolean = true;
  * keeps its elbow bending the right way without the arm crossing her face: the head toss alone
  * carries the hair flick, and the hand stays on the hip, where an elbow out at the waist reads as
  * the swagger it is.
+ *
+ * The lead arm (behind the body) hangs and rises in front of her, its elbow under the shoulder or
+ * ahead of it, never behind: folded with the upper arm pulled back, its elbow stuck out of her
+ * back and read as a broken arm (the owner's call). It hangs soft (the stance, the dip), opens
+ * forward on its way up (the toss, the perch), reaches out (the offer), curls, and drops into
+ * the guard's fold, the elbow down in front of the ribs.
  */
 
 /** The rear foot where she stands, flat, the weight on it. */
@@ -83,8 +90,8 @@ const STAND: Pose = {
   nearFoot: REAR,
   farFoot: GUARD.farFoot,
   nearFist: at(-11, 38),
-  farFist: at(1.5, 35.8),
-  bends: { nearElbow: 'back', farElbow: 'back', nearKnee: 'front' },
+  farFist: at(3.7, 34.1),
+  bends: { nearElbow: 'back', farElbow: 'down', nearKnee: 'front' },
   twist: 0.65,
   face: 'cool',
 };
@@ -132,7 +139,7 @@ const DIP: Pose = onHip({
   torso: 20,
   head: -1,
   shrug: 1.8,
-  farFist: at(5.5, 29.5),
+  farFist: at(8.6, 25.8),
   twist: 0.4,
   face: 'focus',
 });
@@ -146,7 +153,7 @@ const TOSS: Pose = onHip({
   head: -12,
   shrug: 0.4,
   nearFoot: onBall(toeOf(REAR), -22),
-  farFist: at(4, 38),
+  farFist: at(10.5, 39.5),
   farHand: 'open',
   twist: 0.75,
   face: 'cool',
@@ -160,7 +167,7 @@ const PERCH: Pose = onHip({
   torso: -8,
   head: -8,
   nearFoot: REAR,
-  farFist: at(6, 40),
+  farFist: at(14.2, 45.8),
   face: 'smirk',
 });
 
@@ -197,7 +204,7 @@ const RELEASE: Pose = atChin({
   head: -5,
   shrug: 1.2,
   nearFoot: { x: -23, y: 8.5, angle: -22 },
-  farFist: at(8.5, 43),
+  farFist: at(10.8, 47),
   farHand: 'fist',
   bends: { nearElbow: 'down', farElbow: 'down', nearKnee: 'front' },
   twist: 0.55,

@@ -145,13 +145,17 @@ const SCRATCH: Pose = {
 
 // Frame 3: the scratch back and the deepest coil, low on the rear leg, the chest turned right
 // away, both heels up; the rear arm swings the record back past the hip, long and loose, flat,
-// ready to whip, and the lead hand comes off it, back up in front of the chest.
+// ready to whip, and the lead hand comes off it, back up in front of the chest. The rear
+// shoulder blade draws back with the arm, as a wind-up does: the arm hangs from the top of the
+// back, down along it to the record (left where it was, the shoulder sits buried inside the
+// padded jacket and the arm seems to grow out of the middle of the back).
 const LOAD_BODY: Body = {
   ...COIL_BODY,
   hip: at(-11, 32),
   torso: 6,
   head: 6,
   shrug: 3.2,
+  reach: { near: 0, far: -2.2 },
   twist: -0.95,
   nearFoot: onToes(LEAD_TOE, -13),
   farFoot: onToes(REAR_TOE, -30),

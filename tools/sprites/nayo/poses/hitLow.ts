@@ -11,13 +11,16 @@ import { onToes, skid } from './hitHigh.ts';
  * The kick takes the lead shin: frame 0, held through the hitstop, knocks the lead foot back
  * onto its toes, the knee buckling forward, the weight dumped onto the rear leg; the hips drop,
  * the chest pitches over the hurt leg, the lead hand reaches down for the knee, the rear arm
- * swings back for balance. Frame 1 is a small hop on the rear foot, the hurt foot tucked just
- * off the floor, the hand coming back up off the knee, the rear arm swinging in by the hip: it
- * lands straight into the held frame 4 on a light hit. Heavy hits get the big hop (2): the
- * hurt knee drawn up high, the hand clutching it, the rear arm flung up for balance; then he
- * lands and sets the hurt foot down gingerly on its toes as the gloves climb back (3). Frame
- * 4, held, is the shaken guard on a sore leg: the weight kept off it on the rear foot, the
- * lead heel up, eyes squeezed shut. The hurt leg folds back under him, never kicks forward.
+ * swings back for balance. Frame 1 is a small hop on the rear foot, on the way to the heavy
+ * hit's big hop: the hurt foot drawn up off the floor, the hand still on the knee rising with
+ * it, the rear arm still thrown back and starting to climb (every joint moving one way from 0
+ * through 2: a frame 1 heading back to the guard pumped the whole figure in and out again in
+ * the middle of the heavy hop). On a light hit it drops straight into the held frame 4, as
+ * hitHigh's frame 1 does. Heavy hits get the big hop (2): the hurt knee drawn up high, the
+ * hand clutching it, the rear arm flung up for balance; then he lands and sets the hurt foot
+ * down gingerly on its toes as the gloves climb back (3). Frame 4, held, is the shaken guard
+ * on a sore leg: the weight kept off it on the rear foot, the lead heel up, eyes squeezed
+ * shut. The hurt leg folds back under him, never kicks forward.
  */
 
 /** Held through the hitstop: the lead foot knocked back onto its toes, the knee buckling. */
@@ -41,18 +44,19 @@ const IMPACT: Pose = {
 };
 
 /**
- * The small hop on the rear foot: the hurt foot tucked just off the floor, the hand coming
- * back up off the knee, the rear arm swinging back in by the hip.
+ * The small hop on the rear foot, between the impact and the big hop: the hurt foot drawn up
+ * off the floor, the hand still on the knee as it rises, the rear arm still thrown back,
+ * starting to climb; the chest straightening a little, the head coming back up.
  */
 const HOP: Pose = {
   hip: at(-8.6, 35),
-  torso: 20,
-  head: -1,
-  shrug: 2,
-  nearFoot: { x: 1.5, y: 8, angle: -18 },
+  torso: 23.5,
+  head: -4,
+  shrug: 1.5,
+  nearFoot: { x: 0.5, y: 10.8, angle: -41 },
   farFoot: lifted(onToes(GUARD.farFoot, -24), 1.5),
-  nearFist: at(8.5, 43),
-  farFist: at(-13.6, 34.2),
+  nearFist: at(9.5, 32.8),
+  farFist: at(-23.2, 44.5),
   bends: { farElbow: 'up' },
   nearHand: 'open',
   farHand: 'open',

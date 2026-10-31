@@ -18,9 +18,16 @@ export const ANIMATED: boolean = true;
  *   heel pops, the hips start in.
  * - 1: the snap: the hips push in over the lead knee ahead of the shoulders, the fist half way
  *   out and rising, the elbow under it; a short trail.
- * - 2: the jab: the arm long (the elbow all but straight, the forearm level), the lead shoulder
- *   rolled in and the chin tucked behind it, the chest turned to profile, the rear heel high,
- *   the rear fist tucked under the chin; the trail and a tick of a flash on the knuckles.
+ * - 2: the jab: the reach is the body's, not the arm's: the hips drive in over the lead knee,
+ *   the lean deepens, the chest turned to profile, the rear heel high, the chin tucked, the rear
+ *   fist up at the jaw. The arm stays soft, the elbow 28 degrees short of straight (dropped
+ *   under the line, the forearm rising to the knuckles), and the knuckles stop on the far edge
+ *   of the hitbox, not past it.
+ *   Seen three quarters, the upper arm comes out from behind the bust (the lead shoulder held
+ *   back behind it, `reach` -4.5): out of the body, chest edge to knuckles, the arm shows 20 px,
+ *   her guard's forearm and a little (17), under Nayo's jab at her size. Locked straight out of
+ *   the chest to the hitbox's limit (26 px of black tube, no elbow) it read as an arm half
+ *   again too long (the owner's call). The trail and a tick of a flash on the knuckles.
  * - 3: the fist snaps back low, the body still in a beat behind it (the hips leave last).
  * - 4: settled back in the guard, the lead hand a touch low and in (it overshoots its place):
  *   the idle's first frame, the guard, is a hair away.
@@ -46,7 +53,7 @@ interface Key {
   /** Chin down over the guard's, on screen (degrees). */
   readonly chin: number;
   readonly shrug: number;
-  /** The lead shoulder reaching in. */
+  /** The lead shoulder reaching in (negative: held back behind the bust, see frame 2). */
   readonly reach: number;
   readonly heel: number;
   /** The lead fist. */
@@ -105,18 +112,18 @@ const KEYS: readonly Key[] = [
   },
   // 2: the jab.
   {
-    hip: [-3.9, 31],
-    torso: 25.5,
+    hip: [-2.4, 30.4],
+    torso: 30,
     chin: 6,
     shrug: 1.8,
-    reach: 1.5,
-    heel: -24,
-    fist: [31.6, 47.5],
-    rear: [-0.4, -1.2],
+    reach: -4.5,
+    heel: -28,
+    fist: [28.6, 50.2],
+    rear: [-0.9, 1.3],
     twist: 0.02,
     effects: [
-      smear(4, [12, 46], [19, 47.4], [25, 47.8], [29.5, 47.6]),
-      { kind: 'flash', center: at(36.5, 47.5), radius: 3, tone: 'strike' },
+      smear(4, [12, 46], [18, 48.4], [23, 49.8], [27, 50.3]),
+      { kind: 'flash', center: at(33.4, 50.4), radius: 3, tone: 'strike' },
     ],
   },
   // 3: the fist snaps back low.

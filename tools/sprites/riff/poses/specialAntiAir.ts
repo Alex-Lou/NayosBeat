@@ -53,7 +53,10 @@ export const ANIMATED: boolean = true;
  * - 4 (6 ticks): the hang just past the top, 10 px under it: the freeze breaks, the knee drops,
  *   the legs start to switch for the floor (the rear foot reaching back, the lead leg swinging
  *   under her), the fists come in, the rear one back under the chin as in the guard (turned with
- *   the chest). The fall is all ahead of her: it snaps into the next frame.
+ *   the chest), the lead one home in front of the chest, its elbow low in front of the body
+ *   (held low by the hip with the shoulder drawn back and the elbow folded square behind her,
+ *   that far arm read as a broken one, seen three quarters: the owner turned it down). The fall
+ *   is all ahead of her: it snaps into the next frame.
  * - 5 (6 ticks): the landing, hard: 38 px down at once, low and wide on the guard's marks, the
  *   hips 6 px under the guard's, the rear heel high on its ball and the rear knee driven forward
  *   and down, floating over the floor (her crouch's sprinter's set), the lead fist low, the rear
@@ -250,7 +253,8 @@ const HANG: Pose = tucked(
     twist: 0.45,
     nearFoot: { x: -11, y: 40, angle: -45 },
     farFoot: { x: 5, y: 34, angle: -30 },
-    farFist: at(8, 70),
+    // The lead fist home in front of the chest, the elbow low in front of the body.
+    farFist: at(12.5, 80.1),
     bends: { nearKnee: 'front', farKnee: 'front' },
     effects: [diamonds(13, 0.9)],
   },

@@ -27,10 +27,13 @@ export const ANIMATED: boolean = true;
  *   under her, the torso comes back to 23 degrees, the chest half open; the rear arm unfolds out
  *   of its elbow and drops in front of her, the elbow down at her side, the fist low in front of
  *   the chest (with the chin thrown up, a fist left folded at the collar sat on her face; folded
- *   under the elbow's line, it read as an arm bent the wrong way); the lead hand pulled back to
- *   the hip, its elbow behind. The chin goes up and back (the head 22 degrees back on screen, past
- *   stamp.ts's upright tolerance: she looks down her nose at him). The lead foot stays where the
- *   Coude stamped it, the rear one pushes on its ball.
+ *   under the elbow's line, it read as an arm bent the wrong way); the lead hand drops out of
+ *   its cover, loose, the elbow at her side and the forearm opening down past the hip, on its
+ *   way back for the bow (pulled back to the hip with the elbow folded square behind her, that
+ *   far arm read as a broken one, seen three quarters: the owner turned it down). The chin goes
+ *   up and back (the head 22 degrees back on screen, past stamp.ts's upright tolerance: she
+ *   looks down her nose at him). The lead foot stays where the Coude stamped it, the rear one
+ *   pushes on its ball.
  * - 1 (2 ticks): the bow, the deepest load: the hips drive in and down under the shoulders, which
  *   lean back, the chest pushed out (the open jacket wide), the chin still up; both arms swung
  *   back and down behind her, the elbows soft (the shoulders 50 to 55 degrees back, as far as
@@ -42,10 +45,12 @@ export const ANIMATED: boolean = true;
  * - 3 (2 ticks, the hitstop holds it): impact. One line from the rear boot, off the floor behind
  *   her, to the forehead: the torso at 52 degrees, the chin tucked so the brow leads (the head
  *   turned 28 degrees forward: RotSprite, as on her pummel's impact), the shoulders hunched, the
- *   arms flung back like wings (as far as the shoulders open), the trailing boot pointed down
- *   off the push, its ankle 30 degrees past square (a boot does not point further). The forehead at the hitbox's far edge, a big
- *   silver star bursting off the tip of the brow, clear of the eye, and a tall shockwave pushed
- *   forward off it: a string's heavy hit, not the pummel's tap. The trail closes on the head.
+ *   arms flung back like wings (as far as the shoulders open), the elbows soft (the lead one
+ *   under 45 degrees: folded further, pulled back like that, it sticks out of her back), the
+ *   trailing boot pointed down off the push, its ankle 30 degrees past square (a boot does not
+ *   point further). The forehead at the hitbox's far edge, a big silver star bursting off the
+ *   tip of the brow, clear of the eye, and a tall shockwave pushed forward off it: a string's
+ *   heavy hit, not the pummel's tap. The trail closes on the head.
  * - 4 (7 ticks): the rebound: the head snaps back off the contact, the chin jerked up (« come
  *   on »: the cocky beat), while the body still hangs forward over the blow (the torso at 27
  *   degrees) and the hips stay in; the rear boot lands under her, up on its ball, the lead foot
@@ -224,7 +229,7 @@ const RECOIL: Key = {
   near: onBall(TOE - CARRY[0], -40),
   far: planted(STAMP - CARRY[0]),
   rear: arm(40, 120),
-  lead: arm(-30, 110),
+  lead: arm(5, 55),
 };
 
 // 1: the bow, the deepest load: the hips in, the shoulders and the chin back, the arms behind.
@@ -266,7 +271,7 @@ const IMPACT: Key = {
   near: angles(220, 216, -84),
   far: planted(LANDING - CARRY[3]),
   rear: at(-2.3, 46.8),
-  lead: at(0, 38),
+  lead: arm(-56, 40),
   bends: { nearElbow: 'up', farElbow: 'up' },
   face: 'effort',
 };

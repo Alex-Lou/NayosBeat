@@ -166,8 +166,10 @@ const CORK: Pose = {
       shrug: 3,
       twist: -0.9,
       nearFist: at(2, 58),
-      farFist: at(5, 57),
-      bends: { nearElbow: 'down', farElbow: 'back' },
+      // The lead fist hugged in high on the chest, its elbow down at her side, in front of the
+      // body: folded back out of an elbow behind her, that far arm read as a broken one.
+      farFist: at(7.5, 62.9),
+      bends: { nearElbow: 'down', farElbow: 'down' },
     },
     [8, 0.99, -33],
     [-2, 0.99, -43],

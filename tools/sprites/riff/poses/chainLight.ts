@@ -18,7 +18,8 @@ export const ANIMATED: boolean = true;
  *   rear arm comes up out of the guard, the elbow rising off the ribs to aim at the opponent at
  *   chest height and the fist folding back over it to the collar (the forearm 150 degrees back
  *   along the upper arm, above it, the way an elbow folds: below it, it read as an arm bent the
- *   wrong way); the jab hand pulled down to the hip, its elbow back; the hips sink.
+ *   wrong way); the jab hand snaps home to cover, the fist up in front of the chest, the elbow
+ *   low in front of the body; the hips sink.
  * - 1: the skip (3 ticks): both feet off the floor (the game carries her, nothing slides), the
  *   rear knee soft under her, the elbow leading out at shoulder height with the forearm still
  *   folded back over it, the fist at the collar, under the jaw, the chest still closed; the
@@ -34,10 +35,13 @@ export const ANIMATED: boolean = true;
  * - 5: the guard, settled.
  *
  * The arms are placed by their angles on the torso (armAt) where they fold, by the fist where
- * it strikes: the lead hand pulls back to the hip with its elbow behind it, never with the
- * forearm turned back out of an elbow in front. The head stays the source drawing (under 20 degrees on screen)
- * and stays clear of the arm, which passes under the chin. The face stays focused: a light,
- * quick hit.
+ * it strikes. The lead hand stays home in its guard the whole way, a boxer's reflex while the
+ * other hand fires: the fist in front of the chest, under the striking arm, the elbow low in
+ * front of the body, hidden behind the torso. (It used to pull back to the hip, the shoulder
+ * drawn back and the elbow folded square out of her back: seen three quarters, that far arm read
+ * as a broken one, and the owner turned it down.) The head stays the source drawing (under 20
+ * degrees on screen) and stays clear of the arm, which passes under the chin. The face stays
+ * focused: a light, quick hit.
  */
 
 const TOE = toeOf(GUARD.nearFoot);
@@ -155,7 +159,7 @@ const KEYS: readonly Key[] = [
     near: onBall(TOE - 2, -26),
     far: onBall(GUARD.farFoot.x + 6.8 - 2, -18),
     rear: arm(88, 150),
-    lead: arm(-30, 110),
+    lead: arm(25, 145),
   },
   // 1: the skip: both feet up, the elbow leads out, the forearm folded back over it.
   {
@@ -168,7 +172,7 @@ const KEYS: readonly Key[] = [
     near: lifted(onBall(TOE + 1, -36), 3.5),
     far: lifted(planted(GUARD.farFoot.x + 1, -10), 3),
     rear: arm(100, 150),
-    lead: arm(-35, 105),
+    lead: arm(30, 145),
   },
   // 2: the backfist.
   {
@@ -181,7 +185,7 @@ const KEYS: readonly Key[] = [
     near: onBall(TOE, -30),
     far: planted(GUARD.farFoot.x),
     rear: at(30.2, 53.5),
-    lead: arm(-40, 100),
+    lead: arm(35, 145),
     effects: [
       smear(3, [-9, 53], [2, 56], [14, 57], [25, 55.5], [32, 53.5]),
       { kind: 'flash', center: at(36, 53), radius: 4, tone: 'strike' },
@@ -198,7 +202,7 @@ const KEYS: readonly Key[] = [
     near: onBall(TOE, -26),
     far: planted(GUARD.farFoot.x),
     rear: at(15, 45),
-    lead: arm(-20, 110),
+    lead: arm(22, 147),
   },
   // 4: back home, past the guard: the chest opens wide, the hips sink.
   {

@@ -25,8 +25,10 @@ export const ANIMATED: boolean = true;
  *   the rear knee tucked up under her, the rear fist sunk to the collar as the chest lays back (the
  *   chin comes down toward it: the face stays clear); a trail along the swing up.
  * - 2 (5 ticks, active): the chop: the heel on the far edge of the hitbox, a trail along the arc
- *   it came down, the heavy spark (as her other heavies) on the heel, the lead fist yanked back to
- *   the hip to drive it, the rear boot pointed behind; the jaw set (`effort`).
+ *   it came down, the heavy spark (as her other heavies) on the heel, the lead fist kept in its
+ *   guard in front of the chest, a touch low (yanked back to the hip, its elbow stuck out of her
+ *   back at a right angle and read as a broken arm: the owner's call), the rear boot pointed
+ *   behind; the jaw set (`effort`).
  *
  * Every arm keeps the guard's shape turned with the chest (jump.ts's `guarded`) unless it moves
  * on its own; on the laid-back raise the rear glove sinks to the collar, under the chin that the
@@ -138,8 +140,7 @@ const CHOP = key({
   lead: [-54, 31.5, 36],
   rear: [-28.5, 41, 'pointed'],
   rearFist: at(0, 0),
-  leadFist: { at: at(2.9, 37.5) },
-  leadElbow: 'up',
+  leadFist: at(0, -1.5),
   face: 'effort',
   rearKnee: 'down',
 });
@@ -154,8 +155,7 @@ const FOLLOW = key({
   lead: [-58, 30.5, 30],
   rear: [-27.5, 37.5, 'pointed'],
   rearFist: at(0, 0),
-  leadFist: { at: at(2.6, 37.5) },
-  leadElbow: 'up',
+  leadFist: at(0, -1),
   face: 'effort',
   rearKnee: 'down',
 });

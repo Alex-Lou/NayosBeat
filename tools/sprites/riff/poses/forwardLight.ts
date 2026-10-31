@@ -10,7 +10,7 @@ export const ANIMATED: boolean = true;
  * hitbox 8..32 / 44..58; the game carries her 20 px over ticks 0-7. A b-girl's toprock to come
  * in, cocky and provocative, then a jab out of nowhere: a cross-step with the forearms crossed
  * at the jaw, a kick-out with the arms flung wide and the chin up (« come on »), and the lead
- * fist snapping out low and long as both feet stamp down.
+ * fist snapping out low as both feet stamp down.
  *
  * - 0: the dip: the hips sink and go, the rear heel pops, the lead foot skims, the lead hand
  *   loose in front (its elbow open to 141 degrees, never folded flat), the rear fist still
@@ -23,8 +23,13 @@ export const ANIMATED: boolean = true;
  *   opens: raised higher behind her, the arm came out of her back), the lead palm out at chest
  *   height: come on. The chin up, the look from under the lids.
  * - 3: the stamp and the jab: both feet land as the carry ends (dust), the hips drop and the
- *   lean drives in low, the lead fist snaps out long at the face (the elbow 34 degrees short of
- *   straight), the rear hand left open and low behind her hip from the flourish, the arm
+ *   lean drives in low, deeper than the guard's by 12 degrees: the body carries the reach. The
+ *   lead fist snaps out at the face, the elbow 28 degrees short of straight (dropped, the
+ *   forearm rising), the knuckles on the far edge of the hitbox, not past it; the upper arm
+ *   comes out from behind the bust (the lead shoulder held back behind it, `reach` -4.5), so
+ *   that out of the body the arm shows 20 px, as on the Jab (standLight.ts): driven to the
+ *   hitbox's limit out of the chest it read half again too long. The rear hand left open and
+ *   low behind her hip from the flourish, the arm
  *   hanging back, its elbow soft (the mockery: not the Jab's tucked fist); a short straight
  *   streak, a tick of a flash.
  * - 4: the fist snaps back, the weight sinks past the guard: the hips 1.6 px below it, the lean
@@ -186,20 +191,20 @@ const KEYS: readonly Key[] = [
   },
   // 3: the stamp and the jab.
   {
-    hip: [-3, 29],
-    torso: 30,
+    hip: [-2.4, 29],
+    torso: 31,
     look: 13,
     shrug: 2.2,
-    reach: { far: 1.5 },
+    reach: { far: -4.5 },
     twist: 0.35,
     near: onBall(TOE, -24),
     far: planted(GUARD.farFoot.x),
     rear: arm(-30, 20),
-    lead: [31.3, 51.3],
+    lead: [28.4, 51],
     hands: { near: 'open' },
     effects: [
-      smear(3, [12, 45], [20, 48], [28.5, 50]),
-      { kind: 'flash', center: at(32, 50), radius: 3, tone: 'strike' },
+      smear(3, [12, 46], [19, 48.6], [25.5, 50.6]),
+      { kind: 'flash', center: at(32.6, 51.4), radius: 3, tone: 'strike' },
       { kind: 'dust', x: 10, size: 2.5, progress: 0.15 },
     ],
   },

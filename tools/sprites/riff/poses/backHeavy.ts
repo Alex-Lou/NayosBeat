@@ -26,10 +26,12 @@ export const ANIMATED: boolean = true;
  *   fist stays under the chin, sinking with the chest, the elbow down on the ribs.
  * - 1: the launch: the rear foot whips off the floor behind her, pointed down off the swing, the
  *   lead knee loads, the body pitches over, the arms swing forward and down against it (the rear
- *   one drops off the chin, its elbow opening under the shoulder).
+ *   one drops off the chin, its elbow opening under the shoulder; the lead fist, still folded,
+ *   rides forward with the chest, its elbow down in front of the ribs).
  * - 2: the take-off: up on the lead ball, the hips come over it, the knee all but straight (the
  *   heel 35 degrees up: the shin stays over the foot), the rear leg sweeping up behind her (a
- *   trail rising from the floor), the head driving up (the fringe flicks).
+ *   trail rising from the floor), the head driving up (the fringe flicks); the lead arm swings
+ *   down under the shoulder, the elbow opening, on its way to the reach of the kick.
  * - 3: the scorpion (5 ticks): in the air, the lead boot about 21 px off the floor, the chest
  *   pitched 62 degrees over the jumper, the face up on him, the arms reaching down in front of
  *   her; the rear thigh swept up behind her (88 degrees between it and the line of her back:
@@ -39,7 +41,8 @@ export const ANIMATED: boolean = true;
  *   center at x 16, under the hitbox's front edge). The trail curls up from behind her into the
  *   heel, a gold spark there and streaks rising from it: the launch.
  * - 4: the landing on the lead ball (dust), the hips back down, the leg uncurled long behind her,
- *   a little under level, its toes pointed down at the floor.
+ *   a little under level, its toes pointed down at the floor; the lead fist folds back up toward
+ *   its guard, the elbow down in front of the ribs.
  * - 5: the rear foot touches down on its ball, the body sinks past the guard: the hips 1.6 px
  *   below it, the lean 2.5 degrees short of it, the rear fist a touch high under the chin.
  * - 6: the guard, settled.
@@ -51,7 +54,11 @@ export const ANIMATED: boolean = true;
  *
  * Anatomy (tools/sprites/anatomy.ts): every boot stays within 35 degrees of square to its shin
  * (a combat boot does not point like a dancer's foot, nor fold back on the shin); the head
- * tips 50 degrees on the neck at most, so the chest carries the pitch.
+ * tips 50 degrees on the neck at most, so the chest carries the pitch. The lead arm (behind the
+ * body) keeps its elbow down in front of the chest, never pulled back and folded: its elbow
+ * stuck out of her back at a right angle on the launch, the take-off and the landing, and read
+ * as a broken arm (the owner's call). It goes guard, folded lower, swung down, reaching down,
+ * then back up to the guard: the elbow opens and closes, it never swings behind her.
  *
  * The rear leg is placed by its angles from the hip (forward kinematics), drawn behind the
  * torso and the head, where a leg curling over the back belongs. The lead foot pivots on its
@@ -185,7 +192,7 @@ const KEYS: readonly Key[] = [
     near: kick(235, 190, 255),
     far: planted(GUARD.farFoot.x),
     rear: at(8.5, 38.5),
-    lead: [12, 40],
+    lead: [17, 39.5],
     effects: [dust(-20, 2.5, 0.15)],
   },
   // 2: the take-off: up on the lead toes, the rear leg sweeping up behind her.
@@ -198,9 +205,8 @@ const KEYS: readonly Key[] = [
     near: kick(170, 150, 215),
     far: onBall(GUARD.farFoot.x + 6.8, -35),
     rear: at(12, 46),
-    lead: [15, 42],
+    lead: [23, 37.5],
     hands: { near: 'open' },
-    bends: { farElbow: 'back' },
     effects: [smear(4, [-27, 14], [-32, 27], [-33, 40], [-30, 52]), dust(12, 2.5, 0.15)],
   },
   // 3: the scorpion: in the air, the heel hooked over her head.
@@ -233,7 +239,7 @@ const KEYS: readonly Key[] = [
     near: kick(190, 180, 245),
     far: onBall(GUARD.farFoot.x + 6.8, -26),
     rear: at(6, 44),
-    lead: [12, 41],
+    lead: [17.5, 42.5],
     hands: { near: 'open' },
     face: 'effort',
     effects: [dust(12, 3.5, 0.2)],

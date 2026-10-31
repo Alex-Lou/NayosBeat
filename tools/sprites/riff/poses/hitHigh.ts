@@ -31,19 +31,21 @@ export const ANIMATED: boolean = true;
  *   back). The lead hand left out in front, open. The strongest read of the strip.
  * - 1: the rebound: the hips swing back past the feet's middle and the chest comes back in over
  *   them while the head still lags back (22 degrees, turned); the rear arm falls and hangs
- *   behind her hip, the elbow soft, the lead one hangs in front; the feet scrape back under the
- *   pushback. She
+ *   behind her hip, the elbow soft, the lead one hangs in front of the belly, the elbow soft and
+ *   down; the feet scrape back under the pushback. She
  *   glares through it (`effort`: the eye open, the jaw set). A light hit flows from here into
  *   the held frame 4.
  * - 2 (heavy): the sag: the head overshoots, the chin on the chest (turned the other way), the
  *   hips drop low into the plié, the knees opening wide, the arms hanging loose from the
  *   shoulders, the elbows soft: the whole body rocked.
  * - 3 (heavy): the punk beat, halfway up to frame 4: the back of the rear glove wipes her chin
- *   (under the lips, the face stays readable), the jaw set: that all you got?
+ *   (under the lips, the face stays readable), the jaw set: that all you got? The lead fist
+ *   comes up in front of the belly, the elbow down.
  * - 4, held: still rocked back, not her guard yet: the chest up (10 degrees of lean against the
  *   guard's 19), the chin up with it, the hips back over her rear leg, the lead toes still up;
- *   the rear fist back under the chin (the elbow down), the lead fist low and loose, the rear
- *   shoulder shrugged into the collar. One step out of the guard, so the hand-off at the end of
+ *   the rear fist back under the chin (the elbow down), the lead fist low and loose in front of
+ *   the belly, its elbow down in front of the ribs (a low guard), the rear shoulder shrugged into
+ *   the collar. One step out of the guard, so the hand-off at the end of
  *   the stun reads as her taking her stance back.
  *
  * The head never sits at a tilt that RotSprite would only half turn: 37 and 22 degrees back, 26
@@ -52,6 +54,10 @@ export const ANIMATED: boolean = true;
  * it would read as a swoon, so there she glares (`effort`). Every beat moves away from the
  * opponent, never into her: only the back-bend thrusts the hips and the lead knee forward (the
  * knee reaches x = 16, at knee height), while the chest and the head go back.
+ *
+ * The lead arm, behind the body, never folds with its upper arm pulled back: its elbow stuck out
+ * of her back at a right angle and read as a broken arm (the owner's call). From the snap to the
+ * held frame it hangs in front, soft, then folds back up into a low guard, the elbow down.
  */
 
 /** Dust kicked up by a foot scraping back under the blow (the pushback slides her). */
@@ -101,7 +107,7 @@ const REBOUND: Pose = figure({
   nearFoot: onToes(GUARD.nearFoot, REAR_HEEL + 5),
   farFoot: onHeel(GUARD.farFoot, 4),
   nearArm: { upper: -116, lower: -100 },
-  farFist: at(4, 35),
+  farFist: at(7.5, 32.2),
   bends: BENDS,
   nearHand: 'open',
   farHand: 'open',
@@ -119,8 +125,8 @@ const SAG: Pose = figure({
   nearFoot: onToes(GUARD.nearFoot, REAR_HEEL - 2),
   farFoot: GUARD.farFoot,
   nearArm: { upper: -114, lower: -98 },
-  farFist: at(4, 30),
-  bends: { ...BENDS, farElbow: 'back' },
+  farFist: at(7.6, 27),
+  bends: BENDS,
   nearHand: 'open',
   farHand: 'open',
   face: 'hurt',
@@ -137,7 +143,7 @@ const SHAKEN: Pose = {
   nearFoot: onToes(GUARD.nearFoot, REAR_HEEL - 2),
   farFoot: onHeel(GUARD.farFoot, 6),
   nearFist: at(0, 52),
-  farFist: at(5, 40),
+  farFist: at(8.2, 43.5),
   bends: BENDS,
   face: 'effort',
 };
@@ -146,6 +152,8 @@ const SHAKEN: Pose = {
 const WIPE: Pose = {
   ...tween(SAG, SHAKEN, 0.5),
   nearFist: at(3, 52.5),
+  // The lead fist halfway up, in front of the belly (the tween leaves its elbow a hair behind).
+  farFist: at(9.2, 37.5),
   nearHand: 'open',
   farHand: 'fist',
   face: 'effort',

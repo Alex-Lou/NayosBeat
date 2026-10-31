@@ -15,20 +15,22 @@ export const ANIMATED: boolean = true;
  *   hips punched back and down over the rear foot (it takes her weight on its ball, the rear
  *   knee driven forward over it), the lead leg braced nearly straight, its toes
  *   lifting; the chest doubled over the blow, the head dropped with it (the chin down, 36
- *   degrees on screen: the head turns), both forearms clutched over the belly, hands open.
+ *   degrees on screen: the head turns), both forearms clutched over the belly, hands open (the
+ *   lead one folded under it, its elbow down at the waist).
  * - 1: the bridge: the chest comes halfway back up, the head first (upright again, eyes on the
  *   opponent), both forearms still across the stomach; the feet scrape back under the pushback.
  *   A light hit flows from here into the held frame 4: the rear fist goes up to the jaw, the
  *   lead forearm stays on the belly.
  * - 2 (heavy): winded, she sags again, smaller: the chest dips back over the blow while the hips
- *   barely move, the head drops (turned), both hands back on the belly, the elbows tucked
- *   behind the ribs (never jutting at the opponent like an elbow strike).
+ *   barely move, the head drops (turned), both hands back on the belly, the rear elbow tucked
+ *   behind the ribs, the lead one down at the waist (never jutting at the opponent like an elbow
+ *   strike).
  * - 3 (heavy): halfway to frame 4, she shakes it off: the chest straightens up on a roll of the
  *   rear shoulder (shrugged up, the chest turned open), the jaw set, the rear fist climbing up
  *   the chest toward the jaw.
  * - 4, held: still hunched over the blow (31 degrees of lean against the guard's 19), the hips
- *   back over the rear foot, the lead forearm pinned across the belly (the hand open on it, the
- *   elbow tucked behind), the rear fist pulled in under the chin to cover the jaw, the forearm
+ *   back over the rear foot, the lead forearm folded across in front of the belly (the hand
+ *   open, the elbow down at the waist), the rear fist pulled in under the chin to cover the jaw, the forearm
  *   up across the chest, the elbow bent the way an elbow bends (left behind the collar with its
  *   elbow dropped under it, the forearm folded back up like a broken wing); the eyes open, the
  *   jaw set: she glares through it. One step out of the guard, so the hand-off at the end of
@@ -38,6 +40,11 @@ export const ANIMATED: boolean = true;
  * drawing stays about behind the guard's front (x = 14; the fringe of the dropped head reaches
  * 15 on the fold, the winded dip and the hunch). The feet never slide: the rear foot pivots on
  * its ball, the lead one rocks on its heel.
+ *
+ * The lead arm, behind the body, folds in front of the belly, never behind the back: its upper
+ * arm hangs from the shoulder, the elbow down at the waist, the forearm folded forward and up
+ * under the belly. Pulled back with the elbow out of her back (the upper arm 30 to 50 degrees
+ * behind the chest), it read as a broken arm (the owner's call).
  */
 
 /** 0, through the hitstop: doubled over at its deepest, the forearms clutched on the belly. */
@@ -50,8 +57,8 @@ const FOLD: Pose = {
   nearFoot: onToes(GUARD.nearFoot, -3),
   farFoot: onHeel(GUARD.farFoot, 4),
   nearFist: at(-7, 33),
-  farFist: at(-5, 30),
-  bends: { ...BENDS, nearElbow: 'back', farElbow: 'back' },
+  farFist: at(2.5, 26),
+  bends: { ...BENDS, nearElbow: 'back' },
   nearHand: 'open',
   farHand: 'open',
   face: 'hurt',
@@ -67,8 +74,8 @@ const BRIDGE: Pose = {
   nearFoot: onToes(GUARD.nearFoot, REAR_HEEL + 4),
   farFoot: GUARD.farFoot,
   nearFist: at(-4, 41),
-  farFist: at(3, 39),
-  bends: { ...BENDS, nearElbow: 'back', farElbow: 'back' },
+  farFist: at(8, 39.5),
+  bends: { ...BENDS, nearElbow: 'back' },
   face: 'hurt',
   effects: [skid(LEAD_TOE, 2.4, 0.45), skid(REAR_TOE, 1.8, 0.4)],
 };
@@ -83,8 +90,8 @@ const WINDED: Pose = {
   nearFoot: onToes(GUARD.nearFoot, REAR_HEEL + 2),
   farFoot: GUARD.farFoot,
   nearFist: at(-5, 36),
-  farFist: at(1, 37),
-  bends: { ...BENDS, nearElbow: 'back', farElbow: 'back' },
+  farFist: at(6.5, 35.4),
+  bends: { ...BENDS, nearElbow: 'back' },
   nearHand: 'open',
   farHand: 'open',
   face: 'hurt',
@@ -101,8 +108,8 @@ const SHAKEN: Pose = {
   nearFoot: onToes(GUARD.nearFoot, REAR_HEEL - 2),
   farFoot: GUARD.farFoot,
   nearFist: at(4, 48.5),
-  farFist: at(1, 37),
-  bends: { ...BENDS, farElbow: 'back' },
+  farFist: at(8, 37.7),
+  bends: BENDS,
   farHand: 'open',
   face: 'effort',
 };
@@ -116,7 +123,7 @@ const ROLL: Pose = {
   twist: 0.6,
   reach: { near: 1.2 },
   nearFist: at(0.5, 45),
-  bends: { ...BENDS, farElbow: 'back' },
+  bends: BENDS,
   effects: [],
 };
 
