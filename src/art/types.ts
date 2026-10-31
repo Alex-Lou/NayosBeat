@@ -134,6 +134,8 @@ export interface FighterArt {
    * in art pixels from the cell's top left corner. The top square of the cell otherwise.
    */
   readonly portrait?: Portrait;
+  /** The bust drawn for the select screen (its URL), shown in place of `portrait` when there is one. */
+  readonly portraitImage?: string;
 }
 
 /** A square of a strip's frame, in art pixels. */

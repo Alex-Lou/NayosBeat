@@ -21,6 +21,18 @@ export function urlsOf(
 }
 
 /**
+ * The bust drawn for the select screen among the images of a colorway's folder (`portrait.png`,
+ * drawn by hand: tools/sprites/drawn.ts), when it has one.
+ */
+export function portraitOf(
+  files: Readonly<Record<string, string>>,
+  folder: string,
+): { portraitImage?: string } {
+  const url = files[`./${folder}/portrait.png`];
+  return url === undefined ? {} : { portraitImage: url };
+}
+
+/**
  * Every name a fighter's effects images may have: its strips', and the names its clips give their
  * effects (`Clip.fx`, a Remix's platine ones).
  */

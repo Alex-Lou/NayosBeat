@@ -18,7 +18,6 @@ import {
   type WordArea,
 } from '../../src/render/flash-areas';
 import { FLASH_MARGIN, FLASH_RULES } from '../../src/render/flash-budget';
-import { GREYBOX_COLORS } from '../../src/render/greybox-stage';
 import type { HitKind } from '../../src/render/hit-fx';
 import { hitStyleOf } from '../../src/render/hit-styles';
 import { ANNOUNCE_LETTER_AREA } from '../../src/render/hud';
@@ -33,6 +32,7 @@ import {
   wordFor,
   type BlowKind,
 } from '../../src/render/onomatopoeia';
+import { FIGHT_STAGE_COLORS } from '../../src/render/stage-view';
 import {
   boostStamp,
   CALM_STAMP_SIZE,
@@ -139,7 +139,7 @@ describe('what the words and the stamps light (docs/flashs.md §4)', () => {
     Math.max(
       ...STYLES.flatMap((style) =>
         texts.map((text) =>
-          litArea(font, text, comic(style, size, ink.stroke, ink.drop), GREYBOX_COLORS),
+          litArea(font, text, comic(style, size, ink.stroke, ink.drop), FIGHT_STAGE_COLORS),
         ),
       ),
     );
@@ -220,7 +220,7 @@ describe('what the words and the stamps light (docs/flashs.md §4)', () => {
     const characters = [...new Set(Array.from(texts.join('')).concat(DIGITS))].filter(
       (c) => c !== ' ',
     );
-    const areas = characters.map((c) => litArea(pixel, c, plain(24), GREYBOX_COLORS));
+    const areas = characters.map((c) => litArea(pixel, c, plain(24), FIGHT_STAGE_COLORS));
     for (const [index, area] of areas.entries()) {
       expect(area, characters[index]).toBeLessThanOrEqual(ANNOUNCE_LETTER_AREA);
     }
@@ -294,13 +294,13 @@ describe('what a blow asks the budget (docs/flashs.md §4)', () => {
 
 describe('what the veils light (docs/flashs.md §4)', () => {
   it("flashes the super's halo on less than 1 200 px², the éclat on far more", () => {
-    const halo = glowFlashArea(superHalo(GREYBOX_COLORS), GREYBOX_COLORS);
+    const halo = glowFlashArea(superHalo(FIGHT_STAGE_COLORS), FIGHT_STAGE_COLORS);
     expect(halo).toBeGreaterThan(300);
     expect(halo).toBeLessThan(1200);
     for (const energy of [0x30e8ff, 0xff4fc8, 0xff3ca0, 0xffc83a]) {
-      const eclat = koVeil('finisher', energy, GREYBOX_COLORS);
+      const eclat = koVeil('finisher', energy, FIGHT_STAGE_COLORS);
       if (!eclat) throw new Error('No éclat');
-      expect(glowFlashArea(eclat, GREYBOX_COLORS) * CLOSEST).toBeGreaterThan(
+      expect(glowFlashArea(eclat, FIGHT_STAGE_COLORS) * CLOSEST).toBeGreaterThan(
         FLASH_RULES.normal.area,
       );
       // Reduced, it lights without flashing; off, or refused, it darkens.
@@ -309,9 +309,9 @@ describe('what the veils light (docs/flashs.md §4)', () => {
         ['off', true],
         ['normal', false],
       ] as const) {
-        const soft = koVeil('finisher', energy, GREYBOX_COLORS, mode, lit);
+        const soft = koVeil('finisher', energy, FIGHT_STAGE_COLORS, mode, lit);
         if (!soft) throw new Error('No éclat');
-        expect(glowFlashArea(soft, GREYBOX_COLORS), `${mode} ${lit}`).toBe(0);
+        expect(glowFlashArea(soft, FIGHT_STAGE_COLORS), `${mode} ${lit}`).toBe(0);
       }
     }
   });
@@ -323,7 +323,7 @@ describe('what the front effects light (docs/flashs.md §4)', () => {
       // Platine, opaque: it flashes. Half transparent: still. The HUD's black: never.
       0xf2, 0xf6, 0xff, 255, 0xf2, 0xf6, 0xff, 128, 0x0c, 0x06, 0x14, 255, 0, 0, 0, 0,
     ]);
-    expect(litPixels(pixels, GREYBOX_COLORS)).toBe(2);
+    expect(litPixels(pixels, FIGHT_STAGE_COLORS)).toBe(2);
   });
 
   it('counts anew only what changes over the frame before, at the same place', () => {
@@ -334,12 +334,12 @@ describe('what the front effects light (docs/flashs.md §4)', () => {
     const after = new Uint8ClampedArray([
       0xf2, 0xf6, 0xff, 255, 0xf2, 0xf6, 0xff, 255, 0xff, 0xff, 0xff, 255,
     ]);
-    expect(litPixels(after, GREYBOX_COLORS)).toBe(3);
-    expect(freshPixels(before, after, GREYBOX_COLORS)).toBe(2);
+    expect(litPixels(after, FIGHT_STAGE_COLORS)).toBe(3);
+    expect(freshPixels(before, after, FIGHT_STAGE_COLORS)).toBe(2);
     // A cyan held a frame more, a little lighter: nothing new.
     const cyan = new Uint8ClampedArray([0x30, 0xe8, 0xff, 255]);
     const lighter = new Uint8ClampedArray([0x40, 0xf0, 0xff, 255]);
-    expect(freshPixels(cyan, lighter, GREYBOX_COLORS)).toBe(0);
+    expect(freshPixels(cyan, lighter, FIGHT_STAGE_COLORS)).toBe(0);
   });
 
   it('lights more than 300 world px² in the specials that rise and the super only', async () => {
@@ -349,7 +349,7 @@ describe('what the front effects light (docs/flashs.md §4)', () => {
       for (const colorway of ['main', 'alt'] as const) {
         for (const [sheet, frames] of await fxStrips(fighter, colorway)) {
           const peak = Math.max(
-            ...frames.map((pixels) => litPixels(pixels, GREYBOX_COLORS) / ART_SCALE ** 2),
+            ...frames.map((pixels) => litPixels(pixels, FIGHT_STAGE_COLORS) / ART_SCALE ** 2),
           );
           if (peak > 300) bright.push(`${fighter}/${colorway}/${sheet}`);
           if (fighter === 'nayo' && sheet === 'super') rings = Math.max(rings, peak);
@@ -371,7 +371,7 @@ describe('what the front effects light (docs/flashs.md §4)', () => {
   });
 
   it('draws them dark under VEIL_DELTA over the stage: no pixel lighter than FX_DARK', () => {
-    for (const backdrop of GREYBOX_COLORS) {
+    for (const backdrop of FIGHT_STAGE_COLORS) {
       expect(luminanceDelta(FX_DARK, backdrop, 1)).toBeLessThanOrEqual(VEIL_DELTA);
       expect(luminanceDelta(0x000000, backdrop, 1)).toBeLessThanOrEqual(VEIL_DELTA);
     }

@@ -2,7 +2,7 @@ import type Phaser from 'phaser';
 import { describe, expect, it, vi } from 'vitest';
 import { COLOR_GAP, Effects } from '../../src/render/effects';
 import { DEPTH } from '../../src/render/depth';
-import { GREYBOX_COLORS } from '../../src/render/greybox-stage';
+import { FIGHT_STAGE_COLORS } from '../../src/render/stage-view';
 import { koVeil, superDim, superHalo, veilLife } from '../../src/render/veils';
 
 vi.mock('phaser', () => ({ default: { Textures: { FilterMode: { LINEAR: 1 } } } }));
@@ -105,9 +105,9 @@ describe('the veils over the fight (docs/flashs.md §2)', () => {
 
   it('shows a veil from its first frame, then hides it once over', () => {
     const { effects: fx, dim, halo } = effects();
-    const look = superDim(GREYBOX_COLORS);
+    const look = superDim(FIGHT_STAGE_COLORS);
     fx.veil(look);
-    fx.veil(superHalo(GREYBOX_COLORS), { x: 120, y: 190 });
+    fx.veil(superHalo(FIGHT_STAGE_COLORS), { x: 120, y: 190 });
     fx.update();
     expect(dim.visible).toBe(true);
     expect(dim.fill).toBe(look.color);
@@ -120,8 +120,8 @@ describe('the veils over the fight (docs/flashs.md §2)', () => {
 
   it('never follows a colored veil with one of another color within a second', () => {
     const { effects: fx, eclat, vignette } = effects();
-    const cyan = koVeil('finisher', CYAN, GREYBOX_COLORS);
-    const magenta = koVeil('combo', MAGENTA, GREYBOX_COLORS);
+    const cyan = koVeil('finisher', CYAN, FIGHT_STAGE_COLORS);
+    const magenta = koVeil('combo', MAGENTA, FIGHT_STAGE_COLORS);
     if (!cyan || !magenta) throw new Error('Missing veils');
     fx.veil(cyan, { x: 0, y: 0 });
     fx.veil(magenta);
@@ -129,7 +129,7 @@ describe('the veils over the fight (docs/flashs.md §2)', () => {
     expect(eclat.visible).toBe(true);
     expect(vignette.visible).toBe(false);
     // The same color again is no alternation; another one, a second later, is welcome.
-    const cyanVignette = koVeil('combo', CYAN, GREYBOX_COLORS);
+    const cyanVignette = koVeil('combo', CYAN, FIGHT_STAGE_COLORS);
     if (!cyanVignette) throw new Error('Missing veil');
     fx.veil(cyanVignette);
     fx.update();

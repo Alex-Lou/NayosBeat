@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { MAX_CLOSE_UP } from '../../src/render/camera-framing';
-import { GREYBOX_COLORS } from '../../src/render/greybox-stage';
 import { hitStyleOf } from '../../src/render/hit-styles';
 import {
   alphaForDelta,
@@ -10,6 +9,7 @@ import {
   relativeLuminance,
   SATURATED_RED,
 } from '../../src/render/luminance';
+import { FIGHT_STAGE_COLORS } from '../../src/render/stage-view';
 import {
   CALM_DELTA,
   DIM_COLOR,
@@ -48,7 +48,7 @@ describe('the luminance of a flash (WCAG 2.x)', () => {
   it('blends a color over another, and finds the alpha for a given change', () => {
     expect(over(0xffffff, 0x000000, 0.5)).toBe(0x808080);
     expect(over(0x30e8ff, 0x1b1b2f, 0)).toBe(0x1b1b2f);
-    for (const backdrop of GREYBOX_COLORS) {
+    for (const backdrop of FIGHT_STAGE_COLORS) {
       const alpha = alphaForDelta(0xffffff, backdrop, 0.08);
       expect(luminanceDelta(0xffffff, backdrop, alpha)).toBeLessThanOrEqual(0.08);
       expect(luminanceDelta(0xffffff, backdrop, alpha + 0.01)).toBeGreaterThan(0.08);
@@ -69,13 +69,13 @@ describe('the luminance of a flash (WCAG 2.x)', () => {
 /** The largest change of luminance a veil makes on the stage, at its peak. */
 function peakDelta(look: VeilLook): number {
   return Math.max(
-    ...GREYBOX_COLORS.map((backdrop) => luminanceDelta(look.color, backdrop, look.alpha)),
+    ...FIGHT_STAGE_COLORS.map((backdrop) => luminanceDelta(look.color, backdrop, look.alpha)),
   );
 }
 
 describe('the veils (docs/flashs.md §1.2, §2)', () => {
   it("darkens the stage on a super's freeze without a flash, held through the freeze", () => {
-    const dim = superDim(GREYBOX_COLORS);
+    const dim = superDim(FIGHT_STAGE_COLORS);
     expect(dim.color).toBe(DIM_COLOR);
     expect(dim.alpha).toBeLessThanOrEqual(0.55);
     expect(peakDelta(dim)).toBeLessThan(FLASH);
@@ -87,11 +87,11 @@ describe('the veils (docs/flashs.md §1.2, §2)', () => {
   });
 
   it('glows a platine halo behind the super, its flash on a small area only', () => {
-    const halo = superHalo(GREYBOX_COLORS);
+    const halo = superHalo(FIGHT_STAGE_COLORS);
     expect(halo.color).toBe(HALO_COLOR);
     expect(peakDelta(halo)).toBeLessThanOrEqual(HALO_DELTA + 1e-9);
     expect(peakDelta(halo)).toBeGreaterThan(HALO_DELTA - 0.02);
-    for (const backdrop of GREYBOX_COLORS) {
+    for (const backdrop of FIGHT_STAGE_COLORS) {
       expect(flashArea(halo, GLOW_SIZE.halo, backdrop)).toBeLessThan(FLASH_AREA);
       expect(flashArea(halo, GLOW_SIZE.halo, backdrop)).toBeGreaterThan(0);
     }
@@ -99,10 +99,10 @@ describe('the veils (docs/flashs.md §1.2, §2)', () => {
 
   it("softens a KO's veils with the flashes reduced, and inks them off or refused", () => {
     for (const energy of ENERGIES) {
-      const calm = koVeil('combo', energy, GREYBOX_COLORS, 'reduced');
+      const calm = koVeil('combo', energy, FIGHT_STAGE_COLORS, 'reduced');
       if (!calm) throw new Error('No vignette');
       expect(peakDelta(calm)).toBeLessThanOrEqual(CALM_DELTA);
-      const eclat = koVeil('finisher', energy, GREYBOX_COLORS, 'reduced');
+      const eclat = koVeil('finisher', energy, FIGHT_STAGE_COLORS, 'reduced');
       if (!eclat) throw new Error('No éclat');
       expect(peakDelta(eclat)).toBeLessThanOrEqual(VEIL_DELTA);
       for (const [finish, mode, lit] of [
@@ -110,11 +110,11 @@ describe('the veils (docs/flashs.md §1.2, §2)', () => {
         ['finisher', 'off', true],
         ['finisher', 'normal', false],
       ] as const) {
-        const ink = koVeil(finish, energy, GREYBOX_COLORS, mode, lit);
+        const ink = koVeil(finish, energy, FIGHT_STAGE_COLORS, mode, lit);
         expect(ink, `${finish} ${mode}`).toMatchObject({ color: DIM_COLOR });
         if (!ink) continue;
         // It darkens: drawn over the stage, it never makes it lighter.
-        for (const backdrop of GREYBOX_COLORS) {
+        for (const backdrop of FIGHT_STAGE_COLORS) {
           const after = relativeLuminance(over(ink.color, backdrop, ink.alpha));
           expect(after).toBeLessThanOrEqual(relativeLuminance(backdrop));
         }
@@ -124,14 +124,14 @@ describe('the veils (docs/flashs.md §1.2, §2)', () => {
 
   it('leaves a KO alone without a veil, vignettes a combo end, bursts an Ultime', () => {
     for (const energy of ENERGIES) {
-      expect(koVeil('plain', energy, GREYBOX_COLORS)).toBeNull();
-      const vignette = koVeil('combo', energy, GREYBOX_COLORS);
+      expect(koVeil('plain', energy, FIGHT_STAGE_COLORS)).toBeNull();
+      const vignette = koVeil('combo', energy, FIGHT_STAGE_COLORS);
       expect(vignette).toMatchObject({ kind: 'vignette', color: energy });
       if (!vignette) continue;
       // Even in the corners, where it is whole: never a flash.
       expect(peakDelta(vignette)).toBeLessThanOrEqual(VEIL_DELTA);
       expect(peakDelta(vignette)).toBeGreaterThan(VEIL_DELTA - 0.01);
-      const eclat = koVeil('finisher', energy, GREYBOX_COLORS);
+      const eclat = koVeil('finisher', energy, FIGHT_STAGE_COLORS);
       expect(eclat).toMatchObject({ kind: 'eclat', color: energy });
       if (!eclat) continue;
       // Its heart: the KO's one flash, as strong for a cyan as for a magenta.
@@ -166,11 +166,11 @@ describe('the veils (docs/flashs.md §1.2, §2)', () => {
 
   it('rises in a few frames, holds, then fades smoothly: never a front of one frame', () => {
     const looks = [
-      superDim(GREYBOX_COLORS),
-      superHalo(GREYBOX_COLORS),
+      superDim(FIGHT_STAGE_COLORS),
+      superHalo(FIGHT_STAGE_COLORS),
       ...ENERGIES.flatMap((energy) => [
-        koVeil('combo', energy, GREYBOX_COLORS),
-        koVeil('finisher', energy, GREYBOX_COLORS),
+        koVeil('combo', energy, FIGHT_STAGE_COLORS),
+        koVeil('finisher', energy, FIGHT_STAGE_COLORS),
       ]),
     ].filter((look) => look !== null);
     for (const look of looks) {

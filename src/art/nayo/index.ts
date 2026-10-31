@@ -1,4 +1,4 @@
-import { effectNames, urlsOf } from '../strip-urls';
+import { effectNames, portraitOf, urlsOf } from '../strip-urls';
 import type { FighterArt } from '../types';
 import { NAYO_CELLS } from './cells';
 import { NAYO_CLIPS, NAYO_PROJECTILES } from './clips';
@@ -41,6 +41,7 @@ export const NAYO: FighterArt = {
   key: 'nayo',
   urls: urlsOf(MAIN, 'main', NAYO_SHEETS),
   fx: urlsOf(MAIN_FX, 'main/fx', effectNames(NAYO_SHEETS, NAYO_CLIPS)),
+  ...portraitOf(MAIN, 'main'),
   ...SHARED,
 };
 /** Light grey techwear, magenta neon: player 2 in a mirror match. */
@@ -48,5 +49,6 @@ export const NAYO_ALT: FighterArt = {
   key: 'nayo-alt',
   urls: urlsOf(ALT, 'alt', NAYO_SHEETS),
   fx: urlsOf(ALT_FX, 'alt/fx', effectNames(NAYO_SHEETS, NAYO_CLIPS)),
+  ...portraitOf(ALT, 'alt'),
   ...SHARED,
 };

@@ -46,22 +46,22 @@ export function isUiArt(name: string): name is UiArtName {
 
 /** The checks of a drawn one: its format, every frame drawn, any colors. */
 export function uiRulesOf(name: UiArtName): DrawnRules {
-  const { cell, frames } = UI_ARTS[name];
-  return { cell, frames, slots: 256, filled: true, margin: 0, lowestRow: cell - 1 };
+  const { cell, frames, opaque } = UI_ARTS[name];
+  return {
+    width: cell,
+    height: cell,
+    frames,
+    slots: 256,
+    filled: true,
+    margin: 0,
+    lowestRow: cell - 1,
+    transparency: opaque ? 'whole' : 'any',
+  };
 }
 
 /** What is wrong with a drawn one (nothing when the list is empty). */
 export function checkUiDrawn(label: string, image: IndexedImage, name: UiArtName): string[] {
-  const problems = checkDrawn(label, image, uiRulesOf(name), undefined);
-  if (problems.length > 0 || !UI_ARTS[name].opaque) return problems;
-  const index = image.pixels.findIndex((slot) => {
-    const { a } = rgbaAt(image, slot);
-    return a !== 0 && a !== 255;
-  });
-  if (index < 0) return problems;
-  const x = index % image.width;
-  const y = Math.floor(index / image.width);
-  return [`${label}: pixel ${x},${y} is half transparent (only fully opaque or fully transparent)`];
+  return checkDrawn(label, image, uiRulesOf(name), undefined);
 }
 
 /**

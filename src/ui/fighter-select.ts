@@ -18,6 +18,8 @@ export interface FighterLook {
   readonly height: number;
   /** The bust on its tile: a square of the first frame, in art pixels. */
   readonly portrait: { readonly x: number; readonly y: number; readonly size: number };
+  /** The bust drawn for the tile (its URL), shown whole in place of `portrait`. */
+  readonly portraitImage?: string;
   /** Its idle at the game's pace: the frames of the strip it plays in turn, round and round. */
   readonly idle: readonly IdleFrame[];
 }
@@ -255,8 +257,17 @@ export class FighterSelect<Id extends string> {
   }
 }
 
-/** The bust of `look` on its tile: its square of the first frame, scaled to the tile. */
+/**
+ * The bust of `look` on its tile, scaled to the tile: the one drawn for it, else its square of the
+ * first frame.
+ */
 function paintPortrait(portrait: HTMLElement, look: FighterLook): void {
+  if (look.portraitImage !== undefined) {
+    portrait.style.backgroundImage = `url("${look.portraitImage}")`;
+    portrait.style.backgroundSize = '100% 100%';
+    portrait.style.backgroundPosition = '0 0';
+    return;
+  }
   const { strip, frames, width, height } = look;
   const { x, y, size } = look.portrait;
   const stripWidth = frames * width;

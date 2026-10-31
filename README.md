@@ -59,7 +59,7 @@ Ajouter `?debug` à l'URL affiche l'overlay de debug et toutes les boîtes (touj
 
 Nayo est dessiné (sprites générés par `npm run sprites`, provisoires en attendant les planches définitives) ; ses hurtbox sont calées sur le dessin (`npm run measure-boxes`). Riff reste en boîte grise jusqu'à ses propres sprites : la boîte dessine exactement sa hurtbox, avec un « pied » du côté où elle regarde. Dans un match miroir, le joueur 2 porte la seconde tenue (techwear gris clair, néon magenta).
 
-Une planche peut aussi être dessinée à la main dans Aseprite : elle remplace alors celle du code, planche par planche (extension NayosBeat, gabarits au format du jeu, guides des boîtes, export vérifié). Les icônes de l'application et le vinyle du titre aussi. Voir [docs/art/aseprite.md](docs/art/aseprite.md).
+Une planche peut aussi être dessinée à la main dans Aseprite : elle remplace alors celle du code, planche par planche (extension NayosBeat, gabarits au format du jeu, guides des boîtes, export vérifié). Les icônes de l'application et le vinyle du titre aussi ; le portrait de chaque combattant (écran de sélection) et le stage, l'Entrepôt en trois calques de parallaxe, n'existent qu'à la main : sans eux, le recadrage de la garde et la boîte grise. Voir [docs/art/aseprite.md](docs/art/aseprite.md).
 
 ## Combat
 
@@ -83,7 +83,7 @@ Une planche peut aussi être dessinée à la main dans Aseprite : elle remplace 
 | `npm run format` | Prettier |
 | `npm run sprites` | Redessine les planches de sprites (`tools/sprites` → `src/art`) |
 | `npm run measure-boxes` | Mesure le dessin de Nayo bande par bande (4 px) contre ses hurtbox |
-| `npm run sprites:templates` | Écrit les gabarits Aseprite de chaque planche (`art-src/gabarits/`, non commités) |
+| `npm run sprites:templates` | Écrit les gabarits Aseprite : planches, portraits, interface, stage (`art-src/gabarits/`, non commités) |
 | `npm run aseprite:extension` | Construit l'extension Aseprite (`tools/aseprite/dist/`) |
 | `npm run aseprite:check` | Fait tourner l'extension hors d'Aseprite, de bout en bout (Lua 5.4 requis ; lancé aussi par la CI) |
 | `npm run bench` | Banc de perfs de la simulation (100 000 tics CPU contre CPU) |

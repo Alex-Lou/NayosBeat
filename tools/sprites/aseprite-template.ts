@@ -13,7 +13,8 @@
  * pixels.
  */
 
-import { ANCHOR, CELL_SIZE } from '../../src/art/types.ts';
+import { STAGE_LAYERS, STAGE_NAME, type StageLayer } from '../../src/art/stage-layers.ts';
+import { ANCHOR, ART_SCALE, CELL_SIZE } from '../../src/art/types.ts';
 import type { Box, FighterTemplate } from '../../src/core/config.ts';
 import { toPx } from '../../src/core/constants.ts';
 import { MOVE_IDS } from '../../src/core/move-data.ts';
@@ -21,6 +22,9 @@ import { cellBoxOf, type WorldBox } from './cell.ts';
 import { strikeOf, type Clips } from './clips.ts';
 import {
   platinePixels,
+  PORTRAIT,
+  PORTRAIT_SIZE,
+  portraitRules,
   rulesOf,
   stripOf,
   stripPixels,
@@ -31,11 +35,16 @@ import {
 import type { Fighter } from './fighter.ts';
 import { isAirborne, moveHurtboxesAt, POSTURE_CLIPS, type Posture } from './measure.ts';
 import type { IndexedImage, Rgba } from './png.ts';
+import { solve } from './skeleton.ts';
+import { stageRulesOf, stageStart } from './stage-drawn.ts';
 import { UI_ARTS, UI_FOLDER, uiRulesOf, uiStart, type UiArtName } from './ui-drawn.ts';
 
 export const TEMPLATE_FORMAT = 'nayosbeat-template';
-/** 2: the free palettes (`palette.free`, no `palette.alt`), `folder`, no `ticks`. */
-export const TEMPLATE_VERSION = 2;
+/**
+ * 2: the free palettes (`palette.free`, no `palette.alt`), `folder`, no `ticks`. 3: cells of any
+ * size (`width`, `height` in place of `cell`), in the rules too, with their `transparency`.
+ */
+export const TEMPLATE_VERSION = 3;
 
 const LOOP_TAG = '#4a8cffff';
 const ACTIVE_TAG = '#ff3b3bff';
@@ -75,13 +84,17 @@ export interface TemplateTag {
 export interface Template {
   readonly format: typeof TEMPLATE_FORMAT;
   readonly version: typeof TEMPLATE_VERSION;
-  /** Where its files go, in art-src/: the fighter's folder, or UI_FOLDER. */
+  /** Where its files go, in art-src/: the fighter's folder, UI_FOLDER, or the stage's. */
   readonly folder: string;
-  /** The strip, the Remix effects (then `strip` is their special's), or the UI image. */
+  /**
+   * The strip, the Remix effects (then `strip` is their special's), the portrait, the UI image or
+   * the stage layer.
+   */
   readonly name: string;
   readonly strip: string;
-  /** Pixels across a (square) cell. */
-  readonly cell: number;
+  /** A cell's size, in pixels: the document's. */
+  readonly width: number;
+  readonly height: number;
   readonly frames: number;
   /** Seconds each frame shows: a fighter's are its ticks in the game. */
   readonly durations: readonly number[];
@@ -155,7 +168,8 @@ export function templateOf(
     folder: fighter.name,
     name,
     strip,
-    cell: CELL_SIZE,
+    width: CELL_SIZE,
+    height: CELL_SIZE,
     frames,
     durations: ticks.map((tick) => tick / TICKS_PER_SECOND),
     palette: {
@@ -168,36 +182,144 @@ export function templateOf(
   };
 }
 
-/**
- * The template of a UI image (ui-drawn.ts): one layer, starting from what the game has (`drawn`,
- * else the code's drawing), in a free palette, without guides.
- */
-export function uiTemplateOf(name: UiArtName, drawn: IndexedImage | undefined): Template {
-  const { cell, frames, seconds, loops } = UI_ARTS[name];
-  const { pixels, palette } = uiStart(name, drawn);
-  const start = { width: cell * frames, height: cell, pixels };
+/** A drawing of one layer, `dessin`: a portrait, a UI image, a stage layer. */
+interface ImageTemplate {
+  readonly folder: string;
+  readonly name: string;
+  readonly rules: DrawnRules;
+  /** Seconds each frame shows, and whether they loop. */
+  readonly seconds: number;
+  readonly loops: boolean;
+  /** Where its pixels start, in `palette` (`#rrggbbaa`), and its other colorway's palette. */
+  readonly start: Uint8Array;
+  readonly palette: readonly string[];
+  readonly alt?: readonly string[];
+  /** Guides over it, in one cell, in GUIDE_COLORS.ground (appended to the palettes). */
+  readonly guides?: Uint8Array;
+}
+
+function imageTemplateOf(image: ImageTemplate): Template {
+  const { folder, name, rules, seconds, loops, start, palette, alt, guides } = image;
+  const { width, height, frames } = rules;
+  const free = alt === undefined;
+  const guide = guides ? [GUIDE_COLORS.ground] : [];
+  const pixels = { width: width * frames, height, pixels: start };
+  const layers: TemplateLayer[] = [
+    {
+      name: 'dessin',
+      file: `${name}.png`,
+      rules,
+      locked: false,
+      opacity: 255,
+      frames: runsOf(pixels, frames, width, height),
+    },
+  ];
+  if (guides) {
+    const slot = palette.length;
+    const cell = guides.map((on) => (on ? slot : 0));
+    layers.push({ name: 'guides', locked: true, opacity: 160, frames: [runsOfCell(cell)] });
+  }
   return {
     format: TEMPLATE_FORMAT,
     version: TEMPLATE_VERSION,
-    folder: UI_FOLDER,
+    folder,
     name,
     strip: name,
-    cell,
+    width,
+    height,
     frames,
     durations: Array.from({ length: frames }, () => seconds),
-    palette: { main: palette.map(toHex), free: true },
+    palette: free
+      ? { main: [...palette, ...guide], free }
+      : { main: [...palette, ...guide], alt: [...alt, ...guide], free },
     tags: loops ? [{ name: 'boucle', from: 0, to: frames - 1, color: LOOP_TAG }] : [],
-    layers: [
-      {
-        name: 'dessin',
-        file: `${name}.png`,
-        rules: uiRulesOf(name),
-        locked: false,
-        opacity: 255,
-        frames: runsOf(start, frames, cell),
-      },
-    ],
+    layers,
   };
+}
+
+/**
+ * The template of a UI image (ui-drawn.ts): starting from what the game has (`drawn`, else the
+ * code's drawing), in a free palette, without guides.
+ */
+export function uiTemplateOf(name: UiArtName, drawn: IndexedImage | undefined): Template {
+  const { seconds, loops } = UI_ARTS[name];
+  const { pixels, palette } = uiStart(name, drawn);
+  return imageTemplateOf({
+    folder: UI_FOLDER,
+    name,
+    rules: uiRulesOf(name),
+    seconds,
+    loops,
+    start: pixels,
+    palette: palette.map(toHex),
+  });
+}
+
+/**
+ * The template of a fighter's portrait (drawn.ts): in its palette slots, both colorways, starting
+ * from the one drawn, else from the head and shoulders of its guard (the first frame of its idle).
+ */
+export function portraitTemplateOf(fighter: Fighter, drawn: ReadonlyMap<string, Drawn>): Template {
+  return imageTemplateOf({
+    folder: fighter.name,
+    name: PORTRAIT,
+    rules: portraitRules(fighter),
+    seconds: 1,
+    loops: false,
+    start: portraitStart(fighter, drawn),
+    palette: fighter.paletteOf('main').map(toHex),
+    alt: fighter.paletteOf('alt').map(toHex),
+  });
+}
+
+/** The head and shoulders of the guard: a square of its first idle frame around the head. */
+function portraitStart(fighter: Fighter, drawn: ReadonlyMap<string, Drawn>): Uint8Array {
+  const own = drawn.get(PORTRAIT)?.body;
+  if (own) return own.pixels;
+  const idle = stripPixels(fighter, 'idle', drawn).body;
+  const pose = fighter.poses('idle')?.[0];
+  if (!pose) throw new Error(`${fighter.name} has no idle pose`);
+  const { head } = solve(pose, fighter.body);
+  const left = Math.round(ANCHOR.x + head.x * ART_SCALE - PORTRAIT_SIZE / 2);
+  const top = Math.round(ANCHOR.y - head.y * ART_SCALE - PORTRAIT_SIZE * 0.4);
+  const pixels = new Uint8Array(PORTRAIT_SIZE * PORTRAIT_SIZE);
+  for (let y = 0; y < PORTRAIT_SIZE; y++) {
+    for (let x = 0; x < PORTRAIT_SIZE; x++) {
+      const cx = left + x;
+      const cy = top + y;
+      if (cx < 0 || cy < 0 || cx >= CELL_SIZE || cy >= CELL_SIZE) continue;
+      pixels[y * PORTRAIT_SIZE + x] = idle.pixels[cy * idle.width + cx] ?? 0;
+    }
+  }
+  return pixels;
+}
+
+/**
+ * The template of a stage layer (stage-drawn.ts): in a free palette, starting from the one drawn,
+ * else from the grey box; the ground line as a guide behind the floor.
+ */
+export function stageTemplateOf(layer: StageLayer, drawn: IndexedImage | undefined): Template {
+  const rules = stageRulesOf(layer);
+  const { pixels, palette } = stageStart(layer, drawn);
+  const { y: ground } = STAGE_LAYERS.floor;
+  const guides =
+    layer === 'floor'
+      ? undefined
+      : new Uint8Array(rules.width * rules.height).fill(
+          1,
+          ground * rules.width,
+          (ground + 1) * rules.width,
+        );
+  return imageTemplateOf({
+    folder: STAGE_NAME,
+    name: layer,
+    rules,
+    seconds: 1,
+    loops: false,
+    start: pixels,
+    palette: palette.map(toHex),
+    ...(guides && { guides }),
+  });
 }
 
 /** The loop of the strip's clip, and each run of the active frames of its strike. */
@@ -356,18 +478,19 @@ function outline(cell: Uint8Array, box: WorldBox, slot: number): void {
   }
 }
 
-/** The cells of a strip as runs (`runsOfCell`), `size` pixels across; empty without pixels. */
+/** The cells of a strip as runs (`runsOfCell`), `width` × `height` each; empty without pixels. */
 function runsOf(
   pixels: StripPixels | undefined,
   frames: number,
-  size: number = CELL_SIZE,
+  width: number = CELL_SIZE,
+  height: number = CELL_SIZE,
 ): number[][] {
   return Array.from({ length: frames }, (_, frame) => {
-    const cell = new Uint8Array(size * size);
+    const cell = new Uint8Array(width * height);
     if (pixels) {
-      for (let y = 0; y < size; y++) {
-        const from = y * pixels.width + frame * size;
-        cell.set(pixels.pixels.subarray(from, from + size), y * size);
+      for (let y = 0; y < height; y++) {
+        const from = y * pixels.width + frame * width;
+        cell.set(pixels.pixels.subarray(from, from + width), y * width);
       }
     }
     return runsOfCell(cell);

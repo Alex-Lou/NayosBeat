@@ -29,7 +29,8 @@ import { detectEvents, type FightEvent } from './fight-events';
 import { FightFeedback } from './fight-feedback';
 import { FlashBudget } from './flash-budget';
 import { FighterView } from './fighter-view';
-import { drawGreyboxStage, GREYBOX_COLORS, GROUND_Y } from './greybox-stage';
+import { STAGE_ART } from '../art/entrepot';
+import { drawGreyboxStage, GROUND_Y } from './greybox-stage';
 import { hitStyleOf, hudColorOf, type HitStyle } from './hit-styles';
 import { requestLandscapeFullscreen } from './fullscreen';
 import { HoldPrompt } from './hold-prompt';
@@ -39,6 +40,7 @@ import { MoveCaption } from './move-caption';
 import { ProjectileView } from './projectile-view';
 import { loadArt } from './art-textures';
 import { SpriteFighterView } from './sprite-fighter-view';
+import { drawStage, FIGHT_STAGE_COLORS, loadStage } from './stage-view';
 import { VIEW_SIZE } from './view';
 
 /** Caps the catch-up after a long stall (~83 ms of simulation at 60 Hz). */
@@ -167,6 +169,7 @@ export class FightScene extends Phaser.Scene {
 
   preload(): void {
     for (const art of this.arts) if (art) loadArt(this, art);
+    if (STAGE_ART) loadStage(this, STAGE_ART);
   }
 
   create(): void {
@@ -175,7 +178,9 @@ export class FightScene extends Phaser.Scene {
     // origin at the top left, the scroll stays the world x of the screen's left edge.
     this.cameras.main.setZoom(this.scale.width / VIEW_SIZE.width).setOrigin(0, 0);
     const stageWidth = toPx(this.config.stage.width);
-    drawGreyboxStage(this, stageWidth);
+    // The Warehouse once drawn (docs/art/aseprite.md), the grey box until then.
+    if (STAGE_ART) drawStage(this, STAGE_ART);
+    else drawGreyboxStage(this, stageWidth);
     const { comfort } = this.sceneData;
     const budget = new FlashBudget(comfort.flashes);
     const touch = isTouchDevice()
@@ -209,7 +214,7 @@ export class FightScene extends Phaser.Scene {
         this.styles,
         {
           width: stageWidth,
-          colors: GREYBOX_COLORS,
+          colors: FIGHT_STAGE_COLORS,
           budget,
           comfort,
           knockOut: (player, finish, still) => {
@@ -275,7 +280,7 @@ export class FightScene extends Phaser.Scene {
     return art
       ? new SpriteFighterView(this, art, player, GROUND_Y, style.energy, this.config, {
           dissolve: dissolveStyleOf(style.shape),
-          stage: GREYBOX_COLORS,
+          stage: FIGHT_STAGE_COLORS,
           budget,
         })
       : new FighterView(this, color, GROUND_Y, player, this.config.fighters[player]);

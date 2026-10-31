@@ -71,7 +71,7 @@ describe('Free palettes', () => {
 describe('UI images drawn', () => {
   it('keep the title vinyl format: 8 frames of 18 px, each drawn', () => {
     expect(checkUiDrawn('vinyl', imageOf(18, 18, [NONE, RED]), 'vinyl')).toEqual([
-      'vinyl: 18x18 px, expected 144x18 (8 cells of 18 px in a row)',
+      'vinyl: 18x18 px, expected 144x18 (8 cells of 18x18 px in a row)',
     ]);
     const blank = imageOf(144, 18, [NONE, RED], (put) => {
       put(9, 9, 1);
@@ -96,7 +96,7 @@ describe('UI images drawn', () => {
       put(3, 5, 1);
     });
     expect(checkUiDrawn('icon', master, 'icon')).toEqual([
-      'icon: pixel 3,5 is half transparent (only fully opaque or fully transparent)',
+      'icon: frame 1, pixel 3,5: half transparent (only fully opaque or fully transparent pixels)',
     ]);
     expect(checkUiDrawn('vinyl', vinylOf([NONE, glass], 1), 'vinyl')).toEqual([]);
   });

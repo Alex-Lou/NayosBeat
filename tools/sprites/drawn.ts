@@ -38,19 +38,25 @@ export type DrawnLayer = 'body' | 'fx';
  * before it exports.
  */
 export interface DrawnRules {
-  /** Pixels across a (square) cell. */
-  readonly cell: number;
+  /** A cell's size, in pixels: the frames are cells side by side. */
+  readonly width: number;
+  readonly height: number;
   readonly frames: number;
   /** The fighter's palette slots: an index at or past it is none of its colors (a guide's). */
   readonly slots: number;
   /** Every frame draws something. */
   readonly filled: boolean;
-  /** Empty sprite pixels kept along the left, right and top edges of every cell. */
+  /** Empty pixels kept along the left, right and top edges of every cell. */
   readonly margin: number;
   /** The lowest row a cell may draw on. */
   readonly lowestRow: number;
   /** The row every frame's lowest pixel reaches at least (the feet on the ground), if any. */
   readonly groundRow?: number;
+  /**
+   * What may be see-through: any pixel, at any opacity; only whole pixels (each fully opaque or
+   * fully transparent: laid over something else, a half-transparent one cannot be); none.
+   */
+  readonly transparency: 'any' | 'whole' | 'none';
 }
 
 const GROUNDED: ReadonlySet<string> = new Set(GROUNDED_STRIPS);
@@ -61,13 +67,40 @@ export function stripOf(fighter: Fighter, name: string): string | undefined {
   return fighter.platine[name];
 }
 
+/**
+ * The bust of the select screen, drawn apart (art-src/<fighter>/portrait.png): a square in the
+ * fighter's palette slots, both colorways, in place of the square the game cuts from its guard.
+ */
+export const PORTRAIT = 'portrait';
+export const PORTRAIT_SIZE = 96;
+
+export function portraitRules(fighter: Fighter): DrawnRules {
+  return {
+    width: PORTRAIT_SIZE,
+    height: PORTRAIT_SIZE,
+    frames: 1,
+    slots: fighter.paletteOf('main').length,
+    filled: true,
+    margin: 0,
+    lowestRow: PORTRAIT_SIZE - 1,
+    transparency: 'any',
+  };
+}
+
 /** The checks of image `layer` of strip (or Remix effects) `name`. */
 export function rulesOf(fighter: Fighter, name: string, layer: DrawnLayer): DrawnRules {
   const strip = stripOf(fighter, name);
   const spec = strip === undefined ? undefined : fighter.sheets[strip];
   if (!spec) throw new Error(`${fighter.name} has no strip ${name}`);
   const slots = fighter.paletteOf('main').length;
-  const kept = { cell: CELL_SIZE, frames: spec.frames, slots, margin: CELL_MARGIN };
+  const kept = {
+    width: CELL_SIZE,
+    height: CELL_SIZE,
+    frames: spec.frames,
+    slots,
+    margin: CELL_MARGIN,
+    transparency: 'any' as const,
+  };
   // Effects may go a little below the ground (dust, floor rings), not off the cell.
   if (layer === 'fx') return { ...kept, filled: false, lowestRow: CELL_SIZE - 1 };
   const body = { ...kept, filled: true, lowestRow: LOWEST_ROW };
@@ -86,32 +119,38 @@ export function checkDrawn(
   rules: DrawnRules,
   palette: readonly Rgba[] | undefined,
 ): string[] {
-  const { cell } = rules;
+  const { width: cell, height } = rules;
   const width = cell * rules.frames;
-  if (image.width !== width || image.height !== cell) {
+  if (image.width !== width || image.height !== height) {
     return [
-      `${label}: ${image.width}x${image.height} px, expected ${width}x${cell} (${rules.frames} cells of ${cell} px in a row)`,
+      `${label}: ${image.width}x${image.height} px, expected ${width}x${height} (${rules.frames} cells of ${cell}x${height} px in a row)`,
     ];
   }
   const problems: string[] = [];
   const seen = new Set<number>();
   const extents = Array.from({ length: rules.frames }, () => ({
-    top: cell,
+    top: height,
     bottom: -1,
     left: cell,
     right: -1,
   }));
   const empty = (slot: number): boolean =>
     palette ? slot === 0 : (image.alpha[slot] ?? 255) === 0;
+  let hole: string | undefined;
   for (let y = 0; y < image.height; y++) {
     for (let x = 0; x < image.width; x++) {
       const slot = image.pixels[y * image.width + x] ?? 0;
-      if (empty(slot)) continue;
       const frame = Math.floor(x / cell);
       const column = x % cell;
-      if (palette && !seen.has(slot)) {
+      if (empty(slot)) {
+        if (rules.transparency === 'none') hole ??= `frame ${frame + 1}, pixel ${column},${y}`;
+        continue;
+      }
+      if (!seen.has(slot)) {
         seen.add(slot);
-        const problem = slotProblem(slot, image, rules, palette);
+        const problem = palette
+          ? slotProblem(slot, image, rules, palette)
+          : alphaProblem(slot, image, rules);
         if (problem)
           problems.push(`${label}: frame ${frame + 1}, pixel ${column},${y}: ${problem}`);
       }
@@ -123,8 +162,9 @@ export function checkDrawn(
       extent.right = Math.max(extent.right, column);
     }
   }
+  if (hole) problems.push(`${label}: ${hole} is transparent (this one is opaque everywhere)`);
   if (extents.every(({ bottom }) => bottom < 0) && !rules.filled) {
-    problems.push(`${label} draws nothing (no file means no effects)`);
+    problems.push(`${label} draws nothing (no file means none)`);
   }
   extents.forEach(({ top, bottom, left, right }, frame) => {
     const at = `${label}: frame ${frame + 1}`;
@@ -148,6 +188,12 @@ export function checkDrawn(
     }
   });
   return problems;
+}
+
+/** Why a free color drawn in an image is wrong, if it is: half transparent where it may not be. */
+function alphaProblem(slot: number, image: IndexedImage, rules: DrawnRules): string | undefined {
+  if (rules.transparency === 'any' || (image.alpha[slot] ?? 255) === 255) return undefined;
+  return 'half transparent (only fully opaque or fully transparent pixels)';
 }
 
 /** Why a slot drawn in an image is wrong, if it is: none of the fighter's, or recolored. */
@@ -206,6 +252,11 @@ export async function loadDrawn(
   };
   const strips = pngNames(await listFolder(folder));
   for (const name of strips) {
+    if (name === PORTRAIT) {
+      const portrait = await read(`${name}.png`, portraitRules(fighter));
+      if (portrait) drawn.set(name, { body: portrait });
+      continue;
+    }
     if (!(name in fighter.sheets)) {
       problems.push(`art-src/${fighter.name}/${name}.png: ${fighter.name} has no strip ${name}`);
       continue;

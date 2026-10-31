@@ -138,7 +138,7 @@ describe('Drawn strips', () => {
 
   it('keep the number of frames of their strip', () => {
     expect(checkDrawn('idle', standing(9), idle, PALETTE)).toEqual([
-      'idle: 2304x256 px, expected 2560x256 (10 cells of 256 px in a row)',
+      'idle: 2304x256 px, expected 2560x256 (10 cells of 256x256 px in a row)',
     ]);
   });
 
@@ -193,7 +193,7 @@ describe('Drawn strips', () => {
         fx,
         PALETTE,
       ),
-    ).toEqual(['fx/standLight draws nothing (no file means no effects)']);
+    ).toEqual(['fx/standLight draws nothing (no file means none)']);
     const some = imageOf(fx.frames, (put) => {
       put(2, 100, 100, 8);
     });

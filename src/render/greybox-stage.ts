@@ -17,6 +17,14 @@ const COLORS = {
 /** Its large colors, the sky and the ground: what a veil over it must not change too much. */
 export const GREYBOX_COLORS: readonly number[] = [COLORS.background, COLORS.ground];
 
+/** Its look, which a stage drawn by hand starts from (tools/sprites/stage-drawn.ts). */
+export const GREYBOX = {
+  colors: COLORS,
+  groundHeight: GROUND_HEIGHT,
+  markSpacing: GROUND_MARK_SPACING,
+  markSize: GROUND_MARK_SIZE,
+} as const;
+
 /**
  * The static grey-box stage, `stageWidth` world pixels wide (until the stages of phase 6): drawn
  * once, never redrawn. The 1 px screen border makes scaling artifacts easy to spot.

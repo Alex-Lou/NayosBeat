@@ -13,7 +13,7 @@
 -- game's language. Tested outside Aseprite by `npm run aseprite:check` (tools/aseprite/test/).
 
 local TEMPLATE_FORMAT = "nayosbeat-template"
-local TEMPLATE_VERSION = 2
+local TEMPLATE_VERSION = 3
 local TITLE = "NayosBeat"
 local GUIDES = "guides"
 
@@ -96,8 +96,8 @@ local function hasPixels(runs)
   return false
 end
 
-local function cellImage(runs, cell)
-  local image = Image(cell, cell, ColorMode.INDEXED)
+local function cellImage(runs, width, height)
+  local image = Image(width, height, ColorMode.INDEXED)
   image:clear(0)
   local at = 0
   for index = 1, #runs, 2 do
@@ -105,7 +105,7 @@ local function cellImage(runs, cell)
     local slot = math.floor(runs[index + 1])
     if slot ~= 0 then
       for pixel = at, at + count - 1 do
-        image:drawPixel(pixel % cell, pixel // cell, slot)
+        image:drawPixel(pixel % width, pixel // width, slot)
       end
     end
     at = at + count
@@ -143,8 +143,7 @@ local function newSheet(templatePath)
   if app.fs.isFile(target) then
     fail("Cette planche existe déjà :\n" .. target .. "\nOuvrez-la avec Fichier > Ouvrir.")
   end
-  local cell = template.cell
-  local sprite = Sprite(cell, cell, ColorMode.INDEXED)
+  local sprite = Sprite(template.width, template.height, ColorMode.INDEXED)
   sprite:setPalette(paletteOf(template.palette.main))
   sprite.transparentColor = 0
   for _ = 2, template.frames do
@@ -164,7 +163,7 @@ local function newSheet(templatePath)
     layer.name = spec.name
     for frame, runs in ipairs(spec.frames) do
       if hasPixels(runs) then
-        sprite:newCel(layer, frame, cellImage(runs, cell), Point(0, 0))
+        sprite:newCel(layer, frame, cellImage(runs, template.width, template.height), Point(0, 0))
       end
     end
     layer.opacity = spec.opacity
@@ -180,10 +179,10 @@ end
 -- Copies what `layer` draws on frame `frame` into `strip`, its cell starting at column `left`: the
 -- visible sublayers of a group, bottom to top. Layer opacity and blend modes are ignored (a pixel
 -- is a slot), and so is what lies outside the cell.
-local function copyInto(strip, left, layer, frame, cell)
+local function copyInto(strip, left, layer, frame, width, height)
   if layer.isGroup then
     for _, child in ipairs(layer.layers) do
-      if child.isVisible then copyInto(strip, left, child, frame, cell) end
+      if child.isVisible then copyInto(strip, left, child, frame, width, height) end
     end
     return
   end
@@ -198,33 +197,42 @@ local function copyInto(strip, left, layer, frame, cell)
     if slot ~= 0 then
       local x = pixel.x + position.x
       local y = pixel.y + position.y
-      if x >= 0 and x < cell and y >= 0 and y < cell then
+      if x >= 0 and x < width and y >= 0 and y < height then
         strip:drawPixel(left + x, y, slot)
       end
     end
   end
 end
 
--- The checks of `npm run sprites` (tools/sprites/drawn.ts), with the rules the template gives.
--- Frames are numbered from 1, as Aseprite does.
-local function problemsOf(strip, rules, cell, label)
+-- The checks of `npm run sprites` (tools/sprites/drawn.ts), with the rules the template gives and
+-- the palette the strip is written with. Frames are numbered from 1, as Aseprite does.
+local function problemsOf(strip, rules, palette, label)
+  local width = rules.width
   local problems = {}
   local extents = {}
   for frame = 0, rules.frames - 1 do
-    extents[frame] = { top = cell, bottom = -1, left = cell, right = -1 }
+    extents[frame] = { top = rules.height, bottom = -1, left = width, right = -1 }
   end
-  local guides = {}
+  local seen = {}
+  local hole = nil
   local drawn = false
   for pixel in strip:pixels() do
     local slot = pixel()
-    if slot ~= 0 then
+    local frame = pixel.x // width
+    local x = pixel.x % width
+    local at = label .. ", image " .. (frame + 1) .. " (" .. x .. ", " .. pixel.y .. ")"
+    local alpha = slot < #palette and palette:getColor(slot).alpha or 255
+    if slot == 0 or alpha == 0 then
+      if rules.transparency == "none" and hole == nil then hole = at end
+    else
       drawn = true
-      local frame = pixel.x // cell
-      local x = pixel.x % cell
-      if slot >= rules.slots and not guides[slot] then
-        guides[slot] = true
-        table.insert(problems, label .. ", image " .. (frame + 1) .. " (" .. x .. ", " .. pixel.y
-          .. ") : la couleur " .. slot .. " est une couleur de guide, pas du personnage")
+      if not seen[slot] then
+        seen[slot] = true
+        if slot >= rules.slots then
+          table.insert(problems, at .. " : la couleur " .. slot .. " est une couleur de guide, pas du personnage")
+        elseif rules.transparency ~= "any" and alpha ~= 255 then
+          table.insert(problems, at .. " : la couleur " .. slot .. " est à demi transparente (seulement opaque ou transparent)")
+        end
       end
       local extent = extents[frame]
       if pixel.y < extent.top then extent.top = pixel.y end
@@ -233,13 +241,14 @@ local function problemsOf(strip, rules, cell, label)
       if x > extent.right then extent.right = x end
     end
   end
+  if hole ~= nil then table.insert(problems, hole .. " : transparent, ce calque doit être opaque partout") end
   for frame = 0, rules.frames - 1 do
     local extent = extents[frame]
     local at = label .. ", image " .. (frame + 1)
     if extent.bottom < 0 then
       if rules.filled then table.insert(problems, at .. " : vide") end
     else
-      local edge = math.min(extent.top, extent.left, cell - 1 - extent.right)
+      local edge = math.min(extent.top, extent.left, width - 1 - extent.right)
       if edge < rules.margin then
         table.insert(problems, at .. " : à " .. edge .. " px du bord de la case (" .. rules.margin .. " au moins)")
       end
@@ -256,14 +265,24 @@ local function problemsOf(strip, rules, cell, label)
   return problems, drawn
 end
 
+-- The palette the PNGs are written with: the fighter's main colorway, or a free one's own, its slot
+-- 0 transparent whatever color it shows (Aseprite's transparent color).
+local function exportPalette(template, sprite)
+  if not template.palette.free then return paletteOf(template.palette.main) end
+  local palette = Palette(sprite.palettes[1])
+  palette:setColor(0, Color { r = 0, g = 0, b = 0, a = 0 })
+  return palette
+end
+
 local function export(sprite)
   local template = sheetTemplate(sprite)
-  local cell = template.cell
+  local width = template.width
+  local height = template.height
   if sprite.colorMode ~= ColorMode.INDEXED then
     fail("La planche doit rester en mode Indexé (Sprite > Mode couleur > Indexé) : le jeu lit les numéros de couleur.")
   end
-  if sprite.width ~= cell or sprite.height ~= cell then
-    fail("La planche doit faire " .. cell .. " × " .. cell .. " px (elle fait " .. sprite.width .. " × " .. sprite.height .. ").")
+  if sprite.width ~= width or sprite.height ~= height then
+    fail("La planche doit faire " .. width .. " × " .. height .. " px (elle fait " .. sprite.width .. " × " .. sprite.height .. ").")
   end
   if #sprite.frames ~= template.frames then
     fail("La planche a " .. #sprite.frames .. " images, le jeu en attend " .. template.frames .. ".\n"
@@ -271,20 +290,21 @@ local function export(sprite)
         or "Le nombre d'images se change dans le code (src/art/<perso>/sheets.ts et clips.ts), puis les gabarits."))
   end
   local folder = app.fs.filePath(sprite.filename)
+  local palette = exportPalette(template, sprite)
   local outputs = {}
   local problems = {}
   for _, spec in ipairs(template.layers) do
     if spec.file ~= nil then
       local layer = layerNamed(sprite, spec.name)
-      local strip = Image(cell * template.frames, cell, ColorMode.INDEXED)
+      local strip = Image(width * template.frames, height, ColorMode.INDEXED)
       strip:clear(0)
       if layer == nil then
         table.insert(problems, "Calque « " .. spec.name .. " » introuvable (ne le renommez pas).")
       else
         for frame = 1, template.frames do
-          copyInto(strip, (frame - 1) * cell, layer, frame, cell)
+          copyInto(strip, (frame - 1) * width, layer, frame, width, height)
         end
-        local found, drawn = problemsOf(strip, spec.rules, cell, spec.name)
+        local found, drawn = problemsOf(strip, spec.rules, palette, spec.name)
         for _, problem in ipairs(found) do
           table.insert(problems, problem)
         end
@@ -300,7 +320,6 @@ local function export(sprite)
     if #problems > 15 then table.insert(shown, "… et " .. (#problems - 15) .. " autres.") end
     fail(table.concat(shown, "\n"))
   end
-  local palette = template.palette.free and sprite.palettes[1] or paletteOf(template.palette.main)
   local written = {}
   for _, output in ipairs(outputs) do
     if output.drawn then
@@ -344,7 +363,7 @@ local function refreshGuides(sprite)
       local cel = layer:cel(frame)
       if cel ~= nil then sprite:deleteCel(cel) end
       if hasPixels(runs) then
-        sprite:newCel(layer, frame, cellImage(runs, template.cell), Point(0, 0))
+        sprite:newCel(layer, frame, cellImage(runs, template.width, template.height), Point(0, 0))
       end
     end
     layer.isEditable = false

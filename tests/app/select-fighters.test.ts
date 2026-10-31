@@ -43,6 +43,17 @@ describe('select screen fighters', () => {
     ]);
   });
 
+  it('gives the tile the bust drawn for it, and none while there is none', () => {
+    const riff = artOf('riff');
+    if (!riff) throw new Error('Riff has no art');
+    expect(lookOf({ ...riff, portraitImage: 'riff-portrait.png' })?.portraitImage).toBe(
+      'riff-portrait.png',
+    );
+    const { portraitImage, ...plain } = riff;
+    expect(lookOf(riff)?.portraitImage).toBe(portraitImage);
+    expect(lookOf(plain)).not.toHaveProperty('portraitImage');
+  });
+
   it('crops the top of the first frame without a bust, and shows no one without art', () => {
     const riff = artOf('riff');
     if (!riff) throw new Error('Riff has no art');

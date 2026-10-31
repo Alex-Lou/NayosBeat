@@ -131,6 +131,23 @@ describe('FighterSelect', () => {
     expect(tiles.every(({ type, tabIndex }) => type === 'button' && tabIndex === -1)).toBe(true);
   });
 
+  it('shows a bust drawn for the tile whole, in place of the square of the first frame', () => {
+    const drawn = { ...look('riff.png'), portraitImage: 'riff-portrait.png' };
+    const { tile } = setup({
+      fighters: [
+        FIGHTERS[0] as SelectFighter<Id>,
+        { ...(FIGHTERS[1] as SelectFighter<Id>), look: drawn },
+      ],
+    });
+    expect(only(tile(1), 'select-portrait').style).toMatchObject({
+      backgroundImage: 'url("riff-portrait.png")',
+      backgroundSize: '100% 100%',
+      backgroundPosition: '0 0',
+    });
+    // The other one keeps its square.
+    expect(only(tile(0), 'select-portrait').style).toMatchObject({ backgroundSize: '800% 400%' });
+  });
+
   it('frames the first fighter and shows it standing, its idle at the pace of the game', () => {
     const { selected, figure, name, description } = setup();
     expect(selected()).toEqual([0]);

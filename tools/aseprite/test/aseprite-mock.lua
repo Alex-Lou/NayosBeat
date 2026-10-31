@@ -130,7 +130,15 @@ function Point(x, y) return { x = x, y = y } end
 local PaletteMeta = { __len = function(p) return p.size end, __index = {} }
 function PaletteMeta.__index:setColor(i, c) assert(i >= 0 and i < self.size, "palette index"); self.colors[i] = c end
 function PaletteMeta.__index:getColor(i) return self.colors[i] or Color { r = 0, g = 0, b = 0, a = 255 } end
-function Palette(n) return setmetatable({ size = n, colors = {} }, PaletteMeta) end
+-- Palette(size), or Palette(otherPalette): a copy.
+function Palette(n)
+  if type(n) == "table" then
+    local copy = setmetatable({ size = n.size, colors = {} }, PaletteMeta)
+    for i, c in pairs(n.colors) do copy.colors[i] = c end
+    return copy
+  end
+  return setmetatable({ size = n, colors = {} }, PaletteMeta)
+end
 
 local ImageMeta = { __index = {} }
 function Image(width, height, mode)

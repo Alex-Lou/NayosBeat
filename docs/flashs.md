@@ -83,7 +83,7 @@ La livraison s'est faite en trois étapes, **toutes faites** : l'étape 1 a reti
 
 ## 3. Level design (stages de la phase 6)
 
-- **Couleurs.** Chaque stage donne ses grandes couleurs (`FeedbackStage.colors`). Les voiles s'y règlent seuls : sur un décor clair, la mise au noir se retient pour rester sous ΔL 0,08.
+- **Couleurs.** Chaque stage donne ses grandes couleurs (`FeedbackStage.colors`). Les voiles s'y règlent seuls : sur un décor clair, la mise au noir se retient pour rester sous ΔL 0,08. Pour un stage dessiné (`docs/art/aseprite.md`), `npm run sprites` les calcule : celles qu'un calque étale sur au moins 1 % de l'écran. Les tests de flashs mesurent sur ces couleurs (`FIGHT_STAGE_COLORS`), la plus sombre pour les étincelles et les mots : un décor qui ferait dépasser une limite les fait échouer.
 - **Mise au noir.** Sur la scène grise, elle ne se voit guère que sur le sol (ΔL −0,03). Un stage plus clair la rendra plus marquée, dans la même limite.
 - **Lumières du décor.** De petites lumières qui clignotent **en phase** additionnent leur surface : il faut les déphaser ou les compter.
 - **Secousse.** Elle fait osciller tout motif contrasté du fond à 7,5 Hz. Il faut éviter les rayures fines et serrées dans les calques du fond.

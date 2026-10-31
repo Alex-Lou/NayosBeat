@@ -4,7 +4,7 @@ Les planches des combattants sont dessinées par le code (`tools/sprites`, `npm 
 
 L'extension NayosBeat pour Aseprite (`tools/aseprite/`) crée chaque planche au format exact du jeu : cases, ancre des pieds, palette, durées, guides des boîtes de collision. Elle l'exporte ensuite là où `npm run sprites` la lit et la vérifie.
 
-Les icônes de l'application et le vinyle du titre se dessinent de la même façon : voir [Icônes et vinyle du titre](#icônes-et-vinyle-du-titre).
+Les icônes de l'application et le vinyle du titre se dessinent de la même façon : voir [Icônes et vinyle du titre](#icônes-et-vinyle-du-titre). Le portrait de chaque combattant et le stage, l'Entrepôt, aussi, mais ils n'existent qu'à la main : voir [Portraits](#portraits) et [Le stage](#le-stage-lentrepôt).
 
 ## En bref
 
@@ -107,9 +107,46 @@ Ce qui change par rapport aux combattants :
 
 Tant qu'elles ne sont pas dessinées, le code dessine l'icône (la tête de Nayo dans son anneau néon) et le vinyle, comme avant.
 
+## Portraits
+
+Le buste d'un combattant sur l'écran de sélection : `art-src/<perso>/portrait.png`, gabarit `art-src/gabarits/<perso>/portrait.json`.
+
+- **96 × 96 px, une image**, dans la **palette du personnage**, avec ses numéros, comme les planches : l'écran de sélection montre aussi la tenue alt en match miroir, et **Tenue main / alt** fonctionne.
+- Le gabarit part de la tête et des épaules de sa garde (la 1re image de `idle`).
+- La vignette l'affiche en entier, agrandi.
+- Sans portrait dessiné, l'écran garde le carré découpé dans la garde, comme avant.
+
+## Le stage (l'Entrepôt)
+
+Le décor des combats, en trois calques qui défilent d'autant moins vite qu'ils sont loin (parallaxe) : `art-src/entrepot/`, gabarits `art-src/gabarits/entrepot/` (`npm run sprites:templates -- entrepot`).
+
+| Calque | Taille (px du jeu) | Défile à | Règle |
+|---|---|---|---|
+| `far` (fond) | 600 × 270 | 25 % | **Obligatoire**, opaque partout : rien n'est derrière lui. |
+| `mid` (plan moyen) | 720 × 270 | 50 % | Facultatif : vide, pas de fichier, pas de calque. Transparent où rien n'est dessiné. |
+| `floor` (sol) | 960 × 40 | 100 % | **Obligatoire**. Son bord haut est la ligne de sol, où se posent les pieds. |
+
+- Les calques se dessinent à la résolution du jeu (1 px = 1 px du jeu), deux fois moins fin que les combattants. Leurs largeurs couvrent exactement ce que la caméra voit d'un bout à l'autre de l'arène.
+- La caméra zoome jusqu'à ×1,45 quand les combattants se rapprochent : le décor est alors agrandi avec eux.
+- **Palette libre**, mais **pas de pixel à demi transparent** : chaque pixel est opaque ou transparent.
+- Le gabarit part de la boîte grise. Sur le fond et le plan moyen, une ligne de guide montre où commence le sol (rangée 230) : ce qui est dessous est caché par le sol.
+- Le stage se dessine **en entier ou pas du tout** : le fond et le sol, au moins. Sans eux, les combats gardent la boîte grise.
+- Ce que [flashs.md](../flashs.md) §3 demande au décor : contraste faible et couleurs moins saturées que les combattants, pas de rayures fines et serrées (la secousse les ferait vibrer).
+
+### Les flashs, sur le décor
+
+Les voiles de flash (protection photosensible, [flashs.md](../flashs.md)) se règlent sur les **grandes couleurs** du stage : celles qu'un calque étale sur au moins 1 % de l'écran. `npm run sprites` les calcule et les écrit dans `src/art/entrepot/colors.ts`.
+
+Les tests de flashs (`npm test`) mesurent alors les étincelles, les mots et les voiles **sur ces couleurs**, en particulier sur la plus sombre, celle que les flashs éclairent le plus. Un décor qui ferait dépasser une limite fait échouer les tests. Il y a deux façons d'y répondre :
+
+- **Éclaircir les grandes couleurs les plus sombres du décor.** C'est la voie la plus simple.
+- **Régler à nouveau les effets.** Il faut alors remesurer les tables de `src/render/flash-areas.ts`, ou revoir la teinte sombre des effets dans `src/render/veils.ts`. C'est une décision de code, à prendre en connaissance de cause.
+
+À l'essai, un club au mur d'enceintes presque noir (`#0c0a10`) faisait échouer deux tests : les effets sombres y montaient à ΔL 0,082 au lieu de 0,08 au plus.
+
 ## Revenir au dessin du code
 
-Supprimer `art-src/<perso>/<planche>.png` (et `fx/<planche>.png`), ou `art-src/ui/icon.png` / `vinyl.png`, puis lancer `npm run sprites`. Le `.aseprite` peut rester : il n'est lu que par Aseprite.
+Supprimer `art-src/<perso>/<planche>.png` (et `fx/<planche>.png`), ou `art-src/ui/icon.png` / `vinyl.png`, puis lancer `npm run sprites`. Le `.aseprite` peut rester : il n'est lu que par Aseprite. Sans `art-src/<perso>/portrait.png`, l'écran de sélection revient au carré découpé dans la garde ; sans `art-src/entrepot/`, les combats reviennent à la boîte grise.
 
 ## Quand les données du jeu changent
 
@@ -129,6 +166,10 @@ Changer la palette d'un personnage (ajouter un matériau, par exemple) **décale
 | `art-src/<perso>/<planche>.aseprite` | Le document de travail | oui |
 | `art-src/<perso>/<planche>.png`, `fx/<planche>.png` | L'export, lu par `npm run sprites` | oui |
 | `art-src/ui/icon.*`, `art-src/ui/vinyl.*` | Le dessin maître des icônes et le vinyle du titre (document et export) | oui |
+| `art-src/<perso>/portrait.*` | Le portrait de l'écran de sélection (document et export) | oui |
+| `art-src/entrepot/far.*`, `mid.*`, `floor.*` | Les calques du stage (documents et exports) | oui |
+| `src/art/entrepot/` | Le stage tel que le jeu le lit, et ses grandes couleurs (`colors.ts`), écrits par `npm run sprites` | oui |
+| `src/art/stage-layers.ts` | Tailles, défilement et règles des calques, communs au jeu et aux outils | oui |
 | `art-src/gabarits/` | Les gabarits (`npm run sprites:templates`) | non |
 | `tools/aseprite/extension/` | Le code de l'extension (Lua) | oui |
 | `tools/aseprite/test/`, `tools/aseprite/check.ts` | Le banc d'essai de l'extension (`npm run aseprite:check`) | oui |
@@ -136,4 +177,5 @@ Changer la palette d'un personnage (ajouter un matériau, par exemple) **décale
 | `tools/sprites/cell.ts` | Le contrat de la case (marges, sol), commun au code, aux dessins et aux tests | oui |
 | `tools/sprites/drawn.ts` | Lecture et vérification des planches dessinées | oui |
 | `tools/sprites/ui-drawn.ts`, `tools/sprites/colors.ts` | Lecture et vérification des images d'interface dessinées, palettes libres | oui |
+| `tools/sprites/stage-drawn.ts` | Lecture et vérification du stage dessiné, ses grandes couleurs | oui |
 | `tools/sprites/aseprite-template.ts` | Contenu des gabarits (guides, règles, palette) | oui |

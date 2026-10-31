@@ -2,6 +2,7 @@ import type Phaser from 'phaser';
 import { px } from '../../src/core/constants';
 import { HitFx, type HitKind } from '../../src/render/hit-fx';
 import type { HitStyle } from '../../src/render/hit-styles';
+import { darkestOf, FIGHT_STAGE_COLORS } from '../../src/render/stage-view';
 
 /**
  * Measures what a hit effect lights (docs/flashs.md §1.1): the real HitFx plays on a scene that
@@ -11,8 +12,8 @@ import type { HitStyle } from '../../src/render/hit-styles';
  * Phaser must be mocked by the test (its blend modes: NORMAL 0, ADD 1).
  */
 
-/** The stage's sky, its darkest large color: what a spark lights the most. */
-const SKY = 0x1b1b2f;
+/** The stage's sky, its darkest large color: what a spark lights the most (docs/flashs.md §3). */
+const SKY = darkestOf(FIGHT_STAGE_COLORS);
 /** World pixels composited around the impact, at (CENTER_X, CENTER_Y), SAMPLES² samples each. */
 const WIDTH = 320;
 const HEIGHT = 260;

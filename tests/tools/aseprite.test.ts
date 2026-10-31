@@ -6,7 +6,9 @@ import { NAYO as NAYO_TEMPLATE } from '../../src/data/fighters/nayo';
 import { zip } from '../../tools/aseprite/zip';
 import {
   GUIDE_COLORS,
+  portraitTemplateOf,
   runsOfCell,
+  stageTemplateOf,
   templateOf,
   uiTemplateOf,
   type Template,
@@ -147,13 +149,20 @@ describe('Aseprite templates of the UI images', () => {
   const icon = uiTemplateOf('icon', undefined);
 
   it('keep the title vinyl in the format and pace of its CSS', () => {
-    expect(vinyl).toMatchObject({ folder: 'ui', name: 'vinyl', cell: 18, frames: 8 });
+    expect(vinyl).toMatchObject({ folder: 'ui', name: 'vinyl', width: 18, height: 18, frames: 8 });
     expect(vinyl.durations).toEqual(Array.from({ length: 8 }, () => 0.225));
     expect(vinyl.tags).toEqual([{ name: 'boucle', from: 0, to: 7, color: '#4a8cffff' }]);
   });
 
   it('give the icons a master of 64 px, one frame', () => {
-    expect(icon).toMatchObject({ folder: 'ui', name: 'icon', cell: 64, frames: 1, tags: [] });
+    expect(icon).toMatchObject({
+      folder: 'ui',
+      name: 'icon',
+      width: 64,
+      height: 64,
+      frames: 1,
+      tags: [],
+    });
   });
 
   it('have a free palette in one colorway, and one exported layer, without guides', () => {
@@ -174,6 +183,56 @@ describe('Aseprite templates of the UI images', () => {
     for (let y = 0; y < 18; y++) {
       for (let x = 0; x < 18; x++) expect(first[y * 18 + x]).toBe(pixels[y * 18 * 8 + x]);
     }
+  });
+});
+
+describe('Aseprite templates of the portraits and the stage', () => {
+  it("draw a fighter's portrait in its palette slots, both colorways, its guard's head to start", () => {
+    const portrait = portraitTemplateOf(NAYO, new Map());
+    expect(portrait).toMatchObject({ folder: 'nayo', name: 'portrait', width: 96, height: 96 });
+    expect(portrait.frames).toBe(1);
+    expect(portrait.palette.free).toBe(false);
+    expect(portrait.palette.main).toHaveLength(SLOTS);
+    expect(portrait.palette.alt).toHaveLength(SLOTS);
+    expect(portrait.layers.map(({ name, file }) => [name, file])).toEqual([
+      ['dessin', 'portrait.png'],
+    ]);
+    // Something of the guard is in it, and it stays in the fighter's slots.
+    const start = cellOf(portrait.layers[0]?.frames[0] ?? [], 96);
+    expect(start.some((slot) => slot !== 0)).toBe(true);
+    expect(Math.max(...start)).toBeLessThan(SLOTS);
+  });
+
+  it('draw the stage layers at their sizes, in free palettes, from the grey box', () => {
+    for (const [layer, width, height] of [
+      ['far', 600, 270],
+      ['mid', 720, 270],
+      ['floor', 960, 40],
+    ] as const) {
+      const template = stageTemplateOf(layer, undefined);
+      expect(template, layer).toMatchObject({ folder: 'entrepot', name: layer, width, height });
+      expect(template.palette.free).toBe(true);
+      expect(template.layers[0]).toMatchObject({ name: 'dessin', file: `${layer}.png` });
+    }
+  });
+
+  it('show the ground line behind the floor on the far and middle layers', () => {
+    const far = stageTemplateOf('far', undefined);
+    expect(far.layers.map(({ name }) => name)).toEqual(['dessin', 'guides']);
+    const guide = far.palette.main.length - 1;
+    expect(far.palette.main[guide]).toBe(GUIDE_COLORS.ground);
+    const runs = far.layers[1]?.frames[0] ?? [];
+    const pixels = new Uint8Array(600 * 270);
+    let at = 0;
+    for (let index = 0; index < runs.length; index += 2) {
+      pixels.fill(runs[index + 1] ?? 0, at, at + (runs[index] ?? 0));
+      at += runs[index] ?? 0;
+    }
+    const rows = new Set(
+      [...pixels.keys()].filter((i) => pixels[i] === guide).map((i) => Math.floor(i / 600)),
+    );
+    expect([...rows]).toEqual([230]);
+    expect(stageTemplateOf('floor', undefined).layers).toHaveLength(1);
   });
 });
 

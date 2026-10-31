@@ -35,6 +35,7 @@ export function lookOf(art: FighterArt | undefined): FighterLook | undefined {
     width,
     height,
     portrait: art.portrait ?? { x: 0, y: 0, size: Math.min(width, height) },
+    ...(art.portraitImage !== undefined && { portraitImage: art.portraitImage }),
     idle: idle.frames.map((frame, index) => ({
       frame,
       seconds: (idle.ticks[index] ?? 0) / TICK_RATE,

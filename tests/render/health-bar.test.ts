@@ -26,6 +26,7 @@ import {
   type HealthMotion,
 } from '../../src/render/health-motion';
 import type { Breakage } from '../../src/render/boost-motion';
+import { darkestOf, FIGHT_STAGE_COLORS } from '../../src/render/stage-view';
 import { fakeScene, pixelOf } from './hud-fakes';
 
 const ENERGY = 0x30e8ff;
@@ -294,8 +295,8 @@ describe("the health bar under the player's options (docs/flashs.md §4)", () =>
   });
 });
 
-/** The HUD band over the sky (hud.ts), behind the bars and the gauges. */
-const SKY = 0x1b1b2f;
+/** The HUD band over the sky (hud.ts), behind the bars and the gauges: the stage's darkest color. */
+const SKY = darkestOf(FIGHT_STAGE_COLORS);
 const BAND = over(0x0c0614, SKY, 0.55);
 /** Where they are painted: their boxes, with room around for what flies at first. */
 const ROOM = { width: 220, height: 40, x: 10, y: 15 } as const;

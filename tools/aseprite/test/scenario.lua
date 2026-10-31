@@ -158,6 +158,8 @@ for index = 0, #vinyl.palettes[1] - 1 do
   end
 end
 assert(recolored == 1, "the mark's color, once: " .. recolored)
+-- The transparent slot given a color in the palette: what it fills stays transparent.
+vinyl.palettes[1]:setColor(0, Color { r = 0xff, g = 0x00, b = 0x00, a = 255 })
 exported(vinyl, "ui/vinyl.png")
 
 -- One colorway only, no guides: told, and the free palette kept when the rest is refreshed.
@@ -182,5 +184,41 @@ table.remove(vinyl.frames)
 
 -- The icons' master, exported as it came.
 exported(newSheet("icon", "ui"), "ui/icon.png")
+
+-- Nayo's portrait: 96 px, his palette, both colorways.
+local portrait = newSheet("portrait", "nayo")
+assert(portrait.width == 96 and portrait.height == 96 and #portrait.frames == 1, "96 px, one frame")
+app.activeSprite = portrait
+alerts = #ALERTS
+click("NayosBeatColorway")
+assert(#ALERTS == alerts, "a portrait has two colorways: " .. lastAlert())
+click("NayosBeatColorway")
+exported(portrait, "nayo/portrait.png")
+
+-- The stage's far layer: 600 × 270, opaque everywhere. A hole is refused, then mended.
+local far = newSheet("far", "entrepot")
+assert(far.width == 600 and far.height == 270, "the far layer's size")
+assert(#far.layers == 2 and far.layers[2].name == "guides", "the ground line as a guide")
+local sky = far.layers[1]:cel(1).image
+sky:drawPixel(5, 5, 0)
+refused(far, "doit être opaque partout")
+sky:drawPixel(5, 5, 1)
+exported(far, "entrepot/far.png")
+
+-- The floor: 960 × 40, whole pixels only. A half-transparent color is refused, then made opaque.
+local floor = newSheet("floor", "entrepot")
+assert(floor.width == 960 and floor.height == 40, "the floor's size")
+local ground = floor.palettes[1]:getColor(2)
+floor.palettes[1]:setColor(2, Color { r = ground.red, g = ground.green, b = ground.blue, a = 128 })
+refused(floor, "à demi transparente")
+floor.palettes[1]:setColor(2, Color { r = ground.red, g = ground.green, b = ground.blue, a = 255 })
+exported(floor, "entrepot/floor.png")
+
+-- The middle layer may stay empty: nothing written.
+local mid = newSheet("mid", "entrepot")
+local before = #ALERTS
+export(mid)
+assert(#ALERTS == before + 1 and not lastAlert():find("mid.png", 1, true), lastAlert())
+assert(not exists("entrepot/mid.png"), "an empty middle layer was written")
 
 print("scenario.lua: every step passed")

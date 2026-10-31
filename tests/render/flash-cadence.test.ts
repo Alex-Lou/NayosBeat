@@ -25,11 +25,12 @@ import {
   SECOND,
   type FlashMode,
 } from '../../src/render/flash-budget';
-import { GREYBOX_COLORS, GROUND_Y } from '../../src/render/greybox-stage';
+import { GROUND_Y } from '../../src/render/greybox-stage';
 import { hitStyleOf, hudColorOf, type HitStyle } from '../../src/render/hit-styles';
 import { Hud } from '../../src/render/hud';
 import { freshPixels } from '../../src/render/luminance';
 import type { TickTally } from '../../src/render/onomatopoeia';
+import { FIGHT_STAGE_COLORS } from '../../src/render/stage-view';
 import { playCombo } from '../core/combo-helpers';
 import { facingOff } from '../core/helpers';
 import { fxStrips } from './fx-strips';
@@ -235,7 +236,7 @@ function lightsAnew(art: FighterArt, sheet: string, from: number, to: number): n
   const frames = STRIPS.get(art)?.get(sheet);
   const after = frames?.[to];
   const lit = after
-    ? freshPixels(from < 0 ? undefined : frames[from], after, GREYBOX_COLORS) / ART_SCALE ** 2
+    ? freshPixels(from < 0 ? undefined : frames[from], after, FIGHT_STAGE_COLORS) / ART_SCALE ** 2
     : 0;
   known.set(key, lit);
   return lit;
@@ -322,7 +323,7 @@ function play(route: Route, mode: FlashMode): Played {
   );
   const feedback = new FightFeedback({} as Phaser.Scene, GROUND_Y, SILENT, styles, {
     width: 640,
-    colors: GREYBOX_COLORS,
+    colors: FIGHT_STAGE_COLORS,
     budget,
     comfort,
     knockOut: (player, finish, still) => {
@@ -501,7 +502,7 @@ describe('what waits to show, played tick by tick (docs/flashs.md §4)', () => {
       [NAYO_STYLE, NAYO_STYLE],
       {
         width: 640,
-        colors: GREYBOX_COLORS,
+        colors: FIGHT_STAGE_COLORS,
         budget: screen.budget,
         comfort: { flashes: mode, shake: 'normal' },
       },

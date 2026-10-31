@@ -10,15 +10,23 @@
 import { spawnSync } from 'node:child_process';
 import { mkdir, rm, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
+import { STAGE_LAYER_NAMES } from '../../src/art/stage-layers.ts';
 import { CELL_SIZE } from '../../src/art/types.ts';
-import { templateOf, uiTemplateOf } from '../sprites/aseprite-template.ts';
+import { GREYBOX_COLORS } from '../../src/render/greybox-stage.ts';
+import {
+  portraitTemplateOf,
+  stageTemplateOf,
+  templateOf,
+  uiTemplateOf,
+} from '../sprites/aseprite-template.ts';
 import { rgbaAt } from '../sprites/colors.ts';
-import { loadDrawn, type StripPixels } from '../sprites/drawn.ts';
+import { loadDrawn, PORTRAIT, PORTRAIT_SIZE, type StripPixels } from '../sprites/drawn.ts';
 import { frameDataOf } from '../sprites/frame-data.ts';
 import { NAYO } from '../sprites/nayo/index.ts';
 import type { IndexedImage, Rgba } from '../sprites/png.ts';
 import { drawStrip, drawStripEffects, toPlatine } from '../sprites/sheet.ts';
-import { loadUiDrawn, uiStart, type UiArtName } from '../sprites/ui-drawn.ts';
+import { largeColorsOf, loadStageDrawn, stageStart } from '../sprites/stage-drawn.ts';
+import { loadUiDrawn, uiStart } from '../sprites/ui-drawn.ts';
 
 const ROOT = new URL('./dist/check/', import.meta.url);
 const STRIPS = [
@@ -38,22 +46,33 @@ const RECOLORED = '255,0,170,255';
 const key = ({ r, g, b, a }: Rgba): string => `${r},${g},${b},${a}`;
 
 /**
- * The pixels where a UI image read back differs, by color, from the code's drawing it started
- * from, once `recolor` is applied to the start.
+ * The pixels where an image in a free palette read back differs, by color, from the drawing it
+ * started from, once `recolor` is applied to the start.
  */
 function colorDifferences(
   read: IndexedImage | undefined,
-  name: UiArtName,
+  start: { readonly pixels: Uint8Array; readonly palette: readonly Rgba[] },
   recolor: (color: string) => string = (color) => color,
 ): number[] {
   if (!read) return [-1];
-  const start = uiStart(name, undefined);
   const different: number[] = [];
   read.pixels.forEach((slot, index) => {
     const wanted = start.palette[start.pixels[index] ?? 0];
     if (!wanted || key(rgbaAt(read, slot)) !== recolor(key(wanted))) different.push(index);
   });
   return different;
+}
+
+/** A cell back from its runs, as the extension paints it. */
+function unrun(runs: readonly number[], width: number, height: number): StripPixels {
+  const pixels = new Uint8Array(width * height);
+  let at = 0;
+  for (let index = 0; index < runs.length; index += 2) {
+    const count = runs[index] ?? 0;
+    pixels.fill(runs[index + 1] ?? 0, at, at + count);
+    at += count;
+  }
+  return { width, height, pixels };
 }
 
 /** The pixels where a strip read back differs from the one it started from. */
@@ -81,6 +100,8 @@ async function main(): Promise<void> {
   await mkdir(new URL('nayo/fx/', ROOT), { recursive: true });
   await mkdir(new URL('gabarits/ui/', ROOT), { recursive: true });
   await mkdir(new URL('ui/', ROOT), { recursive: true });
+  await mkdir(new URL('gabarits/entrepot/', ROOT), { recursive: true });
+  await mkdir(new URL('entrepot/', ROOT), { recursive: true });
   for (const name of STRIPS) {
     const template = templateOf(NAYO, frameDataOf(NAYO), name, new Map());
     await writeFile(new URL(`gabarits/nayo/${name}.json`, ROOT), JSON.stringify(template));
@@ -89,6 +110,14 @@ async function main(): Promise<void> {
     await writeFile(
       new URL(`gabarits/ui/${name}.json`, ROOT),
       JSON.stringify(uiTemplateOf(name, undefined)),
+    );
+  }
+  const portrait = portraitTemplateOf(NAYO, new Map());
+  await writeFile(new URL(`gabarits/nayo/${PORTRAIT}.json`, ROOT), JSON.stringify(portrait));
+  for (const layer of STAGE_LAYER_NAMES) {
+    await writeFile(
+      new URL(`gabarits/entrepot/${layer}.json`, ROOT),
+      JSON.stringify(stageTemplateOf(layer, undefined)),
     );
   }
   const path = (relative: string): string => fileURLToPath(new URL(relative, import.meta.url));
@@ -142,12 +171,27 @@ async function main(): Promise<void> {
   const ui = await loadUiDrawn(ROOT);
   expect(
     'ui/vinyl',
-    colorDifferences(ui.vinyl, 'vinyl', (color) => (color === MARK ? RECOLORED : color)),
+    colorDifferences(ui.vinyl, uiStart('vinyl', undefined), (color) =>
+      color === MARK ? RECOLORED : color,
+    ),
     [],
   );
-  expect('ui/icon', colorDifferences(ui.icon, 'icon'), []);
+  expect('ui/icon', colorDifferences(ui.icon, uiStart('icon', undefined)), []);
+  // The portrait, in Nayo's slots: as its template started it.
+  const start = unrun(portrait.layers[0]?.frames[0] ?? [], PORTRAIT_SIZE, PORTRAIT_SIZE);
+  expect('nayo/portrait', differences(drawn.get(PORTRAIT)?.body, start), []);
+  // The stage exported as the grey box it starts from, without its empty middle layer: its large
+  // colors are then the grey box's.
+  const stage = await loadStageDrawn(ROOT);
+  expect('entrepot/far', colorDifferences(stage.far, stageStart('far', undefined)), []);
+  expect('entrepot/floor', colorDifferences(stage.floor, stageStart('floor', undefined)), []);
+  if (stage.mid) failures.push('entrepot/mid: an empty layer was exported');
+  const colors = largeColorsOf([stage.far, stage.floor].filter((layer) => layer !== undefined));
+  if (colors.join() !== GREYBOX_COLORS.join()) {
+    failures.push(`entrepot: large colors ${colors.join(', ')}, not the grey box's`);
+  }
   if (failures.length > 0) throw new Error(`Aseprite extension:\n  ${failures.join('\n  ')}`);
-  const count = drawn.size + Object.keys(ui).length;
+  const count = drawn.size + Object.keys(ui).length + Object.keys(stage).length;
   console.log(`Aseprite extension: ${count} exports read back as drawn`);
 }
 

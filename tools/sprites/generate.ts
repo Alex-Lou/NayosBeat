@@ -7,8 +7,10 @@
  * fighter only (Nayo's run also draws the icons and the vinyl).
  *
  * A strip drawn by hand (art-src/<fighter>/, see drawn.ts) takes the place of the code's, and so
- * do the title's vinyl and the icons' master (art-src/ui/, see ui-drawn.ts): every drawing is
- * checked first, and nothing is written when one is wrong.
+ * do the title's vinyl and the icons' master (art-src/ui/, see ui-drawn.ts). A fighter's portrait
+ * (drawn.ts) and the stage (art-src/entrepot/, see stage-drawn.ts) are drawn by hand only: Nayo's
+ * run also writes the stage, src/art/entrepot/. Every drawing is checked first, and nothing is
+ * written when one is wrong.
  */
 
 import { mkdir, rm, writeFile } from 'node:fs/promises';
@@ -17,6 +19,7 @@ import { strikeOf } from './clips.ts';
 import {
   loadDrawn,
   platinePixels,
+  PORTRAIT,
   stripPixels,
   unseenStrikes,
   type Drawn,
@@ -29,6 +32,7 @@ import { NAYO } from './nayo/index.ts';
 import type { Colorway } from './palette.ts';
 import { encodeIndexedPng } from './png.ts';
 import { RIFF } from './riff/index.ts';
+import { loadStageDrawn, writeStage } from './stage-drawn.ts';
 import { loadUiDrawn } from './ui-drawn.ts';
 import { drawVinyl } from './vinyl.ts';
 
@@ -170,6 +174,16 @@ async function generate(fighter: Fighter, drawn: ReadonlyMap<string, Drawn>): Pr
     const how = platine.drawn ? 'drawn' : `the effects of ${sheet} in platine`;
     console.log(`${fighter.name} ${name}: ${how}`);
   }
+  // The select screen's bust, drawn apart; without it, the game cuts one from the guard.
+  const portrait = drawn.get(PORTRAIT)?.body;
+  if (portrait) {
+    await save(fighter, portrait, `${PORTRAIT}.png`);
+    console.log(`${fighter.name} ${PORTRAIT}: drawn`);
+  } else {
+    for (const colorway of COLORWAYS) {
+      await rm(new URL(`${colorway}/${PORTRAIT}.png`, assets), { force: true, recursive: true });
+    }
+  }
   await writeFile(
     new URL('cells.ts', assets),
     new TextEncoder().encode(cellsModule(fighter, cells)),
@@ -189,12 +203,18 @@ async function main(): Promise<void> {
   const drawnOf = new Map<Fighter, ReadonlyMap<string, Drawn>>();
   for (const fighter of chosen) drawnOf.set(fighter, await loadDrawn(fighter));
   const ui = chosen.includes(NAYO) ? await loadUiDrawn() : undefined;
+  const stage = chosen.includes(NAYO) ? await loadStageDrawn() : undefined;
   for (const fighter of chosen) await generate(fighter, drawnOf.get(fighter) ?? new Map());
   if (ui) {
     await drawIcons(ui.icon);
     console.log(`icons: ${ui.icon ? 'from the master drawn (art-src/ui/icon.png)' : "the code's"}`);
     await drawVinyl(ui.vinyl);
     console.log(`title vinyl: ${ui.vinyl ? 'drawn (art-src/ui/vinyl.png)' : "the code's"}`);
+  }
+  if (stage) {
+    await writeStage(stage);
+    const layers = Object.keys(stage);
+    console.log(`stage: ${layers.length > 0 ? `drawn (${layers.join(', ')})` : 'the grey box'}`);
   }
 }
 
