@@ -124,6 +124,112 @@ describe('cpu', () => {
   });
 });
 
+describe('cpu perception: it guards on what it saw, with its reaction time', () => {
+  /**
+   * Player 1 starts its Overhand (19 ticks of startup) while the CPU is still blocking. The CPU
+   * first watches 30 quiet ticks, as in a match: a CPU that has seen nothing yet sees tick 0.
+   */
+  function overheadOnBlock(level: CpuBehavior, seed: number) {
+    const start = facingOff(40, MATCH, [
+      { action: 'attack', move: 'forwardHeavy', actionFrame: 0 },
+      { action: 'blockstun', stunFrames: 30, stunTotal: 30 },
+    ]);
+    const quiet = facingOff(40, MATCH, [{}, { action: 'blockstun', stunFrames: 30 }]);
+    let cpu = createCpu(1, level, seed);
+    for (let tick = 0; tick < 30; tick++) cpu = cpuStep(cpu, quiet, MATCH).cpu;
+    let state = start;
+    const inputs: InputBits[] = [];
+    for (let tick = 0; tick < 30; tick++) {
+      const decision = cpuStep(cpu, state, MATCH);
+      cpu = decision.cpu;
+      inputs.push(decision.input);
+      state = step(state, [0, decision.input], MATCH);
+    }
+    return { state, inputs };
+  }
+
+  it('an overhead it has not seen yet catches the easy CPU in its low guard', () => {
+    // Regression: it read the live attacker, standing at tick 0 of any overhead, at every level.
+    let hits = 0;
+    for (let seed = 0; seed < 50; seed++) {
+      const { state } = overheadOnBlock('easy', seed);
+      if (state.fighters[1].health < MATCH.fighters[1].maxHealth) hits++;
+    }
+    expect(hits).toBeGreaterThanOrEqual(40);
+  });
+
+  it('never stands up for an overhead before its reaction time', () => {
+    for (const level of ['easy', 'normal', 'hard'] as const) {
+      for (let seed = 0; seed < 20; seed++) {
+        const { inputs } = overheadOnBlock(level, seed);
+        const firstStand = inputs.findIndex((input) => (input & Input.Down) === 0);
+        if (firstStand >= 0)
+          expect(firstStand, `${level}, seed ${seed}`).toBeGreaterThanOrEqual(12);
+      }
+    }
+  });
+
+  it('the hard CPU still blocks a 19-tick overhead it sees coming', () => {
+    let blocked = 0;
+    for (let seed = 0; seed < 50; seed++) {
+      const { state } = overheadOnBlock('hard', seed);
+      if (state.fighters[1].health === MATCH.fighters[1].maxHealth) blocked++;
+    }
+    expect(blocked).toBeGreaterThanOrEqual(40);
+  });
+});
+
+describe('cpu punish', () => {
+  /** How often, over 100 seeds, the CPU hurts player 1 while its move still recovers. */
+  function punishRate(
+    level: CpuBehavior,
+    move: string,
+    frame: number,
+    blockstun: number,
+    at: number,
+  ) {
+    let punished = 0;
+    for (let seed = 0; seed < 100; seed++) {
+      const start = facingOff(at, MATCH, [
+        { action: 'attack', move: move as never, actionFrame: frame, moveConnected: blockstun > 0 },
+        blockstun > 0 ? { action: 'blockstun', stunFrames: blockstun, stunTotal: blockstun } : {},
+      ]);
+      let state = start;
+      let cpu = createCpu(1, level, seed * 7919 + 3);
+      for (let tick = 0; tick < 45 && state.fighters[0].action === 'attack'; tick++) {
+        const decision = cpuStep(cpu, state, MATCH);
+        cpu = decision.cpu;
+        state = step(state, [0, decision.input], MATCH);
+      }
+      if (state.fighters[0].health < start.fighters[0].health) punished++;
+    }
+    return punished;
+  }
+
+  it('the hard CPU punishes a blocked Uppercut (−23) and a blocked sweep (−8)', () => {
+    expect(punishRate('hard', 'specialAntiAir', 11, 12, 34)).toBeGreaterThanOrEqual(80);
+    expect(punishRate('hard', 'crouchHeavy', 12, 14, 34)).toBeGreaterThanOrEqual(80);
+  });
+
+  it('punishes more often the higher its level', () => {
+    const [easy, normal, hard] = (['easy', 'normal', 'hard'] as const).map((level) =>
+      punishRate(level, 'crouchHeavy', 12, 14, 34),
+    );
+    expect(easy).toBeLessThan(normal ?? 0);
+    expect(normal).toBeLessThan(hard ?? 0);
+  });
+
+  it('never punishes a move that is safe on block (the Direct, +1)', () => {
+    for (const level of ['easy', 'normal', 'hard'] as const) {
+      expect(punishRate(level, 'standLight', 6, 10, 34), level).toBe(0);
+    }
+  });
+
+  it('the hard CPU punishes a whiffed Uppercut in its reach', () => {
+    expect(punishRate('hard', 'specialAntiAir', 11, 0, 40)).toBeGreaterThanOrEqual(60);
+  });
+});
+
 describe('training dummies', () => {
   it('the standing dummy never presses anything', () => {
     const { inputs } = playAgainstCpu('dummyStand', 300, (f) => (f % 30 === 0 ? Input.Light : 0));

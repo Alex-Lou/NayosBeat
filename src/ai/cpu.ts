@@ -3,13 +3,14 @@ import { toPx } from '../core/constants';
 import { superGauge } from '../core/fighter/move';
 import { Input, type InputBits } from '../core/input';
 import type { MoveData } from '../core/move-data';
-import { BOOST_BAR, BOOST_MAX } from '../core/rules';
+import { BOOST_BAR, BOOST_MAX, THREAT_MARGIN } from '../core/rules';
 import type { FighterAction, FighterState, GameState } from '../core/state';
-import { strikeThreatens, upcomingMove } from '../core/threat';
+import { moveOf } from '../core/moves';
+import { strikeThreatens, threatReach, upcomingMove } from '../core/threat';
 import { guardInput, incomingProjectile } from './defense';
 import { holdInput } from './hold-tactics';
 import { planFor, playString, savesForSuper, startString, type StringPlay } from './plans';
-import { PROFILES, type CpuLevel, type Profile } from './profiles';
+import { PROFILES, REACTION_JITTER, type CpuLevel, type Profile } from './profiles';
 import { nextRandom } from './rng';
 
 export type { CpuLevel } from './profiles';
@@ -37,8 +38,12 @@ export interface CpuState {
   readonly player: 0 | 1;
   readonly behavior: CpuBehavior;
   readonly seed: number;
-  /** Opponent snapshots, oldest first: the CPU acts on what it saw `reactionFrames` ago. */
+  /** Opponent snapshots, oldest first, one per tick: the CPU acts on what it saw `reaction` ago. */
   readonly seen: readonly FighterState[];
+  /** Its reaction time now, in ticks: the profile's, plus a jitter drawn at each opponent move. */
+  readonly reaction: number;
+  /** The opening it sees now (a move that can no longer hit, still recovering) was considered. */
+  readonly punishHandled: boolean;
   /** Inputs planned for the next ticks, consumed one per tick. */
   readonly plan: readonly InputBits[];
   /** The current threat was already considered (one decision per threat, not per tick). */
@@ -55,11 +60,35 @@ export function createCpu(player: 0 | 1, behavior: CpuBehavior, seed: number): C
     behavior,
     seed,
     seen: [],
+    reaction: behavior in PROFILES ? PROFILES[behavior as CpuLevel].reactionFrames : 0,
+    punishHandled: false,
     plan: [],
     threatHandled: false,
     cancelHandled: false,
     string: null,
   };
+}
+
+/**
+ * One tick of perception: the live opponent joins what the CPU saw, and each move the opponent
+ * starts draws a new reaction time. It goes on through hitstop and blockstun: a player sees the
+ * frozen frames too, and guards on what they saw, never on what is about to come.
+ */
+function perceive(cpu: CpuState, profile: Profile, live: FighterState): CpuState {
+  const last = cpu.seen[cpu.seen.length - 1];
+  let { reaction, seed } = cpu;
+  if (last && live.move !== null && live.move !== last.move) {
+    const [value, next] = nextRandom(seed);
+    reaction = profile.reactionFrames + Math.floor(value * (REACTION_JITTER + 1));
+    seed = next;
+  }
+  const seen = [...cpu.seen, live].slice(-(profile.reactionFrames + REACTION_JITTER + 1));
+  return { ...cpu, seen, reaction, seed };
+}
+
+/** The opponent as the CPU sees it: `reaction` ticks ago, or as far back as it has seen. */
+function seenOpponent(cpu: CpuState): FighterState | undefined {
+  return cpu.seen[Math.max(0, cpu.seen.length - 1 - cpu.reaction)];
 }
 
 /** Decides the CPU's input for this tick. Pure: same state, same decision. */
@@ -80,30 +109,30 @@ export function cpuStep(
     return { cpu, input: danger ? guardInput(me, liveOpponent, move) : 0 };
   }
   if (state.round.phase !== 'fight') {
-    return { cpu: { ...cpu, plan: [], seen: [], string: null }, input: 0 };
+    return { cpu: { ...cpu, plan: [], seen: [], string: null, punishHandled: false }, input: 0 };
   }
+  const profile = PROFILES[cpu.behavior];
+  const perceived = perceive(cpu, profile, liveOpponent);
   // The game is frozen on impact: keep holding the current input, do not use up the plan (a
   // string's step pressed before the freeze stays buffered through it).
-  if (state.hitstop > 0) return { cpu, input: cpu.string ? 0 : (cpu.plan[0] ?? 0) };
-  const profile = PROFILES[cpu.behavior];
+  if (state.hitstop > 0) return { cpu: perceived, input: cpu.string ? 0 : (cpu.plan[0] ?? 0) };
   // In a hold, its own state decides (hold-tactics.ts); the plan starts over afterwards.
   if (state.hold) {
-    const { input, seed } = holdInput(cpu.player, profile, state, state.hold, config, cpu.seed);
-    return { cpu: { ...cpu, seed, plan: [], string: null }, input };
+    const hold = holdInput(cpu.player, profile, state, state.hold, config, perceived.seed);
+    return { cpu: { ...perceived, seed: hold.seed, plan: [], string: null }, input: hold.input };
   }
+  const opponent = seenOpponent(perceived) ?? liveOpponent;
   // While blocking, keep blocking: dropping the guard mid-string would be a free hit. A string
-  // of its own is over once it blocks: from neutral afterwards, it would hit nothing.
+  // of its own is over once it blocks: from neutral afterwards, it would hit nothing. Its guard
+  // follows what it saw, like a player's: an overhead it has not seen yet meets its low guard.
   if (me.action === 'blockstun') {
-    const blocking = cpu.string ? { ...cpu, string: null } : cpu;
-    const guard = guardInput(me, liveOpponent, upcomingMove(liveOpponent, opponentTemplate));
-    return me.stunFrames > 0
-      ? { cpu: blocking, input: guard }
-      : leaveBlock(blocking, profile, me, liveOpponent, guard);
+    const blocking = perceived.string ? { ...perceived, string: null } : perceived;
+    const guard = guardInput(me, opponent, upcomingMove(opponent, opponentTemplate));
+    if (me.stunFrames > 0) return { cpu: blocking, input: guard };
+    return new Decider(blocking, cpu.behavior, me, opponent, state, config).leaveBlock(guard);
   }
 
-  const seen = [...cpu.seen, liveOpponent].slice(-(profile.reactionFrames + 1));
-  const opponent = seen[0] ?? liveOpponent;
-  const decider = new Decider({ ...cpu, seen }, cpu.behavior, me, opponent, state, config);
+  const decider = new Decider(perceived, cpu.behavior, me, opponent, state, config);
   return decider.decide();
 }
 
@@ -113,6 +142,10 @@ class Decider {
   private readonly toward: number;
   private readonly away: number;
   private readonly distance: number;
+  /** The blow the opening it sees allows (`opening`), if any. */
+  private readonly opening: InputBits | null;
+  /** That opening was considered: kept by every plan it returns this tick. */
+  private punishHandled: boolean;
 
   private readonly profile: Profile;
 
@@ -129,6 +162,9 @@ class Decider {
     this.toward = opponent.x > me.x ? Input.Right : Input.Left;
     this.away = opponent.x > me.x ? Input.Left : Input.Right;
     this.distance = toPx(Math.abs(opponent.x - me.x));
+    this.opening = this.openingBlow();
+    // A new opening is a new decision; none seen, nothing to remember.
+    this.punishHandled = this.opening !== null && cpu.punishHandled;
   }
 
   decide(): { cpu: CpuState; input: InputBits } {
@@ -152,6 +188,9 @@ class Decider {
     }
     const cancelHandled = me.action === 'attack' ? this.cpu.cancelHandled : false;
     if (!DECISION_ACTIONS.has(me.action)) return this.withPlan(this.cpu.plan, { cancelHandled });
+
+    const punish = this.punish();
+    if (punish !== null) return this.withPlan(punish, { cancelHandled });
 
     // Threats get one decision each: anti-air, block, or take the risk.
     const threat = this.threat();
@@ -197,6 +236,52 @@ class Decider {
       return repeat(guardInput(this.me, this.opponent, move), BLOCK_HOLD_FRAMES);
     }
     return [];
+  }
+
+  /**
+   * The blow an opening allows, if any. The opponent's move, as seen, can no longer hit by now
+   * (its active ticks are over, counting the reaction time since) and keeps enough recovery for
+   * the blow to land, in its reach. The count is careful: frozen ticks only make it think less
+   * recovery is left. Easy jabs; the others take the heavy blow when it fits (docs/polish/
+   * AUDIT-ET-PLAN.md, P18).
+   */
+  private openingBlow(): InputBits | null {
+    const opponent = this.opponent;
+    if (opponent.action !== 'attack' || opponent.move === null) return null;
+    const move = moveOf(this.opponentTemplate(), opponent.move);
+    if (move.kind === 'movement') return null;
+    const now = opponent.actionFrame + this.cpu.reaction;
+    if (now < move.startup + move.active) return null;
+    const left = move.startup + move.active + move.recovery - now;
+    const template = this.config.fighters[this.cpu.player];
+    const reach = Math.abs(opponent.x - this.me.x);
+    const fits = (blow: MoveData) =>
+      blow.startup < left && reach <= threatReach(blow) + THREAT_MARGIN;
+    if (this.level !== 'easy' && fits(moveOf(template, 'standHeavy'))) return Input.Heavy;
+    return fits(moveOf(template, 'standLight')) ? Input.Light : null;
+  }
+
+  /** An opening gets one decision: punish it, by the level's chance, before anything planned. */
+  private punish(): InputBits[] | null {
+    if (this.opening === null || this.punishHandled) return null;
+    this.punishHandled = true;
+    return this.chance(this.profile.punish) ? [this.opening, 0] : null;
+  }
+
+  /**
+   * The last tick of a block: punish what it blocked, if it sees an opening (the blow, buffered,
+   * comes out on its first free tick). Else the guard goes on, or, close up and by chance, a
+   * backdash out of the pressure (back + the dash button, out on the first free tick).
+   */
+  leaveBlock(guard: InputBits): { cpu: CpuState; input: InputBits } {
+    const punish = this.punish();
+    if (punish !== null) return this.withPlan(punish, {});
+    const backdash = this.distance < CLOSE_RANGE && this.chance(this.profile.backdash);
+    const { seed, punishHandled } = this;
+    return {
+      cpu: { ...this.cpu, seed, punishHandled },
+      input: backdash ? this.away | Input.Dash : guard,
+    };
   }
 
   /** The game plan by distance: zone from afar, approach, then pressure up close. */
@@ -277,6 +362,7 @@ class Decider {
         plan: rest,
         threatHandled: flags.threatHandled ?? false,
         cancelHandled: flags.cancelHandled ?? false,
+        punishHandled: this.punishHandled,
         string: null,
       },
       input,
@@ -285,7 +371,8 @@ class Decider {
 
   /** A string goes on: nothing else is planned meanwhile, its moves follow nothing else up. */
   private withString(string: StringPlay, input: InputBits): { cpu: CpuState; input: InputBits } {
-    const cpu = { ...this.cpu, seed: this.seed, plan: [], cancelHandled: true, string };
+    const { seed, punishHandled } = this;
+    const cpu = { ...this.cpu, seed, plan: [], cancelHandled: true, punishHandled, string };
     return { cpu, input };
   }
 
@@ -300,24 +387,6 @@ class Decider {
     this.seed = seed;
     return min + Math.floor(value * (max - min + 1));
   }
-}
-
-/**
- * The last tick of a block: the guard goes on, or, close up and by chance, a backdash out of
- * the pressure (back + the dash button, which comes out on the first free tick).
- */
-function leaveBlock(
-  cpu: CpuState,
-  profile: Profile,
-  me: FighterState,
-  opponent: FighterState,
-  guard: InputBits,
-): { cpu: CpuState; input: InputBits } {
-  const [value, seed] = nextRandom(cpu.seed);
-  const close = toPx(Math.abs(opponent.x - me.x)) < CLOSE_RANGE;
-  const back = opponent.x > me.x ? Input.Left : Input.Right;
-  const input = close && value < profile.backdash ? back | Input.Dash : guard;
-  return { cpu: { ...cpu, seed }, input };
 }
 
 /** Invincible to every blow from its first frame: it goes through a meaty attack. */
