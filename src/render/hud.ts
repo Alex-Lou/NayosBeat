@@ -5,7 +5,7 @@ import { ROUNDS_TO_WIN } from '../core/rules';
 import type { FighterState, GameState, RoundState } from '../core/state';
 import { BoostGauge } from './boost-gauge';
 import type { Breakage } from './boost-motion';
-import type { KoFinish } from './fight-events';
+import { shatters, type KoFinish } from './fight-events';
 import type { FlashBudget } from './flash-budget';
 import { BAR_BOX, EMBER_RISE, HealthBar, type HudComfort } from './health-bar';
 import { DISC_SIZE, discSpans, MARK_TICKS, markSpan, PIP_SIZE, pipSpans } from './hud-discs';
@@ -260,10 +260,13 @@ export class Hud {
   }
 }
 
-/** What a KO does to the gauge: a plain one leaves it whole, a combo's cracks it, a super's shatters it. */
+/**
+ * What a KO does to the gauge: a plain one leaves it whole, a combo's cracks it, a super's
+ * shatters it (an Ultime's, the Finisher's: on its contact until its scene plays).
+ */
 function breakageOf(finish: KoFinish | null): Breakage | null {
   if (finish === 'combo') return 'crack';
-  if (finish === 'finisher') return 'shatter';
+  if (finish !== null && shatters(finish)) return 'shatter';
   return null;
 }
 

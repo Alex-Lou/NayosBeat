@@ -8,11 +8,11 @@ import {
   CHAIN_HIGH,
   CHAIN_LAUNCH,
   DASH,
-  FINISHER,
   FORWARD_HEAVY,
   FORWARD_LIGHT,
   FORWARD_REMIX,
   GRAB,
+  LIGHT_FINISHER,
   PUMMEL,
   REMIX,
   REWIND,
@@ -65,7 +65,7 @@ export const RIFF_TEXTS: FighterTexts = {
       text: 'Un revers tournant, la frange qui fouette, un petit pas en avant. Puis la fin : L le Swipe, H le Coup de coude, avant + H la Hache, bas + H le Windmill, arrière + H le Retourné sauté.',
     },
     lightFinisher: {
-      input: FINISHER,
+      input: LIGHT_FINISHER,
       text: "Le corps bascule, un coup de pied circulaire balaie l'adversaire et le met au sol. Sur un adversaire en l'air, il le fait tournoyer (la Vrille) : rattrape-le, une fois par combo.",
     },
     forwardLight: {

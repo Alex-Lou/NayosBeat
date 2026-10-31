@@ -6,7 +6,13 @@ import { BLEEDS, Blood } from './blood';
 import { Dust } from './dust';
 import { Effects } from './effects';
 import { Graze, type GrazeWeight } from './graze';
-import { SHATTER_RUMBLE, vibrationFor, type FightEvent, type KoFinish } from './fight-events';
+import {
+  SHATTER_RUMBLE,
+  shatters,
+  vibrationFor,
+  type FightEvent,
+  type KoFinish,
+} from './fight-events';
 import { blowAsk, SPARK_AREAS, stampArea, wordArea, type BlowAsk } from './flash-areas';
 import type { FlashBudget } from './flash-budget';
 import { SHATTER_VIEW } from './health-bar';
@@ -111,7 +117,7 @@ export class FightFeedback {
     this.superHalo = superHalo(stage.colors);
     this.haloArea = glowFlashArea(this.superHalo, stage.colors);
     const eclat = (style: HitStyle): number => {
-      const look = koVeil('finisher', style.energy, stage.colors);
+      const look = koVeil('ultimate', style.energy, stage.colors);
       return look ? glowFlashArea(look, stage.colors) : 0;
     };
     this.eclatAreas = [eclat(styles[0]), eclat(styles[1])];
@@ -309,11 +315,12 @@ export class FightFeedback {
     }
     if (!event.low) this.blood.bleed(event.x, event.y, event.away, BLEEDS.ko);
     // The final blow shakes the screen hard, then dies out over about 0.7 s; harder still when
-    // it blows the loser's Boost gauge up (an Ultime), the gamepads rumbling with it.
+    // it blows the loser's Boost gauge up (an Ultime, the Finisher until its scene plays it),
+    // the gamepads rumbling with it.
     effects.kick(TRAUMA.ko[event.finish], event.away);
-    if (event.finish === 'finisher') this.rumble?.(SHATTER_RUMBLE.ms, SHATTER_RUMBLE.strength);
+    if (shatters(event.finish)) this.rumble?.(SHATTER_RUMBLE.ms, SHATTER_RUMBLE.strength);
     // How it fell, in the winner's energy: nothing more for a blow on its own, a vignette for a
-    // combo's end, the éclat for an Ultime (docs/flashs.md §2), in ink when refused.
+    // combo's end, the éclat for an Ultime or a Finisher (docs/flashs.md §2), in ink when refused.
     const veil = koVeil(event.finish, style.energy, this.stage.colors, budget.mode, lit);
     if (veil) effects.veil(veil, this.inWorld(event.x, event.y));
     this.slowMotionFrames = KO_SLOW_MOTION_FRAMES;
@@ -326,8 +333,8 @@ export class FightFeedback {
    * of the bar it hits on its own: Hud.)
    */
   private alsoLit(event: PendingBlow['event']): number {
-    const finisher = event.type === 'ko' && event.finish === 'finisher';
-    const eclat = finisher && this.budget.mode === 'normal' ? this.eclatAreas[event.by] : 0;
+    const shattered = event.type === 'ko' && shatters(event.finish);
+    const eclat = shattered && this.budget.mode === 'normal' ? this.eclatAreas[event.by] : 0;
     return eclat + this.shatterOf(event);
   }
 
@@ -336,7 +343,7 @@ export class FightFeedback {
    * which the zoom does not enlarge): hot shards with the flashes normal, their own colors else.
    */
   private shatterOf(event: PendingBlow['event']): number {
-    if (event.type !== 'ko' || event.finish !== 'finisher') return 0;
+    if (event.type !== 'ko' || !shatters(event.finish)) return 0;
     const normal = this.budget.mode === 'normal';
     return this.budget.toWorld(normal ? SHATTER_VIEW.hot : SHATTER_VIEW.plain);
   }

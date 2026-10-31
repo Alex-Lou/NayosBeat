@@ -4,6 +4,7 @@ import { createInitialState, type GameState, type RoundState } from '../../src/c
 import { NAYO } from '../../src/data/fighters/nayo';
 import { RIFF } from '../../src/data/fighters/riff';
 import { TRAINING_STAGE } from '../../src/data/stages';
+import type { KoFinish } from '../../src/render/fight-events';
 import { FlashBudget, type FlashMode } from '../../src/render/flash-budget';
 import { Hud } from '../../src/render/hud';
 import { FX_DARK } from '../../src/render/veils';
@@ -77,7 +78,7 @@ describe('the HUD asks the flash budget for what it lights (docs/flashs.md §4)'
 
   it('breaks the gauges of a fighter still when the feedback says no room is left', () => {
     /** How many more see-through spans (the shards, fading) the HUD shows after the KO. */
-    const shards = (still: boolean) => {
+    const shards = (still: boolean, finish: KoFinish = 'ultimate') => {
       const { hud, graphics } = hudOf('off');
       const faded = () =>
         graphics.reduce(
@@ -86,12 +87,14 @@ describe('the HUD asks the flash budget for what it lights (docs/flashs.md §4)'
         );
       for (let frame = 0; frame <= 60; frame++) hud.update(stateAt(frame, {}, [1000, 100]));
       const before = faded();
-      hud.knockOut(1, 'finisher', still);
+      hud.knockOut(1, finish, still);
       hud.update(stateAt(61, KO, [1000, 0]));
       hud.update(stateAt(63, KO, [1000, 0]));
       return faded() - before;
     };
     expect(shards(false)).toBeGreaterThan(40);
     expect(shards(true)).toBe(0);
+    // The Finisher's KO shatters it too, as an Ultime's until its scene (docs/finisher.md §5.10).
+    expect(shards(false, 'finale')).toBe(shards(false));
   });
 });

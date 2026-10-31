@@ -8,11 +8,11 @@ import {
   CHAIN_HIGH,
   CHAIN_LAUNCH,
   DASH,
-  FINISHER,
   FORWARD_HEAVY,
   FORWARD_LIGHT,
   FORWARD_REMIX,
   GRAB,
+  LIGHT_FINISHER,
   PUMMEL,
   REMIX,
   REWIND,
@@ -69,7 +69,7 @@ export const NAYO_TEXTS: FighterTexts = {
       text: "Ton « deux ». Puis choisis la fin : L met au tapis, H continue au Crochet, avant + H tombe d'en haut (Marteau), bas + H fauche en bas (Balayage), arrière + H fait décoller (Remontant chassé).",
     },
     lightFinisher: {
-      input: FINISHER,
+      input: LIGHT_FINISHER,
       text: 'Le crochet large qui met au sol. Les trois L passent partout où le premier touche.',
     },
     forwardLight: {

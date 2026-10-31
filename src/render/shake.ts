@@ -4,6 +4,8 @@
  * pixels, never a jitter from one frame to the next.
  */
 
+import type { KoFinish } from './fight-events';
+
 /** Screen shake at trauma 1, in world pixels. */
 export const MAX_SHAKE = 8;
 /** Trauma lost each display frame: a KO (1) dies out in 48 frames, 0.8 s. */
@@ -17,13 +19,17 @@ export const SHAKE_STRENGTH: Readonly<Record<ShakeMode, number>> = {
   reduced: 0.5,
   off: 0,
 };
-/** What each event adds (the strongest wins): an Ultime's KO shakes 8 px, a plain one about 6. */
+/**
+ * What each event adds (the strongest wins): an Ultime's KO shakes 8 px, a plain one about 6;
+ * the Finisher's as an Ultime's, until its scene shakes on its contact and on its landing
+ * (docs/finisher.md §1.13, §5.10).
+ */
 export const TRAUMA = {
   heavy: 0.65,
   throw: 0.45,
   fall: 0.45,
   super: 0.5,
-  ko: { plain: 0.85, combo: 0.92, finisher: 1 },
+  ko: { plain: 0.85, combo: 0.92, ultimate: 1, finale: 1 } satisfies Record<KoFinish, number>,
 } as const;
 
 /** A smoothed shake, seeded: the same for the same events. */

@@ -7,7 +7,12 @@
  * as it was.
  */
 
-import type { MatchConfig, TrainingGauge } from '../../src/core/config.ts';
+import type {
+  MatchConfig,
+  TrainingDummyHealth,
+  TrainingFinisher,
+  TrainingGauge,
+} from '../../src/core/config.ts';
 import { Input, type InputBits } from '../../src/core/input.ts';
 import { createInitialState, type FighterState, type GameState } from '../../src/core/state.ts';
 import { step } from '../../src/core/step.ts';
@@ -24,6 +29,9 @@ export interface Replay {
   readonly training?: boolean;
   /** The training option of the Boost gauge (docs/combos-v3.md §6.5): 'normal' unless told. */
   readonly trainingGauge?: TrainingGauge;
+  /** The training options of the Finisher (docs/finisher.md §1.12): 'match' and 100 unless told. */
+  readonly trainingFinisher?: TrainingFinisher;
+  readonly trainingDummyHealth?: TrainingDummyHealth;
   /** The whole match from its first tick (round intro included). */
   readonly inputs: readonly InputRun[];
   /** `replayHash` of the replay: the state on every tick. */
@@ -62,6 +70,8 @@ export function replayConfig(replay: Replay): MatchConfig {
     fighters: [templateOf(first), templateOf(second)],
     training: replay.training ?? false,
     ...(replay.trainingGauge && { trainingGauge: replay.trainingGauge }),
+    ...(replay.trainingFinisher && { trainingFinisher: replay.trainingFinisher }),
+    ...(replay.trainingDummyHealth && { trainingDummyHealth: replay.trainingDummyHealth }),
   };
 }
 

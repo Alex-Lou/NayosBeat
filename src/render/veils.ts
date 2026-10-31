@@ -71,8 +71,9 @@ export function superHalo(stage: readonly number[]): VeilLook {
 
 /**
  * The KO's veil, by how it landed (docs/combos-v3.md §1.8.6): none for a blow on its own; for a
- * combo's end, a vignette in the winner's energy on the screen's edges; for an Ultime, the
- * éclat, the one flash of the KO, bursting from the impact behind the fighters. By the player's
+ * combo's end, a vignette in the winner's energy on the screen's edges; for an Ultime (and the
+ * Finisher, until its scene moves it to the landing), the éclat, the one flash of the KO,
+ * bursting from the impact behind the fighters. By the player's
  * « Effets de flash » (docs/flashs.md §4): reduced, softer, the éclat no longer a flash; off, or
  * the éclat refused by the budget (`lit` false), in ink: they darken.
  */

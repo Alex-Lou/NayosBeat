@@ -76,7 +76,7 @@ function blow(overrides: Partial<Hit> = {}): Hit {
 }
 
 /** The final blow of player 1. */
-function ko(finish: 'plain' | 'finisher', low = false): Blow {
+function ko(finish: 'plain' | 'ultimate', low = false): Blow {
   return { type: 'ko', finish, ...IMPACT, low };
 }
 
@@ -269,7 +269,7 @@ describe('what a blow asks the budget (docs/flashs.md §4)', () => {
       blow(),
       blow({ heavy: true }),
       blow({ heavy: true, low: true }),
-      ko('finisher'),
+      ko('ultimate'),
       ko('plain', true),
     ];
     for (const shape of ['slash', 'claw'] as const) {
@@ -298,7 +298,7 @@ describe('what the veils light (docs/flashs.md §4)', () => {
     expect(halo).toBeGreaterThan(300);
     expect(halo).toBeLessThan(1200);
     for (const energy of [0x30e8ff, 0xff4fc8, 0xff3ca0, 0xffc83a]) {
-      const eclat = koVeil('finisher', energy, GREYBOX_COLORS);
+      const eclat = koVeil('ultimate', energy, GREYBOX_COLORS);
       if (!eclat) throw new Error('No éclat');
       expect(glowFlashArea(eclat, GREYBOX_COLORS) * CLOSEST).toBeGreaterThan(
         FLASH_RULES.normal.area,
@@ -309,7 +309,7 @@ describe('what the veils light (docs/flashs.md §4)', () => {
         ['off', true],
         ['normal', false],
       ] as const) {
-        const soft = koVeil('finisher', energy, GREYBOX_COLORS, mode, lit);
+        const soft = koVeil('ultimate', energy, GREYBOX_COLORS, mode, lit);
         if (!soft) throw new Error('No éclat');
         expect(glowFlashArea(soft, GREYBOX_COLORS), `${mode} ${lit}`).toBe(0);
       }

@@ -8,9 +8,12 @@ import {
   BOOST_GAIN_HITS,
   BOOST_GAIN_SPECIAL,
   BOOST_MAX,
+  COMBO_LIMIT,
   COMBO_SCALING_FLOOR,
   COMBO_SCALING_STEP,
   COUNTER_DAMAGE_PERCENT,
+  DECAY_FROM,
+  DECAY_STEP,
   HOLD_LIMIT_FRAMES,
 } from './rules';
 
@@ -73,7 +76,10 @@ export function boostProblems(template: FighterTemplate): string[] {
   return problems;
 }
 
-/** Rule 3: a Remix keeps its special's timing, the super flashes and hits soon after. */
+/**
+ * Rule 3: a Remix keeps its special's timing, the super flashes and hits soon after, its blows
+ * before the last hold the body until the next, and its last floors.
+ */
 function tierProblems(template: FighterTemplate, id: MoveId, move: MoveData): string[] {
   const problems: string[] = [];
   const plainId = remixed(id);
@@ -103,8 +109,33 @@ function tierProblems(template: FighterTemplate, id: MoveId, move: MoveData): st
     if (move.juggleCost !== 0 || (move.pulses ?? []).some((pulse) => pulse.hit.juggleCost !== 0)) {
       problems.push(`${id}: the super's blows spend no juggle point`);
     }
+    // The Finisher's KO falls on a big blow (docs/finisher.md §1.6): the one that floors.
+    const last = move.pulses?.[move.pulses.length - 1]?.hit ?? move;
+    if (!last.knockdown) problems.push(`${id}: the super's last blow sends to the floor`);
+    // Its lock follows the body from blow to blow (`everyBlowLands`, finisher.ts).
+    if (!holdsToTheNext(move)) {
+      problems.push(`${id}: the super's blows before its last hold the body until the next`);
+    }
   }
   return problems;
+}
+
+/**
+ * The super's blows before its last leave the body as any blow does, neither floored nor
+ * extended, without a CONTRE of their own, and stun it until the next one lands, even decayed
+ * as late in a combo as the super's room allows (COMBO_LIMIT).
+ */
+function holdsToTheNext(move: MoveData): boolean {
+  const decay = DECAY_STEP * Math.max(0, COMBO_LIMIT - 1 - DECAY_FROM);
+  let blow = move;
+  let from = move.startup;
+  for (const pulse of move.pulses ?? []) {
+    const plain = !blow.knockdown && !blow.extender && !blow.counter;
+    if (!plain || blow.hitstun - decay < pulse.frame - from) return false;
+    blow = pulse.hit;
+    from = pulse.frame;
+  }
+  return true;
 }
 
 /** Rule 10: the pulses follow each other within the active frames, on the super only. */

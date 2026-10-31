@@ -1,8 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import type { MatchConfig } from '../../src/core/config';
+import type { MatchConfig, TrainingFinisher } from '../../src/core/config';
+import { px } from '../../src/core/constants';
+import { finisherState } from '../../src/core/finisher';
 import { Input } from '../../src/core/input';
 import { BOOST_MAX, ROUND_TIME, TRAINING_REFILL_FRAMES } from '../../src/core/rules';
 import { createInitialState } from '../../src/core/state';
+import { step } from '../../src/core/step';
+import { NAYO } from '../../src/data/fighters/nayo';
+import { RIFF } from '../../src/data/fighters/riff';
 import { MATCH, run } from './helpers';
 
 const TRAINING: MatchConfig = { ...MATCH, training: true };
@@ -70,5 +75,54 @@ describe('training mode', () => {
     const match: MatchConfig = { ...MATCH, trainingGauge: 'infinite' };
     expect(createInitialState(match).fighters[0].boost).toBe(0);
     expect(run(5, [0, 0], createInitialState(match), match).fighters[0].boost).toBe(0);
+  });
+
+  it("refills the dummy to the share its option says (docs/finisher.md §1.12), the player's whole", () => {
+    for (const [percent, health] of [
+      [100, 900],
+      [50, 450],
+      [30, 270],
+      [10, 90],
+    ] as const) {
+      const config: MatchConfig = { ...TRAINING, trainingDummyHealth: percent };
+      const rested = run(TRAINING_REFILL_FRAMES + 5, [0, 0], createInitialState(config), config);
+      expect(
+        rested.fighters.map((fighter) => fighter.health),
+        `${percent} %`,
+      ).toEqual([NAYO.maxHealth, health]);
+    }
+  });
+
+  it('plays the Finisher as its option says: as in a match, always ready, or never (§1.12)', () => {
+    const lights = (finisher: TrainingFinisher | undefined, dummyHealth: number) => {
+      const config: MatchConfig = {
+        ...TRAINING,
+        trainingGauge: 'full',
+        ...(finisher && { trainingFinisher: finisher }),
+      };
+      const start = createInitialState(config);
+      const [player, dummy] = start.fighters;
+      const state = { ...start, fighters: [player, { ...dummy, health: dummyHealth }] } as const;
+      return finisherState(state, 0, config);
+    };
+    // As in a match (the default): the match point played as reached, the dummy at 30 % or less.
+    expect(lights(undefined, 270)).toBe('ready');
+    expect(lights('match', 271)).toBe('off');
+    expect(lights('always', RIFF.maxHealth)).toBe('ready');
+    expect(lights('off', 1)).toBe('off');
+  });
+
+  it("stops the Finisher's last blow at the dummy's 1 HP floor", () => {
+    const config: MatchConfig = { ...TRAINING, trainingGauge: 'full', trainingFinisher: 'always' };
+    const start = createInitialState(config);
+    const [player, dummy] = start.fighters;
+    let state = { ...start, fighters: [player, { ...dummy, x: player.x + px(40) }] } as const;
+    let lowest = dummy.health;
+    for (let tick = 0; tick < 150; tick++) {
+      state = step(state, [tick === 0 ? Input.Left | Input.Boost : 0, 0], config);
+      lowest = Math.min(lowest, state.fighters[1].health);
+    }
+    expect(lowest).toBe(1);
+    expect(state.round.phase).toBe('fight');
   });
 });

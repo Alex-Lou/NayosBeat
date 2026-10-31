@@ -27,7 +27,7 @@ export interface FighterTexts {
 }
 
 export const SPECIAL = 'S, ou ↓↘→ + un coup';
-export const FINISHER = 'L, L, L';
+export const LIGHT_FINISHER = 'L, L, L';
 export const FORWARD_LIGHT = 'Avant + L';
 export const FORWARD_HEAVY = 'Avant + H';
 export const BACK_HEAVY = 'Arrière + H';

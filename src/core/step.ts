@@ -3,6 +3,7 @@ import { applyHit, contactOf, findHit, impactOf, techGrab, type PlacedBox } from
 import type { MatchConfig } from './config';
 import { isCounterHit } from './damage';
 import { pushboxOf, updateFighter } from './fighter';
+import { finisherBlowOf, finisherReady, inDanger, locks, type FinisherBlow } from './finisher';
 import { readFighter, startHold, struggleInHitstop, updateHold, type HoldTick } from './hold';
 import type { InputBits } from './input';
 import type { MoveData, MoveId } from './move-data';
@@ -22,6 +23,7 @@ import { applyTrainingRules } from './training';
 import {
   EMPTY_CONTACTS,
   FLAG_EXTENDED,
+  FLAG_FINISHER,
   FLAG_MOVE_HIT,
   type Contact,
   type FighterState,
@@ -78,7 +80,8 @@ function frozen(state: GameState, inputA: InputBits, inputB: InputBits): GameSta
 /**
  * A tick without a hold: both fighters, their positions, the projectiles, then every blow found
  * before any is applied. A blow (strike or projectile) beats a grab on the same tick, two grabs
- * tech, a grab alone catches (docs/combat-v2.md §4.2).
+ * tech, a grab alone catches (docs/combat-v2.md §4.2). A pair the Finisher locks is untouchable
+ * but for the super's own blows, like the pair of a hold (docs/finisher.md §1.6).
  */
 function freeTick(
   state: GameState,
@@ -89,13 +92,16 @@ function freeTick(
 ): GameState {
   const [prevA, prevB] = state.fighters;
   const [templateA, templateB] = config.fighters;
-  // Threats are read from the previous state, like the opponent's position: no order effect.
+  // Threats and the Finisher's lights are read from the previous state, like the opponent's
+  // position: no order effect.
   const threatOnA = isThreatened(0, state.fighters, state.projectiles, config);
   const threatOnB = isThreatened(1, state.fighters, state.projectiles, config);
   const discA = hasProjectile(state.projectiles, 0);
   const discB = hasProjectile(state.projectiles, 1);
-  const movedA = updateFighter(prevA, inputA, templateA, prevB.x, threatOnA, discA);
-  const movedB = updateFighter(prevB, inputB, templateB, prevA.x, threatOnB, discB);
+  const armedA = finisherReady(state, 0, config);
+  const armedB = finisherReady(state, 1, config);
+  const movedA = updateFighter(prevA, inputA, templateA, prevB.x, threatOnA, discA, armedA);
+  const movedB = updateFighter(prevB, inputB, templateB, prevA.x, threatOnB, discB, armedB);
 
   const [a, b] = resolvePositions(
     { fighter: movedA, box: pushboxOf(movedA, templateA) },
@@ -105,17 +111,19 @@ function freeTick(
   );
 
   const projectiles = updateProjectiles(state.projectiles, [a, b], state.cameraX, config);
+  const lockedBy = locks(a, b) ? 0 : locks(b, a) ? 1 : null;
   // Once the round is decided, attacks still play out but can no longer change the result.
-  const landedByA = fighting ? findHit(a, templateA, b, templateB) : null;
-  const landedByB = fighting ? findHit(b, templateB, a, templateA) : null;
+  const landedByA = fighting && lockedBy !== 1 ? findHit(a, templateA, b, templateB) : null;
+  const landedByB = fighting && lockedBy !== 0 ? findHit(b, templateB, a, templateA) : null;
   const grabByA = landedByA?.kind === 'grab' ? landedByA : null;
   const grabByB = landedByB?.kind === 'grab' ? landedByB : null;
   const strikeByA = grabByA ? null : landedByA;
   const strikeByB = grabByB ? null : landedByB;
+  const shootable = fighting && lockedBy === null;
   const projectileOnA =
-    fighting && !strikeByB ? findProjectileHit(projectiles, 0, a, config) : null;
+    shootable && !strikeByB ? findProjectileHit(projectiles, 0, a, config) : null;
   const projectileOnB =
-    fighting && !strikeByA ? findProjectileHit(projectiles, 1, b, config) : null;
+    shootable && !strikeByA ? findProjectileHit(projectiles, 1, b, config) : null;
 
   const blow = strikeByA ?? strikeByB ?? projectileOnA ?? projectileOnB;
   if (!blow && (grabByA || grabByB)) {
@@ -126,10 +134,15 @@ function freeTick(
   }
 
   const minHealth = config.training ? 1 : 0;
-  const struckA = struck(0, a, landedOn(b, strikeByB, projectileOnA, config), minHealth, config);
-  const struckB = struck(1, b, landedOn(a, strikeByA, projectileOnB, config), minHealth, config);
-  const nextA = struckA?.fighter ?? connected(a, strikeByA, struckB);
-  const nextB = struckB?.fighter ?? connected(b, strikeByB, struckA);
+  const onA = landedOn(b, strikeByB, projectileOnA, config);
+  const onB = landedOn(a, strikeByA, projectileOnB, config);
+  // How the Finisher's blows land: a trade arms nothing (the attacker is touched).
+  const finisherOnA = strikeByB ? finisherBlowOf(b, a, 1, onB === null, config) : null;
+  const finisherOnB = strikeByA ? finisherBlowOf(a, b, 0, onA === null, config) : null;
+  const struckA = struck(0, a, onA, minHealth, finisherOnA, config);
+  const struckB = struck(1, b, onB, minHealth, finisherOnB, config);
+  const nextA = struckA?.fighter ?? connected(a, strikeByA, struckB, finisherOnB !== null);
+  const nextB = struckB?.fighter ?? connected(b, strikeByB, struckA, finisherOnA !== null);
   const projectileSpent = projectileOnA !== null || projectileOnB !== null;
 
   // The quiet tick's path: its pieces are passed as they are, no tick record is built.
@@ -267,14 +280,16 @@ function landedOn(
 /**
  * Applies the blow that landed on `defender` (as it was when the blow was found): where it met
  * the body, whether it caught the defender attacking or recovering (CONTRE, PUNITION: a longer
- * freeze), and what the defender became. The blow that sets off the combo's extender (Rebond,
- * Vrille) freezes longer too: its second wind.
+ * freeze), whether it was in danger, how a blow of the Finisher's lock lands (`finisher`), and
+ * what the defender became. The blow that sets off the combo's extender (Rebond, Vrille)
+ * freezes longer too: its second wind.
  */
 function struck(
   defenderIndex: 0 | 1,
   defender: FighterState,
   landed: Landed | null,
   minHealth: number,
+  finisher: FinisherBlow | null,
   config: MatchConfig,
 ): Struck | null {
   if (!landed) return null;
@@ -283,6 +298,8 @@ function struck(
   const detail = {
     counter: isCounterHit(defender, template),
     impactPercent: impactPercent(impact.y - defender.y, template),
+    danger: inDanger(defender, template.maxHealth),
+    finisher,
   };
   const fighter = applyHit(defender, landed.fromX, landed.data, minHealth, detail);
   const blocked = fighter.action === 'blockstun';
@@ -301,16 +318,20 @@ function struck(
 
 /**
  * A fighter whose strike landed (`onOpponent`, what it did): it cannot hit twice, it can now be
- * cancelled, and it knows whether it hit or was blocked (`FLAG_MOVE_HIT`).
+ * cancelled, and it knows whether it hit or was blocked (`FLAG_MOVE_HIT`). The armed super stays
+ * the Finisher only through blows of its lock that hit (`finisher`): on its first contact, the
+ * lock takes; blocked, traded or out of lights, it is a plain super from then on.
  */
 function connected(
   fighter: FighterState,
   strikeLanded: MoveData | null,
   onOpponent: Struck | null,
+  finisher: boolean,
 ): FighterState {
   if (!strikeLanded) return fighter;
   const hit = onOpponent?.contact.kind === 'hit';
-  const flags = hit ? fighter.flags | FLAG_MOVE_HIT : fighter.flags;
+  const marked = hit ? fighter.flags | FLAG_MOVE_HIT : fighter.flags;
+  const flags = hit && finisher ? marked : marked & ~FLAG_FINISHER;
   return { ...fighter, moveConnected: true, flags };
 }
 
