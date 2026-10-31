@@ -6,14 +6,22 @@
  * src/ui/title-vinyl.png. Run with `npm run sprites`; `npm run sprites -- riff` draws one
  * fighter only (Nayo's run also draws the icons and the vinyl).
  *
- * A strip drawn by hand (art-src/<fighter>/, see drawn.ts) takes the place of the code's: it is
+ * A strip drawn by hand (art-src/<fighter>/, see drawn.ts) takes the place of the code's, and so
+ * do the title's vinyl and the icons' master (art-src/ui/, see ui-drawn.ts): every drawing is
  * checked first, and nothing is written when one is wrong.
  */
 
 import { mkdir, rm, writeFile } from 'node:fs/promises';
 import { ANCHOR, CELL_SIZE, type Cell } from '../../src/art/types.ts';
 import { strikeOf } from './clips.ts';
-import { loadDrawn, platinePixels, stripPixels, unseenStrikes, type StripPixels } from './drawn.ts';
+import {
+  loadDrawn,
+  platinePixels,
+  stripPixels,
+  unseenStrikes,
+  type Drawn,
+  type StripPixels,
+} from './drawn.ts';
 import type { Fighter } from './fighter.ts';
 import { frameDataOf } from './frame-data.ts';
 import { drawIcons } from './icons.ts';
@@ -21,6 +29,7 @@ import { NAYO } from './nayo/index.ts';
 import type { Colorway } from './palette.ts';
 import { encodeIndexedPng } from './png.ts';
 import { RIFF } from './riff/index.ts';
+import { loadUiDrawn } from './ui-drawn.ts';
 import { drawVinyl } from './vinyl.ts';
 
 const FIGHTERS: readonly Fighter[] = [NAYO, RIFF];
@@ -116,10 +125,8 @@ function cellsModule(fighter: Fighter, cells: ReadonlyMap<string, Cell>): string
   ].join('\n');
 }
 
-async function generate(fighter: Fighter): Promise<void> {
+async function generate(fighter: Fighter, drawn: ReadonlyMap<string, Drawn>): Promise<void> {
   const assets = new URL(`${fighter.name}/`, ART);
-  // The drawings first: a wrong one stops the run before anything is erased.
-  const drawn = await loadDrawn(fighter);
   const { template, clips } = frameDataOf(fighter);
   for (const colorway of COLORWAYS) {
     // Effects are rewritten from scratch: a strip that lost its effects must not keep old ones.
@@ -178,10 +185,16 @@ async function main(): Promise<void> {
     );
   }
   const chosen = names.length === 0 ? FIGHTERS : FIGHTERS.filter((f) => names.includes(f.name));
-  for (const fighter of chosen) await generate(fighter);
-  if (chosen.includes(NAYO)) {
-    await drawIcons();
-    await drawVinyl();
+  // Every drawing first: a wrong one stops the run before anything is erased or written.
+  const drawnOf = new Map<Fighter, ReadonlyMap<string, Drawn>>();
+  for (const fighter of chosen) drawnOf.set(fighter, await loadDrawn(fighter));
+  const ui = chosen.includes(NAYO) ? await loadUiDrawn() : undefined;
+  for (const fighter of chosen) await generate(fighter, drawnOf.get(fighter) ?? new Map());
+  if (ui) {
+    await drawIcons(ui.icon);
+    console.log(`icons: ${ui.icon ? 'from the master drawn (art-src/ui/icon.png)' : "the code's"}`);
+    await drawVinyl(ui.vinyl);
+    console.log(`title vinyl: ${ui.vinyl ? 'drawn (art-src/ui/vinyl.png)' : "the code's"}`);
   }
 }
 

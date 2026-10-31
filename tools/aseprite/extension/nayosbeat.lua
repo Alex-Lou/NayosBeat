@@ -5,14 +5,15 @@
 -- art-src/<fighter>/<strip>.aseprite; "Exporter vers le jeu" writes art-src/<fighter>/<strip>.png
 -- (and fx/<strip>.png), which `npm run sprites` checks again and puts in the game.
 --
--- Pixels are palette slots (Indexed mode): the second colorway is only another palette, swapped by
--- the game. Several slots share a color in the main colorway and not in the other one: only the
--- slot counts, never the color. Every decision is made on the Node side, in the template; here,
+-- A fighter's pixels are palette slots (Indexed mode): the second colorway is only another palette,
+-- swapped by the game. Several slots share a color in the main colorway and not in the other one:
+-- only the slot counts, never the color. The UI images (art-src/ui/: the title's vinyl, the icons'
+-- master) have a free palette instead (`palette.free`): the export writes the drawing's own. Every decision is made on the Node side, in the template; here,
 -- the same rules (read from it) warn before anything is written. The text shown is French, the
 -- game's language. Tested outside Aseprite by `npm run aseprite:check` (tools/aseprite/test/).
 
 local TEMPLATE_FORMAT = "nayosbeat-template"
-local TEMPLATE_VERSION = 1
+local TEMPLATE_VERSION = 2
 local TITLE = "NayosBeat"
 local GUIDES = "guides"
 
@@ -51,7 +52,7 @@ local function spritePathOf(templatePath)
   local folder = app.fs.filePath(templatePath)
   local templates = app.fs.filePath(folder)
   if app.fs.fileName(templates) ~= "gabarits" then
-    fail("Un gabarit se choisit dans art-src/gabarits/<perso>/ :\n" .. templatePath)
+    fail("Un gabarit se choisit dans art-src/gabarits/<perso ou ui>/ :\n" .. templatePath)
   end
   local fighter = app.fs.joinPath(app.fs.filePath(templates), app.fs.fileName(folder))
   return app.fs.joinPath(fighter, app.fs.fileTitle(templatePath) .. ".aseprite")
@@ -266,7 +267,8 @@ local function export(sprite)
   end
   if #sprite.frames ~= template.frames then
     fail("La planche a " .. #sprite.frames .. " images, le jeu en attend " .. template.frames .. ".\n"
-      .. "Le nombre d'images se change dans le code (src/art/<perso>/sheets.ts et clips.ts), puis les gabarits.")
+      .. (template.palette.free and "Ce format est celui que le jeu affiche (docs/art/aseprite.md)."
+        or "Le nombre d'images se change dans le code (src/art/<perso>/sheets.ts et clips.ts), puis les gabarits."))
   end
   local folder = app.fs.filePath(sprite.filename)
   local outputs = {}
@@ -298,17 +300,17 @@ local function export(sprite)
     if #problems > 15 then table.insert(shown, "… et " .. (#problems - 15) .. " autres.") end
     fail(table.concat(shown, "\n"))
   end
-  local palette = paletteOf(template.palette.main)
+  local palette = template.palette.free and sprite.palettes[1] or paletteOf(template.palette.main)
   local written = {}
   for _, output in ipairs(outputs) do
     if output.drawn then
       app.fs.makeAllDirectories(app.fs.filePath(output.path))
       output.strip:saveAs { filename = output.path, palette = palette }
-      table.insert(written, template.fighter .. "/" .. output.file)
+      table.insert(written, template.folder .. "/" .. output.file)
     elseif app.fs.isFile(output.path) then
       -- Empty effects: no file, no effects in the game.
       os.remove(output.path)
-      table.insert(written, template.fighter .. "/" .. output.file .. " (supprimé : calque vide)")
+      table.insert(written, template.folder .. "/" .. output.file .. " (supprimé : calque vide)")
     end
   end
   sprite:saveAs(sprite.filename)
@@ -318,24 +320,25 @@ local function export(sprite)
 end
 
 -- The guides, durations and tags follow the game's data: after a hitbox or a duration changes,
--- `npm run sprites:templates`, then this command.
+-- `npm run sprites:templates`, then this command. A free palette is the drawing's: it stays.
 local function refreshGuides(sprite)
   local template = sheetTemplate(sprite)
   if #sprite.frames ~= template.frames then
     fail("La planche a " .. #sprite.frames .. " images, son gabarit " .. template.frames .. ".")
   end
-  local layer = layerNamed(sprite, GUIDES)
   local spec = nil
   for _, each in ipairs(template.layers) do
     if each.name == GUIDES then spec = each end
   end
-  if layer == nil or spec == nil then fail("Calque « " .. GUIDES .. " » introuvable.") end
+  local layer = layerNamed(sprite, GUIDES)
+  if spec ~= nil and layer == nil then fail("Calque « " .. GUIDES .. " » introuvable.") end
   app.transaction(function()
-    sprite:setPalette(paletteOf(template.palette.main))
+    if not template.palette.free then sprite:setPalette(paletteOf(template.palette.main)) end
     for index, seconds in ipairs(template.durations) do
       sprite.frames[index].duration = seconds
     end
     setTags(sprite, template)
+    if spec == nil then return end
     layer.isEditable = true
     for frame, runs in ipairs(spec.frames) do
       local cel = layer:cel(frame)
@@ -355,6 +358,7 @@ local function toggleColorway(sprite)
   local template = sheetTemplate(sprite)
   local main = template.palette.main
   local alt = template.palette.alt
+  if alt == nil then fail("Cette image n'a qu'une tenue : seuls les combattants en ont deux.") end
   local current = sprite.palettes[1]
   local showingMain = true
   for index = 1, #main do
@@ -373,7 +377,7 @@ end
 
 local function askTemplate(plugin)
   local dialog = Dialog { title = "Nouvelle planche NayosBeat" }
-  dialog:label { text = "Un gabarit de art-src/gabarits/<perso>/ (npm run sprites:templates)" }
+  dialog:label { text = "Un gabarit de art-src/gabarits/<perso ou ui>/ (npm run sprites:templates)" }
   dialog:file {
     id = "template",
     label = "Gabarit",

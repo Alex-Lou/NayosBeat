@@ -1,21 +1,24 @@
 /**
- * Writes the Aseprite templates (see aseprite-template.ts) into art-src/gabarits/<fighter>/
- * <name>.json, not committed: one per strip, and one per Remix's platine effects. The Aseprite
- * extension (tools/aseprite/) builds a new drawing from one. Run again whenever the frame data or
- * the palette change: the guides follow.
+ * Writes the Aseprite templates (see aseprite-template.ts) into art-src/gabarits/<folder>/
+ * <name>.json, not committed: one per strip, one per Remix's platine effects, and one per UI image
+ * (the title's vinyl, the icons' master: art-src/gabarits/ui/). The Aseprite extension
+ * (tools/aseprite/) builds a new drawing from one. Run again whenever the frame data or the
+ * palette change: the guides follow.
  *
- *   npm run sprites:templates                     # every strip of both fighters
+ *   npm run sprites:templates                     # every strip of both fighters, and the UI's
  *   npm run sprites:templates -- riff             # one fighter
  *   npm run sprites:templates -- nayo idle super  # some strips of one fighter
+ *   npm run sprites:templates -- ui               # the UI images (-- ui vinyl: one)
  */
 
 import { mkdir, writeFile } from 'node:fs/promises';
-import { templateOf } from './aseprite-template.ts';
+import { templateOf, uiTemplateOf, type Template } from './aseprite-template.ts';
 import { DRAWN_ROOT, loadDrawn } from './drawn.ts';
 import type { Fighter } from './fighter.ts';
 import { frameDataOf } from './frame-data.ts';
 import { NAYO } from './nayo/index.ts';
 import { RIFF } from './riff/index.ts';
+import { isUiArt, loadUiDrawn, UI_ARTS, UI_FOLDER } from './ui-drawn.ts';
 
 const FIGHTERS: readonly Fighter[] = [NAYO, RIFF];
 const TEMPLATES = new URL('gabarits/', DRAWN_ROOT);
@@ -31,26 +34,50 @@ async function write(fighter: Fighter, names: readonly string[]): Promise<void> 
     throw new Error(`${fighter.name}: Remix effects named like a strip: ${twice.join(', ')}`);
   }
   const drawn = await loadDrawn(fighter);
-  const folder = new URL(`${fighter.name}/`, TEMPLATES);
-  await mkdir(folder, { recursive: true });
   for (const name of names.length > 0 ? names : all) {
     const template = templateOf(fighter, frameDataOf(fighter), name, drawn);
-    await writeFile(new URL(`${name}.json`, folder), JSON.stringify(template));
-    const from = drawn.has(name) ? 'the drawing' : 'the code';
-    console.log(
-      `art-src/gabarits/${fighter.name}/${name}.json (${template.frames} frames, from ${from})`,
-    );
+    await save(template, drawn.has(name) ? 'the drawing' : 'the code');
+  }
+}
+
+async function save(template: Template, from: string): Promise<void> {
+  const folder = new URL(`${template.folder}/`, TEMPLATES);
+  await mkdir(folder, { recursive: true });
+  await writeFile(new URL(`${template.name}.json`, folder), JSON.stringify(template));
+  console.log(
+    `art-src/gabarits/${template.folder}/${template.name}.json (${template.frames} frames, from ${from})`,
+  );
+}
+
+async function writeUi(names: readonly string[]): Promise<void> {
+  const unknown = names.filter((name) => !isUiArt(name));
+  if (unknown.length > 0) {
+    throw new Error(`No UI image ${unknown.join(', ')}: ${Object.keys(UI_ARTS).join(', ')}`);
+  }
+  const drawn = await loadUiDrawn();
+  const chosen = (names.length > 0 ? names : Object.keys(UI_ARTS)).filter(isUiArt);
+  for (const name of chosen) {
+    await save(uiTemplateOf(name, drawn[name]), drawn[name] ? 'the drawing' : 'the code');
   }
 }
 
 async function main(): Promise<void> {
   const [first, ...rest] = process.argv.slice(2);
+  if (first === UI_FOLDER) {
+    await writeUi(rest);
+    return;
+  }
   const fighter = FIGHTERS.find((candidate) => candidate.name === first);
   if (first !== undefined && !fighter) {
-    throw new Error(`Unknown fighter ${first}: ${FIGHTERS.map(({ name }) => name).join(', ')}`);
+    const known = [...FIGHTERS.map(({ name }) => name), UI_FOLDER].join(', ');
+    throw new Error(`Unknown fighter ${first}: ${known}`);
   }
-  if (fighter) await write(fighter, rest);
-  else for (const each of FIGHTERS) await write(each, []);
+  if (fighter) {
+    await write(fighter, rest);
+    return;
+  }
+  for (const each of FIGHTERS) await write(each, []);
+  await writeUi([]);
 }
 
 await main();

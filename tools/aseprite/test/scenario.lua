@@ -16,8 +16,8 @@ local function click(id)
   COMMANDS[id].onclick()
 end
 
-local function newSheet(name)
-  DIALOG_DATA = { ok = true, template = root .. "/gabarits/nayo/" .. name .. ".json" }
+local function newSheet(name, folder)
+  DIALOG_DATA = { ok = true, template = root .. "/gabarits/" .. (folder or "nayo") .. "/" .. name .. ".json" }
   local before = #ALERTS
   click("NayosBeatNewSheet")
   assert(#ALERTS == before, name .. " not created: " .. lastAlert())
@@ -142,5 +142,45 @@ local alerts = #ALERTS
 click("NayosBeatRefreshGuides")
 assert(#ALERTS == alerts, lastAlert())
 assert(#idle.tags == 1, "tags doubled: " .. #idle.tags)
+
+-- The title's vinyl: a free palette, recolored in Aseprite and exported with it (check.ts wants
+-- its cyan mark magenta).
+local vinyl = newSheet("vinyl", "ui")
+assert(#vinyl.frames == 8 and math.abs(vinyl.frames[1].duration - 0.225) < 1e-9, "8 frames of 0.225 s")
+assert(#vinyl.layers == 1 and vinyl.layers[1].name == "dessin", "one layer")
+assert(#vinyl.tags == 1 and vinyl.tags[1].name == "boucle", "the turn loops")
+local recolored = 0
+for index = 0, #vinyl.palettes[1] - 1 do
+  local c = vinyl.palettes[1]:getColor(index)
+  if c.red == 0x00 and c.green == 0xb8 and c.blue == 0xd0 then
+    vinyl.palettes[1]:setColor(index, Color { r = 0xff, g = 0x00, b = 0xaa, a = 255 })
+    recolored = recolored + 1
+  end
+end
+assert(recolored == 1, "the mark's color, once: " .. recolored)
+exported(vinyl, "ui/vinyl.png")
+
+-- One colorway only, no guides: told, and the free palette kept when the rest is refreshed.
+app.activeSprite = vinyl
+click("NayosBeatColorway")
+assert(lastAlert():find("qu'une tenue", 1, true), lastAlert())
+alerts = #ALERTS
+click("NayosBeatRefreshGuides")
+assert(#ALERTS == alerts, lastAlert())
+assert(#vinyl.tags == 1, "tags doubled: " .. #vinyl.tags)
+local still = 0
+for index = 0, #vinyl.palettes[1] - 1 do
+  local c = vinyl.palettes[1]:getColor(index)
+  if c.red == 0xff and c.green == 0x00 and c.blue == 0xaa then still = still + 1 end
+end
+assert(still == 1, "the refresh put the palette back")
+
+-- A frame more: refused, the format is the title's.
+vinyl:newEmptyFrame()
+refused(vinyl, "le jeu en attend 8")
+table.remove(vinyl.frames)
+
+-- The icons' master, exported as it came.
+exported(newSheet("icon", "ui"), "ui/icon.png")
 
 print("scenario.lua: every step passed")

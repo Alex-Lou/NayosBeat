@@ -7,11 +7,13 @@
  * fighters' detail: an orange rim, the titles' edge; the black disc and its
  * grooves; a sheen that stays put; the label in the title's yellow and orange, with its spindle
  * hole. A strip of VINYL_FRAMES frames in which only the label's cyan mark turns: the record spins
- * frame by frame (a whole pixel disc turned by CSS would break its pixels).
+ * frame by frame (a whole pixel disc turned by CSS would break its pixels). A vinyl drawn by hand
+ * (art-src/ui/vinyl.png, see ui-drawn.ts) takes its place, in the same format.
  */
 
 import { writeFile } from 'node:fs/promises';
-import { encodeIndexedPng, type Rgba } from './png.ts';
+import { compactImage } from './colors.ts';
+import { encodeIndexedPng, type IndexedImage, type Rgba } from './png.ts';
 
 /** Cells across the disc, and frames of one turn. */
 export const VINYL_CELLS = 18;
@@ -79,8 +81,8 @@ export function vinylCell(x: number, y: number, frame: number): Ink {
   return 'disc';
 }
 
-/** The strip, its frames side by side, as an indexed PNG (one pixel per cell). */
-export async function vinylPng(): Promise<Uint8Array> {
+/** The strip the code draws, its frames side by side (one pixel per cell), and its palette. */
+export function vinylPixels(): { pixels: Uint8Array; palette: readonly Rgba[] } {
   const width = VINYL_CELLS * VINYL_FRAMES;
   const pixels = new Uint8Array(width * VINYL_CELLS);
   for (let frame = 0; frame < VINYL_FRAMES; frame++) {
@@ -90,9 +92,25 @@ export async function vinylPng(): Promise<Uint8Array> {
       }
     }
   }
-  return encodeIndexedPng(width, VINYL_CELLS, pixels, Object.values(PALETTE));
+  return { pixels, palette: Object.values(PALETTE) };
 }
 
-export async function drawVinyl(): Promise<void> {
-  await writeFile(PNG, await vinylPng());
+/** The code's strip as an indexed PNG. */
+export async function vinylPng(): Promise<Uint8Array> {
+  const { pixels, palette } = vinylPixels();
+  return encodeIndexedPng(VINYL_CELLS * VINYL_FRAMES, VINYL_CELLS, pixels, palette);
+}
+
+/**
+ * The title's vinyl as `npm run sprites` writes it: the one drawn by hand when there is one, in
+ * the smallest palette that holds its colors, the code's otherwise.
+ */
+export async function titleVinylPng(drawn?: IndexedImage): Promise<Uint8Array> {
+  if (!drawn) return vinylPng();
+  const { pixels, palette } = compactImage(drawn);
+  return encodeIndexedPng(drawn.width, drawn.height, pixels, palette);
+}
+
+export async function drawVinyl(drawn?: IndexedImage): Promise<void> {
+  await writeFile(PNG, await titleVinylPng(drawn));
 }

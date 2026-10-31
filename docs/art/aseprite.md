@@ -4,6 +4,8 @@ Les planches des combattants sont dessinées par le code (`tools/sprites`, `npm 
 
 L'extension NayosBeat pour Aseprite (`tools/aseprite/`) crée chaque planche au format exact du jeu : cases, ancre des pieds, palette, durées, guides des boîtes de collision. Elle l'exporte ensuite là où `npm run sprites` la lit et la vérifie.
 
+Les icônes de l'application et le vinyle du titre se dessinent de la même façon : voir [Icônes et vinyle du titre](#icônes-et-vinyle-du-titre).
+
 ## En bref
 
 ```bash
@@ -38,8 +40,8 @@ Après une mise à jour de l'extension (`tools/aseprite/extension/`), relancer `
 |---|---|
 | Nouvelle planche… | Crée `art-src/<perso>/<planche>.aseprite` à partir d'un gabarit. Refuse d'écraser une planche existante. |
 | Exporter vers le jeu | Vérifie la planche, puis écrit ses PNG dans `art-src/<perso>/` et enregistre le `.aseprite`. N'écrit rien s'il y a un problème. |
-| Mettre à jour les guides | Recharge les guides, les durées et les étiquettes depuis le gabarit (après `npm run sprites:templates`). Ne touche pas au dessin. |
-| Tenue main / alt | Montre la planche dans l'autre tenue : les mêmes numéros de couleur, l'autre palette. L'export écrit toujours la tenue main. |
+| Mettre à jour les guides | Recharge les guides, les durées et les étiquettes depuis le gabarit (après `npm run sprites:templates`). Ne touche pas au dessin, ni à une palette libre. |
+| Tenue main / alt | Montre la planche dans l'autre tenue : les mêmes numéros de couleur, l'autre palette. L'export écrit toujours la tenue main. Seuls les combattants ont deux tenues. |
 
 ## Le document
 
@@ -87,9 +89,27 @@ L'extension les vérifie avant d'exporter. `npm run sprites` les vérifie à nou
 
 Les Remix (`specialBoost`, `specialForwardBoost`, `specialAntiAirBoost`) jouent la planche de leur spécial avec ses effets en platine. Ces effets se dessinent **à part**, dans leur propre planche (`art-src/<perso>/specialBoost.aseprite` → `fx/specialBoost.png`), sur le calque `référence` du spécial. Tant qu'ils ne sont pas dessinés, le code redessine en platine les effets du spécial.
 
+## Icônes et vinyle du titre
+
+Deux images de l'interface se dessinent aussi dans Aseprite, dans `art-src/ui/`. Leurs gabarits sont `art-src/gabarits/ui/icon.json` et `vinyl.json` (`npm run sprites:templates`, ou `-- ui` pour eux seuls).
+
+| Image | Format | Ce que le jeu en fait |
+|---|---|---|
+| `icon` | **Un dessin maître** de 64 × 64 px, une image | Les quatre icônes de l'application, chacune agrandie d'un facteur entier pour rester nette, centrée sur le fond : ×3 pour 192 px, ×8 pour 512, ×2 pour 180 (iOS), ×4 pour la version « maskable » de 512, qui tient ainsi dans le cercle de 80 % que gardent les lanceurs. |
+| `vinyl` | **8 images de 18 × 18 px**, 0,225 s chacune | Le O de NAYOSBEAT sur l'écran titre, qui tourne en 1,8 s. Le CSS du titre attend exactement ce format (`src/styles.css`, `.title-vinyl`) : l'outil refuse tout autre format. |
+
+Ce qui change par rapport aux combattants :
+
+- **La palette est libre** (256 couleurs au plus) : ces images n'ont qu'une tenue. Le gabarit propose une palette de départ (celle de Nayo et le fond pour l'icône, les 7 couleurs du vinyle), à modifier à volonté dans Aseprite. L'export écrit la palette du dessin, et `npm run sprites` la reconstruit au plus juste.
+- **Un seul calque, `dessin`**, sans guides.
+- **L'icône ne peut pas avoir de pixel à demi transparent** : elle est posée sur le fond. Un pixel transparent laisse voir le fond (`#1b1b2f`). Le vinyle, lui, peut en avoir.
+- Chaque image est vérifiée (format, aucune image vide) avant que `npm run sprites` n'écrive quoi que ce soit.
+
+Tant qu'elles ne sont pas dessinées, le code dessine l'icône (la tête de Nayo dans son anneau néon) et le vinyle, comme avant.
+
 ## Revenir au dessin du code
 
-Supprimer `art-src/<perso>/<planche>.png` (et `fx/<planche>.png`), puis lancer `npm run sprites`. Le `.aseprite` peut rester : il n'est lu que par Aseprite.
+Supprimer `art-src/<perso>/<planche>.png` (et `fx/<planche>.png`), ou `art-src/ui/icon.png` / `vinyl.png`, puis lancer `npm run sprites`. Le `.aseprite` peut rester : il n'est lu que par Aseprite.
 
 ## Quand les données du jeu changent
 
@@ -108,10 +128,12 @@ Changer la palette d'un personnage (ajouter un matériau, par exemple) **décale
 |---|---|---|
 | `art-src/<perso>/<planche>.aseprite` | Le document de travail | oui |
 | `art-src/<perso>/<planche>.png`, `fx/<planche>.png` | L'export, lu par `npm run sprites` | oui |
+| `art-src/ui/icon.*`, `art-src/ui/vinyl.*` | Le dessin maître des icônes et le vinyle du titre (document et export) | oui |
 | `art-src/gabarits/` | Les gabarits (`npm run sprites:templates`) | non |
 | `tools/aseprite/extension/` | Le code de l'extension (Lua) | oui |
 | `tools/aseprite/test/`, `tools/aseprite/check.ts` | Le banc d'essai de l'extension (`npm run aseprite:check`) | oui |
 | `tools/aseprite/dist/` | L'extension empaquetée (`npm run aseprite:extension`) | non |
 | `tools/sprites/cell.ts` | Le contrat de la case (marges, sol), commun au code, aux dessins et aux tests | oui |
 | `tools/sprites/drawn.ts` | Lecture et vérification des planches dessinées | oui |
+| `tools/sprites/ui-drawn.ts`, `tools/sprites/colors.ts` | Lecture et vérification des images d'interface dessinées, palettes libres | oui |
 | `tools/sprites/aseprite-template.ts` | Contenu des gabarits (guides, règles, palette) | oui |

@@ -59,7 +59,7 @@ Ajouter `?debug` à l'URL affiche l'overlay de debug et toutes les boîtes (touj
 
 Nayo est dessiné (sprites générés par `npm run sprites`, provisoires en attendant les planches définitives) ; ses hurtbox sont calées sur le dessin (`npm run measure-boxes`). Riff reste en boîte grise jusqu'à ses propres sprites : la boîte dessine exactement sa hurtbox, avec un « pied » du côté où elle regarde. Dans un match miroir, le joueur 2 porte la seconde tenue (techwear gris clair, néon magenta).
 
-Une planche peut aussi être dessinée à la main dans Aseprite : elle remplace alors celle du code, planche par planche (extension NayosBeat, gabarits au format du jeu, guides des boîtes, export vérifié). Voir [docs/art/aseprite.md](docs/art/aseprite.md).
+Une planche peut aussi être dessinée à la main dans Aseprite : elle remplace alors celle du code, planche par planche (extension NayosBeat, gabarits au format du jeu, guides des boîtes, export vérifié). Les icônes de l'application et le vinyle du titre aussi. Voir [docs/art/aseprite.md](docs/art/aseprite.md).
 
 ## Combat
 

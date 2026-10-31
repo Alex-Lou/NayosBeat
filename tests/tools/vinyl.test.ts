@@ -1,11 +1,12 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { loadUiDrawn } from '../../tools/sprites/ui-drawn';
 import {
   LABEL_RADIUS,
+  titleVinylPng,
   VINYL_CELLS,
   VINYL_FRAMES,
   vinylCell,
-  vinylPng,
 } from '../../tools/sprites/vinyl';
 
 const CENTER = (VINYL_CELLS - 1) / 2;
@@ -18,9 +19,11 @@ function frameOf(frame: number): string[][] {
 }
 
 describe('the title vinyl', () => {
+  // The one drawn by hand (art-src/ui/vinyl.png) when there is one, the code's otherwise.
   it('is the drawing the generator makes (npm run sprites)', async () => {
     const committed = readFileSync(new URL('../../src/ui/title-vinyl.png', import.meta.url));
-    expect([...(await vinylPng())]).toEqual([...committed]);
+    const { vinyl } = await loadUiDrawn();
+    expect([...(await titleVinylPng(vinyl))]).toEqual([...committed]);
   });
 
   it('is a round disc with its spindle hole, rimmed in the titles orange', () => {

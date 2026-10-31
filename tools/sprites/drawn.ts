@@ -38,6 +38,8 @@ export type DrawnLayer = 'body' | 'fx';
  * before it exports.
  */
 export interface DrawnRules {
+  /** Pixels across a (square) cell. */
+  readonly cell: number;
   readonly frames: number;
   /** The fighter's palette slots: an index at or past it is none of its colors (a guide's). */
   readonly slots: number;
@@ -65,7 +67,7 @@ export function rulesOf(fighter: Fighter, name: string, layer: DrawnLayer): Draw
   const spec = strip === undefined ? undefined : fighter.sheets[strip];
   if (!spec) throw new Error(`${fighter.name} has no strip ${name}`);
   const slots = fighter.paletteOf('main').length;
-  const kept = { frames: spec.frames, slots, margin: CELL_MARGIN };
+  const kept = { cell: CELL_SIZE, frames: spec.frames, slots, margin: CELL_MARGIN };
   // Effects may go a little below the ground (dust, floor rings), not off the cell.
   if (layer === 'fx') return { ...kept, filled: false, lowestRow: CELL_SIZE - 1 };
   const body = { ...kept, filled: true, lowestRow: LOWEST_ROW };
@@ -74,36 +76,40 @@ export function rulesOf(fighter: Fighter, name: string, layer: DrawnLayer): Draw
 
 /**
  * What is wrong with a drawn image (`label` names it in the messages, its frames numbered from 1
- * as Aseprite does), against its rules and the fighter's main palette: nothing when the list is
- * empty.
+ * as Aseprite does), against its rules and the main palette of its fighter, whose slots it draws
+ * in; without one (`palette` undefined), its colors are free and its transparent pixels are those
+ * of a transparent color. Nothing is wrong when the list is empty.
  */
 export function checkDrawn(
   label: string,
   image: IndexedImage,
   rules: DrawnRules,
-  palette: readonly Rgba[],
+  palette: readonly Rgba[] | undefined,
 ): string[] {
-  const width = CELL_SIZE * rules.frames;
-  if (image.width !== width || image.height !== CELL_SIZE) {
+  const { cell } = rules;
+  const width = cell * rules.frames;
+  if (image.width !== width || image.height !== cell) {
     return [
-      `${label}: ${image.width}x${image.height} px, expected ${width}x${CELL_SIZE} (${rules.frames} cells of ${CELL_SIZE} px in a row)`,
+      `${label}: ${image.width}x${image.height} px, expected ${width}x${cell} (${rules.frames} cells of ${cell} px in a row)`,
     ];
   }
   const problems: string[] = [];
   const seen = new Set<number>();
   const extents = Array.from({ length: rules.frames }, () => ({
-    top: CELL_SIZE,
+    top: cell,
     bottom: -1,
-    left: CELL_SIZE,
+    left: cell,
     right: -1,
   }));
+  const empty = (slot: number): boolean =>
+    palette ? slot === 0 : (image.alpha[slot] ?? 255) === 0;
   for (let y = 0; y < image.height; y++) {
     for (let x = 0; x < image.width; x++) {
       const slot = image.pixels[y * image.width + x] ?? 0;
-      if (slot === 0) continue;
-      const frame = Math.floor(x / CELL_SIZE);
-      const column = x % CELL_SIZE;
-      if (!seen.has(slot)) {
+      if (empty(slot)) continue;
+      const frame = Math.floor(x / cell);
+      const column = x % cell;
+      if (palette && !seen.has(slot)) {
         seen.add(slot);
         const problem = slotProblem(slot, image, rules, palette);
         if (problem)
@@ -126,7 +132,7 @@ export function checkDrawn(
       if (rules.filled) problems.push(`${at} is empty`);
       return;
     }
-    const edge = Math.min(top, left, CELL_SIZE - 1 - right);
+    const edge = Math.min(top, left, cell - 1 - right);
     if (edge < rules.margin) {
       problems.push(`${at} comes ${edge} px from the cell's edge (${rules.margin} at least)`);
     }
@@ -239,7 +245,7 @@ function pngNames(files: readonly string[]): string[] {
 }
 
 /** The files of a folder; none when it does not exist (nothing drawn yet). */
-async function listFolder(folder: URL): Promise<string[]> {
+export async function listFolder(folder: URL): Promise<string[]> {
   try {
     return await readdir(folder);
   } catch (error) {

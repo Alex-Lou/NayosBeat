@@ -8,6 +8,7 @@ import {
   GUIDE_COLORS,
   runsOfCell,
   templateOf,
+  uiTemplateOf,
   type Template,
 } from '../../tools/sprites/aseprite-template';
 import { strikeOf } from '../../tools/sprites/clips';
@@ -15,6 +16,7 @@ import { rulesOf } from '../../tools/sprites/drawn';
 import { NAYO } from '../../tools/sprites/nayo/index';
 import { crc32 } from '../../tools/sprites/png';
 import { drawStrip } from '../../tools/sprites/sheet';
+import { vinylPixels } from '../../tools/sprites/vinyl';
 
 const FRAME_DATA = { template: NAYO_TEMPLATE, clips: NAYO_CLIPS };
 const NOTHING_DRAWN = new Map();
@@ -23,8 +25,8 @@ const GUIDE = (name: keyof typeof GUIDE_COLORS): number =>
   SLOTS + Object.keys(GUIDE_COLORS).indexOf(name);
 
 /** A cell back from its runs, as the extension paints it. */
-function cellOf(runs: readonly number[]): Uint8Array {
-  const cell = new Uint8Array(CELL_SIZE * CELL_SIZE);
+function cellOf(runs: readonly number[], size: number = CELL_SIZE): Uint8Array {
+  const cell = new Uint8Array(size * size);
   let at = 0;
   for (let index = 0; index < runs.length; index += 2) {
     const count = runs[index] ?? 0;
@@ -54,8 +56,9 @@ describe('Aseprite templates', () => {
   it('hold the strip as the game times it, with the palette of both colorways', () => {
     const { ticks } = NAYO.timing('standLight');
     expect(jab.frames).toBe(NAYO.sheets.standLight?.frames);
-    expect(jab.ticks).toEqual(ticks);
     expect(jab.durations).toEqual(ticks.map((tick) => tick / 60));
+    expect(jab.folder).toBe('nayo');
+    expect(jab.palette.free).toBe(false);
     // The exported layers know where the fighter's colors end and the guides' begin.
     for (const { rules } of jab.layers) if (rules) expect(rules.slots).toBe(SLOTS);
     expect(jab.palette.main).toHaveLength(SLOTS + 4);
@@ -95,7 +98,7 @@ describe('Aseprite templates', () => {
       x: Math.round(ANCHOR.x + strike.box.x * ART_SCALE),
       y: Math.round(ANCHOR.y - (strike.box.y + strike.box.height) * ART_SCALE),
     };
-    const guides = layer(jab, 'guides').frames.map(cellOf);
+    const guides = layer(jab, 'guides').frames.map((runs) => cellOf(runs));
     guides.forEach((cell, frame) => {
       const drawsHitbox = cell.includes(GUIDE('hitbox'));
       expect(drawsHitbox, `frame ${frame}`).toBe(strike.frames.includes(frame));
@@ -136,6 +139,41 @@ describe('Aseprite templates', () => {
       ['dessin', 'projectile.png'],
       ['guides', undefined],
     ]);
+  });
+});
+
+describe('Aseprite templates of the UI images', () => {
+  const vinyl = uiTemplateOf('vinyl', undefined);
+  const icon = uiTemplateOf('icon', undefined);
+
+  it('keep the title vinyl in the format and pace of its CSS', () => {
+    expect(vinyl).toMatchObject({ folder: 'ui', name: 'vinyl', cell: 18, frames: 8 });
+    expect(vinyl.durations).toEqual(Array.from({ length: 8 }, () => 0.225));
+    expect(vinyl.tags).toEqual([{ name: 'boucle', from: 0, to: 7, color: '#4a8cffff' }]);
+  });
+
+  it('give the icons a master of 64 px, one frame', () => {
+    expect(icon).toMatchObject({ folder: 'ui', name: 'icon', cell: 64, frames: 1, tags: [] });
+  });
+
+  it('have a free palette in one colorway, and one exported layer, without guides', () => {
+    for (const template of [vinyl, icon]) {
+      expect(template.palette.free).toBe(true);
+      expect(template.palette.alt).toBeUndefined();
+      expect(template.layers.map(({ name, file }) => [name, file])).toEqual([
+        ['dessin', `${template.name}.png`],
+      ]);
+      expect(template.layers[0]?.rules).toMatchObject({ slots: 256, margin: 0, filled: true });
+    }
+  });
+
+  it('start from the code drawing', () => {
+    const { pixels, palette } = vinylPixels();
+    expect(vinyl.palette.main).toHaveLength(palette.length);
+    const first = cellOf(vinyl.layers[0]?.frames[0] ?? [], 18);
+    for (let y = 0; y < 18; y++) {
+      for (let x = 0; x < 18; x++) expect(first[y * 18 + x]).toBe(pixels[y * 18 * 8 + x]);
+    }
   });
 });
 

@@ -1,11 +1,16 @@
 /**
- * The template the Aseprite extension (tools/aseprite/) builds a strip's document from: its cells,
- * frames and durations, the fighter's palette (both colorways, its slots in order, then the guides'
- * colors), tags for the loop and the active frames, and its layers with their first pixels. The
- * layers it exports (the body, the front effects) start from the strip as the game has it (drawn,
- * or the code's); the guides show the ground, the anchor and the boxes of the frame data, frame by
- * frame, from the same functions the preview and the tests use. Everything the drawing is held to
- * is computed here, so the extension only paints and copies pixels.
+ * The template the Aseprite extension (tools/aseprite/) builds a drawing's document from: its
+ * cells, frames and durations, its palette, tags for the loop and the active frames, and its
+ * layers with their first pixels.
+ *
+ * A fighter's strip draws in the fighter's palette slots (both colorways, then the guides'
+ * colors). The layers it exports (the body, the front effects) start from the strip as the game
+ * has it (drawn, or the code's); the guides show the ground, the anchor and the boxes of the frame
+ * data, frame by frame, from the same functions the preview and the tests use. The title's vinyl
+ * and the icons' master (ui-drawn.ts) have a free palette: the one given is only where they start.
+ *
+ * Everything the drawing is held to is computed here, so the extension only paints and copies
+ * pixels.
  */
 
 import { ANCHOR, CELL_SIZE } from '../../src/art/types.ts';
@@ -25,10 +30,15 @@ import {
 } from './drawn.ts';
 import type { Fighter } from './fighter.ts';
 import { isAirborne, moveHurtboxesAt, POSTURE_CLIPS, type Posture } from './measure.ts';
-import type { Rgba } from './png.ts';
+import type { IndexedImage, Rgba } from './png.ts';
+import { UI_ARTS, UI_FOLDER, uiRulesOf, uiStart, type UiArtName } from './ui-drawn.ts';
 
 export const TEMPLATE_FORMAT = 'nayosbeat-template';
-export const TEMPLATE_VERSION = 1;
+/** 2: the free palettes (`palette.free`, no `palette.alt`), `folder`, no `ticks`. */
+export const TEMPLATE_VERSION = 2;
+
+const LOOP_TAG = '#4a8cffff';
+const ACTIVE_TAG = '#ff3b3bff';
 
 /** The guides' colors, after the fighter's slots in the palette (never exported). */
 export const GUIDE_COLORS = {
@@ -43,7 +53,7 @@ const GUIDE_ORDER = Object.keys(GUIDE_COLORS) as GuideColor[];
 
 export interface TemplateLayer {
   readonly name: string;
-  /** Where the extension exports it, from art-src/<fighter>/; none for a guide. */
+  /** Where the extension exports it, from art-src/<folder>/; none for a guide. */
   readonly file?: string;
   /** What the exported image is held to (the same checks as `npm run sprites`). */
   readonly rules?: DrawnRules;
@@ -65,17 +75,25 @@ export interface TemplateTag {
 export interface Template {
   readonly format: typeof TEMPLATE_FORMAT;
   readonly version: typeof TEMPLATE_VERSION;
-  readonly fighter: string;
-  /** The strip, or the Remix effects (then `strip` is their special's). */
+  /** Where its files go, in art-src/: the fighter's folder, or UI_FOLDER. */
+  readonly folder: string;
+  /** The strip, the Remix effects (then `strip` is their special's), or the UI image. */
   readonly name: string;
   readonly strip: string;
+  /** Pixels across a (square) cell. */
   readonly cell: number;
   readonly frames: number;
-  /** Ticks each frame stays on screen in the game, and the same in seconds (Aseprite's). */
-  readonly ticks: readonly number[];
+  /** Seconds each frame shows: a fighter's are its ticks in the game. */
   readonly durations: readonly number[];
-  /** `#rrggbbaa`: the fighter's slots in order, then the guides' colors. */
-  readonly palette: { readonly main: readonly string[]; readonly alt: readonly string[] };
+  /**
+   * `#rrggbbaa`. A fighter's: its slots in order, then the guides' colors, in both colorways. A
+   * free one (`free`): where the drawing starts, the export writes the drawing's own.
+   */
+  readonly palette: {
+    readonly main: readonly string[];
+    readonly alt?: readonly string[];
+    readonly free: boolean;
+  };
   readonly tags: readonly TemplateTag[];
   /** Bottom to top. */
   readonly layers: readonly TemplateLayer[];
@@ -134,19 +152,51 @@ export function templateOf(
   return {
     format: TEMPLATE_FORMAT,
     version: TEMPLATE_VERSION,
-    fighter: fighter.name,
+    folder: fighter.name,
     name,
     strip,
     cell: CELL_SIZE,
     frames,
-    ticks,
     durations: ticks.map((tick) => tick / TICKS_PER_SECOND),
     palette: {
       main: [...fighter.paletteOf('main').map(toHex), ...Object.values(GUIDE_COLORS)],
       alt: [...fighter.paletteOf('alt').map(toHex), ...Object.values(GUIDE_COLORS)],
+      free: false,
     },
     tags: tagsOf(template, clips, strip, loops),
     layers,
+  };
+}
+
+/**
+ * The template of a UI image (ui-drawn.ts): one layer, starting from what the game has (`drawn`,
+ * else the code's drawing), in a free palette, without guides.
+ */
+export function uiTemplateOf(name: UiArtName, drawn: IndexedImage | undefined): Template {
+  const { cell, frames, seconds, loops } = UI_ARTS[name];
+  const { pixels, palette } = uiStart(name, drawn);
+  const start = { width: cell * frames, height: cell, pixels };
+  return {
+    format: TEMPLATE_FORMAT,
+    version: TEMPLATE_VERSION,
+    folder: UI_FOLDER,
+    name,
+    strip: name,
+    cell,
+    frames,
+    durations: Array.from({ length: frames }, () => seconds),
+    palette: { main: palette.map(toHex), free: true },
+    tags: loops ? [{ name: 'boucle', from: 0, to: frames - 1, color: LOOP_TAG }] : [],
+    layers: [
+      {
+        name: 'dessin',
+        file: `${name}.png`,
+        rules: uiRulesOf(name),
+        locked: false,
+        opacity: 255,
+        frames: runsOf(start, frames, cell),
+      },
+    ],
   };
 }
 
@@ -167,13 +217,13 @@ function tagsOf(
       name: 'boucle',
       from: Math.min(...looped),
       to: Math.max(...looped),
-      color: '#4a8cffff',
+      color: LOOP_TAG,
     });
   }
   const strike = strikeOf(clips, template, strip);
   const active = [...(strike?.frames ?? [])].sort((a, b) => a - b);
   for (const [from, to] of runsOfFrames(active)) {
-    tags.push({ name: 'actif', from, to, color: '#ff3b3bff' });
+    tags.push({ name: 'actif', from, to, color: ACTIVE_TAG });
   }
   return tags;
 }
@@ -306,14 +356,18 @@ function outline(cell: Uint8Array, box: WorldBox, slot: number): void {
   }
 }
 
-/** The cells of a strip as runs (`runsOfCell`); empty cells without pixels. */
-function runsOf(pixels: StripPixels | undefined, frames: number): number[][] {
+/** The cells of a strip as runs (`runsOfCell`), `size` pixels across; empty without pixels. */
+function runsOf(
+  pixels: StripPixels | undefined,
+  frames: number,
+  size: number = CELL_SIZE,
+): number[][] {
   return Array.from({ length: frames }, (_, frame) => {
-    const cell = new Uint8Array(CELL_SIZE * CELL_SIZE);
+    const cell = new Uint8Array(size * size);
     if (pixels) {
-      for (let y = 0; y < CELL_SIZE; y++) {
-        const from = y * pixels.width + frame * CELL_SIZE;
-        cell.set(pixels.pixels.subarray(from, from + CELL_SIZE), y * CELL_SIZE);
+      for (let y = 0; y < size; y++) {
+        const from = y * pixels.width + frame * size;
+        cell.set(pixels.pixels.subarray(from, from + size), y * size);
       }
     }
     return runsOfCell(cell);
