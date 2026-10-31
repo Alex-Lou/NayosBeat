@@ -56,7 +56,8 @@ describe('Aseprite templates', () => {
     expect(jab.frames).toBe(NAYO.sheets.standLight?.frames);
     expect(jab.ticks).toEqual(ticks);
     expect(jab.durations).toEqual(ticks.map((tick) => tick / 60));
-    expect(jab.slots).toBe(SLOTS);
+    // The exported layers know where the fighter's colors end and the guides' begin.
+    for (const { rules } of jab.layers) if (rules) expect(rules.slots).toBe(SLOTS);
     expect(jab.palette.main).toHaveLength(SLOTS + 4);
     expect(jab.palette.alt).toHaveLength(SLOTS + 4);
     expect(jab.palette.main.slice(SLOTS)).toEqual(Object.values(GUIDE_COLORS));

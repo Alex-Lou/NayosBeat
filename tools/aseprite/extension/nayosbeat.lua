@@ -1,14 +1,15 @@
--- NayosBeat : planches de sprites au format du jeu (docs/art/aseprite.md). Aseprite 1.3 ou plus.
+-- NayosBeat: sprite strips in the game's format (docs/art/aseprite.md). Aseprite 1.3 or later.
 --
--- Les gabarits viennent de `npm run sprites:templates` (art-src/gabarits/<perso>/<planche>.json,
--- écrits par tools/sprites/aseprite-template.ts). « Nouvelle planche » en fait le document
--- art-src/<perso>/<planche>.aseprite ; « Exporter vers le jeu » écrit art-src/<perso>/<planche>.png
--- (et fx/<planche>.png), que `npm run sprites` vérifie à nouveau et installe dans le jeu.
+-- The templates come from `npm run sprites:templates` (art-src/gabarits/<fighter>/<strip>.json,
+-- written by tools/sprites/aseprite-template.ts). "Nouvelle planche" makes one into the document
+-- art-src/<fighter>/<strip>.aseprite; "Exporter vers le jeu" writes art-src/<fighter>/<strip>.png
+-- (and fx/<strip>.png), which `npm run sprites` checks again and puts in the game.
 --
--- Les pixels sont des numéros de couleur (mode Indexé) : la tenue alt n'est qu'un changement de
--- palette, fait par le jeu. Plusieurs numéros ont la même couleur en main et pas en alt : seul le
--- numéro compte, jamais la couleur. Toute la logique de vérification vit côté Node ; ici, les
--- mêmes règles (lues dans le gabarit) préviennent avant d'écrire.
+-- Pixels are palette slots (Indexed mode): the second colorway is only another palette, swapped by
+-- the game. Several slots share a color in the main colorway and not in the other one: only the
+-- slot counts, never the color. Every decision is made on the Node side, in the template; here,
+-- the same rules (read from it) warn before anything is written. The text shown is French, the
+-- game's language. Tested outside Aseprite by `npm run aseprite:check` (tools/aseprite/test/).
 
 local TEMPLATE_FORMAT = "nayosbeat-template"
 local TEMPLATE_VERSION = 1
@@ -45,7 +46,7 @@ local function readTemplate(path)
   return template
 end
 
--- art-src/gabarits/<perso>/<planche>.json  <->  art-src/<perso>/<planche>.aseprite
+-- art-src/gabarits/<fighter>/<strip>.json  <->  art-src/<fighter>/<strip>.aseprite
 local function spritePathOf(templatePath)
   local folder = app.fs.filePath(templatePath)
   local templates = app.fs.filePath(folder)
@@ -86,7 +87,7 @@ local function paletteOf(colors)
   return palette
 end
 
--- Les pixels d'une case : des paires [nombre, couleur], rangée par rangée.
+-- The pixels of a cell: pairs [count, slot], row by row.
 local function hasPixels(runs)
   for index = 2, #runs, 2 do
     if runs[index] ~= 0 then return true end
@@ -175,9 +176,9 @@ local function newSheet(templatePath)
   if drawing ~= nil then app.activeLayer = drawing end
 end
 
--- Recopie ce que `layer` dessine sur l'image `frame` dans `strip`, sa case commençant à la colonne
--- `left` : les sous-calques visibles d'un groupe, de bas en haut. L'opacité et les modes de fusion
--- sont ignorés (un pixel est un numéro de couleur), comme ce qui sort de la case.
+-- Copies what `layer` draws on frame `frame` into `strip`, its cell starting at column `left`: the
+-- visible sublayers of a group, bottom to top. Layer opacity and blend modes are ignored (a pixel
+-- is a slot), and so is what lies outside the cell.
 local function copyInto(strip, left, layer, frame, cell)
   if layer.isGroup then
     for _, child in ipairs(layer.layers) do
@@ -203,8 +204,8 @@ local function copyInto(strip, left, layer, frame, cell)
   end
 end
 
--- Les règles de `npm run sprites` (tools/sprites/drawn.ts), lues dans le gabarit. Les images sont
--- numérotées à partir de 1, comme dans Aseprite.
+-- The checks of `npm run sprites` (tools/sprites/drawn.ts), with the rules the template gives.
+-- Frames are numbered from 1, as Aseprite does.
 local function problemsOf(strip, rules, cell, label)
   local problems = {}
   local extents = {}
@@ -305,7 +306,7 @@ local function export(sprite)
       output.strip:saveAs { filename = output.path, palette = palette }
       table.insert(written, template.fighter .. "/" .. output.file)
     elseif app.fs.isFile(output.path) then
-      -- Des effets vides : pas de fichier, pas d'effets dans le jeu.
+      -- Empty effects: no file, no effects in the game.
       os.remove(output.path)
       table.insert(written, template.fighter .. "/" .. output.file .. " (supprimé : calque vide)")
     end
@@ -316,8 +317,8 @@ local function export(sprite)
   app.alert { title = TITLE, text = written }
 end
 
--- Les guides, les durées et les étiquettes suivent les données du jeu : après un changement de
--- hitbox ou de durée, `npm run sprites:templates` puis cette commande.
+-- The guides, durations and tags follow the game's data: after a hitbox or a duration changes,
+-- `npm run sprites:templates`, then this command.
 local function refreshGuides(sprite)
   local template = sheetTemplate(sprite)
   if #sprite.frames ~= template.frames then
@@ -348,8 +349,8 @@ local function refreshGuides(sprite)
   app.refresh()
 end
 
--- Montre la planche dans l'autre tenue (les mêmes numéros, l'autre palette). L'export écrit
--- toujours la palette main, quelle que soit la tenue affichée.
+-- Shows the strip in the other colorway (the same slots, the other palette). The export always
+-- writes the main palette, whichever colorway is shown.
 local function toggleColorway(sprite)
   local template = sheetTemplate(sprite)
   local main = template.palette.main
@@ -409,7 +410,7 @@ local function withSprite(action)
 end
 
 function init(plugin)
-  -- Un sous-menu Fichier > Scripts > NayosBeat ; directement dans Scripts si ce n'est pas possible.
+  -- A File > Scripts > NayosBeat submenu; straight in Scripts when that cannot be made.
   local group = "file_scripts"
   local grouped = pcall(function()
     plugin:newMenuGroup { id = "nayosbeat_menu", title = "NayosBeat", group = "file_scripts" }

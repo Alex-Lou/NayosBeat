@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { NAYO_CLIPS, NAYO_PROJECTILES } from '../../src/art/nayo/clips';
 import { NAYO_SHEETS } from '../../src/art/nayo/sheets';
-import { ANCHOR, ART_SCALE, CELL_SIZE } from '../../src/art/types';
+import { ART_SCALE, CELL_SIZE } from '../../src/art/types';
 import { toPx } from '../../src/core/constants';
 import { NAYO } from '../../src/data/fighters/nayo';
+import { CELL_MARGIN, GROUND_ROW, GROUNDED_STRIPS, LOWEST_ROW } from '../../tools/sprites/cell';
 import { strikesOf } from '../../tools/sprites/clips';
 import type { Fighter } from '../../tools/sprites/fighter';
 import { NAYO as NAYO_GENERATOR } from '../../tools/sprites/nayo/index';
@@ -125,20 +126,17 @@ describe('Nayo strips', () => {
       const { top, bottom, left, right } = extent(sheet, frame);
       expect(bottom, `frame ${frame} is empty`).toBeGreaterThan(0);
       expect(Math.min(top, left, CELL_SIZE - 1 - right), `frame ${frame}`).toBeGreaterThanOrEqual(
-        4,
+        CELL_MARGIN,
       );
-      expect(bottom, `frame ${frame}`).toBeLessThanOrEqual(ANCHOR.y + 2);
+      expect(bottom, `frame ${frame}`).toBeLessThanOrEqual(LOWEST_ROW);
     }
   });
 
-  it.each(['idle', 'walkForward', 'walkBack', 'crouch', 'block'] as const)(
-    '%s: feet stand on the ground line in every frame',
-    (sheet) => {
-      for (let frame = 0; frame < NAYO_SHEETS[sheet].frames; frame++) {
-        expect(extent(sheet, frame).bottom, `frame ${frame}`).toBeGreaterThanOrEqual(ANCHOR.y - 2);
-      }
-    },
-  );
+  it.each(GROUNDED_STRIPS)('%s: feet stand on the ground line in every frame', (sheet) => {
+    for (let frame = 0; frame < NAYO_SHEETS[sheet].frames; frame++) {
+      expect(extent(sheet, frame).bottom, `frame ${frame}`).toBeGreaterThanOrEqual(GROUND_ROW);
+    }
+  });
 
   it('the crouch is about as tall as the crouching hurtbox (54 px)', () => {
     const { top, bottom } = extent('crouch', NAYO_CLIPS.crouch.frames[3] ?? 3);

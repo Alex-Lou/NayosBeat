@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { NAYO_CLIPS } from '../../src/art/nayo/clips';
 import { ANCHOR, CELL_SIZE } from '../../src/art/types';
 import { NAYO as NAYO_TEMPLATE } from '../../src/data/fighters/nayo';
+import { cellBoxOf } from '../../tools/sprites/cell';
 import { strikeOf } from '../../tools/sprites/clips';
 import { checkDrawn, loadDrawn, rulesOf, unseenStrikes } from '../../tools/sprites/drawn';
 import { NAYO } from '../../tools/sprites/nayo/index';
@@ -194,9 +195,20 @@ describe('Drawn strips', () => {
       ),
     ).toEqual(['fx/standLight draws nothing (no file means no effects)']);
     const some = imageOf(fx.frames, (put) => {
-      put(2, 0, 0, 8);
+      put(2, 100, 100, 8);
     });
     expect(checkDrawn('fx/standLight', some, fx, PALETTE)).toEqual([]);
+  });
+
+  it('keep effects off the cell edges, as the code does, but let them reach below the ground', () => {
+    const fx = rulesOf(NAYO, 'standLight', 'fx');
+    const cut = imageOf(fx.frames, (put) => {
+      put(1, CELL_SIZE - 2, 100, 8);
+      put(2, 100, CELL_SIZE - 1, 8);
+    });
+    expect(checkDrawn('fx/standLight', cut, fx, PALETTE)).toEqual([
+      "fx/standLight: frame 2 comes 1 px from the cell's edge (4 at least)",
+    ]);
   });
 
   it('give a Remix its special frames', () => {
@@ -230,5 +242,22 @@ describe('Drawn strips', () => {
       pixels: new Uint8Array(strip.pixels.length),
     };
     expect(unseenStrikes(strike, [blank, undefined])).toEqual(strike.frames);
+  });
+});
+
+describe('Cell boxes', () => {
+  it('put a box standing on the ground on the row above the anchor, edges included', () => {
+    expect(cellBoxOf({ x: 0, y: 0, width: 1, height: 1 })).toEqual({
+      left: ANCHOR.x,
+      right: ANCHOR.x + 1,
+      top: ANCHOR.y - 2,
+      bottom: ANCHOR.y - 1,
+    });
+    expect(cellBoxOf({ x: -18.5, y: 0, width: 32.5, height: 57 })).toEqual({
+      left: ANCHOR.x - 37,
+      right: ANCHOR.x + 27,
+      top: ANCHOR.y - 114,
+      bottom: ANCHOR.y - 1,
+    });
   });
 });

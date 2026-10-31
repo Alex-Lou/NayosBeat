@@ -3,6 +3,7 @@ import { RIFF_CLIPS } from '../../src/art/riff/clips';
 import { RIFF_SHEETS, type RiffSheet } from '../../src/art/riff/sheets';
 import { ANCHOR, ART_SCALE, CELL_SIZE, type Clip, type ClipId } from '../../src/art/types';
 import { RIFF as RIFF_TEMPLATE } from '../../src/data/fighters/riff';
+import { CELL_MARGIN, GROUND_ROW, GROUNDED_STRIPS, LOWEST_ROW } from '../../tools/sprites/cell';
 import { activeFrames, strikeOf, strikesOf, type ShownStrike } from '../../tools/sprites/clips';
 import { PixelCanvas } from '../../tools/sprites/raster';
 import { RIFF } from '../../tools/sprites/riff/index';
@@ -236,20 +237,17 @@ describe('Riff strips: drawing', () => {
       expect(bottom, `frame ${frame} is empty`).toBeGreaterThan(0);
       // A 2 world px margin: 4 sprite pixels.
       expect(Math.min(top, left, CELL_SIZE - 1 - right), `frame ${frame}`).toBeGreaterThanOrEqual(
-        4,
+        CELL_MARGIN,
       );
-      expect(bottom, `frame ${frame}`).toBeLessThanOrEqual(ANCHOR.y + 2);
+      expect(bottom, `frame ${frame}`).toBeLessThanOrEqual(LOWEST_ROW);
     }
   });
 
-  it.each(['idle', 'walkForward', 'walkBack', 'crouch', 'block'] as const)(
-    '%s: feet stand on the ground line in every frame',
-    (sheet) => {
-      for (let frame = 0; frame < RIFF_SHEETS[sheet].frames; frame++) {
-        expect(extent(sheet, frame).bottom, `frame ${frame}`).toBeGreaterThanOrEqual(ANCHOR.y - 2);
-      }
-    },
-  );
+  it.each(GROUNDED_STRIPS)('%s: feet stand on the ground line in every frame', (sheet) => {
+    for (let frame = 0; frame < RIFF_SHEETS[sheet].frames; frame++) {
+      expect(extent(sheet, frame).bottom, `frame ${frame}`).toBeGreaterThanOrEqual(GROUND_ROW);
+    }
+  });
 
   // A boot rolled onto its ball rests its toe on the floor, never in it (look.ts drawBoot).
   it.each(['idle', 'walkForward', 'walkBack', 'block', 'grab', 'hold', 'pummel', 'intro'] as const)(

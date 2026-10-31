@@ -8,10 +8,11 @@
  * is computed here, so the extension only paints and copies pixels.
  */
 
-import { ANCHOR, ART_SCALE, CELL_SIZE } from '../../src/art/types.ts';
+import { ANCHOR, CELL_SIZE } from '../../src/art/types.ts';
 import type { Box, FighterTemplate } from '../../src/core/config.ts';
 import { toPx } from '../../src/core/constants.ts';
 import { MOVE_IDS } from '../../src/core/move-data.ts';
+import { cellBoxOf, type WorldBox } from './cell.ts';
 import { strikeOf, type Clips } from './clips.ts';
 import {
   platinePixels,
@@ -69,13 +70,10 @@ export interface Template {
   readonly name: string;
   readonly strip: string;
   readonly cell: number;
-  readonly anchor: { readonly x: number; readonly y: number };
   readonly frames: number;
   /** Ticks each frame stays on screen in the game, and the same in seconds (Aseprite's). */
   readonly ticks: readonly number[];
   readonly durations: readonly number[];
-  /** The fighter's palette slots: the colors of the palette before the guides'. */
-  readonly slots: number;
   /** `#rrggbbaa`: the fighter's slots in order, then the guides' colors. */
   readonly palette: { readonly main: readonly string[]; readonly alt: readonly string[] };
   readonly tags: readonly TemplateTag[];
@@ -140,11 +138,9 @@ export function templateOf(
     name,
     strip,
     cell: CELL_SIZE,
-    anchor: { x: ANCHOR.x, y: ANCHOR.y },
     frames,
     ticks,
     durations: ticks.map((tick) => tick / TICKS_PER_SECOND),
-    slots,
     palette: {
       main: [...fighter.paletteOf('main').map(toHex), ...Object.values(GUIDE_COLORS)],
       alt: [...fighter.paletteOf('alt').map(toHex), ...Object.values(GUIDE_COLORS)],
@@ -248,14 +244,6 @@ function boxesOf(
   return boxes;
 }
 
-/** A box in world pixels (x toward the opponent, y up from the feet). */
-interface WorldBox {
-  readonly x: number;
-  readonly y: number;
-  readonly width: number;
-  readonly height: number;
-}
-
 function pushboxOf(template: FighterTemplate, posture: Posture): WorldBox {
   const size =
     posture === 'standing'
@@ -304,10 +292,7 @@ export function guidePixels(
 
 /** Outlines a world box in a cell, clipped to it. */
 function outline(cell: Uint8Array, box: WorldBox, slot: number): void {
-  const left = Math.round(ANCHOR.x + box.x * ART_SCALE);
-  const right = Math.round(ANCHOR.x + (box.x + box.width) * ART_SCALE) - 1;
-  const top = Math.round(ANCHOR.y - (box.y + box.height) * ART_SCALE);
-  const bottom = Math.round(ANCHOR.y - box.y * ART_SCALE) - 1;
+  const { left, right, top, bottom } = cellBoxOf(box);
   const put = (x: number, y: number): void => {
     if (x >= 0 && x < CELL_SIZE && y >= 0 && y < CELL_SIZE) cell[y * CELL_SIZE + x] = slot;
   };

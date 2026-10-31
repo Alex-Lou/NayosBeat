@@ -30,6 +30,8 @@ La première fois qu'une commande lit un gabarit ou écrit un fichier, Aseprite 
 
 Après une mise à jour de l'extension (`tools/aseprite/extension/`), relancer `npm run aseprite:extension` et la réinstaller.
 
+`npm run aseprite:check` (Lua 5.4 requis, lancé aussi par la CI) fait tourner l'extension hors d'Aseprite, contre une imitation de son API (`tools/aseprite/test/`). Le scénario crée des planches, les retouche, les exporte, essaie des exports fautifs, puis fait relire et comparer le résultat par `npm run sprites`. Ça vérifie la logique de l'extension, pas Aseprite lui-même.
+
 ## Les commandes
 
 | Commande | Rôle |
@@ -72,7 +74,7 @@ L'extension les vérifie avant d'exporter. `npm run sprites` les vérifie à nou
 | Ne pas modifier la palette dans Aseprite | Une couleur modifiée est refusée. Les couleurs se changent dans `tools/sprites/<perso>/palette.ts`, puis on relance `npm run sprites:templates`. |
 | Les couleurs de guide (les 4 dernières) ne vont pas dans le dessin | Elles ne sont pas des couleurs du personnage. |
 | Le nombre d'images du gabarit | Les images sont liées aux coups (`src/art/<perso>/sheets.ts`, `clips.ts`). Le changer passe par le code. |
-| 4 px vides au moins sur les bords gauche, droit et haut de chaque case | Le jeu recadre les cases sans rogner le contour. |
+| 4 px vides au moins sur les bords gauche, droit et haut de chaque case, effets compris | Le jeu recadre les cases sans rogner le contour. Les effets peuvent descendre sous le sol (poussière), pas sortir de la case. |
 | Rien sous la rangée 250 | Les pieds restent sur le sol. |
 | Les pieds au sol dans chaque image de `idle`, `walkForward`, `walkBack`, `crouch`, `block` | Un pied qui flotte se voit tout de suite en jeu. |
 | Aucune image vide dans `corps` | Le jeu afficherait un trou. |
@@ -108,6 +110,8 @@ Changer la palette d'un personnage (ajouter un matériau, par exemple) **décale
 | `art-src/<perso>/<planche>.png`, `fx/<planche>.png` | L'export, lu par `npm run sprites` | oui |
 | `art-src/gabarits/` | Les gabarits (`npm run sprites:templates`) | non |
 | `tools/aseprite/extension/` | Le code de l'extension (Lua) | oui |
+| `tools/aseprite/test/`, `tools/aseprite/check.ts` | Le banc d'essai de l'extension (`npm run aseprite:check`) | oui |
 | `tools/aseprite/dist/` | L'extension empaquetée (`npm run aseprite:extension`) | non |
+| `tools/sprites/cell.ts` | Le contrat de la case (marges, sol), commun au code, aux dessins et aux tests | oui |
 | `tools/sprites/drawn.ts` | Lecture et vérification des planches dessinées | oui |
 | `tools/sprites/aseprite-template.ts` | Contenu des gabarits (guides, règles, palette) | oui |

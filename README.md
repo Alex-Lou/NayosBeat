@@ -85,6 +85,7 @@ Une planche peut aussi être dessinée à la main dans Aseprite : elle remplace 
 | `npm run measure-boxes` | Mesure le dessin de Nayo bande par bande (4 px) contre ses hurtbox |
 | `npm run sprites:templates` | Écrit les gabarits Aseprite de chaque planche (`art-src/gabarits/`, non commités) |
 | `npm run aseprite:extension` | Construit l'extension Aseprite (`tools/aseprite/dist/`) |
+| `npm run aseprite:check` | Fait tourner l'extension hors d'Aseprite, de bout en bout (Lua 5.4 requis ; lancé aussi par la CI) |
 | `npm run bench` | Banc de perfs de la simulation (100 000 tics CPU contre CPU) |
 | `npm run replays:update` | Réenregistre les hashs des replays dorés (`tests/core/replays`), seulement quand le jeu doit changer |
 

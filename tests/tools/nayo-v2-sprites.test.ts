@@ -3,6 +3,7 @@ import { NAYO_CLIPS } from '../../src/art/nayo/clips';
 import { NAYO_SHEETS } from '../../src/art/nayo/sheets';
 import { ANCHOR, ART_SCALE, CELL_SIZE, type Clip, type ClipId } from '../../src/art/types';
 import { NAYO } from '../../src/data/fighters/nayo';
+import { CELL_MARGIN, LOWEST_ROW } from '../../tools/sprites/cell';
 import { activeFrames, strikeOf, strikesOf, type ShownStrike } from '../../tools/sprites/clips';
 import { GUARD } from '../../tools/sprites/nayo/poses/common';
 import {
@@ -226,14 +227,14 @@ describe('Nayo combat v2', () => {
           const { top, bottom, left, right } = extent(body, frame);
           expect(bottom, `frame ${frame} is empty`).toBeGreaterThan(0);
           const margin = Math.min(top, left, CELL_SIZE - 1 - right);
-          expect(margin, `frame ${frame}`).toBeGreaterThanOrEqual(4);
-          expect(bottom, `frame ${frame} goes below the ground`).toBeLessThanOrEqual(ANCHOR.y + 2);
+          expect(margin, `frame ${frame}`).toBeGreaterThanOrEqual(CELL_MARGIN);
+          expect(bottom, `frame ${frame} goes below the ground`).toBeLessThanOrEqual(LOWEST_ROW);
           if (!fx) continue;
           // Effects may go a little below the ground (dust, floor rings), not off the cell.
           const effects = extent(fx, frame);
           if (effects.bottom < 0) continue;
           const room = Math.min(effects.top, effects.left, CELL_SIZE - 1 - effects.right);
-          expect(room, `effects of frame ${frame}`).toBeGreaterThanOrEqual(4);
+          expect(room, `effects of frame ${frame}`).toBeGreaterThanOrEqual(CELL_MARGIN);
         }
       });
 

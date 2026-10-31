@@ -15,7 +15,8 @@
  */
 
 import { readdir, readFile } from 'node:fs/promises';
-import { ANCHOR, ART_SCALE, CELL_SIZE } from '../../src/art/types.ts';
+import { CELL_SIZE } from '../../src/art/types.ts';
+import { CELL_MARGIN, cellBoxOf, GROUND_ROW, GROUNDED_STRIPS, LOWEST_ROW } from './cell.ts';
 import type { ShownStrike } from './clips.ts';
 import type { Fighter } from './fighter.ts';
 import { decodeIndexedPng, type IndexedImage, type Rgba } from './png.ts';
@@ -32,8 +33,9 @@ export type StripPixels = Pick<PixelCanvas, 'width' | 'height' | 'pixels'>;
 export type DrawnLayer = 'body' | 'fx';
 
 /**
- * The checks a drawn image passes, the ones the strips drawn by code pass (tests/tools): written
- * in the Aseprite templates too, so the extension warns before it exports.
+ * The checks a drawn image passes, the cell's contract that the strips drawn by code keep too
+ * (cell.ts, tests/tools): written in the Aseprite templates as well, so the extension warns
+ * before it exports.
  */
 export interface DrawnRules {
   readonly frames: number;
@@ -49,16 +51,7 @@ export interface DrawnRules {
   readonly groundRow?: number;
 }
 
-/** A 2 world px margin: 4 sprite pixels (tests/tools/sprites.test.ts). */
-const MARGIN = 4;
-/** The strips whose feet stand on the ground in every frame (tests/tools/sprites.test.ts). */
-const GROUNDED: ReadonlySet<string> = new Set([
-  'idle',
-  'walkForward',
-  'walkBack',
-  'crouch',
-  'block',
-]);
+const GROUNDED: ReadonlySet<string> = new Set(GROUNDED_STRIPS);
 
 /** The strip a drawn image goes with: its own name, or a Remix's special for its effects. */
 export function stripOf(fighter: Fighter, name: string): string | undefined {
@@ -72,17 +65,11 @@ export function rulesOf(fighter: Fighter, name: string, layer: DrawnLayer): Draw
   const spec = strip === undefined ? undefined : fighter.sheets[strip];
   if (!spec) throw new Error(`${fighter.name} has no strip ${name}`);
   const slots = fighter.paletteOf('main').length;
-  if (layer === 'fx') {
-    return { frames: spec.frames, slots, filled: false, margin: 0, lowestRow: CELL_SIZE - 1 };
-  }
-  const body = {
-    frames: spec.frames,
-    slots,
-    filled: true,
-    margin: MARGIN,
-    lowestRow: ANCHOR.y + 2,
-  };
-  return GROUNDED.has(name) ? { ...body, groundRow: ANCHOR.y - 2 } : body;
+  const kept = { frames: spec.frames, slots, margin: CELL_MARGIN };
+  // Effects may go a little below the ground (dust, floor rings), not off the cell.
+  if (layer === 'fx') return { ...kept, filled: false, lowestRow: CELL_SIZE - 1 };
+  const body = { ...kept, filled: true, lowestRow: LOWEST_ROW };
+  return GROUNDED.has(name) ? { ...body, groundRow: GROUND_ROW } : body;
 }
 
 /**
@@ -296,16 +283,17 @@ export function unseenStrikes(
   strike: ShownStrike,
   layers: readonly (StripPixels | undefined)[],
 ): number[] {
-  const { box } = strike;
-  const left = Math.max(0, Math.round(ANCHOR.x + box.x * ART_SCALE));
-  const right = Math.min(CELL_SIZE, Math.round(ANCHOR.x + (box.x + box.width) * ART_SCALE));
-  const top = Math.max(0, Math.round(ANCHOR.y - (box.y + box.height) * ART_SCALE));
-  const bottom = Math.min(CELL_SIZE, Math.round(ANCHOR.y - box.y * ART_SCALE));
+  // The pixels the guides outline in red (aseprite-template.ts), clipped to the cell.
+  const box = cellBoxOf(strike.box);
+  const left = Math.max(0, box.left);
+  const right = Math.min(CELL_SIZE - 1, box.right);
+  const top = Math.max(0, box.top);
+  const bottom = Math.min(CELL_SIZE - 1, box.bottom);
   return strike.frames.filter((frame) =>
     layers.every((layer) => {
       if (!layer) return true;
-      for (let y = top; y < bottom; y++) {
-        for (let x = left; x < right; x++) {
+      for (let y = top; y <= bottom; y++) {
+        for (let x = left; x <= right; x++) {
           if ((layer.pixels[y * layer.width + frame * CELL_SIZE + x] ?? 0) !== 0) return false;
         }
       }
