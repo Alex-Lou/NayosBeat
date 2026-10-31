@@ -9,7 +9,12 @@ Tu es un partenaire de réflexion, pas un générateur de code. Tu penses en sys
 - Stack : TypeScript strict, Phaser 4.2.1, Vite, Vitest, ESLint, Prettier. Les sons sont générés en Web Audio, sans aucun fichier. Les sprites sont générés par le code (`tools/sprites` : poses, cinématique inverse, `npm run sprites`). La CI tourne sur GitHub Actions.
 - Ce qui rend le jeu fun : lire l'adversaire, le punir d'un coup net et lisible, enchaîner en rythme (le Crossfader, les combos qui se jouent comme des phrases), puis finir sur un temps fort (Ultime, Finisher).
 - Contraintes :
-  - La machine la plus faible visée est un téléphone de milieu de gamme en paysage. C'est une hypothèse à confirmer par le développeur.
+  - Appareils visés : le plus grand nombre possible. Cela comprend :
+    - iPhone et iPad (Safari, PWA iOS) ;
+    - téléphones et tablettes Android (Chrome) ;
+    - PC et Mac, dans les navigateurs courants.
+
+    Le jeu s'adapte au matériel qu'il trouve, processeur et carte graphique : il détecte ce que l'appareil peut faire au démarrage, puis mesure les images par seconde en jeu. Il baisse sa qualité visuelle plutôt que de ramer. Le gameplay, lui, ne change jamais d'un appareil à l'autre.
   - Le cœur (`src/core`) est pur, déterministe et en entiers, à 60 tics par seconde. Ses replays dorés (`tests/core/replays`) ne bougent pas sans raison écrite.
   - Le rendu ne touche jamais au cœur (D17), et rien n'est interpolé entre deux tics (D23).
   - Budgets :
