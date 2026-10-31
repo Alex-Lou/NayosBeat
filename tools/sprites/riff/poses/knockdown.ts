@@ -17,9 +17,9 @@ export const ANIMATED: boolean = true;
  * footprint, the eyes on the opponent.
  *
  * - 0 (3): the seat hits. The hips slam onto the floor (a puff under them) while the upper body
- *   is still on its way down, the chin tucked like a trained fighter's (the head the source
- *   drawing, hurt); the legs fly on up from the momentum, the rear palm slapping down on the
- *   floor by her hip, the lead arm still up from the fall.
+ *   is still on its way down, the chin tucked like a trained fighter's (hurt); the legs fly on
+ *   up from the momentum, the rear palm slapping down on the floor by her hip, the lead arm
+ *   still up from the fall.
  * - 1 (3): the back slams flat a frame later (overlap: the hips land, then the spine, then the
  *   head, which whips back onto the floor), the legs whipped up high over the hips, the rear arm
  *   flat on the floor at her side, the lead one flopping down across her; a second puff under
@@ -29,8 +29,8 @@ export const ANIMATED: boolean = true;
  * - 3 (6): the attitude, in the body: propped up on the rear elbow (the upper arm straight down
  *   under the shoulder to the floor, the forearm along it), the boots planted, the knees up, she
  *   holds the lead palm up at the opponent (« come on ») and looks at him from under a heavy lid
- *   (`cool`). The torso and the head add up to 18 degrees on screen: the face is the source
- *   drawing. No grin.
+ *   (`cool`). The torso and the head add up to 22 degrees on screen: the face just turned
+ *   (RotSprite, on the floor), the jaw line showing. No grin.
  * - 4 (6): she rocks back onto her shoulders, balled up, the knees to the chest, the arms along
  *   her sides, the hands hooked under the shins, the head tucked aside (RotSprite, on the floor).
  * - 5 (8): and rolls up out of it onto her feet, into a low three-point prowl held for a beat,
@@ -56,11 +56,20 @@ export const ANIMATED: boolean = true;
  * foot to the shin, never pointed on in the line of the leg.
  *
  * Lying poses stretch backward (the head toward negative x), so the boots stay off the
- * opponent; the head turns past 20 degrees on screen (RotSprite) only on the floor. Her near
- * arm (drawn over the body and the head) stays clear of the face. The far arm is drawn behind
- * the body and the head: it is never left to peek out at the hair line (a few pixels of skin by
- * the skull read as a growth). In the falls it is thrown up and forward, clear of the head; on
- * the floor it flops down across her.
+ * opponent; the head turns past 20 degrees on screen (RotSprite) only on the floor and in the
+ * falls into it.
+ *
+ * The chin tucked on a torso tipped far back (BRACED, SEAT, LOOK) never keeps the face upright
+ * (the source drawing, under 20 degrees on screen): the neck and the top of the chest then come
+ * up level with the mouth, in front of it, and read as a beak of skin or something held in the
+ * lips. Those heads tip back to 22-24 degrees on screen instead (the chin still tucked against
+ * the torso, 30 to 36 degrees): turned, the jaw line shows and the throat runs under it down to
+ * the choker.
+ *
+ * Her near arm (drawn over the body and the head) stays clear of the face. The far arm is drawn
+ * behind the body and the head: it is never left to peek out at the hair line (a few pixels of
+ * skin by the skull read as a growth). In the falls it is thrown up and forward, clear of the
+ * head; on the floor it flops down across her.
  *
  * The belt's chain hangs on a spring 6 px below the belt (look.ts): flat on her back, it would
  * hang through the floor with the spring at rest. The fall goes seat first, then the back, so the
@@ -169,14 +178,14 @@ const REAR_TOE = toeOf(GUARD.nearFoot);
 /**
  * Falling back the last pixels before the floor, seat first: the legs up in front, the rear arm
  * reaching straight down for the floor by her hip, the lead one thrown up and forward for
- * balance, clear of the head; the chin tucked for the landing (the head the source drawing,
- * hurt). The falls
- * (trip, airHit) end here and the knockdown lands from it; airHit holds it through a long fall.
+ * balance, clear of the head; the chin tucked for the landing (hurt), the face turned 24 degrees
+ * on screen so the throat shows under the jaw. The falls (trip, airHit) end here and the
+ * knockdown lands from it; airHit holds it through a long fall.
  */
 export const BRACED: Pose = figure({
   hip: at(-9.5, 10),
   torso: -54,
-  head: 36,
+  head: 30,
   shrug: 0,
   twist: 0.45,
   nearArm: { upper: -80, lower: -25 },
@@ -191,7 +200,7 @@ export const BRACED: Pose = figure({
 const SEAT: Pose = figure({
   hip: at(-10, 6.5),
   torso: -60,
-  head: 42,
+  head: 36,
   shrug: 0,
   twist: 0.45,
   nearArm: { upper: -55, lower: 3 },
@@ -239,7 +248,7 @@ const REBOUND: Pose = figure({
 const LOOK: Pose = figure({
   hip: at(-9.5, 8),
   torso: -52,
-  head: 34,
+  head: 30,
   shrug: 0,
   twist: 0.35,
   nearFoot: { x: 4, y: 6.5, angle: 0 },

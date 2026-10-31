@@ -18,19 +18,25 @@ export const ANIMATED: boolean = true;
  * knees. On contact the whole shell is driven back into her: the chest snaps back, the hips give
  * a step's worth, the rear foot braces on its ball, the lead toes peel up, the jaw sets.
  *
- * Standing, the full shell: the rear forearm a vertical bar in front of the jaw, the glove at the
- * cheek, the elbow down in front of the ribs; the lead forearm upright before the chest. The
+ * Standing, the full shell: the rear forearm a vertical bar in front of the neck, the glove on
+ * the jaw, the elbow down in front of the ribs; the lead forearm upright before the chest. The
  * impact is that shell driven back, 8.6 px from its hold by design: a block lands on the
  * proximity guard (the hold, the last frame), not on her open guard, which the strip leaves at
  * once (tests/tools/riff-sprites.test.ts does not ask its first frame to start from the guard).
  *
  * Crouching, the same shell on the crouch's legs (the rear knee forward and low, floating over
- * the floor, the rear boot on its ball): the rear forearm up before the face, the lead forearm
+ * the floor, the rear boot on its ball): the rear forearm up before the jaw, the lead forearm
  * across the chest over the lead knee, the chest folded deeper over the knees, the shoulders up.
  * Its impact rocks the chest back 8 degrees and drives the hips back over the rear foot, the
  * rear knee lifting with them and the heel easing down; never lower, or the knee would touch
- * the floor. The rear glove keeps clear of the face's middle (it covers the cheek and the jaw,
- * in front of the head, never through it), its elbow open enough not to crush the biceps.
+ * the floor.
+ *
+ * The rear glove keeps clear of the face's middle: its wrist about 9 px under the head's center
+ * and 2 in front, the glove over the chin and the jaw, the knuckles at the corner of the mouth,
+ * the eye and the nose in view, its elbow open enough not to crush the biceps (147 degrees at
+ * most). Seen three quarters, that glove is the back of a black fist: 4.5 px under the head's
+ * center, it covered the eye, the nose and the mouth at once and read as a mask or a gag, not a
+ * cover (the face of Riff is compact: the eye 2 px under the center, the mouth 4, the chin 5.5).
  *
  * The face is the source drawing (the head under 20 degrees on screen), its look a hair more
  * chin-down than the guard's; effort on the impact and the rebound. Everything stays inside her
@@ -102,7 +108,7 @@ const SHELL: Pose = aroundHead(
     heel: -12,
     lead: -1.5,
   }),
-  at(0.6, -4.6),
+  at(2.2, -9),
   at(5, -12.6),
 );
 
@@ -119,7 +125,7 @@ const SHELL_IMPACT: Pose = aroundHead(
     lead: -1.5,
     face: 'effort',
   }),
-  at(-0.4, -4.8),
+  at(2, -8.6),
   at(6.2, -13),
 );
 
@@ -137,7 +143,7 @@ const SHELL_RECOIL: Pose = aroundHead(
     face: 'effort',
     effects: [scuff(14, 2.4, 0.55), scuff(-20, 1.8, 0.5)],
   }),
-  at(0.2, -4.4),
+  at(2, -8.8),
   at(4.6, -12.4),
 );
 
@@ -147,8 +153,8 @@ const SHELL_RECOIL: Pose = aroundHead(
 const LOW_HEEL = CROUCH.nearFoot.angle ?? 0;
 
 /**
- * Held: folded deeper over the lead knee, the rear forearm upright before the face (the glove at
- * the cheek, the elbow down before the ribs), the lead forearm across the chest over the knee.
+ * Held: folded deeper over the lead knee, the rear forearm upright before the neck (the glove on
+ * the jaw, the elbow down before the ribs), the lead forearm across the chest over the knee.
  */
 const LOW_SHELL: Pose = aroundHead(
   stance(CROUCH, {
@@ -160,7 +166,7 @@ const LOW_SHELL: Pose = aroundHead(
     heel: LOW_HEEL - 1,
     lead: -1.5,
   }),
-  at(1, -5),
+  at(2.2, -9),
   at(4.2, -12.4),
 );
 
@@ -180,7 +186,7 @@ const LOW_IMPACT: Pose = aroundHead(
     lead: -1.5,
     face: 'effort',
   }),
-  at(0.4, -5.2),
+  at(1.8, -9),
   at(3.6, -12.8),
 );
 
@@ -198,7 +204,7 @@ const LOW_RECOIL: Pose = aroundHead(
     face: 'effort',
     effects: [scuff(14, 2.4, 0.55), scuff(-20, 1.8, 0.5)],
   }),
-  at(1.2, -4.8),
+  at(2.2, -8.8),
   at(4.4, -12),
 );
 

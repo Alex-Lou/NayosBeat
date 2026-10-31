@@ -27,7 +27,8 @@ export const ANIMATED: boolean = true;
  * A back tuck, the guard kept: she does not jump away, she shows off. A short dip, then the set:
  * the lead foot flicks her off the floor, the body long and straight from the pointed toes to the
  * crown, tipped back only 20 degrees, the chest up, both arms thrown up over her head to lead
- * the turn, the eyes on the opponent (the head the drawing). Nothing hangs limp: it is a take-off, never a knock-back (airHit). Then she balls up
+ * the turn, the face clear between them, the eyes on the opponent (the head the drawing).
+ * Nothing hangs limp: it is a take-off, never a knock-back (airHit). Then she balls up
  * and goes over the top, the boots sweeping a magenta arc that carries the half turn; she comes
  * round with the knees still tucked, the shoulders already pitched forward, opens out onto the
  * guard's marks and soaks the landing into her plié, dust out from both boots, and rises into
@@ -174,10 +175,14 @@ const SET = -20;
 
 // 1 · The takeoff (4 ticks), the set of the back tuck, placed as it shows on screen: tipped back
 // only 20 degrees, one long line from the pointed lead toe (just leaving the floor) through the
-// hips to the crown, the chest up; both arms thrown up over the head to lead the turn, the rear
-// one in front of the face (raised forward, the way a shoulder lifts an arm overhead: flung back
-// behind the head, it would come out of the back of the shoulder), the look still on the
-// opponent.
+// hips to the crown, the chest up; both arms thrown up over the head to lead the turn, the look
+// still on the opponent. The rear arm goes straight up along the back of the head, past the ear
+// (172 degrees off hanging on the torso, the elbow soft): its shoulder blade rises with it, the
+// shoulder drawn 3 px back (`reach`), which leaves the elbow room to pass behind the head rather
+// than through it; up there the forearm folds toward the back, so its elbow is picked in front
+// (`nearElbow: 'front'`: 'down' would fold it the wrong way). The lead arm rises in front of the
+// fringe. (Raised forward at 125 degrees instead, the rear sleeve crossed the face from the jaw to
+// the eye: a masked face, an arm guarding it, not a take-off.)
 const SET_BODY: Pose = spun(
   {
     ...GUARD,
@@ -186,15 +191,16 @@ const SET_BODY: Pose = spun(
     head: -8 + 3 - SET,
     shrug: 2.4,
     twist: 0.55,
+    reach: { near: -3 },
     nearFoot: { x: -1.5, y: 15, angle: -64 },
     farFoot: { x: 6.1, y: 11.1, angle: -70 },
     nearFist: at(-31.5, 78),
     farFist: at(-7, 63),
-    bends: { nearKnee: 'front', farKnee: 'front', nearElbow: 'down', farElbow: 'down' },
+    bends: { nearKnee: 'front', farKnee: 'front', nearElbow: 'front', farElbow: 'down' },
   },
   SET,
 );
-const LAUNCH: Pose = pointed(raised(raised(SET_BODY, 'near', 125, 30), 'far', 145, 34));
+const LAUNCH: Pose = pointed(raised(raised(SET_BODY, 'near', 172, 18), 'far', 150, 30));
 
 /** The ball's lean, upright with the hip at the origin. */
 const BALLED = 14;

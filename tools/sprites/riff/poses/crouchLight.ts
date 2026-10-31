@@ -1,4 +1,5 @@
-import type { Bend, Effect } from '../../skeleton.ts';
+import { solve, type Bend, type Effect } from '../../skeleton.ts';
+import { RIFF_BODY } from '../body.ts';
 import { at, GUARD, onBall, planted, smear, toeOf, type Pose } from './common.ts';
 import { atChin, ANIMATED as CROUCH_ANIMATED, POSES as CROUCH_STRIP } from './crouch.ts';
 
@@ -61,6 +62,16 @@ const dust = (x: number, size: number, progress: number): Effect => ({
   progress,
 });
 
+/**
+ * Where the lead fist rides while she pounces (frames 0 to 3), from the head's center: in front
+ * of the chin and under it, the gloved fist in view, the forearm rising to it, the elbow down
+ * under it; carried by the head, it follows her lean frame to frame and lands on the crouch's
+ * fist without a pop. (Placed at a fixed point by the chin, with the lean the fist went behind
+ * the jaw, the elbow came up in front at shoulder height, pointing at the opponent: only a black
+ * club stuck out of the chest, the arm read as folded the wrong way.)
+ */
+const UNDER_CHIN = at(3.7, -13.7);
+
 /** Where the rear hand lands, flat on the floor under her chest, below the rear shoulder. */
 const PALM = at(11.5, 2.6);
 
@@ -80,13 +91,14 @@ interface Key {
   readonly lead: Pose['farFoot'];
   /** The rear hand: open at a point (on the floor), or the fist under the chin (nudged). */
   readonly hand: Hand;
-  readonly fist: readonly [number, number];
+  /** The lead fist: a point, or 'chin' (UNDER_CHIN). */
+  readonly fist: readonly [number, number] | 'chin';
   readonly twist: number;
   readonly effects?: readonly Effect[];
 }
 
 function key(k: Key): Pose {
-  const pose: Pose = {
+  const body: Pose = {
     ...REST,
     hip: at(k.hip[0], k.hip[1]),
     torso: k.torso,
@@ -95,9 +107,16 @@ function key(k: Key): Pose {
     reach: { near: k.roll },
     nearFoot: onBall(TOE, k.heel),
     farFoot: k.lead,
-    farFist: at(k.fist[0], k.fist[1]),
     twist: k.twist,
     ...(k.effects ? { effects: k.effects } : {}),
+  };
+  const head = solve(body, RIFF_BODY).head;
+  const pose: Pose = {
+    ...body,
+    farFist:
+      k.fist === 'chin'
+        ? at(head.x + UNDER_CHIN.x, head.y + UNDER_CHIN.y)
+        : at(k.fist[0], k.fist[1]),
   };
   if ('at' in k.hand) {
     return {
@@ -122,7 +141,7 @@ const KEYS: readonly Key[] = [
     heel: -76,
     lead: { x: 7.9, y: 6.6, angle: 8 },
     hand: { at: at(5, 14), elbow: 'back' },
-    fist: [9.5, 33],
+    fist: 'chin',
     twist: 0.3,
   },
   // 1: the hand slaps the floor under the chest, the chest pitched over it, the lead knee
@@ -136,7 +155,7 @@ const KEYS: readonly Key[] = [
     heel: -80,
     lead: { x: 17.2, y: 7.8, angle: 44 },
     hand: { at: PALM },
-    fist: [14.5, 28],
+    fist: 'chin',
     twist: 0.15,
     effects: [smear(3, [9, 8], [12, 9.5], [16.5, 10]), dust(PALM.x, 2, 0.05)],
   },
@@ -152,7 +171,7 @@ const KEYS: readonly Key[] = [
     heel: -82,
     lead: { x: 21.6, y: 8.2, angle: 50 },
     hand: { at: PALM },
-    fist: [16, 27],
+    fist: 'chin',
     twist: 0.1,
     effects: [
       smear(4, [9, 9], [15, 9], [21, 8.5], [26, 8]),
@@ -171,7 +190,7 @@ const KEYS: readonly Key[] = [
     heel: -76,
     lead: { x: 11.5, y: 7.4, angle: 6 },
     hand: { at: at(5, 23), elbow: 'back' },
-    fist: [10.5, 32.5],
+    fist: 'chin',
     twist: 0.25,
     effects: [dust(PALM.x, 2.5, 0.55)],
   },

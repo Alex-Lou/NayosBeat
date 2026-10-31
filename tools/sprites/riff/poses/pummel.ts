@@ -11,31 +11,34 @@ export const ANIMATED: boolean = true;
  * opponent she holds (Nayo's held: its frame 1, yanked in, starts again on the impact tick),
  * from hold and back to it. The punk's pummel, nothing like his knee: short, ugly, fast.
  *
- * She rears back, chin up, the whole upper body tipping away from him (the head travels 9 px
- * back) while the fists stay locked in his collar, the arms stretching; then she snaps the
+ * She rears back, chin up, the upper body tipping away from him (the head travels 7 px back)
+ * while the fists stay locked in his collar, hauling on it, the elbows still bent (about 50
+ * degrees: tipped further back, the rear arm locked straight from her shoulder to his collar, a
+ * long tube, the arm the owner turned down on the Jab, standLight.ts); then she snaps the
  * other way, rising onto the ball of the rear foot, the hips driving in under the shoulders, and
  * smashes her forehead into his face, the chin tucked so the brow leads (the one frame where the
  * head turns past 20 degrees on screen: RotSprite, the brow set, `effort`). The knuckles never
  * leave his collar (at about x 22-26 here): they haul it a pixel or two down onto the blow while
  * the body drives in, so the arms fold and the elbows flare as the head comes through, and the
  * yank shows. A magenta trail follows the head's arc, a small silver star bursts where the heads
- * meet, just above both pairs of eyes (the hitstop and the shake sell the rest). She rocks back off it, chin up, the lid
- * half down (`cool`): unimpressed; the hold loop settles her back into the grip. The fringe
- * whips forward on the snap and flicks back on the recoil by itself.
+ * meet, just above both pairs of eyes (the hitstop and the shake sell the rest). She rocks back
+ * off it, chin up, the lid half down (`cool`): unimpressed, the rocking in the head more than in
+ * the chest, so that the rear arm stays bent on the grip (47 degrees); the hold loop settles
+ * her back into the grip. The fringe whips forward on the snap and flicks back on the recoil by
+ * itself.
  */
 
 const headOf = (pose: Pose) => solve(pose, RIFF_BODY).head;
 
 // Frame 0 (2 ticks): the rear-back. The upper body tips away from him, the chin up, the rear
-// heel coming down; the fists stay in his collar, the arms stretching.
+// heel coming down; the fists stay in his collar, the shoulders dragged forward by the grip
+// (the rear one 3 px), the elbows bent, hauling.
 const REAR: Pose = {
   ...HOLD,
-  hip: at(-4.2, 32.6),
-  torso: 9,
-  head: -24,
+  hip: at(-4, 32.6),
+  torso: 13,
+  head: -26,
   shrug: 3.2,
-  // The shoulders dragged forward by the grip as the chest tips away: the arms stretch, the
-  // elbows never lock.
   reach: { near: 3, far: 0.8 },
   twist: 0.55,
   nearFoot: onBall(REAR_TOE, -14),
@@ -107,9 +110,9 @@ const IMPACT: Pose = {
 // grip, the rear heel still up. The hold loop settles the rest.
 const BACK: Pose = {
   ...HOLD,
-  hip: at(-3.6, 32.8),
-  torso: 18,
-  head: -14,
+  hip: at(-3.5, 32.8),
+  torso: 20,
+  head: -16,
   shrug: 2.9,
   twist: 0.45,
   nearFoot: onBall(REAR_TOE, -18),

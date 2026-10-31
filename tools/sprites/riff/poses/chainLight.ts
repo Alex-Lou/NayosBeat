@@ -24,10 +24,15 @@ export const ANIMATED: boolean = true;
  *   rear knee soft under her, the elbow leading out at shoulder height with the forearm still
  *   folded back over it, the fist at the collar, under the jaw, the chest still closed; the
  *   head drives 10 px up and in (the fringe flicks, the chain swings out).
- * - 2: the backfist: she lands, the forearm whips open, the elbow a little bent (about 20
- *   degrees), the knuckles at the jaw's height, the chest only half open; a flat crescent trail
- *   from behind her rear shoulder round behind her head to the knuckles, a flash there. The lean
- *   stays at 29 degrees: the head never lunges past the fist's shoulder.
+ * - 2: the backfist: she lands, the forearm whips open, the knuckles at the jaw's height, the
+ *   chest only half open; a flat crescent trail from behind her rear shoulder round behind her
+ *   head to the knuckles, a flash there. The reach is the body's, as on the Jab (standLight.ts):
+ *   the hips land 2 px past the skip's, over the lead knee, the lean deepens to 31 degrees, and
+ *   the arm stays soft, the elbow 29 degrees short of straight (dropped under the line, the
+ *   forearm rising to the knuckles), the rear shoulder rolled in only 1.2 px: out of the body
+ *   the arm shows 20.5 px, the knuckles on the far edge of the hitbox. Locked nearly straight
+ *   off a shoulder rolled 3.5 px in, it showed 23 px out of the chest, 26 from the shoulder: an
+ *   arm too long, the owner's complaint on the Jab.
  * - 3: the follow-through: the arm carries on across, past the target, at chest height, the
  *   chest opening.
  * - 4: back home, past the guard: the chest wide open, the hips 1.6 px below the guard's, the
@@ -176,15 +181,15 @@ const KEYS: readonly Key[] = [
   },
   // 2: the backfist.
   {
-    hip: [-1.5, 31],
-    torso: 29,
+    hip: [0.5, 30.6],
+    torso: 31,
     look: 12,
     shrug: 2.4,
-    reach: { near: 3.5, far: -2 },
+    reach: { near: 1.2, far: -2 },
     twist: -0.35,
     near: onBall(TOE, -30),
     far: planted(GUARD.farFoot.x),
-    rear: at(30.2, 53.5),
+    rear: at(30.6, 53.4),
     lead: arm(35, 145),
     effects: [
       smear(3, [-9, 53], [2, 56], [14, 57], [25, 55.5], [32, 53.5]),

@@ -55,16 +55,19 @@ function borrowed(poses: readonly Pose[], frame: number): Pose {
  *
  * - 0 (2 ticks): the load, on the floor: deep (hips 25.5), the rear knee driven forward and down
  *   over its high heel (her crouch's sprinter's set, the knees bending toward the toes), pitched
- *   in 35 degrees, both arms swung back as far as shoulders go (the pitch lays them level);
- *   dust off both boots.
+ *   in 35 degrees, both arms swung back as far as shoulders go (the pitch lays them level), the
+ *   lead one just under the rear one, a pair of wings (see the lead shoulder below); dust off
+ *   both boots.
  * - 1 (3 ticks): her jump's take-off (copied here as it was drawn for this strip, so that a
  *   change to her jump does not move the Slam), tipped onto the launch diagonal (34 degrees of
- *   spin where hers has 22), the arms flung open, the rear one back, the lead one thrown forward under the
- *   chin (both up would cross her face); set down so that the push-off toes just leave the
- *   floor; a short trail under the boots.
+ *   spin where hers has 22), the arms flung open, the rear one back, the lead one thrown forward
+ *   under the chin (both up would cross her face); set down so that the push-off toes just leave
+ *   the floor; a short trail under the boots.
  * - 2 (5 ticks, the top): the dart, the boots trailing pointed back (35 degrees off square to the
- *   shin at most: a combat boot).
- * - 3 (2 ticks, the flash): the dive-bomb, the hero pose.
+ *   shin at most: a combat boot), the lead arm reaching for him level under the chin (aimed
+ *   higher, its forearm rose across her mouth).
+ * - 3 (2 ticks, the flash): the dive-bomb, the hero pose, both arms back like wings, the lead one
+ *   just under the rear one.
  * - 4 (4 ticks, active): the double stomp into his chest, the knees soft and bending the way
  *   knees bend, the lead fist thrown up by her head, the white-hot star at the soles.
  * - 5 (4 ticks, active): the contact: both boots slammed on their guard marks, the legs as long
@@ -78,6 +81,16 @@ function borrowed(poses: readonly Pose[], frame: number): Pose {
  * arms are thrown nearly straight, never locked past their length (an arm out of reach is
  * drawn rigid, a robot's), each elbow bending the way an elbow bends, and a shoulder swings 60
  * degrees behind the chest at most.
+ *
+ * Seen three quarters, the lead arm (behind the body) needs its shoulder placed with it:
+ * - thrown at him (frames 1 and 2), the elbow stays soft (38 degrees short of straight) and the
+ *   lead shoulder is held back behind the bust (`reach` -4, -5 on the flat dart), as on her Jab
+ *   (standLight.ts): out of the body the arm shows 20 to 21 px. Out of the chest at full length
+ *   it showed 25, an arm half again too long (the owner's call);
+ * - swung back (frames 0 and 3), its shoulder blade draws in to the spine (`reach` -4), which
+ *   on the pitched chest lifts it 3 px, and the arm runs just under the rear one: left on the
+ *   front of the chest, the arm crossed the whole bust hidden and only came out at the small of
+ *   the back, a hand sprouting from her waist.
  */
 
 const TOE = toeOf(GUARD.nearFoot);
@@ -162,6 +175,11 @@ function legs(pose: Pose, near: Leg, far: Leg): Pose {
  * off), never locked out past its length (an arm placed out of reach is drawn rigid, a robot's).
  */
 const REACH = 21.4;
+/**
+ * How far the lead arm reaches when thrown at him: its elbow soft, 38 degrees short of straight
+ * (see the lead shoulder above).
+ */
+const THROWN = 20.6;
 
 /** An arm thrown from its shoulder along `degrees` (0 forward, 90 up). */
 function flung(pose: Pose, side: 'near' | 'far', degrees: number, reach = REACH): Point {
@@ -176,7 +194,7 @@ function flung(pose: Pose, side: 'near' | 'far', degrees: number, reach = REACH)
  * Both arms of `pose` thrown along `near` and `far` degrees, on screen: for a spun pose (the
  * borrowed take-off) the targets are turned back, so that the spin lands them there.
  */
-function arms(pose: Pose, near: number, far: number, reach = REACH): Pose {
+function arms(pose: Pose, near: number, far: number, reach = REACH, farReach = reach): Pose {
   const back = rad(pose.spin ?? 0);
   const unspun = (p: Point): Point => {
     const dx = p.x - pose.hip.x;
@@ -189,7 +207,7 @@ function arms(pose: Pose, near: number, far: number, reach = REACH): Pose {
   return elbowsBent({
     ...pose,
     nearFist: unspun(flung(pose, 'near', near, reach)),
-    farFist: unspun(flung(pose, 'far', far, reach)),
+    farFist: unspun(flung(pose, 'far', far, farReach)),
   });
 }
 
@@ -265,17 +283,20 @@ const LOAD_BODY: Pose = {
   twist: 0.35,
   nearFoot: onBall(TOE, -56),
   farFoot: GUARD.farFoot,
+  reach: { far: -4 },
   bends: { nearElbow: 'down', farElbow: 'down', nearKnee: 'front', farKnee: 'front' },
 };
-// Both arms swung back, as far back as shoulders go (the pitch of the chest lays them level).
+// Both arms swung back, as far back as shoulders go (the pitch of the chest lays them level), the
+// lead shoulder drawn in to the spine and its arm just under the rear one.
 const LOAD: Pose = {
-  ...arms(LOAD_BODY, 192, 195),
+  ...arms(LOAD_BODY, 192, 190),
   effects: [dust(9, 4.5, 0.12), dust(-17, 4, 0.12)],
 };
 
 // 1 · The take-off (3 ticks): her jump's, tipped onto the launch diagonal, the arms flung open
-// (the rear one back, the lead one forward under the chin); set down so that the push-off toes
-// just leave the floor (the game is already lifting her). A short trail under the boots.
+// (the rear one back, the lead one forward under the chin, its elbow soft, its shoulder held back
+// behind the bust); set down so that the push-off toes just leave the floor (the game is already
+// lifting her). A short trail under the boots.
 // Her jump's take-off (jumpForward.ts, frame 1, as it was drawn for this strip): long, the rear
 // leg pushing straight behind, the lead knee driving.
 const JUMP_TAKEOFF: Pose = {
@@ -289,7 +310,13 @@ const JUMP_TAKEOFF: Pose = {
   farFoot: { x: 3, y: 16, angle: -50 },
   bends: { ...GUARD.bends, nearKnee: 'down' },
 };
-const TIPPED: Pose = arms({ ...JUMP_TAKEOFF, spin: 34, head: JUMP_TAKEOFF.head - 12 }, 190, 10);
+const TIPPED: Pose = arms(
+  { ...JUMP_TAKEOFF, spin: 34, head: JUMP_TAKEOFF.head - 12, reach: { far: -4 } },
+  190,
+  10,
+  REACH,
+  THROWN,
+);
 const TAKEOFF: Pose = {
   ...moved(TIPPED, 0, 0.6 - soles(TIPPED)),
   effects: [smear(3, [-10, 4], [-4, 8], [3, 13])],
@@ -297,8 +324,9 @@ const TAKEOFF: Pose = {
 
 // 2 · The dart (5 ticks, the top): flat over the opponent, the chest leading, the back arched
 // (the chest and the rear boot 10 px over the hips), the rear arm swept straight back over her,
-// the lead one reaching for him under the chin, open hands, both clear of the body; the chin up
-// on the target, the fringe trailing.
+// the lead one reaching for him level under the chin (its elbow soft, its shoulder held back
+// behind the bust), open hands, both clear of the body; the chin up on the target, the fringe
+// trailing.
 const DART_BODY: Pose = {
   ...GUARD,
   hip: at(-2, 44),
@@ -310,12 +338,19 @@ const DART_BODY: Pose = {
   farHand: 'open',
   bends: { nearElbow: 'up', farElbow: 'up' },
 };
-const DART: Pose = arms(legs(DART_BODY, [-95, -118, -148], [-80, -100, -130]), 170, 18);
+const DART: Pose = arms(
+  legs({ ...DART_BODY, reach: { far: -5 } }, [-95, -118, -148], [-80, -100, -130]),
+  170,
+  6,
+  REACH,
+  THROWN,
+);
 
 // 3 · The dive-bomb (2 ticks, the 20-tick freeze flash): pitched over at the target (50
 // degrees: the head stays upright, so the torso carries the pitch), both boots cocked under the
 // hips and aimed down at his chest, both arms swept back behind the shoulders like wings, the
-// rear one high, open hands, clear of the head. Under her, the platine swoop of the boots
+// rear one high, the lead one just under it (its shoulder drawn in to the spine), open hands,
+// clear of the head. Under her, the platine swoop of the boots
 // swinging through from behind, a thin magenta streak inside it; a white-hot glint on the toes.
 const BOMB_BODY: Pose = {
   ...GUARD,
@@ -324,12 +359,13 @@ const BOMB_BODY: Pose = {
   head: -32,
   shrug: 3,
   twist: 0.5,
+  reach: { far: -4 },
   nearHand: 'open',
   farHand: 'open',
   bends: { nearElbow: 'down', farElbow: 'down' },
 };
 const BOMB: Pose = {
-  ...arms(legs(BOMB_BODY, [40, -10, -35], [50, -2, -30]), 174, 178),
+  ...arms(legs(BOMB_BODY, [40, -10, -35], [50, -2, -30]), 174, 172),
   effects: [
     smear(1.5, [-14, 22], [-3, 15], [10, 13]),
     platine(5, [-30, 38], [-22, 23], [-9, 14], [4, 11], [13, 12]),

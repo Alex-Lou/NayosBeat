@@ -146,7 +146,9 @@ export function swayFringe(rows: readonly string[], sway: number): readonly stri
     // The fringe starts past the face and its outline.
     const root = row.charAt(face + 1) === 'k' ? face + 2 : face + 1;
     const strands = row.slice(root);
-    if (!/[pqrtuv]/.test(strands)) return row;
+    // The tip's last row is outline only: it swings with the strands above it, or it would hang
+    // alone in front of the mouth.
+    if (!/[pqrtuvk]/.test(strands)) return row;
     const moved =
       shift > 0
         ? strands.charAt(0).repeat(shift) + strands

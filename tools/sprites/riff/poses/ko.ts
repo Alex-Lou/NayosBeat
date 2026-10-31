@@ -23,7 +23,8 @@ export const ANIMATED: boolean = true;
  *   the body tipping back out of the fold, the head whipping back the other way, the limp rear
  *   arm lagging forward over her lap.
  * - 4: the seat hits (a puff), the legs sliding out along the floor, the torso falling back, the
- *   lead arm lagging up from the drop.
+ *   lead arm left lying on her lap, the open hand dropped on the knee: the shoulder falls 14 px,
+ *   the hand only 5 (it lags behind the drop, it never rises).
  * - 5: the back slams flat, the head bouncing off the floor, the legs thrown up, the rear arm
  *   lying flat on the floor at her side, the lead one flopping down across her.
  * - 6: the last rebound: the head and shoulders lift off the floor, the chin dropping, the
@@ -33,10 +34,13 @@ export const ANIMATED: boolean = true;
  *
  * Lying poses stretch back (the head toward negative x), the boots off the opponent. The lead
  * arm, drawn behind the body and the head, never ends by the skull (a few pixels of skin at the
- * hair line read as a growth): it lags up in the air or lies across her. On the floor the rear
- * arm lies flat along her side (its elbow raised off the floor, the hand down by the hip, it
- * read as an elbow bent backward), and the knees bend toward the toes even as she buckles (the
- * rear one forward and low, as in her crouch, never turned out behind her). While she stands,
+ * hair line read as a growth): it stays on her lap or lies across her, never raised (a fist up
+ * in the air mid-collapse reads as a wave or a fist pump, the opposite of a body letting go).
+ * From the sink to the slam its upper arm turns one way only, -60, -20 then 5 degrees, while
+ * the body falls back under it, the elbow barely bent. On the floor the rear arm lies flat
+ * along her side (its elbow raised off the floor, the hand down by the hip, it read as an
+ * elbow bent backward), and the knees bend toward the toes even as she buckles (the rear one
+ * forward and low, as in her crouch, never turned out behind her). While she stands,
  * the feet never slide: the rear foot stays on its ball, the lead one pivots on its heel. The slow
  * drop also keeps the belt's chain off the floor in the held frame: its spring's tip still lags
  * above the belt when the last frame comes (see knockdown.ts).
@@ -115,7 +119,7 @@ const SINK: Pose = figure({
   face: 'out',
 });
 
-/** 4: the seat hits, the legs sliding out, the torso falling back. */
+/** 4: the seat hits, the legs sliding out, the torso falling back, the lead arm limp on her lap. */
 const SEAT: Pose = figure({
   hip: at(-12.5, 6.5),
   torso: -46,
@@ -123,7 +127,7 @@ const SEAT: Pose = figure({
   shrug: 0,
   twist: 0.45,
   nearArm: { upper: 315, lower: 350 },
-  farArm: { upper: 55, lower: 80 },
+  farArm: { upper: -20, lower: -5 },
   nearLeg: { upper: 40, lower: -10, toes: 55 },
   farLeg: { upper: 25, lower: -30, toes: 35 },
   ...LIMP,

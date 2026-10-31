@@ -30,19 +30,25 @@ export const ANIMATED: boolean = true;
  *   straight up; the trail comes down the whole arc into the floor, a gold flash and dust at the
  *   boot.
  * - 4: on round: the rear leg tucks, its knee folding up over the hip, the lead leg comes down in
- *   front (its own trail); the dust rises.
- * - 5: the lead foot lands, the rear knee comes down behind it, the hand pushes off the floor.
- * - 6: up on her feet, a little higher than the crouch, the rear hand swinging up open in front
- *   of the hip, the elbow down under the shoulder (pulled back off the floor behind her, the
- *   elbow jutted out at shoulder height).
+ *   front (its own trail); the hand planted on its print pushes, the chest starts up off the
+ *   floor; the dust rises.
+ * - 5: the rise: the lead foot lands, the rear arm straight as the hand pushes off its print,
+ *   the rear knee swinging down under her, the chest halfway up.
+ * - 6: on the rear knee, the chest up, a little higher than the crouch, the rear hand swinging
+ *   up open in front of the belly, the elbow down under the shoulder (never left behind her
+ *   hip, the arm folded square with the elbow jutting out of her back).
  * - 7: the crouch at rest (crouch.ts), the fist under the chin, where its loop picks up.
+ *
+ * The way up is spread evenly over 4, 5 and 6 (the torso -50, -22, 8, then the crouch's lean;
+ * the head about 13 px a frame): never sat back on the floor one frame and kneeling the next.
  *
  * Anatomy first. Every knee and elbow bends the way it bends (each is placed on the side its
  * joint folds toward, from the line of the limb: knees toward the toes, elbows away from the
  * crook). The rear hand only ever pushes on the floor beside her, along her body: on the sit-back
  * it lands behind her hips (frame 1), and once she is on her back it pushes beside the hip
- * (frames 2-4, one print, it never slides), never behind her head (a shoulder does not bend
- * that far back). On the floor the head is held up off it, the chin tucked as far as a neck goes
+ * (frame 2, then frame 4 just behind it, the arm nearly straight, to push her back up; it
+ * leaves the floor on the rise, frame 5), never behind her head (a shoulder does not bend that
+ * far back). On the floor the head is held up off it, the chin tucked as far as a neck goes
  * (48 degrees on the torso), the eyes on the opponent: it leans back on screen with the body
  * past that (RotSprite turns it). The legs in the air are placed by their angle from the hip
  * (polar), nearly straight; the boots point along them only as far as a combat boot lets an
@@ -207,8 +213,8 @@ const BACK_PALM = [-16.5, 3] as const;
 const PALM = [-7, 3] as const;
 /** On the sweep the arm comes off the floor, tucked along her side, the hand over the hip. */
 const TUCK = [-5, 10] as const;
-/** Where it plants again to push her back up (frame 4). */
-const PUSH = [-11, 3] as const;
+/** Where it plants again to push her back up (frame 4), a little behind its first print. */
+const PUSH = [-13, 3] as const;
 
 const KEYS: readonly Key[] = [
   // 0: the sit-back: the rear knee chambers, the rear hand reaches back for its print.
@@ -270,46 +276,49 @@ const KEYS: readonly Key[] = [
       dust(38, 4, 0.15),
     ],
   },
-  // 4: on round: the rear leg tucks, its knee folding up over the hip, the lead leg comes down
-  // in front.
+  // 4: on round: the lead leg whips down in front (its trail), the rear knee folds up over the
+  // hip, the hand planted on its print and pushing, the chest already coming up off the floor.
   {
-    hip: [-1.5, 13.5],
-    torso: -62,
+    hip: [-2, 12.6],
+    torso: -50,
     look: 2,
     near: { ankle: at(3.5, 8), point: 5 },
     far: [14, 0.96],
     palm: PUSH,
     shrug: 2,
-    fist: [-10, 30],
+    fist: [-8, 30],
     twist: -0.25,
     face: 'effort',
     effects: [smear(4, [6, 45], [17, 42], [25.5, 34], [30, 25.5]), dust(38, 4, 0.5)],
   },
-  // 5: the lead foot lands, the rear knee comes down behind it, the hand pushes off the floor.
+  // 5: the rise: the lead foot lands, the arm straight as the hand pushes off its print, the
+  // rear knee swinging down under her (a puff where the hand leaves the floor).
   {
-    hip: [-11, 17.6],
-    torso: -2,
+    hip: [-7, 15.2],
+    torso: -22,
     look: 6,
-    near: onBall(TOE, -79),
+    near: { ankle: at(-9, 7), point: 25 },
     far: planted(GUARD.farFoot.x),
-    palm: [-18, 19],
-    shrug: 1,
-    fist: [2, 30],
-    twist: 0.3,
-    effects: [dust(38, 4, 0.85)],
+    palm: [-21.5, 12.5],
+    shrug: 1.5,
+    fist: [3, 30],
+    twist: 0.1,
+    face: 'effort',
+    effects: [dust(38, 4, 0.7), dust(-14, 2.5, 0.2)],
   },
-  // 6: up on her feet, a little higher than the crouch, the rear hand swinging up in front of
-  // the hip on its way to the chin, the elbow down under the shoulder.
+  // 6: on the rear knee, the chest up, the rear hand swinging up open in front of the belly on
+  // its way to the chin, the elbow down under the shoulder.
   {
-    hip: [-11, 18.8],
-    torso: 24,
-    look: 9,
-    near: onBall(TOE, -72),
+    hip: [-11, 17.9],
+    torso: 8,
+    look: 8,
+    near: onBall(TOE, -76),
     far: planted(GUARD.farFoot.x),
-    palm: [-1.5, 31],
-    shrug: 2.6,
-    fist: [8, 30],
-    twist: 0.42,
+    palm: [-3, 30],
+    shrug: 1.5,
+    fist: [5, 30],
+    twist: 0.36,
+    effects: [dust(38, 4, 0.9)],
   },
 ];
 

@@ -121,7 +121,10 @@ const SET: Pose = {
 // Frame 1 (3 ticks): the leap. Off the lead foot's toes, the body tipping back and turning
 // sideways, the rear leg swung up nearly straight and level across his belly, the boot flexed
 // (a trail after it); the lead foot leaves the floor pointed, as far as a boot points; the lead
-// fist still in his lapel, the rear arm reaching back and down for the floor.
+// fist still in his lapel, yanking it in, the elbow bent 29 degrees and the lead shoulder held
+// back behind the bust (`reach` -3): out of the body the arm shows 18 px (locked straight out of
+// the collar to the lapel, it showed 23, an arm half again too long: the owner's call on the
+// Jab, standLight.ts); the rear arm reaching back and down for the floor.
 const LEAP: Pose = shown({
   ...GUARD,
   hip: at(3, 37),
@@ -130,10 +133,11 @@ const LEAP: Pose = shown({
   head: 22,
   shrug: 2.6,
   twist: 0.2,
+  reach: { far: -3 },
   nearFoot: { x: 32, y: 45, angle: 76 },
   farFoot: lifted(onBall(LEAD_TOE, -32), 2.5),
   nearFist: at(-10, 31),
-  farFist: at(14, 52),
+  farFist: at(11.5, 53),
   nearHand: 'open',
   bends: { nearKnee: 'up', farKnee: 'front', nearElbow: 'back', farElbow: 'down' },
   face: 'effort',

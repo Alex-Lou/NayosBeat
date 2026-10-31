@@ -21,7 +21,9 @@ export const ANIMATED: boolean = true;
  * - 2: turning over: the legs swing up in front of her, the rear hand already reaching down for
  *   the floor along her side, the lead arm still up.
  * - 3, held: BRACED (knockdown.ts): falling back seat first, the legs up, the rear arm braced
- *   for the floor, the lead one thrown forward, the chin tucked.
+ *   for the floor, the lead one thrown forward, the chin tucked (the face turned 24 degrees on
+ *   screen, between the whipped-back head of frame 2 and the seat's: the throat shows under the
+ *   jaw, never a beak of skin in front of the mouth).
  *
  * Every limb is written by its silhouette (`figure`): the arms flail on one continuous arc,
  * never popping from side to side, every elbow bent the way an elbow bends, and the legs swing
