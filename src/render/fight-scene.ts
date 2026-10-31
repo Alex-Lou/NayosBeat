@@ -4,8 +4,9 @@ import { artOf } from '../art';
 import type { FighterArt } from '../art/types';
 import { assertValidArt } from '../art/validate';
 import type { Sfx } from '../audio/sfx';
-import { hudComfortOf, isCalm, isStill, type Comfort } from '../app/comfort';
+import { hudComfortOf, isCalm, type Comfort } from '../app/comfort';
 import { matchConfigOf, player2Behavior, type MatchSetup } from '../app/match-setup';
+import { DEFAULT_VIEWING, type Viewing } from '../app/viewing';
 import type { MatchConfig } from '../core/config';
 import { TICK_RATE, toPx } from '../core/constants';
 import type { FinisherState } from '../core/finisher';
@@ -21,13 +22,16 @@ import { rumble, vibrate } from '../input/haptics';
 import { PlayerInputs } from '../input/player-inputs';
 import { isTouchDevice, TouchControls } from '../input/touch-controls';
 import { FixedTimestep } from '../loop/fixed-timestep';
-import { frontFighter } from './animation';
+import { TickPacer } from '../loop/tick-pacer';
+import type { AnimOptions } from './anim-options';
+import { frontFighter, type ShowContext } from './animation';
 import { BoxOverlay } from './box-overlay';
 import { frameFight, MAX_CLOSE_UP, type FramingInput } from './camera-framing';
 import { DebugOverlay, describeGame, isDebugEnabled } from './debug-overlay';
 import { dissolveStyleOf } from './dissolve';
 import { detectEvents, type FightEvent } from './fight-events';
 import { FightFeedback } from './fight-feedback';
+import { FightMemory } from './fight-memory';
 import { FinisherSignal, sirenPitchOf } from './finisher-signal';
 import { FlashBudget } from './flash-budget';
 import { FighterView } from './fighter-view';
@@ -38,6 +42,7 @@ import { HoldPrompt } from './hold-prompt';
 import { HoldRing } from './hold-ring';
 import { Hud } from './hud';
 import { MoveCaption } from './move-caption';
+import type { ShakeMode } from './shake';
 import { ProjectileView } from './projectile-view';
 import { loadArt } from './art-textures';
 import { SpriteFighterView } from './sprite-fighter-view';
@@ -54,6 +59,8 @@ export interface FightSceneData {
   readonly sfx: Sfx;
   /** The player's comfort options as the fight starts (then `applyComfort`). */
   readonly comfort: Comfort;
+  /** How the fight is watched as it starts (then `setViewing`): slowed down, which animation. */
+  readonly viewing: Viewing;
   readonly onPause: () => void;
   /** Called once, a moment after the final KO, with the winner's index. */
   readonly onMatchEnd: (winner: 0 | 1 | null) => void;
@@ -65,12 +72,13 @@ type Mutable<T> = { -readonly [K in keyof T]: T[K] };
 interface FighterDisplay {
   /**
    * `frames`: display frames of 1/60 s since the last update; `finisher`: the fighter's Finisher
-   * signal (its halo).
+   * signal (its halo); `context`: the animation's options and what the scene remembers of the
+   * fight.
    */
-  update(state: GameState, frames: number, finisher: FinisherState): void;
+  update(state: GameState, frames: number, finisher: FinisherState, context: ShowContext): void;
   setFront(front: boolean): void;
-  /** The comfort options: `calm`, the flashes not normal; `still`, no motion. */
-  setComfort(calm: boolean, still: boolean): void;
+  /** The comfort options: `calm`, the flashes not normal; how far things shake (off: no motion). */
+  setComfort(calm: boolean, shake: ShakeMode): void;
 }
 
 /** Everything that exists only while the scene runs, created in `create`, freed on shutdown. */
@@ -116,6 +124,19 @@ export class FightScene extends Phaser.Scene {
    * motion, which only slows the simulation.
    */
   private visualClock!: FixedTimestep;
+  /**
+   * Slowed down to watch the animation (Viewing): exactly one frame of game time every so many
+   * frames of the visual clock, in place of the simulation's timestep; the KO's slow motion then
+   * paces its ticks within those (FightFeedback.ticksFor), slowing the slowed game as much.
+   */
+  private pacer: TickPacer | undefined;
+  private viewing: Viewing = DEFAULT_VIEWING;
+  /** What the views remember of the fight, noted tick by tick; reset with every match. */
+  private readonly memory = new FightMemory();
+  private readonly showContext: { options: AnimOptions; memory: FightMemory } = {
+    options: DEFAULT_VIEWING.anim,
+    memory: this.memory,
+  };
   /** Player 2's CPU, unless a human plays it. */
   private cpu: CpuState | undefined;
   private arts: readonly [FighterArt | undefined, FighterArt | undefined] = [undefined, undefined];
@@ -167,6 +188,9 @@ export class FightScene extends Phaser.Scene {
     }
     this.timestep = new FixedTimestep(1000 / TICK_RATE, MAX_TICKS_PER_FRAME);
     this.visualClock = new FixedTimestep(1000 / TICK_RATE, MAX_TICKS_PER_FRAME);
+    // A rematch starts over in its intro, with no event to tell the views: they forget it all.
+    this.memory.reset();
+    this.watch(data.viewing);
     const behavior = player2Behavior(data.setup);
     this.cpu = behavior === 'human' ? undefined : createCpu(1, behavior, Date.now() | 0);
     this.paused = false;
@@ -247,6 +271,7 @@ export class FightScene extends Phaser.Scene {
     };
 
     this.applyComfort(comfort);
+    this.runtime.feedback.setAnimOptions(this.viewing.anim);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.dispose();
     });
@@ -266,7 +291,23 @@ export class FightScene extends Phaser.Scene {
     runtime.feedback.setComfort(comfort);
     runtime.hud.setComfort(hudComfortOf(comfort));
     runtime.holdRing.calm = isCalm(comfort);
-    for (const view of runtime.fighterViews) view.setComfort(isCalm(comfort), isStill(comfort));
+    for (const view of runtime.fighterViews) view.setComfort(isCalm(comfort), comfort.shake);
+  }
+
+  /**
+   * How the fight is watched, at once (changed in training's pause): its pace, and the animation
+   * of now or of before (docs/art/animation-plan.md §2, V0). The simulation is the same at any
+   * pace: only the ticks played per display frame change.
+   */
+  setViewing(viewing: Viewing): void {
+    this.watch(viewing);
+    this.runtime?.feedback.setAnimOptions(viewing.anim);
+  }
+
+  private watch(viewing: Viewing): void {
+    this.pacer = viewing.slowdown > 1 ? new TickPacer(1, viewing.slowdown) : undefined;
+    this.viewing = viewing;
+    this.showContext.options = viewing.anim;
   }
 
   /**
@@ -332,11 +373,17 @@ export class FightScene extends Phaser.Scene {
     // at the zoom it shows at (the last frame's: it eases slowly).
     runtime.budget.advance(visualFrames);
     runtime.budget.setZoom(this.closeUp);
-    const ticks = this.timestep.advance(deltaMs * runtime.feedback.timeScale());
+    // Slowed down, the game lives fewer frames than the screen shows.
+    const gameFrames = this.pacer ? this.pacer.advance(visualFrames) : visualFrames;
+    const ticks = this.pacer
+      ? runtime.feedback.ticksFor(gameFrames)
+      : this.timestep.advance(deltaMs * runtime.feedback.timeScale());
     const startMs = runtime.debugOverlay ? performance.now() : 0;
 
     // Devices are sampled once per display frame and held for every tick of that frame. Above
-    // 60 Hz some frames run no tick: reading then would drop a quick tap no tick ever sees.
+    // 60 Hz, or slowed down, some frames run no tick: reading then would drop a quick tap no tick
+    // ever sees. Gamepads keep no press of their own: they are polled on every frame, read or not.
+    runtime.inputs.poll(pads);
     if (ticks > 0) {
       const [player1, player2] = runtime.inputs.read(pads);
       for (let i = 0; i < ticks; i++) {
@@ -345,6 +392,7 @@ export class FightScene extends Phaser.Scene {
         const previous = this.state;
         this.state = step(previous, this.tickInputs, this.config);
         detectEvents(previous, this.state, this.config, this.tickEvents);
+        this.memory.note(this.state, this.tickEvents);
         const viewLeft = toPx(this.state.cameraX) - VIEW_SIZE.width / 2;
         runtime.feedback.beginTick();
         for (const event of this.tickEvents) {
@@ -354,7 +402,7 @@ export class FightScene extends Phaser.Scene {
         runtime.feedback.endTick();
       }
     }
-    runtime.feedback.update(visualFrames);
+    runtime.feedback.update(visualFrames, gameFrames);
 
     runtime.debugOverlay?.record(
       { frameMs: deltaMs, ticks, tickTimeMs: performance.now() - startMs },
@@ -387,8 +435,8 @@ export class FightScene extends Phaser.Scene {
     this.front = frontFighter(this.front, a, b);
     viewA.setFront(this.front === 0);
     viewB.setFront(this.front === 1);
-    viewA.update(this.state, elapsed, finisher[0]);
-    viewB.update(this.state, elapsed, finisher[1]);
+    viewA.update(this.state, elapsed, finisher[0], this.showContext);
+    viewB.update(this.state, elapsed, finisher[1], this.showContext);
     runtime.projectileView.update(this.state.projectiles, this.state.frame);
     runtime.hud.update(this.state, finisher);
     runtime.touch?.showBoost(a.boost);

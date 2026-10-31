@@ -3,6 +3,7 @@ import '@fontsource/bangers/latin-400.css';
 import './styles.css';
 import Phaser from 'phaser';
 import { App } from './app/app';
+import { viewingFromUrl } from './app/viewing';
 import { watchInstallPrompt } from './app/install';
 import { registerServiceWorker } from './app/service-worker';
 import { Sfx } from './audio/sfx';
@@ -107,7 +108,8 @@ async function start(): Promise<void> {
 
   const startApp = (): void => {
     try {
-      const started = new App(uiRoot(), game, new Sfx());
+      // `?vitesse=2`, `?anim=avant`: to watch the animation in any mode (src/app/viewing.ts).
+      const started = new App(uiRoot(), game, new Sfx(), viewingFromUrl(window.location.search));
       started.start();
       app = started;
     } catch (error) {

@@ -299,6 +299,22 @@ describe('detectEvents', () => {
     expect(jab.find((e) => e.type === 'hit')).toMatchObject({ held: false });
   });
 
+  it('reports the fall of a body knocked out in the air once, as it meets the floor (V1)', () => {
+    // Riff's Retourné launches Nayo: on his last point, then at full health.
+    const config: MatchConfig = { stage: TRAINING_STAGE, fighters: [RIFF, P] };
+    const retourne: [number, number][] = [[Input.Left | Input.Heavy, 0], ...idle(80)];
+    const out = eventsOf(facingOff(30, config, [{}, { health: 1 }]), retourne, config);
+    expect(types(out)).toContain('ko');
+    expect(out.filter((e) => e.type === 'fall')).toEqual([
+      { type: 'fall', x: expect.any(Number) as number, away: 1, ko: true },
+    ]);
+    const alive = eventsOf(facingOff(30, config), retourne, config);
+    expect(alive.filter((e) => e.type === 'fall')).toMatchObject([{ ko: false }]);
+    // Knocked out on its feet, the body never flies: no fall.
+    const jab = facingOff(30, MIRROR_MATCH, [{}, { health: 5 }]);
+    expect(types(eventsOf(jab, [[Input.Light, 0], ...idle(80)]))).not.toContain('fall');
+  });
+
   it('reports two grabs on the same tick as one tech', () => {
     const tech = eventsOf(facingOff(30, MIRROR_MATCH), [[Input.Grab, Input.Grab], ...idle(10)]);
     expect(tech.filter((e) => e.type === 'tech')).toHaveLength(1);

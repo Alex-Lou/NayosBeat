@@ -85,6 +85,23 @@ describe('PlayerInputs', () => {
     expect(inputs.read(pads)).toEqual([Input.Dash, Input.Grab]);
   });
 
+  it('keeps a gamepad press polled between two reads, as a key tapped: once', () => {
+    // Slowed down, the fight reads every few frames: the button is pressed and released between.
+    const { inputs } = setup([pad(0)]);
+    inputs.poll([pad(0)]);
+    inputs.poll([pad(0, [PadButton.West])]);
+    inputs.poll([pad(0)]);
+    expect(inputs.read([pad(0)])[0]).toBe(Input.Light);
+    expect(inputs.read([pad(0)])[0]).toBe(0);
+  });
+
+  it('forgets the gamepad presses polled while a menu was open', () => {
+    const { inputs } = setup([pad(0)]);
+    inputs.poll([pad(0, [PadButton.West])]);
+    inputs.reset([pad(0)]);
+    expect(inputs.read([pad(0)])[0]).toBe(0);
+  });
+
   it('keeps a held dash or grab from a menu until released', () => {
     const { target, inputs } = setup();
     target.dispatchEvent(key('keydown', 'KeyI'));

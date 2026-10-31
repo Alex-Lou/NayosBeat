@@ -6,3 +6,6 @@ coverage/
 
 # Enlarged sprite previews written by `npm run sprites`.
 tools/sprites/preview/
+
+# Films and pages written by `npm run anim:film` and `npm run anim:compare`.
+tools/anim/out/

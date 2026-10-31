@@ -3,25 +3,22 @@ import type { MatchConfig } from '../core/config';
 import { flightTicks } from '../core/fighter/air';
 import { contactDistance } from '../core/hold-pair';
 import { horizontalDirection } from '../core/input';
-import { ROUND_END_FRAMES } from '../core/rules';
 import type { FighterState, GameState, RoundState } from '../core/state';
+import { ANIM_OPTIONS, type AnimOptions } from './anim-options';
+import { deathClipOf } from './deaths';
+import type { FightMemory } from './fight-memory';
+import { flightClipOf, hitClipOf, isAirborne } from './reactions';
+import { restTickOf, roundPoseOf } from './rest-poses';
 
 /** Past every clip's end: the proximity guard holds the shell the block settles into. */
 const HELD = Number.POSITIVE_INFINITY;
 
 /**
  * Which clip shows a fighter: a round pose while the round is not being fought (entrance,
- * winner, loser on time), otherwise the clip of its current action.
+ * winner, loser on time: rest-poses.ts), otherwise the clip of its current action.
  */
 export function clipIdOf(fighter: FighterState, player: 0 | 1, round: RoundState): ClipId {
-  if (round.phase === 'intro') return 'intro';
-  const over = round.phase === 'roundEnd' || round.phase === 'matchEnd';
-  // Only once standing still: a fighter still recovering, or knocked out, keeps its animation.
-  if (over && round.result && fighter.action === 'idle') {
-    if (round.result.winner === player) return 'victory';
-    if (round.result.reason === 'timeout') return 'timeOver';
-  }
-  return actionClipOf(fighter);
+  return roundPoseOf(fighter, player, round) ?? actionClipOf(fighter);
 }
 
 /**
@@ -47,6 +44,19 @@ export interface Shown {
 }
 
 /**
+ * What the animation is drawn from besides the state (docs/art/animation-plan.md §2, V1): its
+ * options (the animation of before, to compare), and what the view remembers of the fight
+ * (FightMemory, held by the fight scene; none where no fight is played tick by tick).
+ */
+export interface ShowContext {
+  readonly options: AnimOptions;
+  readonly memory: FightMemory | null;
+}
+
+/** The animation as it is now, with nothing remembered. */
+export const SHOW_NOW: ShowContext = { options: ANIM_OPTIONS, memory: null };
+
+/**
  * Fills `shown` with what `player` shows: the clip of its state on its own clock, where it is.
  * Thrown backward (docs/combat-v2.md §4.3, §11.1), it plays in step with the thrower: the
  * thrownBack strip frame for frame with the throw, then, once let go, that last frame where it
@@ -60,6 +70,7 @@ export function showFighter(
   config: MatchConfig,
   art: FighterArt,
   shown: Shown,
+  context: ShowContext = SHOW_NOW,
 ): void {
   const fighter = state.fighters[player];
   const thrower = state.fighters[player === 0 ? 1 : 0];
@@ -68,7 +79,7 @@ export function showFighter(
     return;
   }
   shown.clip = clipIdOf(fighter, player, state.round);
-  shown.tick = clipTickOf(shown.clip, fighter, state.round);
+  shown.tick = clipTickOf(shown.clip, fighter, state.round, context.options);
   if (shown.clip === 'knockdown') standUp(fighter, art, shown);
   else if (fighter.action === 'hitstun' || fighter.action === 'blockstun') {
     shown.tick = stunTick(clipOf(art, shown.clip), shown.tick, fighter.stunTotal);
@@ -136,20 +147,21 @@ function thrownBack(
   return true;
 }
 
-/** Ticks since a clip started: round poses follow the round clock, the rest the action's. */
-export function clipTickOf(clip: ClipId, fighter: FighterState, round: RoundState): number {
-  switch (clip) {
-    case 'intro':
-      return round.phaseFrame;
-    case 'victory':
-    case 'timeOver':
-      // The match end follows the round end: keep counting so the pose does not restart.
-      return round.phaseFrame + (round.phase === 'matchEnd' ? ROUND_END_FRAMES : 0);
-    default:
-      // The proximity guard holds the block's last pose, not its impact: nothing has touched
-      // yet, and a real block then shows by rocking back from it.
-      return fighter.action === 'guard' ? HELD : fighter.actionFrame;
-  }
+/**
+ * Ticks since a clip started: the poses at rest on their own clocks (rest-poses.ts), the rest on
+ * the action's.
+ */
+export function clipTickOf(
+  clip: ClipId,
+  fighter: FighterState,
+  round: RoundState,
+  options: AnimOptions = ANIM_OPTIONS,
+): number {
+  const rest = restTickOf(clip, fighter, round, options);
+  if (rest !== null) return rest;
+  // The proximity guard holds the block's last pose, not its impact: nothing has touched yet,
+  // and a real block then shows by rocking back from it.
+  return fighter.action === 'guard' ? HELD : fighter.actionFrame;
 }
 
 function actionClipOf(fighter: FighterState): ClipId {
@@ -167,7 +179,7 @@ function actionClipOf(fighter: FighterState): ClipId {
       // The jump's direction is read at take-off: forward held, it is about to be the flip.
       return horizontalDirection(fighter.input) === fighter.facing ? 'preJumpForward' : 'preJump';
     case 'ko':
-      return koClipOf(fighter);
+      return deathClipOf(fighter);
     case 'holding':
       return fighter.move ?? 'hold';
     case 'air':
@@ -182,45 +194,6 @@ function actionClipOf(fighter: FighterState): ClipId {
     case 'blockstun':
     case 'guard':
       return fighter.crouching ? 'blockCrouch' : 'blockStand';
-  }
-}
-
-/** Sent flying: swept off the legs by a sweep, launched otherwise. */
-function flightClipOf(fighter: FighterState): ClipId {
-  return fighter.reaction === 'trip' ? 'trip' : 'airHit';
-}
-
-/**
- * Knocked out. Sent flying (a launcher, a sweep, a throw, a blow in the air), it flies as any
- * fighter sent flying until the body lands, then plays the ko from the frame it meets the floor
- * (`koLanding`), on the clock the landing restarts: it never hovers upright through the first
- * frames of a ko drawn on its feet. On its feet, the whole ko.
- */
-function koClipOf(fighter: FighterState): ClipId {
-  if (isAirborne(fighter)) return flightClipOf(fighter);
-  const { reaction } = fighter;
-  return reaction === 'launch' || reaction === 'trip' || reaction === 'thrown' ? 'koLanding' : 'ko';
-}
-
-/** Off the ground, or leaving it on this tick (the blow that sends it flying has just landed). */
-function isAirborne(fighter: FighterState): boolean {
-  return fighter.y > 0 || fighter.vy > 0;
-}
-
-/**
- * Hit standing: the head, the belly or a leg, by where the blow landed (§9.4); the whole
- * reaction for a long stun, its quick version otherwise. Crouching, the crouching one.
- */
-function hitClipOf(fighter: FighterState): ClipId {
-  if (fighter.crouching) return 'hitCrouch';
-  const heavy = fighter.reactionHeavy;
-  switch (fighter.reaction) {
-    case 'high':
-      return heavy ? 'hitHigh' : 'hitHighLight';
-    case 'low':
-      return heavy ? 'hitLow' : 'hitLowLight';
-    default:
-      return heavy ? 'hitMid' : 'hitMidLight';
   }
 }
 

@@ -2,11 +2,15 @@ import type Phaser from 'phaser';
 import type { Comfort } from '../app/comfort';
 import type { Sfx } from '../audio/sfx';
 import { px, toPx } from '../core/constants';
+import { TickPacer } from '../loop/tick-pacer';
 import { BLEEDS, Blood } from './blood';
 import { Dust } from './dust';
 import { Effects } from './effects';
 import { Graze, type GrazeWeight } from './graze';
+import type { AnimOptions } from './anim-options';
 import {
+  landingOf,
+  landsHeavy,
   SHATTER_RUMBLE,
   shatters,
   vibrationFor,
@@ -23,9 +27,13 @@ import { SHAKE_STRENGTH, TRAUMA } from './shake';
 import { boostStamp, STAMP_TEXTS, Stamps } from './stamps';
 import { glowFlashArea, koVeil, superDim, superHalo, type VeilLook } from './veils';
 
-/** The final blow plays in slow motion for a moment (display only: the simulation is intact). */
+/**
+ * The final blow plays in slow motion for a moment (display only: the simulation is intact): 7
+ * ticks every 20 frames of game time, for 50 of them.
+ */
 const KO_SLOW_MOTION_FRAMES = 50;
-const KO_SLOW_MOTION_SCALE = 0.35;
+const KO_SLOW_MOTION = { ticks: 7, frames: 20 } as const;
+const KO_SLOW_MOTION_SCALE = KO_SLOW_MOTION.ticks / KO_SLOW_MOTION.frames;
 
 /** The super's halo glows behind the body of the one who lets it go: this high over its feet. */
 const BODY_HEIGHT = 40;
@@ -98,7 +106,14 @@ export class FightFeedback {
   private readonly eclatAreas: readonly [number, number];
   private readonly budget: FlashBudget;
   private readonly blows: PendingBlow[] = [];
+  /** Frames of game time the KO's slow motion has left. */
   private slowMotionFrames = 0;
+  /** Its ticks in whole ticks, when the viewing paces the game (`ticksFor`); anew at each KO. */
+  private slowMotionPacer = new TickPacer(KO_SLOW_MOTION.ticks, KO_SLOW_MOTION.frames);
+  /** How the round's KO landed, null before it: the Finisher's lands in silence (landingOf). */
+  private koFinish: KoFinish | null = null;
+  /** The animation of before (AnimOptions): a body knocked out in the air lands without a sound. */
+  private legacy = false;
 
   constructor(
     scene: Phaser.Scene,
@@ -140,6 +155,11 @@ export class FightFeedback {
     const calm = comfort.flashes !== 'normal';
     this.words.calm = calm;
     this.stamps.calm = calm;
+  }
+
+  /** The animation's options, at once (training's pause): what a body knocked out lands with. */
+  setAnimOptions(options: AnimOptions): void {
+    this.legacy = options.legacy;
   }
 
   /** Call before the events of each simulation tick: blows of the same tick trade fairly. */
@@ -184,6 +204,7 @@ export class FightFeedback {
     switch (event.type) {
       case 'hit':
       case 'ko':
+        if (event.type === 'ko') this.koFinish = event.finish;
         // With the tick's other blows, at its end (endTick).
         this.blows.push({ event, viewLeft });
         break;
@@ -216,11 +237,17 @@ export class FightFeedback {
         sfx.play('throw');
         break;
       }
-      case 'fall':
-        this.dust.kick(event.x, event.away);
-        effects.kick(TRAUMA.fall, event.away);
-        sfx.play('fall');
+      case 'fall': {
+        // A body knocked out in the air claps onto the floor too (docs/art/animation-plan.md §2,
+        // V1), in the dust its ko draws.
+        const landing = landingOf(event, this.koFinish, this.legacy);
+        if (landing.dust) this.dust.kick(event.x, event.away);
+        if (landing.thud) {
+          effects.kick(TRAUMA.fall, event.away);
+          sfx.play('fall');
+        }
         break;
+      }
       case 'attack':
         sfx.play(event.heavy ? 'heavySwing' : 'swing');
         break;
@@ -268,6 +295,7 @@ export class FightFeedback {
         if (event.phase === 'intro') {
           sfx.play('round');
           this.words.reset();
+          this.koFinish = null;
         }
         if (event.phase === 'fight') sfx.play('fight');
         break;
@@ -285,7 +313,7 @@ export class FightFeedback {
     const style = this.styles[event.by];
     const ko = event.type === 'ko';
     // A counter-hit lands like a heavy blow, its stamp over it (docs/combat-v2.md §7.4).
-    const heavy = ko || event.heavy || event.counter !== null;
+    const heavy = landsHeavy(event);
     if (ko) {
       const breaks = lit || budget.admit(this.shatterOf(event));
       this.stage.knockOut?.(event.by === 0 ? 1 : 0, event.finish, !breaks);
@@ -324,6 +352,7 @@ export class FightFeedback {
     const veil = koVeil(event.finish, style.energy, this.stage.colors, budget.mode, lit);
     if (veil) effects.veil(veil, this.inWorld(event.x, event.y));
     this.slowMotionFrames = KO_SLOW_MOTION_FRAMES;
+    this.slowMotionPacer = new TickPacer(KO_SLOW_MOTION.ticks, KO_SLOW_MOTION.frames);
     this.sfx.play('ko');
   }
 
@@ -399,10 +428,20 @@ export class FightFeedback {
   }
 
   /**
-   * Advances the visual effects by `frames` steps of 1/60 s (see the visual clock of
-   * FightScene): they last as long on a 144 Hz screen as on a 60 Hz one.
+   * The ticks to play for `gameFrames` frames of game time, when the viewing paces them (FightScene,
+   * slowed down to watch the animation): one a frame, or 7 every 20 in the KO's slow motion. In
+   * whole ticks, so the slow motion still slows a slowed game, as much as the game's own.
    */
-  update(frames: number): void {
+  ticksFor(gameFrames: number): number {
+    return this.slowMotionFrames > 0 ? this.slowMotionPacer.advance(gameFrames) : gameFrames;
+  }
+
+  /**
+   * Advances the visual effects by `frames` steps of 1/60 s (see the visual clock of
+   * FightScene): they last as long on a 144 Hz screen as on a 60 Hz one. `gameFrames`: those of
+   * them the game lives, fewer when the viewing slows it down; the KO's slow motion counts them.
+   */
+  update(frames: number, gameFrames = frames): void {
     for (let i = 0; i < frames; i++) {
       this.effects.update();
       this.hitFx.update();
@@ -416,7 +455,7 @@ export class FightFeedback {
     // the visual clock the budget kept it for.
     this.words.settle();
     this.stamps.settle();
-    this.slowMotionFrames = Math.max(0, this.slowMotionFrames - frames);
+    this.slowMotionFrames = Math.max(0, this.slowMotionFrames - gameFrames);
   }
 
   get shakeX(): number {
