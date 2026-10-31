@@ -7,7 +7,7 @@
 
 import { readFile } from 'node:fs/promises';
 import { rgbaAt } from './colors.ts';
-import { checkDrawn, DRAWN_ROOT, listFolder, type DrawnRules } from './drawn.ts';
+import { checkDrawn, DRAWN_ROOT, DrawingProblems, listFolder, type DrawnRules } from './drawn.ts';
 import { codeIconPixels, iconPalette, ICON_MASTER, MASTER_START } from './icons.ts';
 import { decodeIndexedPng, type IndexedImage, type Rgba } from './png.ts';
 import { VINYL_CELLS, VINYL_FRAMES, vinylPixels } from './vinyl.ts';
@@ -92,7 +92,7 @@ export async function loadUiDrawn(
     }
   }
   if (problems.length > 0) {
-    throw new Error(
+    throw new DrawingProblems(
       `Drawn ${UI_FOLDER} images:\n${problems.map((line) => `  ${line}`).join('\n')}`,
     );
   }

@@ -22,7 +22,7 @@ import {
   uiTemplateOf,
   type Template,
 } from './aseprite-template.ts';
-import { DRAWN_ROOT, loadDrawn, PORTRAIT } from './drawn.ts';
+import { DRAWN_ROOT, loadDrawn, PORTRAIT, reportingDrawingProblems } from './drawn.ts';
 import type { Fighter } from './fighter.ts';
 import { frameDataOf } from './frame-data.ts';
 import { NAYO } from './nayo/index.ts';
@@ -112,4 +112,4 @@ async function main(): Promise<void> {
   await writeStage([]);
 }
 
-await main();
+await reportingDrawingProblems(main);

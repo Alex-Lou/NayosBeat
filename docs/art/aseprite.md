@@ -13,6 +13,13 @@ npm run aseprite:extension      # une fois : construit l'extension
 npm run sprites:templates       # les gabarits de toutes les planches (après chaque changement de données)
 ```
 
+Pour aller plus vite sur un seul personnage ou une seule planche :
+
+```bash
+npm run sprites -- riff                         # ne régénère que Riff
+npm run sprites:templates -- riff portrait      # un seul gabarit (ou -- riff, -- ui, -- entrepot)
+```
+
 1. Aseprite : **Fichier > Scripts > NayosBeat > Nouvelle planche…**, puis choisir un gabarit, par exemple `art-src/gabarits/nayo/idle.json`. La planche est créée dans `art-src/nayo/idle.aseprite`, à partir de ce que le jeu affiche aujourd'hui.
 2. Dessiner.
 3. **Fichier > Scripts > NayosBeat > Exporter vers le jeu** : écrit `art-src/nayo/idle.png` (et `art-src/nayo/fx/idle.png` pour les effets).
@@ -32,7 +39,15 @@ La première fois qu'une commande lit un gabarit ou écrit un fichier, Aseprite 
 
 Après une mise à jour de l'extension (`tools/aseprite/extension/`), relancer `npm run aseprite:extension` et la réinstaller.
 
-`npm run aseprite:check` (Lua 5.4 requis, lancé aussi par la CI) fait tourner l'extension hors d'Aseprite, contre une imitation de son API (`tools/aseprite/test/`). Le scénario crée des planches, les retouche, les exporte, essaie des exports fautifs, puis fait relire et comparer le résultat par `npm run sprites`. Ça vérifie la logique de l'extension, pas Aseprite lui-même.
+`npm run aseprite:check` (lancé aussi par la CI) fait tourner l'extension hors d'Aseprite, contre une imitation de son API (`tools/aseprite/test/`). Le scénario crée des planches, les retouche, les exporte, essaie des exports fautifs, puis fait relire et comparer le résultat par `npm run sprites`. Ça vérifie la logique de l'extension, pas Aseprite lui-même. Il demande Lua 5.4 (`lua5.4`, ou `lua`). Sur Debian ou Ubuntu, la liste des paquets doit d'abord être à jour, sinon l'installation échoue :
+
+```bash
+sudo apt-get update
+```
+
+```bash
+sudo apt-get install -y lua5.4
+```
 
 ## Les commandes
 
@@ -57,7 +72,7 @@ Une case de **256 × 256 px** par image : les sprites sont dessinés deux fois p
 
 Les guides, image par image :
 
-- **orange** : la ligne juste sous les semelles (la dernière rangée des pieds est la rangée 248), avec un repère sous l'ancre (colonne 128) ;
+- **orange** : la ligne juste sous les semelles (le code pose la dernière rangée des pieds sur la rangée 248), avec un repère sous l'ancre (colonne 128) ;
 - **bleu** : la pushbox (le corps qui empêche les combattants de se traverser) ;
 - **vert** : les hurtbox (où le personnage peut être touché) ;
 - **rouge** : la hitbox, sur les images actives d'un coup. Le poing ou le pied dessiné doit l'atteindre.
@@ -78,7 +93,7 @@ L'extension les vérifie avant d'exporter. `npm run sprites` les vérifie à nou
 | Le nombre d'images du gabarit | Les images sont liées aux coups (`src/art/<perso>/sheets.ts`, `clips.ts`). Le changer passe par le code. |
 | 4 px vides au moins sur les bords gauche, droit et haut de chaque case, effets compris | Le jeu recadre les cases sans rogner le contour. Les effets peuvent descendre sous le sol (poussière), pas sortir de la case. |
 | Rien sous la rangée 250 | Les pieds restent sur le sol. |
-| Les pieds au sol dans chaque image de `idle`, `walkForward`, `walkBack`, `crouch`, `block` | Un pied qui flotte se voit tout de suite en jeu. |
+| Les pieds au sol dans chaque image de `idle`, `walkForward`, `walkBack`, `crouch`, `block` : le pixel le plus bas de chaque image entre les rangées **246 et 250** (248 au juste) | Un pied qui flotte se voit tout de suite en jeu. |
 | Aucune image vide dans `corps` | Le jeu afficherait un trou. |
 
 `npm run sprites` **avertit** aussi (sans bloquer) quand rien n'est dessiné dans la hitbox d'une image active : le coup toucherait là où on ne voit rien.
@@ -112,8 +127,8 @@ Tant qu'elles ne sont pas dessinées, le code dessine l'icône (la tête de Nayo
 Le buste d'un combattant sur l'écran de sélection : `art-src/<perso>/portrait.png`, gabarit `art-src/gabarits/<perso>/portrait.json`.
 
 - **96 × 96 px, une image**, dans la **palette du personnage**, avec ses numéros, comme les planches : l'écran de sélection montre aussi la tenue alt en match miroir, et **Tenue main / alt** fonctionne.
-- Le gabarit part de la tête et des épaules de sa garde (la 1re image de `idle`).
-- La vignette l'affiche en entier, agrandi.
+- Le gabarit part d'un carré de 48 px autour de la tête de sa garde (la 1re image de `idle`), agrandi ×2 : le cadrage des vignettes actuelles (des carrés de 56 et 58 px), avec deux fois plus de pixels pour affiner. Chaque pixel de départ y est donc un bloc de 2 × 2.
+- `npm run sprites` l'installe dans les deux tenues : `src/art/<perso>/main/portrait.png` et `alt/portrait.png`. La vignette l'affiche en entier, agrandi.
 - Sans portrait dessiné, l'écran garde le carré découpé dans la garde, comme avant.
 
 ## Le stage (l'Entrepôt)
@@ -143,6 +158,32 @@ Les tests de flashs (`npm test`) mesurent alors les étincelles, les mots et les
 - **Régler à nouveau les effets.** Il faut alors remesurer les tables de `src/render/flash-areas.ts`, ou revoir la teinte sombre des effets dans `src/render/veils.ts`. C'est une décision de code, à prendre en connaissance de cause.
 
 À l'essai, un club au mur d'enceintes presque noir (`#0c0a10`) faisait échouer deux tests : les effets sombres y montaient à ΔL 0,082 au lieu de 0,08 au plus.
+
+## Sans Aseprite
+
+Le pipeline ne dépend pas d'Aseprite : `npm run sprites` lit des PNG. Pour en produire autrement (un script, un autre éditeur), il suffit d'écrire ce que l'extension écrirait :
+
+- **Le PNG** : indexé 8 bits, les images côte à côte sur une rangée. Largeur = `width` × `frames` du gabarit, hauteur = `height`.
+- **La palette** : pour un combattant (planches, effets, portrait), celle de sa tenue main, **numéros compris**, c'est-à-dire `palette.main` du gabarit sans les 4 couleurs de guide qu'une planche y ajoute à la fin. Pour une palette libre (`palette.free` : icône, vinyle, stage), n'importe quelles couleurs, 256 au plus. Dans tous les cas, l'index 0 est transparent.
+- **Où** : le chemin du champ `file` du calque exporté, à partir de `art-src/<folder>/`.
+- **Les règles** : celles du champ `rules` de ce calque, les mêmes que `npm run sprites` vérifie.
+
+Le format des gabarits (`art-src/gabarits/<folder>/<name>.json`, version 3) :
+
+| Champ | Contenu |
+|---|---|
+| `folder`, `name` | Le dossier dans `art-src/` et le nom de l'image. |
+| `width`, `height`, `frames` | La taille d'une case et le nombre d'images. |
+| `durations` | La durée de chaque image, en secondes. |
+| `palette` | `main` (et `alt` pour un combattant), en `#rrggbbaa`, et `free`. |
+| `tags` | Les étiquettes : `name`, `from`, `to` (images comptées à partir de 0). |
+| `layers` | De l'arrière vers l'avant : `name`, `file` (absent pour un guide ou une référence), `rules`, `locked`, `opacity`, et `frames`. `frames` donne les pixels de départ de chaque case, en paires `[nombre, couleur]`, rangée par rangée. |
+
+Pour partir d'un gabarit :
+1. décoder les paires de `layers[i].frames[f]` en une case de `width` × `height` ;
+2. placer les cases côte à côte et retoucher ;
+3. écrire le PNG avec `encodeIndexedPng` (`tools/sprites/png.ts`) et la palette ci-dessus ;
+4. lancer `npm run sprites`. Un dessin fautif est refusé sans rien écrire : le message dit quel fichier, quelle image, quel pixel, et la règle.
 
 ## Revenir au dessin du code
 

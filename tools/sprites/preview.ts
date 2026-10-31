@@ -20,7 +20,7 @@ import { toPx } from '../../src/core/constants.ts';
 import { NAYO as NAYO_TEMPLATE } from '../../src/data/fighters/nayo.ts';
 import { RIFF as RIFF_TEMPLATE } from '../../src/data/fighters/riff.ts';
 import { strikeOf, type Clips } from './clips.ts';
-import { loadDrawn, stripPixels, type Drawn } from './drawn.ts';
+import { loadDrawn, reportingDrawingProblems, stripPixels, type Drawn } from './drawn.ts';
 import type { Fighter, Strike } from './fighter.ts';
 import { NAYO } from './nayo/index.ts';
 import type { Colorway } from './palette.ts';
@@ -178,4 +178,4 @@ async function main(): Promise<void> {
   }
 }
 
-await main();
+await reportingDrawingProblems(main);

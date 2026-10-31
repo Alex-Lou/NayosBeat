@@ -272,7 +272,13 @@ export function portraitTemplateOf(fighter: Fighter, drawn: ReadonlyMap<string, 
   });
 }
 
-/** The head and shoulders of the guard: a square of its first idle frame around the head. */
+/**
+ * Sprite pixels across the square of the guard a portrait starts from, enlarged twice: about the
+ * framing of the select tiles' squares (56 and 58 px), at twice their detail.
+ */
+const PORTRAIT_SOURCE = PORTRAIT_SIZE / 2;
+
+/** The head of the guard: a square of its first idle frame around the head, enlarged twice. */
 function portraitStart(fighter: Fighter, drawn: ReadonlyMap<string, Drawn>): Uint8Array {
   const own = drawn.get(PORTRAIT)?.body;
   if (own) return own.pixels;
@@ -280,13 +286,14 @@ function portraitStart(fighter: Fighter, drawn: ReadonlyMap<string, Drawn>): Uin
   const pose = fighter.poses('idle')?.[0];
   if (!pose) throw new Error(`${fighter.name} has no idle pose`);
   const { head } = solve(pose, fighter.body);
-  const left = Math.round(ANCHOR.x + head.x * ART_SCALE - PORTRAIT_SIZE / 2);
-  const top = Math.round(ANCHOR.y - head.y * ART_SCALE - PORTRAIT_SIZE * 0.4);
+  const left = Math.round(ANCHOR.x + head.x * ART_SCALE - PORTRAIT_SOURCE / 2);
+  const top = Math.round(ANCHOR.y - head.y * ART_SCALE - PORTRAIT_SOURCE * 0.45);
+  const zoom = PORTRAIT_SIZE / PORTRAIT_SOURCE;
   const pixels = new Uint8Array(PORTRAIT_SIZE * PORTRAIT_SIZE);
   for (let y = 0; y < PORTRAIT_SIZE; y++) {
     for (let x = 0; x < PORTRAIT_SIZE; x++) {
-      const cx = left + x;
-      const cy = top + y;
+      const cx = left + Math.floor(x / zoom);
+      const cy = top + Math.floor(y / zoom);
       if (cx < 0 || cy < 0 || cx >= CELL_SIZE || cy >= CELL_SIZE) continue;
       pixels[y * PORTRAIT_SIZE + x] = idle.pixels[cy * idle.width + cx] ?? 0;
     }

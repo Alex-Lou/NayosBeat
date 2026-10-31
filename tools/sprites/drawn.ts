@@ -26,6 +26,26 @@ import { drawStrip, drawStripEffects, toPlatine } from './sheet.ts';
 /** Where the drawn strips and their Aseprite files live. */
 export const DRAWN_ROOT = new URL('../../art-src/', import.meta.url);
 
+/** What is wrong with drawings: the artist's to fix, not a bug of the tools. */
+export class DrawingProblems extends Error {
+  override name = 'DrawingProblems';
+}
+
+/**
+ * Runs a tool's `main`, the problems found in drawings shown as they are (the list, without a
+ * stack trace: the line to fix stays readable) and the run failed (exit code 1). Any other error
+ * is a bug, thrown as it is.
+ */
+export async function reportingDrawingProblems(main: () => Promise<void>): Promise<void> {
+  try {
+    await main();
+  } catch (error) {
+    if (!(error instanceof DrawingProblems)) throw error;
+    console.error(error.message);
+    process.exitCode = 1;
+  }
+}
+
 /** The pixels of a strip, wherever they come from (the code or a drawing). */
 export type StripPixels = Pick<PixelCanvas, 'width' | 'height' | 'pixels'>;
 
@@ -282,7 +302,7 @@ export async function loadDrawn(
   }
   if (problems.length > 0) {
     const lines = problems.map((line) => `  ${line}`).join('\n');
-    throw new Error(`Drawn strips of ${fighter.name}:\n${lines}`);
+    throw new DrawingProblems(`Drawn strips of ${fighter.name}:\n${lines}`);
   }
   return drawn;
 }

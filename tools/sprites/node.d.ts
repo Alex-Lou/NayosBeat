@@ -7,4 +7,4 @@ declare module 'node:fs/promises' {
   export function rm(path: URL, options: { recursive: true; force: true }): Promise<void>;
 }
 
-declare const process: { readonly argv: readonly string[] };
+declare const process: { readonly argv: readonly string[]; exitCode?: number | undefined };

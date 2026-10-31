@@ -20,6 +20,7 @@ import {
   loadDrawn,
   platinePixels,
   PORTRAIT,
+  reportingDrawingProblems,
   stripPixels,
   unseenStrikes,
   type Drawn,
@@ -218,4 +219,4 @@ async function main(): Promise<void> {
   }
 }
 
-await main();
+await reportingDrawingProblems(main);

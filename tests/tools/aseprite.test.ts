@@ -201,6 +201,13 @@ describe('Aseprite templates of the portraits and the stage', () => {
     const start = cellOf(portrait.layers[0]?.frames[0] ?? [], 96);
     expect(start.some((slot) => slot !== 0)).toBe(true);
     expect(Math.max(...start)).toBeLessThan(SLOTS);
+    // The tiles' framing, enlarged twice: every pixel of the guard is a 2 × 2 square.
+    for (let y = 0; y < 96; y += 2) {
+      for (let x = 0; x < 96; x += 2) {
+        const pixel = start[y * 96 + x];
+        expect([start[y * 96 + x + 1], start[(y + 1) * 96 + x]]).toEqual([pixel, pixel]);
+      }
+    }
   });
 
   it('draw the stage layers at their sizes, in free palettes, from the grey box', () => {

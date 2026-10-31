@@ -16,7 +16,7 @@ import {
 import { GREYBOX } from '../../src/render/greybox-stage.ts';
 import { VIEW_SIZE } from '../../src/render/view.ts';
 import { compactImage, rgbaAt } from './colors.ts';
-import { checkDrawn, DRAWN_ROOT, listFolder, type DrawnRules } from './drawn.ts';
+import { checkDrawn, DRAWN_ROOT, DrawingProblems, listFolder, type DrawnRules } from './drawn.ts';
 import { decodeIndexedPng, encodeIndexedPng, type IndexedImage, type Rgba } from './png.ts';
 
 const ART = new URL(`../../src/art/${STAGE_NAME}/`, import.meta.url);
@@ -84,7 +84,7 @@ export async function loadStageDrawn(root: URL = DRAWN_ROOT): Promise<DrawnStage
     );
   }
   if (problems.length > 0) {
-    throw new Error(`Drawn stage:\n${problems.map((line) => `  ${line}`).join('\n')}`);
+    throw new DrawingProblems(`Drawn stage:\n${problems.map((line) => `  ${line}`).join('\n')}`);
   }
   return drawn;
 }

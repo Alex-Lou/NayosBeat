@@ -1,10 +1,17 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { NAYO_CLIPS } from '../../src/art/nayo/clips';
 import { ANCHOR, CELL_SIZE } from '../../src/art/types';
 import { NAYO as NAYO_TEMPLATE } from '../../src/data/fighters/nayo';
 import { cellBoxOf } from '../../tools/sprites/cell';
 import { strikeOf } from '../../tools/sprites/clips';
-import { checkDrawn, loadDrawn, rulesOf, unseenStrikes } from '../../tools/sprites/drawn';
+import {
+  checkDrawn,
+  DrawingProblems,
+  loadDrawn,
+  reportingDrawingProblems,
+  rulesOf,
+  unseenStrikes,
+} from '../../tools/sprites/drawn';
 import { NAYO } from '../../tools/sprites/nayo/index';
 import {
   crc32,
@@ -122,6 +129,37 @@ describe('PNG decoder', () => {
     const pixels = new Uint8Array([0, 1, 2, 3, 4, 5]);
     const image = await decodeIndexedPng(await encodeIndexedPng(3, 2, pixels, PALETTE.slice(0, 6)));
     expect([...image.pixels]).toEqual([...pixels]);
+  });
+});
+
+describe('Problems found in drawings', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('are shown as they are, without a stack trace, and fail the run', async () => {
+    const shown = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const before = process.exitCode;
+    try {
+      await reportingDrawingProblems(() =>
+        Promise.reject(new DrawingProblems('Drawn strips of riff:\n  art-src/riff/idle.png: …')),
+      );
+      expect(shown).toHaveBeenCalledWith('Drawn strips of riff:\n  art-src/riff/idle.png: …');
+      expect(process.exitCode).toBe(1);
+    } finally {
+      process.exitCode = before;
+    }
+  });
+
+  it('are the only errors reported so: a bug keeps its stack', async () => {
+    const bug = new TypeError('a bug');
+    await expect(reportingDrawingProblems(() => Promise.reject(bug))).rejects.toBe(bug);
+  });
+
+  it('are what reading wrong drawings throws', async () => {
+    await expect(loadDrawn(NAYO, new URL('./fixtures/drawn/', import.meta.url))).rejects.toThrow(
+      DrawingProblems,
+    );
   });
 });
 
