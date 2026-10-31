@@ -1,0 +1,16 @@
+{
+  "name": "nayosbeat-sprites",
+  "displayName": "NayosBeat Sprites",
+  "description": "Planches de sprites au format de NayosBeat : gabarits, guides des boîtes, export vers le jeu.",
+  "version": "1.0.0",
+  "author": {
+    "name": "NayosBeat"
+  },
+  "contributes": {
+    "scripts": [
+      {
+        "path": "./nayosbeat.lua"
+      }
+    ]
+  }
+}

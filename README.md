@@ -59,6 +59,8 @@ Ajouter `?debug` à l'URL affiche l'overlay de debug et toutes les boîtes (touj
 
 Nayo est dessiné (sprites générés par `npm run sprites`, provisoires en attendant les planches définitives) ; ses hurtbox sont calées sur le dessin (`npm run measure-boxes`). Riff reste en boîte grise jusqu'à ses propres sprites : la boîte dessine exactement sa hurtbox, avec un « pied » du côté où elle regarde. Dans un match miroir, le joueur 2 porte la seconde tenue (techwear gris clair, néon magenta).
 
+Une planche peut aussi être dessinée à la main dans Aseprite : elle remplace alors celle du code, planche par planche (extension NayosBeat, gabarits au format du jeu, guides des boîtes, export vérifié). Voir [docs/art/aseprite.md](docs/art/aseprite.md).
+
 ## Combat
 
 - Univers **Sound Clash** : **Nayo**, boxeur-DJ (polyvalent : portée, 1000 PV) et **Riff**, punk de rue qui breake et cogne (rushdown : vitesse, 900 PV).
@@ -81,6 +83,8 @@ Nayo est dessiné (sprites générés par `npm run sprites`, provisoires en atte
 | `npm run format` | Prettier |
 | `npm run sprites` | Redessine les planches de sprites (`tools/sprites` → `src/art`) |
 | `npm run measure-boxes` | Mesure le dessin de Nayo bande par bande (4 px) contre ses hurtbox |
+| `npm run sprites:templates` | Écrit les gabarits Aseprite de chaque planche (`art-src/gabarits/`, non commités) |
+| `npm run aseprite:extension` | Construit l'extension Aseprite (`tools/aseprite/dist/`) |
 | `npm run bench` | Banc de perfs de la simulation (100 000 tics CPU contre CPU) |
 | `npm run replays:update` | Réenregistre les hashs des replays dorés (`tests/core/replays`), seulement quand le jeu doit changer |
 
@@ -100,7 +104,8 @@ src/
   render/   Phaser : affichage, mise à l'échelle pixel-perfect, overlay de debug
   main.ts   Point d'entrée
 tests/      Tests Vitest, même arborescence que src/
-tools/      Générateur de sprites (Node, sans dépendance)
+tools/      Générateur de sprites (Node, sans dépendance) et extension Aseprite
+art-src/    Planches dessinées à la main dans Aseprite (remplacent celles du code)
 ```
 
 Dépendances à sens unique : `app` → `ui`, `render` ; `render` → `art`, `ai`, `input`, `loop`, `data`, `core` ; `art` → `data`, `core` ; `ai` → `data`, `core` ; `data` → `core` ; `core` ne dépend de rien (vérifié par ESLint pour `core`, `data` et `ai`).

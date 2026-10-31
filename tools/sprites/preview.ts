@@ -20,12 +20,12 @@ import { toPx } from '../../src/core/constants.ts';
 import { NAYO as NAYO_TEMPLATE } from '../../src/data/fighters/nayo.ts';
 import { RIFF as RIFF_TEMPLATE } from '../../src/data/fighters/riff.ts';
 import { strikeOf, type Clips } from './clips.ts';
+import { loadDrawn, stripPixels, type Drawn } from './drawn.ts';
 import type { Fighter, Strike } from './fighter.ts';
 import { NAYO } from './nayo/index.ts';
 import type { Colorway } from './palette.ts';
 import { encodeIndexedPng, type Rgba } from './png.ts';
 import { RIFF } from './riff/index.ts';
-import { drawStrip, drawStripEffects } from './sheet.ts';
 
 const PREVIEW = new URL('./preview/', import.meta.url);
 const ZOOM = 2;
@@ -83,10 +83,11 @@ async function render(
   guides: Guides,
   sheet: string,
   colorway: Colorway,
+  drawn: ReadonlyMap<string, Drawn>,
 ): Promise<void> {
-  const canvas = drawStrip(fighter, sheet);
+  // A strip drawn by hand (art-src/) as the game gets it, else the code's.
   // The front effects go over both fighters in the game: over the body here.
-  const front = drawStripEffects(fighter, sheet);
+  const { body: canvas, fx: front } = stripPixels(fighter, sheet, drawn);
   const palette = [...fighter.paletteOf(colorway)];
   const slot = (color: Rgba): number => palette.push(color) - 1;
   const background = slot(BACKGROUND);
@@ -169,7 +170,12 @@ async function main(): Promise<void> {
       `Name at least one strip: ${Object.keys(NAYO.sheets).join(', ')}; Riff's with --riff`,
     );
   }
-  for (const { fighter, guides, sheet } of jobs) await render(fighter, guides, sheet, colorway);
+  const drawnOf = new Map<Fighter, ReadonlyMap<string, Drawn>>();
+  for (const { fighter, guides, sheet } of jobs) {
+    const drawn = drawnOf.get(fighter) ?? (await loadDrawn(fighter));
+    drawnOf.set(fighter, drawn);
+    await render(fighter, guides, sheet, colorway, drawn);
+  }
 }
 
 await main();

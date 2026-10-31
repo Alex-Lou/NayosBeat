@@ -5,18 +5,22 @@
  * not committed), the installed game's icons into public/icons/ and the title's vinyl into
  * src/ui/title-vinyl.png. Run with `npm run sprites`; `npm run sprites -- riff` draws one
  * fighter only (Nayo's run also draws the icons and the vinyl).
+ *
+ * A strip drawn by hand (art-src/<fighter>/, see drawn.ts) takes the place of the code's: it is
+ * checked first, and nothing is written when one is wrong.
  */
 
 import { mkdir, rm, writeFile } from 'node:fs/promises';
 import { ANCHOR, CELL_SIZE, type Cell } from '../../src/art/types.ts';
+import { strikeOf } from './clips.ts';
+import { loadDrawn, platinePixels, stripPixels, unseenStrikes, type StripPixels } from './drawn.ts';
 import type { Fighter } from './fighter.ts';
+import { frameDataOf } from './frame-data.ts';
 import { drawIcons } from './icons.ts';
 import { NAYO } from './nayo/index.ts';
 import type { Colorway } from './palette.ts';
 import { encodeIndexedPng } from './png.ts';
-import type { PixelCanvas } from './raster.ts';
 import { RIFF } from './riff/index.ts';
-import { drawStrip, drawStripEffects, toPlatine } from './sheet.ts';
 import { drawVinyl } from './vinyl.ts';
 
 const FIGHTERS: readonly Fighter[] = [NAYO, RIFF];
@@ -38,7 +42,7 @@ interface Image {
  * empty, and video memory is precious on phones. `anchor` is the pixel that goes on the
  * fighter's position in the full cell.
  */
-function crop(canvas: PixelCanvas, anchor: Cell['anchor']): { image: Image; cell: Cell } {
+function crop(canvas: StripPixels, anchor: Cell['anchor']): { image: Image; cell: Cell } {
   const frames = canvas.width / CELL_SIZE;
   let left = CELL_SIZE;
   let right = -1;
@@ -114,6 +118,9 @@ function cellsModule(fighter: Fighter, cells: ReadonlyMap<string, Cell>): string
 
 async function generate(fighter: Fighter): Promise<void> {
   const assets = new URL(`${fighter.name}/`, ART);
+  // The drawings first: a wrong one stops the run before anything is erased.
+  const drawn = await loadDrawn(fighter);
+  const { template, clips } = frameDataOf(fighter);
   for (const colorway of COLORWAYS) {
     // Effects are rewritten from scratch: a strip that lost its effects must not keep old ones.
     await rm(new URL(`${colorway}/fx/`, assets), { recursive: true, force: true });
@@ -123,26 +130,38 @@ async function generate(fighter: Fighter): Promise<void> {
   }
   const cells = new Map<string, Cell>();
   for (const [sheet, { frames }] of Object.entries(fighter.sheets)) {
-    const body = crop(drawStrip(fighter, sheet), ANCHOR);
+    const strip = stripPixels(fighter, sheet, drawn);
+    const body = crop(strip.body, ANCHOR);
     await save(fighter, body.image, `${sheet}.png`);
     cells.set(sheet, body.cell);
-    const drawn = drawStripEffects(fighter, sheet);
-    if (drawn) {
-      const effects = crop(drawn, ANCHOR);
+    if (strip.fx) {
+      const effects = crop(strip.fx, ANCHOR);
       await save(fighter, effects.image, `fx/${sheet}.png`);
       cells.set(`fx/${sheet}`, effects.cell);
     }
     const { width, height } = body.cell;
-    console.log(`${fighter.name} ${sheet}: ${frames} x ${width}x${height}${drawn ? ' + fx' : ''}`);
+    const notes = `${strip.fx ? ' + fx' : ''}${strip.drawn ? ' (drawn)' : ''}`;
+    console.log(`${fighter.name} ${sheet}: ${frames} x ${width}x${height}${notes}`);
+    // The code's strips are measured by the tests; a drawing, here.
+    const strike = strip.drawn ? strikeOf(clips, template, sheet) : undefined;
+    const unseen = strike ? unseenStrikes(strike, [strip.body, strip.fx]) : [];
+    if (unseen.length > 0) {
+      // Numbered from 1, as Aseprite does.
+      const listed = unseen.map((frame) => frame + 1).join(', ');
+      console.warn(`  warning: nothing drawn in the hitbox on frame(s) ${listed} (from 1)`);
+    }
   }
-  // The effects a clip names (a Remix's): its strip's, redrawn in platine.
+  // The effects a clip names (a Remix's): drawn apart, or its strip's redrawn in platine.
   for (const [name, sheet] of Object.entries(fighter.platine)) {
-    const drawn = drawStripEffects(fighter, sheet, toPlatine);
-    if (!drawn) throw new Error(`${fighter.name} ${name}: strip ${sheet} has no effects to redraw`);
-    const effects = crop(drawn, ANCHOR);
+    const platine = platinePixels(fighter, name, drawn);
+    if (!platine.fx) {
+      throw new Error(`${fighter.name} ${name}: strip ${sheet} has no effects to redraw`);
+    }
+    const effects = crop(platine.fx, ANCHOR);
     await save(fighter, effects.image, `fx/${name}.png`);
     cells.set(`fx/${name}`, effects.cell);
-    console.log(`${fighter.name} ${name}: the effects of ${sheet} in platine`);
+    const how = platine.drawn ? 'drawn' : `the effects of ${sheet} in platine`;
+    console.log(`${fighter.name} ${name}: ${how}`);
   }
   await writeFile(
     new URL('cells.ts', assets),

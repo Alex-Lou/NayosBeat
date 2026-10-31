@@ -6,3 +6,7 @@ coverage/
 
 # Enlarged sprite previews written by `npm run sprites`.
 tools/sprites/preview/
+
+# Aseprite templates written by `npm run sprites:templates`, and the packed extension.
+art-src/gabarits/
+tools/aseprite/dist/

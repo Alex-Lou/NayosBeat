@@ -86,8 +86,9 @@ export interface IndexedImage {
 }
 
 /**
- * Decodes an 8-bit indexed PNG, the kind `encodeIndexedPng` writes (the game's strips): enough
- * for the tools that measure what the strips draw, not a general decoder.
+ * Decodes an 8-bit indexed PNG, the kind `encodeIndexedPng` writes (the game's strips) or an
+ * image editor saves (filtered rows, the strips drawn in Aseprite): enough for the tools that
+ * read what the strips draw, not a general decoder.
  */
 export async function decodeIndexedPng(png: Uint8Array): Promise<IndexedImage> {
   const view = new DataView(png.buffer, png.byteOffset, png.byteLength);
@@ -106,6 +107,7 @@ export async function decodeIndexedPng(png: Uint8Array): Promise<IndexedImage> {
       if (body[8] !== 8 || body[9] !== COLOR_TYPE_INDEXED) {
         throw new Error('Only 8-bit indexed PNGs are supported');
       }
+      if (body[12] !== 0) throw new Error('Interlaced PNGs are not supported');
     } else if (type === 'PLTE') {
       alpha = Array.from({ length: length / 3 }, () => 255);
       colors = Array.from(
@@ -126,10 +128,50 @@ export async function decodeIndexedPng(png: Uint8Array): Promise<IndexedImage> {
   const pixels = new Uint8Array(width * height);
   for (let y = 0; y < height; y++) {
     const row = y * (width + 1);
-    if (raw[row] !== 0) throw new Error('Only unfiltered rows are supported');
-    pixels.set(raw.subarray(row + 1, row + 1 + width), y * width);
+    unfilter(
+      raw[row] ?? 0,
+      raw.subarray(row + 1, row + 1 + width),
+      pixels.subarray(y * width, (y + 1) * width),
+      y > 0 ? pixels.subarray((y - 1) * width, y * width) : undefined,
+    );
   }
   return { width, height, pixels, alpha, colors };
+}
+
+/**
+ * One row of one byte per pixel, its PNG filter undone: each byte was stored as the difference
+ * with a guess made from its left, upper and upper-left neighbours (`above` undefined on the
+ * first row, all zeros).
+ */
+function unfilter(
+  filter: number,
+  line: Uint8Array,
+  out: Uint8Array,
+  above: Uint8Array | undefined,
+): void {
+  for (let x = 0; x < line.length; x++) {
+    const left = x > 0 ? (out[x - 1] ?? 0) : 0;
+    const up = above?.[x] ?? 0;
+    const upLeft = x > 0 ? (above?.[x - 1] ?? 0) : 0;
+    let guess: number;
+    if (filter === 0) guess = 0;
+    else if (filter === 1) guess = left;
+    else if (filter === 2) guess = up;
+    else if (filter === 3) guess = Math.floor((left + up) / 2);
+    else if (filter === 4) guess = paeth(left, up, upLeft);
+    else throw new Error(`Unknown PNG filter ${String(filter)}`);
+    out[x] = ((line[x] ?? 0) + guess) & 0xff;
+  }
+}
+
+/** The neighbour closest to `left + up - upLeft` (PNG filter 4). */
+function paeth(left: number, up: number, upLeft: number): number {
+  const estimate = left + up - upLeft;
+  const toLeft = Math.abs(estimate - left);
+  const toUp = Math.abs(estimate - up);
+  const toUpLeft = Math.abs(estimate - upLeft);
+  if (toLeft <= toUp && toLeft <= toUpLeft) return left;
+  return toUp <= toUpLeft ? up : upLeft;
 }
 
 /** zlib stream (what PNG expects), compressed by the runtime. */
