@@ -21,6 +21,7 @@ import {
   isCalm,
   isStill,
   loadComfort,
+  loadStruggle,
   loadTextSize,
   markNoticeSeen,
   nextMode,
@@ -28,12 +29,15 @@ import {
   NOTICE,
   noticeSeen,
   saveComfort,
+  saveStruggle,
   saveTextSize,
   SHAKE_LABELS,
   STAGING_LABELS,
+  STRUGGLE_LABELS,
   TEXT_LABELS,
   watchReducedMotion,
   type Comfort,
+  type StruggleMode,
   type TextSize,
 } from './comfort';
 import { controlsContent, currentDevices, helpPages } from './controls-content';
@@ -107,6 +111,8 @@ export class App {
   private chosen: Partial<Comfort> = {};
   /** « Taille du texte »: the menus' only (src/app/comfort.ts). */
   private textSize: TextSize = loadTextSize();
+  /** « Lutte en prise »: kept, given to each fight (src/input/held-struggle.ts). */
+  private struggle: StruggleMode = loadStruggle();
   /**
    * The fighters whose Finisher this session has played already: from the second one on, its
    * scene plays short (docs/finisher.md §1.14). The fights note it.
@@ -332,6 +338,18 @@ export class App {
         again(text);
       },
     };
+    const struggle: MenuItem = {
+      label: `Lutte en prise : ${STRUGGLE_LABELS[this.struggle].label}`,
+      hint: STRUGGLE_LABELS[this.struggle].hint,
+      onSelect: () => {
+        this.struggle = this.struggle === 'mash' ? 'hold' : 'mash';
+        saveStruggle(this.struggle);
+        (this.game.scene.getScene(FIGHT_SCENE) as FightScene | null)?.setHeldStruggle(
+          this.struggle === 'hold',
+        );
+        again(struggle);
+      },
+    };
     const keys: MenuItem = {
       label: 'Touches',
       hint: 'Clavier, manette et boutons tactiles',
@@ -341,7 +359,10 @@ export class App {
         });
       },
     };
-    items.push(sound, flash, tremble, scene, text, keys, { label: 'Retour', onSelect: back });
+    items.push(sound, flash, tremble, scene, text, struggle, keys, {
+      label: 'Retour',
+      onSelect: back,
+    });
     this.showMenu({ title: 'Options', overlay: paused, items, onBack: back, initialIndex });
   }
 
@@ -680,6 +701,7 @@ export class App {
       viewing: this.setup.mode === 'training' ? this.viewing : this.fromUrl,
       boxes: this.setup.mode === 'training' && this.boxes,
       trainingData: this.trainingData,
+      heldStruggle: this.struggle === 'hold',
       mode: this.mode,
       silhouette: this.silhouette,
       onPause: () => {
