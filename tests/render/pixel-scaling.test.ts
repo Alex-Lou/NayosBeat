@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { computeZoom } from '../../src/render/pixel-scaling';
+import { computeZoom, uiScaleFor } from '../../src/render/pixel-scaling';
 
 const BASE = { width: 480, height: 270 };
 
@@ -35,5 +35,17 @@ describe('computeZoom', () => {
   it('returns 1 for degenerate input', () => {
     expect(computeZoom({ width: 0, height: 0 }, BASE, 1)).toBe(1);
     expect(computeZoom({ width: 1920, height: 1080 }, BASE, 0)).toBe(4);
+  });
+});
+
+describe('uiScaleFor (docs/polish/AUDIT-ET-PLAN.md, P22)', () => {
+  it('keeps the menus as drawn on a phone, and grows them by whole steps on bigger screens', () => {
+    expect(uiScaleFor({ width: 667, height: 375 })).toBe(1);
+    expect(uiScaleFor({ width: 932, height: 430 })).toBe(1);
+    expect(uiScaleFor({ width: 1280, height: 720 })).toBe(2);
+    expect(uiScaleFor({ width: 1366, height: 768 })).toBe(2);
+    expect(uiScaleFor({ width: 1920, height: 1080 })).toBe(3);
+    // Never below 1, on the smallest screen.
+    expect(uiScaleFor({ width: 320, height: 240 })).toBe(1);
   });
 });

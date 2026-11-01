@@ -10,7 +10,7 @@ import { Sfx } from './audio/sfx';
 import { isTouchDevice } from './input/touch-controls';
 import { FightScene } from './render/fight-scene';
 import { canTurnLandscape, requestLandscapeFullscreen } from './render/fullscreen';
-import { computeZoom, type Size } from './render/pixel-scaling';
+import { computeZoom, uiScaleFor, type Size } from './render/pixel-scaling';
 import { rendererChoice } from './render/lean-context';
 import { renderModeOf } from './render/render-mode';
 import { renderScaleFor, renderSizeOf } from './render/view';
@@ -35,6 +35,11 @@ const RENDER_SIZE = renderSizeOf(
 
 function currentZoom(): number {
   return computeZoom(viewport(), RENDER_SIZE, window.devicePixelRatio);
+}
+
+/** The menus grow with the screen (styles.css, `.menu-panel`), by whole steps. */
+function scaleMenus(): void {
+  document.getElementById('ui')?.style.setProperty('--ui-scale', String(uiScaleFor(viewport())));
 }
 
 /** Set once the game has started: the service worker may only reload it on the menus. */
@@ -111,7 +116,9 @@ async function start(): Promise<void> {
   // Also fires on orientation change and browser zoom (devicePixelRatio change).
   const onResize = (): void => {
     game.scale.setZoom(currentZoom());
+    scaleMenus();
   };
+  scaleMenus();
   window.addEventListener('resize', onResize);
   // The browser's bars showing or hiding resize only the visible viewport.
   window.visualViewport?.addEventListener('resize', onResize);

@@ -53,6 +53,19 @@ describe('Menu, for a touch screen (docs/polish/AUDIT-ET-PLAN.md, L21)', () => {
     expect(byClass(root, 'menu-help-touch')[0]?.textContent).toBe('Touche un choix');
   });
 
+  it('keeps the item chosen with the keys in view, not the one under the pointer', () => {
+    const { page, root } = setup({ initialIndex: 1 });
+    const [first, second] = byClass(root, 'menu-item');
+    if (!first || !second) throw new Error('Items missing');
+    // Opening on it: shown.
+    expect(second.scrolledIntoView).toBe(1);
+    page.window.dispatchEvent(Object.assign(new Event('keydown'), { code: 'ArrowUp' }));
+    expect(first.scrolledIntoView).toBe(1);
+    second.dispatchEvent(new Event('pointerenter'));
+    expect(second.classList.contains('selected')).toBe(true);
+    expect(second.scrolledIntoView).toBe(1);
+  });
+
   it('removes « Retour » with itself', () => {
     const { page, menu } = setup({ onBack: vi.fn() });
     menu.dispose();

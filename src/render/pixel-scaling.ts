@@ -32,3 +32,15 @@ export function computeZoom(viewport: Size, base: Size, devicePixelRatio: number
   }
   return fit;
 }
+
+/** The menus' layout: drawn for a phone's screen, on the pixel font's grid of 8. */
+const UI_BASE: Size = { width: 640, height: 360 };
+
+/**
+ * How many times the menus grow on `viewport` (docs/polish/AUDIT-ET-PLAN.md, P22): 1 on a phone,
+ * 2 in 1280×720, 3 in 1920×1080. A whole number, so the pixel font stays on its grid.
+ */
+export function uiScaleFor(viewport: Size): number {
+  const fit = Math.min(viewport.width / UI_BASE.width, viewport.height / UI_BASE.height);
+  return Math.max(1, Math.floor(fit + EPSILON));
+}

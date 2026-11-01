@@ -253,6 +253,8 @@ body {
   background: rgba(10, 10, 25, 0.82);
 }
 .menu-panel {
+  /* Bigger on a bigger screen, by whole steps (src/render/pixel-scaling.ts, uiScaleFor). */
+  zoom: var(--ui-scale, 1);
   width: min(560px, 100%);
   max-height: 100%;
   /* Centers like the flex alignment, but a panel taller than the screen still scrolls from its top. */

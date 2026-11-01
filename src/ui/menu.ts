@@ -93,7 +93,8 @@ export class Menu {
       button.tabIndex = -1;
       if (item.hint) button.appendChild(element('span', 'menu-hint', item.hint));
       button.addEventListener('pointerenter', () => {
-        this.select(index);
+        // Under the pointer already: the list does not scroll under it.
+        this.select(index, false);
       });
       button.addEventListener('click', () => {
         this.options.feedback?.('confirm');
@@ -171,10 +172,16 @@ export class Menu {
     }
   }
 
-  private select(index: number): void {
+  /**
+   * `reveal`: the list scrolls to show the item (chosen with the keys, a gamepad, or as the menu
+   * opens), a long one on a short screen, or grown with it (`--ui-scale`, styles.css).
+   */
+  private select(index: number, reveal = true): void {
     this.buttons[this.selected]?.classList.remove('selected');
     this.selected = index;
-    this.buttons[index]?.classList.add('selected');
+    const button = this.buttons[index];
+    button?.classList.add('selected');
+    if (reveal) button?.scrollIntoView({ block: 'nearest' });
   }
 
   private activate(index: number): void {
