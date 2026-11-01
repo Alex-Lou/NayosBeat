@@ -69,7 +69,7 @@ Ces réglages restent dans l'entraînement : un match contre l'ordinateur ou à 
 Les films comparés montrent la même séquence côte à côte, à l'échelle d'un téléphone :
 
 ```bash
-npm run anim:film -- cpu:15 --from 1050        # ou un replay doré : ko.json
+npm run anim:film -- cpu:7 --from 1050        # ou un replay doré : ko.json
 npm run anim:compare -- tools/anim/out/cpu-15-avant.json tools/anim/out/cpu-15-apres.json
 ```
 

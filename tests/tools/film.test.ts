@@ -50,8 +50,9 @@ describe('the films of the animation (docs/art/animation-plan.md §2, V0)', () =
   });
 
   it('films a CPU match to the end of its round: the KO lands with a thud, the victory whole', () => {
-    // Seed 15: Riff knocks Nayo out in the air, then her victory.
-    const take = cpuTake(15);
+    // Seed 7: Riff knocks Nayo out in the air, then her victory (seed 15 until the CPU of
+    // docs/polish/AUDIT-ET-PLAN.md, lot 5, which plays its seeds differently).
+    const take = cpuTake(7);
     expect(take.states.at(-1)?.round.number).toBe(2);
     const before = shoot(take, true);
     const after = shoot(take, false);
@@ -65,7 +66,7 @@ describe('the films of the animation (docs/art/animation-plan.md §2, V0)', () =
   });
 
   it("points the page's landing at the KO's, not at a fall both films show", () => {
-    const take = cpuTake(15);
+    const take = cpuTake(7);
     const before = shoot(take, true);
     const after = shoot(take, false);
     const landing = new Map(chaptersOf(before, after)).get('retombée') ?? -1;
