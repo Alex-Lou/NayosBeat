@@ -22,17 +22,34 @@ describe('helpPages', () => {
     expect(deviceTitles(PHONE)).toEqual(['Tactile']);
   });
 
-  it('shows the keyboard on a computer', () => {
-    expect(deviceTitles({ touch: false, gamepad: false })).toEqual(['Clavier']);
+  it('shows the keyboard on a computer, player 2 in a table of their own (L23)', () => {
+    expect(deviceTitles({ touch: false, gamepad: false })).toEqual(['Clavier', 'Joueur 2']);
+    const player2 = helpPages({ touch: false, gamepad: false })[0]?.sections[1];
+    expect(player2?.rows).toContainEqual(['Pavé 1 (ou :)', 'Coup léger (L)']);
+    expect(player2?.rows.every(([keys, effect]) => keys.length > 0 && effect.length > 0)).toBe(
+      true,
+    );
   });
 
   it('adds the gamepad when one is connected', () => {
-    expect(deviceTitles({ touch: false, gamepad: true })).toEqual(['Clavier', 'Manette']);
+    expect(deviceTitles({ touch: false, gamepad: true })).toEqual([
+      'Clavier',
+      'Joueur 2',
+      'Manette',
+    ]);
+  });
+
+  it('names its first tab after the devices it shows, never « Commandes » again (L23)', () => {
+    const tab = (devices: ControlDevices) => helpPages(devices)[0]?.title;
+    expect(tab(PHONE)).toBe('Tactile');
+    expect(tab({ touch: true, gamepad: true })).toBe('Tactile / manette');
+    expect(tab({ touch: false, gamepad: false })).toBe('Clavier');
+    expect(tab({ touch: false, gamepad: true })).toBe('Clavier / manette');
   });
 
   it('has a page « Les bases », then one page per fighter (§17)', () => {
     expect(helpPages(PHONE).map((page) => page.title)).toEqual([
-      'Commandes',
+      'Tactile',
       'Les bases',
       ...ROSTER.map((entry) => entry.template.name),
     ]);

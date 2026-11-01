@@ -8,6 +8,12 @@ import type { RenderMode } from '../../src/render/render-mode';
 import { SIMPLE_MODE_NOTICE } from '../../src/ui/title-screen';
 import { installFakePage, type FakeElement } from '../render/fake-dom';
 
+// The help's tables need a real page: here, the screen around them is what is looked at.
+vi.mock('../../src/app/controls-content', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../src/app/controls-content')>()),
+  controlsContent: () => document.createElement('div'),
+}));
+
 /** The elements under `node` that have the class `name`, in page order. */
 function byClass(node: FakeElement, name: string): FakeElement[] {
   const own = node.className.split(' ').includes(name) ? [node] : [];
@@ -75,6 +81,7 @@ function launch(
     if (!root) throw new Error('Nothing on screen');
     return {
       title: byClass(root, 'menu-title')[0]?.textContent,
+      subtitle: byClass(root, 'menu-subtitle')[0]?.textContent,
       items: byClass(root, 'menu-item').map((item) => item.textContent),
       selected: byClass(root, 'menu-item').findIndex((item) => item.classList.contains('selected')),
       notice: byClass(root, 'menu-notice')[0]?.textContent,
@@ -132,6 +139,18 @@ describe('the options (docs/flashs.md §4)', () => {
     expect(kept.has('nayosbeat.notice')).toBe(false);
     press('Enter');
     expect(screen().title).toBe('Avant de jouer');
+  });
+
+  it("says « Commandes » once: the devices' tab named after them, a fighter's page by its name (L23)", () => {
+    const { press, screen, choose } = launch({ 'nayosbeat.notice': 'seen' });
+    press('Enter');
+    choose('Commandes');
+    expect(screen().title).toBe('Commandes');
+    expect(screen().subtitle).toBeUndefined();
+    expect(screen().items.filter((item) => item === 'Commandes')).toHaveLength(0);
+    expect(screen().items[0]).toBe('Clavier');
+    choose('Nayo');
+    expect(screen().subtitle).toBe('Nayo');
   });
 
   it('moves the sound from the main menu into the options screen', () => {

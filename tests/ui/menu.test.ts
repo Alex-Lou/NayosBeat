@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { relativeLuminance } from '../../src/render/luminance';
 import { Menu, type MenuOptions } from '../../src/ui/menu';
-import { installFakePage, type FakeElement } from '../render/fake-dom';
+import { FakeElement, installFakePage } from '../render/fake-dom';
 
 /** The elements under `node` that have the class `name`, in page order. */
 function byClass(node: FakeElement, name: string): FakeElement[] {
@@ -74,6 +74,29 @@ describe('Menu, for a touch screen (docs/polish/AUDIT-ET-PLAN.md, L21)', () => {
     const help = relativeLuminance(hex(/\.menu-help \{[^}]*?color: #([0-9a-f]{6})/));
     const background = relativeLuminance(hex(/\.menu \{[^}]*?background: #([0-9a-f]{6})/));
     expect((help + 0.05) / (background + 0.05)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('opens a page to read on its top, its choices under it', () => {
+    const content = new FakeElement('div') as unknown as HTMLElement;
+    const { root } = setup({ initialIndex: 1, content });
+    expect(byClass(root, 'menu-item').map((item) => item.scrolledIntoView)).toEqual([0, 0]);
+  });
+
+  it('chooses with left and right too when its items are a row of tabs, and says so (L23)', () => {
+    const press = (page: { window: EventTarget }, code: string) =>
+      page.window.dispatchEvent(Object.assign(new Event('keydown'), { code }));
+    const tabs = setup({ row: true });
+    expect(byClass(tabs.root, 'menu-help-keys')[0]?.textContent).toMatch(/^Flèches choisir/);
+    press(tabs.page, 'ArrowRight');
+    expect(byClass(tabs.root, 'menu-item')[1]?.classList.contains('selected')).toBe(true);
+    press(tabs.page, 'ArrowLeft');
+    expect(byClass(tabs.root, 'menu-item')[0]?.classList.contains('selected')).toBe(true);
+    tabs.menu.dispose();
+    // A vertical list: nothing to the sides.
+    const list = setup();
+    expect(byClass(list.root, 'menu-help-keys')[0]?.textContent).toMatch(/^↑↓ choisir/);
+    press(list.page, 'ArrowRight');
+    expect(byClass(list.root, 'menu-item')[0]?.classList.contains('selected')).toBe(true);
   });
 
   it('removes « Retour » with itself', () => {

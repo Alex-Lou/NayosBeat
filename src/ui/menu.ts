@@ -19,6 +19,11 @@ export interface MenuOptions {
   readonly initialIndex?: number;
   /** Called on navigation, e.g. to play a sound. */
   readonly feedback?: (action: MenuFeedback) => void;
+  /**
+   * Its items laid out in a row, as tabs (styles.css): left and right choose too, and the help
+   * says so (docs/polish/AUDIT-ET-PLAN.md, L23).
+   */
+  readonly row?: boolean;
 }
 
 export type MenuFeedback = 'move' | 'confirm' | 'back';
@@ -106,13 +111,18 @@ export class Menu {
     panel.appendChild(list);
     // "Echap" without accent: the pixel font has no capital É.
     panel.appendChild(
-      helpLine('↑↓ choisir · Entrée / A valider · Echap / B retour', 'Touche un choix'),
+      helpLine(
+        // The pixel font has ↑ and ↓, no ← nor →.
+        `${options.row ? 'Flèches' : '↑↓'} choisir · Entrée / A valider · Echap / B retour`,
+        'Touche un choix',
+      ),
     );
     if (options.onBack) this.root.appendChild(backButton(options.onBack, options.feedback));
     this.root.appendChild(panel);
     parent.appendChild(this.root);
 
-    this.select(options.initialIndex ?? 0);
+    // A page to read (`content`, the help) opens on its top, its choices under it.
+    this.select(options.initialIndex ?? 0, !options.content);
     window.addEventListener('keydown', this.onKeyDown);
     this.frameRequest = requestAnimationFrame(this.pollGamepads);
   }
@@ -167,7 +177,8 @@ export class Menu {
         break;
       case 'left':
       case 'right':
-        // A vertical list: nothing to the sides.
+        // A vertical list: nothing to the sides. A row (tabs): the item before or after.
+        if (this.options.row) this.handle(action === 'left' ? 'up' : 'down');
         break;
     }
   }

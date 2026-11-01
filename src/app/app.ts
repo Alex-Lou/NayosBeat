@@ -368,8 +368,10 @@ export class App {
     };
     this.showMenu({
       title: 'Commandes',
-      subtitle: page.title,
+      // Whose moves a fighter's page lists; the other pages' headings say what they are.
+      ...(page.fighter ? { subtitle: page.title } : {}),
       overlay: paused,
+      row: true,
       content: controlsContent(page),
       items: [
         ...pages.map((other, at) => ({
