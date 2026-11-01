@@ -69,6 +69,9 @@ La livraison s'est faite en trois étapes, **toutes faites** : l'étape 1 a reti
 | KO en fin de combo (3 coups ou plus) | idem | **Vignette** à l'énergie du gagnant sur les bords, sous le HUD : ΔL 0,08 dans les coins, transparente sur 45 % du centre. Ce n'est pas un flash. |
 | KO par l'Ultime (une super) | idem | **Éclat** à l'énergie du gagnant, depuis l'impact, derrière les combattants : 480 px de diamètre, ΔL 0,22 au cœur. Il s'éteint avant les bords, puisque le gros plan ne montre que 330 px. C'est le seul vrai flash du KO, sur la même image que la gerbe. |
 | Secousse | ±amplitude inversée à chaque image | Lissée, en trauma², 7,5 Hz au plus (§1.3) |
+| Spéciaux et projectiles (P5) | La gerbe d'un coup normal : celle du Vinyle cachait la tête et le torse de la victime 9 tics | **Gerbe `pinpoint`** : un cœur opaque de 24 px au plus, 10 px en arrière vers l'attaquant, au contact ; le halo à 0,4 dans l'énergie ; 3 images pleines, 4 de rayons seuls, puis les étincelles. Ni splash, ni lueur chaude, ni front. L'Ultime, le Finisher et tout KO gardent leur grosse gerbe. La surface baisse : aucun flash ajouté. |
+| Textes du temps fort (P10) | « K.O. », « CONTRE ! », « BOUM ! » et « x8 » empilés | **Une seule voix** : sur le tic où le round se termine (hors Finisher), les mots et les tampons à l'écran s'effacent en 4 images (easeOutCubic depuis leur opacité), ceux qui attendaient ne viennent pas. Il reste « K.O. » et, 18 px sous son milieu, le compteur du KO. La carte du Finisher fait de même en arrivant. En entraînement, le nom du coup a sa ligne fixe sous le HUD (y = 40 px de vue), que les mots ne peuvent pas atteindre. |
+| CONTRE et PUNITION (P11) | Même tampon frappé, différents par leurs seuls mots | **Une forme chacun** : CONTRE dans un cadre penché de 8°, PUNITION dans un cadre droit, souligné de 2 px. Ils arrivent au tic du coup en easeOutBack sur 6 images (pic de 110 %, au lieu d'une frappe depuis ×1,6), et restent le gel + 20 images. Toujours comptés dans le budget, leur cadre n'allumant rien. |
 
 **Ce qui ne change pas :**
 - le gel, les dégâts et le timing : le rendu ne touche jamais au cœur (D17) ;
@@ -119,7 +122,7 @@ Un seul budget par combat, pour les deux joueurs. `FightScene` le crée, le fait
 - **Fusion** : ce qui s'allume 2 images au plus après un flash compté s'allume avec lui, sans compter, sauf s'il s'additionne à ce qui attend juste après (il ferait alors un flash de plus).
 - **Décision une fois par tic** : `FightFeedback` met les coups d'un tic de côté (`react`), puis `endTick` demande une seule fois pour leur somme. Un échange de coups fait un flash ou aucun, jamais deux.
 - **Les fx de planche** (`FxGate`, `FxPixels`). Chaque image d'un fx est lue une fois dans sa texture. Une nouvelle image demande ce qu'elle allume de neuf : les pixels qui changent le ciel ou le sol d'au moins ΔL 0,1 et que l'image d'avant, au même endroit, n'allumait pas déjà (à ΔL 0,1 près). Toute l'image si le combattant a bougé ou s'est retourné, ou au début du clip. Le fx demande sur son image, qu'il y ait contact ou non : une super parée ou ratée est comptée aussi. Ainsi l'Uppercut qui touche reste clair : après son image tenue pendant le gel, la suivante allume 1 235 px², dont 633 seulement de neuf.
-- **Le HUD demande lui-même** (`Hud`, `HealthBar`) : le blanc d'un coup sur la barre, refusé, laisse le coup rouge tout de suite ; l'annonce, refusée, s'écrit dans le sombre des fx (`FX_DARK`). L'éclatement de la barre et de la jauge sous l'Ultime (`SHATTER_VIEW` : 1 700 px² de vue avec les éclats chauds, 580 sans) entre dans la demande du KO ; refusé, il passe avant la gerbe étouffée, et s'il ne tient pas non plus, la barre et la jauge éclatent immobiles (sans éclats).
+- **Le HUD demande lui-même** (`Hud`, `HealthBar`) : le blanc d'un coup sur la barre, refusé, laisse le coup rouge tout de suite ; l'annonce, refusée, s'écrit dans le sombre des fx (`FX_DARK`). Le compteur du KO (« x8 », 16 px, sous « K.O. ») demande avec elle, en une seule demande, chacun de ses caractères compté comme la plus large lettre de l'annonce. L'éclatement de la barre et de la jauge sous l'Ultime (`SHATTER_VIEW` : 1 700 px² de vue avec les éclats chauds, 580 sans) entre dans la demande du KO ; refusé, il passe avant la gerbe étouffée, et s'il ne tient pas non plus, la barre et la jauge éclatent immobiles (sans éclats).
 
 **Surfaces mesurées** (px² monde à ΔL ≥ 0,1, coloris le plus clair) :
 
@@ -127,19 +130,21 @@ Un seul budget par combat, pour les deux joueurs. `FightScene` le crée, le fait
 |---|---|---|
 | Gerbe légère, lourde, KO | 400, 1 330, 3 300 | 120, 490, 920 |
 | Gerbe `pulse` (aussi le lourd étouffé), KO étouffé | 430, 440 | 490, 440 |
+| Gerbe d'un spécial ou d'un projectile (`pinpoint`, P5), étouffée ou non | 115 | 148 |
 | Uppercut, Montée platine (pic) | 1 235, 1 218 | — |
 | Super (anneaux s2, s3, s4 / onde du Slam) | 775, 708, 1 491 | 367 |
 | Mots au pic du pop (×1,24) / calmes, sans compteur | léger 431 / 245, lourd 700 / 285, KO 1 538 / 330 | idem |
 | Compteur « xN » (pop / calme, par chiffre en plus du « x ») | léger 36 / 31, lourd 57 / 36, KO 110 / 42 | idem |
 | Tampon le plus large (« DÉGAGEMENT ! ») : frappé à ×1,6 / calme | 1 792 / 410 | idem |
+| CONTRE, PUNITION (comptés comme le plus large) : arrivée à ×1,09 au pic / calme ; leur cadre | 830 / 410 ; 0 | idem |
 
-Les gerbes sont mesurées sur la vraie `HitFx` (test, hasard à graine fixe), les fx sur les vraies planches. Les mots et les tampons sont mesurés sur leurs lettres : le test lit les contours des polices (Bangers, Press Start 2P), les remplit, les encre et pose leur ombre comme le fait le `Text` de Phaser, dans chaque coloris, et vérifie que la table les couvre à 5 % près. Un compteur n'allume jamais plus que son « x » et ses chiffres pris un à un : un « x123 » compte trois chiffres.
+Les gerbes sont mesurées sur la vraie `HitFx` (test, hasard à graine fixe), les fx sur les vraies planches. La gerbe `pinpoint` a son propre compteur de hasard dans le test : les autres gardent le tirage avec lequel elles ont été mesurées. Le cadre de CONTRE et de PUNITION est tracé dans l'énergie du joueur assombrie vers l'encre jusqu'à ne changer aucune grande couleur de la scène de ΔL 0,1 (`toneUnder`) : il se voit, mais n'allume rien, ce que `one-voice.test.ts` vérifie dans chaque coloris. Les mots et les tampons sont mesurés sur leurs lettres : le test lit les contours des polices (Bangers, Press Start 2P), les remplit, les encre et pose leur ombre comme le fait le `Text` de Phaser, dans chaque coloris, et vérifie que la table les couvre à 5 % près. Un compteur n'allume jamais plus que son « x » et ses chiffres pris un à un : un « x123 » compte trois chiffres.
 
 **Un flash refusé s'étouffe**, il ne disparaît pas :
 - **la gerbe** joue sa version étouffée : le lourd prend la silhouette `pulse` (sans la clé blanche ni le splash), le KO la nouvelle `koMuted`. Si même la version étouffée dépasserait la surface avec ce qui brille déjà (un double KO, budget épuisé, l'éclatement de l'Ultime au gros plan), elle n'est pas jouée : il reste le mot, le son, la secousse, le ralenti ;
 - **le mot arrive calme 8 images plus tard au moins, le tampon 8 images après son mot** (`MUTED_DELAY`) : plus petits, sans pop ni frappe, leurs pics ne s'additionnent ni à la gerbe ni entre eux. S'ils ne tiennent pas là (un échange, un double KO, un autre mot qui attend), ils glissent de 4 images en 4 images (`place`, 4 essais), sinon ils ne s'affichent pas (le compteur compte quand même). Les vues comptent leur attente à partir de l'image suivante (`settle`) : une pièce gardée pour l'image N s'affiche à l'image N, à 60 comme à 30 Hz ;
 - **les tampons hors coups** (REMIX, Rewind, super, DÉGAGEMENT, PUNITION) et **le mot d'une projection** demandent comme un coup ; refusés, ils passent calmes, tout de suite s'ils tiennent, plus tard sinon. **L'étincelle de garde** ne se joue que si elle ne fait pas de flash ;
-- **le blanc d'un coup sur la barre de vie** n'est pas joué ; **l'annonce** s'écrit sombre ;
+- **le blanc d'un coup sur la barre de vie** n'est pas joué ; **l'annonce** s'écrit sombre, et le compteur du KO avec elle ;
 - **le fx de planche passe sombre** (multiplié par `FX_DARK` `#4C5266`, ΔL ≤ 0,073), de l'image refusée jusqu'à la fin du clip : il ne redevient jamais clair dans le même clip, et sa dissolution reste sombre ;
 - **l'éclat de l'Ultime devient un éclat d'encre** `#0C0614` à 0,60 qui assombrit ;
 - **le halo de la super** n'est pas joué : il reste la mise au noir.

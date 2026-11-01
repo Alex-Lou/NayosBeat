@@ -203,6 +203,7 @@ export function fakeFeedback() {
     finisherShake: vi.fn(),
     finisherLanding: vi.fn(),
     setCloseUp: vi.fn(),
+    hush: vi.fn(),
   };
   return { feedback, asFeedback: feedback as unknown as FightFeedback };
 }

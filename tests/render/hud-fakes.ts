@@ -51,6 +51,8 @@ export class FakeText {
     readonly y = 0,
     stroke = '#000000',
     strokeThickness = 0,
+    /** Its letters' size, in view pixels (the pixel font's are as wide as high). */
+    readonly fontSize = 0,
   ) {
     this.text = text;
     this.style = { color, stroke, strokeThickness };
@@ -120,9 +122,22 @@ export function fakeScene(): {
         x: number,
         y: number,
         text: string,
-        style: { color?: string; stroke?: string; strokeThickness?: number },
+        style: {
+          color?: string;
+          stroke?: string;
+          strokeThickness?: number;
+          fontSize?: string | number;
+        },
       ) => {
-        const made = new FakeText(text, style.color, x, y, style.stroke, style.strokeThickness);
+        const made = new FakeText(
+          text,
+          style.color,
+          x,
+          y,
+          style.stroke,
+          style.strokeThickness,
+          Number.parseFloat(String(style.fontSize ?? 0)),
+        );
         texts.push(made);
         return made;
       },

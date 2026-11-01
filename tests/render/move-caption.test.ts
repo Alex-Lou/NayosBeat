@@ -13,6 +13,9 @@ class FakeText {
   setOrigin(): this {
     return this;
   }
+  setScrollFactor(): this {
+    return this;
+  }
   setDepth(): this {
     return this;
   }
@@ -38,7 +41,7 @@ describe("training's move names (docs/finisher.md §1.12)", () => {
         },
       },
     } as unknown as Phaser.Scene;
-    const caption = new MoveCaption(scene, { stage: TRAINING_STAGE, fighters: [NAYO, RIFF] }, 230);
+    const caption = new MoveCaption(scene, { stage: TRAINING_STAGE, fighters: [NAYO, RIFF] });
     const [nayo, riff] = texts;
     caption.react({ type: 'attack', by: 0, move: 'super', heavy: true }, 10);
     caption.react({ type: 'attack', by: 1, move: 'super', heavy: true }, 10);

@@ -93,6 +93,7 @@ vi.mock('../../src/render/stamps', async (original) => ({
   ...(await original<typeof import('../../src/render/stamps')>()),
   Stamps: class {
     show = vi.fn();
+    hush = vi.fn();
     update = vi.fn();
     settle = vi.fn();
   },
@@ -114,6 +115,7 @@ vi.mock('../../src/render/onomatopoeia', async (original) => {
         this.tally = real.landHit(this.tally, hit.by).tally;
       }
       reset = vi.fn();
+      hush = vi.fn();
       update = vi.fn();
       settle = vi.fn();
     },
@@ -493,7 +495,8 @@ describe('the flashes of the combo routes, as shown (docs/flashs.md §4)', () =>
 
   it("keeps the Uppercut lit as it lands: its frames held over a hit light little that's new", () => {
     const played = play(route('Nayo ↓S'), 'normal');
-    expect(played.sparks).toEqual(['heavy']);
+    // A special: its spark shows the contact (P5).
+    expect(played.sparks).toEqual(['pinpoint']);
     expect(played.dark[0].has('specialAntiAir')).toBe(false);
   });
 
@@ -519,8 +522,9 @@ describe('what waits to show, played tick by tick (docs/flashs.md §4)', () => {
       low: false,
       damage: 25,
       held: false,
-      tier: 1,
+      tier: 0,
       pulse: false,
+      freeze: 10,
     }) as const;
   const light = (by: 0 | 1): FightEvent => ({
     type: 'hit',

@@ -47,6 +47,30 @@ export function alphaForDelta(color: number, background: number, delta: number):
 }
 
 /**
+ * `color` brought toward `toward` (`toward` drawn over it, as little as needed) until, drawn over
+ * any of `stage`, it changes its luminance by less than `delta`: a color that shows its hue and
+ * lights nothing.
+ */
+export function toneUnder(
+  color: number,
+  toward: number,
+  stage: readonly number[],
+  delta: number,
+): number {
+  const lights = (tone: number) =>
+    stage.some((background) => luminanceDelta(tone, background, 1) >= delta);
+  if (!lights(color)) return color;
+  let low = 0;
+  let high = 1;
+  for (let i = 0; i < 20; i++) {
+    const mid = (low + high) / 2;
+    if (lights(over(toward, color, mid))) low = mid;
+    else high = mid;
+  }
+  return over(toward, color, high);
+}
+
+/**
  * R / (R + G + B) on the linearized channels: from SATURATED_RED on, a color is the saturated
  * red whose flashes count whatever their luminance (WCAG 2.3.1).
  */

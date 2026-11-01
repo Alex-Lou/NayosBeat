@@ -6,15 +6,16 @@ import { step } from '../../src/core/step';
 import { NAYO as P } from '../../src/data/fighters/nayo';
 import { RIFF } from '../../src/data/fighters/riff';
 import { TRAINING_STAGE } from '../../src/data/stages';
-import { BOOST_MAX } from '../../src/core/rules';
+import { BOOST_MAX, COUNTER_HITSTOP } from '../../src/core/rules';
 import type { MoveId } from '../../src/core/move-data';
-import { moveOf } from '../../src/core/moves';
+import { moveOf, tierOf } from '../../src/core/moves';
 import {
   COMBO_KO_HITS,
   detectEvents,
   HAPTICS,
   isHeavy,
   koFinishOf,
+  pinpoints,
   shatters,
   vibrationFor,
   type FightEvent,
@@ -451,11 +452,51 @@ describe('the weight of a blow (docs/polish/AUDIT-ET-PLAN.md, P1)', () => {
   });
 });
 
+describe('the spark that shows the contact (docs/polish/AUDIT-ET-PLAN.md, P5)', () => {
+  type Blow = Extract<FightEvent, { type: 'hit' | 'ko' }>;
+  const blow = (tier: number, type: 'hit' | 'ko' = 'hit'): Blow => {
+    const impact = { x: 0, y: 0, away: 1, by: 0, low: false, damage: 60, held: false } as const;
+    const rest = { counter: null, tier, pulse: false, freeze: 8 } as const;
+    return type === 'hit'
+      ? { type, heavy: false, ...impact, ...rest }
+      : { type, finish: 'plain', ...impact, ...rest };
+  };
+
+  it("pinpoints a special's blow and a Remix's, not a normal's, a super's nor the final blow", () => {
+    expect([0, 1, 2, 3].map((tier) => pinpoints(blow(tier)))).toEqual([false, true, true, false]);
+    expect(pinpoints(blow(1, 'ko'))).toBe(false);
+  });
+
+  it('pinpoints every projectile: each is a special or a Remix, the Vinyle as it lands', () => {
+    const thrown = [P, RIFF].flatMap((template) =>
+      Object.values(template.moves).filter((move) => move.projectile !== undefined),
+    );
+    expect(thrown.map((move) => move.name)).toEqual(['Vinyle', 'Vinyle platine']);
+    for (const move of thrown) expect([1, 2], move.name).toContain(tierOf(move));
+    const vinyle = eventsOf(facingOff(120, MIRROR_MATCH), [[Input.Special, 0], ...idle(60)]);
+    const hit = vinyle.find((event) => event.type === 'hit');
+    expect(hit?.type === 'hit' && pinpoints(hit)).toBe(true);
+  });
+
+  it("carries the blow's freeze, read in the state: its move's, a CONTRE's 3 ticks more", () => {
+    const start = facingOff(40, MIRROR_MATCH);
+    const contre = eventsOf(start, [[Input.Light, 0], [0, Input.Heavy], ...idle(30)]);
+    expect(contre.find((e) => e.type === 'hit')).toMatchObject({
+      counter: 'counter',
+      freeze: P.moves.standLight.hitstop + COUNTER_HITSTOP,
+    });
+    const plain = eventsOf(start, [[Input.Light, 0], ...idle(30)]);
+    expect(plain.find((e) => e.type === 'hit')).toMatchObject({
+      freeze: P.moves.standLight.hitstop,
+    });
+  });
+});
+
 describe('vibrationFor', () => {
   const blow = { x: 0, y: 0, away: 1, by: 1, low: false } as const;
 
   it("shakes the phone of a player grabbed, pummeled, thrown or hit hard, and only that player's", () => {
-    const grabbed: FightEvent = { type: 'grab', ...blow, punish: false };
+    const grabbed: FightEvent = { type: 'grab', ...blow, punish: false, freeze: 30 };
     const pummel: FightEvent = {
       type: 'hit',
       ...blow,
@@ -465,6 +506,7 @@ describe('vibrationFor', () => {
       counter: null,
       tier: 0,
       pulse: false,
+      freeze: 10,
     };
     const thrown: FightEvent = { type: 'throw', ...blow, damage: 100 };
     const heavy: FightEvent = {
@@ -476,6 +518,7 @@ describe('vibrationFor', () => {
       counter: null,
       tier: 0,
       pulse: false,
+      freeze: 10,
     };
     expect(vibrationFor(grabbed, 0)).toBe(HAPTICS.grabbed);
     expect(vibrationFor(pummel, 0)).toBe(HAPTICS.pummel);
@@ -499,6 +542,7 @@ describe('vibrationFor', () => {
       counter: null,
       tier: 1,
       pulse: false,
+      freeze: 10,
     } as const;
     expect(vibrationFor({ ...ko, finish: 'ultimate' }, 0)).toBe(HAPTICS.shatter);
     expect(vibrationFor({ ...ko, finish: 'ultimate' }, 1)).toBe(HAPTICS.shatter);
@@ -517,6 +561,7 @@ describe('vibrationFor', () => {
       counter: null,
       tier: 0,
       pulse: false,
+      freeze: 10,
     };
     expect(vibrationFor(light, 0)).toBe(0);
     expect(vibrationFor({ type: 'block', ...blow }, 0)).toBe(0);

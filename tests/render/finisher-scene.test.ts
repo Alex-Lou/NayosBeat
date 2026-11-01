@@ -128,6 +128,15 @@ describe("the scene's timeline on the core (§2.3, §2.9, §3.3, §3.9)", () => 
       expect(leaving.every((alpha, i) => alpha < (leaving[i - 1] ?? 1.01))).toBe(true);
     }
   });
+
+  it('speaks alone in the place of « K.O. »: the stamps on screen fade out as it comes (P10)', () => {
+    for (const played of [film(LE_QUATRE, FULL), film(LARSEN, SHORT)]) {
+      const first = cardShots(played)[0];
+      const hushed = played.shots.find((shot) => shot.hushes > 0);
+      expect(hushed?.t).toBe(first?.t);
+      expect(played.shots.at(-1)?.hushes).toBe(1);
+    }
+  });
 });
 
 describe('the track: whole ticks, each held 1, 2 or 3 frames (§1.14, D23)', () => {
