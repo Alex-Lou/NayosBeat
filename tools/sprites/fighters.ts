@@ -9,14 +9,17 @@
 
 import { NAYO_CLIPS } from '../../src/art/nayo/clips.ts';
 import { RIFF_CLIPS } from '../../src/art/riff/clips.ts';
+import { SAPHIR_CLIPS } from '../../src/art/saphir/clips.ts';
 import type { Cell } from '../../src/art/types.ts';
 import type { FighterTemplate } from '../../src/core/config.ts';
 import { NAYO as NAYO_TEMPLATE } from '../../src/data/fighters/nayo.ts';
 import { RIFF as RIFF_TEMPLATE } from '../../src/data/fighters/riff.ts';
+import { SAPHIR as SAPHIR_TEMPLATE } from '../../src/data/fighters/saphir.ts';
 import type { Clips } from './clips.ts';
 import type { Fighter } from './fighter.ts';
 import { NAYO } from './nayo/index.ts';
 import { RIFF } from './riff/index.ts';
+import { SAPHIR } from './saphir/index.ts';
 
 export interface ToolFighter {
   /** Its generator: body, poses, palettes, strips (its `name` is its folder and its id). */
@@ -30,6 +33,7 @@ export interface ToolFighter {
 export const TOOL_FIGHTERS: readonly ToolFighter[] = [
   { fighter: NAYO, template: NAYO_TEMPLATE, clips: NAYO_CLIPS },
   { fighter: RIFF, template: RIFF_TEMPLATE, clips: RIFF_CLIPS },
+  { fighter: SAPHIR, template: SAPHIR_TEMPLATE, clips: SAPHIR_CLIPS },
 ];
 
 /** Every fighter's generator, in the list's order. */
