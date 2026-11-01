@@ -417,14 +417,17 @@ describe('the fight’s bus (§1.14, §2.8, §3.8)', () => {
 
   it('hands the bus back whole and lets go of everything on dispose, mid-scene too', () => {
     const played = film(LE_QUATRE, { ...FULL, until: 100 });
-    const { director, sfx } = played;
+    const { director, sfx, textures } = played;
     expect(director.isActive()).toBe(true);
     expect(played.shots.at(-1)?.bus?.gain).toBe(0);
+    // The needle's texture (WebGL), made with the props.
+    expect(textures.keys()).toEqual(['finisher:needle']);
     director.dispose();
     expect(sfx.resetFightBus).toHaveBeenCalled();
     expect(director.isActive()).toBe(false);
     expect(director.camera).toBeNull();
     expect([director.lookOf(0).silhouette, director.lookOf(1).silhouette]).toEqual([0, 0]);
+    expect(textures.keys()).toEqual([]);
   });
 });
 

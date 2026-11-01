@@ -1,13 +1,18 @@
+import type Phaser from 'phaser';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { KeyboardInput, PLAYER1_KEYS, PLAYER2_KEYS } from '../../src/input/keyboard';
 import { PauseInput } from '../../src/input/pause-input';
 import { PlayerInputs } from '../../src/input/player-inputs';
 import { TouchControls } from '../../src/input/touch-controls';
 import { DebugOverlay } from '../../src/render/debug-overlay';
+import { FinisherProps } from '../../src/render/finisher-props';
+import { HoldRing } from '../../src/render/hold-ring';
+import type { RenderMode } from '../../src/render/render-mode';
 import { FighterSelect } from '../../src/ui/fighter-select';
 import { Menu } from '../../src/ui/menu';
 import { TitleScreen } from '../../src/ui/title-screen';
 import { installFakePage, type FakePage } from './fake-dom';
+import { fakeStage } from './finisher-fakes';
 
 /** A fighter of the select screen that stands in guard: its idle plays while it is shown. */
 const IDLE_LOOK = {
@@ -114,5 +119,41 @@ describe('disposal', () => {
     expect(page.runningAnimations()).toBe(1);
     animation.cancel();
     expect(page.runningAnimations()).toBe(0);
+  });
+});
+
+/**
+ * What makes its own textures in the game's manager, which outlives a fight: the smooth strokes
+ * of the lean context (smooth-stroke.ts), drawn with WebGL only.
+ */
+const TEXTURE_CASES: readonly [string, (scene: Phaser.Scene, mode: RenderMode) => Disposable][] = [
+  ['HoldRing', (scene, mode) => new HoldRing(scene, 400, [0xff0000, 0x0000ff], mode)],
+  ['FinisherProps', (scene, mode) => new FinisherProps(scene, 400, 1000, mode)],
+];
+
+describe('disposal of textures', () => {
+  it.each(TEXTURE_CASES)('%s frees the textures it made once disposed', (_, create) => {
+    const { scene, textures } = fakeStage();
+    const disposable = create(scene, 'full');
+    expect(textures.keys()).toHaveLength(1);
+
+    disposable.dispose();
+    expect(textures.keys()).toEqual([]);
+  });
+
+  it.each(TEXTURE_CASES)('%s makes none by Canvas', (_, create) => {
+    const { scene, textures } = fakeStage();
+    create(scene, 'simple');
+    expect(textures.keys()).toEqual([]);
+  });
+
+  it('frees only its own: the next fight’s, made before, stays', () => {
+    const { scene, textures } = fakeStage();
+    const ring = new HoldRing(scene, 400, [0xff0000, 0x0000ff], 'full');
+    const props = new FinisherProps(scene, 400, 1000, 'full');
+    ring.dispose();
+    expect(textures.keys()).toHaveLength(1);
+    props.dispose();
+    expect(textures.keys()).toEqual([]);
   });
 });

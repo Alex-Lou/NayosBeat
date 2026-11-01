@@ -181,7 +181,7 @@ export class FinisherScene {
     scene: Phaser.Scene,
     private readonly cast: FinisherCast,
   ) {
-    this.props = new FinisherProps(scene, cast.groundY, cast.stageWidth);
+    this.props = new FinisherProps(scene, cast.groundY, cast.stageWidth, cast.mode);
     this.crowd = new Crowd(scene, cast.groundY, cast.stageWidth);
     const card = (player: 0 | 1) => {
       const script = scriptOf(cast.fighters[player]);
@@ -346,9 +346,13 @@ export class FinisherScene {
     }
   }
 
-  /** Everything let go: the bus whole and open, nothing shown, the camera the fight's. */
+  /**
+   * Everything let go: the bus whole and open, nothing shown, the camera the fight's, the props'
+   * texture freed.
+   */
   dispose(): void {
     this.end();
+    this.props.dispose();
   }
 
   private start(by: 0 | 1, x: number, y: number, state: GameState, viewLeft: number): void {

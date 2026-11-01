@@ -40,6 +40,18 @@ export class FakeObject {
     this.y = y;
     return this;
   }
+  rotation = 0;
+  scaleX = 1;
+  scaleY = 1;
+  setRotation(rotation: number): this {
+    this.rotation = rotation;
+    return this;
+  }
+  setScale(x: number, y = x): this {
+    this.scaleX = x;
+    this.scaleY = y;
+    return this;
+  }
   setText(text: string): this {
     this.text = text;
     this.width = text.length * this.size * 0.55;
@@ -61,8 +73,6 @@ const CHAINED = [
   'setDepth',
   'setOrigin',
   'setFillStyle',
-  'setRotation',
-  'setScale',
   'setTint',
   'clearTint',
   'setColor',
@@ -74,6 +84,10 @@ const CHAINED = [
   'fillTriangle',
   'lineStyle',
   'lineBetween',
+  'setClosePath',
+  'setStrokeStyle',
+  'setEndAngle',
+  'buildOrderedIndices',
 ] as const;
 for (const name of CHAINED) {
   Object.defineProperty(FakeObject.prototype, name, {
@@ -81,6 +95,51 @@ for (const name of CHAINED) {
       return this;
     },
   });
+}
+
+/** A canvas texture as made by FakeTextures: whether the shader smooths it. */
+interface FakeCanvasTexture {
+  smoothPixelArt: boolean | null;
+}
+
+/**
+ * The game's texture manager as the scene's objects make and free their canvas textures: the
+ * keys in it, the textures made, and the texels painted into each (`x,y` to its color).
+ */
+export class FakeTextures {
+  readonly painted = new Map<string, Map<string, string>>();
+  readonly made = new Map<string, FakeCanvasTexture>();
+  exists(key: string): boolean {
+    return this.painted.has(key);
+  }
+  createCanvas(key: string) {
+    const texels = new Map<string, string>();
+    this.painted.set(key, texels);
+    const context = {
+      fillStyle: '',
+      fillRect(x: number, y: number, width: number, height: number) {
+        for (let dy = 0; dy < height; dy++) {
+          for (let dx = 0; dx < width; dx++) texels.set(`${x + dx},${y + dy}`, context.fillStyle);
+        }
+      },
+    };
+    const texture = {
+      smoothPixelArt: null as boolean | null,
+      getContext: () => context,
+      setSmoothPixelArt(value: boolean) {
+        texture.smoothPixelArt = value;
+      },
+      refresh: () => undefined,
+    };
+    this.made.set(key, texture);
+    return texture;
+  }
+  remove(key: string): void {
+    this.painted.delete(key);
+  }
+  keys(): string[] {
+    return [...this.painted.keys()];
+  }
 }
 
 /** A scene whose `add` makes fakes, kept by kind in the order they were made. */
@@ -91,29 +150,40 @@ export function fakeStage(): {
     graphics: FakeObject[];
     containers: FakeObject[];
     texts: FakeObject[];
+    images: FakeObject[];
+    shapes: FakeObject[];
   };
+  textures: FakeTextures;
 } {
   const made = {
     rectangles: [] as FakeObject[],
     graphics: [] as FakeObject[],
     containers: [] as FakeObject[],
     texts: [] as FakeObject[],
+    images: [] as FakeObject[],
+    shapes: [] as FakeObject[],
   };
   const keep = (list: FakeObject[], object: FakeObject) => {
     list.push(object);
     return object;
   };
+  const textures = new FakeTextures();
   const scene = {
     scale: { width: 1920 },
+    textures,
     add: {
       rectangle: () => keep(made.rectangles, new FakeObject()),
       graphics: () => keep(made.graphics, new FakeObject()),
       container: () => keep(made.containers, new FakeObject()),
       text: (_x: number, _y: number, text: string, style: { fontSize?: number }) =>
         keep(made.texts, new FakeObject(style.fontSize ?? 10).setText(text)),
+      image: () => keep(made.images, new FakeObject()),
+      // The hold's ring: arcs by Canvas, meshes with WebGL.
+      arc: () => keep(made.shapes, new FakeObject()),
+      mesh2d: () => keep(made.shapes, new FakeObject()),
     },
   } as unknown as Phaser.Scene;
-  return { scene, made };
+  return { scene, made, textures };
 }
 
 /** The sounds and the fight's bus as the director asks them. */

@@ -316,7 +316,7 @@ export class FightScene extends Phaser.Scene {
         },
       ),
       hud,
-      holdRing: new HoldRing(this, GROUND_Y, [this.styles[0].energy, this.styles[1].energy]),
+      holdRing: new HoldRing(this, GROUND_Y, [this.styles[0].energy, this.styles[1].energy], mode),
       caption: this.config.training ? new MoveCaption(this, this.config, GROUND_Y) : undefined,
       holdPrompt: this.config.training ? new HoldPrompt(this, this.config, GROUND_Y) : undefined,
       debugOverlay: debug ? new DebugOverlay(document.body) : undefined,
@@ -640,11 +640,15 @@ export class FightScene extends Phaser.Scene {
       .setScroll(framing.left + runtime.feedback.shakeX, framing.top + runtime.feedback.shakeY);
   }
 
-  /** DOM elements and listeners live outside Phaser: they must be released explicitly. */
+  /**
+   * DOM elements and listeners live outside Phaser, and textures in the game's manager: they
+   * must be released explicitly.
+   */
   private dispose(): void {
     if (!this.runtime) return;
     // The fight's bus whole and open again, for the menus and the next fight.
     this.runtime.finisherScene.dispose();
+    this.runtime.holdRing.dispose();
     this.runtime.inputs.dispose();
     this.runtime.pauseInput.dispose();
     this.runtime.debugOverlay?.destroy();

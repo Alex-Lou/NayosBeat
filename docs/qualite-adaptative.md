@@ -507,56 +507,62 @@ Preuve :
 
 À vérifier (§7, point 3) : sur iPhone, l'app 1 min en arrière-plan puis le retour (la pause, puis l'image entière à la reprise) ; en Mode Isolement, si tu acceptes de l'activer, l'avis sur l'écran titre et un KO qui ne sort pas blanc.
 
-**C livrée** le 1er novembre 2026, en attente de la question 2 (§6) : le seuil de 0,2 % n'est pas tenu partout, et deux bords se voient à ×2 (voir les écarts). Elle comprend :
+**C livrée** le 1er novembre 2026. **Question 2 (§6) tranchée par le propriétaire, le 1er novembre** : on garde tout le gain de C, et on redessine en textures lissées les deux seules formes dont le bord se voyait à ×2, l'anneau de prise et la rayure de l'aiguille. Rien d'autre. Elle comprend :
 - `src/render/lean-context.ts` : le contexte WebGL 1 sans MSAA, ni profondeur, ni stencil. Ses autres attributs sont ceux que Phaser 4.2.1 demande pour ce jeu (`alpha`, `premultipliedAlpha`, `preserveDrawingBuffer`, `powerPreference`...) ;
 - `main.ts` le passe à Phaser par `config.canvas` et `config.context`. Si le navigateur n'en fait pas, Phaser fait le sien, comme avant, sur un autre canvas : le nôtre n'est demandé qu'une fois. Avec `?rendu=canvas`, aucun contexte WebGL n'est créé ;
-- le commentaire des appels de dessin, corrigé.
+- le commentaire des appels de dessin, corrigé ;
+- `src/render/smooth-stroke.ts` : les traits lissés sans MSAA. Une texture de 3×3 texels, peinte une fois dans un canvas : un seul texel opaque au milieu, les autres transparents. On l'étire pour que ce texel couvre le trait. Le shader de `smoothPixelArt` fond un texel dans le suivant sur un pixel d'écran, à tout zoom (`DefineBlockyTexCoord-glsl.js`) : les bords du trait sont lissés comme par le MSAA, bouts compris. L'arc (`SmoothArc`, un `Mesh2D`) reprend la géométrie de l'`Arc` de Phaser (trait centré sur le rayon, 100 segments, bouts francs) et les appels dont l'anneau se sert. Ses sommets sont réécrits sur place quand l'arc change : rien n'est alloué par image. La ligne est une `Image` étirée et tournée ;
+- `hold-ring.ts` et `finisher-props.ts` : en WebGL, l'anneau (et sa piste) et la rayure passent par ces traits. Leur logique ne change pas : même vidange, même saut, même clignotement blanc et même réglage `calm` (docs/flashs.md §4), même tracé et même durée de la rayure, mêmes profondeurs. En Canvas (`?rendu=canvas`), ce sont toujours les formes de Phaser, que Canvas lisse lui-même (et il n'a pas de teinte). Chaque texture est faite avec son objet, et libérée à la fermeture de la scène (`HoldRing.dispose`, et `FinisherProps.dispose` par `FinisherScene.dispose`).
 
 Preuve :
 - `tests/render/lean-context.test.ts` : les attributs, WebGL 1, un seul `getContext`, rien sous `?rendu=canvas`, le repli. Cinq mutations le font rougir : `antialias` remis à `true`, `depth` remis à `true`, WebGL 2, un contexte créé sous `?rendu=canvas`, un contexte perdu passé à Phaser ;
-- un essai jetable, hors du dépôt (`contexte-ab/essai/`, chemin en fin de section) : les builds de production de main et de C servis par `vite preview`, dans Chromium headless (SwiftShader). L'horloge, `requestAnimationFrame` et `Date.now` y sont simulés : une image ne passe que quand l'essai la joue, et vaut 1/60 s. `Math.random` a une graine fixe, et la scène est exposée par un patch du bundle servi, comme dans l'essai de B. À chaque capture, les deux builds sont au même tic, avec le même hash d'état ; main contre main donne 0 pixel différent.
+- `tests/render/smooth-stroke.test.ts` : la géométrie de l'arc (le texel opaque sur le trait, les bouts, le tour complet sans bouts, l'arc vide) et de la ligne, et la texture. `hold-ring.test.ts` : l'anneau en WebGL suit l'anneau de Canvas image par image (place, taille, couleur, opacité, arc), sur une prise où le saisi se débat, des deux côtés. `finisher-props.test.ts` : la rayure, du début à la part tracée, et en Canvas, une ligne sans texture. `disposal.test.ts` et `finisher-scene.test.ts` : les textures libérées, aucune en Canvas. Douze mutations les font rougir, dont : un bout du mauvais côté, un tour complet avec des bouts, un texel trop épais, la texture non lissée, l'anneau pas teinté, une texture non libérée, une texture faite en Canvas ;
+- un essai jetable, hors du dépôt (`contexte-ab/essai/`, chemin en fin de section) : les builds de production de main et de C servis par `vite preview`, dans Chromium headless (SwiftShader). L'horloge, `requestAnimationFrame` et `Date.now` y sont simulés : une image ne passe que quand l'essai la joue, et vaut 1/60 s. `Math.random` a une graine fixe, et la scène est exposée par un patch du bundle servi, comme dans l'essai de B. À chaque capture, les deux builds sont au même tic, avec le même hash d'état ; main contre main donne 0 pixel différent. Refait après la retouche (`contexte-ab/essai-v2/`) : main est un `git archive` de e4395cf, la base de C.
 
-| Mesure | main | C |
+| Mesure, refaite après la retouche | main | C |
 |---|---|---|
 | `getContextAttributes()` en combat : `antialias`, `depth`, `stencil` | `true`, `true`, `true` | `false`, `false`, `false` |
 | Échantillons, bits de profondeur, bits de stencil | 4, 24, 8 | 0, 0, 0 |
 | Tampon de dessin à 960×540 (calcul du §2.4, avec un ou deux tampons de couleur) | 17,8 ou 19,8 Mo | 2,0 ou 4,0 Mo |
 | Tampon de dessin à 1920×1080 | 71,2 ou 79,1 Mo | 7,9 ou 15,8 Mo |
-| Mémoire du processus GPU après 30 s de combat, à 960×540 et à 1920×1080 | 199,5 et 341,1 Mo | 184,8 et 270,8 Mo |
-| Travail du GPU simulé par image, à 960×540 | 28,9 ms | 15,2 ms (−47 %) |
-| Travail du GPU simulé par image, à 1920×1080 | 92,1 ms | 44,4 ms (−52 %) |
-| Attente du GPU par image, à 960×540 et à 1920×1080 | 8,3 et 28,4 ms | 3,8 et 11,5 ms |
-| Perte du contexte en combat | 0 tic à l'aveugle, la pause ; 236 textures recréées ; 91 tics après la reprise | pareil (90 tics) ; après la restauration, le même contexte, toujours sans MSAA, et aucun `getContext` de plus |
+| Mémoire du processus GPU après 30 s de combat, à 960×540 et à 1920×1080 | 199,8 et 338,4 Mo | 188,6 et 273,2 Mo |
+| Travail du GPU simulé par image, à 960×540 | 28,8 ms | 15,0 ms (−48 %) |
+| Travail du GPU simulé par image, à 1920×1080 | 92,1 ms | 43,7 ms (−53 %) |
+| Attente du GPU par image, à 960×540 et à 1920×1080 | 8,2 et 28,0 ms | 3,7 et 11,3 ms |
+| Appels de dessin par image en combat, en moyenne et au plus | 19,97 et 25 | 20,02 et 25 |
+| Perte du contexte en combat (mesurée avant la retouche) | 0 tic à l'aveugle, la pause ; 236 textures recréées ; 91 tics après la reprise | pareil (90 tics) ; après la restauration, le même contexte, toujours sans MSAA, et aucun `getContext` de plus |
 
-Le travail du GPU est le temps CPU du processus GPU de Chromium (SwiftShader, tous ses fils) ; l'attente est celle d'une lecture d'un pixel après chaque image. Les deux sont mesurés sur 30 s du même combat contre le CPU, en deux passes alternées par build.
+Le travail du GPU est le temps CPU du processus GPU de Chromium (SwiftShader, tous ses fils) ; l'attente est celle d'une lecture d'un pixel après chaque image. Les deux sont mesurés sur 30 s du même combat contre le CPU, en deux passes alternées par build, qui finissent au même tic avec le même hash. Avant la retouche : −47 % et −52 %. Les textures des traits sont des canvas : Phaser les recrée lui-même après une perte du contexte (§2.3).
 
-**L'A/B, à 960×540** : % de pixels différents, plus grand écart sur un canal, ΔE2000 maximal.
+**L'A/B final, à 960×540** : % de pixels différents, plus grand écart sur un canal, ΔE2000 maximal. Pour l'anneau et la rayure, aussi dans un masque : les pixels du trait et 2 px autour, placés depuis le jeu (caméra, anneau, rayure).
 
 | Image | main contre C | Ce qui change |
 |---|---|---|
 | Neutre | 0,097 %, 29/255, 7,2 | les marques du sol, les ombres |
-| Anneau de prise (4 captures) | de 0,27 à 0,31 %, 123/255, 38,5 | le bord de l'anneau |
+| Anneau de prise, toute la prise (31 captures, du plein au presque vide, blanc puis cyan) | de 0,28 à 0,33 % ; dans l'anneau : 45 à 64/255, ΔE de 16,7 à 22,6 (p99 ≤ 17,8). Avant la retouche : 112 à 123/255, ΔE 38,5 | le bord de l'anneau, d'un palier de MSAA au plus |
 | Super (6 captures) | de 0,10 à 0,12 %, 144/255, 43,5 | les étincelles, les rayons |
 | KO (7 captures) | de 0,10 à 0,41 %, 162/255, 34,0 | les gouttes et les éclats (carrés tournés), les rayons |
 | Finisher de Nayo, gros plan ×2 (14 captures) | de 0,11 à 0,16 %, 93/255, 29,9 | les bords du cône de lumière |
 | Carte du Finisher de Nayo | de 0 à 0,07 %, 26/255, 11,3 | presque rien |
-| Finisher de Riff, avant la carte (18 captures, dont 10 à ×2) | de 0,24 à 1,07 %, 118/255, 34,3 | la foule (cercles sombres sur fond sombre), la rayure de l'aiguille, les clous |
+| La rayure, image par image, à ×2 (27 captures : elle se trace, puis retrace contre la rivale) | de 0,29 à 0,53 % ; dans la rayure : 50 à 61/255, ΔE de 18,8 à 20,4 (p99 ≤ 18,8). Avant la retouche : 107 à 118/255, ΔE 34,0 | le bord de la rayure, d'un palier de MSAA au plus |
+| Finisher de Riff, avant la carte (18 captures, dont 10 à ×2) | de 0,24 à 1,07 %, 104/255, 34,3 | la foule (cercles sombres sur fond sombre), les clous |
 | Carte du Finisher de Riff | de 0,39 à 0,87 %, 128/255, 45,6 | les bords des papiers découpés |
+| Rendu Canvas (`?rendu=canvas`), la prise entière et le Finisher de Riff entier (68 captures) | 0 pixel différent | rien |
 
 **Écarts au plan**
 - **WebGL 1 seulement, et non WebGL 2 d'abord (§5).** Le shader de `smoothPixelArt` de Phaser 4.2.1 est en GLSL ES 1.00. Il tire ses dérivées de `OES_standard_derivatives` (`MakeSmoothPixelArt.js`, `DefineBlockyTexCoord-glsl.js`). Un contexte WebGL 2 n'offre plus cette extension à un tel shader : ANGLE la retire exprès (`Context.cpp` : « In WebGL2, WebGL1 extensions whose functionality is present in core are not exposed »), et Phaser ne vérifie rien en WebGL 2. Dans le jeu, sur un contexte WebGL 2 : « Fragment Shader failed ... 'dFdx' : no matching overloaded function found », et le combat reste au tic 0.
 - **Ce que Phaser exige vraiment en WebGL 1** : `ANGLE_instanced_arrays`, `OES_vertex_array_object` et, avec `smoothPixelArt`, `OES_standard_derivatives`. Il les vérifie lui-même sur le contexte qu'on lui passe (`setExtensions`), et lève la même erreur qu'aujourd'hui s'il en manque une. Le jeu ne les revérifie donc pas.
-- **Le seuil de 0,2 % n'est pas tenu** sur l'anneau de prise, sur les images de KO chargées de particules, ni sur tout le Finisher de Riff. Seules changent les formes dessinées sans texture : l'anneau (`Arc`), les carrés tournés, la rayure, les cercles de la foule, les triangles du cône. Le shader de `smoothPixelArt` lisse les textures, pas ces formes. Le 0,15 % du PLAN §6 avait été mesuré avant le Finisher.
-- **À l'œil** : rien ne se voit à ×1. À ×2, côte à côte, deux bords sortent en escalier là où main les lisse : celui de l'anneau de prise (cyan sur fond sombre) et la rayure de l'aiguille, dans le Finisher de Riff. Le reste est trop petit ou trop peu contrasté pour se distinguer : la foule (ΔE ≤ 10), les papiers de la carte, le cône de Nayo, les éclats, les marques du sol, les ombres. Les captures sont fixes : un bord en escalier qui bouge peut aussi scintiller, ce qu'elles ne montrent pas.
-- **Le gain GPU** tombe dans la fourchette de [classement] (de 41 à 51 % pour le MSAA, 9 % pour la profondeur et le stencil) : −47 % à 960×540, −52 % à 1920×1080. Ce sont des mesures sous SwiftShader, qui ne valent pour aucun téléphone (§1).
-- **La mémoire du processus GPU** baisse de 14,7 Mo à 960×540 (15,8 calculés) et de 70,3 Mo à 1920×1080 (63,3 calculés). SwiftShader n'est pas un GPU en tuiles : sur téléphone, seul le calcul vaut.
-- **Les appels de dessin** : 20 par image en moyenne et 25 au plus en combat, comme le plan (20 et 27). Un Finisher en fait plus : 37 en moyenne pour Nayo, 50 pour Riff, et 72 au plus. Avec `maxTextures` par défaut, un combat en ferait 12, et 14 au plus. Le commentaire de `main.ts` disait de 10 à 17, contre 5 à 7.
+- **Le seuil de 0,2 % n'est pas tenu**, et ne peut pas l'être : sur l'anneau de prise, sur les images de KO chargées de particules, ni sur tout le Finisher de Riff. Les formes dessinées sans texture changent de bord : les carrés tournés, les cercles de la foule, les triangles du cône. Le shader de `smoothPixelArt` lisse les textures, pas ces formes. L'anneau et la rayure, redessinés en textures, gardent un bord différent pixel à pixel : le MSAA à 4 échantillons arrondit la couverture d'un pixel au quart, le shader la donne entière. L'écart qui reste (au plus 64/255 sur un contraste de 190 à 224) tient dans un de ces paliers. Le 0,15 % du PLAN §6 avait été mesuré avant le Finisher.
+- **À l'œil** : rien ne se voit à ×1. À ×2, côte à côte, l'anneau et la rayure ne se distinguent plus de ceux de main (planches `01` à `03`) ; à ×6, pas davantage. Main a même de fins traits plus clairs aux jointures de son anneau (ses quadrilatères de liaison se chevauchent à 90 % d'opacité), que les traits lissés n'ont pas. Le reste, inchangé, est trop petit ou trop peu contrasté pour se distinguer : la foule (ΔE ≤ 10), les clous, les papiers de la carte, le cône de Nayo, les éclats, les marques du sol, les ombres. Les captures sont fixes : un bord en escalier qui bouge peut aussi scintiller, ce qu'elles ne montrent pas.
+- **Le gain GPU** tombe dans la fourchette de [classement] (de 41 à 51 % pour le MSAA, 9 % pour la profondeur et le stencil) : −48 % à 960×540, −53 % à 1920×1080, après la retouche. Ce sont des mesures sous SwiftShader, qui ne valent pour aucun téléphone (§1).
+- **La mémoire du processus GPU** baisse de 11,2 Mo à 960×540 (15,8 calculés) et de 65,2 Mo à 1920×1080 (63,3 calculés). Avant la retouche : 14,7 et 70,3 Mo. Les deux textures des traits pèsent 72 octets ; l'écart vient du bruit de la mesure. SwiftShader n'est pas un GPU en tuiles : sur téléphone, seul le calcul vaut.
+- **Les appels de dessin** : 20 par image en moyenne et 25 au plus en combat, comme le plan (20 et 27). La texture de l'anneau en ajoute un pendant une prise (`maxTextures: 1`) : 20,02 en moyenne au lieu de 19,97. Un Finisher en fait plus : 37 en moyenne pour Nayo, 50 pour Riff, et 72 au plus. Avec `maxTextures` par défaut, un combat en ferait 12, et 14 au plus. Le commentaire de `main.ts` disait de 10 à 17, contre 5 à 7.
 
-**La question 2 reste ouverte**, avec trois réponses mesurées :
-1. Accepter les deux bords en escalier : C telle quelle.
-2. Garder C et redessiner en texture l'anneau (`hold-ring.ts`) et la rayure (`finisher-props.ts`). C'est le défaut du §6, qui ne nommait que le cône.
-3. Garder le MSAA et ne retirer que la profondeur et le stencil (`antialias: true` dans `lean-context.ts`, une ligne). L'image ne change pas : 0 pixel différent sur l'anneau, la super et tout le Finisher de Riff. Le gain tombe à la moitié de la mémoire (7,9 Mo à 960×540, 31,6 Mo à 1920×1080 ; 10,5 Mo mesurés dans le processus GPU) et à 9 % du travail GPU, au lieu de 47 %.
+**La question 2 est tranchée** (réponse 2). Les deux autres, mesurées, sont écartées :
+1. Accepter les deux bords en escalier : C telle quelle. Écartée : ils se voyaient à ×2, et un Finisher se joue à ×2.
+2. **Retenue** : garder C et redessiner en texture l'anneau (`hold-ring.ts`) et la rayure (`finisher-props.ts`). C'est le défaut du §6, qui ne nommait que le cône. Le cône, les clous et la foule ne se voyaient pas : ils restent tels quels.
+3. Garder le MSAA et ne retirer que la profondeur et le stencil (`antialias: true` dans `lean-context.ts`, une ligne). Écartée : l'image ne changeait pas (0 pixel différent sur l'anneau, la super et tout le Finisher de Riff), mais le gain tombait à la moitié de la mémoire (7,9 Mo à 960×540, 31,6 Mo à 1920×1080 ; 10,5 Mo mesurés dans le processus GPU) et à 9 % du travail GPU, au lieu de 47 %.
 
-Les planches A/B et l'essai sont hors du dépôt, dans `/tmp/claude-0/-home-user/52a00850-d99a-5791-bce9-b2e169dbe15f/scratchpad/contexte-ab/` (`planches/`, `essai/`).
+Les planches A/B et les essais sont hors du dépôt, dans `/tmp/claude-0/-home-user/52a00850-d99a-5791-bce9-b2e169dbe15f/scratchpad/contexte-ab/` : `planches/` et `essai/` avant la retouche, `planches-v2/` (avec `mesures.txt`) et `essai-v2/` après.
 
 À vérifier (§7, point 4) : sous Safari, l'anneau de prise et le Finisher de Riff, à l'œil ; sur PC, Chrome en 1920×1080 : les images/s de la surcouche, avant et après.

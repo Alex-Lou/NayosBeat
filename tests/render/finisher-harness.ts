@@ -25,7 +25,13 @@ import { FlashBudget } from '../../src/render/flash-budget';
 import { GROUND_Y } from '../../src/render/greybox-stage';
 import { hitStyleOf } from '../../src/render/hit-styles';
 import { VIEW_SIZE } from '../../src/render/view';
-import { fakeFeedback, fakeSfx, fakeStage, type FakeObject } from './finisher-fakes';
+import {
+  fakeFeedback,
+  fakeSfx,
+  fakeStage,
+  type FakeObject,
+  type FakeTextures,
+} from './finisher-fakes';
 
 /**
  * The Finisher played on the real core through its real director, frame by frame as FightScene
@@ -99,6 +105,8 @@ export interface Film {
   readonly sfx: ReturnType<typeof fakeSfx>['sfx'];
   readonly feedback: ReturnType<typeof fakeFeedback>['feedback'] | null;
   readonly director: FinisherScene;
+  /** The textures the scene made, as they are now. */
+  readonly textures: FakeTextures;
 }
 
 export interface Take {
@@ -166,7 +174,7 @@ export function film(route: Route, take: Take = {}): Film {
   const { sfx, asSfx } = fakeSfx();
   const stand = take.feedback ? null : fakeFeedback();
   const feedback = take.feedback ?? (stand as ReturnType<typeof fakeFeedback>).asFeedback;
-  const { scene, made } = fakeStage();
+  const { scene, made, textures } = fakeStage();
   const styles = [hitStyleOf(route.fighters[0]), hitStyleOf(route.fighters[1])] as const;
   const arts = route.fighters.map((id) => (id === 'nayo' ? NAYO_ART : RIFF_ART));
   const director = new FinisherScene(scene, {
@@ -308,5 +316,6 @@ export function film(route: Route, take: Take = {}): Film {
     sfx,
     feedback: stand?.feedback ?? null,
     director,
+    textures,
   };
 }

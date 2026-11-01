@@ -1,5 +1,7 @@
 import type Phaser from 'phaser';
 import { DEPTH } from './depth';
+import type { RenderMode } from './render-mode';
+import { layLine, paintStroke } from './smooth-stroke';
 import { alphaOver } from './veils';
 import { VIEW_SIZE } from './view';
 
@@ -8,6 +10,9 @@ import { VIEW_SIZE } from './view';
  * flash: the flat over the stage behind the fighters (not a veil of `Effects`: COLOR_GAP would
  * drop it after the super's dark), the cold light falling on Nayo, the needle's scratch across
  * Riff's flat, and her studs flying off on her KO. Everything is made once, hidden until shown.
+ * With WebGL, on the lean context (no multisampling), the scratch is a smooth stroke
+ * (smooth-stroke.ts), its texture made with the props and freed by `dispose`; by Canvas, a line,
+ * which Canvas smooths itself.
  */
 
 /** The cold light on Nayo (§2.5): 60 world px wide at the floor, ΔL ≤ 0.05 over the flat. */
@@ -29,6 +34,14 @@ const SHARDS = [
 ] as const;
 /** The needle's scratch: 1 world px of silver. */
 const NEEDLE_COLOR = 0xd8e0ec;
+const NEEDLE_WIDTH = 1;
+/** The scratch's texture with WebGL (smooth-stroke.ts), in its silver. */
+const NEEDLE_TEXTURE = 'finisher:needle';
+
+/** The scratch: a smooth stroke's image (WebGL), or a line drawn by Canvas. */
+type Needle =
+  | { readonly smooth: true; readonly image: Phaser.GameObjects.Image }
+  | { readonly smooth: false; readonly graphics: Phaser.GameObjects.Graphics };
 
 /** Where on the screen a scratch crosses the flat: from the view's top left to its bottom right. */
 export interface Scratch {
@@ -50,14 +63,15 @@ interface Shard {
 export class FinisherProps {
   private readonly flat: Phaser.GameObjects.Rectangle;
   private readonly cone: Phaser.GameObjects.Graphics;
-  private readonly needle: Phaser.GameObjects.Graphics;
+  private readonly needle: Needle;
   private readonly shards: readonly Shard[];
   private shardSize = 1;
 
   constructor(
-    scene: Phaser.Scene,
+    private readonly scene: Phaser.Scene,
     private readonly groundY: number,
     stageWidth: number,
+    mode: RenderMode,
   ) {
     const { width, height } = VIEW_SIZE;
     this.flat = scene.add
@@ -69,10 +83,23 @@ export class FinisherProps {
       .graphics()
       .setDepth(DEPTH.flat + 0.03)
       .setVisible(false);
-    this.needle = scene.add
-      .graphics()
-      .setDepth(DEPTH.flat + 0.02)
-      .setVisible(false);
+    if (mode === 'full') paintStroke(scene, NEEDLE_TEXTURE, NEEDLE_COLOR);
+    this.needle =
+      mode === 'full'
+        ? {
+            smooth: true,
+            image: scene.add
+              .image(0, 0, NEEDLE_TEXTURE)
+              .setDepth(DEPTH.flat + 0.02)
+              .setVisible(false),
+          }
+        : {
+            smooth: false,
+            graphics: scene.add
+              .graphics()
+              .setDepth(DEPTH.flat + 0.02)
+              .setVisible(false),
+          };
     this.shards = SHARDS.map(() => ({
       graphics: scene.add.graphics().setDepth(DEPTH.sparks).setVisible(false),
       x: 0,
@@ -111,15 +138,23 @@ export class FinisherProps {
 
   /** The needle's scratch, `drawn` of its way along `scratch` (0 to 1; 0: none). */
   showNeedle(scratch: Scratch | null, drawn: number): void {
+    const { needle } = this;
     if (!scratch || drawn <= 0) {
-      this.needle.setVisible(false);
+      (needle.smooth ? needle.image : needle.graphics).setVisible(false);
       return;
     }
     const { x1, y1, x2, y2 } = scratch;
-    this.needle
+    const x = x1 + (x2 - x1) * drawn;
+    const y = y1 + (y2 - y1) * drawn;
+    if (needle.smooth) {
+      layLine(needle.image, x1, y1, x, y, NEEDLE_WIDTH);
+      needle.image.setVisible(true);
+      return;
+    }
+    needle.graphics
       .clear()
-      .lineStyle(1, NEEDLE_COLOR)
-      .lineBetween(x1, y1, x1 + (x2 - x1) * drawn, y1 + (y2 - y1) * drawn)
+      .lineStyle(NEEDLE_WIDTH, NEEDLE_COLOR)
+      .lineBetween(x1, y1, x, y)
       .setVisible(true);
   }
 
@@ -167,10 +202,15 @@ export class FinisherProps {
   hide(): void {
     this.flat.setVisible(false);
     this.cone.setVisible(false);
-    this.needle.setVisible(false);
+    this.showNeedle(null, 0);
     for (const shard of this.shards) {
       shard.age = SHARD_LIFE;
       shard.graphics.setVisible(false);
     }
+  }
+
+  /** The scratch's texture freed (the fight's scene shuts down: the props go with it). */
+  dispose(): void {
+    if (this.needle.smooth) this.scene.textures.remove(NEEDLE_TEXTURE);
   }
 }
