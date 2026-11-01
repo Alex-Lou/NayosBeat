@@ -287,6 +287,52 @@ describe('detectEvents', () => {
     expect(attacks).toEqual([{ type: 'attack', heavy: true, by: 1, move: 'standHeavy' }]);
   });
 
+  it('tells a heavy blow blocked from a light one (P3)', () => {
+    const blocked = (input: number) =>
+      eventsOf(facingOff(30, MIRROR_MATCH), [
+        [input, Input.Right],
+        ...repeat<[number, number]>([0, Input.Right], 20),
+      ]).find((e) => e.type === 'block');
+    expect(blocked(Input.Heavy)).toMatchObject({ type: 'block', heavy: true });
+    expect(blocked(Input.Light)).toMatchObject({ type: 'block', heavy: false });
+  });
+
+  // P4: the recovery to punish is seen.
+  it('tells a heavy blow that touched nothing, on its first tick of recovery, where its reach ended', () => {
+    const start = facingOff(200, MIRROR_MATCH);
+    const { startup, active, hitbox } = moveOf(P, 'standHeavy');
+    const ticks: [number, number][] = [[Input.Heavy, 0], ...idle(40)];
+    const whiffs = (count: number) =>
+      eventsOf(start, ticks.slice(0, count)).filter((e) => e.type === 'whiff');
+    expect(whiffs(startup + active)).toEqual([]);
+    const [nayo] = start.fighters;
+    if (!hitbox) throw new Error('A strike without a hitbox');
+    expect(whiffs(startup + active + 1)).toEqual([
+      {
+        type: 'whiff',
+        by: 0,
+        x: nayo.x + hitbox.x + hitbox.width,
+        y: hitbox.y + Math.trunc(hitbox.height / 2),
+        toward: 1,
+      },
+    ]);
+    expect(whiffs(ticks.length)).toHaveLength(1);
+    // Player 2, facing left: its reach ends on its left.
+    const second = eventsOf(start, [[0, Input.Heavy], ...idle(40)]).find((e) => e.type === 'whiff');
+    expect(second).toMatchObject({ by: 1, x: start.fighters[1].x - hitbox.x - hitbox.width });
+    expect(second).toMatchObject({ toward: -1 });
+  });
+
+  it('never tells a whiff of a light blow, nor of a heavy one that hit or was blocked', () => {
+    const whiffs = (start: GameState, inputs: [number, number]) =>
+      eventsOf(start, [inputs, ...repeat<[number, number]>([0, inputs[1]], 40)]).filter(
+        (e) => e.type === 'whiff',
+      );
+    expect(whiffs(facingOff(200, MIRROR_MATCH), [Input.Light, 0])).toEqual([]);
+    expect(whiffs(facingOff(30, MIRROR_MATCH), [Input.Heavy, 0])).toEqual([]);
+    expect(whiffs(facingOff(30, MIRROR_MATCH), [Input.Heavy, Input.Right])).toEqual([]);
+  });
+
   // Combat v2 (§4): the grab holds, the blows land in the hold, then the throw and the fall.
   it('tells a grab, the pummels and the throw of a hold from a strike', () => {
     const hold = eventsOf(facingOff(30, MIRROR_MATCH), [
@@ -495,6 +541,12 @@ describe('the spark that shows the contact (docs/polish/AUDIT-ET-PLAN.md, P5)', 
 describe('vibrationFor', () => {
   const blow = { x: 0, y: 0, away: 1, by: 1, low: false } as const;
 
+  it('ticks the phone of who guards a heavy blow, 8 ms, never the attacker (P3)', () => {
+    const guarded: FightEvent = { type: 'block', ...blow, heavy: true };
+    expect(vibrationFor(guarded, 0)).toBe(8);
+    expect(vibrationFor(guarded, 1)).toBe(0);
+  });
+
   it("shakes the phone of a player grabbed, pummeled, thrown or hit hard, and only that player's", () => {
     const grabbed: FightEvent = { type: 'grab', ...blow, punish: false, freeze: 30 };
     const pummel: FightEvent = {
@@ -564,7 +616,7 @@ describe('vibrationFor', () => {
       freeze: 10,
     };
     expect(vibrationFor(light, 0)).toBe(0);
-    expect(vibrationFor({ type: 'block', ...blow }, 0)).toBe(0);
+    expect(vibrationFor({ type: 'block', heavy: false, ...blow }, 0)).toBe(0);
     expect(vibrationFor({ type: 'tech', ...blow }, 0)).toBe(0);
     expect(vibrationFor({ type: 'dash', x: 0, toward: 1 }, 0)).toBe(0);
   });
