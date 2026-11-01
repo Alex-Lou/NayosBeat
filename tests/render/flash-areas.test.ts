@@ -75,6 +75,7 @@ const IMPACT = {
   tier: 0,
   pulse: false,
   freeze: 10,
+  aim: 0,
 } as const;
 
 /** A blow of player 1, as fight-events.ts reports it. */

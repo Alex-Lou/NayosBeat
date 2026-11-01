@@ -12,6 +12,7 @@ const BLOW = {
   tier: 0,
   pulse: false,
   freeze: 0,
+  aim: 0,
 };
 
 const hit = (heavy: boolean, held = false): FightEvent => ({ type: 'hit', ...BLOW, heavy, held });

@@ -220,6 +220,7 @@ function blow(counter: 'counter' | null, ko: 'plain' | 'finale' | null = null): 
     tier: 0,
     pulse: false,
     freeze: 11,
+    aim: 0,
   } as const;
   return ko === null
     ? { type: 'hit', heavy: false, ...impact }

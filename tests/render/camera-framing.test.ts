@@ -150,13 +150,14 @@ function hit(x: number, overrides: Partial<Hit> = {}): Hit {
     tier: 0,
     pulse: false,
     freeze: 0,
+    aim: 0,
     ...overrides,
   };
 }
 
 /** The final blow of player 1 (or `by`) at world x `x`. */
 function ko(x: number, finish: 'plain' | 'finale' = 'plain', by: 0 | 1 = 0): FightEvent {
-  const { x: at, y, away, low, damage, held, counter, tier, pulse, freeze } = hit(x);
+  const { x: at, y, away, low, damage, held, counter, tier, pulse, freeze, aim } = hit(x);
   return {
     type: 'ko',
     finish,
@@ -171,6 +172,7 @@ function ko(x: number, finish: 'plain' | 'finale' = 'plain', by: 0 | 1 = 0): Fig
     tier,
     pulse,
     freeze,
+    aim,
   };
 }
 

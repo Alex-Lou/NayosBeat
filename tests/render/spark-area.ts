@@ -264,29 +264,53 @@ function coverOf(atlas: Atlas, images: readonly FakeImage[], at: number): Cover 
 export class SparkMeter {
   private readonly recorded = recordingScene();
   private readonly fx: HitFx;
+  private readonly random = new FxRandom(12345);
 
   constructor(
     mode: RenderMode = 'full',
     private readonly drawnBy: Compositor = mode === 'full' ? 'webgl' : 'canvas',
   ) {
     // The seed the table was measured with (12345, then Math.random's).
-    this.fx = new HitFx(this.recorded.scene, GROUND_Y, mode, new FxRandom(12345));
+    this.fx = new HitFx(this.recorded.scene, GROUND_Y, mode, this.random);
   }
 
   /**
    * The most world px² a blow's effect lights on one display frame, over its first `frames`
-   * (its peak is in its first frames: the burst, the aura, the splash).
+   * (its peak is in its first frames: the burst, the aura, the splash); its spray flying `aim`
+   * radians off its line (P6).
    */
-  peak(style: HitStyle, kind: FxKind, frames = 14): number {
+  peak(style: HitStyle, kind: FxKind, frames = 14, aim = 0): number {
     // What the last effect left is long gone.
     for (let i = 0; i < 200; i++) this.fx.update();
-    this.fx.play(style, kind, px(CENTER_X), px(GROUND_Y - CENTER_Y), 1);
+    this.fx.play(style, kind, px(CENTER_X), px(GROUND_Y - CENTER_Y), 1, 1, aim);
     let peak = 0;
     for (let frame = 0; frame < frames; frame++) {
       this.fx.update();
       peak = Math.max(peak, litArea(this.recorded.atlas, this.recorded.images, this.drawnBy));
     }
     return peak;
+  }
+
+  /**
+   * The pieces a blow's effect shows after `frames` display frames, the blow going `away`, its
+   * spray `aim` radians off its line (P6): each one's frame, rotation, mirror, and where it is
+   * from the impact (world px, y down). Played on the same chance each time (`seed`): two
+   * effects differ only by what they are asked.
+   */
+  pieces(style: HitStyle, kind: FxKind, away: 1 | -1, aim: number, frames: number, seed = 1) {
+    for (let i = 0; i < 200; i++) this.fx.update();
+    this.random.reseed(seed);
+    this.fx.play(style, kind, px(CENTER_X), px(GROUND_Y - CENTER_Y), away, 1, aim);
+    for (let frame = 0; frame < frames; frame++) this.fx.update();
+    return this.recorded.images
+      .filter((image) => image.visible && image.alpha > 0)
+      .map(({ frame, rotation, flipX, x, y }) => ({
+        frame,
+        rotation,
+        flipX,
+        x: x - CENTER_X,
+        y: y - CENTER_Y,
+      }));
   }
 
   /**

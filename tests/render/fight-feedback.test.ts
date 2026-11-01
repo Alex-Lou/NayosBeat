@@ -161,6 +161,7 @@ function blow(type: 'hit' | 'ko', low: boolean, heavy = false): FightEvent {
     tier: 0,
     pulse: false,
     freeze: 10,
+    aim: 0,
   } as const;
   return type === 'hit' ? { type, heavy, ...impact } : { type, finish: 'plain', ...impact };
 }
@@ -306,7 +307,7 @@ describe('the spark of a blow (docs/combat-v2.md §9.3)', () => {
 
   it('bursts on a hit higher up, without the grazing spark', () => {
     feedback().react(blow('hit', false, true));
-    expect(shown.burst).toHaveBeenCalledWith(NAYO_STYLE, 'heavy', px(200), px(50), 1, 1);
+    expect(shown.burst).toHaveBeenCalledWith(NAYO_STYLE, 'heavy', px(200), px(50), 1, 1, 0);
     expect(shown.graze).not.toHaveBeenCalled();
     expect(shown.kick).not.toHaveBeenCalled();
     expect(shown.bleed).toHaveBeenCalledOnce();
@@ -314,7 +315,7 @@ describe('the spark of a blow (docs/combat-v2.md §9.3)', () => {
 
   it('keeps the burst of a low KO, the final blow, with the grazing spark and no blood', () => {
     feedback().react(blow('ko', true));
-    expect(shown.burst).toHaveBeenCalledWith(NAYO_STYLE, 'ko', px(200), px(9), 1, 1);
+    expect(shown.burst).toHaveBeenCalledWith(NAYO_STYLE, 'ko', px(200), px(9), 1, 1, 0);
     expect(shown.graze).toHaveBeenCalledWith(NAYO_STYLE, 'heavy', px(200), px(9), 1);
     expect(shown.bleed).not.toHaveBeenCalled();
   });
@@ -341,9 +342,10 @@ describe('a counter-hit (docs/combat-v2.md §7.4)', () => {
         tier: 0,
         pulse: false,
         freeze: 10,
+        aim: 0,
       };
       feedback().react(hit);
-      expect(shown.burst).toHaveBeenLastCalledWith(NAYO_STYLE, 'heavy', px(200), px(50), 1, 1);
+      expect(shown.burst).toHaveBeenLastCalledWith(NAYO_STYLE, 'heavy', px(200), px(50), 1, 1, 0);
       expect(shown.stamp).toHaveBeenLastCalledWith(
         STAMP_TEXTS[counter],
         hit,
@@ -504,6 +506,7 @@ describe('a KO that blows a Boost gauge up (docs/combos-v3.md §1.8.6)', () => {
     tier: 3,
     pulse: false,
     freeze: 10,
+    aim: 0,
   });
   const withHaptics = (vibrate: () => void, rumble: () => void) => {
     const haptic = new FightFeedback(
@@ -562,6 +565,7 @@ describe('the veils and the shake, never a flash over the whole screen (docs/fla
     tier: 3,
     pulse: false,
     freeze: 10,
+    aim: 0,
   });
 
   it('veils a KO by how it fell: nothing alone, a vignette for a combo, the éclat for an Ultime', () => {
@@ -601,11 +605,11 @@ describe('the veils and the shake, never a flash over the whole screen (docs/fla
   it("plays a super's blows before its last smaller: their spark, a small BOUM", () => {
     const hit = blow('hit', false, true);
     feedback().react({ ...hit, pulse: true } as FightEvent);
-    expect(shown.burst).toHaveBeenCalledWith(NAYO_STYLE, 'pulse', px(200), px(50), 1, 1);
+    expect(shown.burst).toHaveBeenCalledWith(NAYO_STYLE, 'pulse', px(200), px(50), 1, 1, 0);
     expect(shown.word).toHaveBeenCalledWith('pulse', expect.anything(), 0, 0, false);
     expect(shown.jolt).toHaveBeenCalledWith(TRAUMA.heavy, 1);
     feedback().react(hit);
-    expect(shown.burst).toHaveBeenLastCalledWith(NAYO_STYLE, 'heavy', px(200), px(50), 1, 1);
+    expect(shown.burst).toHaveBeenLastCalledWith(NAYO_STYLE, 'heavy', px(200), px(50), 1, 1, 0);
     expect(shown.word).toHaveBeenLastCalledWith('heavy', expect.anything(), 0, 0, false);
   });
 });
@@ -806,6 +810,7 @@ describe("the Finisher's blows, its scene's (docs/finisher.md §1.14, §5.2)", (
       px(50),
       1,
       CLOSE_UP_EFFECTS,
+      0,
     );
     expect(shown.bleed).not.toHaveBeenCalled();
     expect(shown.veil).not.toHaveBeenCalled();
@@ -829,6 +834,7 @@ describe("the Finisher's blows, its scene's (docs/finisher.md §1.14, §5.2)", (
       px(50),
       1,
       CLOSE_UP_EFFECTS,
+      0,
     );
   });
 
@@ -851,6 +857,7 @@ describe("the Finisher's blows, its scene's (docs/finisher.md §1.14, §5.2)", (
       px(50),
       1,
       CLOSE_UP_EFFECTS,
+      0,
     );
   });
 
@@ -867,6 +874,7 @@ describe("the Finisher's blows, its scene's (docs/finisher.md §1.14, §5.2)", (
       px(50),
       1,
       CLOSE_UP_EFFECTS,
+      0,
     );
     // A new super is a new sequence: its blows are its own again.
     fight.react({ type: 'super', by: 0, name: 'Mégabasse', x: px(200), y: 0 });

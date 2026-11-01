@@ -420,7 +420,8 @@ export class FightFeedback {
     if (event.low) this.lowBlow(style, heavy ? 'heavy' : 'light', event, sparks);
     if (sparks && (!event.low || ko)) {
       const look = lit ? ask.look : ask.muted;
-      this.hitFx.play(style, look, event.x, event.y, event.away, this.sizeOf(event));
+      // Its spray flies where its move sends it (P6).
+      this.hitFx.play(style, look, event.x, event.y, event.away, this.sizeOf(event), event.aim);
     }
     if (staged) {
       // Its words are the scene's count; its KO, its scene's alone: no blood at the close up, no
