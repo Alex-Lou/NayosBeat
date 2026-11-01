@@ -1,26 +1,14 @@
 import { DIRECTIONS, Input, type InputBits } from '../core/input';
+import { ACTION_FLAGS, DEFAULT_PAD, PAD_ACTIONS, type PadMap } from './bindings';
+import { PadButton } from './gamepad-buttons';
+
+export { PadButton } from './gamepad-buttons';
 
 /** The subset of the Gamepad API that is read, so the mapping can be tested without a browser. */
 export interface GamepadSnapshot {
   readonly buttons: readonly { readonly pressed: boolean }[];
   readonly axes: readonly number[];
 }
-
-/** Button indices of the W3C "standard" mapping (Xbox / PlayStation layouts). */
-export const PadButton = {
-  South: 0,
-  East: 1,
-  West: 2,
-  North: 3,
-  LeftBumper: 4,
-  RightBumper: 5,
-  RightTrigger: 7,
-  Start: 9,
-  DpadUp: 12,
-  DpadDown: 13,
-  DpadLeft: 14,
-  DpadRight: 15,
-} as const;
 
 /**
  * How far the stick must be pushed to take a direction, and how far back it must come to let it
@@ -63,27 +51,26 @@ export function stickBits(pad: GamepadSnapshot, previous: InputBits): InputBits 
   return bits;
 }
 
-/** Everything but the stick: the d-pad and the buttons. */
-export function buttonBits(pad: GamepadSnapshot): InputBits {
+/** Everything but the stick: the d-pad, and the buttons as `map` binds them. */
+export function buttonBits(pad: GamepadSnapshot, map: PadMap = DEFAULT_PAD): InputBits {
   let bits = 0;
   if (isPressed(pad, PadButton.DpadUp)) bits |= Input.Up;
   if (isPressed(pad, PadButton.DpadDown)) bits |= Input.Down;
   if (isPressed(pad, PadButton.DpadLeft)) bits |= Input.Left;
   if (isPressed(pad, PadButton.DpadRight)) bits |= Input.Right;
-  if (isPressed(pad, PadButton.South)) bits |= Input.Jump;
-  if (isPressed(pad, PadButton.West)) bits |= Input.Light;
-  if (isPressed(pad, PadButton.North)) bits |= Input.Heavy;
-  if (isPressed(pad, PadButton.East)) bits |= Input.Special;
-  if (isPressed(pad, PadButton.RightBumper)) bits |= Input.Grab;
-  if (isPressed(pad, PadButton.LeftBumper)) bits |= Input.Dash;
-  // BOOST on RT / R2 (docs/combos-v3.md §1.8.5).
-  if (isPressed(pad, PadButton.RightTrigger)) bits |= Input.Boost;
+  for (const action of PAD_ACTIONS) {
+    if (isPressed(pad, map[action])) bits |= ACTION_FLAGS[action];
+  }
   return bits;
 }
 
 /** One read of a pad, its stick read against the directions it gave last time. */
-export function bitsFromGamepad(pad: GamepadSnapshot, previousStick: InputBits = 0): InputBits {
-  return buttonBits(pad) | stickBits(pad, previousStick);
+export function bitsFromGamepad(
+  pad: GamepadSnapshot,
+  previousStick: InputBits = 0,
+  map: PadMap = DEFAULT_PAD,
+): InputBits {
+  return buttonBits(pad, map) | stickBits(pad, previousStick);
 }
 
 /**
@@ -93,10 +80,10 @@ export function bitsFromGamepad(pad: GamepadSnapshot, previousStick: InputBits =
 export class GamepadReader {
   private readonly sticks = new Map<number, InputBits>();
 
-  read(pad: GamepadSnapshot & { readonly index: number }): InputBits {
+  read(pad: GamepadSnapshot & { readonly index: number }, map: PadMap = DEFAULT_PAD): InputBits {
     const stick = stickBits(pad, this.sticks.get(pad.index) ?? 0);
     this.sticks.set(pad.index, stick);
-    return buttonBits(pad) | stick;
+    return buttonBits(pad, map) | stick;
   }
 }
 
