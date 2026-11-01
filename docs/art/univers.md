@@ -1,12 +1,12 @@
 # NayosBeat — bible des univers
 
-Trois univers, par ordre de priorité. Chacun apporte **un stage** et **deux combattants** : un sur le gabarit **Polyvalent** (portée, projectile, uppercut), un sur le gabarit **Rushdown** (vitesse, ruée, saut plongeant). Les gabarits fixent le gameplay (coups, frame data, hitbox) ; l'univers fixe tout le reste (look, noms, ambiance).
+Trois univers, par ordre de priorité. Chacun apporte **un stage** et ses combattants : d'abord un sur le gabarit **Polyvalent** (portée, projectile, uppercut) et un sur le gabarit **Rushdown** (vitesse, ruée, saut plongeant), puis, s'il en a un troisième, un **archétype neuf** (Sound Clash : Saphir, la **Contreuse**, à mi-distance). Le gabarit ou l'archétype fixe le gameplay (coups, frame data, hitbox) ; l'univers fixe tout le reste (look, noms, ambiance).
 
-| Priorité | Univers | Polyvalent | Rushdown | Stage |
-|---|---|---|---|---|
-| 1 | **Sound Clash** | Nayo | Riff | Entrepôt-club |
-| 2 | **Néon Underground** | Kaï | Vexa | Toit sous la pluie |
-| Bonus | **Archipel des Légendes** | Sora | Kitsune | Cour de temple |
+| Priorité | Univers | Polyvalent | Rushdown | 3e | Stage |
+|---|---|---|---|---|---|
+| 1 | **Sound Clash** | Nayo | Riff | Saphir (Contreuse) | Entrepôt-club |
+| 2 | **Néon Underground** | Kaï | Vexa | — | Toit sous la pluie |
+| Bonus | **Archipel des Légendes** | Sora | Kitsune | — | Cour de temple |
 
 Règles communes à tous les personnages :
 
