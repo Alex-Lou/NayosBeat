@@ -12,6 +12,7 @@ import {
   type HdShape,
   type HdShapeName,
 } from './hd-shapes';
+import { FxRandom } from './fx-random';
 import type { HitStyle } from './hit-styles';
 import type { RenderMode } from './render-mode';
 import { VIEW_SIZE } from './view';
@@ -103,6 +104,16 @@ interface PieceSpec {
   readonly spin?: number;
   /** Keeps the shape turned along its motion (sparks). */
   readonly align?: boolean;
+  /**
+   * Cools down a ramp of tints instead of fading out (saint11; docs/polish/AUDIT-ET-PLAN.md,
+   * P7): `step` frames on each color, the last one fading over what is left of its life.
+   */
+  readonly ramp?: Ramp;
+}
+
+interface Ramp {
+  readonly colors: readonly number[];
+  readonly step: number;
 }
 
 interface Piece {
@@ -287,12 +298,21 @@ const STRETCH = 1.15;
 
 /** The KO's smoke: the burst's slate, tinged with the winner's energy (never a grey smudge). */
 const SMOKE_SLATE = 0x33334a;
+/** Frames a cooling spark keeps each tint, and the smoke (P7). */
+const SPARK_COOLING = 2;
+const SMOKE_COOLING = 7;
 const EMBER_TINT = 0xff6a1a;
 /** No tint: a shape in its own colors (a white shape white, a painted one as painted). */
 const WHITE = 0xffffff;
 
-function random(min: number, max: number): number {
-  return min + Math.random() * (max - min);
+/**
+ * A spark's tints as it cools (P7), from `start`, its own color, on: the heart of the flash, the
+ * strike, the energy, then the slate. A color not on it starts the ramp at its strike.
+ */
+function cooling(style: HitStyle, start: number): Ramp {
+  const ramp = [style.core, style.strike, style.energy, SMOKE_SLATE];
+  const from = ramp.indexOf(start);
+  return { colors: ramp.slice(Math.max(1, from)), step: SPARK_COOLING };
 }
 
 /** A color brought `amount` (0 to 1) of the way to another. */
@@ -438,6 +458,8 @@ export class HitFx {
     scene: Phaser.Scene,
     private readonly groundY: number,
     private readonly mode: RenderMode,
+    /** The effects' seeded randomness (fx-random.ts), the feedback's. */
+    private readonly random: FxRandom = new FxRandom(),
   ) {
     createAtlas(scene);
     for (const name of Object.keys(LAYERS) as LayerName[]) {
@@ -525,7 +547,7 @@ export class HitFx {
     const { size, life, keys } = star;
     const auraScale = star.auraScale ?? AURA_SCALE;
     const mirror = direction !== 0;
-    const tilt = random(-0.15, 0.15);
+    const tilt = this.random.between(-0.15, 0.15);
     const ahead = Math.cos(direction);
     const burstLife = sum(keys);
     // Along the blow (its width) and across it.
@@ -583,7 +605,7 @@ export class HitFx {
     }
     for (let i = 0; i < star.lines; i++) {
       // From behind the impact, dying in it: where the blow came from.
-      const offset = (i - (star.lines - 1) / 2) * size * 0.1 + random(-1, 1);
+      const offset = (i - (star.lines - 1) / 2) * size * 0.1 + this.random.between(-1, 1);
       this.spawn(
         {
           layer: 'line',
@@ -638,16 +660,20 @@ export class HitFx {
     this.arcs(style, star, x, y, direction);
     for (let i = 0; i < star.streaks; i++) {
       // Half the streaks fly on with the blow, the others every way.
-      const angle = i % 2 === 0 ? direction + random(-0.6, 0.6) : random(0, Math.PI * 2);
+      const angle =
+        i % 2 === 0
+          ? direction + this.random.between(-0.6, 0.6)
+          : this.random.between(0, Math.PI * 2);
       this.spawn(
         {
           layer: 'streak',
           color: i % 3 === 1 ? energy : style.strike,
-          life: random(4, 6) * life,
-          from: [size * random(0.4, 0.6), 2.2],
+          ramp: cooling(style, i % 3 === 1 ? energy : style.strike),
+          life: this.random.between(4, 6) * life,
+          from: [size * this.random.between(0.4, 0.6), 2.2],
           to: [size * 0.2, 0.8],
           direction: angle,
-          speed: random(5, 8) * Math.sqrt(life),
+          speed: this.random.between(5, 8) * Math.sqrt(life),
           drag: 0.85,
           align: true,
         },
@@ -658,19 +684,19 @@ export class HitFx {
     for (let i = 0; i < star.drops; i++) {
       // Thrown evenly all around, each a little off its share of the turn. Painted: they
       // shrink away rather than fade.
-      const angle = direction + ((i + random(-0.3, 0.3)) / star.drops) * Math.PI * 2;
-      const start = size * random(0.2, 0.35);
+      const angle = direction + ((i + this.random.between(-0.3, 0.3)) / star.drops) * Math.PI * 2;
+      const start = size * this.random.between(0.2, 0.35);
       this.spawn(
         {
           layer: 'drop',
-          life: random(9, 13) * life,
+          life: this.random.between(9, 13) * life,
           from: [size * 0.3, size * 0.085],
           to: [size * 0.06, size * 0.02],
           ease: 2,
           hold: 0.75,
           fade: 1.5,
           direction: angle,
-          speed: random(2.5, 5.5) * Math.sqrt(life),
+          speed: this.random.between(2.5, 5.5) * Math.sqrt(life),
           drag: 0.87,
           gravity: 0.05,
           align: true,
@@ -680,18 +706,19 @@ export class HitFx {
       );
     }
     for (let i = 0; i < star.specks; i++) {
-      const angle = random(0, Math.PI * 2);
-      const speck = random(1.6, 2.6);
+      const angle = this.random.between(0, Math.PI * 2);
+      const speck = this.random.between(1.6, 2.6);
       this.spawn(
         {
           layer: 'speck',
           color: i % 3 === 2 ? energy : style.strike,
-          life: random(9, 15) * life,
+          ramp: cooling(style, i % 3 === 2 ? energy : style.strike),
+          life: this.random.between(9, 15) * life,
           from: [speck, speck],
           to: [1, 1],
           hold: 0.4,
           direction: angle,
-          speed: random(1.5, 4) * Math.sqrt(life),
+          speed: this.random.between(1.5, 4) * Math.sqrt(life),
           drag: 0.92,
           gravity: 0.05,
         },
@@ -700,15 +727,15 @@ export class HitFx {
       );
     }
     for (let i = 0; i < star.twinkles; i++) {
-      const angle = random(0, Math.PI * 2);
-      const distance = size * random(0.5, 0.95);
-      const twinkle = random(7, 11) * Math.sqrt(size / STARS.heavy.size);
+      const angle = this.random.between(0, Math.PI * 2);
+      const distance = size * this.random.between(0.5, 0.95);
+      const twinkle = this.random.between(7, 11) * Math.sqrt(size / STARS.heavy.size);
       this.spawn(
         {
           layer: 'twinkle',
           color: i % 2 === 0 ? energy : style.strike,
-          delay: Math.round(random(1, 5) * life),
-          life: random(6, 9) * life,
+          delay: Math.round(this.random.between(1, 5) * life),
+          life: this.random.between(6, 9) * life,
           from: [0, 0],
           to: [twinkle, twinkle],
           pulse: true,
@@ -728,39 +755,39 @@ export class HitFx {
   private linger(style: HitStyle, star: Star, x: number, y: number): void {
     const { size, linger } = star;
     for (let i = 0; i < linger; i++) {
-      const angle = ((i + random(-0.3, 0.3)) / linger) * Math.PI * 2;
+      const angle = ((i + this.random.between(-0.3, 0.3)) / linger) * Math.PI * 2;
       this.spawn(
         {
           layer: 'streak',
           color: i % 2 === 0 ? style.energy : style.strike,
           delay: 2,
-          life: random(18, 26),
+          life: this.random.between(18, 26),
           from: [size * 0.45, 1.8],
           to: [size * 0.8, 0.5],
           ease: 2,
           fade: 1.2,
           direction: angle,
-          speed: random(3, 4.5),
+          speed: this.random.between(3, 4.5),
           drag: 0.94,
           align: true,
         },
         x + Math.cos(angle) * size * 0.5,
         y + Math.sin(angle) * size * 0.5,
       );
-      const from = random(0, Math.PI * 2);
-      const at = size * random(0.1, 0.45);
+      const from = this.random.between(0, Math.PI * 2);
+      const at = size * this.random.between(0.1, 0.45);
       this.spawn(
         {
           layer: 'speck',
           color: i % 3 === 0 ? style.energy : i % 3 === 1 ? style.strike : EMBER_TINT,
-          delay: Math.round(random(4, 18)),
-          life: random(26, 40),
+          delay: Math.round(this.random.between(4, 18)),
+          life: this.random.between(26, 40),
           from: [3.6, 3.6],
           to: [1.4, 1.4],
           hold: 0.5,
           fade: 1.2,
-          direction: random(0, Math.PI * 2),
-          speed: random(0.4, 1.4),
+          direction: this.random.between(0, Math.PI * 2),
+          speed: this.random.between(0.4, 1.4),
           drag: 0.97,
           gravity: -0.012,
         },
@@ -771,23 +798,27 @@ export class HitFx {
     const smoke = blend(SMOKE_SLATE, style.energy, 0.3);
     for (let i = 0; i < 4; i++) {
       // Rising off the impact, thinning out as it climbs.
-      const from = random(0, Math.PI * 2);
-      const puff = size * random(0.14, 0.2);
+      const from = this.random.between(0, Math.PI * 2);
+      const puff = size * this.random.between(0.14, 0.2);
       this.spawn(
         {
           layer: 'puff',
           color: smoke,
-          delay: Math.round(random(6, 10)),
-          life: random(26, 34),
+          ramp: {
+            colors: [smoke, blend(SMOKE_SLATE, style.energy, 0.15), SMOKE_SLATE],
+            step: SMOKE_COOLING,
+          },
+          delay: Math.round(this.random.between(6, 10)),
+          life: this.random.between(26, 34),
           from: [puff, puff],
           to: [puff * 2.2, puff * 2.2],
           ease: 2,
           alpha: 0.45,
           fade: 1.6,
-          angle: random(0, Math.PI * 2),
-          spin: random(-0.02, 0.02),
-          direction: random(-Math.PI * 0.75, -Math.PI * 0.25),
-          speed: random(0.6, 1),
+          angle: this.random.between(0, Math.PI * 2),
+          spin: this.random.between(-0.02, 0.02),
+          direction: this.random.between(-Math.PI * 0.75, -Math.PI * 0.25),
+          speed: this.random.between(0.6, 1),
           drag: 0.985,
         },
         x + Math.cos(from) * size * 0.12,
@@ -795,15 +826,15 @@ export class HitFx {
       );
     }
     for (let i = 0; i < 6; i++) {
-      const angle = random(0, Math.PI * 2);
-      const distance = size * random(0.3, 0.9);
-      const twinkle = random(8, 13);
+      const angle = this.random.between(0, Math.PI * 2);
+      const distance = size * this.random.between(0.3, 0.9);
+      const twinkle = this.random.between(8, 13);
       this.spawn(
         {
           layer: 'twinkle',
           color: i % 2 === 0 ? style.energy : style.strike,
-          delay: Math.round(random(10, 34)),
-          life: random(10, 14),
+          delay: Math.round(this.random.between(10, 34)),
+          life: this.random.between(10, 14),
           from: [0, 0],
           to: [twinkle, twinkle],
           pulse: true,
@@ -826,7 +857,7 @@ export class HitFx {
         i === 0 ? lighten(style.energy, 0.35) : style.energy,
         x,
         y,
-        direction + Math.PI + random(-0.08, 0.08),
+        direction + Math.PI + this.random.between(-0.08, 0.08),
         size * (0.42 + i * 0.075),
         size * 0.46,
         { delay: i, life: 5, alpha: 1 - i * 0.22, speed: 2 },
@@ -909,7 +940,7 @@ export class HitFx {
       y,
     );
     for (let i = 0; i < 4; i++) {
-      const angle = back + (i - 1.5) * 0.7 + random(-0.15, 0.15);
+      const angle = back + (i - 1.5) * 0.7 + this.random.between(-0.15, 0.15);
       this.spawn(
         {
           layer: 'line',
@@ -937,24 +968,24 @@ export class HitFx {
     for (let i = 0; i < 6; i++) {
       // Glancing off the guard, never straight back.
       const side = i % 2 === 0 ? 1 : -1;
-      const angle = back + side * random(0.5, 1.25);
+      const angle = back + side * this.random.between(0.5, 1.25);
       this.spawn(
         {
           layer: 'streak',
           color: i < 2 ? pale : style.energy,
-          life: random(6, 8),
-          from: [random(10, 15), 2],
+          life: this.random.between(6, 8),
+          from: [this.random.between(10, 15), 2],
           to: [4, 0.9],
           hold: 0.4,
           fade: 1,
           direction: angle,
-          speed: random(3, 5),
+          speed: this.random.between(3, 5),
           drag: 0.86,
           gravity: 0.12,
           align: true,
         },
         guardX,
-        y + side * random(0, 6),
+        y + side * this.random.between(0, 6),
       );
     }
     for (const side of [-1, 1]) {
@@ -1032,15 +1063,15 @@ export class HitFx {
         {
           layer: 'shard',
           color: style.energy,
-          life: random(8, 12),
+          life: this.random.between(8, 12),
           from: [4, 4],
           to: [1.5, 1.5],
-          angle: random(0, Math.PI),
-          direction: direction + Math.PI + random(-0.9, 0.9),
-          speed: random(1.5, 3),
+          angle: this.random.between(0, Math.PI),
+          direction: direction + Math.PI + this.random.between(-0.9, 0.9),
+          speed: this.random.between(1.5, 3),
           drag: 0.9,
           gravity: 0.1,
-          spin: random(-0.3, 0.3),
+          spin: this.random.between(-0.3, 0.3),
         },
         x,
         y,
@@ -1103,16 +1134,20 @@ export class HitFx {
   ): void {
     for (let i = 0; i < count; i++) {
       // Most sparks fly on with the blow.
-      const angle = i % 3 === 2 ? random(0, Math.PI * 2) : direction + random(-1.2, 1.2);
+      const angle =
+        i % 3 === 2
+          ? this.random.between(0, Math.PI * 2)
+          : direction + this.random.between(-1.2, 1.2);
       this.spawn(
         {
           layer: 'spark',
           color: i % 2 === 0 ? style.strike : style.energy,
-          life: random(10, 18) * life,
+          ramp: cooling(style, i % 2 === 0 ? style.strike : style.energy),
+          life: this.random.between(10, 18) * life,
           from: [10, 2.4],
           to: [3, 1],
           angle,
-          speed: random(2.5, 6) * Math.sqrt(life),
+          speed: this.random.between(2.5, 6) * Math.sqrt(life),
           drag: 0.9,
           gravity: 0.14,
           align: true,
@@ -1129,15 +1164,15 @@ export class HitFx {
         {
           layer: 'shard',
           color,
-          life: random(12, 20),
+          life: this.random.between(12, 20),
           from: [4 * size, 4 * size],
           to: [1.5, 1.5],
-          angle: random(0, Math.PI),
-          direction: random(0, Math.PI * 2),
-          speed: random(1.5, 3.5),
+          angle: this.random.between(0, Math.PI),
+          direction: this.random.between(0, Math.PI * 2),
+          speed: this.random.between(1.5, 3.5),
           drag: 0.93,
           gravity: 0.1,
-          spin: random(-0.3, 0.3),
+          spin: this.random.between(-0.3, 0.3),
         },
         x,
         y,
@@ -1191,7 +1226,15 @@ export class HitFx {
     const width = spec.from[0] + (spec.to[0] - spec.from[0]) * grow;
     const height = spec.from[1] + (spec.to[1] - spec.from[1]) * grow;
     const hold = spec.hold ?? 0;
-    const fading = Math.min(1, Math.max(0, (t - hold) / (1 - hold)));
+    let fading = Math.min(1, Math.max(0, (t - hold) / (1 - hold)));
+    if (spec.ramp) {
+      // On each tint in turn, opaque; the last fades out over what is left.
+      const { colors, step } = spec.ramp;
+      const at = Math.min(colors.length - 1, Math.floor(age / step));
+      image.setTint(colors[at] ?? WHITE);
+      const cooled = (colors.length - 1) * step;
+      fading = age < cooled ? 0 : (age - cooled) / Math.max(1, life - cooled);
+    }
     const scale =
       (spec.keys ? this.showKey(piece, frames, spec.keys, spec.scales) : 1) * piece.size;
     image

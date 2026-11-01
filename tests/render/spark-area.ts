@@ -1,5 +1,6 @@
 import type Phaser from 'phaser';
 import { px } from '../../src/core/constants';
+import { FxRandom } from '../../src/render/fx-random';
 import { HitFx, type HitKind } from '../../src/render/hit-fx';
 import type { HitStyle } from '../../src/render/hit-styles';
 import type { RenderMode } from '../../src/render/render-mode';
@@ -9,7 +10,7 @@ import { darkestOf, FIGHT_STAGE_COLORS } from '../../src/render/stage-view';
  * Measures what a hit effect lights (docs/flashs.md §1.1): the real HitFx plays on a scene that
  * keeps its images, and each display frame is composited pixel by pixel over the stage's sky as
  * WebGL blends (sRGB, alpha or added), then the world px² whose WCAG luminance rose by 0.1 or
- * more are counted. The test that uses it seeds Math.random: the same effect every run.
+ * more are counted. Its effects are seeded (FxRandom): the same effect every run.
  * Phaser must be mocked by the test (its blend modes: NORMAL 0, ADD 1). Drawn by Canvas, the
  * same, every tint ignored (Phaser's Canvas renderer has none: render-mode.ts).
  */
@@ -204,7 +205,8 @@ export class SparkMeter {
     mode: RenderMode = 'full',
     private readonly drawnBy: Compositor = mode === 'full' ? 'webgl' : 'canvas',
   ) {
-    this.fx = new HitFx(this.recorded.scene, GROUND_Y, mode);
+    // The seed the table was measured with (12345, then Math.random's).
+    this.fx = new HitFx(this.recorded.scene, GROUND_Y, mode, new FxRandom(12345));
   }
 
   /**

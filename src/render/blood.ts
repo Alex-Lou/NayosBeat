@@ -1,6 +1,7 @@
 import type Phaser from 'phaser';
 import { toPx } from '../core/constants';
 import { DEPTH } from './depth';
+import { FxRandom } from './fx-random';
 
 /** Arcade-style blood: a few dark-red drops, never gore. Three tones, darkest to lightest. */
 const TONES = [0x7a0f1a, 0xb81d2b, 0xe8384a] as const;
@@ -51,6 +52,8 @@ export class Blood {
   constructor(
     scene: Phaser.Scene,
     private readonly groundY: number,
+    /** The effects' seeded randomness (fx-random.ts), the feedback's. */
+    private readonly random: FxRandom = new FxRandom(),
   ) {
     this.drops = Array.from({ length: DROP_POOL_SIZE }, () => ({
       shape: scene.add.rectangle(0, 0, 1, 1, TONES[1]).setDepth(DEPTH.blood).setVisible(false),
@@ -76,10 +79,10 @@ export class Blood {
       const drop = this.drops[this.nextDrop];
       this.nextDrop = (this.nextDrop + 1) % this.drops.length;
       if (!drop) continue;
-      drop.vx = away * style.speed * (0.4 + Math.random() * 0.9);
-      drop.vy = -(0.8 + Math.random() * 1.6);
+      drop.vx = away * style.speed * (0.4 + this.random.next() * 0.9);
+      drop.vy = -(0.8 + this.random.next() * 1.6);
       drop.alive = true;
-      const size = Math.random() < 0.7 ? 2 : 1;
+      const size = this.random.next() < 0.7 ? 2 : 1;
       drop.shape
         .setPosition(Math.round(screenX), Math.round(screenY))
         .setSize(size, size)
@@ -118,7 +121,7 @@ export class Blood {
     splat.life = SPLAT_STAY + SPLAT_FADE;
     splat.shape
       .setPosition(Math.round(x), this.groundY)
-      .setSize(2 + Math.floor(Math.random() * 3), 1)
+      .setSize(2 + Math.floor(this.random.next() * 3), 1)
       .setAlpha(1)
       .setVisible(true);
   }

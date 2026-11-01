@@ -546,12 +546,13 @@ export class FightScene extends Phaser.Scene {
       }
       runtime.trainingView?.record(this.state);
       const viewLeft = toPx(this.state.cameraX) - VIEW_SIZE.width / 2;
-      runtime.feedback.beginTick();
+      runtime.feedback.beginTick(this.state.frame);
       for (const event of this.tickEvents) {
         runtime.feedback.react(event, viewLeft);
         runtime.caption?.react(event, this.state.frame);
       }
       runtime.feedback.endTick();
+      runtime.feedback.trail(this.state);
       // After the blows' own effects: they ask the flash budget first.
       for (const event of this.tickEvents) scene.react(event, this.state, viewLeft);
       if (!staged && scene.isActive()) return i + 1;

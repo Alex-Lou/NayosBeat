@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { MAX_SHAKE, Shake, SHAKE_STEP, TRAUMA, TRAUMA_DECAY } from '../../src/render/shake';
+import {
+  MAX_SHAKE,
+  Shake,
+  SHAKE_STEP,
+  SHAKE_STRENGTH,
+  TRAUMA,
+  TRAUMA_DECAY,
+} from '../../src/render/shake';
 
 /** The camera's offsets, frame by frame, after a kick of `trauma` toward `away`. */
 function run(trauma: number, away: 1 | -1 = 1, frames = 60, seed = 1) {
@@ -42,6 +49,28 @@ describe('the screen shake (docs/flashs.md §1.3)', () => {
       }
       heading = step;
     }
+  });
+
+  it('already moves on the contact’s frame: 2 px for a heavy blow, 4 for a KO (P2)', () => {
+    // Regression: it eased from where it stood, 0, and its first frame barely moved.
+    expect(run(TRAUMA.heavy)[0]?.x).toBe(-2);
+    expect(run(TRAUMA.ko.plain)[0]?.x).toBe(-4);
+    expect(run(TRAUMA.ko.plain, -1)[0]?.x).toBe(4);
+  });
+
+  it('jolts 1 px with a light blow for 2 frames, then back, never swinging; nothing reduced', () => {
+    const jolt = (strength: number, away: 1 | -1 = 1) => {
+      const shake = new Shake(strength);
+      shake.jolt(away);
+      return Array.from({ length: 6 }, () => {
+        shake.update();
+        return shake.x;
+      });
+    };
+    expect(jolt(1)).toEqual([-1, -1, 0, 0, 0, 0]);
+    expect(jolt(1, -1)).toEqual([1, 1, 0, 0, 0, 0]);
+    expect(jolt(SHAKE_STRENGTH.reduced)).toEqual([0, 0, 0, 0, 0, 0]);
+    expect(jolt(SHAKE_STRENGTH.off)).toEqual([0, 0, 0, 0, 0, 0]);
   });
 
   it('dies out, the strongest kick winning over a weaker one', () => {

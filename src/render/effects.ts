@@ -110,6 +110,11 @@ export class Effects {
     this.shake.kick(trauma, away, axis, zoom);
   }
 
+  /** A light blow's jolt (Shake.jolt), the picture moving with it. */
+  jolt(away: 1 | -1): void {
+    this.shake.jolt(away);
+  }
+
   /**
    * Starts a veil; `at`: world pixels a glow bursts from; `size`: a glow's size over its own
    * (GLOW_SIZE), smaller at the Finisher's close up (docs/finisher.md §1.14). A colored veil (a

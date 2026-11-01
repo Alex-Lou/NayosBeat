@@ -7,10 +7,13 @@ import { NAYO as P } from '../../src/data/fighters/nayo';
 import { RIFF } from '../../src/data/fighters/riff';
 import { TRAINING_STAGE } from '../../src/data/stages';
 import { BOOST_MAX } from '../../src/core/rules';
+import type { MoveId } from '../../src/core/move-data';
+import { moveOf } from '../../src/core/moves';
 import {
   COMBO_KO_HITS,
   detectEvents,
   HAPTICS,
+  isHeavy,
   koFinishOf,
   shatters,
   vibrationFor,
@@ -413,6 +416,38 @@ describe('detectEvents', () => {
     expect(types(plain)).not.toContain('boost');
     const dash = eventsOf(facingOff(200, MIRROR_MATCH), [[Input.Dash, 0], ...idle(30)]);
     expect(types(dash)).toEqual(['dash']);
+  });
+});
+
+describe('the weight of a blow (docs/polish/AUDIT-ET-PLAN.md, P1)', () => {
+  it('only adds weight: every blow heavy by its damage stays heavy, but the Vinyle', () => {
+    for (const template of [P, RIFF]) {
+      for (const [id, move] of Object.entries(template.moves)) {
+        if (move.kind === 'movement' || move.damage < 60 || move.projectile) continue;
+        expect(isHeavy(move), `${template.name} ${id}`).toBe(true);
+      }
+    }
+  });
+
+  it('makes heavy the six blows that hit as such, and the Vinyle light, a projectile', () => {
+    // Light while their damage stayed under 60: Nayo's Mise au tapis; Riff's Hache, Retourné
+    // sauté, Swipe (her strings' end), Coup de boule and Retourné.
+    const heavy = (template: typeof P, id: MoveId) => isHeavy(moveOf(template, id));
+    expect(heavy(P, 'lightFinisher')).toBe(true);
+    for (const id of [
+      'chainHigh',
+      'chainLaunch',
+      'lightFinisher',
+      'chainHeavy',
+      'backHeavy',
+    ] as const) {
+      expect(heavy(RIFF, id), id).toBe(true);
+    }
+    // Frozen 8 ticks: a projectile's freeze, light (Sakurai's rule).
+    expect(isHeavy(P.moves.special)).toBe(false);
+    // The jab stays light, the Crochet heavy.
+    expect(isHeavy(P.moves.standLight)).toBe(false);
+    expect(isHeavy(P.moves.standHeavy)).toBe(true);
   });
 });
 

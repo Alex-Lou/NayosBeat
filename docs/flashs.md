@@ -37,18 +37,21 @@ La livraison s'est faite en trois étapes, **toutes faites** : l'étape 1 a reti
 
 - **Modèle.** Un trauma qui décroît (1/48 par image), et une amplitude en **trauma²** de 8 px au plus (Eiserloh, GDC 2016).
 - **Lissage.** Entre deux cibles, la caméra fait un demi-tour toutes les 4 images au plus, soit 7,5 Hz. Avant, elle s'inversait à chaque image, soit 30 Hz.
-- **Graine.** Le hasard est à graine fixe : la même secousse pour les mêmes événements.
-- **Premier élan.** L'image part d'abord dans le sens du coup.
+- **Graine.** Le hasard est à graine fixe : la même secousse pour les mêmes événements. Les effets (gerbes, poussière, sang) tirent le leur du numéro du tic (`fx-random.ts`) : le même tic joue les mêmes étincelles, quoi qu'il y ait eu avant.
+- **Premier élan.** L'image part d'abord dans le sens du coup, et bouge dès l'image du contact : elle part de 60 % de sa première cible (2 px pour un coup lourd, 4 pour un KO simple), au lieu de rester immobile la première image.
+- **À-coup des légers.** Un coup léger, hors trauma, déplace l'image de 1 px dans le sens du coup pendant 2 images, puis la rend, sans oscillation. Réduit : 0 px (l'arrondi par défaut de 0,5). Aucun : rien.
+- **Poids.** Un coup est lourd par ses données, plus par ses dégâts : un gel de 10 tics ou plus, ou une mise au sol (`isHeavy`, `fight-events.ts`). La Mise au tapis de Nayo, la Hache, le Retourné sauté, le Swipe, le Coup de boule et le Retourné de Riff le deviennent ; le Vinyle, projectile au gel de 8, redevient léger.
 - **Option.** « Tremblement de l'écran » : normal, réduit (deux fois moins loin) ou aucun. Sans choix du joueur, le réglage système (`prefers-reduced-motion`) le met à « aucun ». Les vibrations restent.
 - **La victime tremble** pendant l'arrêt sur image (`hit-shake.ts`, `docs/art/animation-plan.md` §2, V1) : son dessin seul, de ±1 px (coup léger, garde) ou ±2 px (coup lourd, CONTRE, PUNITION, KO), qui change de côté tous les 2 tics du jeu. Réduit : 1 px au plus. Aucun : immobile. Jamais pendant le verrou du Finisher ni pendant le gel de son KO : sa mise en scène tient ces images, et le gel du cœur ne montre rien qui bouge (`docs/finisher.md` §1.14).
 - **Le Finisher secoue sur un seul axe** (`Shake.kick` reçoit un axe et le zoom) : le long du sol pour Nayo, du ciel pour Riff. Le décalage en pixels est divisé par le zoom, pas le trauma : à ×2,0, la même force à l'écran qu'un KO à ×1,0.
 
 | Événement | Trauma | Pic |
 |---|---|---|
-| Coup lourd, frappe de super | 0,65 | 3 px |
+| Coup léger (à-coup, hors trauma) | — | 1 px, 2 images |
+| Coup lourd, frappe de super | 0,65 | 3 px (2 px dès l'image du contact) |
 | Projection, chute (le corps KO en l'air compris, sauf après le Finisher) | 0,45 | 2 px |
 | Gel de la super | 0,5 | 2 px |
-| KO simple | 0,85 | 6 px |
+| KO simple | 0,85 | 6 px (4 px dès l'image du contact) |
 | KO en fin de combo | 0,92 | 7 px |
 | KO par l'Ultime | 1 | 8 px |
 | Finisher : son contact, puis sa retombée (un seul axe, ÷ zoom) | 0,6, puis 1 | 2,9 px, puis 8 px de la vue |

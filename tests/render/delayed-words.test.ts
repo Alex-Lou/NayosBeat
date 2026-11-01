@@ -40,6 +40,7 @@ vi.mock('../../src/render/blood', () => ({
 vi.mock('../../src/render/effects', () => ({
   Effects: class {
     kick = vi.fn();
+    jolt = vi.fn();
     veil = vi.fn();
     setShake = vi.fn();
     update = vi.fn();
@@ -262,7 +263,7 @@ describe('what waits shows on the frame the flash budget keeps it for (docs/flas
       now += steps;
       budget.advance(steps);
       for (let i = 0; i < steps; i++, tick++) {
-        feedback.beginTick();
+        feedback.beginTick(tick);
         for (const event of TICKS[tick] ?? []) feedback.react(event, 0);
         feedback.endTick();
       }

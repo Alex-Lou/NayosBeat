@@ -2,6 +2,7 @@ import type Phaser from 'phaser';
 import type { Comfort } from '../app/comfort';
 import type { Sfx } from '../audio/sfx';
 import { px, toPx } from '../core/constants';
+import type { GameState } from '../core/state';
 import { TickPacer } from '../loop/tick-pacer';
 import { BLEEDS, Blood } from './blood';
 import { HAPTICS } from './fight-events';
@@ -28,6 +29,7 @@ import {
   type BlowAsk,
 } from './flash-areas';
 import { FLASH_MERGE, type FlashBudget } from './flash-budget';
+import { FxRandom } from './fx-random';
 import { SHATTER_VIEW } from './health-bar';
 import { HitFx } from './hit-fx';
 import type { HitStyle } from './hit-styles';
@@ -43,6 +45,9 @@ import { glowFlashArea, koVeil, superDim, superHalo, type VeilLook } from './vei
  */
 const KO_SLOW_MOTION_FRAMES = 50;
 const KO_SLOW_MOTION = { ticks: 7, frames: 20 } as const;
+/** A pushed fighter's trail (P7): from this speed (sub-pixels a tick), every this many ticks. */
+const SLIDE_SPEED = px(2);
+const SLIDE_EVERY = 4;
 const KO_SLOW_MOTION_SCALE = KO_SLOW_MOTION.ticks / KO_SLOW_MOTION.frames;
 
 /** The super's halo glows behind the body of the one who lets it go: this high over its feet. */
@@ -112,6 +117,8 @@ interface PendingBlow {
  */
 export class FightFeedback {
   private readonly effects: Effects;
+  /** The effects' randomness, seeded by the tick (fx-random.ts), shared by every effect. */
+  private readonly random = new FxRandom();
   private readonly hitFx: HitFx;
   private readonly blood: Blood;
   private readonly dust: Dust;
@@ -160,10 +167,10 @@ export class FightFeedback {
       return look ? glowFlashArea(look, stage.colors) : 0;
     };
     this.eclatAreas = [eclat(styles[0]), eclat(styles[1])];
-    this.hitFx = new HitFx(scene, groundY, stage.mode);
-    this.blood = new Blood(scene, groundY);
-    this.dust = new Dust(scene, groundY);
-    this.graze = new Graze(scene, groundY);
+    this.hitFx = new HitFx(scene, groundY, stage.mode, this.random);
+    this.blood = new Blood(scene, groundY, this.random);
+    this.dust = new Dust(scene, groundY, this.random);
+    this.graze = new Graze(scene, groundY, this.random);
     this.words = new Onomatopoeia(scene, groundY, styles);
     this.stamps = new Stamps(scene, groundY, styles);
     this.setComfort(stage.comfort);
@@ -186,9 +193,27 @@ export class FightFeedback {
     this.legacy = options.legacy;
   }
 
-  /** Call before the events of each simulation tick: blows of the same tick trade fairly. */
-  beginTick(): void {
+  /**
+   * Call before the events of each simulation tick (`tick`, the state's frame): blows of the
+   * same tick trade fairly, and its effects play the same whatever came before (fx-random.ts).
+   */
+  beginTick(tick: number): void {
+    this.random.reseed(tick);
     this.words.beginTick();
+  }
+
+  /**
+   * A fighter pushed along the floor by a blow, hit or guarding, SLIDE_SPEED or faster, leaves
+   * a trail behind its heels every SLIDE_EVERY ticks (docs/polish/AUDIT-ET-PLAN.md, P7): read in
+   * `state`, so still through a freeze. Call once a simulation tick.
+   */
+  trail(state: GameState): void {
+    if (state.hitstop > 0 || state.frame % SLIDE_EVERY !== 0) return;
+    for (const fighter of state.fighters) {
+      const pushed = fighter.action === 'hitstun' || fighter.action === 'blockstun';
+      if (!pushed || fighter.y > 0 || Math.abs(fighter.vx) < SLIDE_SPEED) continue;
+      this.dust.scrape(fighter.x, fighter.vx > 0 ? 1 : -1);
+    }
   }
 
   /**
@@ -381,7 +406,7 @@ export class FightFeedback {
       if (heavy) {
         effects.kick(TRAUMA.heavy, event.away);
         if (!event.low) this.blood.bleed(event.x, event.y, event.away, BLEEDS.heavyHit);
-      }
+      } else effects.jolt(event.away);
       this.sfx.play(event.held ? 'pummel' : heavy ? 'heavyHit' : 'lightHit');
       return;
     }

@@ -76,6 +76,7 @@ vi.mock('../../src/render/blood', () => ({
 vi.mock('../../src/render/effects', () => ({
   Effects: class {
     kick = vi.fn();
+    jolt = vi.fn();
     veil = vi.fn();
     setShake = vi.fn();
     update = vi.fn();
@@ -341,7 +342,7 @@ function play(route: Route, mode: FlashMode): Played {
   for (const state of run.states) {
     screen.advance(1);
     detectEvents(previous, state, config, events);
-    feedback.beginTick();
+    feedback.beginTick(state.frame);
     for (const event of events) feedback.react(event, 0);
     feedback.endTick();
     feedback.update(1);
@@ -430,9 +431,11 @@ describe('the flashes of the combo routes, as shown (docs/flashs.md §4)', () =>
     expect(reduced.sparks.at(-1)).toBe('ko');
   });
 
-  it('flashes once at most on light blows five a second: none normal, one reduced, close up', () => {
+  it('flashes once at most on light blows five a second, close up: only their heavy end may', () => {
+    // The string ends on the Mise au tapis: a knockdown, heavy since P1 (docs/polish/
+    // AUDIT-ET-PLAN.md), its heavy spark the one flash, normal. The light blows before it, none.
     const flashes = (mode: FlashMode) => play(route('Nayo L, ←L, ←L, ←L'), mode).flashes;
-    expect(flashes('normal')).toEqual([]);
+    expect(flashes('normal').length).toBeLessThanOrEqual(1);
     expect(flashes('reduced').length).toBeLessThanOrEqual(1);
     expect(flashes('off')).toEqual([]);
   });
@@ -511,7 +514,7 @@ describe('what waits to show, played tick by tick (docs/flashs.md §4)', () => {
     );
     for (let frame = 1; frame <= 120; frame++) {
       screen.advance(1);
-      feedback.beginTick();
+      feedback.beginTick(frame);
       for (const event of ticks[frame] ?? []) feedback.react(event, 0);
       feedback.endTick();
       feedback.update(1);

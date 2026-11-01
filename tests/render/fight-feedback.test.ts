@@ -18,6 +18,8 @@ import { hitStyleOf } from '../../src/render/hit-styles';
 import { CLOSE_UP_EFFECTS } from '../../src/render/camera-framing';
 import { TRAUMA } from '../../src/render/shake';
 import { STAMP_TEXTS } from '../../src/render/stamps';
+import type { GameState } from '../../src/core/state';
+import { facingOff } from '../core/helpers';
 import { DIM_COLOR, HALO_COLOR, type VeilLook } from '../../src/render/veils';
 
 /**
@@ -32,6 +34,8 @@ const shown = vi.hoisted(() => ({
   stamp: vi.fn(),
   word: vi.fn(),
   jolt: vi.fn(),
+  lightJolt: vi.fn(),
+  scrape: vi.fn(),
   veil: vi.fn(),
   shake: vi.fn(),
 }));
@@ -52,6 +56,7 @@ vi.mock('../../src/render/dust', () => ({
   Dust: class {
     kick = shown.kick;
     puff = vi.fn();
+    scrape = shown.scrape;
     update = vi.fn();
   },
 }));
@@ -65,6 +70,7 @@ vi.mock('../../src/render/blood', () => ({
 vi.mock('../../src/render/effects', () => ({
   Effects: class {
     kick = shown.jolt;
+    jolt = shown.lightJolt;
     veil = shown.veil;
     setShake = shown.shake;
     update = vi.fn();
@@ -105,6 +111,8 @@ function stageOf(flashes: FlashMode = 'normal'): FeedbackStage {
 /** Each tick's events go in, then its blows light up together. */
 class Fight {
   readonly feedback: FightFeedback;
+  /** The tick its next events play on. */
+  private tick = 0;
   constructor(readonly stage: FeedbackStage = stageOf()) {
     this.feedback = new FightFeedback(
       {} as Phaser.Scene,
@@ -116,7 +124,7 @@ class Fight {
   }
 
   react(...events: FightEvent[]): void {
-    this.feedback.beginTick();
+    this.feedback.beginTick(this.tick++);
     for (const event of events) this.feedback.react(event, 0);
     this.feedback.endTick();
   }
@@ -153,6 +161,60 @@ function blow(type: 'hit' | 'ko', low: boolean, heavy = false): FightEvent {
   } as const;
   return type === 'hit' ? { type, heavy, ...impact } : { type, finish: 'plain', ...impact };
 }
+
+describe('the weight of a blow on the screen (docs/polish/AUDIT-ET-PLAN.md, P2)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('jolts the picture 1 px with a light blow, shakes it with a heavy one, never both', () => {
+    feedback().react(blow('hit', false));
+    expect(shown.lightJolt).toHaveBeenCalledWith(1);
+    expect(shown.jolt).not.toHaveBeenCalled();
+    vi.clearAllMocks();
+    feedback().react(blow('hit', false, true));
+    expect(shown.jolt).toHaveBeenCalledWith(TRAUMA.heavy, 1);
+    expect(shown.lightJolt).not.toHaveBeenCalled();
+  });
+});
+
+describe('the trail of a fighter pushed along the floor (P7)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  /** Riff on the floor (or `y` up), `action`, sliding at `vx` px a tick, on `frame`. */
+  const sliding = (
+    action: 'hitstun' | 'blockstun' | 'idle',
+    vx: number,
+    frame = 8,
+    hitstop = 0,
+    y = 0,
+  ): GameState => {
+    const state = facingOff(60);
+    const riff = { ...state.fighters[1], action, vx: px(vx), y } as const;
+    return { ...state, frame, hitstop, fighters: [state.fighters[0], riff] };
+  };
+
+  it('leaves dust behind the heels every 4 ticks while hit or guarding, 2 px a tick or faster', () => {
+    const fight = feedback();
+    fight.feedback.trail(sliding('hitstun', 3.5));
+    expect(shown.scrape).toHaveBeenCalledWith(sliding('hitstun', 3.5).fighters[1].x, 1);
+    fight.feedback.trail(sliding('blockstun', -2));
+    expect(shown.scrape).toHaveBeenLastCalledWith(expect.any(Number), -1);
+    expect(shown.scrape).toHaveBeenCalledTimes(2);
+  });
+
+  it('leaves none between, slower, in the air, frozen, or walking', () => {
+    const fight = feedback();
+    fight.feedback.trail(sliding('hitstun', 3.5, 9));
+    fight.feedback.trail(sliding('hitstun', 1.75));
+    fight.feedback.trail(sliding('hitstun', 3.5, 8, 0, px(10)));
+    fight.feedback.trail(sliding('hitstun', 3.5, 8, 5));
+    fight.feedback.trail(sliding('idle', 3.5));
+    expect(shown.scrape).not.toHaveBeenCalled();
+  });
+});
 
 describe('the spark of a blow (docs/combat-v2.md §9.3)', () => {
   beforeEach(() => {

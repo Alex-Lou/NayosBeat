@@ -1,6 +1,7 @@
 import type Phaser from 'phaser';
 import { toPx } from '../core/constants';
 import { DEPTH } from './depth';
+import { FxRandom } from './fx-random';
 import type { HitStyle } from './hit-styles';
 
 /** How hard a low blow lands: a sweep (heavy) throws more, longer streaks than a jab. */
@@ -62,6 +63,8 @@ export class Graze {
   constructor(
     scene: Phaser.Scene,
     private readonly groundY: number,
+    /** The effects' seeded randomness (fx-random.ts), the feedback's. */
+    private readonly random: FxRandom = new FxRandom(),
   ) {
     const rectangle = (): Phaser.GameObjects.Rectangle =>
       scene.add.rectangle(0, 0, 1, 1, 0xffffff).setDepth(DEPTH.sparks).setVisible(false);
@@ -94,8 +97,8 @@ export class Graze {
       if (!streak) continue;
       // A flat fan: the first streak, the brightest, straight along the blow, the others a
       // little faster or slower, a hair up or down (never into the floor).
-      streak.vx = away * spark.speed * (0.7 + 0.15 * (i % 5) + Math.random() * 0.2);
-      streak.vy = (i % 2 === 0 ? -1 : 1) * Math.random() * 0.25;
+      streak.vx = away * spark.speed * (0.7 + 0.15 * (i % 5) + this.random.next() * 0.2);
+      streak.vy = (i % 2 === 0 ? -1 : 1) * this.random.next() * 0.25;
       streak.life = LIFE;
       streak.shape
         .setOrigin(away > 0 ? 1 : 0, 0.5)

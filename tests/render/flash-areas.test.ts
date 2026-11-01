@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { ART_SCALE } from '../../src/art/types';
 import { MAX_CLOSE_UP } from '../../src/render/camera-framing';
 import type { FightEvent } from '../../src/render/fight-events';
@@ -82,20 +82,6 @@ function ko(finish: 'plain' | 'ultimate', low = false): Blow {
 }
 
 describe('what a spark lights (docs/flashs.md §1.1)', () => {
-  beforeAll(() => {
-    // mulberry32: the same sparks every run.
-    let seed = 12345;
-    vi.spyOn(Math, 'random').mockImplementation(() => {
-      seed = (seed + 0x6d2b79f5) | 0;
-      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
-      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-    });
-  });
-  afterAll(() => {
-    vi.restoreAllMocks();
-  });
-
   it('never lights more than its table says, in any colorway', () => {
     const meter = new SparkMeter();
     const kinds: HitKind[] = ['light', 'heavy', 'ko', 'pulse', 'koMuted', 'block'];

@@ -1,6 +1,6 @@
 import type { FighterTemplate, MatchConfig } from '../core/config';
 import { finisherLocked } from '../core/finisher';
-import type { MoveId } from '../core/move-data';
+import type { MoveData, MoveId } from '../core/move-data';
 import { moveOf, tierOf } from '../core/moves';
 import type { Contact, CounterHit, FighterState, GameState, RoundPhase } from '../core/state';
 import { finisherNameOf } from '../data/roster';
@@ -138,10 +138,16 @@ export type FightEvent =
   | { readonly type: 'phase'; readonly phase: RoundPhase };
 
 /**
- * A move this strong counts as heavy (bigger sparks, shake, heavy sounds), by its own damage:
- * the swing and the hit agree, and a heavy blow stays heavy late in a scaled combo.
+ * A move this weighty counts as heavy (bigger sparks, shake, heavy sounds): its data says so,
+ * not its damage (docs/polish/AUDIT-ET-PLAN.md, P1). A freeze of HEAVY_HITSTOP ticks or more,
+ * or a knockdown. The swing and the hit agree, and a heavy blow stays heavy late in a scaled
+ * combo. A counter-hit lands heavy too (`landsHeavy`).
  */
-export const HEAVY_HIT_DAMAGE = 60;
+export const HEAVY_HITSTOP = 10;
+
+export function isHeavy(move: MoveData): boolean {
+  return move.hitstop >= HEAVY_HITSTOP || move.knockdown !== undefined;
+}
 
 /**
  * Vibration, in ms, of a player's phone: being grabbed (the cue to break free is felt in the
@@ -192,8 +198,7 @@ export function detectEvents(
           events.push({ type: 'rewind', by: player, name: move.name, x, y, toward });
         else events.push({ type: 'dash', x, toward });
       } else {
-        const heavy = move.damage >= HEAVY_HIT_DAMAGE;
-        events.push({ type: 'attack', heavy, by: player, move: after.move });
+        events.push({ type: 'attack', heavy: isHeavy(move), by: player, move: after.move });
         const tier = tierOf(move);
         if (tier === 2) events.push({ type: 'boost', by: player, x, y });
         if (tier === 3) events.push({ type: 'super', by: player, name: move.name, x, y });
@@ -262,7 +267,7 @@ function contactEvent(contact: Contact, next: GameState, config: MatchConfig): F
     return { type: 'ko', ...blow, finish: koFinishOf(tier, defender.comboCount, finale) };
   }
   if (contact.kind === 'throw') return { type: 'throw', ...impact, damage };
-  return { type: 'hit', ...blow, heavy: move.damage >= HEAVY_HIT_DAMAGE };
+  return { type: 'hit', ...blow, heavy: isHeavy(move) };
 }
 
 /**

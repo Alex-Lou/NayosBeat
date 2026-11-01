@@ -77,6 +77,7 @@ vi.mock('../../src/render/blood', () => ({
 vi.mock('../../src/render/effects', () => ({
   Effects: class {
     kick = vi.fn();
+    jolt = vi.fn();
     veil = vi.fn();
     setShake = vi.fn();
     update = vi.fn();
@@ -262,7 +263,7 @@ function counted(route: Route, mode: FlashMode, shake: Comfort['shake'] = 'norma
       budget.setZoom(closeUp);
     },
     onTick: (_previous: GameState, next: GameState, events) => {
-      feedback.beginTick();
+      feedback.beginTick(next.frame);
       for (const event of events) {
         if (event.type === 'super' && press === null) press = frame;
         if (event.type === 'finisherLock' && lock === null) lock = frame;
