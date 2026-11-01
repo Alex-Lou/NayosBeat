@@ -11,7 +11,11 @@ import type { FlashBudget } from './flash-budget';
 import { BAR_BOX, EMBER_RISE, HealthBar, type HudComfort } from './health-bar';
 import { DISC_SIZE, discSpans, MARK_TICKS, markSpan, PIP_SIZE, pipSpans } from './hud-discs';
 import { paintSpans, spanTexture, type Span } from './hud-paint';
+import { advantageText } from './advantage-meter';
 import { announcementOf, comboText, NO_TIMER } from './hud-text';
+
+/** The advantage's colors (docs/polish/AUDIT-ET-PLAN.md, P19); its sign is always written. */
+const ADVANTAGE_COLORS = { ahead: '#7bea8a', behind: '#ffa04a', even: '#ffffff' } as const;
 import { FX_DARK } from './veils';
 import { VIEW_SIZE } from './view';
 
@@ -71,6 +75,7 @@ export class Hud {
   private readonly announcer: Phaser.GameObjects.Text;
   /** Training only: hits and damage of player 1's last combo on the dummy. */
   private readonly trainingInfo: Phaser.GameObjects.Text | undefined;
+  private readonly advantageInfo: Phaser.GameObjects.Text | undefined;
   private dummyHealthBefore = 0;
   /** Round wins currently painted; -1 forces the first paint. */
   private shownWins: readonly [number, number] = [-1, -1];
@@ -175,6 +180,31 @@ export class Hud {
           scene.add.text(width / 2, VIEW_SIZE.height - 12, '', smallText()).setOrigin(0.5, 1),
         )
       : undefined;
+    this.advantageInfo = config.training
+      ? this.fixed(
+          scene.add
+            .text(width / 2, VIEW_SIZE.height - 24, '', smallText())
+            .setOrigin(0.5, 1)
+            .setColor(ADVANTAGE_COLORS.even),
+        )
+      : undefined;
+  }
+
+  /**
+   * Training: the advantage of the last exchange for player 1 (advantage-meter.ts), kept until
+   * the next one, green ahead, orange behind. Nothing before the first, nothing out of training.
+   */
+  showAdvantage(ticks: number | null): void {
+    const info = this.advantageInfo;
+    if (!info || ticks === null) return;
+    setTextIfChanged(info, advantageText(ticks));
+    const color =
+      ticks > 0
+        ? ADVANTAGE_COLORS.ahead
+        : ticks < 0
+          ? ADVANTAGE_COLORS.behind
+          : ADVANTAGE_COLORS.even;
+    if (info.style.color !== color) info.setColor(color);
   }
 
   /** `finisher`: each fighter's Finisher signal on this state (finisher-signal.ts). */

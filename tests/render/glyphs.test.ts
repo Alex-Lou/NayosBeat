@@ -5,6 +5,7 @@ import type { RoundState } from '../../src/core/state';
 import { ROSTER } from '../../src/data/roster';
 import { BOOST_WORD, FINISH_WORD, MAX_WORD } from '../../src/render/boost-gauge';
 import { announcementOf, comboText, HOLD_PROMPT, NO_TIMER } from '../../src/render/hud-text';
+import { advantageText } from '../../src/render/advantage-meter';
 import { wordFor, type BlowKind } from '../../src/render/onomatopoeia';
 import { boostStamp, STAMP_TEXTS } from '../../src/render/stamps';
 import { glyphsOf } from './font-glyphs';
@@ -63,6 +64,10 @@ function hudTexts(): string[] {
     '↑',
     comboText(1, 30),
     comboText(12, 345),
+    // The advantage of an exchange (advantage-meter.ts): ahead, behind, even.
+    advantageText(2),
+    advantageText(-23),
+    advantageText(0),
     // The Boost gauge under each health bar (docs/combos-v3.md §1.8.6), and the Finisher's
     // plate (docs/finisher.md §1.2).
     BOOST_WORD,

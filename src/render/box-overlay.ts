@@ -27,6 +27,8 @@ const PLAYERS = [0, 1] as const;
  */
 export class BoxOverlay {
   private readonly graphics: Phaser.GameObjects.Graphics;
+  /** Training shows it on demand (« Boîtes » in the pause): hidden, nothing is drawn. */
+  private shown = true;
 
   constructor(
     scene: Phaser.Scene,
@@ -36,7 +38,13 @@ export class BoxOverlay {
     this.graphics = scene.add.graphics().setDepth(DEPTH.debug);
   }
 
+  show(on: boolean): void {
+    this.shown = on;
+    this.graphics.setVisible(on);
+  }
+
   update(state: GameState): void {
+    if (!this.shown) return;
     const g = this.graphics.clear();
     for (const player of PLAYERS) {
       const fighter = state.fighters[player];

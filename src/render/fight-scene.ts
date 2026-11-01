@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { cpuStep, createCpu, type CpuState } from '../ai/cpu';
+import { cpuStep, createCpu, type CpuBehavior, type CpuState } from '../ai/cpu';
 import { artOf } from '../art';
 import type { FighterArt } from '../art/types';
 import { assertValidArt } from '../art/validate';
@@ -25,6 +25,7 @@ import { FixedTimestep } from '../loop/fixed-timestep';
 import { TickPacer } from '../loop/tick-pacer';
 import type { AnimOptions } from './anim-options';
 import { frontFighter, type ShowContext } from './animation';
+import { NO_ADVANTAGE, trackAdvantage, type Advantage } from './advantage-meter';
 import { BoxOverlay } from './box-overlay';
 import { frameFight, MAX_CLOSE_UP, type FramingInput } from './camera-framing';
 import { DebugOverlay, describeGame, isDebugEnabled } from './debug-overlay';
@@ -63,6 +64,8 @@ export interface FightSceneData {
   readonly comfort: Comfort;
   /** How the fight is watched as it starts (then `setViewing`): slowed down, which animation. */
   readonly viewing: Viewing;
+  /** Training: the boxes shown as it starts (then `setBoxes`), as `?debug` shows them. */
+  readonly boxes?: boolean;
   readonly onPause: () => void;
   /** Called once, a moment after the final KO, with the winner's index. */
   readonly onMatchEnd: (winner: 0 | 1 | null) => void;
@@ -141,6 +144,8 @@ export class FightScene extends Phaser.Scene {
   };
   /** Player 2's CPU, unless a human plays it. */
   private cpu: CpuState | undefined;
+  /** Training: the advantage of the exchanges, measured on every tick (advantage-meter.ts). */
+  private advantage: Advantage = NO_ADVANTAGE;
   private arts: readonly [FighterArt | undefined, FighterArt | undefined] = [undefined, undefined];
   private styles!: readonly [HitStyle, HitStyle];
   private paused = false;
@@ -192,6 +197,7 @@ export class FightScene extends Phaser.Scene {
     this.visualClock = new FixedTimestep(1000 / TICK_RATE, MAX_TICKS_PER_FRAME);
     // A rematch starts over in its intro, with no event to tell the views: they forget it all.
     this.memory.reset();
+    this.advantage = NO_ADVANTAGE;
     this.watch(data.viewing);
     const behavior = player2Behavior(data.setup);
     this.cpu = behavior === 'human' ? undefined : createCpu(1, behavior, Date.now() | 0);
@@ -272,8 +278,10 @@ export class FightScene extends Phaser.Scene {
       caption: this.config.training ? new MoveCaption(this, this.config, GROUND_Y) : undefined,
       holdPrompt: this.config.training ? new HoldPrompt(this, this.config, GROUND_Y) : undefined,
       debugOverlay: debug ? new DebugOverlay(document.body) : undefined,
-      boxOverlay: debug ? new BoxOverlay(this, this.config, GROUND_Y) : undefined,
+      boxOverlay:
+        debug || this.config.training ? new BoxOverlay(this, this.config, GROUND_Y) : undefined,
     };
+    this.runtime.boxOverlay?.show(debug || this.sceneData.boxes === true);
 
     this.applyComfort(comfort);
     this.runtime.feedback.setAnimOptions(this.viewing.anim);
@@ -307,6 +315,16 @@ export class FightScene extends Phaser.Scene {
   setViewing(viewing: Viewing): void {
     this.watch(viewing);
     this.runtime?.feedback.setAnimOptions(viewing.anim);
+  }
+
+  /** Training: the boxes shown or not, at once (the pause's « Boîtes »); `?debug` keeps them. */
+  setBoxes(on: boolean): void {
+    this.runtime?.boxOverlay?.show(on || isDebugEnabled());
+  }
+
+  /** Training: player 2 plays as `dummy` from now on (the pause's « Mannequin »). */
+  setDummy(dummy: CpuBehavior): void {
+    this.cpu = createCpu(1, dummy, Date.now() | 0);
   }
 
   private watch(viewing: Viewing): void {
@@ -398,6 +416,7 @@ export class FightScene extends Phaser.Scene {
         this.state = step(previous, this.tickInputs, this.config);
         detectEvents(previous, this.state, this.config, this.tickEvents);
         this.memory.note(this.state, this.tickEvents);
+        if (this.config.training) this.advantage = trackAdvantage(this.advantage, this.state);
         const viewLeft = toPx(this.state.cameraX) - VIEW_SIZE.width / 2;
         runtime.feedback.beginTick();
         for (const event of this.tickEvents) {
@@ -444,6 +463,7 @@ export class FightScene extends Phaser.Scene {
     viewB.update(this.state, elapsed, finisher[1], this.showContext);
     runtime.projectileView.update(this.state.projectiles, this.state.frame);
     runtime.hud.update(this.state, finisher);
+    runtime.hud.showAdvantage(this.advantage.last);
     runtime.touch?.showBoost(a.boost);
     runtime.touch?.showFinisher(finisher[0], a.facing, a.action);
     runtime.holdRing.update(this.state);

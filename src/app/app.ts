@@ -82,6 +82,8 @@ export class App {
    * to change it, a choice of training must not slow them down unseen.
    */
   private viewing: Viewing;
+  /** Training shows the boxes (its pause's « Boîtes »), kept from one session to the next. */
+  private boxes = false;
 
   constructor(
     private readonly root: HTMLElement,
@@ -464,6 +466,38 @@ export class App {
     return [speed, animation];
   }
 
+  /**
+   * The training pause's « Mannequin » and « Boîtes » (docs/polish/AUDIT-ET-PLAN.md, P19), each
+   * cycled in place and applied to the fight at once: what player 2 does, and the boxes `?debug`
+   * shows (hit, hurt and push), to learn the reach and the openings without leaving the session.
+   * `again`: shows the pause again, the item still selected.
+   */
+  private trainingItems(fight: FightScene, again: (item: MenuItem) => void): MenuItem[] {
+    const index = DUMMIES.findIndex(({ dummy }) => dummy === this.setup.dummy);
+    const dummy: MenuItem = {
+      label: `Mannequin : ${DUMMIES[index]?.label ?? ''}`,
+      hint: DUMMIES[index]?.hint ?? '',
+      onSelect: () => {
+        const next = DUMMIES[(index + 1) % DUMMIES.length] ?? DUMMIES[0];
+        if (next) {
+          this.setup = { ...this.setup, dummy: next.dummy };
+          fight.setDummy(next.dummy);
+        }
+        again(dummy);
+      },
+    };
+    const boxes: MenuItem = {
+      label: `Boîtes : ${this.boxes ? 'oui' : 'non'}`,
+      hint: 'Les zones qui frappent, qui encaissent et qui poussent',
+      onSelect: () => {
+        this.boxes = !this.boxes;
+        fight.setBoxes(this.boxes);
+        again(boxes);
+      },
+    };
+    return [dummy, boxes];
+  }
+
   private startFight(): void {
     this.screen?.dispose();
     this.screen = undefined;
@@ -472,6 +506,7 @@ export class App {
       sfx: this.sfx,
       comfort: this.comfort,
       viewing: this.setup.mode === 'training' ? this.viewing : this.fromUrl,
+      boxes: this.setup.mode === 'training' && this.boxes,
       onPause: () => {
         this.showPause();
       },
@@ -523,12 +558,17 @@ export class App {
           this.showControls(Math.max(0, own), true);
         },
       },
-      // Training: how it is watched, at once, over the fight.
+      // Training: the dummy and the boxes, then how it is watched, at once, over the fight.
       ...(this.setup.mode === 'training'
-        ? this.viewingItems((item) => {
-            fight.setViewing(this.viewing);
-            this.showPause(items.indexOf(item));
-          })
+        ? [
+            ...this.trainingItems(fight, (item) => {
+              this.showPause(items.indexOf(item));
+            }),
+            ...this.viewingItems((item) => {
+              fight.setViewing(this.viewing);
+              this.showPause(items.indexOf(item));
+            }),
+          ]
         : []),
       optionsItem,
       {

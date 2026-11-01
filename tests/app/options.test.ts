@@ -30,7 +30,13 @@ function launch(stored: Record<string, string> = {}, reducedMotion = false, view
     getItem: (key: string) => kept.get(key) ?? null,
     setItem: (key: string, value: string) => kept.set(key, value),
   });
-  const fight = { applyComfort: vi.fn(), resumeMatch: vi.fn(), setViewing: vi.fn() };
+  const fight = {
+    applyComfort: vi.fn(),
+    resumeMatch: vi.fn(),
+    setViewing: vi.fn(),
+    setDummy: vi.fn(),
+    setBoxes: vi.fn(),
+  };
   const start = vi.fn();
   const game = {
     loop: { sleep: vi.fn(), wake: vi.fn() },
@@ -248,6 +254,37 @@ describe('how a fight is watched (docs/art/animation-plan.md §2, V0)', () => {
     const { app, screen } = launch({ 'nayosbeat.notice': 'seen' });
     (app as unknown as { showPause(): void }).showPause();
     expect(screen().items.some((item) => item.startsWith('Vitesse'))).toBe(false);
+  });
+
+  it("sets the dummy and the boxes from training's pause, at once (docs/polish, P19)", () => {
+    const { app, screen, choose, fight, start } = training();
+    choose('Immobile');
+    app.showPause();
+    expect(screen().items).toContain('Mannequin : Immobile');
+    expect(screen().items).toContain('Boîtes : non');
+    choose('Mannequin');
+    expect(fight.setDummy).toHaveBeenLastCalledWith('dummyBlock');
+    expect(screen().title).toBe('Pause');
+    expect(screen().items[screen().selected]).toBe('Mannequin : Pare tout');
+    choose('Boîtes');
+    expect(fight.setBoxes).toHaveBeenLastCalledWith(true);
+    expect(screen().items[screen().selected]).toBe('Boîtes : oui');
+    // Started over, the session keeps both.
+    choose('Recommencer');
+    expect(start).toHaveBeenLastCalledWith(
+      'fight',
+      expect.objectContaining({
+        boxes: true,
+        setup: expect.objectContaining({ dummy: 'dummyBlock' }) as unknown,
+      }),
+    );
+  });
+
+  it('keeps the dummy and the boxes out of the pause of a match', () => {
+    const { app, screen } = launch({ 'nayosbeat.notice': 'seen' });
+    (app as unknown as { showPause(): void }).showPause();
+    expect(screen().items.some((item) => item.startsWith('Mannequin'))).toBe(false);
+    expect(screen().items.some((item) => item.startsWith('Boîtes'))).toBe(false);
   });
 
   it('leaves the matches as the address asks, whatever training chose, and training its own', () => {
