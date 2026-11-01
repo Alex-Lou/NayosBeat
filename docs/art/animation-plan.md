@@ -2,7 +2,7 @@
 
 Fluidité, morts variées, réactions variées, vie au repos
 
-> **État : V0 et V1 livrés** (branche `feat/anim-voir`) ; prochaines étapes F1, puis F2 et la porte G1. Écarts au texte ci-dessous :
+> **État : V0, V1 et F1 livrés ; F2 codé** (branche `feat/anim-f2`), en attente de la porte G1 (voir l'état de F2 au §3.3). Écarts de V0 et V1 au texte ci-dessous :
 > - « Animation : d'avant » (`AnimOptions.legacy`) coupe aussi ce que V1 apporte : les horloges des poses de round, le tremblement de la victime et le claquement du KO en l'air. Sinon l'interrupteur ne montrerait aucune différence.
 > - `FightMemory` garde déjà le dernier coup reçu par chaque perso (tic, gel, poids, sens) : le tremblement en a besoin, car `state.contacts` ne dure qu'un tic et ne dit pas si le coup était lourd. Un gel qui n'est pas celui du coup (le flash d'une super) ne fait pas trembler. `note(next, events)` est appelé juste après `detectEvents`, et R1 y ajoutera son souvenir.
 > - `deaths.ts`, `reactions.ts` et `rest-poses.ts` reprennent le choix d'aujourd'hui (`deathClipOf`, `hitClipOf`, `flightClipOf`, `roundPoseOf`). Les horloges des poses au repos vivent dans `rest-poses.ts` (`restTickOf`), appelé par `clipTickOf`. Les modules ne reçoivent le `ShowContext` que quand ils s'en servent : M1, R1 et P2 l'ajouteront à leur appel (une ligne d'`animation.ts`).
@@ -286,6 +286,53 @@ Les tests existants jugent aussi les intermédiaires, et doivent passer sans ret
 - les dashs ne sont plus bloqués à 20 images/s.
 
 **Porte G1.** Le propriétaire juge F2 en A/B. S'il ne voit pas la différence, on agit avant F4 : `every: 1` sur les chutes et KO (45 à 51 images/s mesurées), plus de ponts, ou une clé de passage dessinée là où le tween échoue.
+
+#### État de F2 (branche `feat/anim-f2`, en attente de G1)
+
+**Ce qui est livré.** Tout ce que la liste ci-dessus annonce : `tween.ts`, `inbetweens.ts`, les deux `smoothing.ts` (les 12 bandes pilotes), les deux `played.ts` générés, `fighter.ts` (`keys`, `inbetweens`, `played`), `sheet.ts`, `generate.ts`, `types.ts` (`Played`, `playedClips`, `playedStrips`, `playedRange`, `FighterArt.keyClips`), les deux `src/art/<perso>/index.ts`, `animation.ts`, `preview.ts` (ordre de jeu, `--ticks`) et les 11 tests de `tests/tools/inbetweens.test.ts`. Chacun a été vu rouge en cassant exprès le code. Rien dans `src/core` ni `src/data` : les 31 replays sont inchangés. Anatomie : 0 limite dure. `anatomy`, `hurtboxes`, `visible-contact` et `hold-pairs` passent sans retouche.
+
+**Les chiffres** (clés seules → avec intermédiaires ; un « changement » est un tic où le dessin change, compté sur les tics en mouvement, sans la dernière tenue) :
+
+| Clip | Nayo | Riff |
+|---|---|---|
+| `ko` : dessins | 8 → 22 | 8 → 21 |
+| `ko` : changements sur les 24 premiers tics | 5 → 17 | 5 → 15 |
+| `knockdown` : changements sur ses 10 premiers tics | 3 → 7 | 3 → 7 |
+| `airHit` (avant de tenir la dernière image) | 13 → 43 images/s | 13 → 43 images/s |
+| `hitHigh`, `hitMid`, `hitLow` | 17 → 39 à 43 images/s | 17 → 39 à 43 images/s |
+| versions courtes (`…Light`) | 17 → 34 à 43 images/s | 17 → 34 à 43 images/s |
+| `getup`, `trip` | 30 → 60 images/s | 30 → 60 images/s |
+| `dashForward` | 20 → 36 images/s | 23 → 37 images/s |
+| `dashBack` | 18 → 35 images/s | 20 → 28 images/s |
+| `standHeavy` (témoin) | 20 → 30 images/s | 20 → 43 images/s |
+
+Le plan annonçait des réactions de 22 à 44 images/s : la mesure faite ici (17 → 39 à 43) compte les tics de la réaction hors dernière tenue, d'où un départ plus bas. Sur le match CPU `cpu:3` (33 s), le dessin change 16,7 fois par seconde au lieu de 12,4 pour Nayo, et 17,5 au lieu de 14,1 pour Riff : seuls les pilotes sont lissés, F4 fera le reste.
+
+**Mémoire vidéo** (`vram-budget.test.ts`) : pire appariement (Nayo contre Nayo) 41,2 → 49,1 Mo ; Nayo contre Riff 38,5 → 46,5 Mo ; Riff contre Riff 35,9 → 43,9 Mo. Plafond : 90 Mo. Aucune texture ne dépasse 2 048 px.
+
+**Écarts au texte**
+- Le prototype `tween.ts` n'était pas dans le dépôt : il venait du dossier de travail `anim-design/fluidite/`, hors dépôt. Il est repris presque tel quel. Seul le typage de `tweenEffects` est resserré : les effets qui vieillissent seuls sont la poussière, l'anneau, les éclats et la colonne.
+- **L'interrupteur A/B.** La vue (`sprite-fighter-view.ts`) résout elle-même le clip par `clipOf(this.art, …)`. On ne l'a pas touchée : le lot 6 la modifie en parallèle. La ligne d'`animation.ts` passe donc par `art.keyClips` autrement. Avec `legacy`, `shown.tick` devient le tic où la clé montrée par le clip des clés est arrivée (`keyTick`). Le clip joué montre alors exactement cette clé, et la tient aussi longtemps qu'avant. Les clips sans intermédiaires gardent leur tic. `tests/render/anim-options.test.ts` est adapté : les tics changent aussi sur les clips lissés, et un nouveau cas vérifie, tic par tic sur `ko.json`, que l'image d'avant est bien la clé.
+- `playedClips(keyClips, played, sheets)` prend aussi les bandes des clés. Un clip retombe sur ses clés quand `played.ts` ne le connaît pas, mais aussi quand le nombre de clés de sa bande a changé depuis le dernier `npm run sprites`. Le total des images s'obtient par `playedStrips` : le nom `playedSheets` était déjà pris (les bandes qu'un combat charge).
+- **Une règle de plus dans l'échelle : aucun intermédiaire plus haut que les clés de sa bande**, sur toutes les bandes. Sans elle, le `ko` de Riff gagnait un pixel de sprite en hauteur (0>1, le bras arrière en arc au-dessus de la tête). Or `finisher-scene.test.ts` cadre la victime du Quatre au demi-pixel près, et ce cas cassait. Les deux intermédiaires de ce passage sont donc abandonnés.
+- `UNSMOOTHED_CLIPS` : `hold`, `held`, `pummel`, `throwBack`, `thrownBack`, `thrownFall`, `super` et `finale`. `super` y est parce que les scripts du Finisher le jouent. Une table qui nomme une bande que seuls ces clips jouent fait échouer `npm run sprites`.
+- Le gel « coups qui touchent » vaut pour une hitbox, un projectile ou une saisie (`kind: 'grab'`). Le changement de boîte est vérifié du premier tic de la tenue jusqu'au premier tic de la clé suivante. Ce gel fige les deux premières tenues du `dashBack` de Riff, dont la boîte se baisse du tic 5 au tic 8 : il ne monte qu'à 28 images/s.
+- Le contact au sol se fait en deux temps. L'échelle descend d'abord la pose, en géométrie. `sheet.ts` mesure ensuite le dessin (`groundedPoses`) et redescend, par une translation, l'intermédiaire qui flotte encore. Le test 7 n'était vert qu'avec cette passe. `Fighter.poses` rend les poses planifiées, avant cette translation : l'anatomie n'en dépend pas.
+- `generate.ts` formate `played.ts` avec l'API de Prettier, au lieu d'imiter Prettier à la main comme pour `cells.ts`.
+- `tests/art/nayo.test.ts` (« lasts the whole knockdown with the getup ») est adapté. Il écrivait 5 durées pour un `getup` qui en a maintenant 9 ; il ajoute désormais un tic à la première.
+- Test 2 : seuls les coups qui touchent sont comparés. Les dashs ont des tics « actifs » sans rien qui touche, et ils sont justement lissés.
+- Test 10 : au moins 4 intermédiaires dans la bande et 3 à l'écran. Chez Riff, le passage 4>5 du `dashForward` est un doublon : il est abandonné.
+- Test 5 : avec 1 ou 2 intermédiaires par passage, le rapport ne peut pas dépasser 3, car le plus grand pas est au plus la longueur du chemin. Il n'a rougi qu'en coupant le tri des doublons et en serrant la courbe (rapport 3,95).
+
+**Ce que l'échelle abandonne, et où une clé dessinée aiderait**
+- `knockdown` de Riff, 4>5 : le relevé roulé. Le tween fait basculer le corps en l'air au lieu de le rouler sur l'épaule. Ce passage est mis à `counts: 0` (coupe franche) jusqu'à ce qu'une clé de passage soit dessinée (§11, risque 2).
+- `ko` de Riff, 0>1 : le bras arrière passe au-dessus de la tête. Les deux intermédiaires sont abandonnés par la règle de hauteur. Une clé de passage, bras le long du corps, rendrait ces 4 tics.
+- `hitHigh` de Nayo, 1>4 (la version courte) : le coude arrière se retourne, en articulations comme en ligne droite. C'est une coupe franche.
+- `hitMid` de Nayo (0>1) et `hitCrouch` de Nayo (1>2) : une pointe de pied sort de la boîte des clés, ce qui est interdit sur une bande de posture. Ce sont des coupes franches.
+- `hitHigh` de Riff, 0>1 : sorti de la boîte des clés en articulations, il est gardé avec les poings en ligne droite.
+- À relire à l'œil : le kip-up de Nayo (`getup` 0>1). L'intermédiaire passe le corps à l'horizontale en l'air ; c'est lisible sur 1 tic, mais une clé de passage serait plus juste. Autre cas : le premier intermédiaire d'`airHit` (0>1), déjà très proche de la clé 1 (la courbe `inOut` sur 3 tics le place à t = 0,78). Il laisse un saut entre l'impact et le vol.
+
+**La preuve pour G1** (hors dépôt, avec les outils de V0) : le film A/B du match CPU `cpu:3` (`npm run anim:film -- cpu:3`, puis `npm run anim:compare`), et des planches tic par tic, avant et après, des pilotes des deux persos : KO, chute et relevé, coup en l'air, réactions, dashs, témoin. Elles sont dans une page qui les joue en boucle à 1, ½ et ¼, à ×1 (un pixel de sprite) et ×2. En entraînement, « Animation : d'avant » montre les clés seules sur le même coup.
 
 ### 3.4 F3 : ponts entre clips et vol étiré (1 jour)
 
@@ -737,7 +784,8 @@ Le plafond provisoire est de **90 Mo par match dans le pire appariement**, miroi
 | Étape | Estimation | Source |
 |---|---|---|
 | Aujourd'hui | 62,8 Mo (66,5 avec projectiles et fx platine) | mesuré |
-| Après F1 | ≈ 40 Mo | critique de la fluidité |
+| Après F1 | ≈ 40 Mo (mesuré : 41,2 Mo) | critique de la fluidité |
+| Après F2 (12 bandes pilotes par perso) | mesuré : 49,1 Mo | `vram-budget.test.ts` |
 | Après F4, sans les poses de round | ≈ 70 à 75 Mo | estimation : 81,8 Mo mesurés avec les poses de round |
 | Morts, 8 bandes par perso, lissées | + 6 à 12 Mo | estimation : la critique donne environ +10 Mo sans recadrage ni lissage |
 | Réactions, lots 1 et 2 | + 4 à 8 Mo (miroir compris) | estimation |
