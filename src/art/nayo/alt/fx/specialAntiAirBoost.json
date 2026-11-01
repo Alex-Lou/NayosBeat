@@ -1,0 +1,65 @@
+{
+  "frames": {
+    "0": {
+      "frame": { "x": 0, "y": 757, "w": 71, "h": 18 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 10, "y": 217, "w": 71, "h": 18 },
+      "sourceSize": { "w": 122, "h": 236 }
+    },
+    "1": {
+      "frame": { "x": 0, "y": 235, "w": 118, "h": 216 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 3, "y": 20, "w": 118, "h": 216 },
+      "sourceSize": { "w": 122, "h": 236 }
+    },
+    "2": {
+      "frame": { "x": 0, "y": 0, "w": 122, "h": 235 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 122, "h": 235 },
+      "sourceSize": { "w": 122, "h": 236 }
+    },
+    "3": {
+      "frame": { "x": 0, "y": 453, "w": 36, "h": 217 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 83, "y": 15, "w": 36, "h": 217 },
+      "sourceSize": { "w": 122, "h": 236 }
+    },
+    "4": {
+      "frame": { "x": 36, "y": 453, "w": 33, "h": 201 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 84, "y": 31, "w": 33, "h": 201 },
+      "sourceSize": { "w": 122, "h": 236 }
+    },
+    "5": {
+      "frame": { "x": 69, "y": 453, "w": 29, "h": 164 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 86, "y": 68, "w": 29, "h": 164 },
+      "sourceSize": { "w": 122, "h": 236 }
+    },
+    "6": {
+      "frame": { "x": 0, "y": 670, "w": 103, "h": 87 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 9, "y": 145, "w": 103, "h": 87 },
+      "sourceSize": { "w": 122, "h": 236 }
+    },
+    "7": {
+      "frame": { "x": 0, "y": 775, "w": 94, "h": 13 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 1, "y": 218, "w": 94, "h": 13 },
+      "sourceSize": { "w": 122, "h": 236 }
+    },
+    "8": {
+      "frame": { "x": 94, "y": 775, "w": 1, "h": 1 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 1, "h": 1 },
+      "sourceSize": { "w": 122, "h": 236 }
+    },
+    "9": {
+      "frame": { "x": 95, "y": 775, "w": 1, "h": 1 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 1, "h": 1 },
+      "sourceSize": { "w": 122, "h": 236 }
+    }
+  },
+  "meta": { "image": "specialAntiAirBoost.png", "size": { "w": 122, "h": 788 } }
+}

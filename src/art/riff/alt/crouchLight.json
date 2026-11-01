@@ -1,0 +1,35 @@
+{
+  "frames": {
+    "0": {
+      "frame": { "x": 84, "y": 0, "w": 91, "h": 102 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 2, "y": 9, "w": 91, "h": 102 },
+      "sourceSize": { "w": 114, "h": 112 }
+    },
+    "1": {
+      "frame": { "x": 267, "y": 0, "w": 103, "h": 93 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 3, "y": 17, "w": 103, "h": 93 },
+      "sourceSize": { "w": 114, "h": 112 }
+    },
+    "2": {
+      "frame": { "x": 370, "y": 0, "w": 110, "h": 88 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 4, "y": 22, "w": 110, "h": 88 },
+      "sourceSize": { "w": 114, "h": 112 }
+    },
+    "3": {
+      "frame": { "x": 175, "y": 0, "w": 92, "h": 102 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 2, "y": 9, "w": 92, "h": 102 },
+      "sourceSize": { "w": 114, "h": 112 }
+    },
+    "4": {
+      "frame": { "x": 0, "y": 0, "w": 84, "h": 112 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 84, "h": 112 },
+      "sourceSize": { "w": 114, "h": 112 }
+    }
+  },
+  "meta": { "image": "crouchLight.png", "size": { "w": 480, "h": 112 } }
+}

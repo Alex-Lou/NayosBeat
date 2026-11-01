@@ -21,6 +21,27 @@ export interface Pixels {
   readonly data: Uint8ClampedArray;
 }
 
+/** Pixels cut out of a cell (a frame's, in an atlas): where their top left corner is in it. */
+export interface Cut {
+  readonly pixels: Pixels;
+  readonly x: number;
+  readonly y: number;
+}
+
+/** A whole cell, as a cut. */
+export function wholeCell(pixels: Pixels): Cut {
+  return { pixels, x: 0, y: 0 };
+}
+
+/** Whether `cut` shows a pixel at `x`, `y` of its cell. */
+function shows(cut: Cut, x: number, y: number): boolean {
+  const column = x - cut.x;
+  const row = y - cut.y;
+  const { width, height, data } = cut.pixels;
+  if (column < 0 || row < 0 || column >= width || row >= height) return false;
+  return (data[(row * width + column) * 4 + 3] ?? 0) > 0;
+}
+
 /** The pixels a ghost dissolves: where each is in its cell, its color, the moment it goes. */
 export interface Ghost {
   readonly count: number;
@@ -69,19 +90,27 @@ export function noiseAt(x: number, y: number): number {
 /**
  * The pixels of `from` that `to` no longer shows at the same place of the same cell (`to`
  * null: all of them), and when each goes: the top first as the sound rises away, the far ends
- * first as the shockwave scatters, the grain of the noise in between.
+ * first as the shockwave scatters, the grain of the noise in between. Both are cut out of a
+ * cell of `cell`'s size; the ghost's pixels are placed in the cell.
  */
 export function vanishing(
-  from: Pixels,
-  to: Pixels | null,
+  from: Cut,
+  to: Cut | null,
+  cell: { readonly width: number; readonly height: number },
   style: DissolveStyle,
   anchorX: number,
 ): Ghost {
-  const { width, height, data } = from;
+  const { data } = from.pixels;
+  const { width, height } = cell;
+  const columns = from.pixels.width;
+  // Where pixel `i` of the cut is in the cell.
+  const xOf = (i: number): number => from.x + (i % columns);
+  const yOf = (i: number): number => from.y + Math.floor(i / columns);
+  // The pixels of the cut that go, row by row.
   const indices: number[] = [];
-  for (let i = 0; i < width * height; i++) {
+  for (let i = 0; i < columns * from.pixels.height; i++) {
     if ((data[i * 4 + 3] ?? 0) === 0) continue;
-    if (to && (to.data[i * 4 + 3] ?? 0) > 0) continue;
+    if (to && shows(to, xOf(i), yOf(i))) continue;
     indices.push(i);
   }
   const count = indices.length;
@@ -94,8 +123,8 @@ export function vanishing(
   };
   const reach = Math.max(1, Math.max(anchorX, width - anchorX));
   indices.forEach((i, k) => {
-    const x = i % width;
-    const y = Math.floor(i / width);
+    const x = xOf(i);
+    const y = yOf(i);
     const p = i * 4;
     ghost.xs[k] = x;
     ghost.ys[k] = y;

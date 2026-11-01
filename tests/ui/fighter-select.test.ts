@@ -15,13 +15,24 @@ import {
 
 type Id = 'nayo' | 'riff';
 
-/** A look of the fake roster: four frames of 80×160 at an uneven pace, a bust of 40 px. */
+/**
+ * A look of the fake roster: four frames of 80×160 side by side (no atlas), at an uneven pace,
+ * a bust of 40 px.
+ */
 function look(strip: string): FighterLook {
   return {
     strip,
-    frames: 4,
+    image: { width: 320, height: 160 },
     width: 80,
     height: 160,
+    cuts: [0, 1, 2, 3].map((frame) => ({
+      x: 0,
+      y: 0,
+      width: 80,
+      height: 160,
+      left: frame * 80,
+      top: 0,
+    })),
     portrait: { x: 20, y: 0, size: 40 },
     idle: [
       { frame: 0, seconds: 0.25 },
@@ -107,6 +118,23 @@ function playing(node: FakeElement): FakeAnimation[] {
   return node.animations.filter(({ cancelled }) => !cancelled);
 }
 
+/** What the figure shows: the frame of the fighter standing there. */
+function shown(figure: FakeElement): FakeElement {
+  return only(figure, 'select-cut');
+}
+
+/** Where a frame of the fake looks shows in the figure: the whole cell, the strip slid along. */
+function wholeFrame(position: string) {
+  return {
+    left: '0%',
+    top: '0%',
+    width: '100%',
+    height: '100%',
+    backgroundSize: '400% 100%',
+    backgroundPosition: `${position} 0%`,
+  };
+}
+
 describe('FighterSelect', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
@@ -117,8 +145,14 @@ describe('FighterSelect', () => {
     expect(tiles).toHaveLength(10);
     expect(only(tile(0), 'select-tile-name').textContent).toBe('Nayo');
     expect(only(tile(1), 'select-tile-name').textContent).toBe('Riff');
-    expect(only(tile(0), 'select-portrait').style).toMatchObject({
+    expect(only(only(tile(0), 'select-portrait'), 'select-cut').style).toMatchObject({
+      position: 'absolute',
       backgroundImage: 'url("nayo.png")',
+      // The whole bust shows: the first frame's cut is its whole cell.
+      left: '0%',
+      top: '0%',
+      width: '100%',
+      height: '100%',
       // The strip is 8 busts wide and 4 high; the bust starts 20 px into the 280 it can slide.
       backgroundSize: '800% 400%',
       backgroundPosition: '7.14% 0%',
@@ -139,13 +173,19 @@ describe('FighterSelect', () => {
         { ...(FIGHTERS[1] as SelectFighter<Id>), look: drawn },
       ],
     });
-    expect(only(tile(1), 'select-portrait').style).toMatchObject({
+    const bust = only(tile(1), 'select-portrait');
+    expect(bust.style).toMatchObject({
       backgroundImage: 'url("riff-portrait.png")',
       backgroundSize: '100% 100%',
       backgroundPosition: '0 0',
     });
+    // Nothing of the strip over it: the drawn bust comes before the square of the guard.
+    expect(byClass(bust, 'select-cut')).toHaveLength(0);
     // The other one keeps its square.
-    expect(only(tile(0), 'select-portrait').style).toMatchObject({ backgroundSize: '800% 400%' });
+    expect(only(only(tile(0), 'select-portrait'), 'select-cut').style).toMatchObject({
+      backgroundImage: 'url("nayo.png")',
+      backgroundSize: '800% 400%',
+    });
   });
 
   it('frames the first fighter and shows it standing, its idle at the pace of the game', () => {
@@ -153,29 +193,77 @@ describe('FighterSelect', () => {
     expect(selected()).toEqual([0]);
     expect(name.textContent).toBe('Nayo');
     expect(description.textContent).toBe('Vive');
-    expect(figure.style).toMatchObject({
+    expect(figure.style).toMatchObject({ position: 'relative', aspectRatio: '80 / 160' });
+    expect(shown(figure).style).toMatchObject({
+      position: 'absolute',
       backgroundImage: 'url("nayo.png")',
-      backgroundSize: '400% 100%',
-      backgroundPositionX: '0%',
-      aspectRatio: '80 / 160',
+      backgroundRepeat: 'no-repeat',
+      ...wholeFrame('0%'),
     });
-    const [idle, ...others] = playing(figure);
+    const [idle, ...others] = playing(shown(figure));
     expect(others).toHaveLength(0);
     expect(idle?.options).toEqual({ duration: 1000, iterations: Infinity });
     // Each frame holds until the next, for as long as it does in the game.
     expect(idle?.keyframes).toEqual([
-      { offset: 0, easing: 'step-end', backgroundPositionX: '0%' },
-      { offset: 0.25, easing: 'step-end', backgroundPositionX: '33.33%' },
-      { offset: 0.375, easing: 'step-end', backgroundPositionX: '66.67%' },
-      { offset: 0.5, easing: 'step-end', backgroundPositionX: '100%' },
-      { offset: 1, backgroundPositionX: '100%' },
+      { offset: 0, easing: 'step-end', ...wholeFrame('0%') },
+      { offset: 0.25, easing: 'step-end', ...wholeFrame('33.33%') },
+      { offset: 0.375, easing: 'step-end', ...wholeFrame('66.67%') },
+      { offset: 0.5, easing: 'step-end', ...wholeFrame('100%') },
+      { offset: 1, ...wholeFrame('100%') },
     ]);
   });
 
   it('stands still on its first frame when the player keeps the screen still', () => {
-    const { figure } = setup({ still: true });
-    expect(figure.style.backgroundPositionX).toBe('0%');
-    expect(figure.animations).toHaveLength(0);
+    const { page, figure } = setup({ still: true });
+    expect(shown(figure).style.backgroundPosition).toBe('0% 0%');
+    expect(page.runningAnimations()).toBe(0);
+  });
+
+  it('shows each frame of an atlas where its cut goes in the cell, the bust where it overlaps', () => {
+    // Two frames cut to what they draw and packed: frame 0 is 60×150 from (10, 10) in its cell
+    // of 80×160, at (0, 0) of an image of 120×150; frame 1 is 50×140 from (20, 20), at (60, 0).
+    const atlas: FighterLook = {
+      ...look('atlas.png'),
+      image: { width: 120, height: 150 },
+      cuts: [
+        { x: 10, y: 10, width: 60, height: 150, left: 0, top: 0 },
+        { x: 20, y: 20, width: 50, height: 140, left: 60, top: 0 },
+      ],
+      idle: [
+        { frame: 0, seconds: 0.5 },
+        { frame: 1, seconds: 0.5 },
+      ],
+    };
+    const { tile, figure } = setup({
+      fighters: [{ id: 'nayo', name: 'Nayo', description: 'Vive', look: atlas }],
+    });
+    const [first, second] = playing(shown(figure))[0]?.keyframes ?? [];
+    expect(first).toMatchObject({
+      left: '12.5%',
+      top: '6.25%',
+      width: '75%',
+      height: '93.75%',
+      backgroundSize: '200% 100%',
+      backgroundPosition: '0% 0%',
+    });
+    expect(second).toMatchObject({
+      left: '25%',
+      top: '12.5%',
+      width: '62.5%',
+      height: '87.5%',
+      backgroundSize: '240% 107.14%',
+      // 60 px into the 70 the image can slide; at the top of the 10 it can.
+      backgroundPosition: '85.71% 0%',
+    });
+    // The bust (20, 0, 40 px) keeps what overlaps frame 0's cut: from (20, 10), 40×30.
+    expect(only(only(tile(0), 'select-portrait'), 'select-cut').style).toMatchObject({
+      left: '0%',
+      top: '25%',
+      width: '100%',
+      height: '75%',
+      backgroundSize: '300% 500%',
+      backgroundPosition: '12.5% 0%',
+    });
   });
 
   it('starts on the last pick', () => {
@@ -213,8 +301,8 @@ describe('FighterSelect', () => {
     expect(name.textContent).toBe('Bientôt');
     expect(description.textContent).toBe('Un combattant de plus arrive');
     expect(figure.classList.contains('empty')).toBe(true);
-    expect(figure.style.backgroundImage).toBe('none');
-    expect(playing(figure)).toHaveLength(0);
+    expect(byClass(figure, 'select-cut')).toHaveLength(0);
+    expect(page.runningAnimations()).toBe(0);
 
     feedback.mockClear();
     press(page, 'Enter');
@@ -224,17 +312,17 @@ describe('FighterSelect', () => {
     // Back on a fighter, it stands there again, its idle from the start.
     press(page, 'ArrowUp');
     expect(figure.classList.contains('empty')).toBe(false);
-    expect(figure.style.backgroundImage).toBe('url("nayo.png")');
-    expect(playing(figure)).toHaveLength(1);
-    expect(figure.animations).toHaveLength(2);
+    expect(shown(figure).style.backgroundImage).toBe('url("nayo.png")');
+    expect(playing(shown(figure))).toHaveLength(1);
+    expect(page.runningAnimations()).toBe(1);
   });
 
   it('plays one idle at a time, from one fighter to the next', () => {
     const { page, figure } = setup();
     press(page, 'ArrowRight');
     press(page, 'ArrowLeft');
-    expect(figure.animations).toHaveLength(3);
-    expect(playing(figure)).toEqual([figure.animations[2]]);
+    expect(playing(shown(figure))).toHaveLength(1);
+    expect(page.runningAnimations()).toBe(1);
   });
 
   it('stays put, silent, where there is nowhere to go', () => {
@@ -294,14 +382,14 @@ describe('FighterSelect', () => {
     const { page, tile, figure } = setup({ taken: 'nayo' });
     expect(only(tile(0), 'select-badge').textContent).toBe('J1');
     expect(byClass(tile(1), 'select-badge')).toHaveLength(0);
-    expect(figure.style.backgroundImage).toBe('url("nayo-alt.png")');
+    expect(shown(figure).style.backgroundImage).toBe('url("nayo-alt.png")');
     press(page, 'ArrowRight');
-    expect(figure.style.backgroundImage).toBe('url("riff.png")');
+    expect(shown(figure).style.backgroundImage).toBe('url("riff.png")');
   });
 
   it('keeps the only look of a fighter that has no other colors', () => {
     const { figure } = setup({ taken: 'riff', initial: 'riff' });
-    expect(figure.style.backgroundImage).toBe('url("riff.png")');
+    expect(shown(figure).style.backgroundImage).toBe('url("riff.png")');
   });
 
   it('goes back with Escape', () => {

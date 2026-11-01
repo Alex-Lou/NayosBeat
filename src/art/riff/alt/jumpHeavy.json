@@ -1,0 +1,41 @@
+{
+  "frames": {
+    "0": {
+      "frame": { "x": 180, "y": 0, "w": 70, "h": 151 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 41, "y": 0, "w": 70, "h": 151 },
+      "sourceSize": { "w": 157, "h": 166 }
+    },
+    "1": {
+      "frame": { "x": 543, "y": 0, "w": 135, "h": 139 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 18, "y": 2, "w": 135, "h": 139 },
+      "sourceSize": { "w": 157, "h": 166 }
+    },
+    "2": {
+      "frame": { "x": 386, "y": 0, "w": 157, "h": 149 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 10, "w": 157, "h": 149 },
+      "sourceSize": { "w": 157, "h": 166 }
+    },
+    "3": {
+      "frame": { "x": 250, "y": 0, "w": 136, "h": 151 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 2, "y": 10, "w": 136, "h": 151 },
+      "sourceSize": { "w": 157, "h": 166 }
+    },
+    "4": {
+      "frame": { "x": 89, "y": 0, "w": 91, "h": 158 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 36, "y": 3, "w": 91, "h": 158 },
+      "sourceSize": { "w": 157, "h": 166 }
+    },
+    "5": {
+      "frame": { "x": 0, "y": 0, "w": 89, "h": 161 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 19, "y": 5, "w": 89, "h": 161 },
+      "sourceSize": { "w": 157, "h": 166 }
+    }
+  },
+  "meta": { "image": "jumpHeavy.png", "size": { "w": 678, "h": 161 } }
+}

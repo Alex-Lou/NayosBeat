@@ -68,7 +68,15 @@ function setup() {
         refresh: uploads,
       }),
       get: () => ({
-        get: (frame: number) => ({ cutX: frame * 20, cutY: 0, cutWidth: 20, cutHeight: 20 }),
+        // Whole cells, side by side: no offset in the cell.
+        get: (frame: number) => ({
+          cutX: frame * 20,
+          cutY: 0,
+          cutWidth: 20,
+          cutHeight: 20,
+          x: 0,
+          y: 0,
+        }),
         getSourceImage: () => ({}),
       }),
     },

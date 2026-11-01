@@ -25,14 +25,22 @@ export function playedUrls(art: FighterArt, layer: Layer): [sheet: string, url: 
 
 /**
  * Loads every strip of `art` that a clip plays, effects included, that is not already in the
- * texture cache.
+ * texture cache. An image with an atlas has its frames cut to what they draw and packed: Phaser
+ * puts each back at its place in the cell (a trimmed frame keeps the cell's size), so frames,
+ * anchors and flips work as with a row of equal cells, which an image without one is.
  */
 export function loadArt(scene: Phaser.Scene, art: FighterArt): void {
   for (const layer of ['body', 'fx'] as const) {
     for (const [sheet, url] of playedUrls(art, layer)) {
       const key = textureKey(art, sheet, layer);
       if (scene.textures.exists(key)) continue;
-      const cell = cellOf(art, stripName(sheet, layer));
+      const name = stripName(sheet, layer);
+      const atlas = art.atlases?.[name];
+      if (atlas !== undefined) {
+        scene.load.atlas(key, url, atlas);
+        continue;
+      }
+      const cell = cellOf(art, name);
       scene.load.spritesheet(key, url, { frameWidth: cell.width, frameHeight: cell.height });
     }
   }

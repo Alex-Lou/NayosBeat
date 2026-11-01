@@ -1,0 +1,65 @@
+{
+  "frames": {
+    "0": {
+      "frame": { "x": 341, "y": 0, "w": 80, "h": 157 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 14, "y": 2, "w": 80, "h": 157 },
+      "sourceSize": { "w": 113, "h": 159 }
+    },
+    "1": {
+      "frame": { "x": 263, "y": 159, "w": 68, "h": 145 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 26, "y": 14, "w": 68, "h": 145 },
+      "sourceSize": { "w": 113, "h": 159 }
+    },
+    "2": {
+      "frame": { "x": 0, "y": 159, "w": 79, "h": 156 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 15, "y": 3, "w": 79, "h": 156 },
+      "sourceSize": { "w": 113, "h": 159 }
+    },
+    "3": {
+      "frame": { "x": 185, "y": 0, "w": 85, "h": 158 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 16, "y": 1, "w": 85, "h": 158 },
+      "sourceSize": { "w": 113, "h": 159 }
+    },
+    "4": {
+      "frame": { "x": 0, "y": 0, "w": 91, "h": 159 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 22, "y": 0, "w": 91, "h": 159 },
+      "sourceSize": { "w": 113, "h": 159 }
+    },
+    "5": {
+      "frame": { "x": 270, "y": 0, "w": 71, "h": 158 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 26, "y": 1, "w": 71, "h": 158 },
+      "sourceSize": { "w": 113, "h": 159 }
+    },
+    "6": {
+      "frame": { "x": 91, "y": 0, "w": 94, "h": 159 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 94, "h": 159 },
+      "sourceSize": { "w": 113, "h": 159 }
+    },
+    "7": {
+      "frame": { "x": 331, "y": 159, "w": 92, "h": 143 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 2, "y": 16, "w": 92, "h": 143 },
+      "sourceSize": { "w": 113, "h": 159 }
+    },
+    "8": {
+      "frame": { "x": 79, "y": 159, "w": 92, "h": 152 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 2, "y": 7, "w": 92, "h": 152 },
+      "sourceSize": { "w": 113, "h": 159 }
+    },
+    "9": {
+      "frame": { "x": 171, "y": 159, "w": 92, "h": 150 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 2, "y": 9, "w": 92, "h": 150 },
+      "sourceSize": { "w": 113, "h": 159 }
+    }
+  },
+  "meta": { "image": "intro.png", "size": { "w": 423, "h": 315 } }
+}

@@ -23,7 +23,7 @@ npm run sprites:templates -- riff portrait      # un seul gabarit (ou -- riff, -
 1. Aseprite : **Fichier > Scripts > NayosBeat > Nouvelle planche…**, puis choisir un gabarit, par exemple `art-src/gabarits/nayo/idle.json`. La planche est créée dans `art-src/nayo/idle.aseprite`, à partir de ce que le jeu affiche aujourd'hui.
 2. Dessiner.
 3. **Fichier > Scripts > NayosBeat > Exporter vers le jeu** : écrit `art-src/nayo/idle.png` (et `art-src/nayo/fx/idle.png` pour les effets).
-4. `npm run sprites` : vérifie la planche et l'installe dans le jeu (`src/art/`), dans les deux tenues.
+4. `npm run sprites` : vérifie la planche et l'installe dans le jeu (`src/art/`), dans les deux tenues, recadrée et rangée en atlas comme celles du code ([atlas.md](atlas.md)).
 5. `npm run dev` pour la voir en jeu, `npm run sprites:preview -- idle` pour la voir avec ses boîtes.
 6. Commiter le `.aseprite`, le `.png` exporté et ce que `npm run sprites` a changé dans `src/art/`.
 
@@ -199,6 +199,7 @@ Changer la palette d'un personnage (ajouter un matériau, par exemple) **décale
 
 - `npm run sprites:anatomy` et les tests de `tests/tools/` mesurent les **poses du code** : ils ne disent rien d'une planche dessinée à la main.
 - `npm run measure-boxes` lit les PNG du jeu (`src/art/`) : il mesure bien les planches dessinées.
+- `tests/tools/atlas.test.ts` compare l'atlas de chaque planche dessinée à son dessin : le recadrage n'en perd aucun pixel.
 
 ## Fichiers
 

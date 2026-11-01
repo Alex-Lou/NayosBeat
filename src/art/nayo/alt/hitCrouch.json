@@ -1,0 +1,23 @@
+{
+  "frames": {
+    "0": {
+      "frame": { "x": 0, "y": 0, "w": 109, "h": 119 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 109, "h": 119 },
+      "sourceSize": { "w": 109, "h": 119 }
+    },
+    "1": {
+      "frame": { "x": 109, "y": 0, "w": 71, "h": 117 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 38, "y": 2, "w": 71, "h": 117 },
+      "sourceSize": { "w": 109, "h": 119 }
+    },
+    "2": {
+      "frame": { "x": 180, "y": 0, "w": 68, "h": 114 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 41, "y": 5, "w": 68, "h": 114 },
+      "sourceSize": { "w": 109, "h": 119 }
+    }
+  },
+  "meta": { "image": "hitCrouch.png", "size": { "w": 248, "h": 119 } }
+}

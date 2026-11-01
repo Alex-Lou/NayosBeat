@@ -141,8 +141,8 @@ export class FxDissolve {
     const source = this.pixels.of(from.sheet, from.frame);
     if (!source) return;
     const cell = cellOf(this.art, stripName(from.sheet, 'fx'));
-    const remaining = to ? (this.pixels.of(to.sheet, to.frame)?.pixels ?? null) : null;
-    const ghost = vanishing(source.pixels, remaining, this.style, cell.anchor.x);
+    const remaining = to ? (this.pixels.of(to.sheet, to.frame) ?? null) : null;
+    const ghost = vanishing(source, remaining, cell, this.style, cell.anchor.x);
     if (ghost.count < MIN_GHOST_PIXELS) return;
     // A free slot, else the ghost furthest gone.
     let slot = this.slots.find((candidate) => !candidate.ghost);

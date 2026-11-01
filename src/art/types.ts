@@ -7,7 +7,7 @@ import type { CoreMoveId, MoveId, OptionalMoveId } from '../core/move-data';
 
 /** Sprite pixels per world pixel: fighters are drawn twice as finely as the stage. */
 export const ART_SCALE = 2;
-/** Every frame is a square cell (in sprite pixels); strips are one row of cells, facing right. */
+/** Every frame is a square cell (in sprite pixels); strips are drawn as one row of cells, facing right. */
 export const CELL_SIZE = 256;
 /** Pixel of the cell where the center of the feet stands, in every frame. */
 export const ANCHOR = { x: 128, y: 248 } as const;
@@ -25,6 +25,50 @@ export interface Cell {
   readonly width: number;
   readonly height: number;
   readonly anchor: { readonly x: number; readonly y: number };
+  /**
+   * What each frame draws: the box of its opaque pixels in the cell, 0 by 0 for a frame that
+   * draws nothing. Each frame is saved cut to that box (and a margin), in an atlas (`Atlas`).
+   */
+  readonly frames?: readonly Rect[];
+}
+
+/** A rectangle of a cell, in art pixels from its top left corner. */
+export interface Rect {
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+}
+
+/**
+ * Where the frames of a strip are in its image, written next to it by `npm run sprites` (the
+ * JSON hash format, which Phaser reads): each frame (named by its index) is cut to what it
+ * draws, and the cuts are packed together, so the empty corners of the cells take no video
+ * memory. Phaser puts each cut back at its place in the cell.
+ */
+export interface Atlas {
+  readonly frames: Readonly<Record<string, AtlasFrame>>;
+  readonly meta: { readonly image: string; readonly size: AtlasSize };
+}
+
+export interface AtlasFrame {
+  /** The cut, in the image. */
+  readonly frame: AtlasRect;
+  readonly trimmed: boolean;
+  /** The cut, in the cell. */
+  readonly spriteSourceSize: AtlasRect;
+  /** The cell. */
+  readonly sourceSize: AtlasSize;
+}
+
+export interface AtlasSize {
+  readonly w: number;
+  readonly h: number;
+}
+
+export interface AtlasRect extends AtlasSize {
+  readonly x: number;
+  readonly y: number;
 }
 
 /** A full, uncropped cell anchored at the feet. */
@@ -139,6 +183,17 @@ export interface FighterArt {
   readonly fx?: Readonly<Record<string, string>>;
   /** Cropped cells by strip ('idle') and by strip effects ('fx/idle'); FULL_CELL otherwise. */
   readonly cells?: Readonly<Record<string, Cell>>;
+  /**
+   * URL of the atlas of each image that has one, by strip ('idle') and by strip effects
+   * ('fx/idle'): its frames are cut and packed (`Atlas`). An image without one is a row of
+   * equal cells.
+   */
+  readonly atlases?: Readonly<Record<string, string>>;
+  /**
+   * The atlas of the idle's strip, bundled with the code rather than loaded: the select screen
+   * shows its frames at once (src/app/select-fighters.ts).
+   */
+  readonly idleAtlas?: Atlas;
   /**
    * The bust on the character select screen: a square of the first frame of its idle strip,
    * in art pixels from the cell's top left corner. The top square of the cell otherwise.

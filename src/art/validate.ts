@@ -74,6 +74,12 @@ export function validateArt(art: FighterArt, template: FighterTemplate): string[
       (!cell || (x + size <= cell.width && y + size <= cell.height));
     check(fits, 'portrait must be a square inside the first idle frame');
   }
+  // The select screen finds the idle's frames in its image through its atlas, bundled.
+  const idle = art.clips.idle.sheet;
+  if (art.atlases?.[idle] !== undefined) {
+    const cuts = Object.keys(art.idleAtlas?.frames ?? {}).length;
+    check(cuts === art.sheets[idle]?.frames, `idle strip ${idle} needs its atlas (idleAtlas)`);
+  }
 
   const expected: [string, Clip | undefined, number][] = [
     ['preJump', art.clips.preJump, template.preJumpFrames],

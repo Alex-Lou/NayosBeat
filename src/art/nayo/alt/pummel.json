@@ -1,0 +1,29 @@
+{
+  "frames": {
+    "0": {
+      "frame": { "x": 117, "y": 166, "w": 114, "h": 157 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 9, "w": 114, "h": 157 },
+      "sourceSize": { "w": 117, "h": 167 }
+    },
+    "1": {
+      "frame": { "x": 113, "y": 0, "w": 115, "h": 162 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 4, "w": 115, "h": 162 },
+      "sourceSize": { "w": 117, "h": 167 }
+    },
+    "2": {
+      "frame": { "x": 0, "y": 0, "w": 113, "h": 166 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 3, "y": 0, "w": 113, "h": 166 },
+      "sourceSize": { "w": 117, "h": 167 }
+    },
+    "3": {
+      "frame": { "x": 0, "y": 166, "w": 117, "h": 160 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 7, "w": 117, "h": 160 },
+      "sourceSize": { "w": 117, "h": 167 }
+    }
+  },
+  "meta": { "image": "pummel.png", "size": { "w": 231, "h": 326 } }
+}

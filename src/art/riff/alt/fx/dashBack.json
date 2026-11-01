@@ -1,0 +1,41 @@
+{
+  "frames": {
+    "0": {
+      "frame": { "x": 242, "y": 0, "w": 21, "h": 10 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 79, "y": 3, "w": 21, "h": 10 },
+      "sourceSize": { "w": 121, "h": 13 }
+    },
+    "1": {
+      "frame": { "x": 0, "y": 0, "w": 38, "h": 13 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 83, "y": 0, "w": 38, "h": 13 },
+      "sourceSize": { "w": 121, "h": 13 }
+    },
+    "2": {
+      "frame": { "x": 263, "y": 0, "w": 1, "h": 1 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 1, "h": 1 },
+      "sourceSize": { "w": 121, "h": 13 }
+    },
+    "3": {
+      "frame": { "x": 264, "y": 0, "w": 1, "h": 1 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 1, "h": 1 },
+      "sourceSize": { "w": 121, "h": 13 }
+    },
+    "4": {
+      "frame": { "x": 149, "y": 0, "w": 93, "h": 11 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 10, "y": 2, "w": 93, "h": 11 },
+      "sourceSize": { "w": 121, "h": 13 }
+    },
+    "5": {
+      "frame": { "x": 38, "y": 0, "w": 111, "h": 13 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 111, "h": 13 },
+      "sourceSize": { "w": 121, "h": 13 }
+    }
+  },
+  "meta": { "image": "dashBack.png", "size": { "w": 265, "h": 13 } }
+}

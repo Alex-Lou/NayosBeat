@@ -1,14 +1,14 @@
 /**
  * Prints where each fighter's drawing stands against its hurtboxes (docs/combat-v2.md §9.2),
- * from the generated strips (src/art/<name>/main/*.png). For each posture: the drawn front edge
- * of every neutral, guard and hit pose, band by band (4 px), the farthest of them ("body") and
- * the front edge of the hurtbox there; the walks and the forward jump (marked *) for the record,
- * their limbs reaching out. Then each edge of the hurtboxes against the drawing, flagged when
- * they are more than 1.5 px apart. With `--moves`, every frame of every move against the
- * hurtboxes in force while it shows: a body that leaves them (the feet off the floor, the
- * whole body above the box) is flagged, a move hurtbox (§9.2) is what fixes it. Run with
- * `npm run measure-boxes` after `npm run sprites`; `npm run measure-boxes -- riff --moves` for
- * one fighter.
+ * from the generated strips (src/art/<name>/main/*.png, read through their atlases). For each
+ * posture: the drawn front edge of every neutral, guard and hit pose, band by band (4 px), the
+ * farthest of them ("body") and the front edge of the hurtbox there; the walks and the forward
+ * jump (marked *) for the record, their limbs reaching out. Then each edge of the hurtboxes
+ * against the drawing, flagged when they are more than 1.5 px apart. With `--moves`, every
+ * frame of every move against the hurtboxes in force while it shows: a body that leaves them
+ * (the feet off the floor, the whole body above the box) is flagged, a move hurtbox (§9.2) is
+ * what fixes it. Run with `npm run measure-boxes` after `npm run sprites`;
+ * `npm run measure-boxes -- riff --moves` for one fighter.
  */
 
 import { readFile } from 'node:fs/promises';
@@ -16,12 +16,13 @@ import { NAYO_CELLS } from '../../src/art/nayo/cells.ts';
 import { NAYO_CLIPS } from '../../src/art/nayo/clips.ts';
 import { RIFF_CELLS } from '../../src/art/riff/cells.ts';
 import { RIFF_CLIPS } from '../../src/art/riff/clips.ts';
-import { FULL_CELL, type Cell } from '../../src/art/types.ts';
+import { FULL_CELL, type Atlas, type Cell } from '../../src/art/types.ts';
 import type { Box, FighterTemplate } from '../../src/core/config.ts';
 import { toPx } from '../../src/core/constants.ts';
 import { MOVE_IDS } from '../../src/core/move-data.ts';
 import { NAYO } from '../../src/data/fighters/nayo.ts';
 import { RIFF } from '../../src/data/fighters/riff.ts';
+import { cellReader } from './atlas.ts';
 import type { Clips } from './clips.ts';
 import {
   BAND,
@@ -64,18 +65,24 @@ function hurtboxes(template: FighterTemplate, posture: Posture): readonly Box[] 
 
 const masks = new Map<string, StripMask>();
 
-/** A strip as generated, its cells cropped (their size and anchor: cells.ts). */
+/**
+ * A strip as generated, its cells cropped (their size and anchor: cells.ts), its frames read
+ * through its atlas (tools/sprites/atlas.ts).
+ */
 async function maskOf(fighter: Measured, sheet: string): Promise<StripMask> {
   const key = `${fighter.name}/${sheet}`;
   const known = masks.get(key);
   if (known) return known;
-  const file = new URL(`../../src/art/${fighter.name}/main/${sheet}.png`, import.meta.url);
-  const image = await decodeIndexedPng(await readFile(file));
+  const file = new URL(`../../src/art/${fighter.name}/main/${sheet}`, import.meta.url);
+  const image = await decodeIndexedPng(await readFile(new URL(`${file.href}.png`)));
+  const atlas = JSON.parse(
+    new TextDecoder().decode(await readFile(new URL(`${file.href}.json`))),
+  ) as Atlas;
   const cell = fighter.cells[sheet] ?? FULL_CELL;
+  const slot = cellReader(image, atlas);
   const mask: StripMask = {
     cell,
-    opaque: (frame, column, row) =>
-      (image.alpha[image.pixels[row * image.width + frame * cell.width + column] ?? 0] ?? 0) > 0,
+    opaque: (frame, column, row) => (image.alpha[slot(frame, column, row)] ?? 0) > 0,
   };
   masks.set(key, mask);
   return mask;

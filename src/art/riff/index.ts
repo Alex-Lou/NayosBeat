@@ -1,5 +1,5 @@
-import { effectNames, portraitOf, urlsOf } from '../strip-urls';
-import type { FighterArt } from '../types';
+import { atlasesOf, effectNames, idleAtlasOf, portraitOf, urlsOf } from '../strip-urls';
+import type { Atlas, FighterArt } from '../types';
 import { RIFF_CELLS } from './cells';
 import { RIFF_CLIPS } from './clips';
 import { RIFF_SHEETS } from './sheets';
@@ -27,6 +27,23 @@ const ALT_FX = import.meta.glob<string>('./alt/fx/*.png', {
   import: 'default',
 });
 
+/**
+ * The atlas written next to each image (tools/sprites/atlas.ts): where its frames are, cut to what
+ * they draw and packed. The fight loads it with the image.
+ */
+const MAIN_ATLASES = import.meta.glob<string>('./main/**/*.json', {
+  eager: true,
+  query: '?url',
+  import: 'default',
+});
+const ALT_ATLASES = import.meta.glob<string>('./alt/**/*.json', {
+  eager: true,
+  query: '?url',
+  import: 'default',
+});
+/** The idle's atlases, bundled: the select screen shows its frames at once. */
+const IDLE_ATLASES = import.meta.glob<Atlas>('./*/idle.json', { eager: true, import: 'default' });
+
 const SHARED = {
   // Her crest and her raised fist, on the character select screen.
   portrait: { x: 28, y: 4, size: 58 },
@@ -40,6 +57,8 @@ export const RIFF: FighterArt = {
   key: 'riff',
   urls: urlsOf(MAIN, 'main', RIFF_SHEETS),
   fx: urlsOf(MAIN_FX, 'main/fx', effectNames(RIFF_SHEETS, RIFF_CLIPS)),
+  atlases: atlasesOf(MAIN_ATLASES, 'main', RIFF_SHEETS, effectNames(RIFF_SHEETS, RIFF_CLIPS)),
+  ...idleAtlasOf(IDLE_ATLASES, 'main', RIFF_CLIPS.idle.sheet),
   ...portraitOf(MAIN, 'main'),
   ...SHARED,
 };
@@ -48,6 +67,8 @@ export const RIFF_ALT: FighterArt = {
   key: 'riff-alt',
   urls: urlsOf(ALT, 'alt', RIFF_SHEETS),
   fx: urlsOf(ALT_FX, 'alt/fx', effectNames(RIFF_SHEETS, RIFF_CLIPS)),
+  atlases: atlasesOf(ALT_ATLASES, 'alt', RIFF_SHEETS, effectNames(RIFF_SHEETS, RIFF_CLIPS)),
+  ...idleAtlasOf(IDLE_ATLASES, 'alt', RIFF_CLIPS.idle.sheet),
   ...portraitOf(ALT, 'alt'),
   ...SHARED,
 };

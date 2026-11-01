@@ -13,7 +13,10 @@ const PUBLIC_FILES = [
   'icons/apple-touch-icon.png',
 ];
 
-/** Everything the installed game needs offline: the page, the built files, the public files. */
+/**
+ * Everything the installed game needs offline: the page, the built files (the sprite strips and
+ * their atlases among them), the public files.
+ */
 export function precacheList(bundleFiles: readonly string[]): string[] {
   const built = bundleFiles.filter(
     (file) => !file.endsWith('.map') && file !== 'sw.js' && file !== 'index.html',

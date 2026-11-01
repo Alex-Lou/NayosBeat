@@ -1,0 +1,29 @@
+{
+  "frames": {
+    "0": {
+      "frame": { "x": 0, "y": 0, "w": 129, "h": 137 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 32, "y": 0, "w": 129, "h": 137 },
+      "sourceSize": { "w": 161, "h": 137 }
+    },
+    "1": {
+      "frame": { "x": 0, "y": 249, "w": 125, "h": 109 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 18, "y": 7, "w": 125, "h": 109 },
+      "sourceSize": { "w": 161, "h": 137 }
+    },
+    "2": {
+      "frame": { "x": 0, "y": 137, "w": 135, "h": 112 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 4, "y": 20, "w": 135, "h": 112 },
+      "sourceSize": { "w": 161, "h": 137 }
+    },
+    "3": {
+      "frame": { "x": 0, "y": 358, "w": 135, "h": 101 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 36, "w": 135, "h": 101 },
+      "sourceSize": { "w": 161, "h": 137 }
+    }
+  },
+  "meta": { "image": "trip.png", "size": { "w": 135, "h": 459 } }
+}

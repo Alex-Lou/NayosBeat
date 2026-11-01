@@ -12,9 +12,10 @@ import { installFakePage, type FakePage } from './fake-dom';
 /** A fighter of the select screen that stands in guard: its idle plays while it is shown. */
 const IDLE_LOOK = {
   strip: 'idle.png',
-  frames: 2,
+  image: { width: 160, height: 160 },
   width: 80,
   height: 160,
+  cuts: [0, 80].map((left) => ({ x: 0, y: 0, width: 80, height: 160, left, top: 0 })),
   portrait: { x: 20, y: 0, size: 40 },
   idle: [
     { frame: 0, seconds: 0.1 },

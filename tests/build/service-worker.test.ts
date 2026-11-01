@@ -16,6 +16,12 @@ describe('service worker', () => {
     expect(files.some((file) => file.endsWith('.map'))).toBe(false);
   });
 
+  it('caches each strip with its atlas: a fight loads both', () => {
+    const files = precacheList(['index.html', 'assets/idle-abc.png', 'assets/idle-def.json']);
+    expect(files).toContain('./assets/idle-abc.png');
+    expect(files).toContain('./assets/idle-def.json');
+  });
+
   it('fills the template, with a version that changes with the files', () => {
     const a = serviceWorkerSource(TEMPLATE, ['./', './assets/a-1.js']);
     const b = serviceWorkerSource(TEMPLATE, ['./', './assets/a-2.js']);

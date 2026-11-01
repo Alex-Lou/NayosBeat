@@ -1,0 +1,41 @@
+{
+  "frames": {
+    "0": {
+      "frame": { "x": 211, "y": 172, "w": 113, "h": 146 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 5, "y": 26, "w": 113, "h": 146 },
+      "sourceSize": { "w": 142, "h": 172 }
+    },
+    "1": {
+      "frame": { "x": 93, "y": 172, "w": 118, "h": 148 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 24, "w": 118, "h": 148 },
+      "sourceSize": { "w": 142, "h": 172 }
+    },
+    "2": {
+      "frame": { "x": 141, "y": 0, "w": 123, "h": 156 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 5, "y": 16, "w": 123, "h": 156 },
+      "sourceSize": { "w": 142, "h": 172 }
+    },
+    "3": {
+      "frame": { "x": 0, "y": 0, "w": 141, "h": 172 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 1, "y": 0, "w": 141, "h": 172 },
+      "sourceSize": { "w": 142, "h": 172 }
+    },
+    "4": {
+      "frame": { "x": 264, "y": 0, "w": 105, "h": 150 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 12, "y": 22, "w": 105, "h": 150 },
+      "sourceSize": { "w": 142, "h": 172 }
+    },
+    "5": {
+      "frame": { "x": 0, "y": 172, "w": 93, "h": 149 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 9, "y": 23, "w": 93, "h": 149 },
+      "sourceSize": { "w": 142, "h": 172 }
+    }
+  },
+  "meta": { "image": "chainHeavy.png", "size": { "w": 369, "h": 321 } }
+}

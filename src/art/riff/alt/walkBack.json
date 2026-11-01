@@ -1,0 +1,65 @@
+{
+  "frames": {
+    "0": {
+      "frame": { "x": 646, "y": 0, "w": 93, "h": 150 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 12, "y": 6, "w": 93, "h": 150 },
+      "sourceSize": { "w": 105, "h": 156 }
+    },
+    "1": {
+      "frame": { "x": 214, "y": 0, "w": 82, "h": 155 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 17, "y": 1, "w": 82, "h": 155 },
+      "sourceSize": { "w": 105, "h": 156 }
+    },
+    "2": {
+      "frame": { "x": 296, "y": 0, "w": 77, "h": 155 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 22, "y": 1, "w": 77, "h": 155 },
+      "sourceSize": { "w": 105, "h": 156 }
+    },
+    "3": {
+      "frame": { "x": 0, "y": 0, "w": 71, "h": 156 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 28, "y": 0, "w": 71, "h": 156 },
+      "sourceSize": { "w": 105, "h": 156 }
+    },
+    "4": {
+      "frame": { "x": 71, "y": 0, "w": 65, "h": 156 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 34, "y": 0, "w": 65, "h": 156 },
+      "sourceSize": { "w": 105, "h": 156 }
+    },
+    "5": {
+      "frame": { "x": 136, "y": 0, "w": 78, "h": 156 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 21, "y": 0, "w": 78, "h": 156 },
+      "sourceSize": { "w": 105, "h": 156 }
+    },
+    "6": {
+      "frame": { "x": 373, "y": 0, "w": 84, "h": 155 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 11, "y": 1, "w": 84, "h": 155 },
+      "sourceSize": { "w": 105, "h": 156 }
+    },
+    "7": {
+      "frame": { "x": 457, "y": 0, "w": 91, "h": 153 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 2, "y": 3, "w": 91, "h": 153 },
+      "sourceSize": { "w": 105, "h": 156 }
+    },
+    "8": {
+      "frame": { "x": 548, "y": 0, "w": 98, "h": 152 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 4, "w": 98, "h": 152 },
+      "sourceSize": { "w": 105, "h": 156 }
+    },
+    "9": {
+      "frame": { "x": 739, "y": 0, "w": 92, "h": 148 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 7, "y": 8, "w": 92, "h": 148 },
+      "sourceSize": { "w": 105, "h": 156 }
+    }
+  },
+  "meta": { "image": "walkBack.png", "size": { "w": 831, "h": 156 } }
+}

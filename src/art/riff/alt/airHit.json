@@ -1,0 +1,29 @@
+{
+  "frames": {
+    "0": {
+      "frame": { "x": 0, "y": 0, "w": 99, "h": 156 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 33, "y": 0, "w": 99, "h": 156 },
+      "sourceSize": { "w": 150, "h": 156 }
+    },
+    "1": {
+      "frame": { "x": 0, "y": 156, "w": 140, "h": 137 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 10, "y": 13, "w": 140, "h": 137 },
+      "sourceSize": { "w": 150, "h": 156 }
+    },
+    "2": {
+      "frame": { "x": 0, "y": 293, "w": 146, "h": 103 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 1, "y": 39, "w": 146, "h": 103 },
+      "sourceSize": { "w": 150, "h": 156 }
+    },
+    "3": {
+      "frame": { "x": 0, "y": 396, "w": 135, "h": 101 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 55, "w": 135, "h": 101 },
+      "sourceSize": { "w": 150, "h": 156 }
+    }
+  },
+  "meta": { "image": "airHit.png", "size": { "w": 146, "h": 497 } }
+}

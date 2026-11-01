@@ -1,20 +1,24 @@
 /**
  * Draws every fighter's sprite strips into src/art/<fighter>/<colorway>/ (game assets), their
- * front effects into src/art/<fighter>/<colorway>/fx/, the size and anchor of their cropped
- * cells into src/art/<fighter>/cells.ts, enlarged copies into tools/sprites/preview/ (to look at,
- * not committed), the installed game's icons into public/icons/ and the title's vinyl into
- * src/ui/title-vinyl.png. Run with `npm run sprites`; `npm run sprites -- riff` draws one
- * fighter only (Nayo's run also draws the icons and the vinyl).
+ * front effects into src/art/<fighter>/<colorway>/fx/, each image with its atlas (`<strip>.json`:
+ * its frames cut to what they draw and packed, tools/sprites/atlas.ts), the size and anchor of
+ * their cropped cells and what each frame draws into src/art/<fighter>/cells.ts, enlarged copies
+ * of the cropped cells side by side into tools/sprites/preview/ (to look at, not committed), the
+ * installed game's icons into public/icons/ and the title's vinyl into src/ui/title-vinyl.png.
+ * Run with `npm run sprites`; `npm run sprites -- riff` draws one fighter only (Nayo's run also
+ * draws the icons and the vinyl).
  *
- * A strip drawn by hand (art-src/<fighter>/, see drawn.ts) takes the place of the code's, and so
- * do the title's vinyl and the icons' master (art-src/ui/, see ui-drawn.ts). A fighter's portrait
- * (drawn.ts) and the stage (art-src/entrepot/, see stage-drawn.ts) are drawn by hand only: Nayo's
- * run also writes the stage, src/art/entrepot/. Every drawing is checked first, and nothing is
- * written when one is wrong.
+ * A strip drawn by hand (art-src/<fighter>/, see drawn.ts) takes the place of the code's, and is
+ * cut and packed into its atlas just the same. The title's vinyl and the icons' master may be
+ * drawn too (art-src/ui/, see ui-drawn.ts). A fighter's portrait (drawn.ts) and the stage
+ * (art-src/entrepot/, see stage-drawn.ts) are drawn by hand only and saved whole, one image each:
+ * no atlas. Nayo's run also writes the stage, src/art/entrepot/. Every drawing is checked first,
+ * and nothing is written when one is wrong.
  */
 
 import { mkdir, rm, writeFile } from 'node:fs/promises';
-import { ANCHOR, CELL_SIZE, type Cell } from '../../src/art/types.ts';
+import { ANCHOR, CELL_SIZE, type Atlas, type Cell } from '../../src/art/types.ts';
+import { atlasJson, packStrip } from './atlas.ts';
 import { strikeOf } from './clips.ts';
 import {
   loadDrawn,
@@ -44,6 +48,8 @@ const PREVIEW_SCALE = 2;
 const COLORWAYS: readonly Colorway[] = ['main', 'alt'];
 /** Empty pixels kept around what a strip draws, so the outline never touches a cell edge. */
 const MARGIN = 2;
+/** Prettier's line length (.prettierrc.json), which the cells module is formatted to. */
+const PRINT_WIDTH = 100;
 
 interface Image {
   readonly width: number;
@@ -97,37 +103,108 @@ function previewOf(fighter: Fighter): URL {
   return fighter === NAYO ? PREVIEW : new URL(`${fighter.name}/`, PREVIEW);
 }
 
-async function save(fighter: Fighter, image: Image, file: string): Promise<void> {
-  const { width, height, pixels } = image;
+/** A strip as saved: its atlas, and its cropped cells side by side (the preview, to look at). */
+interface Atlased {
+  readonly page: Image;
+  readonly atlas: Atlas;
+  readonly preview: Image;
+  /** The cropped cell, with what each frame draws. */
+  readonly cell: Cell;
+}
+
+/**
+ * A strip in full cells (`canvas`), drawn by code or by hand, cropped (`crop`) and saved as an
+ * atlas named `file` (tools/sprites/atlas.ts): each frame cut to what it draws, the cuts packed.
+ */
+function atlased(canvas: StripPixels, file: string): Atlased {
+  const { image, cell } = crop(canvas, ANCHOR);
+  // The cropped cell in the full one: cropping moved the anchor by as much.
+  const box = {
+    left: ANCHOR.x - cell.anchor.x,
+    top: ANCHOR.y - cell.anchor.y,
+    width: cell.width,
+    height: cell.height,
+  };
+  const name = `${file.slice(file.lastIndexOf('/') + 1)}.png`;
+  const { image: page, atlas, extents } = packStrip(canvas, box, name);
+  return { page, atlas, preview: image, cell: { ...cell, frames: extents } };
+}
+
+/**
+ * Writes `image` as `file` (no extension) in each colorway, and `preview` enlarged beside the
+ * other previews (to look at).
+ */
+async function savePng(
+  fighter: Fighter,
+  image: Image,
+  file: string,
+  preview: Image = image,
+): Promise<void> {
   const assets = new URL(`${fighter.name}/`, ART);
   for (const colorway of COLORWAYS) {
     // Only the colors the image may use: the Boost's platine where it draws in it.
-    const palette = fighter.paletteOf(colorway, pixels);
-    const path = `${colorway}/${file}`;
-    await writeFile(new URL(path, assets), await encodeIndexedPng(width, height, pixels, palette));
+    const palette = fighter.paletteOf(colorway, image.pixels);
+    const path = `${colorway}/${file}.png`;
+    await writeFile(
+      new URL(path, assets),
+      await encodeIndexedPng(image.width, image.height, image.pixels, palette),
+    );
     await writeFile(
       new URL(path, previewOf(fighter)),
-      await encodeIndexedPng(width, height, pixels, palette, PREVIEW_SCALE),
+      await encodeIndexedPng(preview.width, preview.height, preview.pixels, palette, PREVIEW_SCALE),
     );
+  }
+}
+
+/** Writes `strip` as `file` (no extension): its image and its atlas, in each colorway. */
+async function save(fighter: Fighter, strip: Atlased, file: string): Promise<void> {
+  await savePng(fighter, strip.page, file, strip.preview);
+  const json = new TextEncoder().encode(atlasJson(strip.atlas));
+  for (const colorway of COLORWAYS) {
+    await writeFile(new URL(`${fighter.name}/${colorway}/${file}.json`, ART), json);
   }
 }
 
 /** The cells as a TypeScript module, formatted the way Prettier would. */
 function cellsModule(fighter: Fighter, cells: ReadonlyMap<string, Cell>): string {
-  const lines = [...cells].map(([name, { width, height, anchor }]) => {
-    const key = /^\w+$/.test(name) ? name : `'${name}'`;
-    return `  ${key}: { width: ${width}, height: ${height}, anchor: { x: ${anchor.x}, y: ${anchor.y} } },`;
-  });
+  const lines = [...cells].flatMap(([name, cell]) => cellLines(name, cell));
   return [
     '// Generated by `npm run sprites` (tools/sprites/generate.ts): do not edit.',
     "import type { Cell } from '../types';",
     '',
-    '/** Cropped cells of each strip (and of its front effects, `fx/`), with their anchor. */',
+    '/**',
+    ' * Cropped cells of each strip (and of its front effects, `fx/`), with their anchor and what',
+    ' * each frame draws.',
+    ' */',
     `export const ${fighter.name.toUpperCase()}_CELLS: Readonly<Record<string, Cell>> = {`,
     ...lines,
     '};',
     '',
   ].join('\n');
+}
+
+/** One cell of the cells module, on one line when it fits, the way Prettier would. */
+function cellLines(name: string, { width, height, anchor, frames = [] }: Cell): string[] {
+  const key = /^\w+$/.test(name) ? name : `'${name}'`;
+  const head = [
+    `width: ${width}`,
+    `height: ${height}`,
+    `anchor: { x: ${anchor.x}, y: ${anchor.y} }`,
+  ];
+  const boxes = frames.map(
+    (f) => `{ x: ${f.x}, y: ${f.y}, width: ${f.width}, height: ${f.height} }`,
+  );
+  // Prettier breaks an array of two objects or more, one per line.
+  const list = boxes.length > 1 ? ['frames: [', ...boxes.map((box) => `  ${box},`), ']'] : [];
+  const fields = boxes.length === 1 ? [...head, `frames: [${boxes.join('')}]`] : head;
+  const line = `  ${key}: { ${fields.join(', ')} },`;
+  if (list.length === 0 && line.length <= PRINT_WIDTH) return [line];
+  return [
+    `  ${key}: {`,
+    ...fields.map((field) => `    ${field},`),
+    ...list.map((part, index) => `    ${part}${index === list.length - 1 ? ',' : ''}`),
+    '  },',
+  ];
 }
 
 async function generate(fighter: Fighter, drawn: ReadonlyMap<string, Drawn>): Promise<void> {
@@ -141,19 +218,21 @@ async function generate(fighter: Fighter, drawn: ReadonlyMap<string, Drawn>): Pr
     }
   }
   const cells = new Map<string, Cell>();
+  // Each strip cropped, then saved as an atlas named `file`, its cell kept under the same name.
+  const keep = async (canvas: StripPixels, file: string): Promise<Atlased> => {
+    const strip = atlased(canvas, file);
+    await save(fighter, strip, file);
+    cells.set(file, strip.cell);
+    return strip;
+  };
   for (const [sheet, { frames }] of Object.entries(fighter.sheets)) {
     const strip = stripPixels(fighter, sheet, drawn);
-    const body = crop(strip.body, ANCHOR);
-    await save(fighter, body.image, `${sheet}.png`);
-    cells.set(sheet, body.cell);
-    if (strip.fx) {
-      const effects = crop(strip.fx, ANCHOR);
-      await save(fighter, effects.image, `fx/${sheet}.png`);
-      cells.set(`fx/${sheet}`, effects.cell);
-    }
+    const body = await keep(strip.body, sheet);
+    if (strip.fx) await keep(strip.fx, `fx/${sheet}`);
     const { width, height } = body.cell;
+    const { w, h } = body.atlas.meta.size;
     const notes = `${strip.fx ? ' + fx' : ''}${strip.drawn ? ' (drawn)' : ''}`;
-    console.log(`${fighter.name} ${sheet}: ${frames} x ${width}x${height}${notes}`);
+    console.log(`${fighter.name} ${sheet}: ${frames} x ${width}x${height} in ${w}x${h}${notes}`);
     // The code's strips are measured by the tests; a drawing, here.
     const strike = strip.drawn ? strikeOf(clips, template, sheet) : undefined;
     const unseen = strike ? unseenStrikes(strike, [strip.body, strip.fx]) : [];
@@ -169,16 +248,15 @@ async function generate(fighter: Fighter, drawn: ReadonlyMap<string, Drawn>): Pr
     if (!platine.fx) {
       throw new Error(`${fighter.name} ${name}: strip ${sheet} has no effects to redraw`);
     }
-    const effects = crop(platine.fx, ANCHOR);
-    await save(fighter, effects.image, `fx/${name}.png`);
-    cells.set(`fx/${name}`, effects.cell);
+    await keep(platine.fx, `fx/${name}`);
     const how = platine.drawn ? 'drawn' : `the effects of ${sheet} in platine`;
     console.log(`${fighter.name} ${name}: ${how}`);
   }
-  // The select screen's bust, drawn apart; without it, the game cuts one from the guard.
+  // The select screen's bust, drawn apart; without it, the game cuts one from the guard. One
+  // image shown whole, not a strip of cells: no atlas.
   const portrait = drawn.get(PORTRAIT)?.body;
   if (portrait) {
-    await save(fighter, portrait, `${PORTRAIT}.png`);
+    await savePng(fighter, portrait, PORTRAIT);
     console.log(`${fighter.name} ${PORTRAIT}: drawn`);
   } else {
     for (const colorway of COLORWAYS) {

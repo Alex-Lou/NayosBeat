@@ -49,6 +49,6 @@
   - `noiseAt` : le bruit fixe ;
   - `dissolveStyleOf` : `slash` donne `rise`, `claw` donne `scatter`.
 - **`src/render/fx-dissolve.ts`** : `FxDissolve`, quatre fantômes par combattant, chacun dans sa texture canvas. Quand les quatre sont pris, le plus avancé cède sa place.
-  - Les pixels de chaque image d'effets sont lus une fois, depuis sa planche, puis gardés.
+  - Les pixels de chaque image d'effets sont lus une fois dans sa découpe de l'atlas, puis gardés avec leur place dans la case (`FxPixels`, docs/art/atlas.md).
   - `SpriteFighterView` lui donne à chaque image ce qu'elle montre et si le coup est stylé.
 - **Tests** : `tests/render/dissolve.test.ts`, `tests/render/fx-dissolve.test.ts`.

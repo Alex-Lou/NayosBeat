@@ -1,12 +1,15 @@
 import type Phaser from 'phaser';
 import { ART_SCALE, type FighterArt } from '../art/types';
 import { textureKey } from './art-textures';
-import { opaqueCount, type Pixels } from './dissolve';
+import { opaqueCount, type Cut } from './dissolve';
 import { freshPixels, litPixels } from './luminance';
 
-/** A frame of a strip of front effects, as it is drawn. */
-export interface FxFrame {
-  readonly pixels: Pixels;
+/**
+ * A frame of a strip of front effects, as it is drawn: its pixels as its texture cuts them (to
+ * what it draws, in an atlas), and where that cut is in its cell.
+ */
+export interface FxFrame extends Cut {
+  readonly pixels: ImageData;
   /** The pixels it shows. */
   readonly count: number;
   /** World px² it lights over the stage (ΔL ≥ 0.1: docs/flashs.md §1.1), drawn lit. */
@@ -15,7 +18,8 @@ export interface FxFrame {
 
 /**
  * The pixels of a fighter's front effects, read from their textures once a frame, then kept: what
- * dissolves (FxDissolve), and what the flash budget counts of them (docs/flashs.md §4).
+ * dissolves (FxDissolve), and what the flash budget counts of them (docs/flashs.md §4). Each keeps
+ * its texture's cut, not its whole cell: the cells are mostly empty.
  */
 export class FxPixels {
   private readonly frames = new Map<string, FxFrame>();
@@ -60,7 +64,8 @@ export class FxPixels {
     );
     const pixels = context.getImageData(0, 0, cut.cutWidth, cut.cutHeight);
     const lit = litPixels(pixels.data, this.stage) / ART_SCALE ** 2;
-    const read = { pixels, count: opaqueCount(pixels), lit };
+    // A trimmed frame's offset in its cell (0, 0 for a whole one).
+    const read = { pixels, x: cut.x, y: cut.y, count: opaqueCount(pixels), lit };
     this.frames.set(id, read);
     return read;
   }
@@ -78,8 +83,32 @@ export class FxPixels {
     if (known !== undefined) return known;
     const before = this.of(sheet, from);
     if (!before) return shown.lit;
-    const lit = freshPixels(before.pixels.data, shown.pixels.data, this.stage) / ART_SCALE ** 2;
+    const lit =
+      freshPixels(placedOn(before, shown), shown.pixels.data, this.stage) / ART_SCALE ** 2;
     this.fresh.set(id, lit);
     return lit;
   }
+}
+
+/**
+ * The pixels `frame` draws where `cut` is in their cell, transparent where it draws nothing:
+ * what was drawn before at the same place, pixel for pixel.
+ */
+function placedOn(frame: Cut, cut: Cut): Uint8ClampedArray {
+  const { width, height } = cut.pixels;
+  const source = frame.pixels;
+  const same = frame.x === cut.x && frame.y === cut.y && source.width === width;
+  if (same && source.height === height) return source.data;
+  const out = new Uint8ClampedArray(width * height * 4);
+  // The columns of the cell both cover.
+  const left = Math.max(cut.x, frame.x);
+  const right = Math.min(cut.x + width, frame.x + source.width);
+  if (right <= left) return out;
+  for (let y = 0; y < height; y++) {
+    const row = cut.y + y - frame.y;
+    if (row < 0 || row >= source.height) continue;
+    const from = (row * source.width + left - frame.x) * 4;
+    out.set(source.data.subarray(from, from + (right - left) * 4), (y * width + left - cut.x) * 4);
+  }
+  return out;
 }

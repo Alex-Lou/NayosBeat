@@ -1,4 +1,6 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import type { Atlas } from '../../src/art/types';
 import type { Replay } from '../../tools/replays/replay';
 import { chaptersOf, comparePage } from '../../tools/anim/compare';
 import { cpuTake, replayTake, shoot, type Film } from '../../tools/anim/film';
@@ -93,5 +95,23 @@ describe('the films of the animation (docs/art/animation-plan.md §2, V0)', () =
     expect(page).toContain('<canvas id="c0"');
     expect(page).toContain('data:image/png;base64,');
     await expect(comparePage(before, shoot(take, false, 0, 60))).rejects.toThrow();
+  });
+
+  it('puts each strip in the page with its atlas, where its frames are cut and packed', async () => {
+    const take = replayTake('ko', koReplay());
+    const page = await comparePage(shoot(take, true, 100, 130), shoot(take, false, 100, 130));
+    const json = /\)\((\{"title".*\})\);<\/script>/s.exec(page)?.[1];
+    if (json === undefined) throw new Error('The page holds no data');
+    const data = JSON.parse(json) as {
+      images: Record<string, string>;
+      atlases: Record<string, Atlas>;
+    };
+    const keys = Object.keys(data.images);
+    expect(keys.length).toBeGreaterThan(0);
+    expect(Object.keys(data.atlases)).toEqual(keys);
+    for (const key of keys) {
+      const file = new URL(`../../src/art/${key}.json`, import.meta.url);
+      expect(data.atlases[key], key).toEqual(JSON.parse(readFileSync(file, 'utf8')));
+    }
   });
 });

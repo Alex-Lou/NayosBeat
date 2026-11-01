@@ -1,10 +1,10 @@
 /**
  * Two films of the same fight side by side (docs/art/animation-plan.md §2, V0), in one page that
- * needs nothing else: the strips it shows are inside. Played at 60 Hz, at full speed, at half or a
- * quarter of it, or tick by tick; at the scale of a phone (480×270 world pixels over 15 cm) or
- * twice that. The spark of each blow is laid over its point of contact as the game would hide the
- * body under it: an opaque disc of 34 px (a light blow) or 58 px (a heavy one), held 7 or 10
- * frames (the game draws its sparks, it has no strip of them).
+ * needs nothing else: the strips it shows are inside, with their atlases. Played at 60 Hz, at
+ * full speed, at half or a quarter of it, or tick by tick; at the scale of a phone (480×270 world
+ * pixels over 15 cm) or twice that. The spark of each blow is laid over its point of contact as
+ * the game would hide the body under it: an opaque disc of 34 px (a light blow) or 58 px (a heavy
+ * one), held 7 or 10 frames (the game draws its sparks, it has no strip of them).
  *
  *   npm run anim:compare -- tools/anim/out/ko-avant.json tools/anim/out/ko-apres.json
  *   npm run anim:compare -- before.json after.json --out page.html --note "What to look at."
@@ -13,7 +13,7 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { NAYO_CELLS } from '../../src/art/nayo/cells.ts';
 import { RIFF_CELLS } from '../../src/art/riff/cells.ts';
-import type { Cell } from '../../src/art/types.ts';
+import type { Atlas, Cell } from '../../src/art/types.ts';
 import { templateOf, type FighterId } from '../../src/data/roster.ts';
 import { TRAINING_STAGE } from '../../src/data/stages.ts';
 import { GREYBOX_COLORS, GROUND_Y } from '../../src/render/greybox-stage.ts';
@@ -32,6 +32,8 @@ interface PageData {
   readonly names: readonly [string, string];
   /** The strips, by `fighter/colorway/sheet` (`fx/` before the sheet for front effects). */
   readonly images: Readonly<Record<string, string>>;
+  /** Where each image's frames are, by the same key: cut to what they draw and packed. */
+  readonly atlases: Readonly<Record<string, Atlas>>;
   readonly cells: Readonly<Record<string, Readonly<Record<string, Cell>>>>;
   readonly groundY: number;
   readonly stageWidth: number;
@@ -64,8 +66,11 @@ function css(color: number): string {
   return `#${color.toString(16).padStart(6, '0')}`;
 }
 
-/** The strips the films show, by image key: a front effect only if its fighter has one. */
-async function imagesOf(films: readonly Film[]): Promise<Record<string, string>> {
+/**
+ * The strips the films show, by image key, with their atlases (docs/art/atlas.md): a front effect
+ * only if its fighter has one.
+ */
+async function imagesOf(films: readonly Film[]): Promise<Pick<PageData, 'images' | 'atlases'>> {
   const wanted = new Set<string>();
   for (const film of films) {
     for (const tick of film.ticks) {
@@ -81,6 +86,7 @@ async function imagesOf(films: readonly Film[]): Promise<Record<string, string>>
     }
   }
   const images: Record<string, string> = {};
+  const atlases: Record<string, Atlas> = {};
   for (const key of [...wanted].sort()) {
     let bytes: Uint8Array;
     try {
@@ -90,8 +96,11 @@ async function imagesOf(films: readonly Film[]): Promise<Record<string, string>>
       continue;
     }
     images[key] = `data:image/png;base64,${base64(bytes)}`;
+    // Without its atlas, an image is a row of equal cells, as the game loads it.
+    const atlas = await readFile(fileUrl(`src/art/${key}.json`), 'utf8').catch(() => undefined);
+    if (atlas !== undefined) atlases[key] = JSON.parse(atlas) as Atlas;
   }
-  return images;
+  return { images, atlases };
 }
 
 function base64(bytes: Uint8Array): string {
@@ -119,7 +128,7 @@ export async function comparePage(before: Film, after: Film, note = ''): Promise
     title: `${before.name} : avant / après`,
     films,
     names: [templateOf(first).name, templateOf(second).name],
-    images: await imagesOf(films),
+    ...(await imagesOf(films)),
     cells: { nayo: CELLS.nayo, riff: CELLS.riff },
     groundY: GROUND_Y,
     stageWidth: toPx(TRAINING_STAGE.width),
@@ -292,7 +301,18 @@ function play(data: PageData): void {
     ctx.translate(Math.round(x * SCALE), Math.round((data.groundY - y) * SCALE));
     if (flip) ctx.scale(-1, 1);
     const { width, height, anchor } = cell;
-    ctx.drawImage(image, frame * width, 0, width, height, -anchor.x, -anchor.y, width, height);
+    const atlas = data.atlases[key];
+    if (atlas) {
+      // The frame's cut, put back at its place in the cell.
+      const cut = atlas.frames[String(frame)];
+      if (cut) {
+        const { frame: from, spriteSourceSize: to } = cut;
+        const [left, top] = [to.x - anchor.x, to.y - anchor.y];
+        ctx.drawImage(image, from.x, from.y, from.w, from.h, left, top, from.w, from.h);
+      }
+    } else {
+      ctx.drawImage(image, frame * width, 0, width, height, -anchor.x, -anchor.y, width, height);
+    }
     ctx.restore();
   }
 

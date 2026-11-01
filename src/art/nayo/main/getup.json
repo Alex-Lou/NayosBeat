@@ -1,0 +1,35 @@
+{
+  "frames": {
+    "0": {
+      "frame": { "x": 130, "y": 164, "w": 160, "h": 121 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 45, "w": 160, "h": 121 },
+      "sourceSize": { "w": 170, "h": 166 }
+    },
+    "1": {
+      "frame": { "x": 0, "y": 164, "w": 130, "h": 123 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 40, "y": 38, "w": 130, "h": 123 },
+      "sourceSize": { "w": 170, "h": 166 }
+    },
+    "2": {
+      "frame": { "x": 176, "y": 0, "w": 87, "h": 136 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 75, "y": 28, "w": 87, "h": 136 },
+      "sourceSize": { "w": 170, "h": 166 }
+    },
+    "3": {
+      "frame": { "x": 0, "y": 0, "w": 88, "h": 164 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 69, "y": 0, "w": 88, "h": 164 },
+      "sourceSize": { "w": 170, "h": 166 }
+    },
+    "4": {
+      "frame": { "x": 88, "y": 0, "w": 88, "h": 162 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 69, "y": 2, "w": 88, "h": 162 },
+      "sourceSize": { "w": 170, "h": 166 }
+    }
+  },
+  "meta": { "image": "getup.png", "size": { "w": 290, "h": 287 } }
+}

@@ -97,7 +97,7 @@ Une planche peut aussi être dessinée à la main dans Aseprite : elle remplace 
 | `npm run lint` | ESLint |
 | `npm run typecheck` | TypeScript |
 | `npm run format` | Prettier |
-| `npm run sprites` | Redessine les planches de sprites (`tools/sprites` → `src/art`) |
+| `npm run sprites` | Redessine les planches de sprites (`tools/sprites` → `src/art`), dessinées par le code ou à la main, chacune en atlas : ses images recadrées et rangées, avec leur JSON ([docs/art/atlas.md](docs/art/atlas.md)) |
 | `npm run measure-boxes` | Mesure le dessin de chaque combattant bande par bande (4 px) contre ses hurtbox (`-- riff` : un seul) |
 | `npm run sprites:templates` | Écrit les gabarits Aseprite : planches, portraits, interface, stage (`art-src/gabarits/`, non commités) |
 | `npm run aseprite:extension` | Construit l'extension Aseprite (`tools/aseprite/dist/`) |
@@ -113,7 +113,7 @@ Une planche peut aussi être dessinée à la main dans Aseprite : elle remplace 
 src/
   core/     Simulation pure et déterministe (aucun import Phaser/DOM, vérifié par ESLint)
   ai/       Ordinateur et mannequins, purs et déterministes eux aussi (graine aléatoire)
-  art/      Sprites : planches PNG et tables d'animation, vérifiées contre la frame data
+  art/      Sprites : planches PNG en atlas (JSON) et tables d'animation, vérifiées contre la frame data
   audio/    Effets sonores synthétisés
   app/      Enchaînement des écrans et configuration d'un match
   ui/       Menus et écran titre (HTML par-dessus le jeu)

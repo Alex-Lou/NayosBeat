@@ -60,6 +60,19 @@ describe('Nayo art', () => {
     }
   });
 
+  it("needs the idle's atlas at hand when its strip has one: the select screen reads it", () => {
+    const { idleAtlas, ...without } = NAYO;
+    expect(idleAtlas).toBeDefined();
+    const frames = Object.fromEntries(Object.entries(idleAtlas?.frames ?? {}).slice(1));
+    const short = { ...NAYO, idleAtlas: { meta: { image: '', size: { w: 1, h: 1 } }, frames } };
+    for (const art of [without, short]) {
+      expect(validateArt(art, NAYO_TEMPLATE)).toEqual([
+        'nayo: idle strip idle needs its atlas (idleAtlas)',
+      ]);
+    }
+    expect(validateArt({ ...without, atlases: {} }, NAYO_TEMPLATE)).toEqual([]);
+  });
+
   it('rejects effects of a strip that does not exist', () => {
     const art = { ...NAYO, fx: { ...NAYO.fx, dance: 'dance.png' } };
     expect(validateArt(art, NAYO_TEMPLATE)).toEqual(['nayo: effects dance of no strip nor clip']);
