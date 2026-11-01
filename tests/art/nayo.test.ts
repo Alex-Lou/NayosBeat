@@ -25,7 +25,9 @@ describe('Nayo art', () => {
   });
 
   it('lasts the whole knockdown with the getup', () => {
-    const getup = { ...NAYO.clips.getup, ticks: [2, 2, 2, 2, 3] };
+    // A tick more on its first frame (the getup is played with its in-betweens).
+    const ticks = NAYO.clips.getup.ticks.map((tick, index) => (index === 0 ? tick + 1 : tick));
+    const getup = { ...NAYO.clips.getup, ticks };
     const art = { ...NAYO, clips: { ...NAYO.clips, getup } };
     expect(validateArt(art, NAYO_TEMPLATE)).toEqual([
       'nayo: clips knockdown and getup last 41 ticks, its gameplay lasts 40',

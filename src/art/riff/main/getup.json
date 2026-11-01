@@ -1,19 +1,19 @@
 {
   "frames": {
     "0": {
-      "frame": { "x": 0, "y": 575, "w": 99, "h": 111 },
+      "frame": { "x": 0, "y": 1132, "w": 99, "h": 111 },
       "trimmed": true,
       "spriteSourceSize": { "x": 5, "y": 44, "w": 99, "h": 111 },
       "sourceSize": { "w": 104, "h": 155 }
     },
     "1": {
-      "frame": { "x": 0, "y": 447, "w": 96, "h": 128 },
+      "frame": { "x": 0, "y": 884, "w": 96, "h": 128 },
       "trimmed": true,
       "spriteSourceSize": { "x": 2, "y": 27, "w": 96, "h": 128 },
       "sourceSize": { "w": 104, "h": 155 }
     },
     "2": {
-      "frame": { "x": 0, "y": 305, "w": 91, "h": 142 },
+      "frame": { "x": 0, "y": 607, "w": 91, "h": 142 },
       "trimmed": true,
       "spriteSourceSize": { "x": 1, "y": 13, "w": 91, "h": 142 },
       "sourceSize": { "w": 104, "h": 155 }
@@ -25,11 +25,35 @@
       "sourceSize": { "w": 104, "h": 155 }
     },
     "4": {
-      "frame": { "x": 0, "y": 155, "w": 92, "h": 150 },
+      "frame": { "x": 0, "y": 308, "w": 92, "h": 150 },
       "trimmed": true,
       "spriteSourceSize": { "x": 0, "y": 5, "w": 92, "h": 150 },
       "sourceSize": { "w": 104, "h": 155 }
+    },
+    "5": {
+      "frame": { "x": 0, "y": 1012, "w": 97, "h": 120 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 4, "y": 35, "w": 97, "h": 120 },
+      "sourceSize": { "w": 104, "h": 155 }
+    },
+    "6": {
+      "frame": { "x": 0, "y": 749, "w": 93, "h": 135 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 2, "y": 20, "w": 93, "h": 135 },
+      "sourceSize": { "w": 104, "h": 155 }
+    },
+    "7": {
+      "frame": { "x": 0, "y": 458, "w": 92, "h": 149 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 6, "w": 92, "h": 149 },
+      "sourceSize": { "w": 104, "h": 155 }
+    },
+    "8": {
+      "frame": { "x": 0, "y": 155, "w": 92, "h": 153 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 2, "w": 92, "h": 153 },
+      "sourceSize": { "w": 104, "h": 155 }
     }
   },
-  "meta": { "image": "getup.png", "size": { "w": 99, "h": 686 } }
+  "meta": { "image": "getup.png", "size": { "w": 99, "h": 1243 } }
 }

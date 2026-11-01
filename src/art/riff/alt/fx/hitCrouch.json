@@ -1,23 +1,41 @@
 {
   "frames": {
     "0": {
-      "frame": { "x": 87, "y": 0, "w": 1, "h": 1 },
+      "frame": { "x": 262, "y": 0, "w": 1, "h": 1 },
       "trimmed": true,
       "spriteSourceSize": { "x": 0, "y": 0, "w": 1, "h": 1 },
-      "sourceSize": { "w": 87, "h": 10 }
+      "sourceSize": { "w": 94, "h": 11 }
     },
     "1": {
-      "frame": { "x": 0, "y": 0, "w": 87, "h": 10 },
+      "frame": { "x": 81, "y": 0, "w": 87, "h": 10 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 0, "w": 87, "h": 10 },
-      "sourceSize": { "w": 87, "h": 10 }
+      "spriteSourceSize": { "x": 3, "y": 1, "w": 87, "h": 10 },
+      "sourceSize": { "w": 94, "h": 11 }
     },
     "2": {
-      "frame": { "x": 88, "y": 0, "w": 1, "h": 1 },
+      "frame": { "x": 263, "y": 0, "w": 1, "h": 1 },
       "trimmed": true,
       "spriteSourceSize": { "x": 0, "y": 0, "w": 1, "h": 1 },
-      "sourceSize": { "w": 87, "h": 10 }
+      "sourceSize": { "w": 94, "h": 11 }
+    },
+    "3": {
+      "frame": { "x": 264, "y": 0, "w": 1, "h": 1 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 1, "h": 1 },
+      "sourceSize": { "w": 94, "h": 11 }
+    },
+    "4": {
+      "frame": { "x": 168, "y": 0, "w": 94, "h": 10 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 1, "w": 94, "h": 10 },
+      "sourceSize": { "w": 94, "h": 11 }
+    },
+    "5": {
+      "frame": { "x": 0, "y": 0, "w": 81, "h": 11 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 6, "y": 0, "w": 81, "h": 11 },
+      "sourceSize": { "w": 94, "h": 11 }
     }
   },
-  "meta": { "image": "hitCrouch.png", "size": { "w": 89, "h": 10 } }
+  "meta": { "image": "hitCrouch.png", "size": { "w": 265, "h": 11 } }
 }

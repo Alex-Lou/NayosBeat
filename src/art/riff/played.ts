@@ -5,4 +5,59 @@ import type { Played } from '../types';
  * The strips with in-betweens (their keys first, then the in-betweens) and the clips that
  * play them (tools/sprites/<fighter>/smoothing.ts, docs/art/animation-plan.md §3.3).
  */
-export const RIFF_PLAYED: Played = { sheets: {}, clips: {} };
+export const RIFF_PLAYED: Played = {
+  sheets: {
+    airHit: { keys: 4, frames: 11 },
+    knockdown: { keys: 6, frames: 13 },
+    getup: { keys: 5, frames: 9 },
+    ko: { keys: 8, frames: 21 },
+    trip: { keys: 4, frames: 7 },
+    hitHigh: { keys: 5, frames: 12 },
+    hitMid: { keys: 5, frames: 13 },
+    hitLow: { keys: 5, frames: 13 },
+    hitCrouch: { keys: 3, frames: 6 },
+    dashForward: { keys: 6, frames: 10 },
+    dashBack: { keys: 6, frames: 8 },
+    standHeavy: { keys: 7, frames: 14 },
+  },
+  clips: {
+    airHit: {
+      frames: [0, 4, 1, 5, 6, 7, 2, 8, 9, 10, 3],
+      ticks: [2, 1, 2, 1, 1, 1, 2, 1, 2, 1, 1],
+    },
+    knockdown: {
+      frames: [0, 6, 1, 7, 2, 8, 9, 3, 10, 11, 12, 4, 5],
+      ticks: [2, 1, 2, 1, 2, 1, 1, 2, 1, 2, 1, 6, 8],
+    },
+    getup: { frames: [0, 5, 1, 6, 2, 7, 3, 8, 4], ticks: [1, 1, 1, 1, 1, 1, 1, 1, 2] },
+    ko: {
+      frames: [0, 1, 8, 9, 2, 10, 11, 3, 12, 13, 4, 14, 15, 5, 16, 17, 6, 18, 19, 20, 7],
+      ticks: [4, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 2, 1, 1],
+    },
+    koLanding: {
+      frames: [4, 14, 15, 5, 16, 17, 6, 18, 19, 20, 7],
+      ticks: [2, 1, 1, 2, 1, 1, 2, 1, 2, 1, 1],
+    },
+    trip: { frames: [0, 4, 1, 5, 2, 6, 3], ticks: [1, 1, 1, 1, 1, 1, 7] },
+    hitHigh: { frames: [0, 1, 5, 2, 8, 9, 3, 10, 11, 4], ticks: [3, 2, 1, 2, 1, 1, 2, 1, 1, 2] },
+    hitHighLight: { frames: [0, 1, 6, 7, 4], ticks: [3, 2, 1, 1, 2] },
+    hitMid: {
+      frames: [0, 5, 1, 6, 2, 9, 10, 3, 11, 12, 4],
+      ticks: [2, 1, 2, 1, 2, 1, 1, 2, 1, 1, 2],
+    },
+    hitMidLight: { frames: [0, 5, 1, 7, 8, 4], ticks: [2, 1, 2, 1, 1, 2] },
+    hitLow: {
+      frames: [0, 5, 1, 6, 2, 9, 10, 3, 11, 12, 4],
+      ticks: [2, 1, 2, 1, 2, 1, 1, 2, 1, 1, 2],
+    },
+    hitLowLight: { frames: [0, 5, 1, 7, 8, 4], ticks: [2, 1, 2, 1, 1, 2] },
+    hitCrouch: { frames: [0, 3, 1, 4, 5, 2], ticks: [2, 1, 2, 1, 1, 1] },
+    dashForward: { frames: [0, 1, 6, 2, 7, 3, 9, 4, 5], ticks: [1, 2, 1, 2, 1, 2, 1, 3, 3] },
+    boostCancel: { frames: [0, 1, 6, 2, 8, 4, 5], ticks: [1, 1, 1, 1, 1, 3, 2] },
+    dashBack: { frames: [0, 1, 2, 3, 6, 4, 7, 5], ticks: [1, 4, 4, 2, 1, 2, 1, 5] },
+    standHeavy: {
+      frames: [0, 7, 1, 8, 2, 3, 4, 9, 10, 5, 11, 12, 13, 6],
+      ticks: [1, 1, 1, 1, 2, 3, 2, 1, 1, 2, 1, 1, 1, 5],
+    },
+  },
+};

@@ -9,4 +9,20 @@
 import type { NayoSheet } from '../../../src/art/nayo/sheets.ts';
 import type { Smoothing } from '../inbetweens.ts';
 
-export const NAYO_SMOOTHING: Readonly<Partial<Record<NayoSheet, Smoothing>>> = {};
+/** A drawing every 1.5 ticks in each hold that may be cut: about 40 a second. */
+const PILOT: Smoothing = { every: 1.5 };
+
+export const NAYO_SMOOTHING: Readonly<Partial<Record<NayoSheet, Smoothing>>> = {
+  airHit: PILOT,
+  knockdown: PILOT,
+  getup: PILOT,
+  ko: PILOT,
+  trip: PILOT,
+  hitHigh: PILOT,
+  hitMid: PILOT,
+  hitLow: PILOT,
+  hitCrouch: PILOT,
+  dashForward: PILOT,
+  dashBack: PILOT,
+  standHeavy: PILOT,
+};

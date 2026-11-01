@@ -1,29 +1,47 @@
 {
   "frames": {
     "0": {
-      "frame": { "x": 0, "y": 28, "w": 74, "h": 11 },
+      "frame": { "x": 0, "y": 69, "w": 74, "h": 11 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 3, "y": 4, "w": 74, "h": 11 },
-      "sourceSize": { "w": 91, "h": 15 }
+      "spriteSourceSize": { "x": 4, "y": 4, "w": 74, "h": 11 },
+      "sourceSize": { "w": 92, "h": 15 }
     },
     "1": {
-      "frame": { "x": 0, "y": 15, "w": 86, "h": 13 },
+      "frame": { "x": 0, "y": 44, "w": 86, "h": 13 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 2, "w": 86, "h": 13 },
-      "sourceSize": { "w": 91, "h": 15 }
+      "spriteSourceSize": { "x": 1, "y": 2, "w": 86, "h": 13 },
+      "sourceSize": { "w": 92, "h": 15 }
     },
     "2": {
       "frame": { "x": 0, "y": 0, "w": 91, "h": 15 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 0, "w": 91, "h": 15 },
-      "sourceSize": { "w": 91, "h": 15 }
+      "spriteSourceSize": { "x": 1, "y": 0, "w": 91, "h": 15 },
+      "sourceSize": { "w": 92, "h": 15 }
     },
     "3": {
-      "frame": { "x": 74, "y": 28, "w": 1, "h": 1 },
+      "frame": { "x": 74, "y": 69, "w": 1, "h": 1 },
       "trimmed": true,
       "spriteSourceSize": { "x": 0, "y": 0, "w": 1, "h": 1 },
-      "sourceSize": { "w": 91, "h": 15 }
+      "sourceSize": { "w": 92, "h": 15 }
+    },
+    "4": {
+      "frame": { "x": 0, "y": 57, "w": 79, "h": 12 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 3, "y": 3, "w": 79, "h": 12 },
+      "sourceSize": { "w": 92, "h": 15 }
+    },
+    "5": {
+      "frame": { "x": 0, "y": 30, "w": 90, "h": 14 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 1, "w": 90, "h": 14 },
+      "sourceSize": { "w": 92, "h": 15 }
+    },
+    "6": {
+      "frame": { "x": 0, "y": 15, "w": 91, "h": 15 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 1, "y": 0, "w": 91, "h": 15 },
+      "sourceSize": { "w": 92, "h": 15 }
     }
   },
-  "meta": { "image": "trip.png", "size": { "w": 91, "h": 39 } }
+  "meta": { "image": "trip.png", "size": { "w": 91, "h": 80 } }
 }

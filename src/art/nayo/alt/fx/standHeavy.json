@@ -53,6 +53,30 @@
       "trimmed": true,
       "spriteSourceSize": { "x": 0, "y": 0, "w": 1, "h": 1 },
       "sourceSize": { "w": 38, "h": 38 }
+    },
+    "9": {
+      "frame": { "x": 8, "y": 38, "w": 1, "h": 1 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 1, "h": 1 },
+      "sourceSize": { "w": 38, "h": 38 }
+    },
+    "10": {
+      "frame": { "x": 9, "y": 38, "w": 1, "h": 1 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 1, "h": 1 },
+      "sourceSize": { "w": 38, "h": 38 }
+    },
+    "11": {
+      "frame": { "x": 10, "y": 38, "w": 1, "h": 1 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 1, "h": 1 },
+      "sourceSize": { "w": 38, "h": 38 }
+    },
+    "12": {
+      "frame": { "x": 11, "y": 38, "w": 1, "h": 1 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 1, "h": 1 },
+      "sourceSize": { "w": 38, "h": 38 }
     }
   },
   "meta": { "image": "standHeavy.png", "size": { "w": 38, "h": 39 } }

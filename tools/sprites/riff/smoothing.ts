@@ -9,4 +9,22 @@
 import type { RiffSheet } from '../../../src/art/riff/sheets.ts';
 import type { Smoothing } from '../inbetweens.ts';
 
-export const RIFF_SMOOTHING: Readonly<Partial<Record<RiffSheet, Smoothing>>> = {};
+/** A drawing every 1.5 ticks in each hold that may be cut: about 40 a second. */
+const PILOT: Smoothing = { every: 1.5 };
+
+export const RIFF_SMOOTHING: Readonly<Partial<Record<RiffSheet, Smoothing>>> = {
+  airHit: PILOT,
+  // Her backward roll up from the floor (4 to 5): the tween flips the body through the air
+  // instead of rolling it over a shoulder. A clean cut until a passing key is drawn (§11, 2).
+  knockdown: { ...PILOT, counts: { '4>5': 0 } },
+  getup: PILOT,
+  ko: PILOT,
+  trip: PILOT,
+  hitHigh: PILOT,
+  hitMid: PILOT,
+  hitLow: PILOT,
+  hitCrouch: PILOT,
+  dashForward: PILOT,
+  dashBack: PILOT,
+  standHeavy: PILOT,
+};

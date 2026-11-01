@@ -1,29 +1,47 @@
 {
   "frames": {
     "0": {
-      "frame": { "x": 54, "y": 0, "w": 16, "h": 9 },
+      "frame": { "x": 132, "y": 0, "w": 16, "h": 9 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 3, "y": 3, "w": 16, "h": 9 },
-      "sourceSize": { "w": 29, "h": 12 }
+      "spriteSourceSize": { "x": 4, "y": 3, "w": 16, "h": 9 },
+      "sourceSize": { "w": 30, "h": 12 }
     },
     "1": {
       "frame": { "x": 0, "y": 0, "w": 25, "h": 11 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 1, "w": 25, "h": 11 },
-      "sourceSize": { "w": 29, "h": 12 }
+      "spriteSourceSize": { "x": 1, "y": 1, "w": 25, "h": 11 },
+      "sourceSize": { "w": 30, "h": 12 }
     },
     "2": {
       "frame": { "x": 25, "y": 0, "w": 29, "h": 11 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 0, "w": 29, "h": 11 },
-      "sourceSize": { "w": 29, "h": 12 }
+      "spriteSourceSize": { "x": 1, "y": 0, "w": 29, "h": 11 },
+      "sourceSize": { "w": 30, "h": 12 }
     },
     "3": {
-      "frame": { "x": 70, "y": 0, "w": 1, "h": 1 },
+      "frame": { "x": 148, "y": 0, "w": 1, "h": 1 },
       "trimmed": true,
       "spriteSourceSize": { "x": 0, "y": 0, "w": 1, "h": 1 },
-      "sourceSize": { "w": 29, "h": 12 }
+      "sourceSize": { "w": 30, "h": 12 }
+    },
+    "4": {
+      "frame": { "x": 112, "y": 0, "w": 20, "h": 10 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 3, "y": 2, "w": 20, "h": 10 },
+      "sourceSize": { "w": 30, "h": 12 }
+    },
+    "5": {
+      "frame": { "x": 54, "y": 0, "w": 29, "h": 11 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 1, "w": 29, "h": 11 },
+      "sourceSize": { "w": 30, "h": 12 }
+    },
+    "6": {
+      "frame": { "x": 83, "y": 0, "w": 29, "h": 11 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 1, "y": 0, "w": 29, "h": 11 },
+      "sourceSize": { "w": 30, "h": 12 }
     }
   },
-  "meta": { "image": "trip.png", "size": { "w": 71, "h": 11 } }
+  "meta": { "image": "trip.png", "size": { "w": 149, "h": 11 } }
 }

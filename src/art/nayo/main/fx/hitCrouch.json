@@ -17,7 +17,13 @@
       "trimmed": true,
       "spriteSourceSize": { "x": 0, "y": 0, "w": 1, "h": 1 },
       "sourceSize": { "w": 83, "h": 11 }
+    },
+    "3": {
+      "frame": { "x": 85, "y": 0, "w": 1, "h": 1 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 1, "h": 1 },
+      "sourceSize": { "w": 83, "h": 11 }
     }
   },
-  "meta": { "image": "hitCrouch.png", "size": { "w": 85, "h": 11 } }
+  "meta": { "image": "hitCrouch.png", "size": { "w": 86, "h": 11 } }
 }

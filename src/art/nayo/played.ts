@@ -5,4 +5,59 @@ import type { Played } from '../types';
  * The strips with in-betweens (their keys first, then the in-betweens) and the clips that
  * play them (tools/sprites/<fighter>/smoothing.ts, docs/art/animation-plan.md §3.3).
  */
-export const NAYO_PLAYED: Played = { sheets: {}, clips: {} };
+export const NAYO_PLAYED: Played = {
+  sheets: {
+    airHit: { keys: 4, frames: 11 },
+    knockdown: { keys: 4, frames: 8 },
+    getup: { keys: 5, frames: 9 },
+    ko: { keys: 8, frames: 22 },
+    trip: { keys: 4, frames: 7 },
+    hitHigh: { keys: 5, frames: 12 },
+    hitMid: { keys: 5, frames: 12 },
+    hitLow: { keys: 5, frames: 13 },
+    hitCrouch: { keys: 3, frames: 4 },
+    dashForward: { keys: 6, frames: 11 },
+    dashBack: { keys: 6, frames: 11 },
+    standHeavy: { keys: 9, frames: 13 },
+  },
+  clips: {
+    airHit: {
+      frames: [0, 4, 1, 5, 6, 7, 2, 8, 9, 10, 3],
+      ticks: [2, 1, 2, 1, 1, 1, 2, 1, 2, 1, 1],
+    },
+    knockdown: { frames: [0, 4, 1, 5, 2, 6, 7, 3], ticks: [2, 1, 2, 1, 2, 1, 1, 20] },
+    getup: { frames: [0, 5, 1, 6, 2, 7, 3, 8, 4], ticks: [1, 1, 1, 1, 1, 1, 1, 1, 2] },
+    ko: {
+      frames: [0, 8, 9, 1, 10, 11, 2, 12, 13, 3, 14, 15, 4, 16, 17, 5, 18, 19, 6, 20, 21, 7],
+      ticks: [2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 3, 1],
+    },
+    koLanding: {
+      frames: [3, 14, 15, 4, 16, 17, 5, 18, 19, 6, 20, 21, 7],
+      ticks: [2, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 3, 1],
+    },
+    trip: { frames: [0, 4, 1, 5, 2, 6, 3], ticks: [1, 1, 1, 1, 1, 1, 7] },
+    hitHigh: {
+      frames: [0, 5, 1, 6, 2, 8, 9, 3, 10, 11, 4],
+      ticks: [2, 1, 2, 1, 2, 1, 1, 2, 1, 1, 1],
+    },
+    hitHighLight: { frames: [0, 5, 1, 7, 4], ticks: [2, 1, 3, 1, 1] },
+    hitMid: { frames: [0, 1, 5, 2, 8, 9, 3, 10, 11, 4], ticks: [3, 2, 1, 2, 1, 1, 2, 1, 1, 1] },
+    hitMidLight: { frames: [0, 1, 6, 7, 4], ticks: [3, 2, 1, 1, 1] },
+    hitLow: {
+      frames: [0, 5, 1, 6, 2, 9, 10, 3, 11, 12, 4],
+      ticks: [2, 1, 2, 1, 2, 1, 1, 2, 1, 1, 1],
+    },
+    hitLowLight: { frames: [0, 5, 1, 7, 8, 4], ticks: [2, 1, 2, 1, 1, 1] },
+    hitCrouch: { frames: [0, 3, 1, 2], ticks: [2, 1, 4, 1] },
+    dashForward: { frames: [0, 1, 6, 7, 2, 8, 3, 9, 4, 5], ticks: [1, 2, 1, 1, 2, 2, 2, 1, 3, 3] },
+    boostCancel: { frames: [0, 1, 6, 2, 8, 3, 10, 5], ticks: [1, 2, 1, 2, 1, 2, 1, 2] },
+    dashBack: {
+      frames: [0, 1, 6, 7, 2, 8, 9, 3, 10, 4, 5],
+      ticks: [1, 2, 1, 1, 2, 1, 1, 2, 2, 4, 5],
+    },
+    standHeavy: {
+      frames: [0, 9, 1, 10, 2, 3, 4, 11, 5, 12, 6, 7, 8],
+      ticks: [2, 1, 2, 1, 2, 4, 2, 1, 2, 1, 3, 3, 4],
+    },
+  },
+};
