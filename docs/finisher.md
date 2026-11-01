@@ -376,6 +376,7 @@ Sinon `FLAG_FINISHER` tombe : c'est une super ordinaire, parée, échangée, rat
 **Constat**
 - Les chiffres de la v1 (7 Finishers en 200 matchs, tous des Mégabasses en reversal, 0 pour Riff) venaient d'une autre règle (frappe mortelle dès la première frappe). Ils sont à re-mesurer avec la règle finale (PR 5).
 - **Re-mesuré par la PR 5** (§5.11) : 2 % des matchs gagnés en difficile finissaient sur un Finisher avant elle, 4 % après (200 matchs, Nayo contre Riff), avec la défense ci-dessous : la cible de 15 à 35 % n'est pas tenue. Celle de 40 à 60 % de victoires par perso ne l'est pas non plus, ni avant ni après : Nayo gagne 95 à 98 % des matchs entre CPU difficiles.
+- **Re-mesuré après D33** (le CPU ne presse que ce qui touche, et punit avec tout son kit) : 6 % des matchs gagnés finissent sur un Finisher (12 sur 200 : Nayo 11, Riff 1), et Riff gagne 10 % des matchs entre CPU difficiles (20 sur 200). Contre Riff, Nayo en place 3 dans ses 40 premiers matchs (aucun avant). Les deux cibles ne sont toujours pas tenues : le reste de l'écart vient des données (`docs/combat-v2.md`, D33).
 
 **Données**
 - Nouvelle condition de plan `PlanCondition.finisher?: true` : le plan n'est tiré que si `finisherReady` vaut `ready` pour le CPU.

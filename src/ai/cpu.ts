@@ -1,9 +1,11 @@
-import type { MatchConfig } from '../core/config';
+import type { Box, MatchConfig } from '../core/config';
 import { toPx } from '../core/constants';
 import { superGauge } from '../core/fighter/move';
 import { Input, type InputBits } from '../core/input';
-import type { MoveData } from '../core/move-data';
-import { BOOST_BAR, BOOST_MAX, THREAT_MARGIN } from '../core/rules';
+import { leftEdge } from '../core/boxes';
+import { hurtboxesOf } from '../core/combat';
+import type { MoveData, MoveId } from '../core/move-data';
+import { BOOST_BAR, BOOST_MAX } from '../core/rules';
 import type { FighterAction, FighterState, GameState } from '../core/state';
 import { moveOf } from '../core/moves';
 import { strikeThreatens, threatReach, upcomingMove } from '../core/threat';
@@ -181,6 +183,8 @@ class Decider {
   private readonly toward: number;
   private readonly away: number;
   private readonly distance: number;
+  /** From it to the near edge of the opponent's body as seen, in sub-pixels (D33). */
+  private readonly bodyGap: number;
   /** The blow the opening it sees allows (`opening`), if any. */
   private readonly opening: InputBits | null;
   /** That opening was considered: kept by every plan it returns this tick. */
@@ -205,6 +209,10 @@ class Decider {
     this.toward = opponent.x > me.x ? Input.Right : Input.Left;
     this.away = opponent.x > me.x ? Input.Left : Input.Right;
     this.distance = toPx(Math.abs(opponent.x - me.x));
+    const template = this.opponentTemplate();
+    // Down, no body to hit: its body as it gets up, for a blow pressed on its wake-up.
+    const body = hurtboxesOf(opponent, template);
+    this.bodyGap = gapToBody(me, opponent, body.length > 0 ? body : template.standingHurtboxes);
     this.opening = this.openingBlow();
     // A new opening is a new decision; none seen, nothing to remember.
     this.punishHandled = this.opening !== null && cpu.punishHandled;
@@ -292,8 +300,10 @@ class Decider {
    * (its active ticks are over, counting the ticks played since it was seen) and keeps enough
    * recovery for the blow to land, in its reach. The ticks frozen since (an impact, a super's
    * flash) are not counted: nothing moved on them. Counted, a super seen at its flash looked
-   * over, and the CPU walked into it (docs/finisher.md §1.8). Easy jabs; the others take the
-   * heavy blow when it fits (docs/polish/AUDIT-ET-PLAN.md, P18).
+   * over, and the CPU walked into it (docs/finisher.md §1.8). Easy jabs (docs/polish/
+   * AUDIT-ET-PLAN.md, P18); the others take the blow of their kit that hurts most and still
+   * lands in time from where they stand: a heavy, a sweep, or a special that carries them there
+   * (Riff's Glissade slides 64 px), never a projectile (D33).
    */
   private openingBlow(): InputBits | null {
     const opponent = this.opponent;
@@ -303,12 +313,32 @@ class Decider {
     const now = opponent.actionFrame + playedSince(this.cpu);
     if (now < move.startup + move.active) return null;
     const left = move.startup + move.active + move.recovery - now;
-    const template = this.config.fighters[this.cpu.player];
-    const reach = Math.abs(opponent.x - this.me.x);
-    const fits = (blow: MoveData) =>
-      blow.startup < left && reach <= threatReach(blow) + THREAT_MARGIN;
-    if (this.level !== 'easy' && fits(moveOf(template, 'standHeavy'))) return Input.Heavy;
-    return fits(moveOf(template, 'standLight')) ? Input.Light : null;
+    const { moves } = this.config.fighters[this.cpu.player];
+    const blows: readonly (readonly [MoveData | undefined, InputBits])[] =
+      this.level === 'easy'
+        ? [[moves.standLight, Input.Light]]
+        : [
+            [moves.standHeavy, Input.Heavy],
+            [moves.crouchHeavy, Input.Down | Input.Heavy],
+            [moves.special.projectile ? undefined : moves.special, Input.Special],
+            [moves.specialForward, this.toward | Input.Special],
+            [moves.standLight, Input.Light],
+          ];
+    let best: { damage: number; input: InputBits } | null = null;
+    for (const [blow, input] of blows) {
+      if (blow === undefined || blow.startup >= left || !this.reaches(blow)) continue;
+      if (best === null || blow.damage > best.damage) best = { damage: blow.damage, input };
+    }
+    return best?.input ?? null;
+  }
+
+  /**
+   * Whether `move` touches the opponent from where they stand now: its reach (its hitbox's
+   * front, carried by its motion) covers the gap to their body as it is, the reaches of
+   * docs/combat-v2.md §10.4. The CPU presses nothing that would whiff (D33).
+   */
+  private reaches(move: MoveData | undefined): boolean {
+    return move !== undefined && this.bodyGap <= threatReach(move);
   }
 
   /**
@@ -405,12 +435,16 @@ class Decider {
     }
     // Up close to a Mégabasse: out of its reach, no pressure.
     if (wary) return repeat(away, this.between(6, 14));
-    if (this.chance(this.profile.throw)) return [Input.Grab, 0];
-    if (this.chance(0.1)) return [away | Input.Heavy, 0];
-    if (this.chance(0.35)) return [Input.Light, 0, 0, 0];
-    if (this.chance(0.25)) return [Input.Down | Input.Light, Input.Down, 0];
-    if (this.chance(0.2)) return [Input.Heavy, 0];
-    if (this.chance(0.15)) return [Input.Down | Input.Heavy, Input.Down, 0];
+    // Only what touches from here (D33). Out of even its jab's reach (Riff's, from 46 to 60 px),
+    // it steps in, as its aggression says.
+    const fits = (id: MoveId) => this.reaches(moves[id]);
+    if (!fits('standLight') && this.chance(aggression)) return repeat(toward, this.between(4, 8));
+    if (fits('grab') && this.chance(this.profile.throw)) return [Input.Grab, 0];
+    if (fits('backHeavy') && this.chance(0.1)) return [away | Input.Heavy, 0];
+    if (fits('standLight') && this.chance(0.35)) return [Input.Light, 0, 0, 0];
+    if (fits('crouchLight') && this.chance(0.25)) return [Input.Down | Input.Light, Input.Down, 0];
+    if (fits('standHeavy') && this.chance(0.2)) return [Input.Heavy, 0];
+    if (fits('crouchHeavy') && this.chance(0.15)) return [Input.Down | Input.Heavy, Input.Down, 0];
     if (this.chance(0.3)) return repeat(away | Input.Down, this.between(8, 16));
     return repeat(away, this.between(6, 12));
   }
@@ -475,6 +509,16 @@ class Decider {
     this.seed = seed;
     return min + Math.floor(value * (max - min + 1));
   }
+}
+
+/**
+ * From `me` to the near edge of `opponent`'s body (`boxes`, its hurtboxes), facing either way:
+ * its back is the near edge after a cross-up.
+ */
+function gapToBody(me: FighterState, opponent: FighterState, boxes: readonly Box[]): number {
+  const lefts = boxes.map((box) => leftEdge(box, opponent.x, opponent.facing));
+  if (me.x < opponent.x) return Math.min(...lefts) - me.x;
+  return me.x - Math.max(...boxes.map((box, at) => (lefts[at] ?? 0) + box.width));
 }
 
 /** Invincible to every blow from its first frame: it goes through a meaty attack. */

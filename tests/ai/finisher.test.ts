@@ -335,31 +335,35 @@ describe('hard CPUs in real matches, at fixed seeds (§1.11, test 17)', () => {
     expect(versusMatches().reduce((total, match) => total + match.waryJumps, 0)).toBe(0);
   }, 60_000);
 
-  it('end 2.5 to 35 % of the matches they win with a Finisher (the 15 to 35 % of §1.11 is not met: 4 %)', () => {
+  it('end 4 to 35 % of the matches they win with a Finisher (the 15 to 35 % of §1.11 is not met: 6 %)', () => {
     const played = versusMatches();
     const won = count(played, (match) => match.winner !== null);
     const finished = count(played, (match) => match.finisher !== null);
-    // Measured: 8 of 200 (4 %), all Nayo's, with the defense of §1.11 (Riff out of the
-    // Mégabasse's reach); 16 % while she still jumped at it, 2 % before the CPU played for it.
-    expect(finished / won).toBeGreaterThanOrEqual(0.025);
+    // Measured: 12 of 200 (6 %), Nayo 11 and Riff 1, since the CPU presses only what reaches
+    // and punishes with its whole kit (D33); 8 (4 %), all Nayo's, before; 16 % while Riff still
+    // jumped at an armed Mégabasse, 2 % before the CPU played for its Finisher.
+    expect(finished / won).toBeGreaterThanOrEqual(0.04);
     expect(finished / won).toBeLessThanOrEqual(0.35);
   }, 60_000);
 
-  it('land a Finisher with each fighter in 40 mirror matches (Nayo none in 40 against Riff)', () => {
-    // Measured: Nayo 2 in his first 40 mirror matches, Riff 4 in hers. Against Riff, Nayo lands
-    // none in the first 40 (then 2, 3, 3 by 40): the one-in-40 of §1.11 is not met there.
+  it('land a Finisher with each fighter in 40 mirror matches, and Nayo in 40 against Riff', () => {
+    // Measured: Nayo 6 in his first 40 mirror matches, Riff 7 in hers (2 and 4 before D33).
+    // Against Riff, Nayo lands 3 in the first 40 since D33, none before: the one-in-40 of §1.11
+    // was not met there.
     const nayo = playMatches(40, NAYO);
     expect(count(nayo, (match) => match.finisher === 'Nayo')).toBeGreaterThanOrEqual(1);
+    const versus = versusMatches().slice(0, 40);
+    expect(count(versus, (match) => match.finisher === 'Nayo')).toBeGreaterThanOrEqual(1);
     const riff = playMatches(40, RIFF);
     expect(count(riff, (match) => match.finisher === 'Riff')).toBeGreaterThanOrEqual(2);
   }, 60_000);
 
-  it('leave the matchup as it was: Riff wins 1 to 10 % of it (the 40 to 60 % of §1.11 is not met)', () => {
-    // Measured: Riff 5 of 200 (2.5 %), and 4.5 % before the Finisher's CPU (§5.11): the hard
-    // CPUs' matchup is Nayo's at every level, which the Finisher does not change.
+  it("leave the matchup Nayo's: Riff wins 6 to 20 % of it (the 40 to 60 % of §1.11 is not met)", () => {
+    // Measured: Riff 20 of 200 (10 %) since D33; 5 (2.5 %) before, 4.5 % before the Finisher's
+    // CPU (§5.11). The rest of the gap is the data, her reach above all (D33): the owner's call.
     const played = versusMatches();
     const riff = count(played, (match) => match.winner === 'Riff') / played.length;
-    expect(riff).toBeGreaterThanOrEqual(0.01);
-    expect(riff).toBeLessThanOrEqual(0.1);
+    expect(riff).toBeGreaterThanOrEqual(0.06);
+    expect(riff).toBeLessThanOrEqual(0.2);
   }, 60_000);
 });

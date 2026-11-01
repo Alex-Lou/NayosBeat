@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { cpuStep, createCpu, type CpuBehavior, type CpuState } from '../../src/ai/cpu';
+import { finisherMenace, leavesGround } from '../../src/ai/defense';
 import { nextRandom } from '../../src/ai/rng';
 import type { MatchConfig } from '../../src/core/config';
-import { px } from '../../src/core/constants';
+import { px, toPx } from '../../src/core/constants';
 import { Input, type InputBits } from '../../src/core/input';
 import type { FighterAction, GameState } from '../../src/core/state';
 import { step } from '../../src/core/step';
@@ -97,14 +98,25 @@ describe('cpu', () => {
   it('never gets stuck with the command table of combat v2: it attacks every 3 s at most', () => {
     // §13.4: in neutral (out of a hold, a knockdown, a stun, the round's end), each CPU starts a
     // move: the time it spends hit or blocking is the opponent's pressure, not its stalling.
+    // Nor is the hard CPU's keeping out of a Mégabasse that would finish it (docs/finisher.md
+    // §1.11): there it waits on purpose (since D33, Riff for 181 ticks once in these matches).
     for (const level of ['easy', 'normal', 'hard'] as const) {
       const quiet: [number, number] = [0, 0];
       const longest: [number, number] = [0, 0];
       playCpuMatches(6000, MATCH, [level, level], (state) => {
         for (const player of [0, 1] as const) {
           const fighter = state.fighters[player];
+          const opponent = state.fighters[player === 0 ? 1 : 0];
+          const superMove = MATCH.fighters[player === 0 ? 1 : 0].moves.super;
+          const keepsAway =
+            level === 'hard' &&
+            finisherMenace(state, player, MATCH, opponent) &&
+            !leavesGround(superMove);
           const busy =
-            fighter.move !== null || state.hold !== null || state.round.phase !== 'fight';
+            fighter.move !== null ||
+            state.hold !== null ||
+            state.round.phase !== 'fight' ||
+            keepsAway;
           const down = STUNNED.has(fighter.action);
           quiet[player] = busy || down ? 0 : quiet[player] + 1;
           longest[player] = Math.max(longest[player], quiet[player]);
@@ -229,6 +241,33 @@ describe('cpu punish', () => {
     expect(punishRate('hard', 'specialAntiAir', 11, 0, 40)).toBeGreaterThanOrEqual(60);
   });
 
+  it('punishes from afar with the blow of its kit that reaches: Riff slides in (D33)', () => {
+    // Nayo's Uppercut whiffed 90 px from Riff: none of her normals reach (her heavy, 56.5 px),
+    // her Glissade does (113.5 px, 10 ticks). Over 100 seeds, the punishes it lands.
+    const slides = (level: CpuBehavior) => {
+      let landed = 0;
+      for (let seed = 0; seed < 100; seed++) {
+        const nayo = { action: 'attack', move: 'specialAntiAir', actionFrame: 11 } as const;
+        let state = facingOff(90, MATCH, [nayo, {}]);
+        let cpu = createCpu(1, level, seed * 7919 + 3);
+        for (let tick = 0; tick < 45 && state.fighters[0].action === 'attack'; tick++) {
+          const decision = cpuStep(cpu, state, MATCH);
+          cpu = decision.cpu;
+          const before = state;
+          state = step(state, [0, decision.input], MATCH);
+          const hurt = state.fighters[0].health < before.fighters[0].health;
+          if (hurt && before.fighters[1].move === 'special') landed++;
+        }
+      }
+      return landed;
+    };
+    // Measured: hard 89, normal 44, easy 0 (it jabs). Before D33, 0 at every level: only the
+    // heavy and the jab were tried.
+    expect(slides('hard')).toBeGreaterThanOrEqual(70);
+    expect(slides('normal')).toBeGreaterThanOrEqual(30);
+    expect(slides('easy')).toBe(0);
+  });
+
   /**
    * Over 200 seeds, player 1 presses `input` from neutral, `at` px from a CPU that watched 30
    * quiet ticks, the block's real freeze included: the times the CPU blocked it, and the times
@@ -275,6 +314,46 @@ describe('cpu punish', () => {
       expect(light.blocked, level).toBeGreaterThan(50);
       expect(light.punished, level).toBe(0);
     }
+  });
+});
+
+describe('cpu reach (D33)', () => {
+  /** Riff's reaches against Nayo standing, center to center (tests/data/ranges.test.ts). */
+  const RIFF_REACH: Readonly<Record<string, number>> = {
+    standLight: 46.5,
+    crouchLight: 45.5,
+    grab: 41.5,
+    backHeavy: 35.5,
+    standHeavy: 56.5,
+    crouchHeavy: 57.5,
+  };
+
+  it('presses up close only what reaches: Riff steps in from 55 px, never jabs the air', () => {
+    let pressed = 0;
+    let whiffed = 0;
+    for (let seed = 0; seed < 100; seed++) {
+      let state = facingOff(55);
+      let cpu = createCpu(1, 'hard', seed * 7919 + 5);
+      // Ticks since Nayo last moved: knocked back by a blow, he is where she saw him only once
+      // her reaction time is over (12 ticks, and up to 6 more: D31).
+      let still = 0;
+      for (let tick = 0; tick < 90; tick++) {
+        const decision = cpuStep(cpu, state, MATCH);
+        cpu = decision.cpu;
+        const before = state.fighters[1];
+        state = step(state, [0, decision.input], MATCH);
+        still = STUNNED.has(state.fighters[0].action) ? 0 : still + 1;
+        const riff = state.fighters[1];
+        const reach = riff.move === null ? undefined : RIFF_REACH[riff.move];
+        if (riff.action !== 'attack' || before.action === 'attack' || reach === undefined) continue;
+        if (still < 20) continue;
+        pressed++;
+        if (toPx(Math.abs(riff.x - state.fighters[0].x)) > reach) whiffed++;
+      }
+    }
+    // Before D33: pressed from anywhere under 60 px, out of reach a third of the time.
+    expect(pressed).toBeGreaterThan(20);
+    expect(whiffed).toBe(0);
   });
 });
 
