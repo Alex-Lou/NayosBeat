@@ -110,13 +110,23 @@ body {
   background: rgba(255, 255, 255, 0.15);
   border: 2px solid rgba(255, 255, 255, 0.35);
   pointer-events: none;
-  transition: transform 50ms;
+  transition:
+    transform 50ms,
+    opacity 200ms;
 }
 /* Pressed: a little smaller, its edge lit. */
 .touch-button.pressed {
   transform: scale(0.92);
   background: rgba(255, 255, 255, 0.3);
   box-shadow: 0 0 8px 1px currentColor;
+}
+/* A fighter under the buttons (src/render/touch-cover.ts): they fade to let it be seen, the one
+   pressed a little less (BOOST under a bar stays faded, as it stays greyed). */
+.touch-button-zone.covered .touch-button {
+  opacity: 0.35;
+}
+.touch-button-zone.covered .touch-button.pressed:not(.empty) {
+  opacity: 0.8;
 }
 .touch-light {
   color: #fff;
