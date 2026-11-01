@@ -1,52 +1,78 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`reaches (§10.4) > Nayo's 1`] = `
-"against             Nayo  crouch  Riff  crouch
-standLight            53.5  54.0  55.0  55.0
-standHeavy            65.5  66.0  67.0  67.0
-crouchLight           51.5  52.0  53.0  53.0
-crouchHeavy           64.5  65.0  66.0  66.0
-jumpLight             41.5  42.0  43.0  43.0
-jumpHeavy             49.5  50.0  51.0  51.0
-specialForward        87.5  88.0  89.0  89.0
-specialAntiAir        37.5  38.0  39.0  39.0
-grab                  43.5  44.0  45.0  45.0
-forwardLight          69.5  70.0  71.0  71.0
-forwardHeavy          61.5  62.0  63.0  63.0
-backHeavy             43.5     -  45.0     -
-chainLight            69.5  70.0  71.0  71.0
-lightFinisher         73.5  74.0  75.0  75.0
-jabRepeat             53.5  54.0  55.0  55.0
-chainHeavy            81.5  82.0  83.0  83.0
-chainHigh             69.5  70.0  71.0  71.0
-chainLaunch           55.5     -  57.0     -
-specialForwardBoost   87.5  88.0  89.0  89.0
-specialAntiAirBoost   37.5  38.0  39.0  39.0
-super                 73.5  74.0  75.0  75.0"
+"against             Nayo  crouch  Riff  crouch  Saphir  crouch
+standLight            53.5  54.0  55.0  55.0  54.0  54.0
+standHeavy            65.5  66.0  67.0  67.0  66.0  66.0
+crouchLight           51.5  52.0  53.0  53.0  52.0  52.0
+crouchHeavy           64.5  65.0  66.0  66.0  65.0  65.0
+jumpLight             41.5  42.0  43.0  43.0  42.0  42.0
+jumpHeavy             49.5  50.0  51.0  51.0  50.0  50.0
+specialForward        87.5  88.0  89.0  89.0  88.0  88.0
+specialAntiAir        37.5  38.0  39.0  39.0  38.0  38.0
+grab                  43.5  44.0  45.0  45.0  44.0  44.0
+forwardLight          69.5  70.0  71.0  71.0  70.0  70.0
+forwardHeavy          61.5  62.0  63.0  63.0  62.0  62.0
+backHeavy             43.5     -  45.0     -  44.0     -
+chainLight            69.5  70.0  71.0  71.0  70.0  70.0
+lightFinisher         73.5  74.0  75.0  75.0  74.0  74.0
+jabRepeat             53.5  54.0  55.0  55.0  54.0  54.0
+chainHeavy            81.5  82.0  83.0  83.0  82.0  82.0
+chainHigh             69.5  70.0  71.0  71.0  70.0  70.0
+chainLaunch           55.5     -  57.0     -  56.0     -
+specialForwardBoost   87.5  88.0  89.0  89.0  88.0  88.0
+specialAntiAirBoost   37.5  38.0  39.0  39.0  38.0  38.0
+super                 73.5  74.0  75.0  75.0  74.0  74.0"
 `;
 
 exports[`reaches (§10.4) > Riff's 1`] = `
-"against             Nayo  crouch  Riff  crouch
-standLight            46.5  47.0  48.0  48.0
-standHeavy            56.5  57.0  58.0  58.0
-crouchLight           45.5  46.0  47.0  47.0
-crouchHeavy           57.5  58.0  59.0  59.0
-jumpLight             39.5  40.0  41.0  41.0
-jumpHeavy             45.5  46.0  47.0  47.0
-special              113.5 114.0 115.0 115.0
-specialForward        78.5  79.0  80.0  80.0
-specialAntiAir        53.5  54.0  55.0  55.0
-grab                  41.5  42.0  43.0  43.0
-forwardLight          65.5  66.0  67.0  67.0
-forwardHeavy          62.5  63.0  64.0  64.0
-backHeavy             35.5     -  37.0     -
-chainLight            61.5  62.0  63.0  63.0
-lightFinisher         65.5  66.0  67.0  67.0
-chainHeavy            59.5  60.0  61.0  61.0
-chainHigh             59.5  60.0  61.0  61.0
-chainLaunch           49.5     -  51.0     -
-specialBoost         113.5 114.0 115.0 115.0
-specialForwardBoost   78.5  79.0  80.0  80.0
-specialAntiAirBoost   53.5  54.0  55.0  55.0
-super                 87.5  88.0  89.0  89.0"
+"against             Nayo  crouch  Riff  crouch  Saphir  crouch
+standLight            46.5  47.0  48.0  48.0  47.0  47.0
+standHeavy            56.5  57.0  58.0  58.0  57.0  57.0
+crouchLight           45.5  46.0  47.0  47.0  46.0  46.0
+crouchHeavy           57.5  58.0  59.0  59.0  58.0  58.0
+jumpLight             39.5  40.0  41.0  41.0  40.0  40.0
+jumpHeavy             45.5  46.0  47.0  47.0  46.0  46.0
+special              113.5 114.0 115.0 115.0 114.0 114.0
+specialForward        78.5  79.0  80.0  80.0  79.0  79.0
+specialAntiAir        53.5  54.0  55.0  55.0  54.0  54.0
+grab                  41.5  42.0  43.0  43.0  42.0  42.0
+forwardLight          65.5  66.0  67.0  67.0  66.0  66.0
+forwardHeavy          62.5  63.0  64.0  64.0  63.0  63.0
+backHeavy             35.5     -  37.0     -  36.0     -
+chainLight            61.5  62.0  63.0  63.0  62.0  62.0
+lightFinisher         65.5  66.0  67.0  67.0  66.0  66.0
+chainHeavy            59.5  60.0  61.0  61.0  60.0  60.0
+chainHigh             59.5  60.0  61.0  61.0  60.0  60.0
+chainLaunch           49.5     -  51.0     -  50.0     -
+specialBoost         113.5 114.0 115.0 115.0 114.0 114.0
+specialForwardBoost   78.5  79.0  80.0  80.0  79.0  79.0
+specialAntiAirBoost   53.5  54.0  55.0  55.0  54.0  54.0
+super                 87.5  88.0  89.0  89.0  88.0  88.0"
+`;
+
+exports[`reaches (§10.4) > Saphir's 1`] = `
+"against             Nayo  crouch  Riff  crouch  Saphir  crouch
+standLight            54.5  55.0  56.0  56.0  55.0  55.0
+standHeavy            71.5  72.0  73.0  73.0  72.0  72.0
+crouchLight           53.5  54.0  55.0  55.0  54.0  54.0
+crouchHeavy           65.5  66.0  67.0  67.0  66.0  66.0
+jumpLight             45.5  46.0  47.0  47.0  46.0  46.0
+jumpHeavy             53.5  54.0  55.0  55.0  54.0  54.0
+special               99.5 100.0 101.0 101.0 100.0 100.0
+specialForward       103.5 104.0 105.0 105.0 104.0 104.0
+specialAntiAir        41.5  42.0  43.0  43.0  42.0  42.0
+grab                  43.5  44.0  45.0  45.0  44.0  44.0
+forwardLight          69.5  70.0  71.0  71.0  70.0  70.0
+forwardHeavy          67.5  68.0  69.0  69.0  68.0  68.0
+backHeavy             45.5     -  47.0     -  46.0     -
+chainLight            67.5  68.0  69.0  69.0  68.0  68.0
+lightFinisher         69.5  70.0  71.0  71.0  70.0  70.0
+chainHeavy            77.5  78.0  79.0  79.0  78.0  78.0
+chainHigh             67.5  68.0  69.0  69.0  68.0  68.0
+chainLaunch           57.5     -  59.0     -  58.0     -
+specialBoost          99.5 100.0 101.0 101.0 100.0 100.0
+specialForwardBoost  103.5 104.0 105.0 105.0 104.0 104.0
+specialAntiAirBoost   41.5  42.0  43.0  43.0  42.0  42.0
+super                 91.5  92.0  93.0  93.0  92.0  92.0"
 `;

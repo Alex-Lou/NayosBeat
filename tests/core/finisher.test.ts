@@ -23,6 +23,7 @@ import {
 import { step } from '../../src/core/step';
 import { NAYO } from '../../src/data/fighters/nayo';
 import { RIFF } from '../../src/data/fighters/riff';
+import { SAPHIR } from '../../src/data/fighters/saphir';
 import { playReplay, type Replay } from '../../tools/replays/replay';
 import { floored, playCombo } from './combo-helpers';
 import {
@@ -83,7 +84,7 @@ function healthAfterBlows(states: readonly GameState[], by: 0 | 1): number[] {
 }
 
 describe('the four lights (§1.1, test 1)', () => {
-  for (const attacker of [NAYO, RIFF]) {
+  for (const attacker of [NAYO, RIFF, SAPHIR]) {
     const victim = attacker === NAYO ? RIFF : NAYO;
     const blows = 1 + (attacker.moves.super?.pulses?.length ?? 0);
     for (const by of [0, 1] as const) {
@@ -115,7 +116,8 @@ describe('the four lights (§1.1, test 1)', () => {
         expect(lights({ victim: { ...full, comboCount: full.comboCount + 1 } })).toBe('blocked');
         expect(lights({ victim: { ...marked, flags: FLAG_DANGER | FLAG_LIMIT } })).toBe('blocked');
         expect(lights({ victim: { ...marked, flags: FLAG_DANGER | FLAG_BOUNCE } })).toBe('blocked');
-        // 4 (b). The Slam leaves the ground: its victim must be on it. The Mégabasse does not.
+        // 4 (b). The Slam leaves the ground: its victim must be on it. The Mégabasse and the Coda
+        // do not.
         const air = attacker === RIFF ? 'blocked' : 'ready';
         const juggled = { ...marked, action: 'airHit', y: px(30), comboCount: 2 } as const;
         expect(lights({ victim: juggled })).toBe(air);
@@ -509,7 +511,7 @@ describe('blocked or whiffed: a plain super, nothing more (§1.7, test 8)', () =
 
 describe('no data of its own (§1.6, test 10)', () => {
   it('the armed super is the super: its move, its data, its last blow that floors', () => {
-    for (const template of [NAYO, RIFF]) {
+    for (const template of [NAYO, RIFF, SAPHIR]) {
       const config = matchOf(template, template === NAYO ? RIFF : NAYO, 0);
       const [started] = superAlone(config, 0, { distance: 40 });
       expect(started?.fighters[0].move).toBe('super');

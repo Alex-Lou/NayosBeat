@@ -5,6 +5,7 @@ import { Input, type InputBits } from '../../src/core/input';
 import type { FighterState } from '../../src/core/state';
 import { NAYO } from '../../src/data/fighters/nayo';
 import { RIFF } from '../../src/data/fighters/riff';
+import { SAPHIR } from '../../src/data/fighters/saphir';
 import { makeFighter, playAlone as play, repeat, stepsOf as steps } from './helpers';
 
 const { Up, Left, Right } = Input;
@@ -13,6 +14,7 @@ describe('walk (§3.1)', () => {
   it.each([
     [NAYO, 1.5, 1.2],
     [RIFF, 1.9, 1.4],
+    [SAPHIR, 1.6, 1.6],
   ] as const)('%s walks at the v2 speeds', (template, forward, back) => {
     expect(steps(play(template, repeat(Right, 10)))).toEqual(repeat(px(forward), 10));
     expect(steps(play(template, repeat(Left, 10)))).toEqual(repeat(-px(back), 10));
@@ -57,7 +59,7 @@ describe('jumps (§3.1)', () => {
 
   it('sends everyone flying with the same gravity: the knockdown depends on the blow only', () => {
     // A lift of 3 px/tick lands on tick 11 whatever the victim's own jump (L = 4V - 1).
-    for (const template of [NAYO, RIFF]) {
+    for (const template of [NAYO, RIFF, SAPHIR]) {
       const hit = makeFighter({ action: 'airHit', y: 0, vy: px(3) });
       const states = play(template, repeat(0, 20), hit);
       expect(states.findIndex((state) => state.action === 'knockdown') + 1).toBe(11);
