@@ -11,7 +11,17 @@ import { NAYO } from '../../src/data/fighters/nayo';
 import { RIFF } from '../../src/data/fighters/riff';
 import type { FighterId } from '../../src/data/roster';
 import { TRAINING_STAGE } from '../../src/data/stages';
-import { frameAround, frameFight, MAX_CLOSE_UP } from '../../src/render/camera-framing';
+import {
+  closestDuring,
+  frameAround,
+  frameFight,
+  MAX_CLOSE_UP,
+  NO_PUSH,
+  pushNow,
+  pushOf,
+  type CameraPush,
+  type Framing,
+} from '../../src/render/camera-framing';
 import { detectEvents, type FightEvent } from '../../src/render/fight-events';
 import type { FightFeedback } from '../../src/render/fight-feedback';
 import {
@@ -205,6 +215,12 @@ export function film(route: Route, take: Take = {}): Film {
   let closeUp = MAX_CLOSE_UP;
   let left = 0;
   let top = 0;
+  // The fight camera's footsies window and push, as FightScene keeps them.
+  let middle = null as number | null;
+  let lean = 0;
+  let push = NO_PUSH;
+  const pushShown = (): CameraPush =>
+    director.isActive() ? NO_PUSH : pushNow(push, state.hitstop, comfort);
   const shots: Shot[] = [];
   const events: FightEvent[] = [];
   let heard = 0;
@@ -228,6 +244,8 @@ export function film(route: Route, take: Take = {}): Film {
       pressed = 0;
     }
     detectEvents(previous, state, config, events);
+    push = pushOf(events, previous, state, push);
+    budget.setZoom(closestDuring(closeUp, pushShown()));
     take.onTick?.(previous, state, events);
     const viewLeft = toPx(state.cameraX) - VIEW_SIZE.width / 2;
     for (const event of events) {
@@ -269,16 +287,28 @@ export function film(route: Route, take: Take = {}): Film {
     const staged = director.camera;
     const [a, b] = state.fighters;
     const xs = [toPx(a.x), toPx(b.x), toPx(a.x), toPx(a.x)];
-    const framing = staged
-      ? frameAround(staged.middle, staged.closeUp, viewLeft, GROUND_Y)
-      : frameFight({
-          xs,
-          highestFeet: toPx(Math.max(a.y, b.y)),
-          viewLeft,
-          groundY: GROUND_Y,
-          closeUp,
-          elapsed: 1,
-        });
+    let framing: Framing;
+    if (staged) {
+      framing = frameAround(staged.middle, staged.closeUp, viewLeft, GROUND_Y);
+      middle = null;
+      lean = 0;
+    } else {
+      const fight = frameFight({
+        xs,
+        highestFeet: toPx(Math.max(a.y, b.y)),
+        viewLeft,
+        groundY: GROUND_Y,
+        closeUp,
+        elapsed: 1,
+        middle,
+        lean,
+        push: pushShown(),
+        hitstop: state.hitstop,
+        comfort,
+      });
+      ({ middle, lean } = fight);
+      framing = fight;
+    }
     ({ closeUp, left, top } = framing);
     take.onShown?.(state, director);
     const lastBus = sfx.setFightBus.mock.lastCall as [number, number] | undefined;

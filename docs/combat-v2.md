@@ -625,7 +625,7 @@ Un coup suit si `démarrage ≤ avantage − 1` (avant recul). Direct (+5) → c
 
 ### 7.4 CONTRE et PUNITION
 
-- Toucher un adversaire **pendant qu'il attaque** (coup de type `normal`, `special` ou `grab`, à n'importe quel frame ; pas les `movement`, pas les coups de prise) est un CONTRE : **+20 % de dégâts, +4 tics de hitstun** (sauf mise au sol), **+3 tics de hitstop**, petit zoom de caméra (rendu seul), grosse étincelle.
+- Toucher un adversaire **pendant qu'il attaque** (coup de type `normal`, `special` ou `grab`, à n'importe quel frame ; pas les `movement`, pas les coups de prise) est un CONTRE : **+20 % de dégâts, +4 tics de hitstun** (sauf mise au sol), **+3 tics de hitstop**, petit zoom de caméra (rendu seul : la poussée ×1,04 pendant le gel, `camera-framing.ts`), grosse étincelle.
 - Le tampon dit « **CONTRE !** » si l'adversaire était en démarrage ou actif, « **PUNITION !** » s'il était en récupération (coup ou prise ratés). Même bonus, deux mots pour apprendre à punir.
 - Une Prise sur une récupération (de coup, de dash, de backdash, d'atterrissage) est une PUNITION et ne se dégage pas (§4.2).
 - Par construction, seul le premier coup d'un combo peut être un CONTRE (ensuite la victime est en hitstun). `isCounterHit(defender, template)` est une fonction pure du cœur, réutilisée par le rendu (DRY).

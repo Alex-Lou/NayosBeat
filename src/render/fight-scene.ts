@@ -31,10 +31,16 @@ import { NO_COMBO, trackCombo, type ComboMeter } from './training-combo';
 import { TrainingView } from './training-view';
 import { BoxOverlay } from './box-overlay';
 import {
+  closestDuring,
   FINISHER_CLOSE_UP,
   frameAround,
   frameFight,
   MAX_CLOSE_UP,
+  NO_PUSH,
+  pushNow,
+  pushOf,
+  type CameraPush,
+  type Framing,
   type FramingInput,
 } from './camera-framing';
 import { DebugOverlay, describeGame, isDebugEnabled } from './debug-overlay';
@@ -204,6 +210,8 @@ export class FightScene extends Phaser.Scene {
   private closeUp = MAX_CLOSE_UP;
   private cameraLeft = 0;
   private cameraTop = 0;
+  /** The last contact's camera push (see pushOf), played while the game is frozen. */
+  private push: CameraPush = NO_PUSH;
   private runtime: Runtime | undefined;
 
   /** Reused every tick to avoid allocating. */
@@ -222,6 +230,11 @@ export class FightScene extends Phaser.Scene {
     groundY: GROUND_Y,
     closeUp: MAX_CLOSE_UP,
     elapsed: 0,
+    middle: null,
+    lean: 0,
+    push: NO_PUSH,
+    hitstop: 0,
+    comfort: { shake: 'normal', flashes: 'normal' },
   };
 
   constructor() {
@@ -257,6 +270,9 @@ export class FightScene extends Phaser.Scene {
     this.closeUp = MAX_CLOSE_UP;
     this.cameraLeft = 0;
     this.cameraTop = 0;
+    this.push = NO_PUSH;
+    this.framingInput.middle = null;
+    this.framingInput.lean = 0;
   }
 
   preload(): void {
@@ -389,6 +405,7 @@ export class FightScene extends Phaser.Scene {
     runtime.hud.setComfort(hudComfortOf(comfort));
     runtime.holdRing.calm = isCalm(comfort);
     runtime.finisherScene.setComfort(comfort);
+    this.framingInput.comfort = comfort;
     for (const view of runtime.fighterViews) view.setComfort(isCalm(comfort), comfort.shake);
   }
 
@@ -550,6 +567,9 @@ export class FightScene extends Phaser.Scene {
       const previous = this.state;
       this.state = step(previous, this.tickInputs, this.config);
       detectEvents(previous, this.state, this.config, this.tickEvents);
+      this.push = pushOf(this.tickEvents, previous, this.state, this.push);
+      // A blow's flashes are counted at the close-up its push takes them to.
+      runtime.budget.setZoom(closestDuring(this.closeUp, this.pushShown(scene)));
       this.memory.note(this.state, this.tickEvents);
       if (this.config.training) {
         this.advantage = trackAdvantage(this.advantage, this.state);
@@ -569,6 +589,12 @@ export class FightScene extends Phaser.Scene {
       if (!staged && scene.isActive()) return i + 1;
     }
     return count;
+  }
+
+  /** The camera's push shown now: none while the Finisher's scene plays, which frames its own. */
+  private pushShown(scene: FinisherScene): CameraPush {
+    if (scene.isActive()) return NO_PUSH;
+    return pushNow(this.push, this.state.hitstop, this.framingInput.comfort);
   }
 
   /**
@@ -649,11 +675,22 @@ export class FightScene extends Phaser.Scene {
     input.viewLeft = toPx(this.state.cameraX) - VIEW_SIZE.width / 2;
     input.closeUp = this.closeUp;
     input.elapsed = elapsed;
-    // The Finisher's scene frames its close up itself, the texts of the world sharp for it.
+    input.push = this.pushShown(scene);
+    input.hitstop = this.state.hitstop;
+    // The Finisher's scene frames its close up itself, the texts of the world sharp for it; the
+    // fight's framing starts afresh after it.
     const staged = scene.camera;
-    const framing = staged
-      ? frameAround(staged.middle, staged.closeUp, input.viewLeft, GROUND_Y)
-      : frameFight(input);
+    let framing: Framing;
+    if (staged) {
+      framing = frameAround(staged.middle, staged.closeUp, input.viewLeft, GROUND_Y);
+      input.middle = null;
+      input.lean = 0;
+    } else {
+      const fight = frameFight(input);
+      input.middle = fight.middle;
+      input.lean = fight.lean;
+      framing = fight;
+    }
     runtime.caption?.setCloseUp(staged ? FINISHER_CLOSE_UP : MAX_CLOSE_UP);
     this.closeUp = framing.closeUp;
     this.cameraLeft = framing.left;

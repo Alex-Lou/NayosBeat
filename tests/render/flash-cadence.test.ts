@@ -13,7 +13,14 @@ import { NAYO } from '../../src/data/fighters/nayo';
 import { RIFF } from '../../src/data/fighters/riff';
 import { TRAINING_STAGE } from '../../src/data/stages';
 import { clipFrameAt, showFighter, type Shown } from '../../src/render/animation';
-import { MAX_CLOSE_UP } from '../../src/render/camera-framing';
+import {
+  closestDuring,
+  frameFight,
+  MAX_CLOSE_UP,
+  NO_PUSH,
+  pushNow,
+  pushOf,
+} from '../../src/render/camera-framing';
 import { detectEvents, type FightEvent } from '../../src/render/fight-events';
 import { FightFeedback } from '../../src/render/fight-feedback';
 import {
@@ -243,23 +250,32 @@ function lightsAnew(art: FighterArt, sheet: string, from: number, to: number): n
   return lit;
 }
 
-/** A budget at the closest framing that keeps, frame by frame, what lights: what the screen shows. */
+/**
+ * A budget at the closest framing that keeps, frame by frame, what lights: what the screen shows,
+ * in px² of the view at the zoom it shows at (`setZoom`: a strong blow's push, camera-framing.ts).
+ */
 function watched(mode: FlashMode) {
   const budget = new FlashBudget(mode);
-  budget.setZoom(MAX_CLOSE_UP);
+  let zoom = MAX_CLOSE_UP;
+  budget.setZoom(zoom);
   const lit = new Map<number, number>();
   let now = 0;
   const show = budget.show.bind(budget);
   budget.show = (area: number, delay?: number) => {
     show(area, delay);
     const at = now + (delay ?? 0);
-    if (area > 0) lit.set(at, (lit.get(at) ?? 0) + area);
+    if (area > 0) lit.set(at, (lit.get(at) ?? 0) + area * zoom ** 2);
   };
   return {
     budget,
     advance(frames: number) {
       now += frames;
       budget.advance(frames);
+    },
+    /** The close-up the screen shows from now on, and the budget counts at. */
+    setZoom(closeUp: number) {
+      zoom = closeUp;
+      budget.setZoom(closeUp);
     },
     /**
      * The frames a flash started on: something new lights where the last frames add up over the
@@ -273,7 +289,7 @@ function watched(mode: FlashMode) {
         let sum = 0;
         for (let back = 0; back <= FLASH_MERGE; back++) sum += lit.get(frame - back) ?? 0;
         const last = flashes[flashes.length - 1];
-        const over = sum * MAX_CLOSE_UP ** 2 >= FLASH_RULES[mode].area;
+        const over = sum >= FLASH_RULES[mode].area;
         if (over && (last === undefined || frame - last > FLASH_MERGE)) flashes.push(frame);
       }
       return flashes;
@@ -305,7 +321,10 @@ interface Played {
   readonly dark: readonly [ReadonlySet<string>, ReadonlySet<string>];
 }
 
-/** Plays `route`, everything shown at the closest framing. */
+/**
+ * Plays `route`, everything shown at the closest framing, pushed in on the strong blows as
+ * FightScene frames them (camera-framing.ts, P12).
+ */
 function play(route: Route, mode: FlashMode): Played {
   sparks.mockClear();
   const { config } = route;
@@ -339,9 +358,26 @@ function play(route: Route, mode: FlashMode): Played {
   const shown: Shown = { clip: 'idle', tick: 0, x: 0 };
   const events: FightEvent[] = [];
   let previous = start;
+  let push = NO_PUSH;
+  let framing = frameFight({
+    xs: [0, 0],
+    highestFeet: 0,
+    viewLeft: 0,
+    groundY: GROUND_Y,
+    closeUp: MAX_CLOSE_UP,
+    elapsed: 1,
+    middle: null,
+    lean: 0,
+    push,
+    hitstop: 0,
+    comfort,
+  });
   for (const state of run.states) {
     screen.advance(1);
     detectEvents(previous, state, config, events);
+    push = pushOf(events, previous, state, push);
+    const pushing = pushNow(push, state.hitstop, comfort);
+    screen.setZoom(closestDuring(framing.closeUp, pushing));
     feedback.beginTick(state.frame);
     for (const event of events) feedback.react(event, 0);
     feedback.endTick();
@@ -366,6 +402,21 @@ function play(route: Route, mode: FlashMode): Played {
       }
     }
     hud.update(state);
+    // The fighters always close: the closest framing, and its push.
+    framing = frameFight({
+      xs: [0, 0],
+      highestFeet: 0,
+      viewLeft: 0,
+      groundY: GROUND_Y,
+      closeUp: framing.closeUp,
+      elapsed: 1,
+      middle: framing.middle,
+      lean: framing.lean,
+      push: pushing,
+      hitstop: state.hitstop,
+      comfort,
+    });
+    screen.setZoom(framing.closeUp);
     previous = state;
   }
   return {

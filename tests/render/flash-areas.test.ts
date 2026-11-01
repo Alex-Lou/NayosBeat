@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { ART_SCALE } from '../../src/art/types';
-import { MAX_CLOSE_UP } from '../../src/render/camera-framing';
+import { MAX_CLOSE_UP, PUSHED_CLOSE_UP } from '../../src/render/camera-framing';
 import type { FightEvent } from '../../src/render/fight-events';
 import type { RoundState } from '../../src/core/state';
 import { ROSTER } from '../../src/data/roster';
@@ -53,6 +53,11 @@ vi.mock('phaser', () => ({
 
 /** World px² become this many px² of the view at the closest framing of the game. */
 const CLOSEST = MAX_CLOSE_UP ** 2;
+/**
+ * And at the closest a strong blow's push takes it (camera-framing.ts, P12), with the flashes
+ * normal only: the push never plays with them calm.
+ */
+const PUSHED = PUSHED_CLOSE_UP ** 2;
 
 type Blow = Extract<FightEvent, { type: 'hit' | 'ko' }>;
 type Hit = Extract<FightEvent, { type: 'hit' }>;
@@ -206,6 +211,10 @@ describe('what the words and the stamps light (docs/flashs.md §4)', () => {
       expect(wordArea(kind, 99, true), kind).toBeLessThan(limit);
     }
     expect(stampArea(true)).toBeLessThan(limit);
+    // Pushed in on a strong blow, the flashes normal: a muted blow's calm word and stamp neither.
+    const pushed = (FLASH_RULES.normal.area * FLASH_MARGIN) / PUSHED;
+    for (const kind of KINDS) expect(wordArea(kind, 99, true), kind).toBeLessThan(pushed);
+    expect(stampArea(true)).toBeLessThan(pushed);
     // With the flashes normal, the words and stamps that pop are flashes close up: counted.
     expect(wordArea('ko', 1, false) * CLOSEST).toBeGreaterThan(FLASH_RULES.normal.area);
     expect(stampArea(false) * CLOSEST).toBeGreaterThan(FLASH_RULES.normal.area);
@@ -316,6 +325,10 @@ describe('what a blow asks the budget (docs/flashs.md §4)', () => {
         const { mutedArea } = blowAsk(event, shape, true, 1);
         expect(mutedArea * CLOSEST, `${shape} ${JSON.stringify(event)}`).toBeLessThan(
           FLASH_RULES.reduced.area,
+        );
+        // Pushed in, which only the flashes normal allow.
+        expect(mutedArea * PUSHED, `${shape} ${JSON.stringify(event)}`).toBeLessThan(
+          FLASH_RULES.normal.area,
         );
       }
     }
