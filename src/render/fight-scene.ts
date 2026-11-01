@@ -26,6 +26,7 @@ import { TickPacer } from '../loop/tick-pacer';
 import type { AnimOptions } from './anim-options';
 import { frontFighter, type ShowContext } from './animation';
 import { NO_ADVANTAGE, trackAdvantage, type Advantage } from './advantage-meter';
+import { TouchCover } from './touch-cover';
 import { NO_COMBO, trackCombo, type ComboMeter } from './training-combo';
 import { TrainingView } from './training-view';
 import { BoxOverlay } from './box-overlay';
@@ -118,6 +119,8 @@ interface Runtime {
   readonly inputs: PlayerInputs;
   /** Player 1's touch controls, on a touch device: the BOOST button wears its gauge. */
   readonly touch: TouchControls | undefined;
+  /** With them: they fade while a fighter is under them (touch-cover.ts). */
+  readonly touchCover: TouchCover | undefined;
   readonly pauseInput: PauseInput;
   readonly fighterViews: readonly [FighterDisplay, FighterDisplay];
   readonly projectileView: ProjectileView;
@@ -278,6 +281,9 @@ export class FightScene extends Phaser.Scene {
     const runtime: Omit<Runtime, 'finisherScene'> = {
       inputs: new PlayerInputs(window, touch, connectedGamepads()),
       touch,
+      touchCover: touch
+        ? new TouchCover(this.game.canvas, touch, this.config, GROUND_Y)
+        : undefined,
       pauseInput: new PauseInput(document.body),
       fighterViews: [
         this.fighterDisplay(0, COLORS.player1, budget),
@@ -638,6 +644,7 @@ export class FightScene extends Phaser.Scene {
     this.cameras.main
       .setZoom((this.scale.width / VIEW_SIZE.width) * framing.closeUp)
       .setScroll(framing.left + runtime.feedback.shakeX, framing.top + runtime.feedback.shakeY);
+    runtime.touchCover?.update(this.state, framing, performance.now());
   }
 
   /**
@@ -650,6 +657,7 @@ export class FightScene extends Phaser.Scene {
     this.runtime.finisherScene.dispose();
     this.runtime.holdRing.dispose();
     this.runtime.inputs.dispose();
+    this.runtime.touchCover?.dispose();
     this.runtime.pauseInput.dispose();
     this.runtime.debugOverlay?.destroy();
     this.runtime = undefined;
