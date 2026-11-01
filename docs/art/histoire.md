@@ -46,6 +46,24 @@ Ce qu'elle veut : pas la cabine. Le bruit. Que tout L'Entrepôt saute sur son te
 
 Elle parle vite, trop, et rit au milieu de ses phrases. Elle chambre. Elle tutoie les vigiles.
 
+## Saphir
+
+Elle salue d'abord.
+
+Au-dessus du bal du samedi, il y avait une salle de boxe française. En bas, l'orchestre jouait du swing. En haut, le plancher tremblait avec lui : le temps long, puis le court. Elle a fini par frapper comme on danse.
+
+Elle y a appris la politesse des pieds. On touche. On salue. On s'en va.
+
+Quarante ans derrière le comptoir d'une boutique de disques. On l'appelle Saphir, comme les pointes de lecture qu'elle vendait à l'unité, dans une boîte en fer. La boutique a fermé. Un soir, les basses du tournoi ont traversé sa rue. Elle les a suivies, en talons plats.
+
+Tailleur-pantalon crème, chemisier vert bouteille, chaussures bicolores cirées, cheveux blancs coupés court. Et le chapeau de feutre à ruban vert, celui du comptoir. Elle ne l'enlève que pour saluer. Après le combat.
+
+Elle ne charge pas, elle invite. Un pas sur le temps long, le pied qui claque sur le court, et elle est déjà repartie : la SYNCOPE. Tu frappes dans le vide, elle te le fait payer de loin, en retard exprès : RUBATO. Tu sautes, elle monte plus haut que toi : CONTRE-UT. Et quand elle veut finir, l'orchestre lui revient. Un pied bas, un fouetté, un revers. DOU. BI. DOUM. La CODA.
+
+Ce qu'elle veut : passer la face B. Que, pour une fois, toute une salle danse sur l'autre côté du disque, celui qu'on n'écoute jamais.
+
+Elle vouvoie tout le monde. Elle parle doucement, et finit ses phrases. Elle dit merci après chaque danse.
+
 ## Le clash
 
 L'an dernier, une autre adresse. Nayo jouait son set. Riff a escaladé les enceintes et plongé dans la foule. En retombant, une ranger a trouvé la platine.
@@ -116,6 +134,33 @@ L'homme de la cabine hoche la tête. Il lèvera les bras au DROP. Personne ne sa
    *Son* : musique coupée net ; reste la ranger sur le béton, à contretemps, puis pile sur un temps qui ne joue plus.
    Riff : « J'avais pas fini. »
 
+10. **Saphir**
+   Une rue mouillée, les basses qui passent sous une porte de fer. Plan serré sur des chaussures bicolores qui descendent l'escalier, sans se presser. En bas, elle ajuste son chapeau d'un doigt, salue la salle d'un signe de tête, et tombe en garde sur le temps long.
+   *Son* : le craquement d'un disque avant la musique, puis une contrebasse qui marche.
+   Saphir : « Approchez. Je ne mords pas. »
+
+11. **Saphir et Nayo**
+   Centre du béton, fumée basse. Nayo, immobile, compte. Saphir fait un pas, en revient, en refait un, sans jamais tomber sur ses temps à lui.
+   *Son* : sa basse à lui, droite ; une contrebasse qui swingue par-dessus, à contretemps.
+   Saphir : « Vous comptez. Moi, je swingue. »
+   Nayo : « Je compte quand même. »
+
+12. **Saphir et Riff**
+   Riff tourne autour d'elle en toprock. Saphir ne bouge que la tête, et la suit des yeux sous le bord du chapeau.
+   *Son* : un accord saturé ; une note de contrebasse, une seule.
+   Riff : « Tu danses, mamie ? »
+   Saphir : « Je mène, mademoiselle. »
+
+13. **Si Saphir gagne : la face B**
+   Le noir s'ouvre en vert : DOU, BI, DOUM. L'image se fige, plus un bruit. Puis, sur le temps court, toute la salle repart sur un autre morceau. Saphir soulève son chapeau vers l'adversaire, au sol, et le remet.
+   *Son* : un disque qui s'arrête net ; un temps de silence ; la face B, qui swingue.
+   Saphir : « Merci pour la danse. »
+
+14. **Temps écoulé**
+   Le chrono tombe à zéro. Saphir regarde sa montre, la remonte, puis salue quand même, un peu trop bas, comme au bal.
+   *Son* : musique coupée net ; reste le tic-tac de sa montre.
+   Saphir : « Nous reprendrons. »
+
 ## Répliques
 
 **Nayo**
@@ -135,3 +180,12 @@ L'homme de la cabine hoche la tête. Il lèvera les bras au DROP. Personne ne sa
 - Provocation : « Allez, souris. Ça te tuera pas. »
 - Victoire : « Oups. »
 - Victoire : « Remets-la. Je l'aime bien, celle-là. »
+
+**Saphir**
+
+- Entrée : « Approchez. Je ne mords pas. »
+- Entrée : « Une danse ? Je mène. »
+- Provocation : « Trop tôt. Reprenez. »
+- Provocation : « On ne court pas, au bal. »
+- Victoire : « Merci pour la danse. »
+- Victoire : « Face B, maintenant. »
