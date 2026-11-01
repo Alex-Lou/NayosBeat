@@ -7,6 +7,7 @@ import type { FinisherState } from '../core/finisher';
 import type { FighterState, GameState } from '../core/state';
 import { DEPTH } from './depth';
 import { FinisherHalo } from './finisher-halo';
+import type { ShakeMode } from './shake';
 
 /** The "foot" that shows which way a grey box faces, in world pixels. */
 const FOOT_WIDTH = 6;
@@ -57,9 +58,9 @@ export class FighterView {
     this.foot.setDepth(depth);
   }
 
-  /** The comfort options: calm or still, the halo holds its breath. */
-  setComfort(calm: boolean, still: boolean): void {
-    this.halo.calm = calm || still;
+  /** The comfort options: calm or still (no shake), the halo holds its breath. */
+  setComfort(calm: boolean, shake: ShakeMode): void {
+    this.halo.calm = calm || shake === 'off';
   }
 
   /**

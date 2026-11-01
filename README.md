@@ -9,7 +9,7 @@ Plan de production : [docs/PLAN.md](docs/PLAN.md).
 - **2 joueurs** : sur le même appareil (clavier partagé, ou deux manettes).
 - **Entraînement** : sans chrono ni KO, vie rechargée, mannequin immobile, qui pare tout ou piloté par l'ordinateur ; affichage des dégâts du dernier combo.
 
-Sensations : étincelles d'impact, tremblement de l'écran sur les gros coups, ralenti et flash sur le KO, sons générés en direct (Web Audio, aucun fichier). Le son se coupe depuis le menu principal (réglage mémorisé sur l'appareil).
+Sensations : étincelles d'impact, la victime qui tremble pendant l'arrêt sur image, tremblement de l'écran sur les gros coups, ralenti et flash sur le KO, sons générés en direct (Web Audio, aucun fichier). Le son se coupe depuis le menu principal (réglage mémorisé sur l'appareil).
 
 Pause : Échap / P, Start à la manette, bouton « II » en tactile. Le jeu se met aussi en pause quand l'onglet est caché, la fenêtre quittée, ou le téléphone verrouillé ou tourné en portrait. À la reprise, les touches utilisées dans le menu n'agissent pas sur le combat.
 
@@ -57,6 +57,22 @@ Les coups légers s'enchaînent sur un autre coup ou un spécial quand ils touch
 
 Ajouter `?debug` à l'URL affiche l'overlay de debug et toutes les boîtes (toujours actif en dev) : pushbox en bleu, hurtbox en vert (blanches pendant une invincibilité, jaunes quand les prises ratent), hitbox actives en rouge.
 
+### Regarder les animations
+
+Pour juger l'animation (plan : [docs/art/animation-plan.md](docs/art/animation-plan.md)), l'entraînement a deux réglages, dans le menu du mannequin et dans la pause (appliqués à chaud) :
+
+- « Vitesse : normale / ½ / ¼ » : le jeu au ralenti, un tic toutes les 2 ou 4 images, sans rien interpoler ; le ralenti du KO s'y ajoute, la mort dure donc 2 ou 4 fois plus qu'en jeu ;
+- « Animation : nouvelle / d'avant » : l'animation d'avant le plan, pour comparer le même coup.
+
+Ces réglages restent dans l'entraînement : un match contre l'ordinateur ou à 2 joueurs n'en hérite pas. Dans tous les modes, l'adresse fait de même, sans rien mémoriser : `?vitesse=2` (ou 4) et `?anim=avant`, par exemple `…/NayosBeat/?anim=avant` pour un match contre l'ordinateur.
+
+Les films comparés montrent la même séquence côte à côte, à l'échelle d'un téléphone :
+
+```bash
+npm run anim:film -- cpu:15 --from 1050        # ou un replay doré : ko.json
+npm run anim:compare -- tools/anim/out/cpu-15-avant.json tools/anim/out/cpu-15-apres.json
+```
+
 Nayo est dessiné (sprites générés par `npm run sprites`, provisoires en attendant les planches définitives) ; ses hurtbox sont calées sur le dessin (`npm run measure-boxes`). Riff reste en boîte grise jusqu'à ses propres sprites : la boîte dessine exactement sa hurtbox, avec un « pied » du côté où elle regarde. Dans un match miroir, le joueur 2 porte la seconde tenue (techwear gris clair, néon magenta).
 
 Une planche peut aussi être dessinée à la main dans Aseprite : elle remplace alors celle du code, planche par planche (extension NayosBeat, gabarits au format du jeu, guides des boîtes, export vérifié). Les icônes de l'application et le vinyle du titre aussi. Voir [docs/art/aseprite.md](docs/art/aseprite.md).
@@ -88,6 +104,8 @@ Une planche peut aussi être dessinée à la main dans Aseprite : elle remplace 
 | `npm run aseprite:check` | Fait tourner l'extension hors d'Aseprite, de bout en bout (Lua 5.4 requis ; lancé aussi par la CI) |
 | `npm run bench` | Banc de perfs de la simulation (100 000 tics CPU contre CPU) |
 | `npm run replays:update` | Réenregistre les hashs des replays dorés (`tests/core/replays`), seulement quand le jeu doit changer |
+| `npm run anim:film` | Filme un replay ou un match CPU à graine fixe, avec l'animation d'avant et la nouvelle (`tools/anim/out/`) |
+| `npm run anim:compare` | Page HTML autonome de deux films côte à côte : lecture à 1, ½ et ¼, tic par tic, ×1 téléphone et ×2 |
 
 ## Architecture
 

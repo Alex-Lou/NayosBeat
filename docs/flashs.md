@@ -40,11 +40,12 @@ La livraison s'est faite en trois étapes, **toutes faites** : l'étape 1 a reti
 - **Graine.** Le hasard est à graine fixe : la même secousse pour les mêmes événements.
 - **Premier élan.** L'image part d'abord dans le sens du coup.
 - **Option.** « Tremblement de l'écran » : normal, réduit (deux fois moins loin) ou aucun. Sans choix du joueur, le réglage système (`prefers-reduced-motion`) le met à « aucun ». Les vibrations restent.
+- **La victime tremble** pendant l'arrêt sur image (`hit-shake.ts`, `docs/art/animation-plan.md` §2, V1) : son dessin seul, de ±1 px (coup léger, garde) ou ±2 px (coup lourd, CONTRE, PUNITION, KO), qui change de côté tous les 2 tics du jeu. Réduit : 1 px au plus. Aucun : immobile.
 
 | Événement | Trauma | Pic |
 |---|---|---|
 | Coup lourd, frappe de super | 0,65 | 3 px |
-| Projection, chute | 0,45 | 2 px |
+| Projection, chute (le corps KO en l'air compris, sauf après le Finisher) | 0,45 | 2 px |
 | Gel de la super | 0,5 | 2 px |
 | KO simple | 0,85 | 6 px |
 | KO en fin de combo | 0,92 | 7 px |
@@ -151,7 +152,7 @@ Le hitstop, les dégâts et le timing ne bougent jamais : le budget ne touche pa
 | Option | Valeurs | Ce qu'elle change |
 |---|---|---|
 | Effets de flash | normaux, réduits, aucun | Le mode du budget. En réduits et en aucun (« calme ») : mots plus petits (12, 13 et 14 px au lieu de 13, 17 et 26) sans pop, tampon à 11 px sans frappe, avec un fondu, assez petits pour ne jamais flasher seuls au gros plan ; une seule rémanence Boost à 0,22, traînée de dash sous ΔL 0,08 (0,27 en cyan, 0,28 en or), anneau de prise blanc fixe, vignette du KO à ΔL 0,05, éclat de l'Ultime à ΔL 0,08, pas de halo, ni blanc des coups ni éclats chauds sur le HUD. En aucun, tout coup joue sa version étouffée, l'éclat est à l'encre, tout fx de planche est sombre, et les annonces le sont dès qu'elles flasheraient. |
-| Tremblement de l'écran | normal, réduit, aucun | La secousse (réduit : deux fois moins loin). Aucun garde aussi immobiles le HUD, l'idle de la sélection et le vinyle du titre. |
+| Tremblement de l'écran | normal, réduit, aucun | La secousse (réduit : deux fois moins loin) et le tremblement de la victime pendant le gel (réduit : 1 px au plus). Aucun garde aussi immobiles la victime, le HUD, l'idle de la sélection et le vinyle du titre. |
 
 - **Défaut.** Ce que le joueur a choisi prime. Sinon, le réglage système « réduire les animations » donne « réduits » et « aucun », sinon « normaux » et « normal ». `watchReducedMotion` suit le système quand il change.
 - **Persistance.** Comme le son : `nayosbeat.flashes` et `nayosbeat.shake` dans le stockage de la page, et `saveComfort` n'écrit que l'option changée. Un stockage refusé (navigation privée) garde le choix pour la session.

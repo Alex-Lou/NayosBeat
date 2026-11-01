@@ -63,6 +63,14 @@ export function koFinishOf(tier: number, comboHits: number, finale: boolean): Ko
   return comboHits >= COMBO_KO_HITS ? 'combo' : 'plain';
 }
 
+/**
+ * A blow that lands heavy (bigger sparks, shake and sound, the victim trembling more): a heavy
+ * move, a counter-hit (CONTRE, PUNITION), the final blow.
+ */
+export function landsHeavy(blow: Extract<FightEvent, { type: 'hit' | 'ko' }>): boolean {
+  return blow.type === 'ko' || blow.heavy || blow.counter !== null;
+}
+
 /** The KO blows the loser's Boost gauge up: an Ultime's, the Finisher's. */
 export function shatters(finish: KoFinish): boolean {
   return finish === 'ultimate' || finish === 'finale';
@@ -78,8 +86,11 @@ export type FightEvent =
   | ({ readonly type: 'tech' } & Impact)
   /** `by` threw: the opponent flies, `damage` taken. */
   | ({ readonly type: 'throw'; readonly damage: number } & Impact)
-  /** A fighter sent flying lands on its back at `x` (stage sub-pixels), pushed `away`. */
-  | { readonly type: 'fall'; readonly x: number; readonly away: 1 | -1 }
+  /**
+   * A fighter sent flying lands on its back at `x` (stage sub-pixels), pushed `away`; `ko`, the
+   * body of a fighter knocked out in the air (`landingOf`).
+   */
+  | { readonly type: 'fall'; readonly x: number; readonly away: 1 | -1; readonly ko: boolean }
   /** `by` starts `move` (not a dash: see below). */
   | {
       readonly type: 'attack';
@@ -193,8 +204,12 @@ export function detectEvents(
     }
     if (after.action === 'air' && before.action === 'preJump') events.push({ type: 'jump' });
     if (after.action === 'landing' && before.action !== 'landing') events.push({ type: 'land' });
-    if (after.action === 'knockdown' && before.action === 'airHit') {
-      events.push({ type: 'fall', x: after.x, away: before.vx < 0 ? -1 : 1 });
+    const fell = after.action === 'knockdown' && before.action === 'airHit';
+    // Knocked out in the air: the body lands once (it never bounces), the ko going on.
+    const fellOut =
+      after.action === 'ko' && before.action === 'ko' && before.y > 0 && after.y === 0;
+    if (fell || fellOut) {
+      events.push({ type: 'fall', x: after.x, away: before.vx < 0 ? -1 : 1, ko: fellOut });
     }
   }
 
@@ -287,6 +302,34 @@ function reachedSuperFlash(
   const move = moveOf(template, after.move);
   if (tierOf(move) !== 3 || move.flash?.frame !== after.actionFrame) return false;
   return before.move !== after.move || before.actionFrame !== after.actionFrame;
+}
+
+/** What a body landing on its back makes seen, heard and felt: its dust, its thud (sound, jolt). */
+export interface Landing {
+  readonly dust: boolean;
+  readonly thud: boolean;
+}
+
+const LANDINGS = {
+  fall: { dust: true, thud: true },
+  // Its dust is the ko's own (fx/ko, which koLanding plays from the floor): drawn once.
+  ko: { dust: false, thud: true },
+  silent: { dust: false, thud: false },
+} as const satisfies Record<string, Landing>;
+
+/**
+ * How a body sent flying lands (docs/art/animation-plan.md §2, V1): in its dust, with a thud.
+ * Knocked out in the air, with the thud alone; but silent after the Finisher (`finish`: the KO's,
+ * null before one), whose scene plays its own landing, and with the animation of before
+ * (`legacy`), where a body knocked out landed without a sound.
+ */
+export function landingOf(
+  fall: Extract<FightEvent, { type: 'fall' }>,
+  finish: KoFinish | null,
+  legacy: boolean,
+): Landing {
+  if (!fall.ko) return LANDINGS.fall;
+  return finish === 'finale' || legacy ? LANDINGS.silent : LANDINGS.ko;
 }
 
 /**

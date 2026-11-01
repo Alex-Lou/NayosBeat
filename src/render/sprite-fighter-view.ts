@@ -6,7 +6,7 @@ import type { FinisherState } from '../core/finisher';
 import { isActiveFrame, moveOf, tierOf } from '../core/moves';
 import type { FighterState, GameState } from '../core/state';
 import { AnchoredSprite } from './anchored-sprite';
-import { clipFrameAt, showFighter, type Shown } from './animation';
+import { clipFrameAt, SHOW_NOW, showFighter, type ShowContext, type Shown } from './animation';
 import { BoostEcho } from './boost-echo';
 import { DashTrail } from './dash-trail';
 import { DEPTH } from './depth';
@@ -15,6 +15,8 @@ import { FinisherHalo } from './finisher-halo';
 import { FxGate, type FlashBudget } from './flash-budget';
 import { FxDissolve } from './fx-dissolve';
 import { FxPixels } from './fx-pixels';
+import { hitShakeOf } from './hit-shake';
+import type { ShakeMode } from './shake';
 
 const SHADOW_WIDTH = 36;
 const SHADOW_HEIGHT = 6;
@@ -34,13 +36,13 @@ export interface SpriteFighterLook {
 /**
  * A fighter drawn with its sprites. The frame comes from the simulation state alone (action,
  * frame counter, move, round, and the opponent holding or throwing it), so the animation always
- * matches the frame data. The strips that
- * have front effects play them in step, over both fighters; a dash leaves afterimages in the
- * fighter's energy color (`trailColor`), a Boost move white echoes (`BoostEcho`). What the
- * effects of a special, a Remix or a super stop showing dissolves (`FxDissolve`). A clip of
- * effects that would flash beyond the budget plays dark (`FxGate`, docs/flashs.md §4). Its
- * Finisher ready, a halo glows on the floor under its feet (`FinisherHalo`). Its boxes show in
- * the debug view (BoxOverlay).
+ * matches the frame data; struck, the body trembles through the impact freeze (hit-shake.ts).
+ * The strips that have front effects play them in step, over both fighters; a dash leaves
+ * afterimages in the fighter's energy color (`trailColor`), a Boost move white echoes
+ * (`BoostEcho`). What the effects of a special, a Remix or a super stop showing dissolves
+ * (`FxDissolve`). A clip of effects that would flash beyond the budget plays dark (`FxGate`,
+ * docs/flashs.md §4). Its Finisher ready, a halo glows on the floor under its feet
+ * (`FinisherHalo`). Its boxes show in the debug view (BoxOverlay).
  */
 export class SpriteFighterView {
   private readonly halo: FinisherHalo;
@@ -57,6 +59,8 @@ export class SpriteFighterView {
   private readonly shown: Shown = { clip: 'idle', tick: 0, x: 0 };
   /** Where the body stood the frame before: its effects' pixels compare only in place. */
   private readonly before = { x: Number.NaN, y: Number.NaN, flip: false };
+  /** The player's « Tremblement de l'écran »: how far a struck body trembles. */
+  private shake: ShakeMode = 'normal';
 
   constructor(
     scene: Phaser.Scene,
@@ -93,12 +97,15 @@ export class SpriteFighterView {
 
   /**
    * The player's comfort options, at once (the pause's options): `calm`, the flashes reduced or
-   * off (one fainter echo, fainter afterimages); `still`, the screen keeping still (the
-   * dissolving effects do not drift); either, the Finisher's halo holds its breath.
+   * off (one fainter echo, fainter afterimages); `shake`, how far things shake (a struck body
+   * trembles less, or not at all), off keeping the screen still (the dissolving effects do not
+   * drift either); calm or still, the Finisher's halo holds its breath.
    */
-  setComfort(calm: boolean, still: boolean): void {
+  setComfort(calm: boolean, shake: ShakeMode): void {
     this.echo.calm = calm;
     this.trail.calm = calm;
+    const still = shake === 'off';
+    this.shake = shake;
     this.halo.calm = calm || still;
     if (this.dissolve) this.dissolve.still = still;
   }
@@ -110,14 +117,20 @@ export class SpriteFighterView {
 
   /**
    * `frames`: display frames of 1/60 s since the last update (the dissolves go by them);
-   * `finisher`: the fighter's Finisher signal (finisher-signal.ts).
+   * `finisher`: the fighter's Finisher signal (finisher-signal.ts); `context`: the animation's
+   * options and the fight's memory (FightScene).
    */
-  update(state: GameState, frames = 1, finisher: FinisherState = 'off'): void {
+  update(
+    state: GameState,
+    frames = 1,
+    finisher: FinisherState = 'off',
+    context: ShowContext = SHOW_NOW,
+  ): void {
     const fighter = state.fighters[this.player];
     const template = this.config.fighters[this.player];
     const round = state.round;
     const shown = this.shown;
-    showFighter(state, this.player, this.config, this.art, shown);
+    showFighter(state, this.player, this.config, this.art, shown, context);
     const clip = clipOf(this.art, shown.clip);
     const index = clipFrameAt(clip, shown.tick);
     const frame = clip.frames[index] ?? 0;
@@ -125,7 +138,9 @@ export class SpriteFighterView {
     const x = toPx(shown.x);
     const height = toPx(fighter.y);
     const flip = fighter.facing < 0;
-    this.body.show(clip.sheet, frame, x, this.groundY - height, flip);
+    // The body alone trembles: its shadow, afterimages and effects stay where the game has it.
+    const trembling = hitShakeOf(state, this.player, context, this.shake);
+    this.body.show(clip.sheet, frame, x + trembling, this.groundY - height, flip);
     const gliding = isGliding(fighter, template);
     // The round clock counts ticks and stops with the hitstop: the afterimages do too.
     const y = this.groundY - height;

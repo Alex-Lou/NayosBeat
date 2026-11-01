@@ -1,6 +1,7 @@
 import type Phaser from 'phaser';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { App } from '../../src/app/app';
+import { viewingFromUrl, type Viewing } from '../../src/app/viewing';
 import type { Sfx } from '../../src/audio/sfx';
 import { installFakePage, type FakeElement } from '../render/fake-dom';
 
@@ -14,7 +15,7 @@ function byClass(node: FakeElement, name: string): FakeElement[] {
  * The app on a fake page, its storage `stored`, the system asking for less motion or not, a
  * fight scene that records what it is given.
  */
-function launch(stored: Record<string, string> = {}, reducedMotion = false) {
+function launch(stored: Record<string, string> = {}, reducedMotion = false, viewing?: Viewing) {
   const page = installFakePage();
   if (reducedMotion) {
     Object.assign(page.window, {
@@ -29,10 +30,11 @@ function launch(stored: Record<string, string> = {}, reducedMotion = false) {
     getItem: (key: string) => kept.get(key) ?? null,
     setItem: (key: string, value: string) => kept.set(key, value),
   });
-  const fight = { applyComfort: vi.fn(), resumeMatch: vi.fn() };
+  const fight = { applyComfort: vi.fn(), resumeMatch: vi.fn(), setViewing: vi.fn() };
+  const start = vi.fn();
   const game = {
     loop: { sleep: vi.fn(), wake: vi.fn() },
-    scene: { getScene: () => fight, start: vi.fn(), stop: vi.fn() },
+    scene: { getScene: () => fight, start, stop: vi.fn() },
   } as unknown as Phaser.Game;
   let sound = true;
   const sfx = {
@@ -48,7 +50,7 @@ function launch(stored: Record<string, string> = {}, reducedMotion = false) {
   // What the title screen tells a key press by.
   class KeyboardEvent extends Event {}
   vi.stubGlobal('KeyboardEvent', KeyboardEvent);
-  const app = new App(page.body as unknown as HTMLElement, game, sfx);
+  const app = new App(page.body as unknown as HTMLElement, game, sfx, viewing);
   app.start();
   const press = (code: string) => {
     page.window.dispatchEvent(Object.assign(new KeyboardEvent('keydown'), { code, repeat: false }));
@@ -72,7 +74,7 @@ function launch(stored: Record<string, string> = {}, reducedMotion = false) {
     if (!item) throw new Error(`No item ${label}`);
     item.dispatchEvent(new Event('click'));
   };
-  return { page, app, fight, kept, press, screen, choose, root: page.body };
+  return { page, app, fight, start, kept, press, screen, choose, root: page.body };
 }
 
 describe('the options (docs/flashs.md §4)', () => {
@@ -181,5 +183,99 @@ describe('the options (docs/flashs.md §4)', () => {
       'Effets de flash : réduits',
       "Tremblement de l'écran : aucun",
     ]);
+  });
+});
+
+describe('how a fight is watched (docs/art/animation-plan.md §2, V0)', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  /** The app on the training's menu of the dummy, as after both fighters were picked. */
+  function training(viewing?: Viewing) {
+    const launched = launch({ 'nayosbeat.notice': 'seen' }, false, viewing);
+    const app = launched.app as unknown as {
+      setup: object;
+      chooseDummy(): void;
+      showPause(): void;
+    };
+    app.setup = { ...app.setup, mode: 'training' };
+    app.chooseDummy();
+    return { ...launched, app };
+  }
+
+  it('reads the slowdown and the animation of before in the address, nothing else', () => {
+    expect(viewingFromUrl('')).toEqual({ slowdown: 1, anim: { legacy: false } });
+    expect(viewingFromUrl('?vitesse=2&anim=avant')).toEqual({
+      slowdown: 2,
+      anim: { legacy: true },
+    });
+    expect(viewingFromUrl('?vitesse=4&anim=nouvelle').slowdown).toBe(4);
+    expect(viewingFromUrl('?vitesse=3&anim=hier')).toEqual({
+      slowdown: 1,
+      anim: { legacy: false },
+    });
+  });
+
+  it('cycles « Vitesse » and « Animation » in place on the training menu, given to the fight', () => {
+    const { screen, choose, start } = training();
+    expect(screen().items).toContain('Vitesse : normale');
+    expect(screen().items).toContain('Animation : nouvelle');
+    choose('Vitesse');
+    expect(screen().items[screen().selected]).toBe('Vitesse : ½');
+    choose('Vitesse');
+    expect(screen().items[screen().selected]).toBe('Vitesse : ¼');
+    choose('Animation');
+    expect(screen().items[screen().selected]).toBe("Animation : d'avant");
+    choose('Immobile');
+    expect(start).toHaveBeenLastCalledWith(
+      'fight',
+      expect.objectContaining({ viewing: { slowdown: 4, anim: { legacy: true } } }),
+    );
+  });
+
+  it("starts from the address's choice, and changes it at once from training's pause", () => {
+    const { app, screen, choose, fight } = training(viewingFromUrl('?vitesse=2'));
+    expect(screen().items).toContain('Vitesse : ½');
+    app.showPause();
+    choose('Animation');
+    expect(fight.setViewing).toHaveBeenLastCalledWith({ slowdown: 2, anim: { legacy: true } });
+    expect(screen().title).toBe('Pause');
+    expect(screen().items[screen().selected]).toBe("Animation : d'avant");
+  });
+
+  it('keeps the pause of a match free of them', () => {
+    const { app, screen } = launch({ 'nayosbeat.notice': 'seen' });
+    (app as unknown as { showPause(): void }).showPause();
+    expect(screen().items.some((item) => item.startsWith('Vitesse'))).toBe(false);
+  });
+
+  it('leaves the matches as the address asks, whatever training chose, and training its own', () => {
+    const { app, screen, choose, start } = training(viewingFromUrl('?vitesse=2'));
+    const flow = app as unknown as { afterFighterChosen(player: 0 | 1): void };
+    choose('Vitesse');
+    choose('Animation');
+    choose('Immobile');
+    expect(start).toHaveBeenLastCalledWith(
+      'fight',
+      expect.objectContaining({ viewing: { slowdown: 4, anim: { legacy: true } } }),
+    );
+    // Out of training, to a match against the computer: its pause could not change them back.
+    app.showPause();
+    choose('Quitter');
+    choose("Contre l'ordinateur");
+    flow.afterFighterChosen(1);
+    choose('Normal');
+    expect(start).toHaveBeenLastCalledWith(
+      'fight',
+      expect.objectContaining({ viewing: { slowdown: 2, anim: { legacy: false } } }),
+    );
+    // Back in training, its choice is still there for this session.
+    app.showPause();
+    choose('Quitter');
+    choose('Entraînement');
+    flow.afterFighterChosen(1);
+    expect(screen().items).toContain('Vitesse : ¼');
+    expect(screen().items).toContain("Animation : d'avant");
   });
 });

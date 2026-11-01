@@ -3,6 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Sfx } from '../../src/audio/sfx';
 import { px } from '../../src/core/constants';
 import type { Comfort } from '../../src/app/comfort';
+import { TickPacer } from '../../src/loop/tick-pacer';
+import { LEGACY_ANIM } from '../../src/render/anim-options';
 import { FightFeedback, MUTED_DELAY, type FeedbackStage } from '../../src/render/fight-feedback';
 import {
   HAPTICS,
@@ -241,6 +243,105 @@ describe('the Boost (docs/combos-v3.md §1.8.7)', () => {
     feedback().react({ type: 'super', name: 'Mégabasse', ...at });
     expect(shown.stamp).toHaveBeenLastCalledWith('MÉGABASSE !', overHead, 0, 0, false);
     expect(played).toHaveBeenLastCalledWith('super');
+  });
+});
+
+describe('a body that lands on its back (docs/art/animation-plan.md §2, V1)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  const fall = (ko: boolean): FightEvent => ({ type: 'fall', x: px(200), away: 1, ko });
+  /** The final blow, `finish` saying how. */
+  const knockOut = (finish: KoFinish): FightEvent => ({
+    ...(blow('ko', false) as Extract<FightEvent, { type: 'ko' }>),
+    finish,
+  });
+  /** What the landing made seen, heard and felt. */
+  const landing = () => ({
+    dust: shown.kick.mock.calls.length,
+    jolt: shown.jolt.mock.calls.filter(([trauma]) => trauma === TRAUMA.fall).length,
+    thud: played.mock.calls.filter(([sound]) => sound === 'fall').length,
+  });
+
+  it('lands a fighter sent flying in its dust, with a thud', () => {
+    new Fight().react(fall(false));
+    expect(landing()).toEqual({ dust: 1, jolt: 1, thud: 1 });
+  });
+
+  it('claps a body knocked out in the air onto the floor: its ko draws the dust, once', () => {
+    const fight = new Fight();
+    fight.react(knockOut('plain'));
+    vi.clearAllMocks();
+    fight.react(fall(true));
+    expect(landing()).toEqual({ dust: 0, jolt: 1, thud: 1 });
+  });
+
+  it("lands in silence after the Finisher, whose scene plays the landing, until the next round's", () => {
+    const fight = new Fight();
+    fight.react(knockOut('finale'));
+    vi.clearAllMocks();
+    fight.react(fall(true));
+    expect(landing()).toEqual({ dust: 0, jolt: 0, thud: 0 });
+    fight.react({ type: 'phase', phase: 'intro' });
+    fight.react(knockOut('ultimate'));
+    vi.clearAllMocks();
+    fight.react(fall(true));
+    expect(landing()).toEqual({ dust: 0, jolt: 1, thud: 1 });
+  });
+
+  it('lands in silence with the animation of before, as it did, a fighter sent flying as ever', () => {
+    const fight = new Fight();
+    fight.feedback.setAnimOptions(LEGACY_ANIM);
+    fight.react(knockOut('plain'));
+    vi.clearAllMocks();
+    fight.react(fall(true));
+    expect(landing()).toEqual({ dust: 0, jolt: 0, thud: 0 });
+    fight.react(fall(false));
+    expect(landing()).toEqual({ dust: 1, jolt: 1, thud: 1 });
+  });
+});
+
+describe("the KO's slow motion, the game slowed down to watch it (docs/art/animation-plan.md §2, V0)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  /**
+   * The ticks the KO's slow motion plays, and the display frames it lasts, as FightScene plays
+   * them one display frame after the other: the game paced at 1 frame of its own for `slowdown`.
+   */
+  function slowMotion(slowdown: number): { ticks: number; frames: number } {
+    const fight = new Fight();
+    fight.react(blow('ko', false));
+    const pacer = new TickPacer(1, slowdown);
+    let ticks = 0;
+    let frames = 0;
+    while (fight.feedback.timeScale() < 1) {
+      const gameFrames = pacer.advance(1);
+      ticks += fight.feedback.ticksFor(gameFrames);
+      fight.stage.budget.advance(1);
+      fight.feedback.update(1, gameFrames);
+      frames += 1;
+    }
+    return { ticks, frames };
+  }
+
+  it('slows a slowed game as much as the game itself: its ticks, over twice or four times the frames', () => {
+    // The game's own: 50 frames at 0.35 (7 ticks every 20).
+    expect(slowMotion(1)).toEqual({ ticks: 17, frames: 50 });
+    expect(slowMotion(2)).toEqual({ ticks: 17, frames: 100 });
+    expect(slowMotion(4)).toEqual({ ticks: 17, frames: 200 });
+  });
+
+  it('plays every frame of game time a tick outside of it, and lasts 50 frames unpaced', () => {
+    const fight = new Fight();
+    expect(fight.feedback.ticksFor(3)).toBe(3);
+    fight.react(blow('ko', false));
+    fight.wait(49);
+    expect(fight.feedback.timeScale()).toBe(0.35);
+    fight.wait(1);
+    expect(fight.feedback.timeScale()).toBe(1);
   });
 });
 
