@@ -266,7 +266,7 @@ export class FightScene extends Phaser.Scene {
     const stageWidth = toPx(this.config.stage.width);
     // The Warehouse once drawn (docs/art/aseprite.md), the grey box until then.
     if (STAGE_ART) drawStage(this, STAGE_ART);
-    else drawGreyboxStage(this, stageWidth);
+    else drawGreyboxStage(this, stageWidth, { debug });
     const { comfort, mode } = this.sceneData;
     const budget = new FlashBudget(comfort.flashes);
     const touch = isTouchDevice()
