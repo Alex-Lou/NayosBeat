@@ -1,4 +1,5 @@
 import { Input } from '../core/input';
+import { isRecord, PAD_ACTIONS, type PadAction } from './bindings';
 
 /**
  * The right-hand cluster of the touch controls, as data: tested in pure geometry (no visible
@@ -22,6 +23,8 @@ export interface TouchButton {
   readonly fontSize: number;
   /** Input flags held while the button is. */
   readonly flag: number;
+  /** Its action, by which the player's layout places it (`TouchLayout`). */
+  readonly action: PadAction;
   /** Color and look (styles.css). */
   readonly className: string;
   /** Center, in CSS px from the right and from the bottom of the safe area. */
@@ -34,6 +37,7 @@ export interface TouchButton {
 export const TOUCH_BUTTONS: readonly TouchButton[] = [
   {
     label: 'L',
+    action: 'light',
     fontSize: 12,
     flag: Input.Light,
     className: 'touch-light',
@@ -43,6 +47,7 @@ export const TOUCH_BUTTONS: readonly TouchButton[] = [
   },
   {
     label: 'H',
+    action: 'heavy',
     fontSize: 12,
     flag: Input.Heavy,
     className: 'touch-heavy',
@@ -52,6 +57,7 @@ export const TOUCH_BUTTONS: readonly TouchButton[] = [
   },
   {
     label: 'SAUT',
+    action: 'jump',
     fontSize: 9,
     flag: Input.Jump,
     className: 'touch-jump',
@@ -61,6 +67,7 @@ export const TOUCH_BUTTONS: readonly TouchButton[] = [
   },
   {
     label: 'S',
+    action: 'special',
     fontSize: 12,
     flag: Input.Special,
     className: 'touch-special',
@@ -70,6 +77,7 @@ export const TOUCH_BUTTONS: readonly TouchButton[] = [
   },
   {
     label: 'PRISE',
+    action: 'grab',
     fontSize: 8,
     flag: Input.Grab,
     className: 'touch-grab',
@@ -79,6 +87,7 @@ export const TOUCH_BUTTONS: readonly TouchButton[] = [
   },
   {
     label: 'DASH',
+    action: 'dash',
     fontSize: 8,
     flag: Input.Dash,
     className: 'touch-dash',
@@ -88,6 +97,7 @@ export const TOUCH_BUTTONS: readonly TouchButton[] = [
   },
   {
     label: 'BOOST',
+    action: 'boost',
     fontSize: 8,
     flag: Input.Boost,
     className: 'touch-boost',
@@ -128,4 +138,138 @@ export function nearestButton(
     }
   }
   return nearest;
+}
+
+/**
+ * The player's own cluster (« Disposition », docs/polish/AUDIT-ET-PLAN.md, P24): each button
+ * where they moved it and as big as they made it, the whole cluster bigger or smaller (around
+ * the safe area's bottom-right corner), and how opaque. Kept with the keys
+ * (src/input/controls-store.ts).
+ */
+export interface TouchLayout {
+  /** The whole cluster, in percent: its buttons' places and sizes. */
+  readonly size: number;
+  /** The cluster's opacity, in percent. */
+  readonly opacity: number;
+  readonly buttons: Readonly<Record<PadAction, TouchPlacement>>;
+}
+
+/** A button's center at the cluster's 100 % (CSS px from the right and the bottom), its size. */
+export interface TouchPlacement {
+  readonly right: number;
+  readonly bottom: number;
+  /** In percent, on top of the cluster's. */
+  readonly size: number;
+}
+
+/** The sizes the cluster and each button take, in the order they cycle. */
+export const CLUSTER_SIZES: readonly number[] = [80, 90, 100, 110, 120];
+export const BUTTON_SIZES: readonly number[] = [80, 90, 100, 110, 120, 130];
+/** Never fainter than 40 %: a button must stay where the thumb can find it. */
+export const OPACITIES: readonly number[] = [40, 50, 60, 70, 80, 90, 100];
+
+export const DEFAULT_TOUCH_LAYOUT: TouchLayout = {
+  size: 100,
+  opacity: 100,
+  buttons: Object.fromEntries(
+    TOUCH_BUTTONS.map(({ action, right, bottom }) => [action, { right, bottom, size: 100 }]),
+  ) as Record<PadAction, TouchPlacement>,
+};
+
+/**
+ * The buttons as `layout` places them, TOUCH_BUTTONS' order: centers scaled with the cluster
+ * around the corner, diameters and labels with the cluster and the button (a label that fits at
+ * 100 % fits at every size). Pure.
+ */
+export function placedButtons(layout: TouchLayout): TouchButton[] {
+  const cluster = layout.size / 100;
+  return TOUCH_BUTTONS.map((button) => {
+    const placement = layout.buttons[button.action];
+    const scale = cluster * (placement.size / 100);
+    return {
+      ...button,
+      right: placement.right * cluster,
+      bottom: placement.bottom * cluster,
+      diameter: button.diameter * scale,
+      fontSize: button.fontSize * scale,
+    };
+  });
+}
+
+/** The ring of the BOOST button, past its edge (styles.css, `.touch-boost::before`, inset -6px). */
+export const BOOST_RING_PX = 6;
+
+/** How far a button reaches from its center: its circle, BOOST's ring with it. */
+export function reachOf(button: TouchButton): number {
+  return button.diameter / 2 + (button.flag === Input.Boost ? BOOST_RING_PX : 0);
+}
+
+/** Two buttons whose circles (and rings) touch: the eye could not tell them apart. */
+export function overlapping(buttons: readonly TouchButton[]): boolean {
+  return buttons.some((a, at) =>
+    buttons
+      .slice(at + 1)
+      .some((b) => Math.hypot(a.right - b.right, a.bottom - b.bottom) < reachOf(a) + reachOf(b)),
+  );
+}
+
+/**
+ * The top of the button zone, kept free for the pause button (styles.css, `.pause-button`, and
+ * its 48 px target) and the notch of the status bar.
+ */
+export const TOP_CLEARANCE_PX = 56;
+
+/** Whether every button stays inside a button zone of `width` × `height` CSS px. */
+export function fitsZone(
+  buttons: readonly TouchButton[],
+  zone: { readonly width: number; readonly height: number },
+): boolean {
+  return buttons.every((button) => {
+    const reach = reachOf(button);
+    return (
+      button.right >= reach &&
+      button.bottom >= reach &&
+      button.right + reach <= zone.width &&
+      button.bottom + reach <= zone.height - TOP_CLEARANCE_PX
+    );
+  });
+}
+
+/**
+ * A stored layout, checked once as it is read: the sizes and the opacity among those the screen
+ * offers, each button's place finite and on a screen, its size offered; else its default. Buttons
+ * that would overlap all go back to their places. Pure.
+ */
+export function parseTouchLayout(value: unknown): TouchLayout {
+  if (!isRecord(value)) return DEFAULT_TOUCH_LAYOUT;
+  const pick = (candidate: unknown, offered: readonly number[], fallback: number): number =>
+    typeof candidate === 'number' && offered.includes(candidate) ? candidate : fallback;
+  const stored = isRecord(value['buttons']) ? value['buttons'] : {};
+  const buttons = Object.fromEntries(
+    PAD_ACTIONS.map((action) => [
+      action,
+      parsePlacement(stored[action]) ?? DEFAULT_TOUCH_LAYOUT.buttons[action],
+    ]),
+  ) as Record<PadAction, TouchPlacement>;
+  const layout: TouchLayout = {
+    size: pick(value['size'], CLUSTER_SIZES, DEFAULT_TOUCH_LAYOUT.size),
+    opacity: pick(value['opacity'], OPACITIES, DEFAULT_TOUCH_LAYOUT.opacity),
+    buttons,
+  };
+  return overlapping(placedButtons(layout))
+    ? { ...layout, buttons: DEFAULT_TOUCH_LAYOUT.buttons }
+    : layout;
+}
+
+/** The farthest a center may be from the corner: past any phone or tablet. */
+const MAX_OFFSET_PX = 2000;
+
+function parsePlacement(value: unknown): TouchPlacement | undefined {
+  if (!isRecord(value)) return undefined;
+  const { right, bottom, size } = value;
+  const offset = (n: unknown): n is number =>
+    typeof n === 'number' && Number.isFinite(n) && n >= 0 && n <= MAX_OFFSET_PX;
+  if (!offset(right) || !offset(bottom)) return undefined;
+  if (typeof size !== 'number' || !BUTTON_SIZES.includes(size)) return undefined;
+  return { right, bottom, size };
 }

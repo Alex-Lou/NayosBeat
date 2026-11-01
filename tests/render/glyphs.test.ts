@@ -15,6 +15,13 @@ import { noteText } from '../../src/render/training-combo';
 import { NOTES } from './finisher-notes';
 import { SIMPLE_MODE_NOTICE } from '../../src/ui/title-screen';
 import { glyphsOf } from './font-glyphs';
+import { ACTIONS, ASSIGNABLE_BUTTONS, type Refusal } from '../../src/input/bindings';
+import { padButtonName } from '../../src/input/gamepad-buttons';
+import { KEY_NAMES } from '../../src/input/key-names';
+import * as bindingsText from '../../src/ui/bindings-text';
+import { TAB_LABELS } from '../../src/ui/bindings-screen';
+import { DRAWN_KEYS } from '../../src/ui/keyboard-drawing';
+import { TOUCH_BUTTONS } from '../../src/input/touch-layout';
 
 /**
  * Canvas text is drawn once, in its font, without a fallback that would show (docs/combat-v2.md
@@ -152,6 +159,83 @@ describe('glyphs', () => {
       ...DUMMY_HEALTHS.map((health) => `Vie du mannequin : ${health} %`),
     ];
     expect(missing(await glyphsOf(PIXEL), texts)).toEqual([]);
+    expect(texts.filter((text) => CAPITAL_ACCENTED.test(text))).toEqual([]);
+  });
+
+  it('of the « Touches » screen are in the pixel font, without a capital accented (P24)', async () => {
+    const {
+      ACTION_LABELS,
+      ACTION_TAGS,
+      assignedText,
+      CANCELLED_TEXT,
+      FIXED_TEXTS,
+      IDLE_TEXTS,
+      listeningText,
+      NOT_STANDARD_TEXT,
+      refusalText,
+      resetRefusedText,
+      resetText,
+      RETRY_TEXT,
+      TIMEOUT_TEXT,
+      TOUCH_TEXTS,
+      movedText,
+    } = bindingsText;
+    const keys = Object.values(KEY_NAMES).flatMap(({ name, cap }) => [name, cap]);
+    const buttons = ASSIGNABLE_BUTTONS.map((button) => padButtonName(button));
+    const refusals: Refusal[] = [
+      { kind: 'fixed' },
+      { kind: 'directions' },
+      { kind: 'unavailable' },
+      ...ACTIONS.map((action) => ({ kind: 'taken', action }) as const),
+      { kind: 'other', player: 0 },
+      { kind: 'other', player: 1 },
+    ];
+    const texts = [
+      'Touches',
+      'Par défaut',
+      'Retour',
+      'aucune',
+      ...Object.values(TAB_LABELS),
+      ...Object.values(ACTION_LABELS),
+      ...ACTIONS.flatMap((action) => [
+        listeningText(action, 'keys', 5),
+        listeningText(action, 'pad', 5),
+        ...keys.map((key) => assignedText(action, key)),
+      ]),
+      ...refusals.flatMap((refusal) => [
+        ...keys.map((key) => refusalText(refusal, 'keys', key)),
+        ...buttons.map((button) => refusalText(refusal, 'pad', button)),
+      ]),
+      CANCELLED_TEXT,
+      TIMEOUT_TEXT,
+      RETRY_TEXT,
+      NOT_STANDARD_TEXT,
+      ...Object.values(IDLE_TEXTS),
+      ...Object.values(FIXED_TEXTS),
+      resetText(0, 'keys'),
+      resetText(1, 'pad'),
+      resetRefusedText(0),
+      resetRefusedText(1),
+      ...DRAWN_KEYS.flatMap(({ cap }) => (cap === undefined ? [] : [cap])),
+      // « Disposition », its notes and its choices (touch-layout-editor.ts).
+      ...Object.values(TOUCH_TEXTS),
+      ...TOUCH_BUTTONS.flatMap(({ label }) => [
+        movedText(label),
+        `Bouton : ${label}`,
+        `Taille de ${label} : 130 %`,
+      ]),
+      'Taille : 120 %',
+      'Opacité : 40 %',
+      'Touche Disposition pour placer les boutons',
+      'Touche une action, puis sa nouvelle touche',
+    ];
+    // ← and → are drawn as a turned ↑ (keyboard-drawing.ts, appendText).
+    const shown = [...texts, ...Object.values(ACTION_TAGS)].map((text) =>
+      withArrows(text)
+        .map((part) => (typeof part === 'string' ? part : '↑'))
+        .join(''),
+    );
+    expect(missing(await glyphsOf(PIXEL), shown)).toEqual([]);
     expect(texts.filter((text) => CAPITAL_ACCENTED.test(text))).toEqual([]);
   });
 

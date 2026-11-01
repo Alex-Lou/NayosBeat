@@ -1,48 +1,11 @@
-import { Input, type InputBits } from '../core/input';
+import type { InputBits } from '../core/input';
+import { DEFAULT_KEYS, keyFlags, type KeyBindings } from './bindings';
 
-/** Maps `KeyboardEvent.code` (physical key position) to an input flag. */
-export type KeyBindings = Readonly<Record<string, number>>;
+export type { KeyBindings } from './bindings';
 
-/**
- * Physical positions: WASD on QWERTY is ZQSD on AZERTY. The dash goes to the hand that moves
- * (left Shift), the grab above the attacks, under the middle finger (I, above K), BOOST above S
- * (O, above L; docs/combos-v3.md §1.8.5).
- */
-export const PLAYER1_KEYS: KeyBindings = {
-  KeyW: Input.Up,
-  KeyS: Input.Down,
-  KeyA: Input.Left,
-  KeyD: Input.Right,
-  Space: Input.Jump,
-  KeyJ: Input.Light,
-  KeyK: Input.Heavy,
-  KeyL: Input.Special,
-  KeyI: Input.Grab,
-  KeyO: Input.Boost,
-  ShiftLeft: Input.Dash,
-};
-
-export const PLAYER2_KEYS: KeyBindings = {
-  ArrowUp: Input.Up,
-  ArrowDown: Input.Down,
-  ArrowLeft: Input.Left,
-  ArrowRight: Input.Right,
-  Numpad1: Input.Light,
-  Numpad2: Input.Heavy,
-  Numpad3: Input.Special,
-  Numpad4: Input.Grab,
-  // BOOST above S (Numpad3).
-  Numpad6: Input.Boost,
-  Numpad0: Input.Dash,
-  // Laptops without a numeric keypad: the keys around right Shift (M is ";" on AZERTY), BOOST
-  // above S ("[" on QWERTY, "^" on AZERTY, above "'" / "ù").
-  Period: Input.Light,
-  Slash: Input.Heavy,
-  Quote: Input.Special,
-  Semicolon: Input.Grab,
-  BracketLeft: Input.Boost,
-  ShiftRight: Input.Dash,
-};
+/** The default keys of each player (src/input/bindings.ts), as `KeyboardInput` reads them. */
+export const PLAYER1_KEYS: KeyBindings = keyFlags(DEFAULT_KEYS[0]);
+export const PLAYER2_KEYS: KeyBindings = keyFlags(DEFAULT_KEYS[1]);
 
 export function bitsFromKeys(pressed: ReadonlySet<string>, bindings: KeyBindings): InputBits {
   let bits = 0;
@@ -59,13 +22,13 @@ export class KeyboardInput {
   private readonly held = new Set<string>();
   /** Keys pressed since the last `endFrame`, even if already released. */
   private readonly tapped = new Set<string>();
-  private readonly boundCodes: ReadonlySet<string>;
+  private boundCodes: ReadonlySet<string> = new Set();
 
   constructor(
     private readonly target: Window,
-    private readonly bindings: readonly KeyBindings[],
+    private bindings: readonly KeyBindings[],
   ) {
-    this.boundCodes = new Set(bindings.flatMap((b) => Object.keys(b)));
+    this.setBindings(bindings);
     target.addEventListener('keydown', this.onKeyDown);
     target.addEventListener('keyup', this.onKeyUp);
     target.addEventListener('blur', this.onBlur);
@@ -81,6 +44,17 @@ export class KeyboardInput {
   heldBits(player: number): InputBits {
     const bindings = this.bindings[player];
     return bindings ? bitsFromKeys(this.held, bindings) : 0;
+  }
+
+  /**
+   * Takes new keys (the « Touches » screen, under the pause menu). What was held is let go: a key
+   * no longer bound would never see its key-up, and stay held.
+   */
+  setBindings(bindings: readonly KeyBindings[]): void {
+    this.bindings = bindings;
+    this.boundCodes = new Set(bindings.flatMap((b) => Object.keys(b)));
+    this.held.clear();
+    this.tapped.clear();
   }
 
   /** Call once all players have been read for the current frame. */

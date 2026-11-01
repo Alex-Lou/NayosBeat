@@ -8,7 +8,10 @@ import type { FightScene, FightSceneData } from '../render/fight-scene';
 import { requestLandscapeFullscreen } from '../render/fullscreen';
 import type { RenderMode } from '../render/render-mode';
 import { DEFAULT_SILHOUETTE, type SilhouetteLook } from '../render/silhouette';
+import { controlsStore } from '../input/controls-store';
 import { isTouchDevice } from '../input/touch-controls';
+import { BindingsScreen, type BindingsTab } from '../ui/bindings-screen';
+import { TouchLayoutEditor } from '../ui/touch-layout-editor';
 import { FightCard } from '../ui/fight-card';
 import { FighterSelect } from '../ui/fighter-select';
 import { element, Menu, type MenuFeedback, type MenuItem, type MenuOptions } from '../ui/menu';
@@ -329,8 +332,49 @@ export class App {
         again(text);
       },
     };
-    items.push(sound, flash, tremble, scene, text, { label: 'Retour', onSelect: back });
+    const keys: MenuItem = {
+      label: 'Touches',
+      hint: 'Clavier, manette et boutons tactiles',
+      onSelect: () => {
+        this.showBindings(paused, () => {
+          this.showOptions(paused, back, items.indexOf(keys));
+        });
+      },
+    };
+    items.push(sound, flash, tremble, scene, text, keys, { label: 'Retour', onSelect: back });
     this.showMenu({ title: 'Options', overlay: paused, items, onBack: back, initialIndex });
+  }
+
+  /**
+   * The « Touches » screen (src/ui/bindings-screen.ts): each player's keyboard and gamepad, and on
+   * a touch screen player 1's buttons, its first tab there. What is changed is kept at once, and a
+   * fight under the pause takes it as it resumes.
+   */
+  private showBindings(paused: boolean, back: () => void, tab?: BindingsTab): void {
+    const touch = isTouchDevice();
+    const tabs: BindingsTab[] = touch
+      ? ['touch', 'keys1', 'keys2', 'pad1', 'pad2']
+      : ['keys1', 'keys2', 'pad1', 'pad2'];
+    this.show(
+      new BindingsScreen(this.root, {
+        tabs,
+        ...(tab ? { initialTab: tab } : {}),
+        overlay: paused,
+        onBack: back,
+        onTouchLayout: () => {
+          this.show(
+            new TouchLayoutEditor(this.root, {
+              overlay: paused,
+              feedback: this.menuFeedback,
+              onBack: () => {
+                this.showBindings(paused, back, 'touch');
+              },
+            }),
+          );
+        },
+        feedback: this.menuFeedback,
+      }),
+    );
   }
 
   /** The player changed an option: kept (that one alone), then applied everywhere. */
@@ -367,7 +411,8 @@ export class App {
    * pages as the choices. Over the fight from the pause menu (`paused`), back to it.
    */
   private showControls(index: number, paused: boolean): void {
-    const pages = helpPages(currentDevices());
+    // The player's own keys and buttons, as « Touches » left them.
+    const pages = helpPages(currentDevices(), controlsStore.get().bindings);
     const page = pages[index] ?? pages[0];
     if (!page) return;
     const back = () => {
@@ -695,7 +740,7 @@ export class App {
         label: 'Commandes',
         // Opens on the page of player 1's fighter: the moves they are playing with.
         onSelect: () => {
-          const pages = helpPages(currentDevices());
+          const pages = helpPages(currentDevices(), controlsStore.get().bindings);
           const own = pages.findIndex((page) => page.fighter === this.setup.fighters[0]);
           this.showControls(Math.max(0, own), true);
         },

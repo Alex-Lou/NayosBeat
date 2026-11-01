@@ -1,6 +1,8 @@
 import { DIRECTIONS, type InputBits } from '../core/input';
+import { keyFlags, type Bindings, type PadMap } from './bindings';
+import { controlsStore, type ControlsStore } from './controls-store';
 import { GamepadReader } from './gamepad';
-import { KeyboardInput, PLAYER1_KEYS, PLAYER2_KEYS } from './keyboard';
+import { KeyboardInput } from './keyboard';
 import type { TouchControls } from './touch-controls';
 
 /** Buttons that act on a press: held across a menu, they must be released before counting. */
@@ -12,9 +14,14 @@ const PRESS_BUTTONS = ~DIRECTIONS;
  *
  * Gamepads are bound to a player by their index (the first ones connected go to player 1,
  * then player 2), so a pad that disconnects never hands its player's controls to another.
+ *
+ * The keys and buttons are the player's (src/input/controls-store.ts): changed under the pause
+ * menu, they apply as the fight resumes.
  */
 export class PlayerInputs {
   private readonly keyboard: KeyboardInput;
+  private pads: readonly [PadMap, PadMap];
+  private readonly unsubscribe: () => void;
   private readonly gamepads = new GamepadReader();
   private readonly padIndices: [number | null, number | null] = [null, null];
   /** Buttons held when the last menu closed: ignored until released. */
@@ -34,8 +41,15 @@ export class PlayerInputs {
     target: Window,
     private readonly touch: TouchControls | undefined,
     pads: readonly Gamepad[],
+    store: ControlsStore = controlsStore,
   ) {
-    this.keyboard = new KeyboardInput(target, [PLAYER1_KEYS, PLAYER2_KEYS]);
+    const { bindings } = store.get();
+    this.keyboard = new KeyboardInput(target, keyBindingsOf(bindings));
+    this.pads = bindings.pad;
+    this.unsubscribe = store.subscribe(({ bindings: changed }) => {
+      this.keyboard.setBindings(keyBindingsOf(changed));
+      this.pads = changed.pad;
+    });
     this.reset(pads);
   }
 
@@ -99,6 +113,7 @@ export class PlayerInputs {
   }
 
   dispose(): void {
+    this.unsubscribe();
     this.keyboard.dispose();
     this.touch?.dispose();
   }
@@ -113,7 +128,7 @@ export class PlayerInputs {
     this.assignPads(pads);
     const index = this.padIndices[player];
     const pad = index === null ? undefined : pads.find((p) => p.index === index);
-    return pad ? this.gamepads.read(pad) : 0;
+    return pad ? this.gamepads.read(pad, this.pads[player]) : 0;
   }
 
   /** Newly connected pads take the next free player slot. */
@@ -125,4 +140,8 @@ export class PlayerInputs {
       this.padIndices[free] = pad.index;
     }
   }
+}
+
+function keyBindingsOf(bindings: Bindings) {
+  return bindings.keyboard.map(keyFlags);
 }
