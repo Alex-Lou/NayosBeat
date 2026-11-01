@@ -3,7 +3,9 @@
  * Browsers only allow audio after a user gesture, so `unlock()` must be called from one. The
  * fight's sounds go through the `fight` bus (a gain, then a low-pass), the menus' straight to
  * the master: the Finisher's scene silences and muffles the fight (docs/finisher.md §1.14), never
- * the menus.
+ * the menus. The master goes through a soft clipper (`softClip`), and the sounds playing at once
+ * are bounded (`VOICES`): sounds stacked in one tick never clip nor pile up without end
+ * (docs/polish/AUDIT-ET-PLAN.md, P13).
  */
 
 export type SoundName =
@@ -37,6 +39,77 @@ const MASTER_VOLUME = 0.5;
 
 /** The sounds of the menus: they play on the master, past the `fight` bus. */
 const MENU_SOUNDS: ReadonlySet<SoundName> = new Set(['menuMove', 'menuConfirm', 'menuBack']);
+
+/**
+ * How many sounds play at once (docs/polish/AUDIT-ET-PLAN.md, P13): the fight's, and the menus'
+ * counted apart. Past it, a new sound takes the place of the oldest of the least important ones.
+ */
+export const VOICES = { fight: 12, menu: 4 } as const;
+
+/**
+ * How much each sound matters when the voices are all taken: 0 is never cut (the KO, the super,
+ * the announcements), then the heavy blows, then the light ones, then what only accompanies a move.
+ */
+export const PRIORITIES: Readonly<Record<SoundName, 0 | 1 | 2 | 3>> = {
+  ko: 0,
+  super: 0,
+  finisherReady: 0,
+  round: 0,
+  fight: 0,
+  heavyHit: 1,
+  grab: 1,
+  fall: 1,
+  pummel: 1,
+  throw: 1,
+  remix: 1,
+  rewind: 1,
+  lightHit: 2,
+  block: 2,
+  tech: 2,
+  projectile: 2,
+  menuMove: 2,
+  menuConfirm: 2,
+  menuBack: 2,
+  swing: 3,
+  heavySwing: 3,
+  dash: 3,
+  jump: 3,
+  land: 3,
+};
+
+/** A sound cut to make room fades in this time constant, then stops: no click. */
+const STEAL_FADE_S = 0.002;
+const STEAL_STOP_S = 0.01;
+
+/**
+ * The soft clipper on the master (P13): the same signal up to |x| = KNEE (-3 dBFS), then bent
+ * towards 1 by a tanh, never a hard edge. Sounds below the knee play exactly as they would without.
+ */
+export const KNEE = 0.7;
+
+/** The clipper's response at `x`, -1 to 1. */
+export function softClip(x: number): number {
+  const size = Math.abs(x);
+  if (size <= KNEE) return x;
+  return Math.sign(x) * (KNEE + (1 - KNEE) * Math.tanh((size - KNEE) / (1 - KNEE)));
+}
+
+/** The clipper as a WaveShaper's curve: odd, so that 0 maps to 0 exactly. */
+function softClipCurve(points = 4097): Float32Array<ArrayBuffer> {
+  const curve = new Float32Array(points);
+  for (let i = 0; i < points; i++) curve[i] = softClip((2 * i) / (points - 1) - 1);
+  return curve;
+}
+
+/** A sound playing: what it is, how much it matters, its own gain to cut it, its sources. */
+interface Voice {
+  readonly pool: keyof typeof VOICES;
+  readonly priority: number;
+  readonly gain: GainNode;
+  readonly sources: AudioScheduledSourceNode[];
+  /** When its last layer ends, in the context's time. */
+  readonly end: number;
+}
 /** Where a sound plays: through the `fight` bus, or straight on the master. */
 export type Bus = 'fight' | 'master';
 /** The `fight` bus at rest: whole, its low-pass open (above anything a sound here plays). */
@@ -193,6 +266,8 @@ export class Sfx {
   private fightBus: FightBus | undefined;
   private noiseBuffer: AudioBuffer | undefined;
   private enabled = loadEnabled();
+  /** The sounds playing, oldest first. */
+  private voices: Voice[] = [];
 
   get isEnabled(): boolean {
     return this.enabled;
@@ -205,7 +280,9 @@ export class Sfx {
       this.context = new AudioContext();
       this.master = this.context.createGain();
       this.master.gain.value = MASTER_VOLUME;
-      this.master.connect(this.context.destination);
+      const clipper = this.context.createWaveShaper();
+      clipper.curve = softClipCurve();
+      this.master.connect(clipper).connect(this.context.destination);
       const gain = this.context.createGain();
       const filter = this.context.createBiquadFilter();
       filter.type = 'lowpass';
@@ -228,6 +305,34 @@ export class Sfx {
   }
 
   /**
+   * Keeps the sound alive for the page's life (docs/polish/AUDIT-ET-PLAN.md, P15): every press
+   * and touch is a gesture the context may start or resume from, in a fight too, not only on the
+   * menus; and back on screen, a context iOS left « running » yet mute (WebKit bug 283419) is
+   * suspended then resumed. The game has one Sfx: these listeners live as long as the page.
+   */
+  listenTo(page: Window, document: Document): void {
+    page.addEventListener('pointerdown', this.onGesture, true);
+    page.addEventListener('keydown', this.onGesture, true);
+    document.addEventListener('visibilitychange', this.onVisibility);
+  }
+
+  private readonly onGesture = (): void => {
+    this.unlock();
+  };
+
+  private readonly onVisibility = (event: Event): void => {
+    const { context } = this;
+    const visible = (event.target as Document | null)?.visibilityState === 'visible';
+    if (!context || !visible) return;
+    context
+      .suspend()
+      .then(() => context.resume())
+      .catch(() => {
+        // Still locked: the next gesture will try again.
+      });
+  };
+
+  /**
    * `pitch` multiplies the frequencies of its tones (a fighter's siren in its own key); `bus`:
    * where it plays, the menus' on the master and the fight's through its bus unless told (a sound
    * the Finisher's scene plays under the bus it silenced).
@@ -235,13 +340,45 @@ export class Sfx {
   play(name: SoundName, pitch = 1, bus: Bus = MENU_SOUNDS.has(name) ? 'master' : 'fight'): void {
     const { context, master } = this;
     if (!this.enabled || !context || !master || context.state !== 'running') return;
-    const output = bus === 'fight' ? (this.fightBus?.gain ?? master) : master;
-    const sound = SOUNDS[name];
     const now = context.currentTime;
-    for (const tone of sound.tones ?? []) playTone(context, output, tone, now, pitch);
+    const pool = MENU_SOUNDS.has(name) ? 'menu' : 'fight';
+    const priority = PRIORITIES[name];
+    if (!this.makeRoom(pool, priority, now)) return;
+    // Its own gain, whole: the voice can be cut without touching its layers.
+    const gain = context.createGain();
+    gain.connect(bus === 'fight' ? (this.fightBus?.gain ?? master) : master);
+    const sound = SOUNDS[name];
+    const sources: AudioScheduledSourceNode[] = [];
+    let end = now;
+    for (const tone of sound.tones ?? []) {
+      sources.push(playTone(context, gain, tone, now, pitch));
+      end = Math.max(end, now + (tone.delay ?? 0) + tone.duration);
+    }
     const buffer = this.noiseBuffer;
     if (buffer)
-      for (const noise of sound.noises ?? []) playNoise(context, output, buffer, noise, now);
+      for (const noise of sound.noises ?? []) {
+        sources.push(playNoise(context, gain, buffer, noise, now));
+        end = Math.max(end, now + (noise.delay ?? 0) + noise.duration);
+      }
+    this.voices.push({ pool, priority, gain, sources, end });
+  }
+
+  /**
+   * Room for a sound of `priority` in `pool` at `now`: the voices over forgotten, then, all of them
+   * taken, the oldest of the least important cut, if it matters no more than the newcomer. False:
+   * the newcomer matters least, it does not play. A sound of priority 0 always plays.
+   */
+  private makeRoom(pool: keyof typeof VOICES, priority: number, now: number): boolean {
+    this.voices = this.voices.filter((voice) => voice.end > now);
+    const playing = this.voices.filter((voice) => voice.pool === pool);
+    if (playing.length < VOICES[pool]) return true;
+    const least = Math.max(...playing.map((voice) => voice.priority));
+    const victim = playing.find((voice) => voice.priority === least && least > 0);
+    if (!victim || least < priority) return priority === 0;
+    victim.gain.gain.setTargetAtTime(0, now, STEAL_FADE_S);
+    for (const source of victim.sources) source.stop(now + STEAL_STOP_S);
+    this.voices.splice(this.voices.indexOf(victim), 1);
+    return true;
   }
 
   /**
@@ -272,7 +409,7 @@ function playTone(
   tone: Tone,
   now: number,
   pitch: number,
-): void {
+): OscillatorNode {
   const start = now + (tone.delay ?? 0);
   const end = start + tone.duration;
   const oscillator = context.createOscillator();
@@ -286,6 +423,7 @@ function playTone(
   oscillator.start(start);
   // Stopped nodes are released by the browser: nothing to clean up.
   oscillator.stop(end);
+  return oscillator;
 }
 
 function playNoise(
@@ -294,7 +432,7 @@ function playNoise(
   buffer: AudioBuffer,
   noise: Noise,
   now: number,
-): void {
+): AudioBufferSourceNode {
   const source = context.createBufferSource();
   const filter = context.createBiquadFilter();
   const gain = context.createGain();
@@ -307,6 +445,7 @@ function playNoise(
   source.connect(filter).connect(gain).connect(output);
   source.start(start);
   source.stop(start + noise.duration);
+  return source;
 }
 
 /** Half a second of white noise, shared by every noise burst. */

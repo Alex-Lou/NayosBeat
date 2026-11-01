@@ -131,10 +131,13 @@ async function start(): Promise<void> {
     try {
       // `?vitesse=2`, `?anim=avant`: to watch the animation in any mode (src/app/viewing.ts).
       // The renderer is known once the game has booted: its mode is read here, once.
+      // Its sound woken by any press or touch, in a fight too, and back on screen (P15).
+      const sfx = new Sfx();
+      sfx.listenTo(window, document);
       const started = new App(
         uiRoot(),
         game,
-        new Sfx(),
+        sfx,
         renderModeOf(game.renderer),
         viewingFromUrl(window.location.search),
       );
