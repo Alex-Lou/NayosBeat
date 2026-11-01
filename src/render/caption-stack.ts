@@ -1,17 +1,21 @@
-/** Between two names stacked over each other, in world pixels. */
-const STACK_GAP = 2;
+/** Between two names side by side on training's line of move names, in view pixels. */
+const LINE_GAP = 6;
 
-/** A caption's box, anchored at its bottom centre (origin 0.5, 1). */
+/** A caption on the line: its middle and its width (view pixels). */
 interface CaptionBox {
   readonly x: number;
-  readonly y: number;
   readonly width: number;
-  readonly height: number;
 }
 
-/** Where `later` goes so as not to cover `earlier`: just above it, or null if they do not meet. */
-export function stackedY(later: CaptionBox, earlier: CaptionBox): number | null {
-  const apart = Math.abs(later.x - earlier.x) >= (later.width + earlier.width) / 2;
-  const clear = later.y <= earlier.y - earlier.height || earlier.y <= later.y - later.height;
-  return apart || clear ? null : earlier.y - earlier.height - STACK_GAP;
+/**
+ * Where `later` goes along the line, `lineWidth` wide, so as not to cover `earlier`: beside it,
+ * on its own side (on the other if the line's end leaves no room), or null if they do not meet.
+ */
+export function besideX(later: CaptionBox, earlier: CaptionBox, lineWidth: number): number | null {
+  const apart = (later.width + earlier.width) / 2 + LINE_GAP;
+  if (Math.abs(later.x - earlier.x) >= apart) return null;
+  const side = later.x >= earlier.x ? 1 : -1;
+  const x = earlier.x + side * apart;
+  const fits = x - later.width / 2 >= 0 && x + later.width / 2 <= lineWidth;
+  return fits ? x : earlier.x - side * apart;
 }

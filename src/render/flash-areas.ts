@@ -1,8 +1,8 @@
-import type { FightEvent } from './fight-events';
+import { pinpoints, type FightEvent } from './fight-events';
 import type { HitKind } from './hit-fx';
 import type { HitStyle } from './hit-styles';
 import { POP_PEAK, type BlowKind } from './onomatopoeia';
-import { SLAM_FROM } from './stamps';
+import { ARRIVAL_PEAK, SLAM_FROM } from './stamps';
 
 /**
  * What each piece of a blow lights at its peak (docs/flashs.md §1.1, §4), in world px² of
@@ -16,8 +16,8 @@ import { SLAM_FROM } from './stamps';
 export type SparkLook = Exclude<HitKind, 'block'>;
 
 export const SPARK_AREAS: Readonly<Record<HitStyle['shape'], Readonly<Record<HitKind, number>>>> = {
-  slash: { light: 400, heavy: 1330, ko: 3300, pulse: 430, koMuted: 440, block: 95 },
-  claw: { light: 120, heavy: 490, ko: 920, pulse: 490, koMuted: 440, block: 95 },
+  slash: { light: 400, heavy: 1330, ko: 3300, pulse: 430, koMuted: 440, block: 95, pinpoint: 115 },
+  claw: { light: 120, heavy: 490, ko: 920, pulse: 490, koMuted: 440, block: 95, pinpoint: 148 },
 };
 /**
  * A low blow's grazing spark, at most: its flat flash (14 × 2) and its streaks along the floor on
@@ -59,9 +59,13 @@ export function wordArea(kind: BlowKind, count: number, calm: boolean): number {
   return (word + tally) * (calm ? 1 : POP_PEAK ** 2);
 }
 
-/** World px² a stamp lights: slammed down from its largest, or calm. */
-export function stampArea(calm: boolean): number {
-  return calm ? CALM_STAMP_AREA : STAMP_AREA * SLAM_FROM ** 2;
+/**
+ * World px² a stamp lights: slammed down from its largest, or calm; `framed`, CONTRE or
+ * PUNITION, at the peak of its arrival (its frame lights nothing: tests/render/flash-areas.test.ts).
+ */
+export function stampArea(calm: boolean, framed = false): number {
+  if (calm) return CALM_STAMP_AREA;
+  return STAMP_AREA * (framed ? ARRIVAL_PEAK : SLAM_FROM) ** 2;
 }
 
 /** What a blow plays when the budget mutes it: a heavy one the pulse's silhouette, a KO its own. */
@@ -71,6 +75,7 @@ const MUTED: Readonly<Record<SparkLook, SparkLook>> = {
   ko: 'koMuted',
   pulse: 'pulse',
   koMuted: 'koMuted',
+  pinpoint: 'pinpoint',
 };
 
 type BlowEvent = Extract<FightEvent, { type: 'hit' | 'ko' }>;
@@ -124,13 +129,21 @@ export function blowAsk(
 ): BlowAsk {
   const ko = event.type === 'ko';
   const heavy = event.type === 'ko' || event.heavy || event.counter !== null;
-  const look: SparkLook = ko ? 'ko' : event.pulse ? 'pulse' : heavy ? 'heavy' : 'light';
+  const look: SparkLook = ko
+    ? 'ko'
+    : event.pulse
+      ? 'pulse'
+      : pinpoints(event)
+        ? 'pinpoint'
+        : heavy
+          ? 'heavy'
+          : 'light';
   const word: BlowKind = ko ? 'ko' : event.pulse ? 'pulse' : heavy ? 'heavy' : 'light';
   const muted = MUTED[look];
   // A low blow grazes the floor; a low KO keeps its burst too.
   const spark = (kind: SparkLook): number =>
     event.low ? GRAZE_AREA + (ko ? SPARK_AREAS[shape][kind] : 0) : SPARK_AREAS[shape][kind];
-  const stamp = event.counter ? stampArea(calm) : 0;
+  const stamp = event.counter ? stampArea(calm, true) : 0;
   return {
     look,
     muted,

@@ -149,14 +149,29 @@ function hit(x: number, overrides: Partial<Hit> = {}): Hit {
     counter: null,
     tier: 0,
     pulse: false,
+    freeze: 0,
     ...overrides,
   };
 }
 
 /** The final blow of player 1 (or `by`) at world x `x`. */
 function ko(x: number, finish: 'plain' | 'finale' = 'plain', by: 0 | 1 = 0): FightEvent {
-  const { x: at, y, away, low, damage, held, counter, tier, pulse } = hit(x);
-  return { type: 'ko', finish, x: at, y, away, by, low, damage, held, counter, tier, pulse };
+  const { x: at, y, away, low, damage, held, counter, tier, pulse, freeze } = hit(x);
+  return {
+    type: 'ko',
+    finish,
+    x: at,
+    y,
+    away,
+    by,
+    low,
+    damage,
+    held,
+    counter,
+    tier,
+    pulse,
+    freeze,
+  };
 }
 
 const BEFORE = createInitialState(MIRROR_MATCH);

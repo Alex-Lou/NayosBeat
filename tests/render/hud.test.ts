@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { MatchConfig } from '../../src/core/config';
 import { finisherState } from '../../src/core/finisher';
 import {
@@ -35,7 +35,7 @@ import {
   FlashBudget,
   type FlashMode,
 } from '../../src/render/flash-budget';
-import { Hud, HUD_MARGIN } from '../../src/render/hud';
+import { ANNOUNCE_LETTER_AREA, Hud, HUD_MARGIN } from '../../src/render/hud';
 import { DISC_SIZE } from '../../src/render/hud-discs';
 import { FX_DARK } from '../../src/render/veils';
 import { VIEW_SIZE } from '../../src/render/view';
@@ -387,5 +387,47 @@ describe("the Finisher's KO on the HUD (docs/finisher.md §1.14)", () => {
     const { hud, texts } = hudOf('normal');
     hud.update(stateAt(1, KO, [1000, 0]));
     expect(texts.some((text) => text.text === 'K.O.')).toBe(true);
+  });
+});
+
+describe('one voice at the KO (docs/polish/AUDIT-ET-PLAN.md, P10)', () => {
+  /** Where a text of the pixel font stands on the screen, its stroke included (view px). */
+  const box = (text: FakeText) => {
+    const width = text.text.length * text.fontSize + text.style.strokeThickness;
+    const height = text.fontSize + text.style.strokeThickness;
+    const left = text.x - text.originX * width;
+    const top = text.y - text.originY * height;
+    return { left, top, right: left + width, bottom: top + height };
+  };
+  const meet = (a: ReturnType<typeof box>, b: ReturnType<typeof box>) =>
+    a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+
+  it('writes the count of the KO under « K.O. », the two apart, lit together', () => {
+    const { hud, texts, budget } = hudOf('normal');
+    const request = vi.spyOn(budget, 'request');
+    hud.knockOut(1, 'combo', false, 8);
+    hud.update(stateAt(1, KO, [1000, 0]));
+    const ko = texts.find((text) => text.text === 'K.O.');
+    const count = texts.find((text) => text.text === 'x8');
+    if (!ko || !count) throw new Error('No K.O. or no count');
+    expect(meet(box(ko), box(count))).toBe(false);
+    expect(box(count).top).toBeGreaterThan(box(ko).bottom);
+    expect(count.x).toBe(ko.x);
+    expect(count.style.color).toBe('#ffffff');
+    // One request for both: « K.O. » and « x8 », six characters at the announcer's widest.
+    expect(request).toHaveBeenCalledWith(budget.toWorld(ANNOUNCE_LETTER_AREA * 6));
+  });
+
+  it('writes no count for a blow on its own, a double KO or a time out', () => {
+    const counts = (round: Partial<RoundState>, hits: number) => {
+      const { hud, texts } = hudOf('normal');
+      hud.knockOut(1, 'plain', false, hits);
+      hud.update(stateAt(1, round, [1000, 0]));
+      return texts.filter((text) => /^x\d/.test(text.text)).map((text) => text.text);
+    };
+    expect(counts(KO, 1)).toEqual([]);
+    expect(counts({ phase: 'roundEnd', result: { winner: null, reason: 'ko' } }, 5)).toEqual([]);
+    expect(counts({ phase: 'roundEnd', result: { winner: 0, reason: 'timeout' } }, 5)).toEqual([]);
+    expect(counts(KO, 3)).toEqual(['x3']);
   });
 });

@@ -576,9 +576,11 @@ export class FinisherScene {
     const card = this.cards[take.by];
     const { timeline, k } = after;
     const shown = cardOf(timeline, k);
-    // Filled with its words on its first frame, a skip past its start included.
+    // Filled with its words on its first frame, a skip past its start included. In the place of
+    // « K.O. », it speaks alone: the stamps still on screen fade out (P10).
     if (shown.shown && !after.cardReady) {
       after.cardReady = true;
+      this.cast.feedback.hush();
       after.cardLook = this.cardLook(card, after.victim);
       const victimX = toPx(state.fighters[take.by === 0 ? 1 : 0].x);
       const half = card.width / 2 + 4;

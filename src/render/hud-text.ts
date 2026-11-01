@@ -33,6 +33,14 @@ export function announcementOf(round: RoundState, names: readonly [string, strin
 }
 
 /**
+ * Under a round's « K.O. », the count of the blows its winner landed in a row, the final one
+ * included (the tally of the sound words: onomatopoeia.ts), from the second on: « x8 ».
+ */
+export function koTallyText(hits: number): string {
+  return hits >= 2 ? `x${hits}` : '';
+}
+
+/**
  * Training: the hits and damage of player 1's last combo on the dummy, and what its super was
  * (`note`: « FINISHER », or why not, training-combo.ts).
  */

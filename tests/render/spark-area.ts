@@ -193,6 +193,70 @@ function litArea(atlas: Atlas, images: readonly FakeImage[], drawnBy: Compositor
   return lit / (SAMPLES * SAMPLES);
 }
 
+/** What an effect hides on one display frame: the world px² it covers opaquely, and where. */
+export interface Cover {
+  /** World px² where the pieces drawn together let half or less of what is behind show. */
+  readonly opaque: number;
+  /** The middle of that area, from the impact along the blow (world px; 0 with none). */
+  readonly middle: number;
+  /** Of that area, the world px² within HEART_PROBE of the heart (`at` from the impact). */
+  readonly heart: number;
+}
+
+/** The radius around the heart of a burst that its victim shows through, once it is gone. */
+const HEART_PROBE = 6;
+
+/**
+ * How much of what is behind the images shows through, at each sample: the pieces' opacities
+ * stacked (each lets 1 − alpha through, whatever its blend: an added white hides as well).
+ */
+function coverOf(atlas: Atlas, images: readonly FakeImage[], at: number): Cover {
+  const columns = WIDTH * SAMPLES;
+  const through = new Float32Array(columns * HEIGHT * SAMPLES).fill(1);
+  for (const image of images) {
+    const frame = atlas.frames.get(image.frame);
+    if (!image.visible || image.alpha <= 0 || !frame) continue;
+    const cos = Math.cos(image.rotation);
+    const sin = Math.sin(image.rotation);
+    const reach = Math.hypot(image.width, image.height) / 2;
+    const left = Math.max(0, Math.floor((image.x - reach) * SAMPLES));
+    const right = Math.min(columns, Math.ceil((image.x + reach) * SAMPLES));
+    const top = Math.max(0, Math.floor((image.y - reach) * SAMPLES));
+    const bottom = Math.min(HEIGHT * SAMPLES, Math.ceil((image.y + reach) * SAMPLES));
+    for (let row = top; row < bottom; row++) {
+      for (let column = left; column < right; column++) {
+        const dx = (column + 0.5) / SAMPLES - image.x;
+        const dy = (row + 0.5) / SAMPLES - image.y;
+        let u = (dx * cos + dy * sin) / image.width + 0.5;
+        const v = (-dx * sin + dy * cos) / image.height + 0.5;
+        if (u < 0 || u >= 1 || v < 0 || v >= 1) continue;
+        if (image.flipX) u = 1 - u;
+        const tx = frame.x + Math.min(frame.width - 1, Math.floor(u * frame.width));
+        const ty = frame.y + Math.min(frame.height - 1, Math.floor(v * frame.height));
+        const alpha = ((atlas.data[(ty * atlas.width + tx) * 4 + 3] ?? 0) / 255) * image.alpha;
+        const i = row * columns + column;
+        through[i] = (through[i] ?? 1) * (1 - alpha);
+      }
+    }
+  }
+  let opaque = 0;
+  let heart = 0;
+  let sum = 0;
+  through.forEach((shows, i) => {
+    if (shows > 0.5) return;
+    opaque++;
+    const x = ((i % columns) + 0.5) / SAMPLES;
+    const y = (Math.floor(i / columns) + 0.5) / SAMPLES;
+    sum += x;
+    if (Math.hypot(x - CENTER_X - at, y - CENTER_Y) <= HEART_PROBE) heart++;
+  });
+  return {
+    opaque: opaque / SAMPLES ** 2,
+    middle: opaque === 0 ? 0 : sum / opaque - CENTER_X,
+    heart: heart / SAMPLES ** 2,
+  };
+}
+
 /**
  * Plays effects on one HitFx, in `mode`, and measures them as `drawnBy` draws them (by default,
  * the renderer of that mode), one at a time.
@@ -223,5 +287,18 @@ export class SparkMeter {
       peak = Math.max(peak, litArea(this.recorded.atlas, this.recorded.images, this.drawnBy));
     }
     return peak;
+  }
+
+  /**
+   * What a blow's effect hides on each of its first `frames` display frames, its blow going to
+   * the right (its attacker on the left), its heart `at` world px from the impact.
+   */
+  covers(style: HitStyle, kind: HitKind, frames = 14, at = 0): Cover[] {
+    for (let i = 0; i < 200; i++) this.fx.update();
+    this.fx.play(style, kind, px(CENTER_X), px(GROUND_Y - CENTER_Y), 1);
+    return Array.from({ length: frames }, () => {
+      this.fx.update();
+      return coverOf(this.recorded.atlas, this.recorded.images, at);
+    });
   }
 }

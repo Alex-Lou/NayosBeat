@@ -22,7 +22,7 @@ import type { HitKind } from '../../src/render/hit-fx';
 import { hitStyleOf, hudColorOf } from '../../src/render/hit-styles';
 import { ANNOUNCE_LETTER_AREA } from '../../src/render/hud';
 import { BOOST_WORD, FINISH_PLATE_AREA, FINISH_WORD, MAX_WORD } from '../../src/render/boost-gauge';
-import { announcementOf } from '../../src/render/hud-text';
+import { announcementOf, koTallyText } from '../../src/render/hud-text';
 import { freshPixels, litPixels, luminanceDelta } from '../../src/render/luminance';
 import {
   CALM_WORD_SIZES,
@@ -74,6 +74,7 @@ const IMPACT = {
   counter: null,
   tier: 0,
   pulse: false,
+  freeze: 10,
 } as const;
 
 /** A blow of player 1, as fight-events.ts reports it. */
@@ -88,21 +89,26 @@ function ko(finish: 'plain' | 'ultimate', low = false): Blow {
 
 describe('what a spark lights (docs/flashs.md §1.1)', () => {
   it('never lights more than its table says, in any colorway', () => {
-    const meter = new SparkMeter();
-    const kinds: HitKind[] = ['light', 'heavy', 'ko', 'pulse', 'koMuted', 'block'];
-    for (const fighter of ['nayo', 'riff'] as const) {
-      for (const colorway of ['main', 'alt'] as const) {
-        const style = hitStyleOf(fighter, colorway);
-        for (const kind of kinds) {
-          const measured = meter.peak(style, kind);
-          expect(measured, `${fighter} ${colorway} ${kind}`).toBeLessThanOrEqual(
-            SPARK_AREAS[style.shape][kind],
-          );
-          // The table is a measure, not a guess: its brightest colorway is within 10 %.
-          if (colorway === 'main' && kind !== 'block') {
-            expect(measured, `${fighter} ${kind}`).toBeGreaterThan(
-              SPARK_AREAS[style.shape][kind] * 0.9,
+    // A special's spark (P5) on its own meter: the others keep the chance they were measured with.
+    for (const kinds of [
+      ['light', 'heavy', 'ko', 'pulse', 'koMuted', 'block'],
+      ['pinpoint'],
+    ] as const satisfies readonly (readonly HitKind[])[]) {
+      const meter = new SparkMeter();
+      for (const fighter of ['nayo', 'riff'] as const) {
+        for (const colorway of ['main', 'alt'] as const) {
+          const style = hitStyleOf(fighter, colorway);
+          for (const kind of kinds) {
+            const measured = meter.peak(style, kind);
+            expect(measured, `${fighter} ${colorway} ${kind}`).toBeLessThanOrEqual(
+              SPARK_AREAS[style.shape][kind],
             );
+            // The table is a measure, not a guess: its brightest colorway is within 10 %.
+            if (colorway === 'main' && kind !== 'block') {
+              expect(measured, `${fighter} ${kind}`).toBeGreaterThan(
+                SPARK_AREAS[style.shape][kind] * 0.9,
+              );
+            }
           }
         }
       }
@@ -110,7 +116,7 @@ describe('what a spark lights (docs/flashs.md §1.1)', () => {
   }, 60_000);
 
   it('drawn by Canvas (no WebGL), never lights more than its table either: tinted pieces are cut', () => {
-    const kinds: HitKind[] = ['light', 'heavy', 'ko', 'pulse', 'koMuted', 'block'];
+    const kinds: HitKind[] = ['light', 'heavy', 'ko', 'pulse', 'koMuted', 'block', 'pinpoint'];
     const blows = (['nayo', 'riff'] as const).flatMap((fighter) =>
       (['main', 'alt'] as const).flatMap((colorway) =>
         kinds.map((kind) => ({ name: `${fighter} ${colorway} ${kind}`, kind, fighter, colorway })),
@@ -242,6 +248,8 @@ describe('what the words and the stamps light (docs/flashs.md §4)', () => {
       round({ phase: 'matchEnd', wins: [1, 2] }),
     ].map((state) => announcementOf(state, names));
     expect(texts).toContain('DOUBLE K.O.');
+    // The KO's count under it (P10), « x8 », is counted as the announcer's letters.
+    texts.push(koTallyText(8));
     const characters = [...new Set(Array.from(texts.join('')).concat(DIGITS))].filter(
       (c) => c !== ' ',
     );
@@ -277,6 +285,21 @@ describe('what the words and the stamps light (docs/flashs.md §4)', () => {
 });
 
 describe('what a blow asks the budget (docs/flashs.md §4)', () => {
+  it("shows a special's contact, muted or not; the Ultime, the Finisher and every KO keep their own (P5)", () => {
+    const look = (event: Blow) => {
+      const ask = blowAsk(event, 'slash', false, 1);
+      return [ask.look, ask.muted];
+    };
+    expect(look(blow({ tier: 1 }))).toEqual(['pinpoint', 'pinpoint']);
+    expect(look(blow({ tier: 2, heavy: true, counter: 'counter' }))).toEqual([
+      'pinpoint',
+      'pinpoint',
+    ]);
+    expect(look(blow({ tier: 3, heavy: true }))).toEqual(['heavy', 'pulse']);
+    expect(look({ ...ko('plain'), tier: 1 })).toEqual(['ko', 'koMuted']);
+    expect(look(blow({ tier: 0, heavy: true }))).toEqual(['heavy', 'pulse']);
+  });
+
   it('plays a heavy blow muted as the pulse, a KO as its own, a light one as it is', () => {
     const muted = (event: Blow): SparkLook => blowAsk(event, 'slash', false, 1).muted;
     expect(muted(blow({ heavy: true }))).toBe('pulse');
@@ -296,7 +319,7 @@ describe('what a blow asks the budget (docs/flashs.md §4)', () => {
   it('asks for its spark, word and stamp lit; muted, for the spark alone, the rest calm later', () => {
     const ask = blowAsk(blow({ heavy: true, counter: 'counter' }), 'slash', false, 12);
     expect(ask.area).toBe(
-      SPARK_AREAS.slash.heavy + wordArea('heavy', 12, false) + stampArea(false),
+      SPARK_AREAS.slash.heavy + wordArea('heavy', 12, false) + stampArea(false, true),
     );
     expect(ask.mutedArea).toBe(SPARK_AREAS.slash.pulse);
     expect(ask.later).toEqual({ word: wordArea('heavy', 12, true), stamp: stampArea(true) });

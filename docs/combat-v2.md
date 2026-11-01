@@ -1356,7 +1356,7 @@ Chaque phase (et chaque PR à l'intérieur) laisse une build **jouable sur PC et
 - Hurtbox calées sur le dessin (après régénération des sprites de M7.3), outil `measure-boxes`, test « contact visible », tolérances durcies ; correctifs Uppercut 4..24, j.L 4..28, Crochet 10..52, Balayage 12..51.
 - Règle de manip fraîche ; S lit d'abord les manips (↓↘→ + S = Vinyle).
 - Vinyle : renommage, boîte −10..10 / 32..52, vitesse 3,5 ; planche `projectile` redessinée (8 images), `special` retouché.
-- Aide : `data/move-texts.ts`, page « Les bases », une page par personnage (ouverte sur celui choisi), nom du coup au-dessus du perso en entraînement (40 tics), descriptions de sélection (§17.3).
+- Aide : `data/move-texts.ts`, page « Les bases », une page par personnage (ouverte sur celui choisi), nom du coup en entraînement (40 tics), au-dessus du perso sur une ligne fixe sous le HUD (y = 40 px de vue, que les onomatopées ne peuvent pas atteindre : `docs/flashs.md` §2, P10), descriptions de sélection (§17.3).
 - Compteur de combo commité et finalisé ; test des glyphes.
 - Boîte grise de Riff : hurtbox et pied, hitbox rouge en debug seulement ; overlay debug complet.
 - **Fini quand** : l'étincelle d'un Coup bas apparaît à moins de 14 px du sol et à moins de 2 px de l'orteil dessiné ; ↓↘→ + S donne le Vinyle ; s'accroupir puis marcher 13 tics et appuyer S donne le Pied fendu ; chaque coup a son texte.

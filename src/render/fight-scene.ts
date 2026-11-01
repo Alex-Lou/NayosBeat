@@ -34,7 +34,6 @@ import { TrainingView } from './training-view';
 import { BoxOverlay } from './box-overlay';
 import {
   closestDuring,
-  FINISHER_CLOSE_UP,
   frameAround,
   frameFight,
   MAX_CLOSE_UP,
@@ -62,7 +61,8 @@ import { requestLandscapeFullscreen } from './fullscreen';
 import { HoldPrompt } from './hold-prompt';
 import { HoldRing } from './hold-ring';
 import { Hud } from './hud';
-import { MoveCaption } from './move-caption';
+import { MoveCaption, UNDER_CAPTIONS } from './move-caption';
+import { HUD_BAND } from './onomatopoeia';
 import type { ShakeMode } from './shake';
 import { ProjectileView } from './projectile-view';
 import { isContextLost, type RenderMode } from './render-mode';
@@ -350,8 +350,10 @@ export class FightScene extends Phaser.Scene {
           budget,
           comfort,
           mode,
-          knockOut: (player, finish, still) => {
-            hud.knockOut(player, finish, still);
+          // Training writes the moves' names on a line under the HUD: the words stay under it.
+          wordsTop: this.config.training ? UNDER_CAPTIONS : HUD_BAND,
+          knockOut: (player, finish, still, hits) => {
+            hud.knockOut(player, finish, still, hits);
           },
         },
         touch ? vibrate : undefined,
@@ -361,7 +363,7 @@ export class FightScene extends Phaser.Scene {
       ),
       hud,
       holdRing: new HoldRing(this, GROUND_Y, [this.styles[0].energy, this.styles[1].energy], mode),
-      caption: this.config.training ? new MoveCaption(this, this.config, GROUND_Y) : undefined,
+      caption: this.config.training ? new MoveCaption(this, this.config) : undefined,
       holdPrompt: this.config.training ? new HoldPrompt(this, this.config, GROUND_Y) : undefined,
       debugOverlay: debug ? new DebugOverlay(document.body) : undefined,
       boxOverlay:
@@ -682,7 +684,6 @@ export class FightScene extends Phaser.Scene {
     runtime.touch?.showBoost(a.boost);
     runtime.touch?.showFinisher(finisher[0], a.facing, a.action);
     runtime.holdRing.update(this.state);
-    runtime.caption?.update(this.state);
     runtime.holdPrompt?.update(this.state);
     runtime.boxOverlay?.update(this.state);
     runtime.trainingView?.update();
@@ -714,10 +715,10 @@ export class FightScene extends Phaser.Scene {
       input.lean = fight.lean;
       framing = fight;
     }
-    runtime.caption?.setCloseUp(staged ? FINISHER_CLOSE_UP : MAX_CLOSE_UP);
     this.closeUp = framing.closeUp;
     this.cameraLeft = framing.left;
     this.cameraTop = framing.top;
+    runtime.caption?.update(this.state, framing);
     this.cameras.main
       .setZoom((this.scale.width / VIEW_SIZE.width) * framing.closeUp)
       .setScroll(framing.left + runtime.feedback.shakeX, framing.top + runtime.feedback.shakeY);
