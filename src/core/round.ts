@@ -1,4 +1,5 @@
 import type { MatchConfig } from './config';
+import { finisherLocked } from './finisher';
 import { INTRO_FRAMES, ROUND_END_FRAMES, ROUNDS_TO_WIN } from './rules';
 import {
   createRound,
@@ -23,7 +24,10 @@ export function updateRound(state: GameState, config: MatchConfig): GameState {
 
     case 'fight': {
       if (config.training) return nextPhaseFrame(state);
-      const timer = Math.max(0, round.timer - 1);
+      // Stopped while the Finisher locks the pair (docs/finisher.md §1.10): no time out on a
+      // victim held at 1 HP.
+      const locked = finisherLocked(state, 0) || finisherLocked(state, 1);
+      const timer = locked ? round.timer : Math.max(0, round.timer - 1);
       const result = roundResult(state.fighters, timer, config);
       if (!result) return withRound(state, { ...round, timer, phaseFrame: round.phaseFrame + 1 });
       return withRound(state, {

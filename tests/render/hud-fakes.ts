@@ -38,12 +38,22 @@ export class FakeGraphics {
 /** An engine text standing in for the real one. */
 export class FakeText {
   text: string;
-  readonly style: { color: string };
+  readonly style: { color: string; stroke: string; strokeThickness: number };
   alpha = 1;
   renders = 0;
-  constructor(text: string, color = '#ffffff') {
+  /** Where it stands, and which of its points stands there (0: its left or top, 1: the other). */
+  originX = 0;
+  originY = 0;
+  constructor(
+    text: string,
+    color = '#ffffff',
+    readonly x = 0,
+    readonly y = 0,
+    stroke = '#000000',
+    strokeThickness = 0,
+  ) {
     this.text = text;
-    this.style = { color };
+    this.style = { color, stroke, strokeThickness };
   }
   setScrollFactor(): this {
     return this;
@@ -51,7 +61,15 @@ export class FakeText {
   setDepth(): this {
     return this;
   }
-  setOrigin(): this {
+  setOrigin(x = 0.5, y = x): this {
+    this.originX = x;
+    this.originY = y;
+    return this;
+  }
+  setStroke(color: string, thickness: number): this {
+    this.renders++;
+    this.style.stroke = color;
+    this.style.strokeThickness = thickness;
     return this;
   }
   setText(text: string): this {
@@ -98,8 +116,13 @@ export function fakeScene(): {
         graphics.push(made);
         return made;
       },
-      text: (_x: number, _y: number, text: string, style: { color?: string }) => {
-        const made = new FakeText(text, style.color);
+      text: (
+        x: number,
+        y: number,
+        text: string,
+        style: { color?: string; stroke?: string; strokeThickness?: number },
+      ) => {
+        const made = new FakeText(text, style.color, x, y, style.stroke, style.strokeThickness);
         texts.push(made);
         return made;
       },

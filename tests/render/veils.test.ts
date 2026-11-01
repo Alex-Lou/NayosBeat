@@ -102,13 +102,13 @@ describe('the veils (docs/flashs.md §1.2, §2)', () => {
       const calm = koVeil('combo', energy, FIGHT_STAGE_COLORS, 'reduced');
       if (!calm) throw new Error('No vignette');
       expect(peakDelta(calm)).toBeLessThanOrEqual(CALM_DELTA);
-      const eclat = koVeil('finisher', energy, FIGHT_STAGE_COLORS, 'reduced');
+      const eclat = koVeil('ultimate', energy, FIGHT_STAGE_COLORS, 'reduced');
       if (!eclat) throw new Error('No éclat');
       expect(peakDelta(eclat)).toBeLessThanOrEqual(VEIL_DELTA);
       for (const [finish, mode, lit] of [
         ['combo', 'off', true],
-        ['finisher', 'off', true],
-        ['finisher', 'normal', false],
+        ['ultimate', 'off', true],
+        ['ultimate', 'normal', false],
       ] as const) {
         const ink = koVeil(finish, energy, FIGHT_STAGE_COLORS, mode, lit);
         expect(ink, `${finish} ${mode}`).toMatchObject({ color: DIM_COLOR });
@@ -131,7 +131,7 @@ describe('the veils (docs/flashs.md §1.2, §2)', () => {
       // Even in the corners, where it is whole: never a flash.
       expect(peakDelta(vignette)).toBeLessThanOrEqual(VEIL_DELTA);
       expect(peakDelta(vignette)).toBeGreaterThan(VEIL_DELTA - 0.01);
-      const eclat = koVeil('finisher', energy, FIGHT_STAGE_COLORS);
+      const eclat = koVeil('ultimate', energy, FIGHT_STAGE_COLORS);
       expect(eclat).toMatchObject({ kind: 'eclat', color: energy });
       if (!eclat) continue;
       // Its heart: the KO's one flash, as strong for a cyan as for a magenta.
@@ -170,7 +170,7 @@ describe('the veils (docs/flashs.md §1.2, §2)', () => {
       superHalo(FIGHT_STAGE_COLORS),
       ...ENERGIES.flatMap((energy) => [
         koVeil('combo', energy, FIGHT_STAGE_COLORS),
-        koVeil('finisher', energy, FIGHT_STAGE_COLORS),
+        koVeil('ultimate', energy, FIGHT_STAGE_COLORS),
       ]),
     ].filter((look) => look !== null);
     for (const look of looks) {

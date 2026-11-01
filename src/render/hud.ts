@@ -5,7 +5,8 @@ import { ROUNDS_TO_WIN } from '../core/rules';
 import type { FighterState, GameState, RoundState } from '../core/state';
 import { BoostGauge } from './boost-gauge';
 import type { Breakage } from './boost-motion';
-import type { KoFinish } from './fight-events';
+import { shatters, type KoFinish } from './fight-events';
+import { NO_SIGNAL, type FinisherSignals } from './finisher-signal';
 import type { FlashBudget } from './flash-budget';
 import { BAR_BOX, EMBER_RISE, HealthBar, type HudComfort } from './health-bar';
 import { DISC_SIZE, discSpans, MARK_TICKS, markSpan, PIP_SIZE, pipSpans } from './hud-discs';
@@ -14,7 +15,8 @@ import { announcementOf, comboText, NO_TIMER } from './hud-text';
 import { FX_DARK } from './veils';
 import { VIEW_SIZE } from './view';
 
-const MARGIN = 8;
+/** From each edge of the screen to its bar and its gauge. */
+export const HUD_MARGIN = 8;
 /** Room above the bars for their embers, under the screen's top. */
 const BAR_TOP = EMBER_RISE + 1;
 const NAME_Y = BAR_TOP + BAR_BOX.height + 3;
@@ -53,8 +55,8 @@ const TEXT_STYLE: Phaser.Types.GameObjects.Text.TextStyle = {
 /**
  * Health bars, Boost gauges, timer, round wins and announcements (docs/art/direction-hud.md).
  * Fixed on screen, above the stage, on a dark band; everything is made once. What lights up at
- * once (the white of a hit on a bar, a new announcement) asks the fight's flash budget first
- * (docs/flashs.md §4), in view px² (the zoom does not enlarge the HUD).
+ * once (the white of a hit on a bar, a new announcement, the FINISH plate) asks the fight's flash
+ * budget first (docs/flashs.md §4), in view px² (the zoom does not enlarge the HUD).
  */
 export class Hud {
   private readonly bars: readonly [HealthBar, HealthBar];
@@ -96,9 +98,11 @@ export class Hud {
     const { width } = VIEW_SIZE;
     this.motion = comfort.motion;
     this.lights = (view) => budget.request(budget.toWorld(view)) === 'lit';
+    // What may light only if it makes no flash: it waits otherwise (the FINISH plate).
+    const admits = (view: number): boolean => budget.admit(budget.toWorld(view));
     this.names = [config.fighters[0].name, config.fighters[1].name];
-    const leftX = MARGIN;
-    const rightX = width - MARGIN - BAR_BOX.width;
+    const leftX = HUD_MARGIN;
+    const rightX = width - HUD_MARGIN - BAR_BOX.width;
 
     paintSpans(this.fixed(scene.add.graphics()), bandSpans(width));
     const discX = Math.round((width - DISC_SIZE) / 2);
@@ -135,13 +139,15 @@ export class Hud {
         GAUGE_Y,
         { side: 0, energy: energies[0], ...comfort },
         smallText(),
+        admits,
       ),
       new BoostGauge(
         scene,
-        width - MARGIN,
+        width - HUD_MARGIN,
         GAUGE_Y,
         { side: 1, energy: energies[1], ...comfort },
         smallText(),
+        admits,
       ),
     ];
 
@@ -171,7 +177,8 @@ export class Hud {
       : undefined;
   }
 
-  update(state: GameState): void {
+  /** `finisher`: each fighter's Finisher signal on this state (finisher-signal.ts). */
+  update(state: GameState, finisher: FinisherSignals = NO_SIGNAL): void {
     const { fighters, frame, round } = state;
     fighters.forEach((fighter, player) => {
       const max = this.config.fighters[player]?.maxHealth ?? 1;
@@ -181,7 +188,7 @@ export class Hud {
       const breakage = breakageOf(this.finishes[player] ?? null);
       const still = breakage !== null && this.stills[player];
       this.bars[player]?.update(fighter.health / max, comboed, frame, breakage, still);
-      this.gauges[player]?.update(fighter.boost, breakage, frame, still);
+      this.gauges[player]?.update(fighter.boost, breakage, frame, still, finisher[player]);
     });
     this.setPips(round);
     const seconds = Math.ceil(round.timer / TICK_RATE);
@@ -260,10 +267,13 @@ export class Hud {
   }
 }
 
-/** What a KO does to the gauge: a plain one leaves it whole, a combo's cracks it, a super's shatters it. */
+/**
+ * What a KO does to the gauge: a plain one leaves it whole, a combo's cracks it, a super's
+ * shatters it (an Ultime's, the Finisher's: on its contact until its scene plays).
+ */
 function breakageOf(finish: KoFinish | null): Breakage | null {
   if (finish === 'combo') return 'crack';
-  if (finish === 'finisher') return 'shatter';
+  if (finish !== null && shatters(finish)) return 'shatter';
   return null;
 }
 

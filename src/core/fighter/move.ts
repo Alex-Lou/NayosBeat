@@ -10,6 +10,7 @@ import {
   THROW_CONVERSION_FRAMES,
 } from '../rules';
 import {
+  FLAG_FINISHER,
   FLAG_MOVE_HIT,
   FLAG_SPENT_CANCEL,
   FLAG_SPENT_SUPER,
@@ -21,18 +22,21 @@ import { enter, nextFrame } from './action';
 /**
  * One tick of a ground move: a cancel into another move, or its next frame. Null once the move
  * is over: the fighter is back in neutral. A multi-hit move (the super) can land again from each
- * of its pulses. `discOut`: the fighter's projectile still flies (see `groundMove`).
+ * of its pulses. `discOut`: the fighter's projectile still flies (see `groundMove`); `armed`:
+ * the Finisher is ready (see `startGroundMove`).
  */
 export function updateMove(
   fighter: FighterState,
   template: FighterTemplate,
   discOut = false,
+  armed = false,
 ): FighterState | null {
   const move = fighter.move ? moveOf(template, fighter.move) : null;
   if (!move) return null;
   const cancel = cancelMove(fighter, move, template, discOut);
   if (cancel) {
-    return startGroundMove({ ...fighter, vx: momentumOf(fighter, move) }, cancel, template, true);
+    const moving = { ...fighter, vx: momentumOf(fighter, move) };
+    return startGroundMove(moving, cancel, template, true, armed);
   }
   if (fighter.actionFrame + 1 >= moveDuration(move)) return null;
   const next = applyMotion(nextFrame(fighter), move);
@@ -43,29 +47,35 @@ export function updateMove(
  * Starts a ground move, from neutral or as a cancel of the one playing (`cancelled`): a move
  * from neutral starts a new phrase, a cancel grows it, the Rewind starts it over
  * (docs/combos-v3.md §1.2). The gauge the move costs is paid here, and the Rewind or the super
- * is spent for the sequence (§1.8.4).
+ * is spent for the sequence (§1.8.4). The super started while the Finisher is ready (`armed`,
+ * docs/finisher.md §1.6) is marked FLAG_FINISHER: the same move, the same data.
  */
 export function startGroundMove(
   fighter: FighterState,
   moveId: MoveId,
   template: FighterTemplate,
   cancelled = false,
+  armed = false,
 ): FighterState {
   const move = moveOf(template, moveId);
   const started = startAttack(fighter, 'attack', moveId);
+  const finisher = armed && tierOf(move) === 3 ? FLAG_FINISHER : 0;
   return applyMotion(
     {
       ...started,
       crouching: move.crouching === true,
       ...phraseWith(fighter, moveId, cancelled && moveId !== 'boostCancel'),
       boost: fighter.boost - (move.boostCost ?? 0),
-      flags: started.flags | spentBy(moveId, move),
+      flags: started.flags | spentBy(moveId, move) | finisher,
     },
     move,
   );
 }
 
-/** Starts a move of any kind: it has neither connected nor hit anything yet. */
+/**
+ * Starts a move of any kind: it has neither connected nor hit anything yet, nor is it the
+ * Finisher.
+ */
 export function startAttack(
   fighter: FighterState,
   action: FighterAction,
@@ -75,7 +85,7 @@ export function startAttack(
     ...enter(fighter, action),
     move,
     moveConnected: false,
-    flags: fighter.flags & ~FLAG_MOVE_HIT,
+    flags: fighter.flags & ~(FLAG_MOVE_HIT | FLAG_FINISHER),
     bufferedCommand: null,
     bufferFrames: 0,
   };

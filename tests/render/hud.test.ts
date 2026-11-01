@@ -1,13 +1,44 @@
 import { describe, expect, it } from 'vitest';
 import type { MatchConfig } from '../../src/core/config';
-import { createInitialState, type GameState, type RoundState } from '../../src/core/state';
+import { finisherState } from '../../src/core/finisher';
+import {
+  createInitialState,
+  FLAG_DANGER,
+  type GameState,
+  type RoundState,
+} from '../../src/core/state';
 import { NAYO } from '../../src/data/fighters/nayo';
 import { RIFF } from '../../src/data/fighters/riff';
 import { TRAINING_STAGE } from '../../src/data/stages';
-import { FlashBudget, type FlashMode } from '../../src/render/flash-budget';
-import { Hud } from '../../src/render/hud';
+import {
+  BLOCKED_ALPHA,
+  BOOST_WORD,
+  FINISH_PLATE_AREA,
+  FINISH_WORD,
+  GAUGE_WIDTH,
+  LIGHTS_AT,
+  MAX_WORD,
+  WORD_WIDTH,
+} from '../../src/render/boost-gauge';
+import type { KoFinish } from '../../src/render/fight-events';
+import {
+  FinisherSignal,
+  finisherSignalOf,
+  SIGNAL_FADE_TICKS,
+} from '../../src/render/finisher-signal';
+import {
+  FLASH_MARGIN,
+  FLASH_MERGE,
+  FLASH_RULES,
+  FlashBudget,
+  type FlashMode,
+} from '../../src/render/flash-budget';
+import { Hud, HUD_MARGIN } from '../../src/render/hud';
+import { DISC_SIZE } from '../../src/render/hud-discs';
 import { FX_DARK } from '../../src/render/veils';
-import { fakeScene } from './hud-fakes';
+import { VIEW_SIZE } from '../../src/render/view';
+import { armedStart } from '../core/finisher-helpers';
+import { fakeScene, type FakeText } from './hud-fakes';
 
 const CONFIG: MatchConfig = { stage: TRAINING_STAGE, fighters: [NAYO, RIFF] };
 const DARK = `#${FX_DARK.toString(16)}`;
@@ -77,7 +108,7 @@ describe('the HUD asks the flash budget for what it lights (docs/flashs.md §4)'
 
   it('breaks the gauges of a fighter still when the feedback says no room is left', () => {
     /** How many more see-through spans (the shards, fading) the HUD shows after the KO. */
-    const shards = (still: boolean) => {
+    const shards = (still: boolean, finish: KoFinish = 'ultimate') => {
       const { hud, graphics } = hudOf('off');
       const faded = () =>
         graphics.reduce(
@@ -86,12 +117,162 @@ describe('the HUD asks the flash budget for what it lights (docs/flashs.md §4)'
         );
       for (let frame = 0; frame <= 60; frame++) hud.update(stateAt(frame, {}, [1000, 100]));
       const before = faded();
-      hud.knockOut(1, 'finisher', still);
+      hud.knockOut(1, finish, still);
       hud.update(stateAt(61, KO, [1000, 0]));
       hud.update(stateAt(63, KO, [1000, 0]));
       return faded() - before;
     };
     expect(shards(false)).toBeGreaterThan(40);
     expect(shards(true)).toBe(0);
+    // The Finisher's KO shatters it too, as an Ultime's until its scene (docs/finisher.md §5.10).
+    expect(shards(false, 'finale')).toBe(shards(false));
+  });
+});
+
+describe('the FINISH plate on the HUD (docs/finisher.md §1.2, §5.8 test 12)', () => {
+  /** The future track of the Crossfader, under the timer's disc (docs/finisher.md §1.2). */
+  const CROSSFADER = { from: 192, to: 288 };
+
+  /** Both gauges' words, left then right, as the HUD makes them (BOOST before any update). */
+  function wordsOf(texts: readonly FakeText[]): [FakeText, FakeText] {
+    const [left, right] = texts.filter((text) => text.text === BOOST_WORD);
+    if (!left || !right) throw new Error('The HUD writes BOOST under each name');
+    return [left, right];
+  }
+
+  /** Plays `state` from tick `from` for `frames` frames, as FightScene does, its signal read each. */
+  function play(
+    run: ReturnType<typeof hudOf>,
+    signal: FinisherSignal,
+    state: GameState,
+    from: number,
+    frames: number,
+  ): void {
+    for (let frame = from; frame < from + frames; frame++) {
+      run.budget.advance(1);
+      const shown = { ...state, frame };
+      signal.update(shown);
+      run.hud.update(shown, signal.states);
+    }
+  }
+
+  it('touches neither the timer disc nor the Crossfader track, 38 px from the disc', () => {
+    const [left, right] = wordsOf(hudOf('normal').texts);
+    expect([left.originX, right.originX]).toEqual([0, 1]);
+    // Each gauge, from its outer end to the end of its word, FINISH at its longest.
+    const gauges = [
+      { from: HUD_MARGIN, to: left.x + WORD_WIDTH },
+      { from: right.x - WORD_WIDTH, to: VIEW_SIZE.width - HUD_MARGIN },
+    ];
+    expect(gauges).toEqual([
+      { from: 8, to: 182 },
+      { from: 298, to: 472 },
+    ]);
+    for (const gauge of gauges) expect(gauge.to - gauge.from).toBe(GAUGE_WIDTH);
+    const disc = { from: (VIEW_SIZE.width - DISC_SIZE) / 2, to: (VIEW_SIZE.width + DISC_SIZE) / 2 };
+    expect(disc.from).toBe(220);
+    for (const gauge of gauges) {
+      for (const other of [disc, CROSSFADER]) {
+        expect(gauge.to <= other.from || gauge.from >= other.to).toBe(true);
+      }
+    }
+    expect([disc.from - (gauges[0]?.to ?? 0), (gauges[1]?.from ?? 0) - disc.to]).toEqual([38, 38]);
+  });
+
+  it("follows the predicate's state, for either player: ready, blocked, off", () => {
+    const states = {
+      ready: armedStart(CONFIG, 0, { distance: 60 }),
+      // Every light but the room: 11 blows in, the Mégabasse's 3 would pass the limit of 12.
+      blocked: armedStart(CONFIG, 0, {
+        distance: 60,
+        victim: { comboCount: 11, flags: FLAG_DANGER },
+      }),
+      off: armedStart(CONFIG, 0, { distance: 60, wins: [0, 0] }),
+    } as const;
+    for (const [expected, state] of Object.entries(states)) {
+      expect(finisherState(state, 0, CONFIG), expected).toBe(expected);
+    }
+    const run = hudOf('normal');
+    const [left, right] = wordsOf(run.texts);
+    const signal = new FinisherSignal(CONFIG, () => undefined);
+    play(run, signal, states.off, 0, 80);
+    expect(left.text).toBe(MAX_WORD);
+    play(run, signal, states.ready, 80, 80);
+    expect([left.text, left.alpha, left.style.stroke]).toEqual([FINISH_WORD, 1, '#30e8ff']);
+    play(run, signal, states.blocked, 160, 80);
+    expect([left.text, left.alpha]).toEqual([FINISH_WORD, BLOCKED_ALPHA]);
+    play(run, signal, states.off, 240, 10);
+    expect(left.text).toBe(MAX_WORD);
+    // Riff's gauge, empty, never showed a signal.
+    expect(right.text).toBe(BOOST_WORD);
+    // Player 2 armed: the right gauge's plate.
+    const mirrored = armedStart(CONFIG, 1, { distance: 60 });
+    expect(finisherState(mirrored, 1, CONFIG)).toBe('ready');
+    play(run, signal, mirrored, 250, 80);
+    expect([right.text, right.alpha, right.style.stroke]).toEqual([FINISH_WORD, 1, '#ff3ca0']);
+    expect(left.text).toBe(BOOST_WORD);
+  });
+
+  it('shows no signal between rounds, though the lights stay on', () => {
+    const ready = armedStart(CONFIG, 0, { distance: 60 });
+    const over: GameState = { ...ready, round: { ...ready.round, ...KO } };
+    expect(finisherState(over, 0, CONFIG)).toBe('ready');
+    expect(finisherSignalOf(over, 0, CONFIG)).toBe('off');
+    const run = hudOf('normal');
+    const [left] = wordsOf(run.texts);
+    play(run, new FinisherSignal(CONFIG, () => undefined), over, 0, 80);
+    expect(left.text).not.toBe(FINISH_WORD);
+  });
+
+  it('lights the plate when the flash budget has room for it only', () => {
+    const run = hudOf('reduced');
+    const [left] = wordsOf(run.texts);
+    const signal = new FinisherSignal(CONFIG, () => undefined);
+    play(run, signal, armedStart(CONFIG, 0, { distance: 60, wins: [0, 0] }), 0, 80);
+    const ready = armedStart(CONFIG, 0, { distance: 60 });
+    // MAX fades out; on the frame FINISH would start to light, something lit just now, which
+    // the plate would add up with into a flash: it waits, unseen.
+    play(run, signal, ready, 80, LIGHTS_AT);
+    const frame = 80 + LIGHTS_AT;
+    run.budget.advance(1);
+    run.budget.show(
+      run.budget.toWorld(FLASH_RULES.reduced.area * FLASH_MARGIN - FINISH_PLATE_AREA),
+    );
+    signal.update({ ...ready, frame });
+    run.hud.update({ ...ready, frame }, signal.states);
+    expect([left.text, left.alpha]).toEqual([FINISH_WORD, 0]);
+    play(run, signal, ready, frame + 1, 20);
+    expect([left.text, left.alpha]).toEqual([FINISH_WORD, 1]);
+  });
+
+  it('keeps the plate counted on the frames FINISH lights on, not the frame the signal turns', () => {
+    // A piece of the fight that fits alone, not with the plate (a muted spray at the closest
+    // framing), asked as FightScene asks the fight's effects: before the HUD, on each frame from
+    // the one the signal turns on.
+    const piece = FLASH_RULES.reduced.area * FLASH_MARGIN - FINISH_PLATE_AREA / 2;
+    const ready = armedStart(CONFIG, 0, { distance: 60 });
+    const fits = Array.from({ length: SIGNAL_FADE_TICKS + 3 }, (_, age) => {
+      const run = hudOf('reduced');
+      const [left] = wordsOf(run.texts);
+      const signal = new FinisherSignal(CONFIG, () => undefined);
+      play(run, signal, armedStart(CONFIG, 0, { distance: 60, wins: [0, 0] }), 0, 80);
+      play(run, signal, ready, 80, age);
+      const shown = { ...ready, frame: 80 + age };
+      run.budget.advance(1);
+      const room = run.budget.fits(run.budget.toWorld(piece));
+      signal.update(shown);
+      run.hud.update(shown, signal.states);
+      // Whatever the budget says, the plate settles on FINISH.
+      play(run, signal, ready, 81 + age, 20);
+      expect(left.text).toBe(FINISH_WORD);
+      return room;
+    });
+    // MAX fading out lights nothing: room, so nothing is muted for it. FINISH lighting up, the
+    // FLASH_MERGE frames after LIGHTS_AT: no room, the two would add up into a flash the budget
+    // did not count. (On LIGHTS_AT the piece, asked first, would light, and the plate wait.)
+    fits.forEach((room, age) => {
+      const lighting = age > LIGHTS_AT && age <= LIGHTS_AT + FLASH_MERGE;
+      expect(room, `${age} frames in`).toBe(!lighting);
+    });
   });
 });

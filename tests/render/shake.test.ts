@@ -14,9 +14,9 @@ function run(trauma: number, away: 1 | -1 = 1, frames = 60, seed = 1) {
 describe('the screen shake (docs/flashs.md §1.3)', () => {
   it('peaks at its trauma squared: 8 px for an Ultime, about 6 for a plain KO, 3 for a heavy blow', () => {
     const peak = (trauma: number) => Math.max(...run(trauma).map(({ x }) => Math.abs(x)));
-    expect(peak(TRAUMA.ko.finisher)).toBeLessThanOrEqual(MAX_SHAKE);
-    expect(peak(TRAUMA.ko.finisher)).toBeGreaterThanOrEqual(MAX_SHAKE - 1);
-    expect(peak(TRAUMA.ko.plain)).toBeLessThan(peak(TRAUMA.ko.finisher));
+    expect(peak(TRAUMA.ko.ultimate)).toBeLessThanOrEqual(MAX_SHAKE);
+    expect(peak(TRAUMA.ko.ultimate)).toBeGreaterThanOrEqual(MAX_SHAKE - 1);
+    expect(peak(TRAUMA.ko.plain)).toBeLessThan(peak(TRAUMA.ko.ultimate));
     expect(peak(TRAUMA.ko.plain)).toBeGreaterThanOrEqual(5);
     expect(peak(TRAUMA.heavy)).toBeLessThanOrEqual(Math.ceil(MAX_SHAKE * TRAUMA.heavy ** 2));
     expect(peak(TRAUMA.heavy)).toBeGreaterThanOrEqual(2);

@@ -69,6 +69,16 @@ export interface StageConfig {
  */
 export type TrainingGauge = 'normal' | 'full' | 'infinite';
 
+/**
+ * The Finisher in training (docs/finisher.md §1.12): as in a match, its match point played as
+ * reached ('match'); always ready, three bars and room enough ('always'); or never, BOOST and
+ * back staying the plain super ('off').
+ */
+export type TrainingFinisher = 'match' | 'always' | 'off';
+
+/** The health the training dummy refills to, in percent of its own (docs/finisher.md §1.12). */
+export type TrainingDummyHealth = 100 | 50 | 30 | 10;
+
 export interface MatchConfig {
   readonly stage: StageConfig;
   readonly fighters: readonly [FighterTemplate, FighterTemplate];
@@ -76,4 +86,8 @@ export interface MatchConfig {
   readonly training?: boolean;
   /** Training mode's gauge: 'normal' when left out. */
   readonly trainingGauge?: TrainingGauge;
+  /** Training mode's Finisher: 'match' when left out. */
+  readonly trainingFinisher?: TrainingFinisher;
+  /** Training mode's dummy (player 2) refills to this: 100 when left out. */
+  readonly trainingDummyHealth?: TrainingDummyHealth;
 }

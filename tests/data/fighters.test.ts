@@ -271,6 +271,25 @@ describe('fighter templates', () => {
         /super: its pulses must follow each other within its active frames/,
       ],
       [
+        // The Finisher's KO falls on a big blow (docs/finisher.md §1.6, §5.8 test 10).
+        'a super whose last blow leaves the opponent standing',
+        withMove(NAYO, 'super', () => ({
+          pulses: pulses.map(({ frame }) => ({ frame, hit: pulses[0]?.hit ?? NAYO.moves.special })),
+        })),
+        /super: the super's last blow sends to the floor/,
+      ],
+      [
+        // Its lock follows the body from blow to blow (docs/finisher.md §1.6).
+        'a super whose first blow sends to the floor',
+        withMove(NAYO, 'super', () => ({ knockdown: { vy: 600, vx: 200 } })),
+        /super: the super's blows before its last hold the body until the next/,
+      ],
+      [
+        'a super whose first blow stuns shorter than the gap to the next',
+        withMove(NAYO, 'super', () => ({ hitstun: 11 })),
+        /super: the super's blows before its last hold the body until the next/,
+      ],
+      [
         'pulses on a Remix',
         withMove(NAYO, 'specialForwardBoost', () => ({ pulses })),
         /specialForwardBoost: only the super has pulses/,

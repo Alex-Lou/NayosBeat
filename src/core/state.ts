@@ -112,9 +112,11 @@ export interface FighterState {
  * The bits of `FighterState.flags` (docs/combos-v3.md §1.11). The attacker's: what its sequence
  * already spent (the Rewind, the super: once each, cleared as the opponent gets out of it, see
  * `boosted` in step.ts); its current move hit (not blocked), set as it lands, cleared as the next
- * move starts. The victim's, cleared once it stands in neutral again: its combo used its
- * extender (Rebond or Vrille, once a combo), it is being slammed down to bounce, it took the
- * combo's last blow (COMBO_LIMIT).
+ * move starts; its super started armed (the Finisher, docs/finisher.md §1.6), cleared the same
+ * way, or at its first contact if the lock does not take there. The victim's, cleared once it
+ * stands in neutral again: its combo used its extender (Rebond or Vrille, once a combo), it is
+ * being slammed down to bounce, it took the combo's last blow (COMBO_LIMIT), the combo opened
+ * on it at 30 % of its health or less (docs/finisher.md §1.1, the Finisher's third light).
  */
 export const FLAG_SPENT_CANCEL = 1;
 export const FLAG_SPENT_SUPER = 2;
@@ -122,10 +124,12 @@ export const FLAG_MOVE_HIT = 4;
 export const FLAG_EXTENDED = 8;
 export const FLAG_BOUNCE = 16;
 export const FLAG_LIMIT = 32;
+export const FLAG_DANGER = 64;
+export const FLAG_FINISHER = 128;
 /** The attacker's spends, once each per sequence. */
 export const SEQUENCE_FLAGS = FLAG_SPENT_CANCEL | FLAG_SPENT_SUPER;
 /** The victim's marks. */
-export const VICTIM_FLAGS = FLAG_EXTENDED | FLAG_BOUNCE | FLAG_LIMIT;
+export const VICTIM_FLAGS = FLAG_EXTENDED | FLAG_BOUNCE | FLAG_LIMIT | FLAG_DANGER;
 
 export interface ProjectileState {
   readonly owner: 0 | 1;

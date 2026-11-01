@@ -1,6 +1,7 @@
 import { overlapMiddleX, overlapMiddleY, overlaps } from './boxes';
 import type { Box, FighterTemplate } from './config';
 import { chipDamage, scaledDamage } from './damage';
+import { dangerMarked, type FinisherBlow } from './finisher';
 import { has, Input } from './input';
 import type { Guard, MoveData, MoveId } from './move-data';
 import { flightOf, isJuggled } from './juggle';
@@ -73,11 +74,17 @@ export interface Impact {
   readonly y: number;
 }
 
-/** What a blow brings besides its move: a counter-hit, where it lands on the body. */
+/**
+ * What a blow brings besides its move: a counter-hit, where it lands on the body, whether the
+ * defender was in danger before it (`inDanger`, for the combo it may open), and how it lands on
+ * a pair the Finisher locks (docs/finisher.md §1.6).
+ */
 export interface HitDetail {
   readonly counter: CounterHit | null;
   /** Height of the impact, in percent of the defender's standing body (`impactPercent`). */
   readonly impactPercent: number;
+  readonly danger?: boolean;
+  readonly finisher?: FinisherBlow | null;
 }
 
 /** A blow on the body, nothing more. */
@@ -206,7 +213,9 @@ export function contactOf(
  * (`detail`), more damage and stun, or the move's own CONTRE. Late in a combo the hitstun decays
  * (docs/combos-v3.md §1.7). `attackerX` is where the hit comes from (the attacker, or a
  * projectile's back). Health never drops below `minHealth`: 1 in training, where nobody can be
- * KO'd.
+ * KO'd. The combo's first blow marks a defender in danger (FLAG_DANGER), and a blow of the
+ * Finisher's lock stops at 1 HP or takes all that is left (`detail.finisher`), whatever the
+ * scaling.
  */
 export function applyHit(
   defender: FighterState,
@@ -241,7 +250,7 @@ export function applyHit(
   const counter = detail.counter !== null;
   const own = counter ? move.counter : undefined;
   const damage = scaledDamage(move.damage, comboCount, counter);
-  const health = Math.max(minHealth, defender.health - damage);
+  const health = healthAfter(defender.health, damage, minHealth, detail.finisher ?? null);
   const launch = own?.knockdown ?? move.knockdown;
   const slide = own?.pushback ?? move.pushback;
   const flight = flightOf(defender, move, launch, slide, away, comboCount);
@@ -255,7 +264,7 @@ export function applyHit(
     comboCount,
     vx: flight.vx,
     juggle: flight.juggle,
-    flags: flight.flags,
+    flags: dangerMarked(flight.flags, comboCount, detail.danger === true),
     reaction: reactionOf(defender, move, launched, detail.impactPercent),
     reactionHeavy: stun >= HEAVY_REACTION_HITSTUN,
     stunTotal: stun,
@@ -264,6 +273,21 @@ export function applyHit(
   if (health === 0) return { ...shaken, action: 'ko', stunFrames: 0, vy: Math.max(0, flight.vy) };
   if (launched) return { ...shaken, action: 'airHit', stunFrames: 0, vy: flight.vy };
   return { ...shaken, action: 'hitstun', stunFrames: stun };
+}
+
+/**
+ * Health left after a blow of `damage`: never below `minHealth`; on a pair the Finisher locks,
+ * never below 1 before the super's last blow, and none but `minHealth` after it.
+ */
+function healthAfter(
+  health: number,
+  damage: number,
+  minHealth: number,
+  finisher: FinisherBlow | null,
+): number {
+  if (finisher === 'lethal') return minHealth;
+  const floor = finisher === 'floor' ? Math.max(1, minHealth) : minHealth;
+  return Math.max(floor, health - damage);
 }
 
 /**

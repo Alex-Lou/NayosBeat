@@ -4,17 +4,28 @@ import {
   blastShake,
   BLINK_TICKS,
   blinkOn,
+  BLOCKED_ALPHA,
   BOOST_WORD,
   BoostGauge,
+  fadedWord,
+  FINISH_PLATE_AREA,
+  FINISH_WORD,
   GAUGE_WIDTH,
   gaugePaintKey,
   gaugeSpans,
   layersOf,
   levelColor,
+  LIGHTS_AT,
   MAX_WORD,
+  WORD_WIDTH,
+  WORD_X,
+  wordFacesOf,
+  wordOf,
   type GaugeLook,
 } from '../../src/render/boost-gauge';
 import { BREAK_TICKS, CRACK_TICKS, freshBoost, stepBoost } from '../../src/render/boost-motion';
+import { SIGNAL_FADE_TICKS } from '../../src/render/finisher-signal';
+import { FLASH_MERGE } from '../../src/render/flash-budget';
 import { fakeScene, pixelOf } from './hud-fakes';
 
 const ENERGY = 0x00e5ff;
@@ -267,5 +278,171 @@ describe("the Boost gauge under the player's options (docs/flashs.md §4)", () =
       gauge.update(BOOST_MAX, null, frame);
       expect(word.alpha).toBe(1);
     }
+  });
+});
+
+describe('the FINISH plate (docs/finisher.md §1.2, §5.8 test 12)', () => {
+  const faces = wordFacesOf(ENERGY);
+  const full = freshBoost(0, BOOST_MAX);
+
+  it('fits FINISH in 48 px, the gauge ending with it, 174 px from its outer end', () => {
+    // The pixel font's letters are 8 px wide.
+    expect(FINISH_WORD.length * 8).toBe(48);
+    expect(WORD_WIDTH).toBe(48);
+    expect(GAUGE_WIDTH).toBe(WORD_X + 48);
+    expect(GAUGE_WIDTH).toBe(174);
+    // The longest word: BOOST and MAX fit in its place.
+    for (const word of [BOOST_WORD, MAX_WORD]) expect(word.length * 8).toBeLessThan(WORD_WIDTH);
+  });
+
+  it('says FINISH, platine rimmed in the energy, when ready; dimmed when blocked; as ever when off', () => {
+    expect(wordOf(faces, full, LEFT, 0, 'ready')).toEqual({
+      face: { text: FINISH_WORD, color: '#f2f6ff', rim: '#00e5ff' },
+      alpha: 1,
+    });
+    expect(wordOf(faces, full, LEFT, 0, 'blocked')).toEqual({
+      face: faces.finish,
+      alpha: BLOCKED_ALPHA,
+    });
+    expect(BLOCKED_ALPHA).toBe(0.4);
+    // Off: MAX blinking once full, BOOST below.
+    expect(wordOf(faces, full, LEFT, 0, 'off')).toEqual({ face: faces.max, alpha: 1 });
+    expect(wordOf(faces, full, LEFT, BLINK_TICKS, 'off').alpha).toBeLessThan(1);
+    expect(wordOf(faces, freshBoost(0, 2999), LEFT, 0, 'off').face).toBe(faces.boost);
+    // A broken gauge shows no signal: its fighter is down.
+    const cracked = stepBoost(full, BOOST_MAX, 'crack', 1);
+    expect(wordOf(faces, cracked, LEFT, 1, 'ready').face).toBe(faces.max);
+    const shattered = stepBoost(full, BOOST_MAX, 'shatter', 1);
+    expect(wordOf(faces, shattered, LEFT, 1, 'ready').face).toBe(faces.broken);
+  });
+
+  it('never blinks: FINISH holds still, ready or blocked, where MAX would blink', () => {
+    for (const [signal, alpha] of [
+      ['ready', 1],
+      ['blocked', BLOCKED_ALPHA],
+    ] as const) {
+      const { gauge, word } = gaugeOn();
+      for (let frame = 0; frame < 60; frame++) gauge.update(BOOST_MAX, null, frame);
+      const shown: number[] = [];
+      for (let frame = 60; frame < 300; frame++) {
+        gauge.update(BOOST_MAX, null, frame, false, signal);
+        if (frame >= 60 + SIGNAL_FADE_TICKS) {
+          expect(word.text, signal).toBe(FINISH_WORD);
+          shown.push(word.alpha);
+        }
+      }
+      expect(new Set(shown), signal).toEqual(new Set([alpha]));
+      expect(word.style.color).toBe('#f2f6ff');
+      expect(word.style.stroke).toBe('#00e5ff');
+    }
+  });
+
+  it('fades from one state to the next over 6 frames, never two words at once, nothing abrupt', () => {
+    const { gauge, word } = gaugeOn(CALM);
+    // Full a second in: MAX, steady with the flashes reduced.
+    for (let frame = 0; frame < 60; frame++) gauge.update(BOOST_MAX, null, frame);
+    gauge.update(BOOST_MAX, null, 60);
+    expect(word.text).toBe(MAX_WORD);
+    const path: { text: string; alpha: number }[] = [];
+    const play = (signal: 'ready' | 'blocked' | 'off', from: number) => {
+      for (let frame = from; frame < from + 10; frame++) {
+        gauge.update(BOOST_MAX, null, frame, false, signal);
+        path.push({ text: word.text, alpha: word.alpha });
+      }
+    };
+    play('ready', 61);
+    play('blocked', 71);
+    play('off', 81);
+    // Each state is reached SIGNAL_FADE_TICKS after it starts, and held.
+    expect(path[SIGNAL_FADE_TICKS]).toEqual({ text: FINISH_WORD, alpha: 1 });
+    expect(path[10 + SIGNAL_FADE_TICKS]).toEqual({ text: FINISH_WORD, alpha: BLOCKED_ALPHA });
+    expect(path[20 + SIGNAL_FADE_TICKS]).toEqual({ text: MAX_WORD, alpha: 1 });
+    // A third of the word's opacity a frame at most, and a new word only from nothing.
+    path.forEach((step, index) => {
+      const before = path[index - 1];
+      if (!before) return;
+      expect(Math.abs(step.alpha - before.alpha), `${index}`).toBeLessThanOrEqual(1 / 3 + 1e-9);
+      if (step.text !== before.text) expect(before.alpha * step.alpha, `${index}`).toBe(0);
+    });
+    expect(
+      fadedWord({ face: faces.max, alpha: 1 }, { face: faces.finish, alpha: 1 }, 3).alpha,
+    ).toBe(0);
+  });
+
+  it('asks the flash budget on the frame its word starts to light, and waits there unseen', () => {
+    // What lights, from LIGHTS_AT to the fade's end, fits in the window the budget's place covers.
+    expect(LIGHTS_AT).toBe(4);
+    expect(SIGNAL_FADE_TICKS - LIGHTS_AT).toBeLessThanOrEqual(FLASH_MERGE);
+    let room = false;
+    let frame = 0;
+    const asked: number[] = [];
+    const { scene, texts } = fakeScene();
+    const gauge = new BoostGauge(scene, 8, 30, LEFT, {}, (view) => {
+      expect(view).toBe(FINISH_PLATE_AREA);
+      asked.push(frame);
+      return room;
+    });
+    const word = texts[1];
+    if (!word) throw new Error('the gauge writes a word');
+    for (; frame < 60; frame++) gauge.update(BOOST_MAX, null, frame);
+    // MAX fades out without asking; FINISH asks on LIGHTS_AT and, refused, waits with nothing shown.
+    for (; frame < 70; frame++) {
+      gauge.update(BOOST_MAX, null, frame, false, 'ready');
+      if (frame < 60 + LIGHTS_AT) expect(asked, `${frame}`).toEqual([]);
+      if (frame >= 60 + LIGHTS_AT - 1) expect([word.text, word.alpha]).toEqual([FINISH_WORD, 0]);
+    }
+    expect(asked).toEqual([64, 65, 66, 67, 68, 69]);
+    // Admitted on frame 70: it lights from there, full FLASH_MERGE frames later.
+    room = true;
+    const lit: number[] = [];
+    for (; frame < 80; frame++) {
+      gauge.update(BOOST_MAX, null, frame, false, 'ready');
+      lit.push(word.alpha);
+    }
+    expect(asked.at(-1)).toBe(70);
+    expect(lit[0]).toBeCloseTo(1 / 3);
+    expect(lit[1]).toBeCloseTo(2 / 3);
+    expect(lit.slice(FLASH_MERGE)).toEqual(Array.from({ length: 10 - FLASH_MERGE }, () => 1));
+    // Ready, then blocked: it only dims, at once, nothing to ask.
+    room = false;
+    for (; frame < 90; frame++) gauge.update(BOOST_MAX, null, frame, false, 'blocked');
+    expect(asked.at(-1)).toBe(70);
+    expect(word.alpha).toBe(BLOCKED_ALPHA);
+    // Blocked, then ready: the same word holds until LIGHTS_AT, then brightens once admitted.
+    room = true;
+    const brightening: number[] = [];
+    for (; frame < 100; frame++) {
+      gauge.update(BOOST_MAX, null, frame, false, 'ready');
+      brightening.push(word.alpha);
+    }
+    expect(asked.at(-1)).toBe(90 + LIGHTS_AT);
+    expect(brightening.slice(0, LIGHTS_AT)).toEqual([0.4, 0.4, 0.4, 0.4]);
+    expect(brightening[LIGHTS_AT]).toBeCloseTo(0.6);
+    expect(brightening[LIGHTS_AT + 1]).toBeCloseTo(0.8);
+    expect(brightening[SIGNAL_FADE_TICKS]).toBe(1);
+  });
+
+  it('asks again on each frame it is refused, at 30 Hz too', () => {
+    let room = false;
+    let frame = 0;
+    const asked: number[] = [];
+    const { scene, texts } = fakeScene();
+    const gauge = new BoostGauge(scene, 8, 30, CALM, {}, () => {
+      asked.push(frame);
+      return room;
+    });
+    const word = texts[1];
+    if (!word) throw new Error('the gauge writes a word');
+    for (; frame < 60; frame += 2) gauge.update(BOOST_MAX, null, frame);
+    // Two ticks a frame: 60, 62 fade MAX out; 64 asks, refused; 66 asks again, admitted.
+    for (; frame < 66; frame += 2) gauge.update(BOOST_MAX, null, frame, false, 'ready');
+    expect(asked).toEqual([64]);
+    expect([word.text, word.alpha]).toEqual([FINISH_WORD, 0]);
+    room = true;
+    gauge.update(BOOST_MAX, null, frame, false, 'ready');
+    expect(asked).toEqual([64, 66]);
+    expect(word.alpha).toBeCloseTo(1 / 3);
+    gauge.update(BOOST_MAX, null, (frame += 2), false, 'ready');
+    expect(word.alpha).toBe(1);
   });
 });

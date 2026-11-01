@@ -22,6 +22,7 @@ export type SoundName =
   | 'remix'
   | 'rewind'
   | 'super'
+  | 'finisherReady'
   | 'round'
   | 'fight'
   | 'menuMove'
@@ -30,6 +31,11 @@ export type SoundName =
 
 const STORAGE_KEY = 'nayosbeat.sound';
 const MASTER_VOLUME = 0.5;
+
+/** The square of a heavy hit: the reference the Finisher's siren sits under. */
+const HEAVY_HIT_VOLUME = 0.35;
+/** The siren of a Finisher ready (docs/finisher.md §1.2): 9 dB under a heavy hit. */
+const SIREN_VOLUME = HEAVY_HIT_VOLUME * 10 ** (-9 / 20);
 
 interface Tone {
   readonly type: OscillatorType;
@@ -57,7 +63,7 @@ const SOUNDS: Readonly<Record<SoundName, { tones?: readonly Tone[]; noises?: rea
     },
     heavyHit: {
       noises: [{ duration: 0.14, volume: 0.7, cutoff: 1800 }],
-      tones: [{ type: 'square', from: 160, to: 45, duration: 0.14, volume: 0.35 }],
+      tones: [{ type: 'square', from: 160, to: 45, duration: 0.14, volume: HEAVY_HIT_VOLUME }],
     },
     block: {
       noises: [{ duration: 0.04, volume: 0.25, cutoff: 6000 }],
@@ -130,6 +136,17 @@ const SOUNDS: Readonly<Record<SoundName, { tones?: readonly Tone[]; noises?: rea
         { type: 'square', from: 90, to: 24, duration: 0.7, volume: 0.18 },
       ],
     },
+    // The Finisher ready (docs/finisher.md §1.2): a dub siren, the sound systems' own, from the
+    // root up to its fifth in 0.8 s, Nayo's do to sol (`play`'s pitch takes it to Riff's mi and
+    // si). A stand-in made of plain tones: three pulls up, the fifth held. The low-pass at 2 kHz
+    // and the 6 Hz vibrato wait for the engine of the Finisher's sounds (§5.4).
+    finisherReady: {
+      tones: [
+        { type: 'square', from: 262, to: 320, duration: 0.24, volume: SIREN_VOLUME },
+        { type: 'square', from: 320, to: 392, duration: 0.24, volume: SIREN_VOLUME, delay: 0.24 },
+        { type: 'square', from: 392, to: 392, duration: 0.32, volume: SIREN_VOLUME, delay: 0.48 },
+      ],
+    },
     round: { tones: [{ type: 'square', from: 523, to: 523, duration: 0.15, volume: 0.15 }] },
     fight: {
       tones: [
@@ -143,6 +160,14 @@ const SOUNDS: Readonly<Record<SoundName, { tones?: readonly Tone[]; noises?: rea
     },
     menuBack: { tones: [{ type: 'square', from: 500, to: 300, duration: 0.08, volume: 0.08 }] },
   };
+
+/** The layers of the sound `name`, its tones and its noise bursts, as `play` plays them. */
+export function soundOf(name: SoundName): {
+  readonly tones?: readonly Tone[];
+  readonly noises?: readonly Noise[];
+} {
+  return SOUNDS[name];
+}
 
 export class Sfx {
   private context: AudioContext | undefined;
@@ -177,26 +202,33 @@ export class Sfx {
     saveEnabled(enabled);
   }
 
-  play(name: SoundName): void {
+  /** `pitch` multiplies the frequencies of its tones (a fighter's siren in its own key). */
+  play(name: SoundName, pitch = 1): void {
     const { context, master } = this;
     if (!this.enabled || !context || !master || context.state !== 'running') return;
     const sound = SOUNDS[name];
     const now = context.currentTime;
-    for (const tone of sound.tones ?? []) playTone(context, master, tone, now);
+    for (const tone of sound.tones ?? []) playTone(context, master, tone, now, pitch);
     const buffer = this.noiseBuffer;
     if (buffer)
       for (const noise of sound.noises ?? []) playNoise(context, master, buffer, noise, now);
   }
 }
 
-function playTone(context: AudioContext, output: AudioNode, tone: Tone, now: number): void {
+function playTone(
+  context: AudioContext,
+  output: AudioNode,
+  tone: Tone,
+  now: number,
+  pitch: number,
+): void {
   const start = now + (tone.delay ?? 0);
   const end = start + tone.duration;
   const oscillator = context.createOscillator();
   const gain = context.createGain();
   oscillator.type = tone.type;
-  oscillator.frequency.setValueAtTime(tone.from, start);
-  oscillator.frequency.exponentialRampToValueAtTime(Math.max(1, tone.to), end);
+  oscillator.frequency.setValueAtTime(tone.from * pitch, start);
+  oscillator.frequency.exponentialRampToValueAtTime(Math.max(1, tone.to * pitch), end);
   gain.gain.setValueAtTime(tone.volume, start);
   gain.gain.exponentialRampToValueAtTime(0.0001, end);
   oscillator.connect(gain).connect(output);

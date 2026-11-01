@@ -240,7 +240,8 @@ describe('the gauge in a match', () => {
     const share = nayo / (nayo + riff);
     expect(share).toBeGreaterThanOrEqual(0.4);
     expect(share).toBeLessThanOrEqual(0.6);
-  });
+    // 600 000 ticks of play: about 2 s here, more on a loaded CI runner.
+  }, 30_000);
 });
 
 describe('the strings in a match', () => {
