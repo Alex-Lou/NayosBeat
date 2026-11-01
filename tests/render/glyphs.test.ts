@@ -6,6 +6,8 @@ import { ROSTER } from '../../src/data/roster';
 import { BOOST_WORD, FINISH_WORD, MAX_WORD } from '../../src/render/boost-gauge';
 import { announcementOf, comboText, HOLD_PROMPT, NO_TIMER } from '../../src/render/hud-text';
 import { advantageText } from '../../src/render/advantage-meter';
+import { buttonsOf } from '../../src/render/input-history';
+import { Input } from '../../src/core/input';
 import { wordFor, type BlowKind } from '../../src/render/onomatopoeia';
 import { boostStamp, STAMP_TEXTS } from '../../src/render/stamps';
 import { glyphsOf } from './font-glyphs';
@@ -68,6 +70,16 @@ function hudTexts(): string[] {
     advantageText(2),
     advantageText(-23),
     advantageText(0),
+    // The input history of training (input-history.ts): every button and two-digit ticks.
+    buttonsOf(
+      Input.Light |
+        Input.Heavy |
+        Input.Special |
+        Input.Grab |
+        Input.Dash |
+        Input.Boost |
+        Input.Jump,
+    ),
     // The Boost gauge under each health bar (docs/combos-v3.md §1.8.6), and the Finisher's
     // plate (docs/finisher.md §1.2).
     BOOST_WORD,

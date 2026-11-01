@@ -91,6 +91,8 @@ export class App {
   private viewing: Viewing;
   /** Training shows the boxes (its pause's « Boîtes »), kept from one session to the next. */
   private boxes = false;
+  /** Training shows its input history and frame meter (its pause's « Données »). */
+  private trainingData = true;
 
   constructor(
     private readonly root: HTMLElement,
@@ -483,10 +485,11 @@ export class App {
   }
 
   /**
-   * The training pause's « Mannequin » and « Boîtes » (docs/polish/AUDIT-ET-PLAN.md, P19), each
-   * cycled in place and applied to the fight at once: what player 2 does, and the boxes `?debug`
-   * shows (hit, hurt and push), to learn the reach and the openings without leaving the session.
-   * `again`: shows the pause again, the item still selected.
+   * The training pause's « Mannequin », « Boîtes » and « Données » (docs/polish/AUDIT-ET-PLAN.md,
+   * P19 and lot 13), each cycled in place and applied to the fight at once: what player 2 does,
+   * the boxes `?debug` shows (hit, hurt and push), the input history and the frame meter, to
+   * learn the reach and the openings without leaving the session. `again`: shows the pause again,
+   * the item still selected.
    */
   private trainingItems(fight: FightScene, again: (item: MenuItem) => void): MenuItem[] {
     const index = DUMMIES.findIndex(({ dummy }) => dummy === this.setup.dummy);
@@ -511,7 +514,16 @@ export class App {
         again(boxes);
       },
     };
-    return [dummy, boxes];
+    const data: MenuItem = {
+      label: `Données : ${this.trainingData ? 'oui' : 'non'}`,
+      hint: 'Les entrées du joueur 1 et la frise des frames',
+      onSelect: () => {
+        this.trainingData = !this.trainingData;
+        fight.setTrainingData(this.trainingData);
+        again(data);
+      },
+    };
+    return [dummy, boxes, data];
   }
 
   private startFight(): void {
@@ -524,6 +536,7 @@ export class App {
       finishersSeen: this.finishersSeen,
       viewing: this.setup.mode === 'training' ? this.viewing : this.fromUrl,
       boxes: this.setup.mode === 'training' && this.boxes,
+      trainingData: this.trainingData,
       onPause: () => {
         this.showPause();
       },

@@ -36,6 +36,7 @@ function launch(stored: Record<string, string> = {}, reducedMotion = false, view
     setViewing: vi.fn(),
     setDummy: vi.fn(),
     setBoxes: vi.fn(),
+    setTrainingData: vi.fn(),
   };
   const start = vi.fn();
   const game = {
@@ -299,6 +300,25 @@ describe('how a fight is watched (docs/art/animation-plan.md §2, V0)', () => {
         boxes: true,
         setup: expect.objectContaining({ dummy: 'dummyBlock' }) as unknown,
       }),
+    );
+  });
+
+  it("shows training's data by default, and hides it from the pause, at once (lot 13)", () => {
+    const { app, screen, choose, fight, start } = training();
+    choose('Immobile');
+    expect(start).toHaveBeenLastCalledWith(
+      'fight',
+      expect.objectContaining({ trainingData: true }),
+    );
+    app.showPause();
+    expect(screen().items).toContain('Données : oui');
+    choose('Données');
+    expect(fight.setTrainingData).toHaveBeenLastCalledWith(false);
+    expect(screen().items[screen().selected]).toBe('Données : non');
+    choose('Recommencer');
+    expect(start).toHaveBeenLastCalledWith(
+      'fight',
+      expect.objectContaining({ trainingData: false }),
     );
   });
 

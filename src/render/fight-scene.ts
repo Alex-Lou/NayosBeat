@@ -26,6 +26,7 @@ import { TickPacer } from '../loop/tick-pacer';
 import type { AnimOptions } from './anim-options';
 import { frontFighter, type ShowContext } from './animation';
 import { NO_ADVANTAGE, trackAdvantage, type Advantage } from './advantage-meter';
+import { TrainingView } from './training-view';
 import { BoxOverlay } from './box-overlay';
 import {
   FINISHER_CLOSE_UP,
@@ -74,6 +75,8 @@ export interface FightSceneData {
   readonly viewing: Viewing;
   /** Training: the boxes shown as it starts (then `setBoxes`), as `?debug` shows them. */
   readonly boxes?: boolean;
+  /** Training: its input history and frame meter shown as it starts (then `setTrainingData`). */
+  readonly trainingData?: boolean;
   readonly onPause: () => void;
   /** Called once, a moment after the final KO, with the winner's index. */
   readonly onMatchEnd: (winner: 0 | 1 | null) => void;
@@ -132,6 +135,8 @@ interface Runtime {
   /** Debug only: the statistics, and every box. */
   readonly debugOverlay: DebugOverlay | undefined;
   readonly boxOverlay: BoxOverlay | undefined;
+  /** Training: player 1's input history and the frame meter (training-view.ts). */
+  readonly trainingView: TrainingView | undefined;
 }
 
 /**
@@ -305,6 +310,7 @@ export class FightScene extends Phaser.Scene {
       debugOverlay: debug ? new DebugOverlay(document.body) : undefined,
       boxOverlay:
         debug || this.config.training ? new BoxOverlay(this, this.config, GROUND_Y) : undefined,
+      trainingView: this.config.training ? new TrainingView(this, this.config) : undefined,
     };
     // The Finisher's director: what it draws is made now, with the rest (addScreenCamera).
     const [first, second] = this.sceneData.setup.fighters;
@@ -326,6 +332,7 @@ export class FightScene extends Phaser.Scene {
     });
     this.runtime = { ...runtime, finisherScene };
     this.runtime.boxOverlay?.show(debug || this.sceneData.boxes === true);
+    this.runtime.trainingView?.show(this.sceneData.trainingData !== false);
 
     this.applyComfort(comfort);
     this.runtime.feedback.setAnimOptions(this.viewing.anim);
@@ -365,6 +372,11 @@ export class FightScene extends Phaser.Scene {
   /** Training: the boxes shown or not, at once (the pause's « Boîtes »); `?debug` keeps them. */
   setBoxes(on: boolean): void {
     this.runtime?.boxOverlay?.show(on || isDebugEnabled());
+  }
+
+  /** Training: the input history and the frame meter shown or not (the pause's « Données »). */
+  setTrainingData(on: boolean): void {
+    this.runtime?.trainingView?.show(on);
   }
 
   /** Training: player 2 plays as `dummy` from now on (the pause's « Mannequin »). */
@@ -497,6 +509,7 @@ export class FightScene extends Phaser.Scene {
       detectEvents(previous, this.state, this.config, this.tickEvents);
       this.memory.note(this.state, this.tickEvents);
       if (this.config.training) this.advantage = trackAdvantage(this.advantage, this.state);
+      runtime.trainingView?.record(this.state);
       const viewLeft = toPx(this.state.cameraX) - VIEW_SIZE.width / 2;
       runtime.feedback.beginTick();
       for (const event of this.tickEvents) {
@@ -575,6 +588,7 @@ export class FightScene extends Phaser.Scene {
     runtime.caption?.update(this.state);
     runtime.holdPrompt?.update(this.state);
     runtime.boxOverlay?.update(this.state);
+    runtime.trainingView?.update();
 
     const xs = this.framedXs;
     const projectiles = this.state.projectiles;
