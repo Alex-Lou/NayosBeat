@@ -19,6 +19,13 @@ export class PlayerInputs {
   private readonly padIndices: [number | null, number | null] = [null, null];
   /** Buttons held when the last menu closed: ignored until released. */
   private readonly suppressed: [InputBits, InputBits] = [0, 0];
+  /**
+   * Gamepad buttons `poll` saw pressed since the last read: pressed and released in between,
+   * they count once, as a key tapped. Only presses: a release shows at the next read.
+   */
+  private readonly polled: [InputBits, InputBits] = [0, 0];
+  /** What each gamepad held at the last poll, to tell a press from a button still held. */
+  private readonly lastPolled: [InputBits, InputBits] = [0, 0];
   /** Reused every frame to avoid allocating. */
   private readonly current: [InputBits, InputBits] = [0, 0];
 
@@ -31,10 +38,27 @@ export class PlayerInputs {
     this.reset(pads);
   }
 
-  /** Call once per frame with the gamepads connected right now. */
+  /**
+   * Call on every display frame, read or not, with the gamepads connected right now. A gamepad
+   * keeps no press of its own, unlike the keyboard and the touch controls: one pressed and
+   * released between two reads (a slowed fight reads every 2 or 4 frames) still counts at the
+   * next. Only its presses are kept, as the keyboard keeps its taps: a button let go shows at
+   * once, or a quick release between two reads (above 60 Hz) would be lost, and with it the
+   * neutral between the two taps of a dash.
+   */
+  poll(pads: readonly Gamepad[]): void {
+    for (const player of [0, 1] as const) {
+      const held = this.padBits(player, pads);
+      this.polled[player] |= held & ~this.lastPolled[player];
+      this.lastPolled[player] = held;
+    }
+  }
+
+  /** Call on the frames that play a tick, with the gamepads connected right now. */
   read(pads: readonly Gamepad[]): readonly [InputBits, InputBits] {
     for (const player of [0, 1] as const) {
-      const raw = this.raw(player, pads);
+      const raw = this.raw(player, pads) | this.polled[player];
+      this.polled[player] = 0;
       // A suppressed button counts again once it has been released.
       this.suppressed[player] &= raw;
       this.current[player] = raw & ~this.suppressed[player];
@@ -51,6 +75,8 @@ export class PlayerInputs {
   reset(pads: readonly Gamepad[]): void {
     this.keyboard.endFrame();
     for (const player of [0, 1] as const) {
+      this.polled[player] = 0;
+      this.lastPolled[player] = this.padBits(player, pads);
       this.suppressed[player] = this.raw(player, pads) & PRESS_BUTTONS;
     }
   }
@@ -61,11 +87,16 @@ export class PlayerInputs {
   }
 
   private raw(player: 0 | 1, pads: readonly Gamepad[]): InputBits {
+    const touch = player === 0 ? (this.touch?.read() ?? 0) : 0;
+    return this.keyboard.read(player) | this.padBits(player, pads) | touch;
+  }
+
+  /** What `player`'s gamepad holds right now, if it has one. */
+  private padBits(player: 0 | 1, pads: readonly Gamepad[]): InputBits {
     this.assignPads(pads);
     const index = this.padIndices[player];
     const pad = index === null ? undefined : pads.find((p) => p.index === index);
-    const touch = player === 0 ? (this.touch?.read() ?? 0) : 0;
-    return this.keyboard.read(player) | (pad ? this.gamepads.read(pad) : 0) | touch;
+    return pad ? this.gamepads.read(pad) : 0;
   }
 
   /** Newly connected pads take the next free player slot. */

@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { NAYO_CLIPS } from '../../src/art/nayo/clips';
 import { clipOf, type Clip } from '../../src/art/types';
-import type { FighterState, RoundState } from '../../src/core/state';
+import {
+  createInitialState,
+  type FighterState,
+  type GameState,
+  type RoundState,
+} from '../../src/core/state';
+import { step } from '../../src/core/step';
 import { NAYO } from '../../src/art/nayo';
 import { RIFF } from '../../src/art/riff';
 import {
@@ -13,11 +19,14 @@ import {
   stunTick,
   type Shown,
 } from '../../src/render/animation';
+import { LEGACY_ANIM } from '../../src/render/anim-options';
 import type { MatchConfig } from '../../src/core/config';
 import { Input } from '../../src/core/input';
+import { INTRO_FRAMES } from '../../src/core/rules';
 import { NAYO as NAYO_TEMPLATE } from '../../src/data/fighters/nayo';
 import { RIFF as RIFF_TEMPLATE } from '../../src/data/fighters/riff';
 import { TRAINING_STAGE } from '../../src/data/stages';
+import { playCpuMatches } from '../core/cpu-match';
 import { facingOff, fightState, makeFighter, MIRROR_MATCH } from '../core/helpers';
 import { atHoldTick, grabbed, play } from '../core/hold-helpers';
 
@@ -237,10 +246,110 @@ describe('round poses', () => {
     };
     const matchEnd: RoundState = { ...roundEnd, phase: 'matchEnd', phaseFrame: 0 };
     expect(clipTickOf('victory', idle, matchEnd)).toBe(clipTickOf('victory', idle, roundEnd) + 1);
+    // Standing still only since the 20th tick of the round end.
+    const late = makeFighter({ action: 'idle', actionFrame: 129 });
+    expect(clipTickOf('victory', late, roundEnd)).toBe(129);
+    expect(clipTickOf('victory', { ...late, actionFrame: 130 }, matchEnd)).toBe(130);
+  });
+
+  it('plays the victory from its first frame, however late the winner stands still (V1)', () => {
+    const roundEnd: RoundState = {
+      ...FIGHTING,
+      phase: 'roundEnd',
+      phaseFrame: 40,
+      result: { winner: 0, reason: 'ko' },
+    };
+    const stillNow = makeFighter({ action: 'idle', actionFrame: 0 });
+    expect(clipTickOf('victory', stillNow, roundEnd)).toBe(0);
+    expect(clipTickOf('timeOver', stillNow, roundEnd)).toBe(0);
+    // Already still as the round ended: from the round end.
+    expect(clipTickOf('victory', idle, roundEnd)).toBe(40);
+    // The animation of before: from the round end, whatever frame that is by then.
+    expect(clipTickOf('victory', stillNow, roundEnd, LEGACY_ANIM)).toBe(40);
+  });
+
+  it('plays the idle from its first frame as the fight starts: the intro is not its own', () => {
+    const start: RoundState = { ...FIGHTING, phaseFrame: 0 };
+    const afterIntro = makeFighter({ action: 'idle', actionFrame: INTRO_FRAMES });
+    expect(clipTickOf('idle', afterIntro, start)).toBe(0);
+    expect(clipTickOf('idle', idle, FIGHTING)).toBe(30);
+    expect(clipTickOf('idle', makeFighter({ action: 'idle', actionFrame: 12 }), FIGHTING)).toBe(12);
+    expect(clipTickOf('idle', afterIntro, start, LEGACY_ANIM)).toBe(INTRO_FRAMES);
   });
 
   it('follows the action clock for everything else', () => {
-    expect(clipTickOf('idle', idle, FIGHTING)).toBe(400);
+    const walking = makeFighter({ action: 'walkBack', actionFrame: 400 });
+    expect(clipTickOf('walkBack', walking, FIGHTING)).toBe(400);
+    expect(clipTickOf('walkBack', walking, FIGHTING, LEGACY_ANIM)).toBe(400);
+  });
+});
+
+describe('round poses, through the game (V1)', () => {
+  const shown: Shown = { clip: 'idle', tick: 0, x: 0 };
+
+  it('plays the idle from its first frame on the first tick of the fight', () => {
+    const config: MatchConfig = { stage: TRAINING_STAGE, fighters: [NAYO_TEMPLATE, RIFF_TEMPLATE] };
+    let state = createInitialState(config);
+    while (state.round.phase === 'intro') state = step(state, [0, 0], config);
+    for (const [player, art] of [
+      [0, NAYO],
+      [1, RIFF],
+    ] as const) {
+      showFighter(state, player, config, art, shown);
+      expect(shown).toMatchObject({ clip: 'idle', tick: 0 });
+      showFighter(state, player, config, art, shown, { options: LEGACY_ANIM, memory: null });
+      expect(shown).toMatchObject({ clip: 'idle', tick: INTRO_FRAMES });
+    }
+  });
+
+  /** Riff's Retourné knocks out a Nayo on his last point, then the whole round end. */
+  const config: MatchConfig = { stage: TRAINING_STAGE, fighters: [RIFF_TEMPLATE, NAYO_TEMPLATE] };
+  const start = facingOff(30, config, [{}, { health: 1 }]);
+  const states = play(start, 200, (tick) => [tick === 0 ? Input.Left | Input.Heavy : 0, 0], config);
+
+  it("plays the winner's victory whole: from its first frame, one tick at a time", () => {
+    const ticks = states.flatMap((state) => {
+      showFighter(state, 0, config, RIFF, shown);
+      return shown.clip === 'victory' ? [shown.tick] : [];
+    });
+    expect(ticks.length).toBeGreaterThan(100);
+    expect(ticks).toEqual(ticks.map((_, at) => at));
+    // Before, it started where the round end had got to, past its first frames.
+    const first = states.find((state) => {
+      showFighter(state, 0, config, RIFF, shown, { options: LEGACY_ANIM, memory: null });
+      return shown.clip === 'victory';
+    });
+    expect(first?.round.phaseFrame).toBeGreaterThan(0);
+    expect(shown.tick).toBe(first?.round.phaseFrame);
+  });
+
+  it('starts every victory on its first frame and never skips one, in CPU matches', () => {
+    const cpuConfig: MatchConfig = {
+      stage: TRAINING_STAGE,
+      fighters: [NAYO_TEMPLATE, RIFF_TEMPLATE],
+    };
+    const arts = [NAYO, RIFF] as const;
+    const last: [number | null, number | null] = [null, null];
+    let previous: GameState | null = null;
+    let victories = 0;
+    playCpuMatches(20_000, cpuConfig, ['hard', 'hard'], (state) => {
+      for (const player of [0, 1] as const) {
+        showFighter(state, player, cpuConfig, arts[player], shown);
+        const before = last[player];
+        if (shown.clip !== 'victory') last[player] = null;
+        else if (before === null) {
+          victories++;
+          expect(shown.tick).toBe(0);
+          last[player] = 0;
+        } else {
+          // The impact freeze holds the pose, as it holds the game.
+          expect(shown.tick).toBe((previous?.hitstop ?? 0) > 0 ? before : before + 1);
+          last[player] = shown.tick;
+        }
+      }
+      previous = state;
+    });
+    expect(victories).toBeGreaterThan(3);
   });
 });
 

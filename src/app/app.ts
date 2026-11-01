@@ -3,6 +3,7 @@ import type { CpuLevel } from '../ai/cpu';
 import type { Sfx } from '../audio/sfx';
 import type { TrainingGauge } from '../core/config';
 import { ROSTER, templateOf, type FighterId } from '../data/roster';
+import { ANIM_OPTIONS, LEGACY_ANIM } from '../render/anim-options';
 import type { FightScene, FightSceneData } from '../render/fight-scene';
 import { requestLandscapeFullscreen } from '../render/fullscreen';
 import { isTouchDevice } from '../input/touch-controls';
@@ -27,6 +28,7 @@ import { controlsContent, currentDevices, helpPages } from './controls-content';
 import { installMethod, onInstallChange, promptInstall } from './install';
 import { DEFAULT_SETUP, type DummyBehavior, type GameMode, type MatchSetup } from './match-setup';
 import { SELECT_COLUMNS, SELECT_SLOTS, selectFighters } from './select-fighters';
+import { animLabel, DEFAULT_VIEWING, nextSlowdown, SLOWDOWN_LABELS, type Viewing } from './viewing';
 
 const FIGHT_SCENE = 'fight';
 /** The notice of the first launch ignores what is pressed this soon: it was meant for the title. */
@@ -74,12 +76,21 @@ export class App {
   /** The main menu is on screen (it is redrawn when installing becomes possible). */
   private onMainMenu = false;
   private onTitle = false;
+  /**
+   * How training is watched (src/app/viewing.ts): as the address asks (`fromUrl`), then as chosen
+   * there, in its menu or its pause. The other modes keep the address's: their pause has no item
+   * to change it, a choice of training must not slow them down unseen.
+   */
+  private viewing: Viewing;
 
   constructor(
     private readonly root: HTMLElement,
     private readonly game: Phaser.Game,
     private readonly sfx: Sfx,
-  ) {}
+    private readonly fromUrl: Viewing = DEFAULT_VIEWING,
+  ) {
+    this.viewing = fromUrl;
+  }
 
   start(): void {
     this.game.loop.sleep();
@@ -413,6 +424,9 @@ export class App {
         },
       })),
       gaugeItem,
+      ...this.viewingItems((item) => {
+        this.chooseDummy(items.indexOf(item));
+      }),
     ];
     this.showMenu({
       title: 'Mannequin',
@@ -424,6 +438,32 @@ export class App {
     });
   }
 
+  /**
+   * « Vitesse » and « Animation » (docs/art/animation-plan.md §2, V0), each cycled in place: the
+   * game slowed down to half or a quarter, the animation of now or of before, to compare them on
+   * the same blow. `again`: shows the menu again, the item still selected.
+   */
+  private viewingItems(again: (item: MenuItem) => void): MenuItem[] {
+    const { slowdown, anim } = this.viewing;
+    const speed: MenuItem = {
+      label: `Vitesse : ${SLOWDOWN_LABELS[slowdown]}`,
+      hint: 'Le jeu au ralenti, pour regarder les animations',
+      onSelect: () => {
+        this.viewing = { ...this.viewing, slowdown: nextSlowdown(slowdown) };
+        again(speed);
+      },
+    };
+    const animation: MenuItem = {
+      label: `Animation : ${animLabel(anim)}`,
+      hint: "La nouvelle, ou celle d'avant pour comparer",
+      onSelect: () => {
+        this.viewing = { ...this.viewing, anim: anim.legacy ? ANIM_OPTIONS : LEGACY_ANIM };
+        again(animation);
+      },
+    };
+    return [speed, animation];
+  }
+
   private startFight(): void {
     this.screen?.dispose();
     this.screen = undefined;
@@ -431,6 +471,7 @@ export class App {
       setup: this.setup,
       sfx: this.sfx,
       comfort: this.comfort,
+      viewing: this.setup.mode === 'training' ? this.viewing : this.fromUrl,
       onPause: () => {
         this.showPause();
       },
@@ -482,6 +523,13 @@ export class App {
           this.showControls(Math.max(0, own), true);
         },
       },
+      // Training: how it is watched, at once, over the fight.
+      ...(this.setup.mode === 'training'
+        ? this.viewingItems((item) => {
+            fight.setViewing(this.viewing);
+            this.showPause(items.indexOf(item));
+          })
+        : []),
       optionsItem,
       {
         label: 'Quitter',
