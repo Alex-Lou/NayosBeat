@@ -31,17 +31,16 @@ import {
   type StripPixels,
 } from './drawn.ts';
 import type { Fighter } from './fighter.ts';
+import { FIGHTERS } from './fighters.ts';
 import { frameDataOf } from './frame-data.ts';
 import { drawIcons } from './icons.ts';
 import { NAYO } from './nayo/index.ts';
 import type { Colorway } from './palette.ts';
 import { encodeIndexedPng } from './png.ts';
-import { RIFF } from './riff/index.ts';
 import { loadStageDrawn, writeStage } from './stage-drawn.ts';
 import { loadUiDrawn } from './ui-drawn.ts';
 import { drawVinyl } from './vinyl.ts';
 
-const FIGHTERS: readonly Fighter[] = [NAYO, RIFF];
 const ART = new URL('../../src/art/', import.meta.url);
 const PREVIEW = new URL('./preview/', import.meta.url);
 const PREVIEW_SCALE = 2;

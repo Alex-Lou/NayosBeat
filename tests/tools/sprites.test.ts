@@ -7,11 +7,10 @@ import { NAYO } from '../../src/data/fighters/nayo';
 import { CELL_MARGIN, GROUND_ROW, GROUNDED_STRIPS, LOWEST_ROW } from '../../tools/sprites/cell';
 import { strikesOf } from '../../tools/sprites/clips';
 import type { Fighter } from '../../tools/sprites/fighter';
-import { NAYO as NAYO_GENERATOR } from '../../tools/sprites/nayo/index';
+import { FIGHTERS as GENERATORS } from '../../tools/sprites/fighters';
 import { isV2Sheet, NAYO_POSES, type PosedSheet } from '../../tools/sprites/nayo/poses/index';
 import { crc32, encodeIndexedPng, type Rgba } from '../../tools/sprites/png';
 import { PixelCanvas } from '../../tools/sprites/raster';
-import { RIFF as RIFF_GENERATOR } from '../../tools/sprites/riff/index';
 import { drawSheet } from '../../tools/sprites/sheet';
 import type { Effect } from '../../tools/sprites/skeleton';
 import { drawEffect, inkAt } from '../../tools/sprites/vfx';
@@ -65,7 +64,7 @@ describe('the Boost platine', () => {
     { kind: 'column', base: at(0, 0), height: 80, width: 10, progress: 0.3, tone: 'platine' },
     { kind: 'shards', center: at(10, 40), radius: 20, progress: 0.4, tone: 'platine' },
   ];
-  const FIGHTERS: readonly Fighter[] = [NAYO_GENERATOR, RIFF_GENERATOR];
+  const FIGHTERS: readonly Fighter[] = GENERATORS;
 
   it.each(FIGHTERS.map((fighter) => [fighter.name, fighter] as const))(
     '%s: draws it white, the same in both colorways',

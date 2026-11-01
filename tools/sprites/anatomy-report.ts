@@ -8,13 +8,12 @@
 
 import { anatomyIssues } from './anatomy.ts';
 import type { Fighter } from './fighter.ts';
-import { NAYO } from './nayo/index.ts';
-import { RIFF } from './riff/index.ts';
+import { FIGHTERS } from './fighters.ts';
 
 const args = process.argv.slice(2);
-const fighters: readonly Fighter[] =
-  args[0] === 'riff' ? [RIFF] : args[0] === 'nayo' ? [NAYO] : [NAYO, RIFF];
-const named = args.filter((arg) => arg !== 'nayo' && arg !== 'riff');
+const first = FIGHTERS.find((fighter) => fighter.name === args[0]);
+const fighters: readonly Fighter[] = first ? [first] : FIGHTERS;
+const named = args.filter((arg) => !FIGHTERS.some((fighter) => fighter.name === arg));
 let hard = 0;
 let warnings = 0;
 for (const fighter of fighters) {

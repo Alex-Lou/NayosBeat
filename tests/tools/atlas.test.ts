@@ -1,7 +1,5 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { NAYO_CELLS } from '../../src/art/nayo/cells';
-import { RIFF_CELLS } from '../../src/art/riff/cells';
 import { ANCHOR, CELL_SIZE, type Atlas, type Cell } from '../../src/art/types';
 import {
   atlasJson,
@@ -21,6 +19,7 @@ import {
   type Drawn,
 } from '../../tools/sprites/drawn';
 import type { Fighter } from '../../tools/sprites/fighter';
+import { cellsOf, TOOL_FIGHTERS } from '../../tools/sprites/fighters';
 import { NAYO } from '../../tools/sprites/nayo/index';
 import { decodeIndexedPng } from '../../tools/sprites/png';
 import { RIFF } from '../../tools/sprites/riff/index';
@@ -44,16 +43,21 @@ function overlap(a: Atlas['frames'][string]['frame'], b: Atlas['frames'][string]
   return a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
 }
 
-const FIGHTERS = [
-  { name: 'nayo', cells: NAYO_CELLS },
-  { name: 'riff', cells: RIFF_CELLS },
-] as const;
+/** Every fighter the tools know (tools/sprites/fighters.ts), with its committed cells. */
+const FIGHTERS = await Promise.all(
+  TOOL_FIGHTERS.map(async ({ fighter }) => ({
+    name: fighter.name,
+    generator: fighter,
+    cells: await cellsOf(fighter.name),
+  })),
+);
 
 /** What the generator reads for each fighter: the images drawn by hand (art-src/), if any. */
-const DRAWINGS = new Map<Fighter, ReadonlyMap<string, Drawn>>([
-  [NAYO, await loadDrawn(NAYO)],
-  [RIFF, await loadDrawn(RIFF)],
-]);
+const DRAWINGS = new Map<Fighter, ReadonlyMap<string, Drawn>>(
+  await Promise.all(
+    FIGHTERS.map(async ({ generator }) => [generator, await loadDrawn(generator)] as const),
+  ),
+);
 
 /** A strip as the generator gets it (`fx/` before effects): drawn by hand, else by the code. */
 function asDrawn(fighter: Fighter, strip: string): Indexed | undefined {
@@ -252,7 +256,7 @@ describe('the committed atlases (npm run sprites)', () => {
     // which any of the above may be once drawn by hand (tools/sprites/drawn.ts).
     [NAYO, 'fx/idle'],
   ];
-  const byHand = [NAYO, RIFF].flatMap((fighter) =>
+  const byHand = FIGHTERS.map(({ generator }) => generator).flatMap((fighter) =>
     handDrawn(fighter).map((strip) => [fighter, strip] as const),
   );
   // Once each: a strip of the sample may be drawn by hand.
@@ -264,7 +268,7 @@ describe('the committed atlases (npm run sprites)', () => {
     '%s: its atlas gives back the strip as drawn, cell by cell (nothing when it draws nothing)',
     async (_, fighter, strip) => {
       const drawn = asDrawn(fighter, strip);
-      const cells = fighter === NAYO ? NAYO_CELLS : RIFF_CELLS;
+      const cells = FIGHTERS.find(({ generator }) => generator === fighter)?.cells ?? {};
       if (!drawn) {
         // No cell, no image, no atlas: a stale one would show effects no longer drawn.
         expect(cells[strip], strip).toBeUndefined();

@@ -24,13 +24,11 @@ import {
 } from './aseprite-template.ts';
 import { DRAWN_ROOT, loadDrawn, PORTRAIT, reportingDrawingProblems } from './drawn.ts';
 import type { Fighter } from './fighter.ts';
+import { FIGHTERS } from './fighters.ts';
 import { frameDataOf } from './frame-data.ts';
-import { NAYO } from './nayo/index.ts';
-import { RIFF } from './riff/index.ts';
 import { isStageLayer, loadStageDrawn } from './stage-drawn.ts';
 import { isUiArt, loadUiDrawn, UI_ARTS, UI_FOLDER } from './ui-drawn.ts';
 
-const FIGHTERS: readonly Fighter[] = [NAYO, RIFF];
 const TEMPLATES = new URL('gabarits/', DRAWN_ROOT);
 
 async function write(fighter: Fighter, names: readonly string[]): Promise<void> {

@@ -1,8 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { anatomyIssues, jointsOf } from '../../tools/sprites/anatomy';
-import type { Fighter } from '../../tools/sprites/fighter';
-import { NAYO } from '../../tools/sprites/nayo/index';
-import { RIFF } from '../../tools/sprites/riff/index';
+import { FIGHTERS } from '../../tools/sprites/fighters';
 import { BODY, solve, type Pose } from '../../tools/sprites/skeleton';
 
 /** Nayo standing tall, arms hanging, feet flat under the hips. */
@@ -65,7 +63,7 @@ describe('anatomy (tools/sprites/anatomy.ts)', () => {
 
   it('keeps every frame of every strip within what a body can do', () => {
     const broken: string[] = [];
-    for (const fighter of [NAYO, RIFF] as readonly Fighter[]) {
+    for (const fighter of FIGHTERS) {
       for (const sheet of Object.keys(fighter.sheets)) {
         fighter.poses(sheet)?.forEach((pose, frame) => {
           for (const issue of anatomyIssues(pose, fighter.body)) {
