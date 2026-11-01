@@ -481,7 +481,9 @@ describe('vibrationFor', () => {
     expect(vibrationFor(pummel, 0)).toBe(HAPTICS.pummel);
     expect(vibrationFor(thrown, 0)).toBe(HAPTICS.heavyHit);
     expect(vibrationFor(heavy, 0)).toBe(HAPTICS.heavyHit);
-    for (const event of [grabbed, pummel, thrown, heavy]) expect(vibrationFor(event, 1)).toBe(0);
+    for (const event of [grabbed, pummel, thrown]) expect(vibrationFor(event, 1)).toBe(0);
+    // Its attacker feels a heavy blow given, a tick of the hand (P23).
+    expect(vibrationFor(heavy, 1)).toBe(HAPTICS.heavyGiven);
   });
 
   it('buzzes both phones, hard, when a KO blows a Boost gauge up (an Ultime)', () => {

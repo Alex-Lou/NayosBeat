@@ -73,6 +73,15 @@ describe('PlayerInputs', () => {
     expect(player2).toBe(Input.Heavy);
   });
 
+  it("names each player's own gamepad, to rumble that one alone (P23)", () => {
+    const { inputs } = setup([pad(2), pad(5)]);
+    const pads = [pad(5), pad(2)];
+    expect(inputs.padOf(0, pads)?.index).toBe(2);
+    expect(inputs.padOf(1, pads)?.index).toBe(5);
+    // Player 1's pad unplugged: nobody else's rumbles for it.
+    expect(inputs.padOf(0, [pad(5)])).toBeUndefined();
+  });
+
   it('passes on a dash or grab press from the keyboard, even shorter than a frame', () => {
     const { target, inputs } = setup();
     target.dispatchEvent(key('keydown', 'ShiftLeft'));

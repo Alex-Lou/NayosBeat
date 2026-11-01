@@ -27,6 +27,7 @@ import type { AnimOptions } from './anim-options';
 import { frontFighter, type ShowContext } from './animation';
 import { NO_ADVANTAGE, trackAdvantage, type Advantage } from './advantage-meter';
 import { TouchCover } from './touch-cover';
+import { PadHaptics } from './pad-haptics';
 import { NO_COMBO, trackCombo, type ComboMeter } from './training-combo';
 import { TrainingView } from './training-view';
 import { BoxOverlay } from './box-overlay';
@@ -133,6 +134,8 @@ interface Runtime {
   readonly touch: TouchControls | undefined;
   /** With them: they fade while a fighter is under them (touch-cover.ts). */
   readonly touchCover: TouchCover | undefined;
+  /** Each player's gamepad rumbles for its own blows (pad-haptics.ts). */
+  readonly padHaptics: PadHaptics;
   readonly pauseInput: PauseInput;
   readonly fighterViews: readonly [FighterDisplay, FighterDisplay];
   readonly projectileView: ProjectileView;
@@ -306,6 +309,9 @@ export class FightScene extends Phaser.Scene {
 
     const runtime: Omit<Runtime, 'finisherScene'> = {
       inputs: new PlayerInputs(window, touch, connectedGamepads()),
+      padHaptics: new PadHaptics((player) =>
+        this.runtime?.inputs.padOf(player, connectedGamepads()),
+      ),
       touch,
       touchCover: touch
         ? new TouchCover(this.game.canvas, touch, this.config, GROUND_Y)
@@ -581,6 +587,7 @@ export class FightScene extends Phaser.Scene {
       for (const event of this.tickEvents) {
         runtime.feedback.react(event, viewLeft);
         runtime.caption?.react(event, this.state.frame);
+        runtime.padHaptics.react(event);
       }
       runtime.feedback.endTick();
       runtime.feedback.trail(this.state);

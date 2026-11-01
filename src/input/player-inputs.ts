@@ -125,10 +125,15 @@ export class PlayerInputs {
 
   /** What `player`'s gamepad holds right now, if it has one. */
   private padBits(player: 0 | 1, pads: readonly Gamepad[]): InputBits {
+    const pad = this.padOf(player, pads);
+    return pad ? this.gamepads.read(pad, this.pads[player]) : 0;
+  }
+
+  /** The gamepad bound to `player` among `pads`, if any: its rumble is that player's (P23). */
+  padOf(player: 0 | 1, pads: readonly Gamepad[]): Gamepad | undefined {
     this.assignPads(pads);
     const index = this.padIndices[player];
-    const pad = index === null ? undefined : pads.find((p) => p.index === index);
-    return pad ? this.gamepads.read(pad, this.pads[player]) : 0;
+    return index === null ? undefined : pads.find((pad) => pad.index === index);
   }
 
   /** Newly connected pads take the next free player slot. */
