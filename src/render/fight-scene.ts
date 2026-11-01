@@ -12,10 +12,10 @@ import { TICK_RATE, toPx } from '../core/constants';
 import type { FinisherState } from '../core/finisher';
 import type { InputBits } from '../core/input';
 import { matchWinner } from '../core/round';
-import { MATCH_END_FRAMES } from '../core/rules';
 import { createInitialState, type GameState } from '../core/state';
 import { step } from '../core/step';
 import { assertValidMatch } from '../core/validate';
+import type { FighterId } from '../data/roster';
 import { connectedGamepads } from '../input/gamepad';
 import { PauseInput } from '../input/pause-input';
 import { rumble, vibrate } from '../input/haptics';
@@ -27,12 +27,20 @@ import type { AnimOptions } from './anim-options';
 import { frontFighter, type ShowContext } from './animation';
 import { NO_ADVANTAGE, trackAdvantage, type Advantage } from './advantage-meter';
 import { BoxOverlay } from './box-overlay';
-import { frameFight, MAX_CLOSE_UP, type FramingInput } from './camera-framing';
+import {
+  FINISHER_CLOSE_UP,
+  frameAround,
+  frameFight,
+  MAX_CLOSE_UP,
+  type FramingInput,
+} from './camera-framing';
 import { DebugOverlay, describeGame, isDebugEnabled } from './debug-overlay';
 import { dissolveStyleOf } from './dissolve';
 import { detectEvents, type FightEvent } from './fight-events';
 import { FightFeedback } from './fight-feedback';
 import { FightMemory } from './fight-memory';
+import { FinisherScene, playToResults, resultsDue, type CameraNow } from './finisher-scene';
+import type { StagedLook } from './finisher-scripts';
 import { FinisherSignal, sirenPitchOf } from './finisher-signal';
 import { FlashBudget } from './flash-budget';
 import { FighterView } from './fighter-view';
@@ -69,6 +77,11 @@ export interface FightSceneData {
   readonly onPause: () => void;
   /** Called once, a moment after the final KO, with the winner's index. */
   readonly onMatchEnd: (winner: 0 | 1 | null) => void;
+  /**
+   * The fighters whose Finisher the session has played (the app's, across matches): from the
+   * second one on, its scene plays short (docs/finisher.md §1.14). The fight notes its own.
+   */
+  readonly finishersSeen: Set<FighterId>;
 }
 
 type Mutable<T> = { -readonly [K in keyof T]: T[K] };
@@ -80,7 +93,13 @@ interface FighterDisplay {
    * signal (its halo); `context`: the animation's options and what the scene remembers of the
    * fight.
    */
-  update(state: GameState, frames: number, finisher: FinisherState, context: ShowContext): void;
+  update(
+    state: GameState,
+    frames: number,
+    finisher: FinisherState,
+    context: ShowContext,
+    staged: StagedLook,
+  ): void;
   setFront(front: boolean): void;
   /** The comfort options: `calm`, the flashes not normal; how far things shake (off: no motion). */
   setComfort(calm: boolean, shake: ShakeMode): void;
@@ -102,6 +121,8 @@ interface Runtime {
    */
   readonly finisher: FinisherSignal;
   readonly feedback: FightFeedback;
+  /** The Finisher's director: once it locks, it paces the game and frames it (finisher-scene.ts). */
+  readonly finisherScene: FinisherScene;
   readonly hud: Hud;
   /** The time a hold has left, around the fighter held. */
   readonly holdRing: HoldRing;
@@ -152,8 +173,10 @@ export class FightScene extends Phaser.Scene {
   private matchEndReported = false;
   /** The fighter drawn over the other one. */
   private front: 0 | 1 = 0;
-  /** Current close-up of the fight camera (see frameFight). */
+  /** Current close-up of the fight camera (see frameFight), and its world top left corner. */
   private closeUp = MAX_CLOSE_UP;
+  private cameraLeft = 0;
+  private cameraTop = 0;
   private runtime: Runtime | undefined;
 
   /** Reused every tick to avoid allocating. */
@@ -205,6 +228,8 @@ export class FightScene extends Phaser.Scene {
     this.matchEndReported = false;
     this.front = 0;
     this.closeUp = MAX_CLOSE_UP;
+    this.cameraLeft = 0;
+    this.cameraTop = 0;
   }
 
   preload(): void {
@@ -234,7 +259,7 @@ export class FightScene extends Phaser.Scene {
       budget,
     );
 
-    this.runtime = {
+    const runtime: Omit<Runtime, 'finisherScene'> = {
       inputs: new PlayerInputs(window, touch, connectedGamepads()),
       touch,
       pauseInput: new PauseInput(document.body),
@@ -281,6 +306,25 @@ export class FightScene extends Phaser.Scene {
       boxOverlay:
         debug || this.config.training ? new BoxOverlay(this, this.config, GROUND_Y) : undefined,
     };
+    // The Finisher's director: what it draws is made now, with the rest (addScreenCamera).
+    const [first, second] = this.sceneData.setup.fighters;
+    const finisherScene = new FinisherScene(this, {
+      config: this.config,
+      fighters: this.sceneData.setup.fighters,
+      colorways: first === second ? ['main', 'alt'] : ['main', 'main'],
+      energies: [this.styles[0].energy, this.styles[1].energy],
+      strikes: [this.styles[0].strike, this.styles[1].strike],
+      arts: this.arts,
+      groundY: GROUND_Y,
+      stageWidth,
+      sfx: this.sceneData.sfx,
+      feedback: runtime.feedback,
+      budget,
+      comfort,
+      humans: this.cpu ? [0] : [0, 1],
+      seen: this.sceneData.finishersSeen,
+    });
+    this.runtime = { ...runtime, finisherScene };
     this.runtime.boxOverlay?.show(debug || this.sceneData.boxes === true);
 
     this.applyComfort(comfort);
@@ -304,6 +348,7 @@ export class FightScene extends Phaser.Scene {
     runtime.feedback.setComfort(comfort);
     runtime.hud.setComfort(hudComfortOf(comfort));
     runtime.holdRing.calm = isCalm(comfort);
+    runtime.finisherScene.setComfort(comfort);
     for (const view of runtime.fighterViews) view.setComfort(isCalm(comfort), comfort.shake);
   }
 
@@ -398,33 +443,27 @@ export class FightScene extends Phaser.Scene {
     runtime.budget.setZoom(this.closeUp);
     // Slowed down, the game lives fewer frames than the screen shows.
     const gameFrames = this.pacer ? this.pacer.advance(visualFrames) : visualFrames;
-    const ticks = this.pacer
-      ? runtime.feedback.ticksFor(gameFrames)
-      : this.timestep.advance(deltaMs * runtime.feedback.timeScale());
     const startMs = runtime.debugOverlay ? performance.now() : 0;
 
     // Devices are sampled once per display frame and held for every tick of that frame. Above
     // 60 Hz, or slowed down, some frames run no tick: reading then would drop a quick tap no tick
     // ever sees. Gamepads keep no press of their own: they are polled on every frame, read or not.
     runtime.inputs.poll(pads);
-    if (ticks > 0) {
-      const [player1, player2] = runtime.inputs.read(pads);
-      for (let i = 0; i < ticks; i++) {
-        this.tickInputs[0] = player1;
-        this.tickInputs[1] = this.cpu ? this.cpuInput(this.cpu) : player2;
-        const previous = this.state;
-        this.state = step(previous, this.tickInputs, this.config);
-        detectEvents(previous, this.state, this.config, this.tickEvents);
-        this.memory.note(this.state, this.tickEvents);
-        if (this.config.training) this.advantage = trackAdvantage(this.advantage, this.state);
-        const viewLeft = toPx(this.state.cameraX) - VIEW_SIZE.width / 2;
-        runtime.feedback.beginTick();
-        for (const event of this.tickEvents) {
-          runtime.feedback.react(event, viewLeft);
-          runtime.caption?.react(event, this.state.frame);
-        }
-        runtime.feedback.endTick();
+    let ticks = 0;
+    const scene = runtime.finisherScene;
+    if (scene.isActive()) {
+      // The Finisher's scene paces the game itself, frame by frame (docs/finisher.md §1.14).
+      for (let frame = 0; frame < gameFrames && scene.isActive(); frame++) {
+        ticks += this.playTicks(runtime, scene.nextFrame(), pads);
+        this.stage(runtime, pads);
       }
+    } else {
+      const due = this.pacer
+        ? runtime.feedback.ticksFor(gameFrames)
+        : this.timestep.advance(deltaMs * runtime.feedback.timeScale());
+      ticks = this.playTicks(runtime, due, pads);
+      // Locked on one of them: its scene takes the pace over from the next frame.
+      if (scene.isActive()) this.stage(runtime, pads);
     }
     runtime.feedback.update(visualFrames, gameFrames);
 
@@ -436,6 +475,71 @@ export class FightScene extends Phaser.Scene {
     this.reportMatchEnd();
   }
 
+  /**
+   * Plays `count` ticks, the devices read once for all of them, every event to the effects, the
+   * training's captions and the Finisher's scene. A tick that locks a Finisher is the last: its
+   * scene paces the next ones, nobody pressing anything in training (`seizesInputs`). Returns the
+   * ticks played.
+   */
+  private playTicks(runtime: Runtime, count: number, pads: readonly Gamepad[]): number {
+    if (count <= 0) return 0;
+    const scene = runtime.finisherScene;
+    const staged = scene.isActive();
+    // Read even when the scene seizes them (training): a tap made through it is lost, not played
+    // after it.
+    const seized = scene.seizesInputs();
+    const [player1, player2] = runtime.inputs.read(pads);
+    for (let i = 0; i < count; i++) {
+      this.tickInputs[0] = seized ? 0 : player1;
+      this.tickInputs[1] = seized ? 0 : this.cpu ? this.cpuInput(this.cpu) : player2;
+      const previous = this.state;
+      this.state = step(previous, this.tickInputs, this.config);
+      detectEvents(previous, this.state, this.config, this.tickEvents);
+      this.memory.note(this.state, this.tickEvents);
+      if (this.config.training) this.advantage = trackAdvantage(this.advantage, this.state);
+      const viewLeft = toPx(this.state.cameraX) - VIEW_SIZE.width / 2;
+      runtime.feedback.beginTick();
+      for (const event of this.tickEvents) {
+        runtime.feedback.react(event, viewLeft);
+        runtime.caption?.react(event, this.state.frame);
+      }
+      runtime.feedback.endTick();
+      // After the blows' own effects: they ask the flash budget first.
+      for (const event of this.tickEvents) scene.react(event, this.state, viewLeft);
+      if (!staged && scene.isActive()) return i + 1;
+    }
+    return count;
+  }
+
+  /**
+   * A frame of the Finisher's scene, once its ticks are played: it reads what each player holds
+   * (its skip), on every frame; what it skips over, then the match once its card is over, plays
+   * on unseen (docs/finisher.md §1.10).
+   */
+  private stage(runtime: Runtime, pads: readonly Gamepad[]): void {
+    const scene = runtime.finisherScene;
+    const camera: CameraNow = {
+      closeUp: this.closeUp,
+      left: this.cameraLeft,
+      top: this.cameraTop,
+      viewLeft: toPx(this.state.cameraX) - VIEW_SIZE.width / 2,
+    };
+    scene.update(this.state, runtime.inputs.held(pads), camera);
+    this.playUnseen(scene.takeSkipped());
+    if (scene.wantsFastForward()) {
+      this.state = playToResults(this.state, this.config);
+      scene.fastForwarded();
+    }
+  }
+
+  /**
+   * Ticks played without being shown: nobody pressing anything, no CPU, no event, no effect (a
+   * Finisher's scene skipped past them).
+   */
+  private playUnseen(ticks: number): void {
+    for (let i = 0; i < ticks; i++) this.state = step(this.state, [0, 0], this.config);
+  }
+
   private cpuInput(cpu: CpuState): InputBits {
     const decision = cpuStep(cpu, this.state, this.config);
     this.cpu = decision.cpu;
@@ -443,11 +547,11 @@ export class FightScene extends Phaser.Scene {
   }
 
   private reportMatchEnd(): void {
-    const round = this.state.round;
-    if (this.matchEndReported || round.phase !== 'matchEnd') return;
-    if (round.phaseFrame < MATCH_END_FRAMES) return;
+    if (this.matchEndReported || !resultsDue(this.state)) return;
+    // A Finisher's scene, then its winner's pose, come first.
+    if (this.runtime?.finisherScene.holdsResults()) return;
     this.matchEndReported = true;
-    this.sceneData.onMatchEnd(matchWinner(round));
+    this.sceneData.onMatchEnd(matchWinner(this.state.round));
   }
 
   /** `elapsed`: time since the previous frame, in 1/60 s (for the camera's easing). */
@@ -459,8 +563,9 @@ export class FightScene extends Phaser.Scene {
     this.front = frontFighter(this.front, a, b);
     viewA.setFront(this.front === 0);
     viewB.setFront(this.front === 1);
-    viewA.update(this.state, elapsed, finisher[0], this.showContext);
-    viewB.update(this.state, elapsed, finisher[1], this.showContext);
+    const scene = runtime.finisherScene;
+    viewA.update(this.state, elapsed, finisher[0], this.showContext, scene.lookOf(0));
+    viewB.update(this.state, elapsed, finisher[1], this.showContext, scene.lookOf(1));
     runtime.projectileView.update(this.state.projectiles, this.state.frame);
     runtime.hud.update(this.state, finisher);
     runtime.hud.showAdvantage(this.advantage.last);
@@ -482,8 +587,15 @@ export class FightScene extends Phaser.Scene {
     input.viewLeft = toPx(this.state.cameraX) - VIEW_SIZE.width / 2;
     input.closeUp = this.closeUp;
     input.elapsed = elapsed;
-    const framing = frameFight(input);
+    // The Finisher's scene frames its close up itself, the texts of the world sharp for it.
+    const staged = scene.camera;
+    const framing = staged
+      ? frameAround(staged.middle, staged.closeUp, input.viewLeft, GROUND_Y)
+      : frameFight(input);
+    runtime.caption?.setCloseUp(staged ? FINISHER_CLOSE_UP : MAX_CLOSE_UP);
     this.closeUp = framing.closeUp;
+    this.cameraLeft = framing.left;
+    this.cameraTop = framing.top;
     this.cameras.main
       .setZoom((this.scale.width / VIEW_SIZE.width) * framing.closeUp)
       .setScroll(framing.left + runtime.feedback.shakeX, framing.top + runtime.feedback.shakeY);
@@ -492,6 +604,8 @@ export class FightScene extends Phaser.Scene {
   /** DOM elements and listeners live outside Phaser: they must be released explicitly. */
   private dispose(): void {
     if (!this.runtime) return;
+    // The fight's bus whole and open again, for the menus and the next fight.
+    this.runtime.finisherScene.dispose();
     this.runtime.inputs.dispose();
     this.runtime.pauseInput.dispose();
     this.runtime.debugOverlay?.destroy();

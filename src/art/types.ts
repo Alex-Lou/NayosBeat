@@ -100,14 +100,24 @@ export const STATE_CLIP_IDS = [
 ] as const;
 
 export type StateClipId = (typeof STATE_CLIP_IDS)[number];
-export type ClipId = StateClipId | MoveId;
+
+/**
+ * Round poses a fighter may have, each with its fallback (`poseClipOf`): the Finisher's own after
+ * its scene, `finale` (docs/finisher.md §2.10, §3.10), else its victory.
+ */
+export const OPTIONAL_POSE_IDS = ['finale'] as const;
+export type OptionalPoseId = (typeof OPTIONAL_POSE_IDS)[number];
+const POSE_FALLBACKS: Readonly<Record<OptionalPoseId, StateClipId>> = { finale: 'victory' };
+
+export type ClipId = StateClipId | MoveId | OptionalPoseId;
 
 /**
  * A clip for every state and core move, and for the optional moves the fighter has (validation
- * checks each one defined has its clip). `C`: the fighter's own clips, which name its strips.
+ * checks each one defined has its clip), and the optional round poses it has. `C`: the fighter's
+ * own clips, which name its strips.
  */
 export type FighterClips<C extends Clip = Clip> = Readonly<Record<StateClipId | CoreMoveId, C>> &
-  Readonly<Partial<Record<OptionalMoveId, C>>>;
+  Readonly<Partial<Record<OptionalMoveId | OptionalPoseId, C>>>;
 
 export interface FighterArt {
   /** Prefix of the texture keys, unique per fighter. */
@@ -153,6 +163,11 @@ export function clipOf(art: FighterArt, id: ClipId): Clip {
   const clip = art.clips[id];
   if (!clip) throw new Error(`${art.key} has no clip ${id}`);
   return clip;
+}
+
+/** The optional round pose `id` of a fighter if it has it, its fallback otherwise. */
+export function poseClipOf(art: FighterArt, id: OptionalPoseId): ClipId {
+  return art.clips[id] ? id : POSE_FALLBACKS[id];
 }
 
 /** The cells of a strip, `fx/` prefixed for its front effects. */

@@ -90,3 +90,36 @@ describe('the screen shake (docs/flashs.md §1.3)', () => {
     }
   });
 });
+
+describe("the Finisher's shake (docs/finisher.md §4.4)", () => {
+  /** The offsets after a kick along `axis` at `zoom`. */
+  const along = (axis: 'x' | 'y', zoom: number, trauma = 1) => {
+    const shake = new Shake(1, 1);
+    shake.kick(trauma, 1, axis, zoom);
+    return Array.from({ length: 60 }, () => {
+      shake.update();
+      return { x: shake.x, y: shake.y };
+    });
+  };
+
+  it('goes along one axis only: Nayo’s along the floor, Riff’s from the sky, down first', () => {
+    const sideways = along('x', 1);
+    expect(sideways.every(({ y }) => y === 0)).toBe(true);
+    expect(Math.max(...sideways.map(({ x }) => Math.abs(x)))).toBeGreaterThanOrEqual(MAX_SHAKE - 1);
+    const down = along('y', 1);
+    expect(down.every(({ x }) => x === 0)).toBe(true);
+    expect(Math.max(...down.map(({ y }) => Math.abs(y)))).toBeGreaterThanOrEqual(MAX_SHAKE - 1);
+    // The picture first drops (the scroll goes up).
+    expect(down.find(({ y }) => y !== 0)?.y).toBeLessThan(0);
+  });
+
+  it('divides its offset by the zoom, not its trauma: the force of a KO on the screen at ×2', () => {
+    const peak = (zoom: number, trauma = 1) =>
+      Math.max(...along('x', zoom, trauma).map(({ x }) => Math.abs(x)));
+    expect(peak(2)).toBeLessThanOrEqual(MAX_SHAKE / 2);
+    expect(peak(2)).toBeGreaterThanOrEqual(MAX_SHAKE / 2 - 1);
+    // Its contact, 0.6: about 2.9 px of the view at ×2, 1.4 of the world.
+    expect(peak(2, TRAUMA.ko.finale)).toBeLessThanOrEqual(Math.ceil((MAX_SHAKE * 0.36) / 2));
+    expect(TRAUMA.finaleLanding).toBe(1);
+  });
+});

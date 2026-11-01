@@ -28,6 +28,7 @@ export class PlayerInputs {
   private readonly lastPolled: [InputBits, InputBits] = [0, 0];
   /** Reused every frame to avoid allocating. */
   private readonly current: [InputBits, InputBits] = [0, 0];
+  private readonly holding: [InputBits, InputBits] = [0, 0];
 
   constructor(
     target: Window,
@@ -65,6 +66,22 @@ export class PlayerInputs {
     }
     this.keyboard.endFrame();
     return this.current;
+  }
+
+  /**
+   * What each player holds down right now, on any frame: the Finisher's scene, skipped by holding
+   * a button (docs/finisher.md §1.14), reads it on every frame, ticks or not. Only what is down:
+   * a tap already released is not held (frames without a tick would see it until the next read),
+   * and nothing is taken from the next `read`, neither a tap nor a pass through neutral. A button
+   * held across a menu is left out until released, as `read` does.
+   */
+  held(pads: readonly Gamepad[]): readonly [InputBits, InputBits] {
+    for (const player of [0, 1] as const) {
+      const touch = player === 0 ? (this.touch?.heldBits() ?? 0) : 0;
+      const down = this.keyboard.heldBits(player) | this.padBits(player, pads) | touch;
+      this.holding[player] = down & ~this.suppressed[player];
+    }
+    return this.holding;
   }
 
   /**

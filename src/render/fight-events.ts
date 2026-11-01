@@ -47,7 +47,7 @@ interface Blow extends Impact {
  * (docs/combos-v3.md §1.8.6, docs/finisher.md §1.13): `plain`, a blow on its own (the gauge stays
  * whole); `combo`, the end of a combo of COMBO_KO_HITS blows or more (it cracks); `ultimate`, a
  * super (it shatters); `finale`, the last blow of a super the Finisher locks (it shatters too,
- * on the landing once the Finisher's scene plays: until then, as an Ultime's).
+ * on the landing its scene plays: finisher-scene.ts).
  */
 export type KoFinish = 'plain' | 'combo' | 'ultimate' | 'finale';
 /** Blows of a combo, the final one included, from which its KO cracks the gauge. */
@@ -334,13 +334,15 @@ export function landingOf(
 
 /**
  * How long `player`'s phone vibrates for an event: what it takes only, 0 for none; but a KO that
- * blows a Boost gauge up (an Ultime's) shakes both phones, the one who lands it too.
+ * blows a Boost gauge up (an Ultime's) shakes both phones, the one who lands it too. The
+ * Finisher's shakes them on its landing, which its scene plays (docs/finisher.md §1.13).
  */
 export function vibrationFor(event: FightEvent, player: 0 | 1): number {
   switch (event.type) {
     case 'grab':
       return event.by === player ? 0 : HAPTICS.grabbed;
     case 'ko':
+      if (event.finish === 'finale') return 0;
       if (shatters(event.finish)) return HAPTICS.shatter;
       return event.by === player ? 0 : HAPTICS.heavyHit;
     case 'throw':

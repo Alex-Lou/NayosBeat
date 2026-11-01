@@ -31,6 +31,9 @@ vi.mock('../../src/render/anchored-sprite', () => ({
     dark(): this {
       return this;
     }
+    shade(): this {
+      return this;
+    }
     hide(): void {
       // Nothing to hide.
     }

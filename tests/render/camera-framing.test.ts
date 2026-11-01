@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { frameFight, MAX_CLOSE_UP, type FramingInput } from '../../src/render/camera-framing';
+import {
+  CLOSE_UP_EFFECTS,
+  FINISHER_CLOSE_UP,
+  frameAround,
+  frameFight,
+  MAX_CLOSE_UP,
+  textResolution,
+  type FramingInput,
+} from '../../src/render/camera-framing';
 import { VIEW_SIZE } from '../../src/render/view';
 
 const GROUND_Y = 230;
@@ -76,5 +84,22 @@ describe('fight camera framing', () => {
       at144 = frameFight({ ...input, closeUp: at144.closeUp, elapsed: 60 / 144 });
     }
     expect(at144.closeUp).toBeCloseTo(at60.closeUp, 6);
+  });
+});
+
+describe("the Finisher's close up (docs/finisher.md §1.14)", () => {
+  it('frames ×2 around its impact, the ground kept at the bottom, inside the simulation’s camera', () => {
+    const close = frameAround(300, FINISHER_CLOSE_UP, 0, GROUND_Y);
+    expect(close.left).toBeCloseTo(300 - VIEW_SIZE.width / 4, 5);
+    // 115 px of the world over the ground (and the HUD covers the 15 at the top).
+    expect(GROUND_Y - close.top).toBeCloseTo(115, 5);
+    // Never past the simulation camera's walls.
+    expect(frameAround(20, FINISHER_CLOSE_UP, 0, GROUND_Y).left).toBe(0);
+    expect(CLOSE_UP_EFFECTS).toBeCloseTo(0.725, 5);
+  });
+
+  it('draws the texts of the world as sharp as the close up they show at', () => {
+    expect(textResolution(1920)).toBe(Math.ceil(4 * MAX_CLOSE_UP));
+    expect(textResolution(1920, FINISHER_CLOSE_UP)).toBe(8);
   });
 });

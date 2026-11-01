@@ -3,12 +3,11 @@ import type { MatchConfig } from '../core/config';
 import { toPx } from '../core/constants';
 import { moveOf } from '../core/moves';
 import type { GameState } from '../core/state';
-import { MAX_CLOSE_UP } from './camera-framing';
+import { textResolution } from './camera-framing';
 import { stackedY } from './caption-stack';
 import { DEPTH } from './depth';
 import type { FightEvent } from './fight-events';
 import { PIXEL_FONT } from './hud';
-import { VIEW_SIZE } from './view';
 
 /** Ticks a move's name stays over its fighter (docs/combat-v2.md §15). */
 export const CAPTION_TICKS = 40;
@@ -30,6 +29,7 @@ interface Caption {
  */
 export class MoveCaption {
   private readonly captions: readonly [Caption, Caption];
+  private readonly canvasWidth: number;
 
   constructor(
     scene: Phaser.Scene,
@@ -37,7 +37,8 @@ export class MoveCaption {
     private readonly groundY: number,
   ) {
     // Drawn at the fight camera's finest zoom, so the pixel font stays sharp.
-    const resolution = Math.ceil((scene.scale.width / VIEW_SIZE.width) * MAX_CLOSE_UP);
+    this.canvasWidth = scene.scale.width;
+    const resolution = textResolution(this.canvasWidth);
     const caption = (): Caption => ({
       text: scene.add
         .text(0, 0, '', {
@@ -54,6 +55,17 @@ export class MoveCaption {
       since: -Infinity,
     });
     this.captions = [caption(), caption()];
+  }
+
+  /**
+   * The closest zoom the names must stay sharp at (camera-framing.ts): the fight's, or the
+   * Finisher's close up while its scene plays. Drawn again at once.
+   */
+  setCloseUp(closeUp: number): void {
+    const resolution = textResolution(this.canvasWidth, closeUp);
+    for (const { text } of this.captions) {
+      if (text.style.resolution !== resolution) text.setResolution(resolution);
+    }
   }
 
   /** `frame`: the match tick the event happened on. */

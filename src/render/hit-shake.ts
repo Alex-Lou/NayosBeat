@@ -1,3 +1,4 @@
+import { finisherLocked } from '../core/finisher';
 import type { FighterAction, GameState } from '../core/state';
 import type { ShowContext } from './animation';
 import type { ShakeMode } from './shake';
@@ -21,7 +22,9 @@ const STRUCK: ReadonlySet<FighterAction> = new Set(['hitstun', 'airHit', 'ko']);
  * game's own clock (`frame` goes on in the freeze, docs/combat-v2.md): the same on every screen,
  * and in a replay. Only its drawing moves: not its shadow, nor its place in the game. Within the
  * player's « Tremblement de l'écran »: reduced, 1 px at most; none, still. None with the animation
- * of before, nor under a freeze that is not its blow's (a super's flash).
+ * of before, nor under a freeze that is not its blow's (a super's flash), nor while the Finisher
+ * locks it, its KO's freeze included (docs/finisher.md §1.14): its scene holds those frames, and
+ * the core's freeze shows nothing that moves.
  */
 export function hitShakeOf(
   state: GameState,
@@ -31,6 +34,7 @@ export function hitShakeOf(
 ): number {
   const blow = context.memory?.blowOn(player);
   if (!blow || context.options.legacy || shake === 'off' || state.hitstop <= 0) return 0;
+  if (finisherLocked(state, player === 0 ? 1 : 0)) return 0;
   const since = state.frame - blow.frame;
   if (since < 0 || since >= blow.hitstop) return 0;
   const full = reachOf(state.fighters[player].action, blow.heavy);

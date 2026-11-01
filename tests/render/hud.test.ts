@@ -4,6 +4,8 @@ import { finisherState } from '../../src/core/finisher';
 import {
   createInitialState,
   FLAG_DANGER,
+  FLAG_FINISHER,
+  FLAG_MOVE_HIT,
   type GameState,
   type RoundState,
 } from '../../src/core/state';
@@ -315,5 +317,39 @@ describe('the advantage in training (docs/polish/AUDIT-ET-PLAN.md, P19)', () => 
     const { hud, texts } = hudOf('normal');
     hud.showAdvantage(-23);
     expect(texts.some((text) => text.text.startsWith('Avantage'))).toBe(false);
+  });
+});
+
+describe("the Finisher's KO on the HUD (docs/finisher.md §1.14)", () => {
+  /** A KO by player 1's locked super: it still plays it, the victim knocked out. */
+  const locked = (frame: number, phase: 'roundEnd' | 'intro' = 'roundEnd'): GameState => {
+    const state = stateAt(frame, { ...KO, phase }, [1000, 0]);
+    const [a, b] = state.fighters;
+    return {
+      ...state,
+      fighters: [
+        { ...a, action: 'attack', move: 'super', flags: FLAG_FINISHER | FLAG_MOVE_HIT },
+        { ...b, action: 'ko' },
+      ],
+    };
+  };
+
+  it('announces no K.O.: its card does, through the round end, the lock over or not', () => {
+    const { hud, texts } = hudOf('normal');
+    hud.update(locked(1));
+    expect(texts.some((text) => text.text === 'K.O.')).toBe(false);
+    // Once the winner is out of its super, still nothing: the KO was the Finisher's.
+    hud.update(stateAt(2, KO, [1000, 0]));
+    expect(texts.some((text) => text.text === 'K.O.')).toBe(false);
+    // The next round announces as ever.
+    hud.update(stateAt(3, { phase: 'intro', phaseFrame: 0, number: 2 }));
+    hud.update(stateAt(4, KO, [1000, 0]));
+    expect(texts.some((text) => text.text === 'K.O.')).toBe(true);
+  });
+
+  it('announces the K.O. of an Ultime, the super unlocked', () => {
+    const { hud, texts } = hudOf('normal');
+    hud.update(stateAt(1, KO, [1000, 0]));
+    expect(texts.some((text) => text.text === 'K.O.')).toBe(true);
   });
 });

@@ -1,7 +1,10 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { Input } from '../../src/core/input';
 import { PadButton } from '../../src/input/gamepad';
 import { PlayerInputs } from '../../src/input/player-inputs';
+import { TouchControls } from '../../src/input/touch-controls';
+import { TOUCH_BUTTONS } from '../../src/input/touch-layout';
+import { installFakePage } from '../render/fake-dom';
 
 function key(type: 'keydown' | 'keyup', code: string): Event {
   return Object.assign(new Event(type, { cancelable: true }), { code });
@@ -118,5 +121,46 @@ describe('PlayerInputs', () => {
     target.dispatchEvent(key('keydown', 'KeyI'));
     inputs.reset([]);
     expect(inputs.read([])[0]).toBe(0);
+  });
+});
+
+describe('what each player holds, on any frame (docs/finisher.md §1.14)', () => {
+  it('reads the buttons held down, not a tap, without taking it from the next read', () => {
+    const { target, inputs } = setup();
+    target.dispatchEvent(key('keydown', 'KeyJ'));
+    expect(inputs.held([])[0]).toBe(Input.Light);
+    target.dispatchEvent(key('keyup', 'KeyJ'));
+    // Released before any tick read it: no longer held, on every frame until the next read
+    // (a frame without a tick would count it towards the skip), but the tap is still there.
+    expect(inputs.held([])[0]).toBe(0);
+    expect(inputs.held([])[0]).toBe(0);
+    expect(inputs.read([])[0]).toBe(Input.Light);
+    expect(inputs.held([])[0]).toBe(0);
+  });
+
+  it('leaves a tap on the touch controls to the next read', () => {
+    const page = installFakePage();
+    const touch = new TouchControls(page.body as unknown as HTMLElement, undefined);
+    const buttons = page.body.children[0]?.children[2];
+    if (!buttons) throw new Error('No button zone');
+    buttons.rect = { left: 333, top: 0, right: 667, bottom: 375 };
+    const inputs = new PlayerInputs(new EventTarget() as unknown as Window, touch, []);
+    const dash = TOUCH_BUTTONS.find((button) => button.flag === Input.Dash);
+    if (!dash) throw new Error('No DASH button');
+    const at = { pointerId: 1, clientX: 667 - dash.right, clientY: 375 - dash.bottom };
+    buttons.dispatchEvent(Object.assign(new Event('pointerdown'), at));
+    expect(inputs.held([])[0]).toBe(Input.Dash);
+    buttons.dispatchEvent(Object.assign(new Event('pointerup'), at));
+    expect(inputs.held([])[0]).toBe(0);
+    expect(inputs.read([])[0]).toBe(Input.Dash);
+    expect(inputs.read([])[0]).toBe(0);
+    vi.unstubAllGlobals();
+  });
+
+  it('leaves out a button held across a menu, as a read does', () => {
+    const { target, inputs } = setup();
+    target.dispatchEvent(key('keydown', 'KeyJ'));
+    inputs.reset([]);
+    expect(inputs.held([])[0]).toBe(0);
   });
 });

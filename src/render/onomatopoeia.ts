@@ -1,6 +1,6 @@
 import type Phaser from 'phaser';
 import { toPx } from '../core/constants';
-import { MAX_CLOSE_UP } from './camera-framing';
+import { MAX_CLOSE_UP, textResolution } from './camera-framing';
 import { COMIC_FONT, comicDrop, comicFill, INK } from './comic-lettering';
 import { DEPTH } from './depth';
 import type { HitStyle } from './hit-styles';
@@ -134,7 +134,8 @@ export class Onomatopoeia {
   calm = false;
   private readonly words: Word[];
   /** Device pixels per world pixel of the texts (the shadow offsets are not scaled). */
-  private readonly resolution: number;
+  private resolution: number;
+  private readonly canvasWidth: number;
   /** Measured once per size, popping then calm. */
   private readonly wordMetrics: readonly [Record<BlowKind, Metrics>, Record<BlowKind, Metrics>];
   private readonly tallyMetrics: readonly [Record<BlowKind, Metrics>, Record<BlowKind, Metrics>];
@@ -151,7 +152,8 @@ export class Onomatopoeia {
     private readonly styles: readonly [HitStyle, HitStyle],
   ) {
     // Rendered at the finest zoom of the fight camera, so the lettering stays sharp.
-    this.resolution = Math.ceil((scene.scale.width / VIEW_SIZE.width) * MAX_CLOSE_UP);
+    this.canvasWidth = scene.scale.width;
+    this.resolution = textResolution(this.canvasWidth);
     const style: Phaser.Types.GameObjects.Text.TextStyle = {
       fontFamily: COMIC_FONT,
       color: '#ffffff',
@@ -197,6 +199,14 @@ export class Onomatopoeia {
       metricsOf((kind) => tallySize(CALM_WORD_SIZES[kind])),
     ];
     this.hudBottom = groundY - (groundY - HUD_BAND) / MAX_CLOSE_UP;
+  }
+
+  /**
+   * The closest zoom the words drawn from now on must stay sharp at (camera-framing.ts): the
+   * fight's, or the Finisher's close up while its scene plays.
+   */
+  setCloseUp(closeUp: number): void {
+    this.resolution = textResolution(this.canvasWidth, closeUp);
   }
 
   /** Call before the blows of each simulation tick. */
@@ -309,6 +319,8 @@ export class Onomatopoeia {
     const size = (word.calm ? CALM_WORD_SIZES : WORD_SIZES)[kind];
     const fill = comicFill(text, size, style);
     const drop = comicDrop(WORD_INK.drop, this.resolution, style);
+    text.style.resolution = this.resolution;
+    tally.style.resolution = this.resolution;
     text.style.setStyle(
       { fontSize: size, color: fill, shadow: drop, metrics: this.wordMetrics[look][kind] },
       false,

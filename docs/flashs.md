@@ -40,7 +40,8 @@ La livraison s'est faite en trois étapes, **toutes faites** : l'étape 1 a reti
 - **Graine.** Le hasard est à graine fixe : la même secousse pour les mêmes événements.
 - **Premier élan.** L'image part d'abord dans le sens du coup.
 - **Option.** « Tremblement de l'écran » : normal, réduit (deux fois moins loin) ou aucun. Sans choix du joueur, le réglage système (`prefers-reduced-motion`) le met à « aucun ». Les vibrations restent.
-- **La victime tremble** pendant l'arrêt sur image (`hit-shake.ts`, `docs/art/animation-plan.md` §2, V1) : son dessin seul, de ±1 px (coup léger, garde) ou ±2 px (coup lourd, CONTRE, PUNITION, KO), qui change de côté tous les 2 tics du jeu. Réduit : 1 px au plus. Aucun : immobile.
+- **La victime tremble** pendant l'arrêt sur image (`hit-shake.ts`, `docs/art/animation-plan.md` §2, V1) : son dessin seul, de ±1 px (coup léger, garde) ou ±2 px (coup lourd, CONTRE, PUNITION, KO), qui change de côté tous les 2 tics du jeu. Réduit : 1 px au plus. Aucun : immobile. Jamais pendant le verrou du Finisher ni pendant le gel de son KO : sa mise en scène tient ces images, et le gel du cœur ne montre rien qui bouge (`docs/finisher.md` §1.14).
+- **Le Finisher secoue sur un seul axe** (`Shake.kick` reçoit un axe et le zoom) : le long du sol pour Nayo, du ciel pour Riff. Le décalage en pixels est divisé par le zoom, pas le trauma : à ×2,0, la même force à l'écran qu'un KO à ×1,0.
 
 | Événement | Trauma | Pic |
 |---|---|---|
@@ -50,6 +51,7 @@ La livraison s'est faite en trois étapes, **toutes faites** : l'étape 1 a reti
 | KO simple | 0,85 | 6 px |
 | KO en fin de combo | 0,92 | 7 px |
 | KO par l'Ultime | 1 | 8 px |
+| Finisher : son contact, puis sa retombée (un seul axe, ÷ zoom) | 0,6, puis 1 | 2,9 px, puis 8 px de la vue |
 
 ---
 
@@ -147,21 +149,43 @@ Le hitstop, les dégâts et le timing ne bougent jamais : le budget ne touche pa
 - `flash-areas.test.ts` : mesuré ≤ table pour chaque gerbe, chaque mot, chaque compteur, chaque tampon et chaque lettre d'annonce, dans chaque coloris ; chaque version étouffée seule, et chaque mot ou tampon calme seul, sous 90 % de la surface des modes réduits au gros plan maximal ; la liste des planches qui allument plus de 300 px² (Uppercut, Montée platine, super) ;
 - `health-bar.test.ts`, `hud.test.ts` : l'éclatement mesuré sous `SHATTER_VIEW`, sur le ciel et sur la bande du HUD ; le blanc d'une barre et l'annonce qui demandent au budget ; la casse immobile.
 
-### 4.2 Les options du joueur (`src/app/comfort.ts`)
+### 4.2 Le Finisher (`docs/finisher.md` §4, PR 3)
+
+Sa mise en scène passe par le même budget, compté sur l'horloge visuelle, au zoom qu'elle cadre (jusqu'à ×2,0, où 2 520 px² de la vue font 630 px² du monde).
+
+- **Ce qu'elle tire pendant le verrou et après le KO** (les gerbes de la super, l'éclat de la retombée, les éclats de Riff) prend la taille × 0,725 (`CLOSE_UP_EFFECTS`). Les gerbes la gardent même avec l'écran immobile, sans gros plan : la place qu'elles laissent tient le registre. Mesuré : à leur taille, après `L, L, H, H`, les deux lourds prennent les créneaux ordinaires, la gerbe de UN et les anneaux s2 dépassent la surface, les anneaux passent sombres pour toute la super, et TROIS perd son flash ; en effets réduits, la gerbe du KO de Larsen prend un créneau. L'éclat et les tampons, qui ne prennent jamais de créneau, gardent leur taille avec l'écran immobile ; les éclats de Riff n'y volent pas du tout.
+- **Ses tampons** (le nom, UN, DEUX, TROIS) arrivent 3 images après leur coup (`FINISHER_STAMP_AFTER`, au-delà de `FLASH_MERGE`), pleins s'ils ne font pas de flash, calmes sinon : ils ne prennent jamais de créneau.
+- **L'éclat de la retombée** demande comme un climax, avec ce que la barre et la jauge allument en éclatant ; refusé, il passe à l'encre. Aucun éclat avec les flashs à « aucun ».
+- **La carte** demande comme un effet ordinaire, sa boîte entière (par prudence) ; refusée, ou les flashs à « aucun », elle s'écrit dans le sombre des fx (`FX_DARK`). En réduits, elle entre en fondu de 8 images.
+- **Les aplats, le cône, la foule et la rayure** ne sont jamais des flashs : aplats sous ΔL 0,06 contre le ciel et le sol, cône à ΔL 0,05 de l'aplat, foule noire sur l'aplat, rayure de 1 px. Les silhouettes sont une baisse ; avec les flashs à « aucun », il n'y en a pas (leur retour en couleur flasherait).
+- **Le liseré du gagnant**, lui, est une hausse : 1 px du monde autour de sa pose, dans son énergie (au plus 300 px² du monde, mesuré à 236 sur Nayo, 291 sur Riff). Il demande au budget une fois (`admit`), sur l'image où il atteindrait ΔL 0,10 sur l'aplat ; refusé, il passe dans un ton qui ne flashe jamais (ΔL 0,08 sur l'aplat). Dès la retombée, il prend ce ton : la pose bouge, et chaque image rallumerait tout le liseré. Mesuré : en effets normaux, celui de Nayo (t = 83) se fond dans le flash de TROIS, celui de Riff (t = 51) reste seul sous le seuil ; en effets réduits, celui de Nayo est refusé.
+- **Pas de sang** dans la super verrouillée : le gros plan le quadruplerait.
+
+**Mesuré** (`tests/render/finisher-flashes.test.ts`, test 15 : les vraies routes sur le vrai cœur, la vraie `FightFeedback`, les fx des vraies planches dans leurs portes, les poses imposées par la scène comprises, le liseré mesuré sur les planches du corps, le vrai HUD et le metteur en scène, au zoom qu'il cadre) :
+
+| Route | Flashs comptés, t depuis l'appui |
+|---|---|
+| Le Quatre, après `L, L, H, H` | −33 et −12 (les deux lourds), **82** (TROIS : les anneaux s4), **142** (QUATRE : l'éclat, le climax), **172** (la carte) |
+| Larsen, après `H` | −12 (le lourd), **93** (la reprise : l'éclat, le climax), **123** (la carte) |
+
+C'est le registre de `docs/finisher.md` §4.3 : 3 pour Le Quatre, 2 pour Larsen, à 30 images d'écart au moins, jamais 2 climax dans la même seconde, 5 sur 8 en 5 s avec les deux lourds. Le même avec le tremblement à « aucun ». En réduits, 2 par seconde au plus, et dans la scène plus rien hors de la carte (172, 123), tremblement à « aucun » compris ; en aucun, rien.
+
+### 4.3 Les options du joueur (`src/app/comfort.ts`)
 
 | Option | Valeurs | Ce qu'elle change |
 |---|---|---|
 | Effets de flash | normaux, réduits, aucun | Le mode du budget. En réduits et en aucun (« calme ») : mots plus petits (12, 13 et 14 px au lieu de 13, 17 et 26) sans pop, tampon à 11 px sans frappe, avec un fondu, assez petits pour ne jamais flasher seuls au gros plan ; une seule rémanence Boost à 0,22, traînée de dash sous ΔL 0,08 (0,27 en cyan, 0,28 en or), anneau de prise blanc fixe, vignette du KO à ΔL 0,05, éclat de l'Ultime à ΔL 0,08, pas de halo, ni blanc des coups ni éclats chauds sur le HUD. En aucun, tout coup joue sa version étouffée, l'éclat est à l'encre, tout fx de planche est sombre, et les annonces le sont dès qu'elles flasheraient. |
 | Tremblement de l'écran | normal, réduit, aucun | La secousse (réduit : deux fois moins loin) et le tremblement de la victime pendant le gel (réduit : 1 px au plus). Aucun garde aussi immobiles la victime, le HUD, l'idle de la sélection et le vinyle du titre. |
+| Mise en scène | complète, courte | La mise en scène du Finisher (`docs/finisher.md` §1.14) : entière, ou sa version courte. Elle est aussi courte à partir du 2e Finisher du perso dans la séance, et toujours en entraînement. Elle ne suit pas le réglage système : avec « réduire les animations », le tremblement à « aucun » garde déjà la caméra immobile pendant la scène. |
 
 - **Défaut.** Ce que le joueur a choisi prime. Sinon, le réglage système « réduire les animations » donne « réduits » et « aucun », sinon « normaux » et « normal ». `watchReducedMotion` suit le système quand il change.
-- **Persistance.** Comme le son : `nayosbeat.flashes` et `nayosbeat.shake` dans le stockage de la page, et `saveComfort` n'écrit que l'option changée. Un stockage refusé (navigation privée) garde le choix pour la session.
-- **L'écran « Options »** remplace « Son » dans le menu principal (indication « Son, effets de flash, tremblement »). Il contient le son et les deux options ; chacune tourne sur place et la sélection reste dessus. « Retour » revient sur « Options ».
+- **Persistance.** Comme le son : `nayosbeat.flashes`, `nayosbeat.shake` et `nayosbeat.staging` dans le stockage de la page, et `saveComfort` n'écrit que l'option changée. Un stockage refusé (navigation privée) garde le choix pour la session.
+- **L'écran « Options »** remplace « Son » dans le menu principal (indication « Son, effets de flash, tremblement »). Il contient le son et les options ; chacune tourne sur place et la sélection reste dessus. « Retour » revient sur « Options ».
 - **Depuis la pause**, une entrée « Options » ouvre le même écran par-dessus le combat. Le changement s'applique **à chaud** (`FightScene.applyComfort`) : budget, secousse, mots, tampons, HUD, anneau de prise, rémanences et dissolution relisent leur réglage à chaque image.
 - **L'avis du premier lancement** (`nayosbeat.notice`) : après l'écran titre, une fois, « Avant de jouer », avec « Jouer » et « Options ». Il dit le risque (« des crises convulsives »), les signes à surveiller (vertige, trouble de la vue, contractions des yeux ou du visage, mouvements involontaires, désorientation, perte de conscience) et d'arrêter tout de suite de jouer puis de consulter un médecin s'ils apparaissent, comme les avertissements des consoles, puis les précautions. Il complète le travail sur les effets, il ne le remplace pas (XAG 118). Les mots « épilepsie » et « sans danger » n'apparaissent dans aucun libellé. Un appui dans la première seconde est ignoré (le second appui d'un titre passé en hâte) ; « retour » ramène au titre sans marquer l'avis lu : seuls « Jouer » et « Options » le font.
 - **Les menus** reçoivent les classes `calm` (l'invite du titre ne clignote plus, la case choisie ne pulse plus) et `still` (le vinyle du titre ne tourne plus) ; le bloc `@media (prefers-reduced-motion)` a disparu.
 
-### 4.3 Le HUD : deux drapeaux
+### 4.4 Le HUD : deux drapeaux
 
 `HudComfort` remplace l'ancien `reducedMotion` de la barre de vie et de la jauge :
 - `flashes` (effets de flash normaux) : le blanc d'un coup sur la barre, le clignotement de « MAX », le balayage de la jauge, le reflet chaud des éclats d'un KO (mêlés à 45 % de blanc sur la barre, la rangée claire de leur barre sur la jauge, blanche à 3 barres) ;
@@ -169,7 +193,7 @@ Le hitstop, les dégâts et le timing ne bougent jamais : le budget ne touche pa
 
 En effets réduits, les éclats de la jauge et de la barre restent, sans leur reflet chaud : ce qu'ils allument quand même (le verre vide, le liseré) est compté avec le KO (`SHATTER_VIEW`).
 
-### 4.4 Écarts au design
+### 4.5 Écarts au design
 
 - **Le seuil suit le zoom courant** (2 520 px² de vue en normaux), pas un seuil monde fixe : au gros plan maximal, c'est le même 1 200 px² monde.
 - **Le seuil des modes réduit et aucun est de 1 100 px² de vue** (27" à 50 cm), au lieu de 1 680. Le KO étouffé a donc été rapetissé (440 px² au lieu de 634) pour ne jamais flasher seul.

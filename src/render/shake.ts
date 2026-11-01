@@ -21,16 +21,23 @@ export const SHAKE_STRENGTH: Readonly<Record<ShakeMode, number>> = {
 };
 /**
  * What each event adds (the strongest wins): an Ultime's KO shakes 8 px, a plain one about 6;
- * the Finisher's as an Ultime's, until its scene shakes on its contact and on its landing
- * (docs/finisher.md §1.13, §5.10).
+ * the Finisher's, which its scene plays (docs/finisher.md §1.13, §4.4), lightly on its contact
+ * (0.6, about 3 px) and as an Ultime's on its landing.
  */
 export const TRAUMA = {
   heavy: 0.65,
   throw: 0.45,
   fall: 0.45,
   super: 0.5,
-  ko: { plain: 0.85, combo: 0.92, ultimate: 1, finale: 1 } satisfies Record<KoFinish, number>,
+  ko: { plain: 0.85, combo: 0.92, ultimate: 1, finale: 0.6 } satisfies Record<KoFinish, number>,
+  finaleLanding: 1,
 } as const;
+
+/**
+ * Which way a shake goes: both (the camera's own, mostly sideways), or along one axis only, as
+ * the Finisher's (Nayo's blows along the floor, Riff's from the sky).
+ */
+export type ShakeAxis = 'both' | 'x' | 'y';
 
 /** A smoothed shake, seeded: the same for the same events. */
 export class Shake {
@@ -40,6 +47,9 @@ export class Shake {
   private fromY = 0;
   private toX = 0;
   private toY = 0;
+  private axis: ShakeAxis = 'both';
+  /** The offset is divided by this: the camera's close-up of the kick, the same force on screen. */
+  private zoom = 1;
   /** Offset of the camera's scroll this frame, world pixels. */
   x = 0;
   y = 0;
@@ -52,15 +62,19 @@ export class Shake {
 
   /**
    * Adds trauma, the strongest wins. `away`: the blow's direction; the picture first jolts that
-   * way (the camera's scroll the other).
+   * way (the camera's scroll the other), down first along `y` alone. `zoom`: the camera's
+   * close-up, which the offset is divided by (docs/finisher.md §4.4: trauma² would make the
+   * trauma's own division four times weaker), the same force on screen at any zoom.
    */
-  kick(trauma: number, away: 1 | -1 = 1): void {
+  kick(trauma: number, away: 1 | -1 = 1, axis: ShakeAxis = 'both', zoom = 1): void {
     if (this.strength === 0 || trauma <= this.trauma) return;
     this.trauma = Math.min(1, trauma);
     this.fromX = this.x / MAX_SHAKE;
     this.fromY = this.y / MAX_SHAKE;
-    this.toX = -away;
-    this.toY = -0.4;
+    this.axis = axis;
+    this.zoom = Math.max(1, zoom);
+    this.toX = axis === 'y' ? 0 : -away;
+    this.toY = axis === 'x' ? 0 : axis === 'y' ? -1 : -0.4;
     this.age = 0;
   }
 
@@ -77,14 +91,18 @@ export class Shake {
       this.fromX = this.toX;
       this.fromY = this.toY;
       // Back the other way each step, by half to all of a swing: a shake, never a jitter.
-      this.toX = -Math.sign(this.fromX || 1) * (0.5 + this.random() / 2);
-      this.toY = -Math.sign(this.fromY || 1) * (0.5 + this.random() / 2);
+      const toX = -Math.sign(this.fromX || 1) * (0.5 + this.random() / 2);
+      const toY = -Math.sign(this.fromY || 1) * (0.5 + this.random() / 2);
+      this.toX = this.axis === 'y' ? 0 : toX;
+      this.toY = this.axis === 'x' ? 0 : toY;
     }
     const t = (this.age % SHAKE_STEP) / SHAKE_STEP;
     const eased = t * t * (3 - 2 * t);
-    const amplitude = MAX_SHAKE * this.strength * this.trauma ** 2;
+    const amplitude = (MAX_SHAKE * this.strength * this.trauma ** 2) / this.zoom;
+    // Both ways, it is mostly sideways; along y alone, it swings as far as sideways would.
+    const vertical = this.axis === 'y' ? amplitude : amplitude / 2;
     this.x = Math.round(amplitude * (this.fromX + (this.toX - this.fromX) * eased));
-    this.y = Math.round((amplitude / 2) * (this.fromY + (this.toY - this.fromY) * eased));
+    this.y = Math.round(vertical * (this.fromY + (this.toY - this.fromY) * eased));
   }
 
   /** mulberry32. */

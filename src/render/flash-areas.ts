@@ -95,6 +95,24 @@ export interface BlowAsk {
 }
 
 /**
+ * A blow of the Finisher's lock (docs/finisher.md §1.14, §5.2): its spark the pulse's, its KO's
+ * too (the KO's first key is a flash), `size` times its own at the close up; no word and no
+ * stamp, the scene stamps its count instead. Its KO stays a climax.
+ */
+export function finisherAsk(event: BlowEvent, shape: HitStyle['shape'], size: number): BlowAsk {
+  const area = (event.low ? GRAZE_AREA : 0) + SPARK_AREAS[shape].pulse * size ** 2;
+  return {
+    look: 'pulse',
+    muted: 'pulse',
+    word: 'pulse',
+    area,
+    mutedArea: area,
+    later: { word: 0, stamp: 0 },
+    climax: event.type === 'ko' || (event.tier >= 3 && !event.pulse),
+  };
+}
+
+/**
  * `calm`: the words and stamps without their pop (the flashes reduced or off); `count`: the rank
  * of the blow in its tally (Onomatopoeia.countOf), which its word shows.
  */

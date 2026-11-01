@@ -17,10 +17,12 @@ import {
   loadComfort,
   markNoticeSeen,
   nextMode,
+  nextStaging,
   NOTICE,
   noticeSeen,
   saveComfort,
   SHAKE_LABELS,
+  STAGING_LABELS,
   watchReducedMotion,
   type Comfort,
 } from './comfort';
@@ -73,6 +75,11 @@ export class App {
   private comfort: Comfort = loadComfort();
   /** What the player chose this session: it holds even where the storage refuses it. */
   private chosen: Partial<Comfort> = {};
+  /**
+   * The fighters whose Finisher this session has played already: from the second one on, its
+   * scene plays short (docs/finisher.md §1.14). The fights note it.
+   */
+  private readonly finishersSeen = new Set<FighterId>();
   /** The main menu is on screen (it is redrawn when installing becomes possible). */
   private onMainMenu = false;
   private onTitle = false;
@@ -227,12 +234,13 @@ export class App {
   }
 
   /**
-   * The « Options » screen: the sound, « Effets de flash », « Tremblement de l'écran », each
-   * cycled in place (the screen comes back with it still selected), kept at once and applied at
-   * once, to a fight under the pause menu too (`paused`). `back`: where « Retour » goes.
+   * The « Options » screen: the sound, « Effets de flash », « Tremblement de l'écran », « Mise en
+   * scène », each cycled in place (the screen comes back with it still selected), kept at once
+   * and applied at once, to a fight under the pause menu too (`paused`). `back`: where « Retour »
+   * goes.
    */
   private showOptions(paused: boolean, back: () => void, initialIndex = 0): void {
-    const { flashes, shake } = this.comfort;
+    const { flashes, shake, staging } = this.comfort;
     const items: MenuItem[] = [];
     const again = (item: MenuItem) => {
       this.showOptions(paused, back, items.indexOf(item));
@@ -260,7 +268,15 @@ export class App {
         again(tremble);
       },
     };
-    items.push(sound, flash, tremble, { label: 'Retour', onSelect: back });
+    const scene: MenuItem = {
+      label: `Mise en scène : ${STAGING_LABELS[staging].label}`,
+      hint: STAGING_LABELS[staging].hint,
+      onSelect: () => {
+        this.changeComfort({ staging: nextStaging(staging) });
+        again(scene);
+      },
+    };
+    items.push(sound, flash, tremble, scene, { label: 'Retour', onSelect: back });
     this.showMenu({ title: 'Options', overlay: paused, items, onBack: back, initialIndex });
   }
 
@@ -505,6 +521,7 @@ export class App {
       setup: this.setup,
       sfx: this.sfx,
       comfort: this.comfort,
+      finishersSeen: this.finishersSeen,
       viewing: this.setup.mode === 'training' ? this.viewing : this.fromUrl,
       boxes: this.setup.mode === 'training' && this.boxes,
       onPause: () => {

@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { DEPTH } from './depth';
-import { Shake } from './shake';
+import { Shake, type ShakeAxis } from './shake';
 import {
   GLOW_SIZE,
   glowProfile,
@@ -30,8 +30,12 @@ export interface EffectsOptions {
 
 interface Layer {
   readonly object: { setAlpha(alpha: number): unknown; setVisible(visible: boolean): unknown };
-  /** Takes the veil's color, at `at` (world pixels) for a glow. */
-  readonly start: (look: VeilLook, at: { readonly x: number; readonly y: number }) => void;
+  /** Takes the veil's color, at `at` (world pixels) for a glow, `size` times its size. */
+  readonly start: (
+    look: VeilLook,
+    at: { readonly x: number; readonly y: number },
+    size: number,
+  ) => void;
   look: VeilLook | null;
   age: number;
 }
@@ -72,10 +76,16 @@ export class Effects {
       object.setVisible(false);
       return { object, start, look: null, age: 0 };
     };
+    const glowStart =
+      (image: Phaser.GameObjects.Image, kind: 'halo' | 'eclat'): Layer['start'] =>
+      (look, at, size) => {
+        const side = GLOW_SIZE[kind] * size;
+        image.setTint(look.color).setPosition(at.x, at.y).setDisplaySize(side, side);
+      };
     this.layers = {
       dim: layer(dim, (look) => dim.setFillStyle(look.color)),
-      halo: layer(halo, (look, at) => halo.setTint(look.color).setPosition(at.x, at.y)),
-      eclat: layer(eclat, (look, at) => eclat.setTint(look.color).setPosition(at.x, at.y)),
+      halo: layer(halo, glowStart(halo, 'halo')),
+      eclat: layer(eclat, glowStart(eclat, 'eclat')),
       vignette: layer(vignette, (look) => vignette.setTint(look.color)),
     };
   }
@@ -85,16 +95,24 @@ export class Effects {
     this.shake.strength = strength;
   }
 
-  /** Adds trauma (the strongest wins); `away`: the picture first jolts with the blow. */
-  kick(trauma: number, away?: 1 | -1): void {
-    this.shake.kick(trauma, away);
+  /**
+   * Adds trauma (the strongest wins); `away`: the picture first jolts with the blow; `axis` and
+   * `zoom`: one axis only, the offset divided by the close-up (the Finisher's, Shake.kick).
+   */
+  kick(trauma: number, away?: 1 | -1, axis?: ShakeAxis, zoom?: number): void {
+    this.shake.kick(trauma, away, axis, zoom);
   }
 
   /**
-   * Starts a veil; `at`: world pixels a glow bursts from. A colored veil (a KO's) of another
-   * color within COLOR_GAP frames of the last one is dropped.
+   * Starts a veil; `at`: world pixels a glow bursts from; `size`: a glow's size over its own
+   * (GLOW_SIZE), smaller at the Finisher's close up (docs/finisher.md §1.14). A colored veil (a
+   * KO's) of another color within COLOR_GAP frames of the last one is dropped.
    */
-  veil(look: VeilLook, at: { readonly x: number; readonly y: number } = { x: 0, y: 0 }): void {
+  veil(
+    look: VeilLook,
+    at: { readonly x: number; readonly y: number } = { x: 0, y: 0 },
+    size = 1,
+  ): void {
     if (look.kind === 'vignette' || look.kind === 'eclat') {
       const last = this.lastColor;
       if (last && last.color !== look.color && this.frame - last.frame < COLOR_GAP) return;
@@ -104,7 +122,7 @@ export class Effects {
     layer.look = look;
     // Its first state shows on this display frame's update.
     layer.age = -1;
-    layer.start(look, at);
+    layer.start(look, at, size);
   }
 
   /** Advances the shake and the veils by one display frame. */

@@ -116,6 +116,8 @@ interface Piece {
   y: number;
   vx: number;
   vy: number;
+  /** Its blow's size over its own (smaller at the Finisher's close up). */
+  size: number;
 }
 
 /** Sizes of Riff's effect for one kind of blow (world pixels). */
@@ -451,22 +453,30 @@ export class HitFx {
         y: 0,
         vx: 0,
         vy: 0,
+        size: 1,
       }));
       this.pools.set(name, { pieces, next: 0, frames });
     }
   }
 
+  /** The impact the effect being played bursts from, and its size: its pieces scale from there. */
+  private readonly origin = { x: 0, y: 0, size: 1 };
+
   /**
    * Plays a blow's effect at a point in stage coordinates (sub-pixels, y up from the ground),
-   * the blow going `away` (1: to the right).
+   * the blow going `away` (1: to the right); `size` times its own, every piece around the impact
+   * (the Finisher's close up: docs/finisher.md §1.14).
    */
-  play(style: HitStyle, kind: HitKind, x: number, y: number, away: 1 | -1): void {
+  play(style: HitStyle, kind: HitKind, x: number, y: number, away: 1 | -1, size = 1): void {
     // A blow before the atlas is all painted (never seen: the intro is longer) waits for it.
     paintAtlas(Infinity);
     const px = toPx(x);
     // The KO of a sweep lands at the feet: its burst rises above the floor, not through it.
     const ko = kind === 'ko' || kind === 'koMuted';
     const py = this.groundY - Math.max(toPx(y), ko ? KO_LIFT : 0);
+    this.origin.x = px;
+    this.origin.y = py;
+    this.origin.size = size;
     const direction = away > 0 ? 0 : Math.PI;
     if (style.shape === 'slash') {
       if (kind === 'block') this.guard(style, px, py, direction);
@@ -1136,15 +1146,17 @@ export class HitFx {
     if (!pool || !piece) return;
     pool.next = (pool.next + 1) % pool.pieces.length;
     const direction = spec.direction ?? spec.angle ?? 0;
-    const speed = spec.speed ?? 0;
+    const { origin } = this;
+    const speed = (spec.speed ?? 0) * origin.size;
     piece.spec = spec;
     piece.age = -Math.max(0, Math.round(spec.delay ?? 0));
     piece.life = Math.max(1, Math.round(spec.life));
     piece.key = -1;
-    piece.x = x;
-    piece.y = y;
+    piece.x = origin.x + (x - origin.x) * origin.size;
+    piece.y = origin.y + (y - origin.y) * origin.size;
     piece.vx = Math.cos(direction) * speed;
     piece.vy = Math.sin(direction) * speed;
+    piece.size = origin.size;
     piece.image
       .setTint(spec.color ?? 0xffffff)
       .setRotation(spec.angle ?? 0)
@@ -1158,7 +1170,7 @@ export class HitFx {
     if (age > 0) {
       const drag = spec.drag ?? 1;
       piece.vx *= drag;
-      piece.vy = piece.vy * drag + (spec.gravity ?? 0);
+      piece.vy = piece.vy * drag + (spec.gravity ?? 0) * piece.size;
       piece.x += piece.vx;
       piece.y += piece.vy;
       if (spec.spin) image.setRotation(image.rotation + spec.spin);
@@ -1172,7 +1184,8 @@ export class HitFx {
     const height = spec.from[1] + (spec.to[1] - spec.from[1]) * grow;
     const hold = spec.hold ?? 0;
     const fading = Math.min(1, Math.max(0, (t - hold) / (1 - hold)));
-    const scale = spec.keys ? this.showKey(piece, frames, spec.keys, spec.scales) : 1;
+    const scale =
+      (spec.keys ? this.showKey(piece, frames, spec.keys, spec.scales) : 1) * piece.size;
     image
       .setPosition(piece.x, piece.y)
       .setDisplaySize(width * scale, height * scale)

@@ -132,12 +132,25 @@ export class TouchControls {
       const { finger, stickOrigin: origin } = this;
       stick = finisherBack(stick, finger.x - origin.x, finger.y - origin.y, this.finisherBack);
     }
-    let bits = stick | this.tappedBits;
+    const bits = stick | this.tappedBits | this.buttonsHeld();
+    this.passedNeutral = false;
+    this.tappedBits = 0;
+    return bits;
+  }
+
+  /**
+   * The stick and the buttons a finger holds right now, nothing reset: no tap, no pass through
+   * neutral taken from the next read.
+   */
+  heldBits(): InputBits {
+    return this.stickBits | this.buttonsHeld();
+  }
+
+  private buttonsHeld(): InputBits {
+    let bits = 0;
     for (let index = 0; index < this.holders.length; index++) {
       if ((this.holders[index] ?? 0) > 0) bits |= TOUCH_BUTTONS[index]?.flag ?? 0;
     }
-    this.passedNeutral = false;
-    this.tappedBits = 0;
     return bits;
   }
 

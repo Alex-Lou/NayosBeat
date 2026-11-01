@@ -64,6 +64,17 @@ export class AnchoredSprite {
     return this;
   }
 
+  /**
+   * Darkens the sprite toward a black silhouette (the Finisher's: 0, its colors; 1, black),
+   * multiplied over its colors.
+   */
+  shade(dark: number): this {
+    const level = Math.round(255 * (1 - Math.min(1, Math.max(0, dark))));
+    if (level === 255) this.sprite.clearTint();
+    else this.sprite.setTint(level * 0x010101).setTintMode(Phaser.TintModes.MULTIPLY);
+    return this;
+  }
+
   /** Draws the sprite as a flat silhouette of `color` (an afterimage). */
   fill(color: number): this {
     this.sprite.setTint(color).setTintMode(Phaser.TintModes.FILL);

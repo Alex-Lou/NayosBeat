@@ -3,21 +3,31 @@ import type { HudComfort } from '../render/health-bar';
 import type { ShakeMode } from '../render/shake';
 
 /**
- * The player's comfort options (the « Options » screen, docs/flashs.md §4): « Effets de flash »
- * and « Tremblement de l'écran ». Kept like the sound (`nayosbeat.*` in the page's storage, which
- * may be unavailable: then they hold for the session). What the player chose wins; what they did
- * not follows the system's « reduce motion », the only signal a page gets (none exists for
- * flashes): then the flashes reduced and the screen still.
+ * The player's comfort options (the « Options » screen, docs/flashs.md §4): « Effets de flash »,
+ * « Tremblement de l'écran » and « Mise en scène » (the Finisher's, docs/finisher.md §1.14).
+ * Kept like the sound (`nayosbeat.*` in the page's storage, which may be unavailable: then they
+ * hold for the session). What the player chose wins; what they did not follows the system's
+ * « reduce motion », the only signal a page gets (none exists for flashes): then the flashes
+ * reduced and the screen still. The Finisher's scene plays in full unless chosen short.
  */
 export interface Comfort {
   readonly flashes: FlashMode;
   readonly shake: ShakeMode;
+  readonly staging: StagingMode;
 }
+
+/** « Mise en scène » (docs/finisher.md §1.14): the Finisher's scene in full, or its short version. */
+export type StagingMode = 'full' | 'short';
 
 /** Both options take these values, in the order they cycle. */
 const MODES = ['normal', 'reduced', 'off'] as const;
 type Mode = (typeof MODES)[number];
-const KEYS = { flashes: 'nayosbeat.flashes', shake: 'nayosbeat.shake' } as const;
+const STAGINGS = ['full', 'short'] as const;
+const KEYS = {
+  flashes: 'nayosbeat.flashes',
+  shake: 'nayosbeat.shake',
+  staging: 'nayosbeat.staging',
+} as const;
 const NOTICE_KEY = 'nayosbeat.notice';
 const REDUCED_MOTION = '(prefers-reduced-motion: reduce)';
 
@@ -34,6 +44,10 @@ export const SHAKE_LABELS: Readonly<Record<ShakeMode, { label: string; hint: str
   normal: { label: 'normal', hint: "L'écran tremble sous les gros coups" },
   reduced: { label: 'réduit', hint: "L'écran tremble deux fois moins fort" },
   off: { label: 'aucun', hint: "L'écran et le HUD restent immobiles" },
+};
+export const STAGING_LABELS: Readonly<Record<StagingMode, { label: string; hint: string }>> = {
+  full: { label: 'complète', hint: 'Le Finisher joué en entier, environ 4 secondes' },
+  short: { label: 'courte', hint: 'Le Finisher en 2 secondes et demie, vol et carte écourtés' },
 };
 
 /** The notice of the first launch (docs/flashs.md §4): it completes the work on the effects. */
@@ -69,15 +83,28 @@ export function nextMode(mode: Mode): Mode {
   return MODES[(MODES.indexOf(mode) + 1) % MODES.length] ?? 'normal';
 }
 
-/** What was stored wins; what was not (or is unreadable) follows the system. Pure. */
+/** The other « Mise en scène ». */
+export function nextStaging(staging: StagingMode): StagingMode {
+  return staging === 'full' ? 'short' : 'full';
+}
+
+/**
+ * What was stored wins; what was not (or is unreadable) follows the system, the scene in full
+ * whatever it says (the sound carries it, docs/finisher.md §4.5). Pure.
+ */
 export function comfortOf(
-  stored: { readonly flashes: string | null; readonly shake: string | null },
+  stored: {
+    readonly flashes: string | null;
+    readonly shake: string | null;
+    readonly staging: string | null;
+  },
   reducedMotion: boolean,
 ): Comfort {
   const known = (value: string | null): Mode | undefined => MODES.find((mode) => mode === value);
   return {
     flashes: known(stored.flashes) ?? (reducedMotion ? 'reduced' : 'normal'),
     shake: known(stored.shake) ?? (reducedMotion ? 'off' : 'normal'),
+    staging: STAGINGS.find((staging) => staging === stored.staging) ?? 'full',
   };
 }
 
@@ -92,7 +119,7 @@ export function prefersReducedMotion(): boolean {
 
 export function loadComfort(): Comfort {
   return comfortOf(
-    { flashes: read(KEYS.flashes), shake: read(KEYS.shake) },
+    { flashes: read(KEYS.flashes), shake: read(KEYS.shake), staging: read(KEYS.staging) },
     prefersReducedMotion(),
   );
 }
@@ -104,6 +131,7 @@ export function loadComfort(): Comfort {
 export function saveComfort(changed: Partial<Comfort>): void {
   if (changed.flashes) write(KEYS.flashes, changed.flashes);
   if (changed.shake) write(KEYS.shake, changed.shake);
+  if (changed.staging) write(KEYS.staging, changed.staging);
 }
 
 /** Whether the notice of the first launch was read already. */

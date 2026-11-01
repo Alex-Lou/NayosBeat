@@ -313,7 +313,7 @@ function play(route: Route, mode: FlashMode): Played {
   const screen = watched(mode);
   const { budget } = screen;
   const { styles, arts } = looksOf(config);
-  const comfort = { flashes: mode, shake: 'normal' } as const;
+  const comfort = { flashes: mode, shake: 'normal', staging: 'full' } as const;
   const hud = new Hud(
     fakeScene().scene,
     config,
@@ -504,7 +504,7 @@ describe('what waits to show, played tick by tick (docs/flashs.md §4)', () => {
         width: 640,
         colors: FIGHT_STAGE_COLORS,
         budget: screen.budget,
-        comfort: { flashes: mode, shake: 'normal' },
+        comfort: { flashes: mode, shake: 'normal', staging: 'full' },
       },
     );
     for (let frame = 1; frame <= 120; frame++) {

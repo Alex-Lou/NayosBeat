@@ -4,6 +4,7 @@ import type { Sfx } from '../audio/sfx';
 import { px, toPx } from '../core/constants';
 import { TickPacer } from '../loop/tick-pacer';
 import { BLEEDS, Blood } from './blood';
+import { HAPTICS } from './fight-events';
 import { Dust } from './dust';
 import { Effects } from './effects';
 import { Graze, type GrazeWeight } from './graze';
@@ -17,14 +18,22 @@ import {
   type FightEvent,
   type KoFinish,
 } from './fight-events';
-import { blowAsk, SPARK_AREAS, stampArea, wordArea, type BlowAsk } from './flash-areas';
-import type { FlashBudget } from './flash-budget';
+import { CLOSE_UP_EFFECTS, MAX_CLOSE_UP } from './camera-framing';
+import {
+  blowAsk,
+  finisherAsk,
+  SPARK_AREAS,
+  stampArea,
+  wordArea,
+  type BlowAsk,
+} from './flash-areas';
+import { FLASH_MERGE, type FlashBudget } from './flash-budget';
 import { SHATTER_VIEW } from './health-bar';
 import { HitFx } from './hit-fx';
 import type { HitStyle } from './hit-styles';
 import { Onomatopoeia } from './onomatopoeia';
-import { SHAKE_STRENGTH, TRAUMA } from './shake';
-import { boostStamp, STAMP_TEXTS, Stamps } from './stamps';
+import { SHAKE_STRENGTH, TRAUMA, type ShakeAxis } from './shake';
+import { boostStamp, STAMP_TEXTS, Stamps, type StampLook } from './stamps';
 import { glowFlashArea, koVeil, superDim, superHalo, type VeilLook } from './veils';
 
 /**
@@ -49,6 +58,11 @@ const HEAD_HEIGHT = px(60);
  * `place`).
  */
 export const MUTED_DELAY = { word: 8, stamp: 16 } as const;
+/**
+ * Display frames a stamp of the Finisher's scene waits after its blow: past the frames it would
+ * light with (FLASH_MERGE), its count still on the beat.
+ */
+export const FINISHER_STAMP_AFTER = FLASH_MERGE + 1;
 
 /** Where a Boost stamp goes: over the head of the one who spends. */
 function overHead(at: { readonly by: 0 | 1; readonly x: number; readonly y: number }) {
@@ -89,7 +103,9 @@ interface PendingBlow {
  * guard's spark) asks the budget too. A low blow lands at the feet (docs/combat-v2.md
  * §9.3): instead of the burst, which would sink through the floor, a grazing spark skims it and
  * dust flies, without blood, which stays for heavy blows higher up. A low KO keeps its burst,
- * the mark of the final blow, lifted above the floor by HitFx.
+ * the mark of the final blow, lifted above the floor by HitFx. The blows of the Finisher's lock
+ * and its KO are its scene's (finisher-scene.ts): small sparks, no word, no blood; the scene
+ * plays the rest through its own hands here (its stamps, its shakes, its landing).
  */
 export class FightFeedback {
   private readonly effects: Effects;
@@ -114,6 +130,11 @@ export class FightFeedback {
   private koFinish: KoFinish | null = null;
   /** The animation of before (AnimOptions): a body knocked out in the air lands without a sound. */
   private legacy = false;
+  /**
+   * Who the Finisher's lock is of, from its first contact to that player's next super: the blows
+   * of its super are the scene's (finisher-scene.ts), their count stamped instead of their words.
+   */
+  private lockedBy: 0 | 1 | null = null;
 
   constructor(
     scene: Phaser.Scene,
@@ -176,7 +197,9 @@ export class FightFeedback {
     if (blows.length === 0) return;
     const calm = budget.mode !== 'normal';
     const asks = blows.map(({ event }) =>
-      blowAsk(event, this.styles[event.by].shape, calm, this.words.countOf(event.by)),
+      this.staged(event)
+        ? finisherAsk(event, this.styles[event.by].shape, this.sizeOf(event))
+        : blowAsk(event, this.styles[event.by].shape, calm, this.words.countOf(event.by)),
     );
     let area = 0;
     let climax = false;
@@ -266,8 +289,13 @@ export class FightFeedback {
         sfx.play('rewind');
         break;
       case 'super':
+        // A new super is a new sequence: a lock before it is over.
+        if (this.lockedBy === event.by) this.lockedBy = null;
         this.stamp(boostStamp(event.name), overHead(event), viewLeft);
         sfx.play('super');
+        break;
+      case 'finisherLock':
+        this.lockedBy = event.by;
         break;
       case 'freeze': {
         // The whole game freezes on the cue (the core's flash): the stage goes dark under both
@@ -296,6 +324,7 @@ export class FightFeedback {
           sfx.play('round');
           this.words.reset();
           this.koFinish = null;
+          this.lockedBy = null;
         }
         if (event.phase === 'fight') sfx.play('fight');
         break;
@@ -312,18 +341,29 @@ export class FightFeedback {
     const { effects, budget } = this;
     const style = this.styles[event.by];
     const ko = event.type === 'ko';
+    const staged = this.staged(event);
     // A counter-hit lands like a heavy blow, its stamp over it (docs/combat-v2.md §7.4).
     const heavy = landsHeavy(event);
-    if (ko) {
-      const breaks = lit || budget.admit(this.shatterOf(event));
+    // The Finisher's KO breaks the HUD on its landing, which its scene plays.
+    if (ko && event.finish !== 'finale') {
+      const breaks = lit || budget.admit(this.shatterOf(event.finish));
       this.stage.knockOut?.(event.by === 0 ? 1 : 0, event.finish, !breaks);
     }
     const sparks = lit || budget.admit(ask.mutedArea);
     // A super's blows before its last play a smaller spark and a small BOUM, the big ones kept
-    // for the last (BOOM, BOOM, BOOOOM).
+    // for the last (BOOM, BOOM, BOOOOM); the Finisher's all play the small one.
     if (event.low) this.lowBlow(style, heavy ? 'heavy' : 'light', event, sparks);
     if (sparks && (!event.low || ko)) {
-      this.hitFx.play(style, lit ? ask.look : ask.muted, event.x, event.y, event.away);
+      const look = lit ? ask.look : ask.muted;
+      this.hitFx.play(style, look, event.x, event.y, event.away, this.sizeOf(event));
+    }
+    if (staged) {
+      // Its words are the scene's count; its KO, its scene's alone: no blood at the close up, no
+      // veil, no shake, no slow motion, no KO sound (docs/finisher.md §5.2).
+      if (ko) return;
+      this.sfx.play(heavy ? 'heavyHit' : 'lightHit');
+      if (heavy) effects.kick(TRAUMA.heavy, event.away);
+      return;
     }
     // Lit, they are in what its request lit; muted, they wait, calm, the stamp after its word.
     const word = lit ? 0 : budget.place(ask.later.word, MUTED_DELAY.word);
@@ -343,12 +383,11 @@ export class FightFeedback {
     }
     if (!event.low) this.blood.bleed(event.x, event.y, event.away, BLEEDS.ko);
     // The final blow shakes the screen hard, then dies out over about 0.7 s; harder still when
-    // it blows the loser's Boost gauge up (an Ultime, the Finisher until its scene plays it),
-    // the gamepads rumbling with it.
+    // it blows the loser's Boost gauge up (an Ultime), the gamepads rumbling with it.
     effects.kick(TRAUMA.ko[event.finish], event.away);
     if (shatters(event.finish)) this.rumble?.(SHATTER_RUMBLE.ms, SHATTER_RUMBLE.strength);
     // How it fell, in the winner's energy: nothing more for a blow on its own, a vignette for a
-    // combo's end, the éclat for an Ultime or a Finisher (docs/flashs.md §2), in ink when refused.
+    // combo's end, the éclat for an Ultime (docs/flashs.md §2), in ink when refused.
     const veil = koVeil(event.finish, style.energy, this.stage.colors, budget.mode, lit);
     if (veil) effects.veil(veil, this.inWorld(event.x, event.y));
     this.slowMotionFrames = KO_SLOW_MOTION_FRAMES;
@@ -358,23 +397,121 @@ export class FightFeedback {
 
   /**
    * World px² a blow lights besides its spark, word and stamp, at once: the éclat of an Ultime's
-   * KO (only with the flashes normal), and what it breaks on the HUD. (The HUD asks for the flash
-   * of the bar it hits on its own: Hud.)
+   * KO (only with the flashes normal), and what it breaks on the HUD; nothing for the Finisher's,
+   * which lights them on its landing (`finisherLanding`). (The HUD asks for the flash of the bar
+   * it hits on its own: Hud.)
    */
   private alsoLit(event: PendingBlow['event']): number {
-    const shattered = event.type === 'ko' && shatters(event.finish);
+    if (event.type !== 'ko' || event.finish === 'finale') return 0;
+    const shattered = shatters(event.finish);
     const eclat = shattered && this.budget.mode === 'normal' ? this.eclatAreas[event.by] : 0;
-    return eclat + this.shatterOf(event);
+    return eclat + this.shatterOf(event.finish);
   }
 
   /**
-   * World px² an Ultime's KO lights on the HUD, as the loser's bar and gauge blow up (view px²,
-   * which the zoom does not enlarge): hot shards with the flashes normal, their own colors else.
+   * World px² a KO that blows the gauges up lights on the HUD, as the loser's bar and gauge
+   * break (view px², which the zoom does not enlarge): hot shards with the flashes normal, their
+   * own colors else.
    */
-  private shatterOf(event: PendingBlow['event']): number {
-    if (event.type !== 'ko' || !shatters(event.finish)) return 0;
+  private shatterOf(finish: KoFinish): number {
+    if (!shatters(finish)) return 0;
     const normal = this.budget.mode === 'normal';
     return this.budget.toWorld(normal ? SHATTER_VIEW.hot : SHATTER_VIEW.plain);
+  }
+
+  /** A blow of the super the Finisher locks, its KO always: its scene's (finisher-scene.ts). */
+  private staged(event: PendingBlow['event']): boolean {
+    if (event.type === 'ko' && event.finish === 'finale') return true;
+    return this.lockedBy === event.by && event.tier >= 3;
+  }
+
+  /**
+   * The size of what a blow fires over its own: × 0.725 for the Finisher's, from its lock on
+   * (docs/finisher.md §1.14): its screen area stays the one measured at the fight's closest
+   * framing once the camera closes in, and its first blows leave their super's rings room to
+   * light without a slot. With the screen kept still too (no close up): that room is what keeps
+   * the registry (§4.3), TROIS's rings lit, and Larsen's KO no flash (measured).
+   */
+  private sizeOf(event: PendingBlow['event']): number {
+    return this.staged(event) ? CLOSE_UP_EFFECTS : 1;
+  }
+
+  /**
+   * The Finisher's scene frames the fight at `closeUp` (camera-framing.ts), or leaves it to the
+   * fight's framing (null): the words and stamps drawn from now on stay sharp at it.
+   */
+  setCloseUp(closeUp: number | null): void {
+    this.words.setCloseUp(closeUp ?? MAX_CLOSE_UP);
+    this.stamps.setCloseUp(closeUp ?? MAX_CLOSE_UP);
+  }
+
+  /**
+   * A stamp of the Finisher's scene (its name, its count) for `at.by` over `at` (stage
+   * sub-pixels), or over its head; `look`: its size and tilt; `replaces`: the stamp whose place
+   * it takes (the super's name, the count's word before). It comes just past what its blow lights (FINISHER_STAMP_AFTER frames: the
+   * blow's spark and the new frame of its effects, which ask later in the frame), in its look if
+   * that makes no flash, calm where the budget finds room otherwise: it never takes a slot, the
+   * scene's flashes are its blows' and its landing's.
+   */
+  finisherStamp(
+    text: string,
+    at: { readonly by: 0 | 1; readonly x: number; readonly y: number },
+    viewLeft: number,
+    look: StampLook,
+    place: { readonly replaces: string | null; readonly overHead: boolean },
+  ): void {
+    if (place.replaces !== null) this.stamps.dismiss(place.replaces);
+    const { budget } = this;
+    const size = (look.size ?? 1) ** 2;
+    const full = stampArea(false) * size;
+    const lit = budget.mode === 'normal' && budget.fits(full, FINISHER_STAMP_AFTER);
+    if (lit) budget.show(full, FINISHER_STAMP_AFTER);
+    const delay = lit
+      ? FINISHER_STAMP_AFTER
+      : budget.place(stampArea(true) * size, FINISHER_STAMP_AFTER);
+    const where = place.overHead ? overHead(at) : at;
+    this.stamps.show(text, where, viewLeft, delay, !lit, look);
+  }
+
+  /** The Finisher's shake (docs/finisher.md §4.4): along one axis, divided by the close up. */
+  finisherShake(trauma: number, away: 1 | -1, axis: ShakeAxis, closeUp: number): void {
+    this.effects.kick(trauma, away, axis, closeUp);
+  }
+
+  /**
+   * The Finisher's landing (docs/finisher.md §1.13, §1.14): the victim of `by` lands at `x`
+   * (stage sub-pixels), pushed `away`. Its one éclat, from where it lands, `size` times its own,
+   * a climax with what the loser's gauges light as they break, in ink if refused, none with the
+   * flashes off; the gauges and the bar break (still, without their shards, if even they find
+   * no room); the `dust` (the victim's body landing then); the phones and the gamepads. `quiet`
+   * (the scene skipped past it): the gauges and the bar break still, nothing else.
+   */
+  finisherLanding(
+    by: 0 | 1,
+    x: number,
+    away: 1 | -1,
+    size: number,
+    how: { readonly quiet: boolean; readonly dust: boolean },
+  ): void {
+    const { budget } = this;
+    const loser = by === 0 ? 1 : 0;
+    if (how.quiet) {
+      this.stage.knockOut?.(loser, 'finale', true);
+      return;
+    }
+    const { energy } = this.styles[by];
+    const eclat = budget.mode === 'normal' ? this.eclatAreas[by] * size ** 2 : 0;
+    const shatter = this.shatterOf('finale');
+    const lit = budget.mode !== 'off' && budget.request(eclat + shatter, true) === 'lit';
+    const breaks = lit || budget.admit(shatter);
+    this.stage.knockOut?.(loser, 'finale', !breaks);
+    if (budget.mode !== 'off') {
+      const veil = koVeil('finale', energy, this.stage.colors, budget.mode, lit);
+      if (veil) this.effects.veil(veil, this.inWorld(x, 0), size);
+    }
+    if (how.dust) this.dust.kick(x, away);
+    this.vibrate?.(HAPTICS.shatter);
+    this.rumble?.(SHATTER_RUMBLE.ms, SHATTER_RUMBLE.strength);
   }
 
   /**

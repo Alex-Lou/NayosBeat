@@ -1,6 +1,6 @@
 import type Phaser from 'phaser';
 import { toPx } from '../core/constants';
-import { MAX_CLOSE_UP } from './camera-framing';
+import { textResolution } from './camera-framing';
 import { DEPTH } from './depth';
 import { COMIC_FONT, comicDrop, comicFill, INK } from './comic-lettering';
 import type { HitStyle } from './hit-styles';
@@ -47,8 +47,16 @@ export const STAMP_INK = { stroke: 4, drop: 2 } as const;
 
 type Metrics = Phaser.Types.GameObjects.Text.TextMetrics;
 
+/** How a stamp is drawn besides its words: its size over its own, its tilt (radians). */
+export interface StampLook {
+  readonly size?: number;
+  readonly tilt?: number;
+}
+
 interface Stamp {
   readonly text: Phaser.GameObjects.Text;
+  /** Its size over its own (the Finisher's close up draws them smaller). */
+  size: number;
   /** Frames it waits, hidden, before it slams down (after a blow the flash budget muted). */
   wait: number;
   /** Shown this display frame: its wait starts with the next one (`settle`). */
@@ -69,7 +77,8 @@ export class Stamps {
   calm = false;
   private readonly stamps: Stamp[];
   /** Device pixels per world pixel of the texts (the shadow offset is not scaled). */
-  private readonly resolution: number;
+  private resolution: number;
+  private readonly canvasWidth: number;
   /** Measured once per size, slammed then calm: restyling a stamp then redraws it only once. */
   private readonly metrics: readonly [Metrics, Metrics];
   private next = 0;
@@ -79,7 +88,8 @@ export class Stamps {
     private readonly groundY: number,
     private readonly styles: readonly [HitStyle, HitStyle],
   ) {
-    this.resolution = Math.ceil((scene.scale.width / VIEW_SIZE.width) * MAX_CLOSE_UP);
+    this.canvasWidth = scene.scale.width;
+    this.resolution = textResolution(this.canvasWidth);
     this.stamps = Array.from({ length: POOL_SIZE }, () => ({
       text: scene.add
         .text(0, 0, '', {
@@ -95,6 +105,7 @@ export class Stamps {
         .setRotation(TILT)
         .setDepth(DEPTH.words)
         .setVisible(false),
+      size: 1,
       wait: 0,
       fresh: false,
       calm: false,
@@ -109,10 +120,29 @@ export class Stamps {
   }
 
   /**
+   * The closest zoom the stamps drawn from now on must stay sharp at (camera-framing.ts): the
+   * fight's, or the Finisher's close up while its scene plays.
+   */
+  setCloseUp(closeUp: number): void {
+    this.resolution = textResolution(this.canvasWidth, closeUp);
+  }
+
+  /** The stamp that says `words`, if one shows or waits: gone (the Finisher's name replaces it). */
+  dismiss(words: string): void {
+    for (const stamp of this.stamps) {
+      if (stamp.text.text !== words || (stamp.life === 0 && stamp.wait === 0)) continue;
+      stamp.life = 0;
+      stamp.wait = 0;
+      this.place(stamp);
+    }
+  }
+
+  /**
    * Stamps `words` (a `STAMP_TEXTS` entry, or a Boost move's) for `at.by` over (at.x, at.y)
    * (simulation units), inside the simulation camera whose left edge is `viewLeft` (world
    * pixels), `delay` display frames from the next one (null: never, the flash budget found no
-   * room for it); `calm`: at its calm size, fading in, whatever the options.
+   * room for it); `calm`: at its calm size, fading in, whatever the options; `look`: its size
+   * and tilt, when not its own (the Finisher's).
    */
   show(
     words: string,
@@ -120,6 +150,7 @@ export class Stamps {
     viewLeft: number,
     delay: number | null = 0,
     calm = false,
+    look: StampLook = {},
   ): void {
     if (delay === null) return;
     const stamp = this.stamps[this.next];
@@ -128,6 +159,9 @@ export class Stamps {
     const style = this.styles[at.by];
     const { text } = stamp;
     stamp.calm = calm || this.calm;
+    stamp.size = look.size ?? 1;
+    text.setRotation(look.tilt ?? TILT);
+    text.style.resolution = this.resolution;
     const size = stamp.calm ? CALM_STAMP_SIZE : STAMP_SIZE;
     // Restyled without a redraw, then drawn once with its words.
     const shadow = comicDrop(STAMP_INK.drop, this.resolution, style);
@@ -138,7 +172,7 @@ export class Stamps {
     );
     if (text.text === words) text.updateText();
     else text.setText(words);
-    const half = text.width / 2 + 2;
+    const half = (text.width * stamp.size) / 2 + 2;
     const x = Math.min(Math.max(toPx(at.x), viewLeft + half), viewLeft + VIEW_SIZE.width - half);
     text.setPosition(Math.round(x), Math.round(this.groundY - toPx(at.y) - OVER));
     stamp.life = LIFE;
@@ -178,7 +212,7 @@ export class Stamps {
       !stamp.calm && age < SLAM_FRAMES ? SLAM_FROM - (SLAM_FROM - 1) * (age / SLAM_FRAMES) : 1;
     const fadeIn = stamp.calm ? (age + 1) / CALM_FADE_IN : 1;
     text
-      .setScale(scale)
+      .setScale(scale * stamp.size)
       .setAlpha(Math.min(1, fadeIn, life / FADE_FRAMES))
       .setVisible(true);
   }

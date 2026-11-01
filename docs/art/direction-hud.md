@@ -53,7 +53,7 @@ Ce que montrent le haut de l'écran de combat et les titres des menus, et pourqu
 - **KO.** Comme la jauge de Boost (§4), la barre dit comment le combattant est tombé :
   - **un coup seul** (moins de 3 coups dans le combo) : elle se vide, sans plus ;
   - **la fin d'un combo** de 3 coups ou plus : elle se **fissure**. Quatre fissures la traversent, claires sur le tube vide et sombres sur la traînée rouge, coupent son liseré, et cinq éclats tombent ;
-  - **l'Ultime** (et plus tard le Finisher) : elle **éclate** en même temps que la jauge. Elle tremble, ses éclats de verre (ceux du haut à la couleur du perso) et de la traînée rouge sont projetés puis retombent sur la scène en 48 tics, avec 18 étincelles jaunes et orange ; son cadre reste éteint.
+  - **l'Ultime** et **le Finisher** : elle **éclate** en même temps que la jauge. Elle tremble, ses éclats de verre (ceux du haut à la couleur du perso) et de la traînée rouge sont projetés puis retombent sur la scène en 48 tics, avec 18 étincelles jaunes et orange ; son cadre reste éteint. Sous le Finisher, elle éclate sur la **retombée** que joue sa mise en scène (QUATRE de Nayo, la reprise de Riff), pas au contact (`docs/finisher.md` §1.13).
   - En mouvement réduit : les fissures apparaissent d'un coup, et l'explosion laisse directement le cadre éteint.
 - **Nouveau round.** La barre se remplit en 0,75 s au lieu d'apparaître pleine, réparée.
 
@@ -149,6 +149,7 @@ La recherche (7 agents, puis une critique qui a rouvert une trentaine de sources
    - « ROUND n » entre d'un coup sec, d'abord en contour seul, puis plein, comme dans KOF XV.
    - « COMBAT ! » tombe sur le 3e temps : c'est l'entrée de SF6, ramenée à 4 tics.
 8. **Le KO.** « K.O. » en lettrage complet, des rayons violets et orange plutôt que le rouge et les flashs blancs de 3rd Strike, et le HUD visible tout du long.
+   - **Fait pour le Finisher** (`docs/finisher.md` §1.14, PR 3) : le HUD reste entier pendant toute sa mise en scène, sans fondu ; l'annonce « K.O. » ne s'affiche pas pour un KO `finale`, sa carte la remplace (« QUATRE. » en tube néon pour Nayo, des lettres découpées pour Riff, « FINISHER » en petit au-dessus). Le HUD le voit lui-même : le KO tombe pendant que le verrou tient la paire.
 9. **Un compteur de combo** côté attaquant, s'il complète les onomatopées.
    - Il grossit avec le combo, comme dans Strive.
    - Il est en couleurs chaudes pour un vrai combo, et en couleurs froides en entraînement quand le combo était évitable, la convention d'Arc System Works ([Dustloop](https://www.dustloop.com/w/GGXRD-R2/HUD)).

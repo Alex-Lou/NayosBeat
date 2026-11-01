@@ -12,11 +12,22 @@ import { DashTrail } from './dash-trail';
 import { DEPTH } from './depth';
 import type { DissolveStyle } from './dissolve';
 import { FinisherHalo } from './finisher-halo';
+import { UNSTAGED, type StagedLook } from './finisher-scripts';
 import { FxGate, type FlashBudget } from './flash-budget';
 import { FxDissolve } from './fx-dissolve';
 import { FxPixels } from './fx-pixels';
 import { hitShakeOf } from './hit-shake';
 import type { ShakeMode } from './shake';
+
+/** Where the 1 px outline of a silhouette is drawn: the body, filled, a world pixel each way. */
+const OUTLINE = [
+  [1, 0],
+  [-1, 0],
+  [0, 1],
+  [0, -1],
+] as const;
+/** Just under its body. */
+const OUTLINE_DEPTH = 0.01;
 
 const SHADOW_WIDTH = 36;
 const SHADOW_HEIGHT = 6;
@@ -42,12 +53,17 @@ export interface SpriteFighterLook {
  * (`BoostEcho`). What the effects of a special, a Remix or a super stop showing dissolves
  * (`FxDissolve`). A clip of effects that would flash beyond the budget plays dark (`FxGate`,
  * docs/flashs.md §4). Its Finisher ready, a halo glows on the floor under its feet
- * (`FinisherHalo`). Its boxes show in the debug view (BoxOverlay).
+ * (`FinisherHalo`). The Finisher's scene may impose a pose on its own clock, lifted, and turn it
+ * into a black silhouette, outlined in its energy (`StagedLook`, finisher-scene.ts); its effects
+ * and their dissolve follow the pose shown. Its boxes show in the debug view (BoxOverlay).
  */
 export class SpriteFighterView {
   private readonly halo: FinisherHalo;
   private readonly shadow: Phaser.GameObjects.Ellipse;
   private readonly body: AnchoredSprite;
+  /** The silhouette's outline: the body filled, drawn around it. */
+  private readonly outline: readonly AnchoredSprite[];
+  private outlineColor: number | null = null;
   private readonly effects: AnchoredSprite | undefined;
   private readonly trail: DashTrail;
   private readonly echo: BoostEcho;
@@ -86,6 +102,11 @@ export class SpriteFighterView {
     this.trail = new DashTrail(scene, art, trailColor, look.stage);
     this.echo = new BoostEcho(scene, art);
     this.body = new AnchoredSprite(scene, art).setDepth(DEPTH.fighterBack);
+    this.outline = OUTLINE.map(() => {
+      const sprite = new AnchoredSprite(scene, art).setDepth(DEPTH.fighterBack - OUTLINE_DEPTH);
+      sprite.hide();
+      return sprite;
+    });
     this.effects = art.fx
       ? new AnchoredSprite(scene, art, 'fx').setDepth(DEPTH.effects)
       : undefined;
@@ -112,35 +133,45 @@ export class SpriteFighterView {
 
   /** Draws this fighter over the other one, or under it. */
   setFront(front: boolean): void {
-    this.body.setDepth(front ? DEPTH.fighterFront : DEPTH.fighterBack);
+    const depth = front ? DEPTH.fighterFront : DEPTH.fighterBack;
+    this.body.setDepth(depth);
+    for (const sprite of this.outline) sprite.setDepth(depth - OUTLINE_DEPTH);
   }
 
   /**
    * `frames`: display frames of 1/60 s since the last update (the dissolves go by them);
    * `finisher`: the fighter's Finisher signal (finisher-signal.ts); `context`: the animation's
-   * options and the fight's memory (FightScene).
+   * options and the fight's memory (FightScene); `staged`: what the Finisher's scene imposes.
    */
   update(
     state: GameState,
     frames = 1,
     finisher: FinisherState = 'off',
     context: ShowContext = SHOW_NOW,
+    staged: StagedLook = UNSTAGED,
   ): void {
     const fighter = state.fighters[this.player];
     const template = this.config.fighters[this.player];
     const round = state.round;
     const shown = this.shown;
     showFighter(state, this.player, this.config, this.art, shown, context);
+    // The scene's pose prevails over the death, the reaction and the rest.
+    if (staged.pose) {
+      shown.clip = staged.pose.clip;
+      shown.tick = staged.pose.tick;
+    }
     const clip = clipOf(this.art, shown.clip);
     const index = clipFrameAt(clip, shown.tick);
     const frame = clip.frames[index] ?? 0;
 
     const x = toPx(shown.x);
-    const height = toPx(fighter.y);
+    const height = toPx(fighter.y) + (staged.pose?.lift ?? 0);
     const flip = fighter.facing < 0;
     // The body alone trembles: its shadow, afterimages and effects stay where the game has it.
     const trembling = hitShakeOf(state, this.player, context, this.shake);
     this.body.show(clip.sheet, frame, x + trembling, this.groundY - height, flip);
+    this.body.shade(staged.silhouette);
+    this.showOutline(staged, clip.sheet, frame, x + trembling, this.groundY - height, flip);
     const gliding = isGliding(fighter, template);
     // The round clock counts ticks and stops with the hitstop: the afterimages do too.
     const y = this.groundY - height;
@@ -180,6 +211,30 @@ export class SpriteFighterView {
     const shrink = SHADOW_HALF_HEIGHT / (SHADOW_HALF_HEIGHT + height);
     this.shadow.setPosition(x, this.groundY).setScale(shrink);
     this.halo.update(x, finisher, state.frame);
+  }
+
+  /** The silhouette's outline, as dark as the body is: around its pose, in `staged.outline`. */
+  private showOutline(
+    staged: StagedLook,
+    sheet: string,
+    frame: number,
+    x: number,
+    y: number,
+    flip: boolean,
+  ): void {
+    const { outline, silhouette } = staged;
+    if (outline === null || silhouette <= 0) {
+      for (const sprite of this.outline) sprite.hide();
+      return;
+    }
+    if (outline !== this.outlineColor) {
+      for (const sprite of this.outline) sprite.fill(outline);
+      this.outlineColor = outline;
+    }
+    this.outline.forEach((sprite, index) => {
+      const [dx, dy] = OUTLINE[index] ?? [0, 0];
+      sprite.setAlpha(silhouette).show(sheet, frame, x + dx, y + dy, flip);
+    });
   }
 }
 

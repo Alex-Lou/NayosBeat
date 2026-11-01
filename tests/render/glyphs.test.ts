@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FLASH_LABELS, NOTICE, SHAKE_LABELS } from '../../src/app/comfort';
+import { FLASH_LABELS, NOTICE, SHAKE_LABELS, STAGING_LABELS } from '../../src/app/comfort';
 import { helpPages, withArrows } from '../../src/app/controls-content';
 import type { RoundState } from '../../src/core/state';
 import { ROSTER } from '../../src/data/roster';
@@ -121,6 +121,10 @@ describe('glyphs', () => {
       ]),
       ...Object.values(SHAKE_LABELS).flatMap(({ label, hint }) => [
         `Tremblement de l'écran : ${label}`,
+        hint,
+      ]),
+      ...Object.values(STAGING_LABELS).flatMap(({ label, hint }) => [
+        `Mise en scène : ${label}`,
         hint,
       ]),
     ];

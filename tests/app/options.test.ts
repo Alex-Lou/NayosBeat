@@ -135,6 +135,7 @@ describe('the options (docs/flashs.md §4)', () => {
       'Son : oui',
       'Effets de flash : normaux',
       "Tremblement de l'écran : normal",
+      'Mise en scène : complète',
       'Retour',
     ]);
     choose('Son');
@@ -167,13 +168,34 @@ describe('the options (docs/flashs.md §4)', () => {
     expect(screen().items[screen().selected]).toBe('Options');
   });
 
+  it('cycles « Mise en scène » in place and keeps it (docs/finisher.md §1.14)', () => {
+    const { press, screen, choose, kept } = launch({ 'nayosbeat.notice': 'seen' });
+    press('Enter');
+    choose('Options');
+    choose('Mise en scène');
+    expect(screen().items[3]).toBe('Mise en scène : courte');
+    expect(screen().selected).toBe(3);
+    expect(kept.get('nayosbeat.staging')).toBe('short');
+    expect(kept.has('nayosbeat.flashes')).toBe(false);
+    choose('Mise en scène');
+    expect(screen().items[3]).toBe('Mise en scène : complète');
+    const again = launch({ 'nayosbeat.notice': 'seen', 'nayosbeat.staging': 'short' });
+    again.press('Enter');
+    again.choose('Options');
+    expect(again.screen().items[3]).toBe('Mise en scène : courte');
+  });
+
   it('opens from the pause, applies at once to the fight, and goes back to the pause', () => {
     const { app, screen, choose, fight } = launch({ 'nayosbeat.notice': 'seen' });
     (app as unknown as { showPause(): void }).showPause();
     expect(screen().items).toContain('Options');
     choose('Options');
     choose('Tremblement');
-    expect(fight.applyComfort).toHaveBeenLastCalledWith({ flashes: 'normal', shake: 'reduced' });
+    expect(fight.applyComfort).toHaveBeenLastCalledWith({
+      flashes: 'normal',
+      shake: 'reduced',
+      staging: 'full',
+    });
     choose('Retour');
     expect(screen().title).toBe('Pause');
     expect(screen().items[screen().selected]).toBe('Options');

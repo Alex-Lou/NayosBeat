@@ -77,6 +77,12 @@ export class KeyboardInput {
     return bitsFromKeys(this.held, bindings) | bitsFromKeys(this.tapped, bindings);
   }
 
+  /** The keys `player` holds down right now: no tap, nothing taken from the next read. */
+  heldBits(player: number): InputBits {
+    const bindings = this.bindings[player];
+    return bindings ? bitsFromKeys(this.held, bindings) : 0;
+  }
+
   /** Call once all players have been read for the current frame. */
   endFrame(): void {
     this.tapped.clear();

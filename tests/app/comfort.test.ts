@@ -8,7 +8,9 @@ import {
   nextMode,
   noticeSeen,
   saveComfort,
+  nextStaging,
   SHAKE_LABELS,
+  STAGING_LABELS,
 } from '../../src/app/comfort';
 
 /** A page storage standing in for the browser's, or one that refuses (private mode). */
@@ -30,19 +32,22 @@ describe("the player's comfort options (docs/flashs.md §4)", () => {
   });
 
   it('follows the system when nothing was chosen: less motion, the flashes reduced, still', () => {
-    const none = { flashes: null, shake: null };
-    expect(comfortOf(none, false)).toEqual({ flashes: 'normal', shake: 'normal' });
-    expect(comfortOf(none, true)).toEqual({ flashes: 'reduced', shake: 'off' });
+    const none = { flashes: null, shake: null, staging: null };
+    expect(comfortOf(none, false)).toEqual({ flashes: 'normal', shake: 'normal', staging: 'full' });
+    // The Finisher's scene stays whole: its sound carries it (docs/finisher.md §4.5).
+    expect(comfortOf(none, true)).toEqual({ flashes: 'reduced', shake: 'off', staging: 'full' });
   });
 
   it('keeps what was chosen over the system, and ignores what it cannot read', () => {
-    expect(comfortOf({ flashes: 'normal', shake: 'reduced' }, true)).toEqual({
+    expect(comfortOf({ flashes: 'normal', shake: 'reduced', staging: 'short' }, true)).toEqual({
       flashes: 'normal',
       shake: 'reduced',
+      staging: 'short',
     });
-    expect(comfortOf({ flashes: 'strobe', shake: 'on' }, false)).toEqual({
+    expect(comfortOf({ flashes: 'strobe', shake: 'on', staging: 'long' }, false)).toEqual({
       flashes: 'normal',
       shake: 'normal',
+      staging: 'full',
     });
   });
 
@@ -51,7 +56,10 @@ describe("the player's comfort options (docs/flashs.md §4)", () => {
     saveComfort({ flashes: 'off' });
     expect([...kept]).toEqual([['nayosbeat.flashes', 'off']]);
     vi.stubGlobal('window', { matchMedia: () => ({ matches: true }) });
-    expect(loadComfort()).toEqual({ flashes: 'off', shake: 'off' });
+    expect(loadComfort()).toEqual({ flashes: 'off', shake: 'off', staging: 'full' });
+    saveComfort({ staging: 'short' });
+    expect(kept.get('nayosbeat.staging')).toBe('short');
+    expect(loadComfort().staging).toBe('short');
   });
 
   it('holds for the session when the storage refuses, reading and writing', () => {
@@ -61,7 +69,7 @@ describe("the player's comfort options (docs/flashs.md §4)", () => {
       saveComfort({ shake: 'off' });
       markNoticeSeen();
     }).not.toThrow();
-    expect(loadComfort()).toEqual({ flashes: 'normal', shake: 'normal' });
+    expect(loadComfort()).toEqual({ flashes: 'normal', shake: 'normal', staging: 'full' });
     expect(noticeSeen()).toBe(false);
   });
 
@@ -78,7 +86,8 @@ describe("the player's comfort options (docs/flashs.md §4)", () => {
       'off',
       'normal',
     ]);
-    for (const labels of [FLASH_LABELS, SHAKE_LABELS]) {
+    expect([nextStaging('full'), nextStaging('short')]).toEqual(['short', 'full']);
+    for (const labels of [FLASH_LABELS, SHAKE_LABELS, STAGING_LABELS]) {
       for (const { label, hint } of Object.values(labels)) {
         expect(label.length).toBeGreaterThan(3);
         expect(hint.length).toBeGreaterThan(20);
@@ -87,19 +96,19 @@ describe("the player's comfort options (docs/flashs.md §4)", () => {
   });
 
   it('gives the HUD its two flags: the flashes by « Effets de flash », the motion by the shake', () => {
-    expect(hudComfortOf({ flashes: 'normal', shake: 'normal' })).toEqual({
+    expect(hudComfortOf({ flashes: 'normal', shake: 'normal', staging: 'full' })).toEqual({
       flashes: true,
       motion: true,
     });
-    expect(hudComfortOf({ flashes: 'reduced', shake: 'normal' })).toEqual({
+    expect(hudComfortOf({ flashes: 'reduced', shake: 'normal', staging: 'full' })).toEqual({
       flashes: false,
       motion: true,
     });
-    expect(hudComfortOf({ flashes: 'normal', shake: 'reduced' })).toEqual({
+    expect(hudComfortOf({ flashes: 'normal', shake: 'reduced', staging: 'full' })).toEqual({
       flashes: true,
       motion: true,
     });
-    expect(hudComfortOf({ flashes: 'off', shake: 'off' })).toEqual({
+    expect(hudComfortOf({ flashes: 'off', shake: 'off', staging: 'short' })).toEqual({
       flashes: false,
       motion: false,
     });

@@ -6,7 +6,9 @@ import { toPx } from '../core/constants';
 import type { FinisherState } from '../core/finisher';
 import type { FighterState, GameState } from '../core/state';
 import { DEPTH } from './depth';
+import type { ShowContext } from './animation';
 import { FinisherHalo } from './finisher-halo';
+import { UNSTAGED, type StagedLook } from './finisher-scripts';
 import type { ShakeMode } from './shake';
 
 /** The "foot" that shows which way a grey box faces, in world pixels. */
@@ -65,12 +67,19 @@ export class FighterView {
 
   /**
    * `_frames`: the display frames since the last update (nothing here goes by them); `finisher`:
-   * the fighter's Finisher signal (finisher-signal.ts).
+   * the fighter's Finisher signal (finisher-signal.ts); `staged`: what the Finisher's scene
+   * imposes, of which a box shows only the silhouette, its color darkened to black.
    */
-  update(state: GameState, _frames: number, finisher: FinisherState = 'off'): void {
+  update(
+    state: GameState,
+    _frames: number,
+    finisher: FinisherState = 'off',
+    _context?: ShowContext,
+    staged: StagedLook = UNSTAGED,
+  ): void {
     const fighter = state.fighters[this.player];
     const template = this.template;
-    const color = this.bodyColor(fighter);
+    const color = darkened(this.bodyColor(fighter), staged.silhouette);
     const { x, y, facing } = fighter;
     this.halo.update(toPx(x), finisher, state.frame);
     if (fighter.action === 'knockdown') {
@@ -129,4 +138,11 @@ export class FighterView {
         return this.color;
     }
   }
+}
+
+/** `color` darkened toward black by `dark` (0: itself, 1: black). */
+function darkened(color: number, dark: number): number {
+  const keep = 1 - Math.min(1, Math.max(0, dark));
+  const channel = (shift: number) => Math.round(((color >> shift) & 0xff) * keep) << shift;
+  return channel(16) | channel(8) | channel(0);
 }

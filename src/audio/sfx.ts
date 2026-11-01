@@ -1,6 +1,9 @@
 /**
  * Synthesized sound effects (Web Audio): no audio files to download, tiny and instant.
- * Browsers only allow audio after a user gesture, so `unlock()` must be called from one.
+ * Browsers only allow audio after a user gesture, so `unlock()` must be called from one. The
+ * fight's sounds go through the `fight` bus (a gain, then a low-pass), the menus' straight to
+ * the master: the Finisher's scene silences and muffles the fight (docs/finisher.md §1.14), never
+ * the menus.
  */
 
 export type SoundName =
@@ -31,6 +34,13 @@ export type SoundName =
 
 const STORAGE_KEY = 'nayosbeat.sound';
 const MASTER_VOLUME = 0.5;
+
+/** The sounds of the menus: they play on the master, past the `fight` bus. */
+const MENU_SOUNDS: ReadonlySet<SoundName> = new Set(['menuMove', 'menuConfirm', 'menuBack']);
+/** Where a sound plays: through the `fight` bus, or straight on the master. */
+export type Bus = 'fight' | 'master';
+/** The `fight` bus at rest: whole, its low-pass open (above anything a sound here plays). */
+export const FIGHT_BUS_OPEN = { gain: 1, cutoff: 20000 } as const;
 
 /** The square of a heavy hit: the reference the Finisher's siren sits under. */
 const HEAVY_HIT_VOLUME = 0.35;
@@ -169,9 +179,18 @@ export function soundOf(name: SoundName): {
   return SOUNDS[name];
 }
 
+/** The bus every sound of the fight goes through: its gain, then its low-pass, then the master. */
+interface FightBus {
+  readonly gain: GainNode;
+  readonly filter: BiquadFilterNode;
+  /** What it was last set to: a frame that changes nothing schedules nothing. */
+  shown: { gain: number; cutoff: number };
+}
+
 export class Sfx {
   private context: AudioContext | undefined;
   private master: GainNode | undefined;
+  private fightBus: FightBus | undefined;
   private noiseBuffer: AudioBuffer | undefined;
   private enabled = loadEnabled();
 
@@ -187,6 +206,12 @@ export class Sfx {
       this.master = this.context.createGain();
       this.master.gain.value = MASTER_VOLUME;
       this.master.connect(this.context.destination);
+      const gain = this.context.createGain();
+      const filter = this.context.createBiquadFilter();
+      filter.type = 'lowpass';
+      gain.connect(filter).connect(this.master);
+      this.fightBus = { gain, filter, shown: { gain: Number.NaN, cutoff: Number.NaN } };
+      this.setFightBus(FIGHT_BUS_OPEN.gain, FIGHT_BUS_OPEN.cutoff);
       this.noiseBuffer = createNoise(this.context);
     }
     // `suspended` before the first gesture; `interrupted` on iOS after a call or a lock.
@@ -202,16 +227,42 @@ export class Sfx {
     saveEnabled(enabled);
   }
 
-  /** `pitch` multiplies the frequencies of its tones (a fighter's siren in its own key). */
-  play(name: SoundName, pitch = 1): void {
+  /**
+   * `pitch` multiplies the frequencies of its tones (a fighter's siren in its own key); `bus`:
+   * where it plays, the menus' on the master and the fight's through its bus unless told (a sound
+   * the Finisher's scene plays under the bus it silenced).
+   */
+  play(name: SoundName, pitch = 1, bus: Bus = MENU_SOUNDS.has(name) ? 'master' : 'fight'): void {
     const { context, master } = this;
     if (!this.enabled || !context || !master || context.state !== 'running') return;
+    const output = bus === 'fight' ? (this.fightBus?.gain ?? master) : master;
     const sound = SOUNDS[name];
     const now = context.currentTime;
-    for (const tone of sound.tones ?? []) playTone(context, master, tone, now, pitch);
+    for (const tone of sound.tones ?? []) playTone(context, output, tone, now, pitch);
     const buffer = this.noiseBuffer;
     if (buffer)
-      for (const noise of sound.noises ?? []) playNoise(context, master, buffer, noise, now);
+      for (const noise of sound.noises ?? []) playNoise(context, output, buffer, noise, now);
+  }
+
+  /**
+   * The `fight` bus from now on (docs/finisher.md §1.14): its `gain` (0 to 1) and its low-pass
+   * `cutoff` (Hz). The Finisher's scene sets it every frame, never a ramp scheduled ahead: the
+   * pause freezes it where it is, and the pause menu, on the master, keeps its sounds.
+   */
+  setFightBus(gain: number, cutoff: number): void {
+    const { context, fightBus } = this;
+    if (!context || !fightBus) return;
+    const { shown } = fightBus;
+    if (shown.gain === gain && shown.cutoff === cutoff) return;
+    const now = context.currentTime;
+    fightBus.gain.gain.setValueAtTime(gain, now);
+    fightBus.filter.frequency.setValueAtTime(cutoff, now);
+    fightBus.shown = { gain, cutoff };
+  }
+
+  /** The `fight` bus whole again and open: the scene skipped, over, or the fight left. */
+  resetFightBus(): void {
+    this.setFightBus(FIGHT_BUS_OPEN.gain, FIGHT_BUS_OPEN.cutoff);
   }
 }
 

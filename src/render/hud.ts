@@ -1,6 +1,7 @@
 import type Phaser from 'phaser';
 import type { MatchConfig } from '../core/config';
 import { TICK_RATE } from '../core/constants';
+import { finisherLocked } from '../core/finisher';
 import { ROUNDS_TO_WIN } from '../core/rules';
 import type { FighterState, GameState, RoundState } from '../core/state';
 import { BoostGauge } from './boost-gauge';
@@ -88,6 +89,11 @@ export class Hud {
   private readonly stills: [boolean, boolean] = [false, false];
   /** Whether `view` px² of the HUD may light up now (the fight's flash budget). */
   private readonly lights: (view: number) => boolean;
+  /**
+   * The round's KO is the Finisher's: its card says it, not the announcer (docs/finisher.md
+   * §1.14). Seen on the KO, as the lock still holds the pair, kept to the next round.
+   */
+  private finale = false;
 
   /**
    * `energies`: each fighter's color on the HUD in its colorway (hudColorOf), for its side;
@@ -235,7 +241,8 @@ export class Hud {
     }
     const [, b] = fighters;
     if (this.trainingInfo) this.updateTrainingInfo(this.trainingInfo, b);
-    this.announce(announcementOf(state.round, this.names));
+    this.finale = finaleOf(state, this.finale);
+    this.announce(this.finale ? '' : announcementOf(state.round, this.names));
   }
 
   /** A new announcement lights its letters at once: white if the budget lets it, dark if not. */
@@ -298,8 +305,20 @@ export class Hud {
 }
 
 /**
+ * Whether the round's KO is the Finisher's (`before`: what the frame before saw): from the KO,
+ * which falls while the lock holds the pair, to the next round's intro.
+ */
+function finaleOf(state: GameState, before: boolean): boolean {
+  const { round } = state;
+  if (round.phase === 'intro' || round.phase === 'fight') return false;
+  if (before) return true;
+  const winner = round.result?.reason === 'ko' ? round.result.winner : null;
+  return winner !== null && finisherLocked(state, winner);
+}
+
+/**
  * What a KO does to the gauge: a plain one leaves it whole, a combo's cracks it, a super's
- * shatters it (an Ultime's, the Finisher's: on its contact until its scene plays).
+ * shatters it (an Ultime's, the Finisher's: on its landing, which its scene plays).
  */
 function breakageOf(finish: KoFinish | null): Breakage | null {
   if (finish === 'combo') return 'crack';
