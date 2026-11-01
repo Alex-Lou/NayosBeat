@@ -105,13 +105,13 @@ Entrepôt reconverti en club, la nuit. Mur d'enceintes empilées au fond, néons
 
 > Une légende du circuit, masquée, polie et redoutable : personne ne sait qui est dessous, ni si c'est la même d'un soir à l'autre. Elle entre d'un pas, touche, et n'est déjà plus là. Sa spec : [saphir.md](../saphir.md).
 
-- **Silhouette** : une femme d'une trentaine d'années, droite, de profil, talon avant levé. Détail signature : le **masque de Janus**, plein, en laque saphir : un profil sculpté devant, un autre derrière, l'un vers l'adversaire, l'autre vers la salle. Rigide, il suit la tête ; une queue de cheval noire sort du sommet.
-- **Tenue** (de scène, en op-art) : veste courte ivoire à col montant, ceinture saphir, pantalon large de danse rayé d'ondes noires, gants noirs, chaussures bicolores de savate (noir et blanc cassé). Les bandes sont larges et peu nombreuses : elles ne scintillent pas (`docs/flashs.md`).
-- **Tenue 2** (miroir) : la même, inversée : noire, rayée d'ondes ivoire ; énergie **lilas**. Le masque, les cheveux et les chaussures ne changent pas.
+- **Silhouette** : une femme d'une trentaine d'années, droite, de profil, **les mains jointes dans le dos**, la pointe du pied avant posée : elle ne frappe qu'avec les jambes, ses mains ne sortent que pour la prise. Détail signature : le **masque de Janus**, plein, en laque saphir : un profil sculpté devant, un autre derrière, l'un vers l'adversaire, l'autre vers la salle. Rigide, il suit la tête ; une queue de cheval noire sort du sommet.
+- **Tenue** (de scène, en trois couleurs : saphir, ivoire, noir) : veste courte ivoire à col montant bordé de saphir, ceinture saphir, pantalon large de danse noir à liseré saphir, gants noirs, chaussures bicolores de savate (noir et blanc cassé).
+- **Tenue 2** (miroir) : la même, inversée : veste noire, pantalon ivoire ; énergie **lilas**. Le masque, les cheveux et les chaussures ne changent pas.
 - **Costume pour plus tard** : le tailleur-pantalon crème, en tenue à débloquer (une coupe à part : chaque coup redessiné, hors v1).
-- **Masque et cheveux** : dessinés de zéro. Le masque ne bouge pas : seule la fente de l'œil s'allume de son énergie quand elle force (`effort`) et au pic d'un spécial (`kiai`). Un peu de peau brun chaud au cou, entre le col et le masque.
-- **Palette** (figée à la porte 2) : masse ivoire `#ECE8DE` (tenue 2 : noir `#121216`) ; masque saphir `#2A4CB8` dans les deux tenues ; énergie verte `#20B464` (tenue 2 : lilas `#C0A0FF`).
-- **Effets de coup** : arcs de coups de pied **verts** (forme `slash`), éclats crème, étincelles en croix ; son énergie (Syncope, Rubato, Contre-ut) est verte. Tenue 2 : lilas.
+- **Masque et cheveux** : dessinés de zéro. Le profil du dos est pris dans un contre-jour froid (arcade, nez, lèvres, menton accrochent la lumière), une rainure gravée sépare les deux visages. Le masque ne bouge pas : seule la fente de l'œil s'allume de son énergie quand elle force (`effort`) et au pic d'un spécial (`kiai`). Un peu de peau brun chaud au cou, entre le col et le masque.
+- **Palette** (figée à la porte 2) : masse ivoire `#ECE8DE` (tenue 2 : noir `#121216`) ; masque saphir `#2A4CB8` dans les deux tenues ; énergie saphir `#3A6CF0` (tenue 2 : lilas `#C0A0FF`).
+- **Effets de coup** : arcs de coups de pied **saphir** (forme `slash`), éclats crème, étincelles en losange (le saphir taillé) ; son énergie (Syncope, Rubato, Contre-ut) est saphir. Tenue 2 : lilas.
 
 | Coup (gabarit) | Nom | Mise en scène |
 |---|---|---|
@@ -123,8 +123,8 @@ Entrepôt reconverti en club, la nuit. Mur d'enceintes empilées au fond, néons
 | forwardHeavy | Fouetté plongeant | Le pied monte puis plonge par-dessus la garde |
 | backHeavy | Chandelle | Coup de pied droit vers le ciel |
 | crouchLight | Coup de pied bas | Au tibia, presque à plat |
-| crouchHeavy | Fauche | Revers bas aux chevilles, une main au sol |
-| special | Syncope | Un pas de swing, un fouetté qui claque, et elle repart en arrière |
+| crouchHeavy | Fauche | Revers bas aux chevilles, accroupie sur une jambe, les mains dans le dos |
+| special | Syncope | Un pas de swing, la jambe par-dessus la tête qui retombe en croissant, et elle repart en arrière ; sa traînée écrit un S |
 | specialForward | Rubato | Elle retient son poids, puis fond et fouette, en retard exprès |
 | specialAntiAir | Contre-ut | Elle bondit, la jambe tendue droit vers le ciel |
 | throwForward, throwBack | Croc-en-jambe, Valse | Un pied derrière la cheville ; un tour de valse, par-dessus l'épaule |

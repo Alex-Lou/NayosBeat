@@ -31,7 +31,7 @@ export const SAPHIR_TEXTS: FighterTexts = {
   moves: {
     special: {
       input: SPECIAL,
-      text: 'Un pas de swing, un fouetté qui claque de loin, et elle repart aussitôt en arrière. Paré tout près, il se punit ; au bout de sa portée, elle est déjà loin.',
+      text: 'Un pas de swing, la jambe passe par-dessus sa tête et retombe de loin, puis elle repart aussitôt en arrière. Paré tout près, il se punit ; au bout de sa portée, elle est déjà loin.',
     },
     specialForward: {
       input: 'Avant + S',
@@ -103,7 +103,7 @@ export const SAPHIR_TEXTS: FighterTexts = {
     },
     crouchHeavy: {
       input: 'Bas + H',
-      text: "Un revers bas aux chevilles, une main au sol. L'adversaire tombe sur le dos. Se pare accroupi.",
+      text: "Un revers bas aux chevilles, accroupie sur une jambe. L'adversaire tombe sur le dos. Se pare accroupi.",
     },
     jumpLight: {
       input: "En l'air, L",

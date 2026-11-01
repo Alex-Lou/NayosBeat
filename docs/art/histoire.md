@@ -56,9 +56,9 @@ Elle n'apparaît que les nuits où le son est bon, et repart avant la fin du der
 
 On l'appelle Saphir, comme la pointe qui lit le sillon. Elle te lit avant que tu bouges.
 
-Veste courte ivoire à col montant, ceinture saphir, pantalon large où des ondes noires tournent quand elle tourne, gants noirs, chaussures bicolores de savate. Le masque ne tombe jamais. Pas même pour saluer.
+Veste courte ivoire à col montant, ceinture saphir, pantalon large noir, gants noirs, chaussures bicolores de savate. Elle se bat les mains jointes dans le dos : ses jambes suffisent. Le masque ne tombe jamais. Pas même pour saluer.
 
-Elle ne charge pas, elle invite. Un pas sur le temps long, le pied qui claque sur le court, et elle est déjà repartie : la SYNCOPE. Tu frappes dans le vide, elle te le fait payer de loin, en retard exprès : RUBATO. Tu sautes, elle monte plus haut que toi : CONTRE-UT. Et quand elle veut finir, l'orchestre lui revient. Un pied bas, un fouetté, un revers. DOU. BI. DOUM. La CODA.
+Elle ne charge pas, elle invite. Un pas sur le temps long, la jambe qui passe par-dessus sa tête et retombe sur le court, comme l'aiguille sur le disque, et elle est déjà repartie : la SYNCOPE. Tu frappes dans le vide, elle te le fait payer de loin, en retard exprès : RUBATO. Tu sautes, elle monte plus haut que toi : CONTRE-UT. Et quand elle veut finir, l'orchestre lui revient. Un pied bas, un fouetté, un revers. DOU. BI. DOUM. La CODA.
 
 Ce qu'elle veut : passer la face B. Que, pour une fois, toute une salle danse sur l'autre côté du disque, celui qu'on n'écoute jamais.
 
