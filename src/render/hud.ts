@@ -13,7 +13,7 @@ import { BAR_BOX, EMBER_RISE, HealthBar, type HudComfort } from './health-bar';
 import { DISC_SIZE, discSpans, MARK_TICKS, markSpan, PIP_SIZE, pipSpans } from './hud-discs';
 import { paintSpans, spanTexture, type Span } from './hud-paint';
 import { advantageText } from './advantage-meter';
-import { announcementOf, comboText, NO_TIMER } from './hud-text';
+import { announcementOf, comboText, koTallyText, NO_TIMER } from './hud-text';
 import { noteText, type ComboLine } from './training-combo';
 
 /** The advantage's colors (docs/polish/AUDIT-ET-PLAN.md, P19); its sign is always written. */
@@ -46,6 +46,13 @@ const TIMER_COLORS = { normal: '#ffffff', low: '#ffa04a' } as const;
  * effects instead (ΔL ≤ 0.073 over the stage).
  */
 export const ANNOUNCE_LETTER_AREA = 305;
+/** The announcer's middle, from the top of the screen (view px). */
+export const ANNOUNCE_Y = VIEW_SIZE.height / 2 - 40;
+/**
+ * The KO's count stands under « K.O. », its top this far under the announcer's middle (view px):
+ * the one voice of the KO says both (docs/polish/AUDIT-ET-PLAN.md, P10).
+ */
+export const KO_TALLY_BELOW = 18;
 const ANNOUNCE_DARK = `#${FX_DARK.toString(16).padStart(6, '0')}`;
 
 /** Pixel font designed on an 8 px grid: sizes are kept to multiples of 8 to stay crisp. */
@@ -75,6 +82,10 @@ export class Hud {
   /** The vinyl turns (the screen not kept still). */
   private motion: boolean;
   private readonly announcer: Phaser.GameObjects.Text;
+  /** Under « K.O. »: the count of the blows its winner landed in a row (koTallyText). */
+  private readonly koTally: Phaser.GameObjects.Text;
+  /** The tally of each fighter's final blow (its winner's count), 0 while up. */
+  private readonly koHits: [number, number] = [0, 0];
   /** Training only: hits and damage of player 1's last combo on the dummy. */
   private readonly trainingInfo: Phaser.GameObjects.Text | undefined;
   private readonly advantageInfo: Phaser.GameObjects.Text | undefined;
@@ -182,8 +193,14 @@ export class Hud {
     // Over the timer: its digits never hide it.
     this.mark = this.fixed(scene.add.graphics({ x: discX, y: DISC_TOP }));
     this.announcer = this.fixed(
-      scene.add.text(width / 2, VIEW_SIZE.height / 2 - 40, '', { ...TEXT_STYLE, fontSize: '24px' }),
+      scene.add.text(width / 2, ANNOUNCE_Y, '', { ...TEXT_STYLE, fontSize: '24px' }),
     ).setOrigin(0.5);
+    this.koTally = this.fixed(
+      scene.add.text(width / 2, ANNOUNCE_Y + KO_TALLY_BELOW, '', {
+        ...TEXT_STYLE,
+        fontSize: '16px',
+      }),
+    ).setOrigin(0.5, 0);
 
     this.trainingInfo = config.training
       ? this.fixed(
@@ -246,17 +263,31 @@ export class Hud {
       paintSpans(this.mark, [markSpan(spin)]);
     }
     this.finale = finaleOf(state, this.finale);
-    this.announce(this.finale ? '' : announcementOf(state.round, this.names));
+    const text = this.finale ? '' : announcementOf(state.round, this.names);
+    this.announce(text, text === 'K.O.' ? this.tallyOf(round) : '');
   }
 
-  /** A new announcement lights its letters at once: white if the budget lets it, dark if not. */
-  private announce(text: string): void {
-    if (this.announcer.text === text) return;
-    const letters = text.replace(/ /g, '').length;
+  /** The count under a round's single « K.O. »: its winner's blows in a row (none for a draw). */
+  private tallyOf(round: RoundState): string {
+    const winner = round.result?.winner;
+    if (winner === undefined || winner === null) return '';
+    return koTallyText(this.koHits[winner === 0 ? 1 : 0]);
+  }
+
+  /**
+   * A new announcement, and the KO's count under it, light their letters at once (each counted
+   * at the announcer's widest): white if the budget lets them, dark if not.
+   */
+  private announce(text: string, tally: string): void {
+    if (this.announcer.text === text && this.koTally.text === tally) return;
+    const letters = (text + tally).replace(/ /g, '').length;
     const lit = letters === 0 || this.lights(ANNOUNCE_LETTER_AREA * letters);
     const color = lit ? TIMER_COLORS.normal : ANNOUNCE_DARK;
-    if (this.announcer.style.color !== color) this.announcer.setColor(color);
-    this.announcer.setText(text);
+    for (const line of [this.announcer, this.koTally]) {
+      if (line.style.color !== color) line.setColor(color);
+    }
+    setTextIfChanged(this.announcer, text);
+    setTextIfChanged(this.koTally, tally);
   }
 
   /** The player's comfort options, from the next frame on (the pause's options). */
@@ -268,9 +299,11 @@ export class Hud {
 
   /**
    * `player` was knocked out on this tick: `finish` says how (fight-events.ts); `still`, its
-   * gauges break without their shards (FightFeedback found no room for them in the budget).
+   * gauges break without their shards (FightFeedback found no room for them in the budget);
+   * `hits`, the tally of its final blow, which « K.O. » shows under it.
    */
-  knockOut(player: 0 | 1, finish: KoFinish, still = false): void {
+  knockOut(player: 0 | 1, finish: KoFinish, still = false, hits = 0): void {
+    this.koHits[player] = hits;
     this.finishes[player] = finish;
     this.stills[player] = still;
     this.downAt[player] = null;

@@ -31,8 +31,9 @@ interface Spender {
 /**
  * A blow that went through the guard, the `damage` it really took: `held` when it landed in a
  * hold (a pummel, a throw); `counter` when it caught the defender attacking or recovering (the
- * core's `isCounterHit`); `tier`, its move's (3: a super); `pulse`, a blow of a super before its
- * last (BOOM, BOOM, BOOOOM: docs/flashs.md §2).
+ * core's `isCounterHit`); `tier`, its move's (0: a normal, 1: a special, 2: a Remix, 3: a
+ * super); `pulse`, a blow of a super before its last (BOOM, BOOM, BOOOOM: docs/flashs.md §2);
+ * `freeze`, the ticks the game stays frozen after it (the state's hitstop: its CONTRE's included).
  */
 interface Blow extends Impact {
   readonly damage: number;
@@ -40,6 +41,7 @@ interface Blow extends Impact {
   readonly counter: CounterHit | null;
   readonly tier: number;
   readonly pulse: boolean;
+  readonly freeze: number;
 }
 
 /**
@@ -71,6 +73,16 @@ export function landsHeavy(blow: Extract<FightEvent, { type: 'hit' | 'ko' }>): b
   return blow.type === 'ko' || blow.heavy || blow.counter !== null;
 }
 
+/**
+ * A blow whose spark shows the contact without hiding the victim (docs/polish/AUDIT-ET-PLAN.md,
+ * P5): a special's or a Remix's (tiers 1 and 2: every projectile is one, which
+ * tests/render/fight-events.test.ts keeps true), short of the final blow. A normal keeps its
+ * burst; the Ultime and the Finisher (tier 3), and every KO, keep their big one.
+ */
+export function pinpoints(blow: Extract<FightEvent, { type: 'hit' | 'ko' }>): boolean {
+  return blow.type === 'hit' && (blow.tier === 1 || blow.tier === 2);
+}
+
 /** The KO blows the loser's Boost gauge up: an Ultime's, the Finisher's. */
 export function shatters(finish: KoFinish): boolean {
   return finish === 'ultimate' || finish === 'finale';
@@ -80,8 +92,11 @@ export type FightEvent =
   | ({ readonly type: 'hit'; readonly heavy: boolean } & Blow)
   | ({ readonly type: 'block' } & Impact)
   | ({ readonly type: 'ko'; readonly finish: KoFinish } & Blow)
-  /** A grab caught `by`'s opponent; `punish`: caught recovering, it cannot break free. */
-  | ({ readonly type: 'grab'; readonly punish: boolean } & Impact)
+  /**
+   * A grab caught `by`'s opponent; `punish`: caught recovering, it cannot break free. `freeze`:
+   * the ticks the game stays frozen after it.
+   */
+  | ({ readonly type: 'grab'; readonly punish: boolean; readonly freeze: number } & Impact)
   /** `by` broke free of a grab (one event for two grabs on the same tick). */
   | ({ readonly type: 'tech' } & Impact)
   /** `by` threw: the opponent flies, `damage` taken. */
@@ -249,7 +264,12 @@ function contactEvent(contact: Contact, next: GameState, config: MatchConfig): F
     case 'block':
       return { type: 'block', ...impact };
     case 'grab':
-      return { type: 'grab', ...impact, punish: contact.counter === 'punish' };
+      return {
+        type: 'grab',
+        ...impact,
+        punish: contact.counter === 'punish',
+        freeze: next.hitstop,
+      };
     case 'tech':
       return { type: 'tech', ...impact };
     default:
@@ -260,7 +280,7 @@ function contactEvent(contact: Contact, next: GameState, config: MatchConfig): F
   // A super's blow before its last: its attacker is still in it, short of the last pulse.
   const last = tier === 3 ? move.pulses?.[move.pulses.length - 1]?.frame : undefined;
   const pulse = last !== undefined && attacker.move === contact.move && attacker.actionFrame < last;
-  const blow = { ...impact, damage, held, counter, tier, pulse };
+  const blow = { ...impact, damage, held, counter, tier, pulse, freeze: next.hitstop };
   if (defender.health === 0) {
     // A double KO is never the Finisher's: it locks only a pair that nothing else touches.
     const finale = finisherLocked(next, contact.by) && attacker.health > 0;

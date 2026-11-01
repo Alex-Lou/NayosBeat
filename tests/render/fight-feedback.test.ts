@@ -17,7 +17,7 @@ import { GREYBOX_COLORS } from '../../src/render/greybox-stage';
 import { hitStyleOf } from '../../src/render/hit-styles';
 import { CLOSE_UP_EFFECTS } from '../../src/render/camera-framing';
 import { TRAUMA } from '../../src/render/shake';
-import { STAMP_TEXTS } from '../../src/render/stamps';
+import { counterLook, STAMP_TEXTS } from '../../src/render/stamps';
 import type { GameState } from '../../src/core/state';
 import { facingOff } from '../core/helpers';
 import { DIM_COLOR, HALO_COLOR, type VeilLook } from '../../src/render/veils';
@@ -80,6 +80,7 @@ vi.mock('../../src/render/stamps', async (original) => ({
   ...(await original<typeof import('../../src/render/stamps')>()),
   Stamps: class {
     show = shown.stamp;
+    hush = vi.fn();
     update = vi.fn();
     settle = vi.fn();
   },
@@ -91,6 +92,7 @@ vi.mock('../../src/render/onomatopoeia', async (original) => ({
     countOf = () => 1;
     beginTick = vi.fn();
     reset = vi.fn();
+    hush = vi.fn();
     update = vi.fn();
     settle = vi.fn();
   },
@@ -156,8 +158,9 @@ function blow(type: 'hit' | 'ko', low: boolean, heavy = false): FightEvent {
     damage: 25,
     held: false,
     counter: null,
-    tier: 1,
+    tier: 0,
     pulse: false,
+    freeze: 10,
   } as const;
   return type === 'hit' ? { type, heavy, ...impact } : { type, finish: 'plain', ...impact };
 }
@@ -270,12 +273,20 @@ describe('a counter-hit (docs/combat-v2.md §7.4)', () => {
         low: false,
         held: false,
         counter,
-        tier: 1,
+        tier: 0,
         pulse: false,
+        freeze: 10,
       };
       feedback().react(hit);
       expect(shown.burst).toHaveBeenLastCalledWith(NAYO_STYLE, 'heavy', px(200), px(50), 1, 1);
-      expect(shown.stamp).toHaveBeenLastCalledWith(STAMP_TEXTS[counter], hit, 0, 0, false);
+      expect(shown.stamp).toHaveBeenLastCalledWith(
+        STAMP_TEXTS[counter],
+        hit,
+        0,
+        0,
+        false,
+        counterLook(counter, 10),
+      );
     }
   });
 
@@ -295,16 +306,16 @@ describe('the Boost (docs/combos-v3.md §1.8.7)', () => {
 
   it('stamps REMIX over the head of the one who spends, its bass boost heard', () => {
     feedback().react({ type: 'boost', ...at });
-    expect(shown.stamp).toHaveBeenCalledWith('REMIX !', overHead, 0, 0, false);
+    expect(shown.stamp).toHaveBeenCalledWith('REMIX !', overHead, 0, 0, false, {});
     expect(played).toHaveBeenCalledWith('remix');
   });
 
   it('stamps the Rewind and the super by their names', () => {
     feedback().react({ type: 'rewind', name: 'Pogo', toward: 1, ...at });
-    expect(shown.stamp).toHaveBeenLastCalledWith('POGO !', overHead, 0, 0, false);
+    expect(shown.stamp).toHaveBeenLastCalledWith('POGO !', overHead, 0, 0, false, {});
     expect(played).toHaveBeenLastCalledWith('rewind');
     feedback().react({ type: 'super', name: 'Mégabasse', ...at });
-    expect(shown.stamp).toHaveBeenLastCalledWith('MÉGABASSE !', overHead, 0, 0, false);
+    expect(shown.stamp).toHaveBeenLastCalledWith('MÉGABASSE !', overHead, 0, 0, false, {});
     expect(played).toHaveBeenLastCalledWith('super');
   });
 });
@@ -427,6 +438,7 @@ describe('a KO that blows a Boost gauge up (docs/combos-v3.md §1.8.6)', () => {
     counter: null,
     tier: 3,
     pulse: false,
+    freeze: 10,
   });
   const withHaptics = (vibrate: () => void, rumble: () => void) => {
     const haptic = new FightFeedback(
@@ -484,6 +496,7 @@ describe('the veils and the shake, never a flash over the whole screen (docs/fla
     counter: null,
     tier: 3,
     pulse: false,
+    freeze: 10,
   });
 
   it('veils a KO by how it fell: nothing alone, a vignette for a combo, the éclat for an Ultime', () => {
@@ -570,6 +583,7 @@ describe('the flash budget, asked once a tick (docs/flashs.md §4)', () => {
       0,
       MUTED_DELAY.stamp,
       true,
+      counterLook('counter', 10),
     );
     // The blow itself is felt the same: the shake, the sound.
     expect(shown.jolt).toHaveBeenLastCalledWith(TRAUMA.heavy, 1);
@@ -625,12 +639,12 @@ describe('the flash budget, asked once a tick (docs/flashs.md §4)', () => {
     const knockOut = vi.fn();
     const fight = new Fight({ ...stageOf('off'), knockOut });
     fight.react(ko(0, 'ultimate'));
-    expect(knockOut).toHaveBeenLastCalledWith(1, 'ultimate', false);
+    expect(knockOut).toHaveBeenLastCalledWith(1, 'ultimate', false, 1);
     fight.wait(60);
     // What already lights there (another piece that waited) leaves no room for the shards.
     fight.stage.budget.show(400);
     fight.react(ko(1, 'ultimate'));
-    expect(knockOut).toHaveBeenLastCalledWith(0, 'ultimate', true);
+    expect(knockOut).toHaveBeenLastCalledWith(0, 'ultimate', true, 1);
   });
 
   it('asks for the stamps that are no blow, and for a guard spark: refused, calm, or none', () => {
@@ -640,7 +654,7 @@ describe('the flash budget, asked once a tick (docs/flashs.md §4)', () => {
     fight.wait(3);
     fight.react({ type: 'boost', ...at });
     // Too soon after a flash: calm, at once, since that makes none.
-    expect(shown.stamp).toHaveBeenLastCalledWith('REMIX !', expect.anything(), 0, 0, true);
+    expect(shown.stamp).toHaveBeenLastCalledWith('REMIX !', expect.anything(), 0, 0, true, {});
     const spent = new Fight(stageOf('off'));
     spent.stage.budget.show(450);
     spent.react({ type: 'block', away: 1, low: false, ...at });
@@ -808,14 +822,14 @@ describe("the Finisher's blows, its scene's (docs/finisher.md §1.14, §5.2)", (
       { x: 240, y: 400 },
       CLOSE_UP_EFFECTS,
     );
-    expect(knockOut).toHaveBeenLastCalledWith(1, 'finale', false);
+    expect(knockOut).toHaveBeenLastCalledWith(1, 'finale', false, 0);
     expect(shown.kick).toHaveBeenCalledWith(px(240), 1);
     expect(vibrate).toHaveBeenCalledWith(HAPTICS.shatter);
     expect(rumble).toHaveBeenCalledWith(SHATTER_RUMBLE.ms, SHATTER_RUMBLE.strength);
     // Skipped past: the HUD breaks still, nothing else.
     vi.clearAllMocks();
     feedback.finisherLanding(0, px(240), 1, CLOSE_UP_EFFECTS, { quiet: true, dust: true });
-    expect(knockOut).toHaveBeenLastCalledWith(1, 'finale', true);
+    expect(knockOut).toHaveBeenLastCalledWith(1, 'finale', true, 0);
     expect(shown.veil).not.toHaveBeenCalled();
     expect(vibrate).not.toHaveBeenCalled();
     // The flashes off: no éclat at all (§4.5).

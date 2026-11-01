@@ -96,6 +96,43 @@ class FakeText {
   }
 }
 
+/** An engine Graphics standing in for the real one (a stamp's frame): it draws nothing. */
+class FakeGraphics {
+  setDepth(): this {
+    return this;
+  }
+  setVisible(): this {
+    return this;
+  }
+  setPosition(): this {
+    return this;
+  }
+  setRotation(): this {
+    return this;
+  }
+  setScale(): this {
+    return this;
+  }
+  setAlpha(): this {
+    return this;
+  }
+  clear(): this {
+    return this;
+  }
+  lineStyle(): this {
+    return this;
+  }
+  strokeRect(): this {
+    return this;
+  }
+  fillStyle(): this {
+    return this;
+  }
+  fillRect(): this {
+    return this;
+  }
+}
+
 function scene(): { scene: Phaser.Scene; texts: FakeText[] } {
   const texts: FakeText[] = [];
   const fake = {
@@ -107,6 +144,7 @@ function scene(): { scene: Phaser.Scene; texts: FakeText[] } {
         texts.push(text);
         return text;
       },
+      graphics: () => new FakeGraphics(),
     },
   } as unknown as Phaser.Scene;
   return { scene: fake, texts };
@@ -166,7 +204,7 @@ describe("a muted blow's word and stamp, a moment later (docs/flashs.md §4)", (
 
   it('slams a stamp down 16 frames later; calm, without slamming, fading in', () => {
     const { scene: fake, texts } = scene();
-    const stamps = new Stamps(fake, 400, STYLES);
+    const stamps = new Stamps(fake, 400, STYLES, GREYBOX_COLORS);
     stamps.show('CONTRE !', HIT, 0, 16);
     stamps.settle();
     const stamp = texts.find((text) => text.text === 'CONTRE !');
@@ -190,7 +228,7 @@ describe("a muted blow's word and stamp, a moment later (docs/flashs.md §4)", (
     expect(texts.filter((text) => text.text !== '')).toEqual([]);
     words.beginTick();
     expect(words.countOf(0)).toBe(2);
-    const stamps = new Stamps(fake, 400, STYLES);
+    const stamps = new Stamps(fake, 400, STYLES, GREYBOX_COLORS);
     stamps.show('CONTRE !', HIT, 0, null);
     expect(texts.filter((text) => text.text === 'CONTRE !')).toEqual([]);
   });
@@ -206,8 +244,9 @@ describe('what waits shows on the frame the flash budget keeps it for (docs/flas
       low: false,
       damage: 25,
       held: false,
-      tier: 1,
+      tier: 0,
       pulse: false,
+      freeze: 10,
     }) as const;
   const contre = (by: 0 | 1): FightEvent => ({
     type: 'hit',

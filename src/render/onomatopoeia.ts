@@ -3,6 +3,7 @@ import { toPx } from '../core/constants';
 import { MAX_CLOSE_UP, textResolution } from './camera-framing';
 import { COMIC_FONT, comicDrop, comicFill, INK } from './comic-lettering';
 import { DEPTH } from './depth';
+import { easeOutCubic } from './easings';
 import type { HitStyle } from './hit-styles';
 import { VIEW_SIZE } from './view';
 
@@ -49,8 +50,17 @@ const OUTRUN_FRAMES = 6;
 const OFFSET_Y = 22;
 const OFFSET_X = 8;
 const RISE = 0.3;
-/** Height of the HUD band at the top of the screen (timer, bars, names), in view pixels. */
-const HUD_BAND = 30;
+/**
+ * Height of the HUD band at the top of the screen (timer, bars, names), in view pixels: the
+ * words' tops stay under it, or under training's line of move names (move-caption.ts).
+ */
+export const HUD_BAND = 30;
+/**
+ * At a round's end, the words on screen fade out over this many display frames, on an
+ * easeOutCubic, from where they are: the announcement speaks alone (docs/polish/AUDIT-ET-PLAN.md,
+ * P10).
+ */
+export const HUSH_FRAMES = 4;
 /** The inked outline and the comic drop of a word, then of its tally, in world pixels. */
 export const WORD_INK = { stroke: 4, drop: 2 } as const;
 export const TALLY_INK = { stroke: 3, drop: 1 } as const;
@@ -113,6 +123,8 @@ interface Word {
   total: number;
   /** Frames over which the word fades out (shortened when the next word outruns it). */
   fade: number;
+  /** Hushed (`hush`): its opacity then, which it fades from over its last HUSH_FRAMES. */
+  hushedFrom: number | null;
   tilt: number;
   /** Where the word settles, in world pixels. */
   x: number;
@@ -146,10 +158,12 @@ export class Onomatopoeia {
   /** Counts the blows, to draw each new word over the previous ones. */
   private serial = 0;
 
+  /** `top`: the highest view row a word's top may reach at the closest zoom (under the HUD). */
   constructor(
     scene: Phaser.Scene,
     private readonly groundY: number,
     private readonly styles: readonly [HitStyle, HitStyle],
+    top = HUD_BAND,
   ) {
     // Rendered at the finest zoom of the fight camera, so the lettering stays sharp.
     this.canvasWidth = scene.scale.width;
@@ -177,6 +191,7 @@ export class Onomatopoeia {
       life: 0,
       total: 0,
       fade: FADE_FRAMES,
+      hushedFrom: null,
       tilt: 0,
       x: 0,
       y: 0,
@@ -198,7 +213,7 @@ export class Onomatopoeia {
       metricsOf((kind) => tallySize(WORD_SIZES[kind])),
       metricsOf((kind) => tallySize(CALM_WORD_SIZES[kind])),
     ];
-    this.hudBottom = groundY - (groundY - HUD_BAND) / MAX_CLOSE_UP;
+    this.hudBottom = groundY - (groundY - top) / MAX_CLOSE_UP;
   }
 
   /**
@@ -250,6 +265,7 @@ export class Onomatopoeia {
     word.calm = calm || this.calm;
     word.life = word.total = LIFE[kind];
     word.fade = FADE_FRAMES;
+    word.hushedFrom = null;
     word.tilt = TILTS[(count - 1) % TILTS.length] ?? 0;
     this.restyle(word, kind, count);
 
@@ -278,6 +294,26 @@ export class Onomatopoeia {
    */
   settle(): void {
     for (const word of this.words) word.fresh = false;
+  }
+
+  /**
+   * The round's end is announced (P10): the words on screen fade out over HUSH_FRAMES, from their
+   * opacity, on an easeOutCubic; those still waiting never show. Their tally goes on counting.
+   */
+  hush(): void {
+    for (const word of this.words) {
+      if (word.wait > 0) {
+        word.wait = 0;
+        word.life = 0;
+        hide(word);
+        continue;
+      }
+      if (word.life === 0 || word.hushedFrom !== null) continue;
+      word.hushedFrom = opacityOf(word);
+      const life = Math.min(word.life, HUSH_FRAMES);
+      word.total -= word.life - life;
+      word.life = life;
+    }
   }
 
   /** The tallies start over with every round. */
@@ -348,8 +384,7 @@ export class Onomatopoeia {
     const pop = age < POP_FRAMES ? 1.35 - 0.35 * (age / POP_FRAMES) : 1;
     const grow = age < 2 ? 0.6 + 0.4 * (age / 2) : 1;
     const scale = word.calm ? 1 : pop * grow;
-    const fadeIn = word.calm ? (age + 1) / CALM_FADE_IN : 1;
-    const alpha = Math.min(1, fadeIn, word.life / word.fade);
+    const alpha = word.hushedFrom === null ? opacityOf(word) : word.hushedFrom * hushed(word.life);
     const y = word.y - Math.max(0, age - POP_FRAMES) * RISE;
 
     word.text.setPosition(word.x, y).setScale(scale).setRotation(word.tilt).setAlpha(alpha);
@@ -382,6 +417,18 @@ function outrun(word: Word): void {
   word.total -= word.life - OUTRUN_FRAMES;
   word.life = OUTRUN_FRAMES;
   word.fade = OUTRUN_FRAMES / alpha;
+}
+
+/** What is left of the opacity of a text hushed with `life` display frames to go (P10). */
+export function hushed(life: number): number {
+  const t = (HUSH_FRAMES - life) / HUSH_FRAMES;
+  return 1 - easeOutCubic(t);
+}
+
+/** A word's opacity as it pops (calm: fades in), holds, then fades out. */
+function opacityOf(word: Word): number {
+  const fadeIn = word.calm ? (word.total - word.life + 1) / CALM_FADE_IN : 1;
+  return Math.min(1, fadeIn, word.life / word.fade);
 }
 
 /** Draws the text once, even when its string did not change. */

@@ -20,9 +20,10 @@ import { VIEW_SIZE } from './view';
 /**
  * `pulse`: a super's blow before its last (BOOM, BOOM, BOOOOM), smaller, without the flash; it is
  * also what a heavy blow plays when the flash budget mutes it, `koMuted` what a KO plays then
- * (docs/flashs.md §4).
+ * (docs/flashs.md §4). `pinpoint`: a special's or a projectile's, which shows the contact without
+ * hiding the victim (docs/polish/AUDIT-ET-PLAN.md, P5).
  */
-export type HitKind = 'light' | 'heavy' | 'block' | 'ko' | 'pulse' | 'koMuted';
+export type HitKind = 'light' | 'heavy' | 'block' | 'ko' | 'pulse' | 'koMuted' | 'pinpoint';
 
 type FlipbookName = keyof typeof HD_FLIPBOOKS;
 /** What a piece draws: a shape of its own, or a flipbook of several. */
@@ -145,7 +146,7 @@ interface Burst {
   readonly life: number;
 }
 
-const BURSTS: Readonly<Record<Exclude<HitKind, 'block'>, Burst>> = {
+const BURSTS: Readonly<Record<Exclude<HitKind, 'block' | 'pinpoint'>, Burst>> = {
   light: { glow: 36, core: 14, blades: 1, blade: 32, ring: 0, sparks: 8, shards: 3, life: 1 },
   heavy: { glow: 52, core: 20, blades: 2, blade: 50, ring: 58, sparks: 18, shards: 8, life: 1.25 },
   ko: { glow: 74, core: 28, blades: 3, blade: 64, ring: 86, sparks: 30, shards: 14, life: 1.6 },
@@ -193,7 +194,10 @@ interface Star {
    * through the slow motion that follows.
    */
   readonly linger: number;
-  /** The aura's alpha (0.85), its size (AURA_SCALE), the warm glow's alpha (0.35): less on a pulse. */
+  /**
+   * The aura's alpha (0.85), its size (AURA_SCALE), the warm glow's alpha (0.35, none at 0): less
+   * on a pulse.
+   */
   readonly aura?: number;
   readonly auraScale?: number;
   readonly warm?: number;
@@ -288,7 +292,35 @@ const STARS: Readonly<Record<Exclude<HitKind, 'block'>, Star>> = {
     auraScale: 1.3,
     warm: 0.2,
   },
+  // A special's or a projectile's (P5): its opaque heart PINPOINT.heart wide at most, 3 frames
+  // whole, then 4 of thin rays (its embers, around the hole the blow left), then the sparks
+  // alone; its halo in his energy at 0.4, no warm glow, no splash, no shock front: the victim
+  // shows from the 4th.
+  pinpoint: {
+    size: 19.5,
+    keys: [1, 2, 0, 0, 4],
+    life: 0.8,
+    streaks: 4,
+    drops: 3,
+    twinkles: 3,
+    specks: 8,
+    arcs: 2,
+    farArcs: 0,
+    lines: 1,
+    fronts: 0,
+    splash: false,
+    linger: 0,
+    aura: 0.4,
+    warm: 0,
+  },
 };
+
+/**
+ * A special's or a projectile's spark (P5): the width of its opaque heart at most (world px), and
+ * how far back toward the attacker it sits from the middle of the overlap, on the contact. Its
+ * frames whole, then of rays alone.
+ */
+export const PINPOINT = { heart: 24, back: 10, whole: 3, rays: 4 } as const;
 
 /** Lowest height of a KO burst's center (world pixels): half the biggest burst, Nayo's. */
 const KO_LIFT = Math.max(STARS.ko.size, BURSTS.ko.glow) / 2;
@@ -498,7 +530,8 @@ export class HitFx {
   play(style: HitStyle, kind: HitKind, x: number, y: number, away: 1 | -1, size = 1): void {
     // A blow before the atlas is all painted (never seen: the intro is longer) waits for it.
     paintAtlas(Infinity);
-    const px = toPx(x);
+    // A special's or a projectile's, on the contact: a little back toward the attacker.
+    const px = toPx(x) - (kind === 'pinpoint' ? away * PINPOINT.back * size : 0);
     // The KO of a sweep lands at the feet: its burst rises above the floor, not through it.
     const ko = kind === 'ko' || kind === 'koMuted';
     const py = this.groundY - Math.max(toPx(y), ko ? KO_LIFT : 0);
@@ -511,6 +544,8 @@ export class HitFx {
       else this.star(style, STARS[kind], px, py, direction);
     } else if (kind === 'block') {
       this.clawBlock(style, px, py, direction);
+    } else if (kind === 'pinpoint') {
+      this.clawPinpoint(style, px, py, direction);
     } else {
       this.claw(style, BURSTS[kind], px, py, direction);
     }
@@ -556,19 +591,22 @@ export class HitFx {
     const pale = lighten(energy, 0.55);
     // The burst grows fast, its aura with it.
     const grow = { from: stretch(0.78), to: stretch(1.06), ease: 4, angle: tilt, mirror };
-    this.spawn(
-      {
-        layer: 'warm',
-        color: style.strike,
-        life: keys[0] + keys[1],
-        from: stretch(1.1),
-        to: stretch(1.35),
-        alpha: star.warm ?? 0.35,
-        fade: 1.5,
-      },
-      x,
-      y,
-    );
+    const warm = star.warm ?? 0.35;
+    if (warm > 0) {
+      this.spawn(
+        {
+          layer: 'warm',
+          color: style.strike,
+          life: keys[0] + keys[1],
+          from: stretch(1.1),
+          to: stretch(1.35),
+          alpha: warm,
+          fade: 1.5,
+        },
+        x,
+        y,
+      );
+    }
     this.spawn(
       {
         layer: 'aura',
@@ -1044,6 +1082,59 @@ export class HitFx {
     this.shockwave(style.strike, burst, x, y);
     this.shards(style.strike, burst.shards * 2, x, y, 1.4);
     this.sparks(style, Math.round(burst.sparks / 2), burst.life, x, y, direction);
+  }
+
+  /**
+   * Riff's special or projectile (P5): her energy's glow at 0.4, a white-hot core PINPOINT.heart
+   * wide for PINPOINT.whole frames, her X of blades on alone for PINPOINT.rays more, then her
+   * shards and sparks: the victim shows through.
+   */
+  private clawPinpoint(style: HitStyle, x: number, y: number, direction: number): void {
+    const { heart, whole, rays } = PINPOINT;
+    this.spawn(
+      {
+        layer: 'halo',
+        color: style.energy,
+        life: whole + rays,
+        from: [heart, heart],
+        to: [heart * 1.6, heart * 1.6],
+        alpha: 0.4,
+      },
+      x,
+      y,
+    );
+    this.spawn(
+      {
+        layer: 'halo',
+        color: style.core,
+        life: whole,
+        from: [heart * 0.6, heart * 0.6],
+        to: [heart, heart],
+        fade: 0,
+      },
+      x,
+      y,
+    );
+    for (const [angle, color] of [
+      [-0.8, style.energy],
+      [0.8, style.core],
+    ] as const) {
+      this.spawn(
+        {
+          layer: 'cut',
+          color,
+          life: whole + rays,
+          from: [heart * 0.4, 3],
+          to: [heart * 1.15, 1],
+          angle,
+          hold: 0.4,
+        },
+        x,
+        y,
+      );
+    }
+    this.shards(style.strike, 4, x, y, 1);
+    this.sparks(style, 5, 0.8, x, y, direction);
   }
 
   /** Riff's blocked blow: a ring in her energy, shards glancing back off the guard. */

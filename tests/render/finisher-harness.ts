@@ -93,6 +93,8 @@ export interface Shot {
   readonly bus: { readonly gain: number; readonly cutoff: number } | null;
   readonly landings: readonly unknown[][];
   readonly sounds: readonly string[];
+  /** The times the scene hushed the fight's words and stamps so far (its card's voice: P10). */
+  readonly hushes: number;
 }
 
 export interface Film {
@@ -303,6 +305,7 @@ export function film(route: Route, take: Take = {}): Film {
       bus: lastBus ? { gain: lastBus[0], cutoff: lastBus[1] } : null,
       landings: stand ? [...stand.feedback.finisherLanding.mock.calls] : [],
       sounds,
+      hushes: stand ? stand.feedback.hush.mock.calls.length : 0,
     });
     if (resultsDue(state) && !director.holdsResults()) results = frame;
     if (training && ko !== null && !director.isActive() && results === null) results = frame;

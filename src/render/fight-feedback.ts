@@ -36,7 +36,7 @@ import type { HitStyle } from './hit-styles';
 import { Onomatopoeia } from './onomatopoeia';
 import type { RenderMode } from './render-mode';
 import { SHAKE_STRENGTH, TRAUMA, type ShakeAxis } from './shake';
-import { boostStamp, STAMP_TEXTS, Stamps, type StampLook } from './stamps';
+import { boostStamp, counterLook, STAMP_TEXTS, Stamps, type StampLook } from './stamps';
 import { glowFlashArea, koVeil, superDim, superHalo, type VeilLook } from './veils';
 
 /**
@@ -52,10 +52,7 @@ const KO_SLOW_MOTION_SCALE = KO_SLOW_MOTION.ticks / KO_SLOW_MOTION.frames;
 
 /** The super's halo glows behind the body of the one who lets it go: this high over its feet. */
 const BODY_HEIGHT = 40;
-/**
- * A Boost stamp stands over the head of the one who spends (its feet + this, sub-pixels), above
- * the name of its move that training writes there (move-caption.ts), whoever spends.
- */
+/** A Boost stamp stands over the head of the one who spends (its feet + this, sub-pixels). */
 const HEAD_HEIGHT = px(60);
 
 /**
@@ -89,9 +86,15 @@ export interface FeedbackStage {
   readonly mode: RenderMode;
   /**
    * Tells the HUD how `player` fell, on the tick it falls (Hud.knockOut): `still`, its gauges
-   * break without their shards, the flash budget leaving no room for them.
+   * break without their shards, the flash budget leaving no room for them; `hits`, the tally its
+   * final blow counts (onomatopoeia.ts; 0 for the Finisher's, which its card says).
    */
-  readonly knockOut?: (player: 0 | 1, finish: KoFinish, still: boolean) => void;
+  readonly knockOut?: (player: 0 | 1, finish: KoFinish, still: boolean, hits: number) => void;
+  /**
+   * The highest view row the words may reach at the closest zoom (onomatopoeia.ts): under the
+   * HUD, or under training's line of move names (move-caption.ts).
+   */
+  readonly wordsTop?: number;
 }
 
 /** A blow of the tick, waiting for the others: the tick's blows light up together. */
@@ -132,6 +135,8 @@ export class FightFeedback {
   private readonly eclatAreas: readonly [number, number];
   private readonly budget: FlashBudget;
   private readonly blows: PendingBlow[] = [];
+  /** The round ended on this tick: once its blows land, the announcement speaks alone (P10). */
+  private ending = false;
   /** Frames of game time the KO's slow motion has left. */
   private slowMotionFrames = 0;
   /** Its ticks in whole ticks (`ticksFor`); anew at each KO. */
@@ -171,8 +176,8 @@ export class FightFeedback {
     this.blood = new Blood(scene, groundY, this.random);
     this.dust = new Dust(scene, groundY, this.random);
     this.graze = new Graze(scene, groundY, this.random);
-    this.words = new Onomatopoeia(scene, groundY, styles);
-    this.stamps = new Stamps(scene, groundY, styles);
+    this.words = new Onomatopoeia(scene, groundY, styles, stage.wordsTop);
+    this.stamps = new Stamps(scene, groundY, styles, stage.colors);
     this.setComfort(stage.comfort);
   }
 
@@ -218,9 +223,28 @@ export class FightFeedback {
 
   /**
    * Call after the events of each simulation tick: its blows light up, together (a trade is
-   * one flash or none, never two).
+   * one flash or none, never two). Then, on the tick a round ends, the words and stamps fade
+   * out: its announcement speaks alone (docs/polish/AUDIT-ET-PLAN.md, P10), but after the
+   * Finisher's KO, whose card hushes them as it comes (finisher-scene.ts).
    */
   endTick(): void {
+    this.landBlows();
+    if (!this.ending) return;
+    this.ending = false;
+    if (this.koFinish !== 'finale') this.hush();
+  }
+
+  /**
+   * The words and stamps on screen fade out over HUSH_FRAMES, those waiting never show: a round's
+   * announcement, or the Finisher's card, speaks alone (P10).
+   */
+  hush(): void {
+    this.words.hush();
+    this.stamps.hush();
+  }
+
+  /** The tick's blows light up, together. */
+  private landBlows(): void {
     const { blows, budget } = this;
     if (blows.length === 0) return;
     const calm = budget.mode !== 'normal';
@@ -267,7 +291,9 @@ export class FightFeedback {
         break;
       case 'grab':
         // Caught: the freeze and the victim's vibration say it, a PUNITION is stamped.
-        if (event.punish) this.stamp(STAMP_TEXTS.punish, event, viewLeft);
+        if (event.punish) {
+          this.stamp(STAMP_TEXTS.punish, event, viewLeft, counterLook('punish', event.freeze));
+        }
         sfx.play('grab');
         break;
       case 'tech':
@@ -348,6 +374,7 @@ export class FightFeedback {
         sfx.play('land');
         break;
       case 'phase':
+        if (event.phase === 'roundEnd') this.ending = true;
         if (event.phase === 'intro') {
           sfx.play('round');
           this.words.reset();
@@ -375,7 +402,8 @@ export class FightFeedback {
     // The Finisher's KO breaks the HUD on its landing, which its scene plays.
     if (ko && event.finish !== 'finale') {
       const breaks = lit || budget.admit(this.shatterOf(event.finish));
-      this.stage.knockOut?.(event.by === 0 ? 1 : 0, event.finish, !breaks);
+      const hits = this.words.countOf(event.by);
+      this.stage.knockOut?.(event.by === 0 ? 1 : 0, event.finish, !breaks, hits);
     }
     const sparks = lit || budget.admit(ask.mutedArea);
     // A super's blows before its last play a smaller spark and a small BOUM, the big ones kept
@@ -400,7 +428,8 @@ export class FightFeedback {
     if (event.counter) {
       const after = (word ?? MUTED_DELAY.word) + MUTED_DELAY.stamp - MUTED_DELAY.word;
       const stamp = lit ? 0 : budget.place(ask.later.stamp, after);
-      this.stamps.show(STAMP_TEXTS[event.counter], event, viewLeft, stamp, !lit);
+      const look = counterLook(event.counter, event.freeze);
+      this.stamps.show(STAMP_TEXTS[event.counter], event, viewLeft, stamp, !lit, look);
     }
     if (!ko) {
       if (heavy) {
@@ -525,7 +554,7 @@ export class FightFeedback {
     const { budget } = this;
     const loser = by === 0 ? 1 : 0;
     if (how.quiet) {
-      this.stage.knockOut?.(loser, 'finale', true);
+      this.stage.knockOut?.(loser, 'finale', true, 0);
       return;
     }
     const { energy } = this.styles[by];
@@ -533,7 +562,7 @@ export class FightFeedback {
     const shatter = this.shatterOf('finale');
     const lit = budget.mode !== 'off' && budget.request(eclat + shatter, true) === 'lit';
     const breaks = lit || budget.admit(shatter);
-    this.stage.knockOut?.(loser, 'finale', !breaks);
+    this.stage.knockOut?.(loser, 'finale', !breaks, 0);
     if (budget.mode !== 'off') {
       const veil = koVeil('finale', energy, this.stage.colors, budget.mode, lit);
       if (veil) this.effects.veil(veil, this.inWorld(x, 0), size);
@@ -555,14 +584,19 @@ export class FightFeedback {
     return { delay: budget.place(calmArea, 0), calm: true };
   }
 
-  /** A stamp that is not a blow's (the Boost's, the hold's): when the budget lets it. */
+  /**
+   * A stamp that is not a blow's (the Boost's, the hold's), in `look` (a punishing grab's
+   * PUNITION: its frame): when the budget lets it.
+   */
   private stamp(
     text: string,
     at: { readonly by: 0 | 1; readonly x: number; readonly y: number },
     viewLeft: number,
+    look: StampLook = {},
   ): void {
-    const { delay, calm } = this.alone(stampArea(this.stamps.calm), stampArea(true));
-    this.stamps.show(text, at, viewLeft, delay, calm);
+    const framed = look.frame !== undefined;
+    const { delay, calm } = this.alone(stampArea(this.stamps.calm, framed), stampArea(true));
+    this.stamps.show(text, at, viewLeft, delay, calm, look);
   }
 
   /** A blocked blow, or hands knocked away: the guard's spark, if it makes no flash. */

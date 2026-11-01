@@ -87,6 +87,7 @@ vi.mock('../../src/render/stamps', async (original) => ({
   ...(await original<typeof import('../../src/render/stamps')>()),
   Stamps: class {
     show = vi.fn();
+    hush = vi.fn();
     dismiss = vi.fn();
     setCloseUp = vi.fn();
     update = vi.fn();
@@ -110,6 +111,7 @@ vi.mock('../../src/render/onomatopoeia', async (original) => {
       }
       setCloseUp = vi.fn();
       reset = vi.fn();
+      hush = vi.fn();
       update = vi.fn();
       settle = vi.fn();
     },
