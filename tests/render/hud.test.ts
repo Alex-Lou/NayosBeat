@@ -276,3 +276,44 @@ describe('the FINISH plate on the HUD (docs/finisher.md §1.2, §5.8 test 12)', 
     });
   });
 });
+
+describe('the advantage in training (docs/polish/AUDIT-ET-PLAN.md, P19)', () => {
+  /** The HUD of a training session, and its texts. */
+  function trainingHud() {
+    const { scene, texts } = fakeScene();
+    const comfort = { flashes: true, motion: true };
+    const hud = new Hud(
+      scene,
+      { ...CONFIG, training: true },
+      [0x30e8ff, 0xff3ca0],
+      comfort,
+      new FlashBudget('normal'),
+    );
+    return { hud, texts };
+  }
+
+  it('writes the last exchange, its sign in words, green ahead and orange behind', () => {
+    const { hud, texts } = trainingHud();
+    hud.showAdvantage(-23);
+    const behind = texts.find((text) => text.text === 'Avantage : -23');
+    expect(behind?.style.color).toBe('#ffa04a');
+    hud.showAdvantage(2);
+    const ahead = texts.find((text) => text.text === 'Avantage : +2');
+    expect(ahead?.style.color).toBe('#7bea8a');
+  });
+
+  it('keeps it until the next exchange, and says nothing before the first', () => {
+    const { hud, texts } = trainingHud();
+    hud.showAdvantage(null);
+    expect(texts.some((text) => text.text.startsWith('Avantage'))).toBe(false);
+    hud.showAdvantage(-5);
+    hud.showAdvantage(null);
+    expect(texts.some((text) => text.text === 'Avantage : -5')).toBe(true);
+  });
+
+  it('shows nothing out of training', () => {
+    const { hud, texts } = hudOf('normal');
+    hud.showAdvantage(-23);
+    expect(texts.some((text) => text.text.startsWith('Avantage'))).toBe(false);
+  });
+});
