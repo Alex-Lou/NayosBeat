@@ -235,6 +235,12 @@ body {
   --text-tiny: 7px;
   --text-item: 12px;
 }
+/* « Taille du texte : grande » (src/app/comfort.ts). */
+#ui.large-text {
+  --text-small: 12px;
+  --text-tiny: 10px;
+  --text-item: 16px;
+}
 .menu {
   position: fixed;
   inset: 0;

@@ -145,6 +145,7 @@ describe('the options (docs/flashs.md §4)', () => {
       'Effets de flash : normaux',
       "Tremblement de l'écran : normal",
       'Mise en scène : complète',
+      'Taille du texte : normale',
       'Retour',
     ]);
     choose('Son');
@@ -175,6 +176,22 @@ describe('the options (docs/flashs.md §4)', () => {
     choose('Retour');
     expect(screen().title).toBe('NAYOSBEAT');
     expect(screen().items[screen().selected]).toBe('Options');
+  });
+
+  it("cycles « Taille du texte » in place, keeps it, and turns the menus' text up (P22)", () => {
+    const { press, screen, choose, kept, root } = launch({ 'nayosbeat.notice': 'seen' });
+    press('Enter');
+    choose('Options');
+    expect(root.classList.contains('large-text')).toBe(false);
+    choose('Taille du texte');
+    expect(screen().items[screen().selected]).toBe('Taille du texte : grande');
+    expect(kept.get('nayosbeat.text')).toBe('large');
+    expect(root.classList.contains('large-text')).toBe(true);
+    // The next launch reads it back, from the title on.
+    const again = launch({ 'nayosbeat.notice': 'seen', 'nayosbeat.text': 'large' });
+    expect(again.root.classList.contains('large-text')).toBe(true);
+    choose('Taille du texte');
+    expect(root.classList.contains('large-text')).toBe(false);
   });
 
   it('cycles « Mise en scène » in place and keeps it (docs/finisher.md §1.14)', () => {

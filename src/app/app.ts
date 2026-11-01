@@ -16,16 +16,20 @@ import {
   isCalm,
   isStill,
   loadComfort,
+  loadTextSize,
   markNoticeSeen,
   nextMode,
   nextStaging,
   NOTICE,
   noticeSeen,
   saveComfort,
+  saveTextSize,
   SHAKE_LABELS,
   STAGING_LABELS,
+  TEXT_LABELS,
   watchReducedMotion,
   type Comfort,
+  type TextSize,
 } from './comfort';
 import { controlsContent, currentDevices, helpPages } from './controls-content';
 import { installMethod, onInstallChange, promptInstall } from './install';
@@ -94,6 +98,8 @@ export class App {
   private comfort: Comfort = loadComfort();
   /** What the player chose this session: it holds even where the storage refuses it. */
   private chosen: Partial<Comfort> = {};
+  /** « Taille du texte »: the menus' only (src/app/comfort.ts). */
+  private textSize: TextSize = loadTextSize();
   /**
    * The fighters whose Finisher this session has played already: from the second one on, its
    * scene plays short (docs/finisher.md §1.14). The fights note it.
@@ -264,7 +270,7 @@ export class App {
 
   /**
    * The « Options » screen: the sound, « Effets de flash », « Tremblement de l'écran », « Mise en
-   * scène », each cycled in place (the screen comes back with it still selected), kept at once
+   * scène », « Taille du texte », each cycled in place (the screen comes back with it still selected), kept at once
    * and applied at once, to a fight under the pause menu too (`paused`). `back`: where « Retour »
    * goes.
    */
@@ -305,7 +311,17 @@ export class App {
         again(scene);
       },
     };
-    items.push(sound, flash, tremble, scene, { label: 'Retour', onSelect: back });
+    const text: MenuItem = {
+      label: `Taille du texte : ${TEXT_LABELS[this.textSize].label}`,
+      hint: TEXT_LABELS[this.textSize].hint,
+      onSelect: () => {
+        this.textSize = this.textSize === 'normal' ? 'large' : 'normal';
+        saveTextSize(this.textSize);
+        this.applyComfortClasses();
+        again(text);
+      },
+    };
+    items.push(sound, flash, tremble, scene, text, { label: 'Retour', onSelect: back });
     this.showMenu({ title: 'Options', overlay: paused, items, onBack: back, initialIndex });
   }
 
@@ -325,7 +341,8 @@ export class App {
 
   /**
    * The menus' own animations (styles.css): `calm`, nothing blinks or glows on and off (the
-   * prompt, the frame of the tile chosen); `still`, nothing turns (the title's vinyl).
+   * prompt, the frame of the tile chosen); `still`, nothing turns (the title's vinyl). And their
+   * text, `large-text` (« Taille du texte »).
    */
   private applyComfortClasses(): void {
     const set = (name: string, on: boolean) => {
@@ -334,6 +351,7 @@ export class App {
     };
     set('calm', isCalm(this.comfort));
     set('still', isStill(this.comfort));
+    set('large-text', this.textSize === 'large');
   }
 
   /**

@@ -134,6 +134,27 @@ export function saveComfort(changed: Partial<Comfort>): void {
   if (changed.staging) write(KEYS.staging, changed.staging);
 }
 
+/**
+ * « Taille du texte » (docs/polish/AUDIT-ET-PLAN.md, P22): the menus' text as drawn, or bigger
+ * (8, 7 and 12 px become 12, 10 and 16, styles.css). The menus only: the fight's HUD keeps its
+ * pixel grid. Kept apart from the comfort of the fight, which never reads it.
+ */
+export type TextSize = 'normal' | 'large';
+export const TEXT_LABELS: Readonly<Record<TextSize, { label: string; hint: string }>> = {
+  normal: { label: 'normale', hint: 'Le texte des menus tel quel' },
+  large: { label: 'grande', hint: 'Le texte des menus plus gros' },
+};
+const TEXT_KEY = 'nayosbeat.text';
+
+/** What was stored, the size as drawn otherwise (or unreadable). */
+export function loadTextSize(): TextSize {
+  return read(TEXT_KEY) === 'large' ? 'large' : 'normal';
+}
+
+export function saveTextSize(size: TextSize): void {
+  write(TEXT_KEY, size);
+}
+
 /** Whether the notice of the first launch was read already. */
 export function noticeSeen(): boolean {
   return read(NOTICE_KEY) === 'seen';

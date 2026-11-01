@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   comfortOf,
+  loadTextSize,
+  saveTextSize,
   FLASH_LABELS,
   hudComfortOf,
   loadComfort,
@@ -71,6 +73,21 @@ describe("the player's comfort options (docs/flashs.md §4)", () => {
     }).not.toThrow();
     expect(loadComfort()).toEqual({ flashes: 'normal', shake: 'normal', staging: 'full' });
     expect(noticeSeen()).toBe(false);
+  });
+
+  it('reads « Taille du texte » back, the size as drawn when unknown or unreadable (P22)', () => {
+    const kept = storage();
+    expect(loadTextSize()).toBe('normal');
+    saveTextSize('large');
+    expect(kept.get('nayosbeat.text')).toBe('large');
+    expect(loadTextSize()).toBe('large');
+    kept.set('nayosbeat.text', 'huge');
+    expect(loadTextSize()).toBe('normal');
+    storage(true);
+    expect(() => {
+      saveTextSize('large');
+    }).not.toThrow();
+    expect(loadTextSize()).toBe('normal');
   });
 
   it('remembers the notice of the first launch', () => {
