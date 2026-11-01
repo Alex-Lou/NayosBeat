@@ -50,13 +50,13 @@ Elle parle vite, trop, et rit au milieu de ses phrases. Elle chambre. Elle tutoi
 
 Elle salue d'abord.
 
-Au-dessus du bal du samedi, il y avait une salle de boxe française. En bas, l'orchestre jouait du swing. En haut, le plancher tremblait avec lui : le temps long, puis le court. Elle a fini par frapper comme on danse.
+Personne ne connaît son visage. Son masque a deux profils de saphir : l'un regarde l'adversaire, l'autre regarde la salle, et aucun des deux ne cligne.
 
-Elle y a appris la politesse des pieds. On touche. On salue. On s'en va.
+Elle n'apparaît que les nuits où le son est bon, et repart avant la fin du dernier set. Sur le circuit, on dit qu'elle n'a jamais perdu un échange de pieds, qu'elle danse la savate comme on pose un disque : sur le temps faible. On dit aussi que ce n'est pas toujours la même voix sous le masque, ni la même main qui salue. Personne ne l'a jamais vue arriver. Personne ne l'a jamais vue repartir avec quelqu'un.
 
-Quarante ans derrière le comptoir d'une boutique de disques. On l'appelle Saphir, comme les pointes de lecture qu'elle vendait à l'unité, dans une boîte en fer. La boutique a fermé. Un soir, les basses du tournoi ont traversé sa rue. Elle les a suivies, en talons plats.
+On l'appelle Saphir, comme la pointe qui lit le sillon. Elle te lit avant que tu bouges.
 
-Tailleur-pantalon crème, chemisier vert bouteille, chaussures bicolores cirées, cheveux blancs coupés court. Et le chapeau de feutre à ruban vert, celui du comptoir. Elle ne l'enlève que pour saluer. Après le combat.
+Veste courte ivoire à col montant, ceinture saphir, pantalon large où des ondes noires tournent quand elle tourne, gants noirs, chaussures bicolores de savate. Le masque ne tombe jamais. Pas même pour saluer.
 
 Elle ne charge pas, elle invite. Un pas sur le temps long, le pied qui claque sur le court, et elle est déjà repartie : la SYNCOPE. Tu frappes dans le vide, elle te le fait payer de loin, en retard exprès : RUBATO. Tu sautes, elle monte plus haut que toi : CONTRE-UT. Et quand elle veut finir, l'orchestre lui revient. Un pied bas, un fouetté, un revers. DOU. BI. DOUM. La CODA.
 
@@ -135,7 +135,7 @@ L'homme de la cabine hoche la tête. Il lèvera les bras au DROP. Personne ne sa
    Riff : « J'avais pas fini. »
 
 10. **Saphir**
-   Une rue mouillée, les basses qui passent sous une porte de fer. Plan serré sur des chaussures bicolores qui descendent l'escalier, sans se presser. En bas, elle ajuste son chapeau d'un doigt, salue la salle d'un signe de tête, et tombe en garde sur le temps long.
+   Une rue mouillée, les basses qui passent sous une porte de fer. Plan serré sur des chaussures bicolores qui descendent l'escalier, sans se presser. En bas, elle s'incline vers la salle. Quand elle se redresse, on ne sait plus quel profil regarde où. Elle tombe en garde sur le temps long.
    *Son* : le craquement d'un disque avant la musique, puis une contrebasse qui marche.
    Saphir : « Approchez. Je ne mords pas. »
 
@@ -146,13 +146,13 @@ L'homme de la cabine hoche la tête. Il lèvera les bras au DROP. Personne ne sa
    Nayo : « Je compte quand même. »
 
 12. **Saphir et Riff**
-   Riff tourne autour d'elle en toprock. Saphir ne bouge que la tête, et la suit des yeux sous le bord du chapeau.
+   Riff tourne autour d'elle en toprock. Saphir ne bouge pas. Quand Riff passe derrière elle, l'autre profil la regarde déjà.
    *Son* : un accord saturé ; une note de contrebasse, une seule.
-   Riff : « Tu danses, mamie ? »
+   Riff : « Tu danses, ou tu poses ? »
    Saphir : « Je mène, mademoiselle. »
 
 13. **Si Saphir gagne : la face B**
-   Le noir s'ouvre en vert : DOU, BI, DOUM. L'image se fige, plus un bruit. Puis, sur le temps court, toute la salle repart sur un autre morceau. Saphir soulève son chapeau vers l'adversaire, au sol, et le remet.
+   Le noir s'ouvre en vert : DOU, BI, DOUM. L'image se fige, plus un bruit. Puis, sur le temps court, toute la salle repart sur un autre morceau. Saphir s'incline vers l'adversaire, au sol. Le profil du dos, lui, regarde la salle.
    *Son* : un disque qui s'arrête net ; un temps de silence ; la face B, qui swingue.
    Saphir : « Merci pour la danse. »
 
