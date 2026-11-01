@@ -10,7 +10,8 @@ import type { RenderMode } from '../render/render-mode';
 import { DEFAULT_SILHOUETTE, type SilhouetteLook } from '../render/silhouette';
 import { controlsStore } from '../input/controls-store';
 import { isTouchDevice } from '../input/touch-controls';
-import { BindingsScreen } from '../ui/bindings-screen';
+import { BindingsScreen, type BindingsTab } from '../ui/bindings-screen';
+import { TouchLayoutEditor } from '../ui/touch-layout-editor';
 import { FightCard } from '../ui/fight-card';
 import { FighterSelect } from '../ui/fighter-select';
 import { element, Menu, type MenuFeedback, type MenuItem, type MenuOptions } from '../ui/menu';
@@ -333,7 +334,7 @@ export class App {
     };
     const keys: MenuItem = {
       label: 'Touches',
-      hint: 'Changer les touches du clavier et de la manette',
+      hint: 'Clavier, manette et boutons tactiles',
       onSelect: () => {
         this.showBindings(paused, () => {
           this.showOptions(paused, back, items.indexOf(keys));
@@ -345,15 +346,32 @@ export class App {
   }
 
   /**
-   * The « Touches » screen (src/ui/bindings-screen.ts): each player's keyboard and gamepad. What
-   * is changed is kept at once, and a fight under the pause takes it as it resumes.
+   * The « Touches » screen (src/ui/bindings-screen.ts): each player's keyboard and gamepad, and on
+   * a touch screen player 1's buttons, its first tab there. What is changed is kept at once, and a
+   * fight under the pause takes it as it resumes.
    */
-  private showBindings(paused: boolean, back: () => void): void {
+  private showBindings(paused: boolean, back: () => void, tab?: BindingsTab): void {
+    const touch = isTouchDevice();
+    const tabs: BindingsTab[] = touch
+      ? ['touch', 'keys1', 'keys2', 'pad1', 'pad2']
+      : ['keys1', 'keys2', 'pad1', 'pad2'];
     this.show(
       new BindingsScreen(this.root, {
-        tabs: ['keys1', 'keys2', 'pad1', 'pad2'],
+        tabs,
+        ...(tab ? { initialTab: tab } : {}),
         overlay: paused,
         onBack: back,
+        onTouchLayout: () => {
+          this.show(
+            new TouchLayoutEditor(this.root, {
+              overlay: paused,
+              feedback: this.menuFeedback,
+              onBack: () => {
+                this.showBindings(paused, back, 'touch');
+              },
+            }),
+          );
+        },
         feedback: this.menuFeedback,
       }),
     );

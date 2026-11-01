@@ -827,6 +827,101 @@ body {
 .bindings-status.refused {
   color: #ff9a8a;
 }
+/*
+ * « Disposition » (src/ui/touch-layout-editor.ts): the touch buttons where the fight puts them,
+ * moved with a finger, the menu on the left half. The dashed frame is where they may go: the
+ * buttons' zone of the fight, under the pause button's corner (touch-layout.ts, TOP_CLEARANCE_PX).
+ */
+.touch-editor-zone {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  right: env(safe-area-inset-right, 0px);
+  bottom: env(safe-area-inset-bottom, 0px);
+  z-index: 6;
+  touch-action: none;
+  cursor: grab;
+}
+.touch-editor-zone::before {
+  content: '';
+  position: absolute;
+  inset: 56px 0 0;
+  border: 1px dashed rgba(255, 255, 255, 0.25);
+  pointer-events: none;
+}
+.touch-editor-zone .touch-button {
+  font-family: 'Press Start 2P', monospace;
+}
+/* The button the menu sizes: outlined, steady. */
+.touch-button.chosen {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+}
+.touch-editor .menu {
+  justify-content: flex-start;
+}
+.touch-editor .menu-panel {
+  width: calc((50vw - 32px) / var(--ui-scale, 1));
+  margin: auto 0;
+}
+/* Six choices on a phone's 375 px: compact, still 40 px tall under the thumb. */
+.touch-editor .menu-title {
+  font-size: 16px;
+}
+.touch-editor .menu-items {
+  gap: 6px;
+  margin: 8px 0;
+}
+.touch-editor .menu-item {
+  min-height: 40px;
+  padding: 8px 12px;
+}
+@media (pointer: coarse) {
+  /* Beside « Retour » (112 px from the screen's edge), in the top-left corner. */
+  .touch-editor .menu-title {
+    margin: 0 0 20px 108px;
+    text-align: left;
+  }
+}
+/* The touch tab's three choices share the row. */
+.bindings-cells.cells-touch {
+  grid-template-columns: repeat(3, 1fr);
+}
+/* The touch tab's picture: an iPhone SE held sideways (667 × 375), shrunk to 300 px wide. */
+.touch-mini {
+  position: relative;
+  width: 300px;
+  height: 168.6px;
+  margin: 0 auto;
+  overflow: hidden;
+  border: 2px solid #3a3a5c;
+  border-radius: 10px;
+  background: #0b0b16;
+}
+.touch-mini-screen {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 667px;
+  height: 375px;
+  transform: scale(0.4498);
+  transform-origin: 0 0;
+}
+.touch-mini-zone {
+  position: absolute;
+  inset: 0 0 0 50%;
+}
+.touch-mini-stick {
+  position: absolute;
+  left: 62px;
+  bottom: 42px;
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  border: 2px solid rgba(255, 255, 255, 0.18);
+  box-sizing: border-box;
+}
 /* The character select screen (src/ui/fighter-select.ts): the fighter under the frame, in
    guard, beside the tiles. Sized from the screen's height, so it fits a phone held sideways. */
 .select {

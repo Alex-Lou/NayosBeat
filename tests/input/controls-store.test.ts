@@ -15,6 +15,7 @@ import {
   type Controls,
 } from '../../src/input/controls-store';
 import { PadButton } from '../../src/input/gamepad-buttons';
+import { DEFAULT_TOUCH_LAYOUT } from '../../src/input/touch-layout';
 
 /** Player 2 lights on B, player 1 jumps on LT: a stored set of controls. */
 function custom(): Controls {
@@ -22,7 +23,7 @@ function custom(): Controls {
   if (!keys.ok) throw new Error('refused');
   const pad = assignButton(keys.bindings, 0, 'jump', PadButton.LeftTrigger);
   if (!pad.ok) throw new Error('refused');
-  return { bindings: pad.bindings };
+  return { ...DEFAULT_CONTROLS, bindings: pad.bindings };
 }
 
 /** The stored JSON, with `change` applied to it. */
@@ -52,6 +53,17 @@ describe('the stored controls, `nayosbeat.keys.v1` (P24: parse, don’t validate
   it('read back what was kept', () => {
     expect(parseControls(serializeControls(custom()))).toEqual(custom());
     expect(JSON.parse(serializeControls(custom()))).toMatchObject({ version: 1 });
+  });
+
+  it('keep the touch layout with the keys, and a store without one plays the default cluster', () => {
+    const touch = { ...DEFAULT_TOUCH_LAYOUT, size: 90, opacity: 70 };
+    const controls = { ...custom(), touch };
+    expect(parseControls(serializeControls(controls))).toEqual(controls);
+    const without = stored((value) => {
+      delete value['touch'];
+    });
+    expect(parseControls(without)).toEqual(custom());
+    expect(parseControls(without).touch).toEqual(DEFAULT_TOUCH_LAYOUT);
   });
 
   it('play with the defaults when nothing, or something unreadable, is stored', () => {

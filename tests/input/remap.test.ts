@@ -35,7 +35,7 @@ function store(bindings?: Bindings): ControlsStore {
     setItem: (name: string, value: string) => kept.set(name, value),
   });
   const controls = new ControlsStore();
-  if (bindings) controls.set({ bindings });
+  if (bindings) controls.set({ ...DEFAULT_CONTROLS, bindings });
   return controls;
 }
 
@@ -83,7 +83,7 @@ describe('a remapped key in a fight (P24)', () => {
     const controls = store();
     const target = new EventTarget();
     const inputs = new PlayerInputs(target as unknown as Window, undefined, [], controls);
-    controls.set({ bindings: remapped() });
+    controls.set({ ...DEFAULT_CONTROLS, bindings: remapped() });
     inputs.reset([]);
     target.dispatchEvent(key('keydown', 'KeyB'));
     expect(inputs.read([])[1]).toBe(Input.Light);

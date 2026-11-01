@@ -104,3 +104,19 @@ export function resetRefusedText(player: 0 | 1): string {
 
 export const NOT_STANDARD_TEXT =
   "Une manette n'a pas la disposition standard : ses boutons peuvent différer du dessin";
+
+/** The touch tab and « Disposition » (player 1's touch buttons). */
+export const TOUCH_TEXTS = {
+  idle: 'Disposition : place les boutons au doigt, change leur taille et leur opacité',
+  fixed: 'Le joystick reste sous le pouce gauche, sur la moitié gauche',
+  reset: 'Boutons tactiles remis par défaut',
+  layout: 'Disposition',
+  title: 'Disposition',
+  drag: 'Glisse un bouton pour le déplacer',
+  overlap: 'Deux boutons ne peuvent pas se chevaucher : il revient à sa place',
+  noRoom: 'Plus grand, il ne tient pas sur cet écran',
+} as const;
+
+export function movedText(label: string): string {
+  return `${label} déplacé`;
+}

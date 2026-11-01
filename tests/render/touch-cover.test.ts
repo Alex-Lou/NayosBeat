@@ -3,7 +3,13 @@ import type { MatchConfig, TrainingStart } from '../../src/core/config';
 import { toPx } from '../../src/core/constants';
 import { createInitialState, type GameState } from '../../src/core/state';
 import { COVER_HOLD_MS, TouchControls } from '../../src/input/touch-controls';
-import { TOUCH_BUTTONS } from '../../src/input/touch-layout';
+import { ControlsStore, DEFAULT_CONTROLS } from '../../src/input/controls-store';
+import {
+  DEFAULT_TOUCH_LAYOUT,
+  placedButtons,
+  TOUCH_BUTTONS,
+  type TouchLayout,
+} from '../../src/input/touch-layout';
 import { frameAround, MAX_CLOSE_UP, type Framing } from '../../src/render/camera-framing';
 import { GROUND_Y } from '../../src/render/greybox-stage';
 import { bodyOnScreen, onPage, TouchCover } from '../../src/render/touch-cover';
@@ -151,5 +157,88 @@ describe('touch buttons over a fighter, each on its own (docs/polish/AUDIT-ET-PL
     const before = page.window.listenerCount;
     cover.dispose();
     expect(page.window.listenerCount).toBe(before - 1);
+  });
+});
+
+describe('touch buttons moved by the player still fade over a fighter (P21 with P24)', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  /** H and SAUT swapped: SAUT where H was, over Riff at the start; H in SAUT's corner. */
+  const SWAPPED: TouchLayout = {
+    ...DEFAULT_TOUCH_LAYOUT,
+    buttons: {
+      ...DEFAULT_TOUCH_LAYOUT.buttons,
+      heavy: { right: 52, bottom: 52, size: 100 },
+      jump: { right: 126, bottom: 52, size: 100 },
+    },
+  };
+
+  /** A 667×375 phone, its buttons where `layout` puts them, the page measuring them there. */
+  function phone(layout: TouchLayout) {
+    const page = installFakePage();
+    const kept = new Map<string, string>();
+    vi.stubGlobal('localStorage', {
+      getItem: (name: string) => kept.get(name) ?? null,
+      setItem: (name: string, value: string) => kept.set(name, value),
+    });
+    const store = new ControlsStore();
+    store.set({ ...DEFAULT_CONTROLS, touch: layout });
+    const touch = new TouchControls(
+      page.body as unknown as HTMLElement,
+      undefined,
+      undefined,
+      store,
+    );
+    const zone = page.body.children[0]?.children[2];
+    if (!zone) throw new Error('Button zone missing');
+    /** Where the page shows each button, as `TouchControls` placed it. */
+    const lay = (shown: TouchLayout) => {
+      placedButtons(shown).forEach((spec, index) => {
+        const button = zone.children[index];
+        if (!button) return;
+        const [x, y, r] = [667 - spec.right, 375 - spec.bottom, spec.diameter / 2];
+        button.rect = { left: x - r, top: y - r, right: x + r, bottom: y + r };
+      });
+    };
+    lay(layout);
+    const canvas = document.createElement('canvas') as unknown as FakeElement;
+    canvas.rect = { left: 0, top: 0, right: 667, bottom: 375 };
+    const cover = new TouchCover(canvas as unknown as HTMLElement, touch, TRAINING, GROUND_Y);
+    const show = (now: number) => {
+      const state = createInitialState({ ...TRAINING, trainingStart: 'center' });
+      const [a, b] = state.fighters;
+      const viewLeft = toPx(state.cameraX) - VIEW_SIZE.width / 2;
+      const framing = frameAround((toPx(a.x) + toPx(b.x)) / 2, MAX_CLOSE_UP, viewLeft, GROUND_Y);
+      cover.update(state, framing, now);
+    };
+    const faded = () =>
+      TOUCH_BUTTONS.filter((_, index) => zone.children[index]?.classList.contains('covered')).map(
+        (spec) => spec.label,
+      );
+    return { store, touch, lay, show, faded };
+  }
+
+  it('fade where the player put them, not where they were', () => {
+    const { show, faded } = phone(SWAPPED);
+    show(0);
+    expect(faded()).toContain('SAUT');
+    expect(faded()).not.toContain('H');
+  });
+
+  it('measure the buttons again when they move under the pause', () => {
+    const { store, touch, lay, show, faded } = phone(DEFAULT_TOUCH_LAYOUT);
+    const measure = vi.spyOn(touch, 'buttonCircles');
+    show(0);
+    show(1);
+    expect(measure).toHaveBeenCalledOnce();
+    expect(faded()).toContain('H');
+    store.set({ ...DEFAULT_CONTROLS, touch: SWAPPED });
+    lay(SWAPPED);
+    show(2 * COVER_HOLD_MS);
+    expect(measure).toHaveBeenCalledTimes(2);
+    expect(faded()).toContain('SAUT');
+    expect(faded()).not.toContain('H');
   });
 });

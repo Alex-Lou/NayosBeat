@@ -2,7 +2,15 @@ import type { FinisherState } from '../core/finisher';
 import { has, Input, type InputBits } from '../core/input';
 import { BOOST_BAR, BOOST_MAX } from '../core/rules';
 import type { Facing, FighterAction } from '../core/state';
-import { nearestButton, TOUCH_BUTTONS } from './touch-layout';
+import { controlsStore, type ControlsStore } from './controls-store';
+import {
+  BOOST_RING_PX,
+  nearestButton,
+  placedButtons,
+  TOUCH_BUTTONS,
+  type TouchButton,
+  type TouchLayout,
+} from './touch-layout';
 import { bitsFromStick, finisherBack, followFinger, type Point } from './touch-stick';
 
 /** How far the knob goes from the stick center; beyond it, the center follows the thumb. */
@@ -22,8 +30,6 @@ const RING_STEPS = 20;
  * apart at least, never a flicker, and a fighter dancing at a button's edge keeps it faded.
  */
 export const COVER_HOLD_MS = 1000;
-/** The ring of the BOOST button, past its edge (styles.css, `.touch-boost::before`, inset -6px). */
-const BOOST_RING_PX = 6;
 
 /** A round button on the page, in CSS pixels. */
 export interface ButtonCircle {
@@ -52,6 +58,11 @@ export class TouchControls {
   private stickGhost: HTMLDivElement | undefined;
   private readonly buttonZone: HTMLDivElement;
   private readonly buttons: readonly HTMLDivElement[];
+  /** The buttons where the player's layout puts them (`placedButtons`): drawn and touched. */
+  private placed: readonly TouchButton[];
+  /** Counts the layouts taken: what measured the buttons measures them again when it moves. */
+  private layoutCount = 0;
+  private readonly unsubscribe: () => void;
 
   private stickPointer: number | null = null;
   /** The stick's center and the thumb on it, updated in place as the thumb moves. */
@@ -83,11 +94,13 @@ export class TouchControls {
   /**
    * @param onFirstTouch Called once, from inside a user gesture (e.g. to go fullscreen).
    * @param energy Player 1's energy color: the special button wears it.
+   * @param store The player's layout (« Disposition »): changed under the pause, it applies at once.
    */
   constructor(
     parent: HTMLElement,
     private onFirstTouch: (() => void) | undefined,
     energy?: number,
+    store: ControlsStore = controlsStore,
   ) {
     this.root = createDiv('touch-controls');
     const stickZone = createDiv('touch-stick-zone');
@@ -98,15 +111,10 @@ export class TouchControls {
     this.stickGhost = createDiv('touch-stick-ghost');
     stickZone.appendChild(this.stickGhost);
     this.buttonZone = createDiv('touch-button-zone');
+    this.placed = TOUCH_BUTTONS;
     this.buttons = TOUCH_BUTTONS.map((spec) => {
       const button = createDiv(`touch-button ${spec.className}`);
       button.textContent = spec.label;
-      // The layout is data: placed from its numbers, nothing duplicated in the stylesheet.
-      button.style.right = `${spec.right - spec.diameter / 2}px`;
-      button.style.bottom = `${spec.bottom - spec.diameter / 2}px`;
-      button.style.width = `${spec.diameter}px`;
-      button.style.height = `${spec.diameter}px`;
-      button.style.fontSize = `${spec.fontSize}px`;
       if (energy !== undefined && spec.flag === Input.Special) {
         // Its ring and its letter: the stylesheet's cyan is Nayo's, never Riff's magenta.
         const color = `#${energy.toString(16).padStart(6, '0')}`;
@@ -121,6 +129,10 @@ export class TouchControls {
     });
     this.boostButton = this.buttons[TOUCH_BUTTONS.findIndex((spec) => spec.flag === Input.Boost)];
     this.buttonZone.append(...this.buttons);
+    this.applyLayout(store.get().touch);
+    this.unsubscribe = store.subscribe(({ touch }) => {
+      this.applyLayout(touch);
+    });
     this.root.append(stickZone, this.stickBase, this.buttonZone);
 
     this.root.addEventListener('contextmenu', preventDefault);
@@ -216,6 +228,25 @@ export class TouchControls {
     this.finisher = ready;
   }
 
+  /**
+   * Places the buttons where `layout` puts them, and the cluster's opacity: the layout is data,
+   * nothing of it duplicated in the stylesheet.
+   */
+  private applyLayout(layout: TouchLayout): void {
+    this.placed = placedButtons(layout);
+    this.placed.forEach((spec, index) => {
+      const button = this.buttons[index];
+      if (button) placeButton(button, spec);
+    });
+    this.buttonZone.style.opacity = layout.opacity === 100 ? '' : String(layout.opacity / 100);
+    this.layoutCount++;
+  }
+
+  /** Changes each time the buttons move (`buttonCircles` measures them anew). */
+  get layoutVersion(): number {
+    return this.layoutCount;
+  }
+
   /** Where each button is on the page (TOUCH_BUTTONS' order), round, BOOST with its ring. */
   buttonCircles(): ButtonCircle[] {
     return this.buttons.map((button, index) => {
@@ -248,6 +279,7 @@ export class TouchControls {
 
   /** Removing the elements also drops every listener attached to them. */
   dispose(): void {
+    this.unsubscribe();
     this.root.remove();
     this.buttonPointers.clear();
   }
@@ -299,7 +331,11 @@ export class TouchControls {
   private readonly onButtonDown = (event: PointerEvent): void => {
     // The layout is measured from the safe area's bottom-right corner, which the zone hugs.
     const zone = this.buttonZone.getBoundingClientRect();
-    const index = nearestButton(zone.right - event.clientX, zone.bottom - event.clientY);
+    const index = nearestButton(
+      zone.right - event.clientX,
+      zone.bottom - event.clientY,
+      this.placed,
+    );
     const flag = TOUCH_BUTTONS[index]?.flag;
     if (flag === undefined) return;
     this.buttonZone.setPointerCapture(event.pointerId);
@@ -336,6 +372,15 @@ export class TouchControls {
     const scale = length > KNOB_TRAVEL_PX ? KNOB_TRAVEL_PX / length : 1;
     this.stickKnob.style.transform = `translate(${dx * scale}px, ${dy * scale}px)`;
   }
+}
+
+/** A touch button's place and size on the page, from the corner of its zone. */
+export function placeButton(button: HTMLElement, spec: TouchButton): void {
+  button.style.right = `${spec.right - spec.diameter / 2}px`;
+  button.style.bottom = `${spec.bottom - spec.diameter / 2}px`;
+  button.style.width = `${spec.diameter}px`;
+  button.style.height = `${spec.diameter}px`;
+  button.style.fontSize = `${spec.fontSize}px`;
 }
 
 function toggle(element: HTMLElement, className: string, on: boolean): void {

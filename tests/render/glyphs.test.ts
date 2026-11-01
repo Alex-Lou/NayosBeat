@@ -21,6 +21,7 @@ import { KEY_NAMES } from '../../src/input/key-names';
 import * as bindingsText from '../../src/ui/bindings-text';
 import { TAB_LABELS } from '../../src/ui/bindings-screen';
 import { DRAWN_KEYS } from '../../src/ui/keyboard-drawing';
+import { TOUCH_BUTTONS } from '../../src/input/touch-layout';
 
 /**
  * Canvas text is drawn once, in its font, without a fallback that would show (docs/combat-v2.md
@@ -176,6 +177,8 @@ describe('glyphs', () => {
       resetText,
       RETRY_TEXT,
       TIMEOUT_TEXT,
+      TOUCH_TEXTS,
+      movedText,
     } = bindingsText;
     const keys = Object.values(KEY_NAMES).flatMap(({ name, cap }) => [name, cap]);
     const buttons = ASSIGNABLE_BUTTONS.map((button) => padButtonName(button));
@@ -214,6 +217,17 @@ describe('glyphs', () => {
       resetRefusedText(0),
       resetRefusedText(1),
       ...DRAWN_KEYS.flatMap(({ cap }) => (cap === undefined ? [] : [cap])),
+      // « Disposition », its notes and its choices (touch-layout-editor.ts).
+      ...Object.values(TOUCH_TEXTS),
+      ...TOUCH_BUTTONS.flatMap(({ label }) => [
+        movedText(label),
+        `Bouton : ${label}`,
+        `Taille de ${label} : 130 %`,
+      ]),
+      'Taille : 120 %',
+      'Opacité : 40 %',
+      'Touche Disposition pour placer les boutons',
+      'Touche une action, puis sa nouvelle touche',
     ];
     // ← and → are drawn as a turned ↑ (keyboard-drawing.ts, appendText).
     const shown = [...texts, ...Object.values(ACTION_TAGS)].map((text) =>

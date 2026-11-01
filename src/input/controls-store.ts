@@ -1,4 +1,5 @@
 import { DEFAULT_BINDINGS, isRecord, parseKeyboards, parsePads, type Bindings } from './bindings';
+import { DEFAULT_TOUCH_LAYOUT, parseTouchLayout, type TouchLayout } from './touch-layout';
 
 /**
  * The player's controls, kept in the page's storage under one versioned key
@@ -7,20 +8,28 @@ import { DEFAULT_BINDINGS, isRecord, parseKeyboards, parsePads, type Bindings } 
  *
  *   { "version": 1,
  *     "keyboard": [{ "up": ["KeyW"], ... }, { ... }],   // player 1, player 2: codes per action
- *     "pad": [{ "jump": 0, ... }, { ... }] }            // standard-mapping button per action
+ *     "pad": [{ "jump": 0, ... }, { ... }],             // standard-mapping button per action
+ *     "touch": { "size": 100, "opacity": 100,           // player 1's touch cluster, in percent
+ *                "buttons": { "light": { "right": 200, "bottom": 52, "size": 100 }, ... } } }
  */
 export const CONTROLS_KEY = 'nayosbeat.keys.v1';
 export const CONTROLS_VERSION = 1;
 
 export interface Controls {
   readonly bindings: Bindings;
+  /** Player 1's touch buttons (« Disposition »). */
+  readonly touch: TouchLayout;
 }
 
-export const DEFAULT_CONTROLS: Controls = { bindings: DEFAULT_BINDINGS };
+export const DEFAULT_CONTROLS: Controls = {
+  bindings: DEFAULT_BINDINGS,
+  touch: DEFAULT_TOUCH_LAYOUT,
+};
 
 /**
  * What was stored, checked once as it is read: each player's keyboard and gamepad on its own,
- * what is missing, corrupt, of another version, or in conflict going back to its default. Never
+ * and the touch layout, what is missing, corrupt, of another version, or in conflict going back
+ * to its default. Never
  * throws: a broken storage plays with the default controls. Pure.
  */
 export function parseControls(raw: string | null): Controls {
@@ -34,12 +43,13 @@ export function parseControls(raw: string | null): Controls {
   if (!isRecord(value) || value['version'] !== CONTROLS_VERSION) return DEFAULT_CONTROLS;
   return {
     bindings: { keyboard: parseKeyboards(value['keyboard']), pad: parsePads(value['pad']) },
+    touch: parseTouchLayout(value['touch']),
   };
 }
 
 export function serializeControls(controls: Controls): string {
   const { keyboard, pad } = controls.bindings;
-  return JSON.stringify({ version: CONTROLS_VERSION, keyboard, pad });
+  return JSON.stringify({ version: CONTROLS_VERSION, keyboard, pad, touch: controls.touch });
 }
 
 /**

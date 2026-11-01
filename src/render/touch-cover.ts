@@ -87,11 +87,14 @@ function intersection(a: Rect, b: Rect): Rect {
  * L35), each on its own: on a 16:9 phone the cluster covers the right of the fight, and a fighter
  * there vanished under the thumbs; the buttons over nobody stay as they are. Where the canvas and
  * the buttons are on the page is measured once, and again after every resize (a turn,
- * fullscreen); the fighters, on every frame.
+ * fullscreen) and every new layout of the buttons (« Disposition », moved under the pause): the
+ * player's own places, not the defaults. The fighters, on every frame.
  */
 export class TouchCover {
   private canvasRect: Rect | undefined;
   private buttons: readonly ButtonCircle[] | undefined;
+  /** The touch layout the buttons were measured in: moved under the pause, they are again. */
+  private measuredLayout = -1;
 
   constructor(
     private readonly canvas: HTMLElement,
@@ -105,6 +108,10 @@ export class TouchCover {
   /** Once a frame, after the camera is framed. `now`: in milliseconds. */
   update(state: GameState, framing: Framing, now: number): void {
     const canvas = (this.canvasRect ??= this.canvas.getBoundingClientRect());
+    if (this.measuredLayout !== this.touch.layoutVersion) {
+      this.measuredLayout = this.touch.layoutVersion;
+      this.buttons = undefined;
+    }
     const buttons = (this.buttons ??= this.touch.buttonCircles());
     const bodies = PLAYERS.map((player) => {
       const body = bodyOnScreen(

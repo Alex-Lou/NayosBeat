@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { App } from '../../src/app/app';
 import { DEFAULT_SETUP, matchConfigOf } from '../../src/app/match-setup';
 import { assignKey, DEFAULT_BINDINGS } from '../../src/input/bindings';
-import { CONTROLS_KEY, serializeControls } from '../../src/input/controls-store';
+import { CONTROLS_KEY, DEFAULT_CONTROLS, serializeControls } from '../../src/input/controls-store';
 import { CARD_FADE_MS } from '../../src/ui/fight-card';
 import { viewingFromUrl, type Viewing } from '../../src/app/viewing';
 import type { Sfx } from '../../src/audio/sfx';
@@ -180,12 +180,40 @@ describe('the options (docs/flashs.md §4)', () => {
     expect(screen().items[screen().selected]).toBe('Touches');
   });
 
+  it('opens « Touches » on its touch tab on a touch screen, and « Disposition » from it (P24)', () => {
+    const { press, screen, choose, page } = launch({ 'nayosbeat.notice': 'seen' });
+    press('Enter');
+    choose('Options');
+    Object.assign(page.window, {
+      matchMedia: (media: string) => ({
+        matches: media.includes('coarse'),
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+      }),
+    });
+    choose('Touches');
+    const tabs = () =>
+      byClass(page.body.children[0] as FakeElement, 'bindings-tab').map((tab) => tab.textContent);
+    expect(tabs()[0]).toBe('Tactile');
+    const disposition = byClass(page.body.children[0] as FakeElement, 'bindings-cell').find(
+      (cell) => cell.textContent === 'Disposition',
+    );
+    disposition?.dispatchEvent(new Event('click'));
+    expect(screen().title).toBe('Disposition');
+    // A touch screen goes back with its corner button.
+    byClass(page.body.children[0] as FakeElement, 'menu-back')[0]?.dispatchEvent(
+      new Event('click'),
+    );
+    expect(screen().title).toBe('Touches');
+    expect(tabs()[0]).toBe('Tactile');
+  });
+
   it('shows the keys the player chose in « Commandes », not the defaults (P24)', () => {
     const keys = assignKey(DEFAULT_BINDINGS, 0, 'light', 'KeyB');
     if (!keys.ok) throw new Error('refused');
     const { press, choose } = launch({
       'nayosbeat.notice': 'seen',
-      [CONTROLS_KEY]: serializeControls({ bindings: keys.bindings }),
+      [CONTROLS_KEY]: serializeControls({ ...DEFAULT_CONTROLS, bindings: keys.bindings }),
     });
     press('Enter');
     shownPages.length = 0;

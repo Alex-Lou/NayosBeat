@@ -10,6 +10,7 @@ import {
   type PadAction,
 } from '../input/bindings';
 import { controlsStore, type Controls, type ControlsStore } from '../input/controls-store';
+import { DEFAULT_TOUCH_LAYOUT } from '../input/touch-layout';
 import { connectedGamepads, PadButton } from '../input/gamepad';
 import { padButtonName } from '../input/gamepad-buttons';
 import { KEY_NAMES, keyName } from '../input/key-names';
@@ -27,6 +28,7 @@ import {
   resetText,
   RETRY_TEXT,
   TIMEOUT_TEXT,
+  TOUCH_TEXTS,
   type Device,
 } from './bindings-text';
 import { appendText, drawKeyboard } from './keyboard-drawing';
@@ -41,27 +43,34 @@ import {
   type MenuFeedback,
 } from './menu';
 import { drawPad } from './pad-drawing';
+import { drawTouchPreview } from './touch-layout-editor';
 
-/** A tab of the screen: a player's keyboard or gamepad. */
-export type BindingsTab = 'keys1' | 'keys2' | 'pad1' | 'pad2';
+/** A tab of the screen: a player's keyboard or gamepad, or player 1's touch buttons. */
+export type BindingsTab = 'keys1' | 'keys2' | 'pad1' | 'pad2' | 'touch';
 
 export const TAB_LABELS: Readonly<Record<BindingsTab, string>> = {
   keys1: 'Clavier J1',
   keys2: 'Clavier J2',
   pad1: 'Manette J1',
   pad2: 'Manette J2',
+  touch: 'Tactile',
 };
 
-const TAB_DEVICES: Readonly<Record<BindingsTab, { device: Device; player: 0 | 1 }>> = {
+/** What a tab shows: a device whose keys or buttons it changes, or the touch buttons. */
+type TabDevice = Device | 'touch';
+
+const TAB_DEVICES: Readonly<Record<BindingsTab, { device: TabDevice; player: 0 | 1 }>> = {
   keys1: { device: 'keys', player: 0 },
   keys2: { device: 'keys', player: 1 },
   pad1: { device: 'pad', player: 0 },
   pad2: { device: 'pad', player: 1 },
+  touch: { device: 'touch', player: 0 },
 };
 
 /** A choice under the drawing: an action to change, or one of the screen's own. */
 type Cell =
   | { readonly kind: 'action'; readonly action: Action }
+  | { readonly kind: 'layout' }
   | { readonly kind: 'reset' }
   | { readonly kind: 'back' };
 
@@ -80,6 +89,8 @@ export interface BindingsScreenOptions {
   readonly initialTab?: BindingsTab;
   readonly overlay?: boolean;
   readonly onBack: () => void;
+  /** The touch tab's « Disposition ». */
+  readonly onTouchLayout?: () => void;
   readonly feedback?: (action: MenuFeedback) => void;
   readonly store?: ControlsStore;
   /** The gamepads connected right now. */
@@ -138,7 +149,7 @@ export class BindingsScreen {
     this.pads = options.pads ?? connectedGamepads;
     this.tab = options.initialTab ?? options.tabs[0] ?? 'keys1';
     this.column = Math.max(0, options.tabs.indexOf(this.tab));
-    this.status = IDLE_TEXTS[TAB_DEVICES[this.tab].device];
+    this.status = idleText(TAB_DEVICES[this.tab].device);
     this.root = element('div', options.overlay ? 'menu menu-overlay' : 'menu');
     this.panel = element('div', 'menu-panel bindings-panel');
     this.root.appendChild(
@@ -172,7 +183,7 @@ export class BindingsScreen {
     this.root.remove();
   }
 
-  private get device(): Device {
+  private get device(): TabDevice {
     return TAB_DEVICES[this.tab].device;
   }
 
@@ -181,6 +192,7 @@ export class BindingsScreen {
   }
 
   private cells(): Cell[] {
+    if (this.device === 'touch') return [{ kind: 'layout' }, { kind: 'reset' }, { kind: 'back' }];
     const actions = this.device === 'keys' ? ACTIONS : PAD_ACTIONS;
     return [
       ...actions.map((action): Cell => ({ kind: 'action', action })),
@@ -232,6 +244,9 @@ export class BindingsScreen {
     const action = MENU_KEYS[event.code];
     if (!action) return;
     event.preventDefault();
+    // Heard in the capture phase: the menu it may open (« Retour ») listens in the bubble phase of
+    // this same event, and would take it again.
+    event.stopImmediatePropagation();
     if (event.repeat && (action === 'confirm' || action === 'back')) return;
     this.handle(action);
   };
@@ -328,7 +343,7 @@ export class BindingsScreen {
     this.tab = tab;
     this.row = 0;
     this.column = Math.max(0, this.options.tabs.indexOf(tab));
-    this.status = IDLE_TEXTS[this.device];
+    this.status = idleText(this.device);
     this.render();
   }
 
@@ -337,6 +352,9 @@ export class BindingsScreen {
     switch (cell.kind) {
       case 'action':
         this.listen(cell.action);
+        return;
+      case 'layout':
+        this.options.onTouchLayout?.();
         return;
       case 'reset':
         this.reset();
@@ -348,6 +366,8 @@ export class BindingsScreen {
   }
 
   private listen(action: Action): void {
+    const device = this.device;
+    if (device === 'touch') return;
     const held = new Set<string>();
     for (const pad of this.pads()) {
       pad.buttons.forEach((state, button) => {
@@ -356,7 +376,7 @@ export class BindingsScreen {
     }
     this.listening = {
       action,
-      device: this.device,
+      device,
       player: this.player,
       seconds: LISTEN_SECONDS,
       held,
@@ -417,6 +437,12 @@ export class BindingsScreen {
   private reset(): void {
     const controls = this.store.get();
     const { device, player } = this;
+    if (device === 'touch') {
+      this.store.set({ ...controls, touch: DEFAULT_TOUCH_LAYOUT });
+      this.status = TOUCH_TEXTS.reset;
+      this.render();
+      return;
+    }
     const result: Assigned =
       device === 'keys'
         ? resetKeys(controls.bindings, player)
@@ -493,7 +519,9 @@ export class BindingsScreen {
       // "Echap" without accent, the arrows of the row named: the pixel font has neither.
       helpLine(
         'Flèches choisir · Entrée / A changer · Echap / B retour',
-        'Touche une action, puis sa nouvelle touche',
+        this.device === 'touch'
+          ? 'Touche Disposition pour placer les boutons'
+          : 'Touche une action, puis sa nouvelle touche',
       ),
     );
     if (this.row > 0) this.selectedElement?.scrollIntoView({ block: 'nearest' });
@@ -524,8 +552,12 @@ export class BindingsScreen {
 
   private drawing(): HTMLElement {
     const box = element('div', 'bindings-drawing');
-    const { bindings } = this.store.get();
+    const { bindings, touch } = this.store.get();
     const chosen = this.chosenAction();
+    if (this.device === 'touch') {
+      box.append(drawTouchPreview(touch), element('p', 'bindings-note', TOUCH_TEXTS.fixed));
+      return box;
+    }
     if (this.device === 'keys') {
       const own = bindings.keyboard[this.player];
       const other = bindings.keyboard[this.player === 0 ? 1 : 0];
@@ -541,7 +573,10 @@ export class BindingsScreen {
   }
 
   private cellsElement(): HTMLElement {
-    const grid = element('div', 'bindings-cells');
+    const grid = element(
+      'div',
+      this.device === 'touch' ? 'bindings-cells cells-touch' : 'bindings-cells',
+    );
     const { bindings } = this.store.get();
     this.cells().forEach((cell, at) => {
       const row = 1 + Math.floor(at / COLUMNS);
@@ -561,7 +596,7 @@ export class BindingsScreen {
         button.appendChild(value);
         if (this.listening?.action === cell.action) button.classList.add('listening');
       } else {
-        button.textContent = cell.kind === 'reset' ? 'Par défaut' : 'Retour';
+        button.textContent = CELL_LABELS[cell.kind];
       }
       if (row === this.row && column === this.column) {
         button.classList.add('selected');
@@ -593,6 +628,12 @@ export class BindingsScreen {
     const codes = bindings.keyboard[this.player][action];
     return codes.length === 0 ? 'aucune' : codes.map((code) => this.nameOf(code)).join(', ');
   }
+}
+
+const CELL_LABELS = { layout: TOUCH_TEXTS.layout, reset: 'Par défaut', back: 'Retour' } as const;
+
+function idleText(device: TabDevice): string {
+  return device === 'touch' ? TOUCH_TEXTS.idle : IDLE_TEXTS[device];
 }
 
 /** Keys whose letter depends on the layout: the writing block's. */

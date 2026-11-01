@@ -1,7 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { DEFAULT_KEYS, DEFAULT_PAD } from '../../src/input/bindings';
-import { ControlsStore } from '../../src/input/controls-store';
+import { ControlsStore, DEFAULT_CONTROLS } from '../../src/input/controls-store';
+import { DEFAULT_TOUCH_LAYOUT } from '../../src/input/touch-layout';
 import { PadButton } from '../../src/input/gamepad-buttons';
 import { relativeLuminance } from '../../src/render/luminance';
 import {
@@ -220,6 +221,22 @@ describe('the « Touches » screen, keyboard (P24)', () => {
     expect(onBack).toHaveBeenCalledOnce();
   });
 
+  it('keeps the keys it reads: the menu « Retour » opens never takes Escape a second time', () => {
+    // In a browser the screen hears a key in the window's capture phase; the options' menu it
+    // opens on Escape listens in the bubble phase of that same press, and would go back again
+    // (to the main menu) unless the screen stops it. Node has no phases: the stop is what is seen.
+    const { page, onBack } = setup();
+    const stop = vi.fn();
+    const escape = Object.assign(new Event('keydown', { cancelable: true }), {
+      code: 'Escape',
+      repeat: false,
+      stopImmediatePropagation: stop,
+    });
+    page.window.dispatchEvent(escape);
+    expect(onBack).toHaveBeenCalledOnce();
+    expect(stop).toHaveBeenCalled();
+  });
+
   it('gives up on Start', () => {
     const { page, goTo, tap, pads, screen, status } = setup();
     goTo(LIGHT);
@@ -318,6 +335,49 @@ describe('the « Touches » screen, gamepad (P24)', () => {
         .map((note) => note.text)
         .join(),
     ).toContain("n'a pas la disposition standard");
+  });
+});
+
+describe('the « Touches » screen, touch tab (P24)', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('shows the cluster as placed, opens « Disposition », and puts it back with « Par défaut »', () => {
+    const page = installFakePage();
+    const kept = new Map<string, string>();
+    vi.stubGlobal('localStorage', {
+      getItem: (name: string) => kept.get(name) ?? null,
+      setItem: (name: string, value: string) => kept.set(name, value),
+    });
+    const store = new ControlsStore();
+    const moved = {
+      ...DEFAULT_TOUCH_LAYOUT,
+      opacity: 60,
+      buttons: { ...DEFAULT_TOUCH_LAYOUT.buttons, dash: { right: 177, bottom: 246, size: 100 } },
+    };
+    store.set({ ...DEFAULT_CONTROLS, touch: moved });
+    const onTouchLayout = vi.fn();
+    new BindingsScreen(page.body as unknown as HTMLElement, {
+      tabs: ['touch', 'keys1'],
+      store,
+      onBack: () => undefined,
+      onTouchLayout,
+      pads: () => [],
+    });
+    const root = page.body.children[0] as FakeElement;
+    const zone = byClass(root, 'touch-mini-zone')[0];
+    expect(zone?.style['opacity']).toBe('0.6');
+    expect(zone?.children.find((button) => button.textContent === 'DASH')?.style).toMatchObject({
+      right: '149px',
+    });
+    const cell = (label: string) =>
+      byClass(root, 'bindings-cell').find((node) => node.text === label);
+    cell('Disposition')?.dispatchEvent(new Event('click'));
+    expect(onTouchLayout).toHaveBeenCalledOnce();
+    cell('Par défaut')?.dispatchEvent(new Event('click'));
+    expect(store.get().touch).toEqual(DEFAULT_TOUCH_LAYOUT);
+    expect(store.get().bindings).toEqual(DEFAULT_CONTROLS.bindings);
   });
 });
 

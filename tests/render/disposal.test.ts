@@ -11,6 +11,7 @@ import type { RenderMode } from '../../src/render/render-mode';
 import { ControlsStore } from '../../src/input/controls-store';
 import { BindingsScreen } from '../../src/ui/bindings-screen';
 import { FighterSelect } from '../../src/ui/fighter-select';
+import { TouchLayoutEditor } from '../../src/ui/touch-layout-editor';
 import { Menu } from '../../src/ui/menu';
 import { TitleScreen } from '../../src/ui/title-screen';
 import { installFakePage, type FakePage } from './fake-dom';
@@ -101,6 +102,14 @@ const CASES: readonly [string, (page: FakePage) => Disposable][] = [
       }
       return screen;
     },
+  ],
+  [
+    'TouchLayoutEditor',
+    (page) =>
+      new TouchLayoutEditor(asParent(page), {
+        onBack: () => undefined,
+        store: new ControlsStore(),
+      }),
   ],
   [
     'DebugOverlay',

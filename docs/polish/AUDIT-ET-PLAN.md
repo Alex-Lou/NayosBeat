@@ -682,6 +682,15 @@ Toutes ces recettes ont été **rendues et mesurées** (annexe A), sauf mention 
 - Il refuse les conflits ; Échap et Start restent fixes.
 - **Coût :** 7 h. **Risque :** le plus gros chantier d'accessibilité. Il vient après le ressenti.
 
+*Réalisé (branche `feat/touches`), avec la disposition tactile.* L'écran est dans Options, « Touches ». Décisions prises :
+
+- **Un seul stockage versionné.** `nayosbeat.keys.v1` garde les claviers, les manettes et la disposition tactile (`src/input/controls-store.ts`). Chaque partie est validée seule à la lecture, et une partie invalide revient à son défaut sans emporter les autres. Le format est un contrat : un autre format prendra une autre clé.
+- **Une touche remplace celles de l'action.** Les doubles du joueur 2 (pavé et touches autour de Maj droite) tombent dès qu'il change l'action. *Écarté :* deux emplacements par action, qui doublaient l'écran.
+- **Les conflits sont refusés, jamais échangés.** L'écran dit pourquoi, puis attend une autre touche. *Écarté :* l'échange automatique, qui déplace une action sans que le joueur le voie.
+- **Ce qui reste fixe :** Échap et P (la pause au clavier), Start, la croix et le stick gauche (les directions de la manette). Tab, Ctrl, Alt, les touches système et les touches de fonction sont refusées.
+- **La capture ne laisse rien fuir.** L'écran écoute dans la phase de capture de la fenêtre, et arrête l'événement jusqu'au relâchement de la touche prise. Un bouton de manette ne compte que s'il est pressé de nouveau. Échap ou Start annule, et l'écran rend la main au bout de 5 s.
+- **Tactile.** Les places sont en pixels CSS depuis le coin bas-droit, comme `TOUCH_BUTTONS`, et la taille de la grappe se règle autour de ce coin. Les chevauchements et les sorties de la zone sont refusés, et le coin de la pause reste libre. L'opacité ne descend pas sous 40 %. *Non fait :* recaler les boutons en combat si l'écran est plus petit que celui de la disposition (barres du navigateur contre plein écran).
+
 **P25. Lutte tenue** (L25)
 
 - Une option qui transforme un bouton tenu en un appui synthétique tous les 12 tics (5 par seconde, le rythme du CPU Normal), dans `src/input`.
