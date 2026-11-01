@@ -33,7 +33,8 @@ interface Spender {
  * hold (a pummel, a throw); `counter` when it caught the defender attacking or recovering (the
  * core's `isCounterHit`); `tier`, its move's (0: a normal, 1: a special, 2: a Remix, 3: a
  * super); `pulse`, a blow of a super before its last (BOOM, BOOM, BOOOOM: docs/flashs.md §2);
- * `freeze`, the ticks the game stays frozen after it (the state's hitstop: its CONTRE's included).
+ * `freeze`, the ticks the game stays frozen after it (the state's hitstop: its CONTRE's included);
+ * `aim`, where its spray flies (`aimOf`).
  */
 interface Blow extends Impact {
   readonly damage: number;
@@ -42,6 +43,7 @@ interface Blow extends Impact {
   readonly tier: number;
   readonly pulse: boolean;
   readonly freeze: number;
+  readonly aim: number;
 }
 
 /**
@@ -303,7 +305,8 @@ function contactEvent(contact: Contact, next: GameState, config: MatchConfig): F
   // A super's blow before its last: its attacker is still in it, short of the last pulse.
   const last = tier === 3 ? move.pulses?.[move.pulses.length - 1]?.frame : undefined;
   const pulse = last !== undefined && attacker.move === contact.move && attacker.actionFrame < last;
-  const blow = { ...impact, damage, held, counter, tier, pulse, freeze: next.hitstop };
+  const aim = aimOf(contact.move, move);
+  const blow = { ...impact, damage, held, counter, tier, pulse, freeze: next.hitstop, aim };
   if (defender.health === 0) {
     // A double KO is never the Finisher's: it locks only a pair that nothing else touches.
     const finale = finisherLocked(next, contact.by) && attacker.health > 0;
@@ -331,6 +334,29 @@ function finisherEvents(
     events.push({ type: 'finisherLock', by, name: finisherNameOf(config.fighters[by]), x, y });
   }
   if (!blow.pulse) events.push({ type: 'finisherBlow', by, x, y, away: blow.away });
+}
+
+/** Where a blow's spray flies (`aimOf`), radians: up below 0, down above. */
+export const SPRAY_AIMS = {
+  level: 0,
+  lift: (-55 * Math.PI) / 180,
+  antiAir: (-70 * Math.PI) / 180,
+  down: (35 * Math.PI) / 180,
+} as const;
+/** The anti-air specials, which spray steeply up (P6). */
+const ANTI_AIRS: ReadonlySet<MoveId> = new Set<MoveId>(['specialAntiAir', 'specialAntiAirBoost']);
+
+/**
+ * Where the spray of a blow of `move` (its id `id`) flies, rendering only, read in its data
+ * (docs/polish/AUDIT-ET-PLAN.md, P6): radians off its line, for a blow to the right (mirrored to
+ * the left). A low blow skims the floor, level; an anti-air special sprays steeply up; an
+ * overhead or a Rebond, down; any other blow that lifts its victim off the floor, up.
+ */
+export function aimOf(id: MoveId, move: MoveData): number {
+  if (move.guard === 'low') return SPRAY_AIMS.level;
+  if (ANTI_AIRS.has(id)) return SPRAY_AIMS.antiAir;
+  if (move.guard === 'overhead' || move.extender === 'rebond') return SPRAY_AIMS.down;
+  return (move.knockdown?.vy ?? 0) > 0 ? SPRAY_AIMS.lift : SPRAY_AIMS.level;
 }
 
 /**

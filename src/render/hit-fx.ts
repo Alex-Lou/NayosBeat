@@ -35,6 +35,17 @@ export type FxKind = HitKind | 'blockHeavy' | 'blockMuted' | 'whiff';
 const HEAVY_GUARD = 1.3;
 /** The streaks glancing off Nayo's guard: more for a heavy blow blocked (P3). */
 const GUARD_STREAKS = { light: 6, heavy: 10 } as const;
+/** Riff's shards (P6): this share of them fly within ± `spread` radians of the blow. */
+const SHARD_CONE = { share: 0.6, spread: 0.9 } as const;
+
+/**
+ * The side a blow going `direction` strikes (P6): `mirror`, to the left (its shapes flipped);
+ * `turn`, how far its shapes turn off the level line of that side (up below 0 to the right).
+ */
+function sideOf(direction: number): { mirror: boolean; turn: number } {
+  const mirror = Math.cos(direction) < 0;
+  return { mirror, turn: direction - (mirror ? Math.PI : 0) };
+}
 
 type FlipbookName = keyof typeof HD_FLIPBOOKS;
 /** What a piece draws: a shape of its own, or a flipbook of several. */
@@ -536,9 +547,10 @@ export class HitFx {
   /**
    * Plays a blow's effect at a point in stage coordinates (sub-pixels, y up from the ground),
    * the blow going `away` (1: to the right); `size` times its own, every piece around the impact
-   * (the Finisher's close up: docs/finisher.md §1.14).
+   * (the Finisher's close up: docs/finisher.md §1.14); its spray flying `aim` radians off its line
+   * (P6: up below 0), mirrored with it.
    */
-  play(style: HitStyle, kind: FxKind, x: number, y: number, away: 1 | -1, size = 1): void {
+  play(style: HitStyle, kind: FxKind, x: number, y: number, away: 1 | -1, size = 1, aim = 0): void {
     // A blow before the atlas is all painted (never seen: the intro is longer) waits for it.
     paintAtlas(Infinity);
     // A special's or a projectile's, on the contact: a little back toward the attacker.
@@ -549,7 +561,7 @@ export class HitFx {
     this.origin.x = px;
     this.origin.y = py;
     this.origin.size = kind === 'blockHeavy' ? size * HEAVY_GUARD : size;
-    const direction = away > 0 ? 0 : Math.PI;
+    const direction = away > 0 ? aim : Math.PI - aim;
     const guard = kind === 'block' || kind === 'blockHeavy';
     if (kind === 'whiff') {
       this.whiff(style, px, py, direction);
@@ -598,9 +610,10 @@ export class HitFx {
   private star(style: HitStyle, star: Star, x: number, y: number, direction: number): void {
     const { size, life, keys } = star;
     const auraScale = star.auraScale ?? AURA_SCALE;
-    const mirror = direction !== 0;
-    const tilt = this.random.between(-0.15, 0.15);
+    const { mirror, turn } = sideOf(direction);
+    const tilt = this.random.between(-0.15, 0.15) + turn;
     const ahead = Math.cos(direction);
+    const rise = Math.sin(direction);
     const burstLife = sum(keys);
     // Along the blow (its width) and across it.
     const stretch = (scale: number): [number, number] => [size * STRETCH * scale, size * scale];
@@ -674,8 +687,8 @@ export class HitFx {
           drag: 0.8,
           align: true,
         },
-        x - ahead * size * 0.75,
-        y + offset,
+        x - ahead * size * 0.75 - Math.sin(turn) * offset,
+        y - rise * size * 0.75 + Math.cos(turn) * offset,
       );
     }
     this.spawn(
@@ -709,7 +722,7 @@ export class HitFx {
           drag: 0.8,
         },
         x + ahead * size * 0.3,
-        y,
+        y + rise * size * 0.3,
       );
     }
     this.arcs(style, star, x, y, direction);
@@ -918,7 +931,7 @@ export class HitFx {
         { delay: i, life: 5, alpha: 1 - i * 0.22, speed: 2 },
       );
     }
-    const beyond = direction + (direction === 0 ? -0.35 : 0.35);
+    const beyond = direction + (sideOf(direction).mirror ? 0.35 : -0.35);
     for (let i = 0; i < star.farArcs; i++) {
       this.ripple(style.energy, x, y, beyond, size * (0.66 + i * 0.075), size * 0.34, {
         delay: 1 + i,
@@ -1063,6 +1076,7 @@ export class HitFx {
 
   /** Riff: crossed blade cuts (claw marks on heavy blows) and a spray of diamond shards. */
   private claw(style: HitStyle, burst: Burst, x: number, y: number, direction: number): void {
+    const { mirror, turn } = sideOf(direction);
     this.flash(style, burst, x, y);
     const cut = (
       angle: number,
@@ -1086,18 +1100,18 @@ export class HitFx {
     };
     if (burst.blades === 1) {
       // Light blow: an X.
-      cut(-0.8, burst.blade * 0.85, 0, style.energy, 8);
-      cut(0.8, burst.blade * 0.85, 0, style.core, 9);
+      cut(turn - 0.8, burst.blade * 0.85, 0, style.energy, 8);
+      cut(turn + 0.8, burst.blade * 0.85, 0, style.core, 9);
     } else {
       // Heavy blow: claw marks raking down across the blow.
-      const angle = (direction === 0 ? 1 : -1) * 0.9;
+      const angle = (mirror ? -1 : 1) * 0.9 + turn;
       for (let i = 0; i < burst.blades + 1; i++) {
         const offset = (i - burst.blades / 2) * burst.blade * 0.16;
         cut(angle, burst.blade, offset, i === 1 ? style.core : style.energy, 8 + i);
       }
     }
     this.shockwave(style.strike, burst, x, y);
-    this.shards(style.strike, burst.shards * 2, x, y, 1.4);
+    this.shards(style.strike, burst.shards * 2, x, y, 1.4, direction);
     this.sparks(style, Math.round(burst.sparks / 2), burst.life, x, y, direction);
   }
 
@@ -1108,6 +1122,7 @@ export class HitFx {
    */
   private clawPinpoint(style: HitStyle, x: number, y: number, direction: number): void {
     const { heart, whole, rays } = PINPOINT;
+    const { turn } = sideOf(direction);
     this.spawn(
       {
         layer: 'halo',
@@ -1133,8 +1148,8 @@ export class HitFx {
       y,
     );
     for (const [angle, color] of [
-      [-0.8, style.energy],
-      [0.8, style.core],
+      [turn - 0.8, style.energy],
+      [turn + 0.8, style.core],
     ] as const) {
       this.spawn(
         {
@@ -1150,7 +1165,7 @@ export class HitFx {
         y,
       );
     }
-    this.shards(style.strike, 4, x, y, 1);
+    this.shards(style.strike, 4, x, y, 1, direction);
     this.sparks(style, 5, 0.8, x, y, direction);
   }
 
@@ -1336,8 +1351,18 @@ export class HitFx {
     }
   }
 
-  private shards(color: number, count: number, x: number, y: number, size: number): void {
+  /** Riff's diamond shards: SHARD_CONE.share of them along the blow (`direction`), the rest any way. */
+  private shards(
+    color: number,
+    count: number,
+    x: number,
+    y: number,
+    size: number,
+    direction: number,
+  ): void {
+    const along = Math.round(count * SHARD_CONE.share);
     for (let i = 0; i < count; i++) {
+      const spread = i < along ? SHARD_CONE.spread : Math.PI;
       this.spawn(
         {
           layer: 'shard',
@@ -1346,7 +1371,7 @@ export class HitFx {
           from: [4 * size, 4 * size],
           to: [1.5, 1.5],
           angle: this.random.between(0, Math.PI),
-          direction: this.random.between(0, Math.PI * 2),
+          direction: direction + this.random.between(-spread, spread),
           speed: this.random.between(1.5, 3.5),
           drag: 0.93,
           gravity: 0.1,
