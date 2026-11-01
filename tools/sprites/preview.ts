@@ -1,24 +1,33 @@
 /**
  * Renders strips to look at while drawing them: on the stage background, with the ground line,
  * the pushbox edges (dashed), the front effects over the body (as the game draws them) and, on
- * the active frames of an attack, its hitbox (red frame). Writes tools/sprites/preview/
- * <sheet>.png, tools/sprites/preview/riff/<sheet>.png for Riff (not committed), and prints each
- * frame's ticks, the active ones in [ ].
+ * the active frames of an attack, its hitbox (red frame). The frames come in the order the
+ * strip's clip plays them, a bar over each: yellow for a key, blue for an in-between
+ * (inbetweens.ts); the frames no clip plays come last. Writes tools/sprites/preview/<sheet>.png,
+ * tools/sprites/preview/riff/<sheet>.png for Riff (not committed), and prints each key's ticks,
+ * the active ones in [ ].
+ *
+ * `--ticks`: the strip's clip tick by tick instead, one cell per tick of 60 Hz, its keys alone
+ * on the top row (the animation of before) and played with its in-betweens under them; a
+ * drawing that stays from the tick before is dimmed: where the movement holds
+ * (<sheet>-ticks.png).
  *
  *   npm run sprites:preview -- idle standHeavy          # Nayo, main colorway
  *   npm run sprites:preview -- --alt idle               # second colorway
  *   npm run sprites:preview -- --riff idle              # Riff (also: riff/idle)
  *   npm run sprites:preview -- --all                    # every strip (with --riff: hers)
+ *   npm run sprites:preview -- --ticks ko riff/ko       # tick by tick, before and after
  */
 
 import { mkdir, writeFile } from 'node:fs/promises';
 import { NAYO_CLIPS } from '../../src/art/nayo/clips.ts';
 import { RIFF_CLIPS } from '../../src/art/riff/clips.ts';
-import { ANCHOR, ART_SCALE, CELL_SIZE } from '../../src/art/types.ts';
+import { ANCHOR, ART_SCALE, CELL_SIZE, playedClips, type Clip } from '../../src/art/types.ts';
 import type { FighterTemplate } from '../../src/core/config.ts';
 import { toPx } from '../../src/core/constants.ts';
 import { NAYO as NAYO_TEMPLATE } from '../../src/data/fighters/nayo.ts';
 import { RIFF as RIFF_TEMPLATE } from '../../src/data/fighters/riff.ts';
+import { clipFrameAt } from '../../src/render/animation.ts';
 import { strikeOf, type Clips } from './clips.ts';
 import { loadDrawn, reportingDrawingProblems, stripPixels, type Drawn } from './drawn.ts';
 import type { Fighter, Strike } from './fighter.ts';
@@ -34,6 +43,11 @@ const GROUND: Rgba = { r: 0x3a, g: 0x3a, b: 0x5c, a: 255 };
 const GUIDE: Rgba = { r: 0x6a, g: 0x3a, b: 0x3a, a: 255 };
 const HITBOX: Rgba = { r: 0xff, g: 0x3b, b: 0x3b, a: 255 };
 const SEPARATOR: Rgba = { r: 0x2a, g: 0x2a, b: 0x44, a: 255 };
+const KEY: Rgba = { r: 0xff, g: 0xd2, b: 0x3f, a: 255 };
+const INBETWEEN: Rgba = { r: 0x3f, g: 0x9c, b: 0xff, a: 255 };
+const HELD: Rgba = { r: 0x2e, g: 0x2e, b: 0x44, a: 255 };
+/** Height of the bar over each cell, in cell pixels. */
+const BAR = 4;
 
 /** What the preview draws over a fighter's strips. */
 interface Guides {
@@ -41,6 +55,8 @@ interface Guides {
   readonly pushboxHalf: number;
   /** The hitbox of a strip's attack (world pixels) and its active frames. */
   readonly strike: (sheet: string) => Strike | undefined;
+  /** The clips of the keys (src/art/<name>/clips.ts). */
+  readonly clips: Clips;
 }
 
 /** A fighter's moves (src/data/fighters/), played by its clips (src/art/<name>/clips.ts). */
@@ -48,11 +64,33 @@ function guidesOf(template: FighterTemplate, clips: Clips): Guides {
   return {
     pushboxHalf: toPx(template.standingPushbox.width) / 2,
     strike: (sheet) => strikeOf(clips, template, sheet),
+    clips,
   };
 }
 
 const NAYO_GUIDES = guidesOf(NAYO_TEMPLATE, NAYO_CLIPS);
 const RIFF_GUIDES = guidesOf(RIFF_TEMPLATE, RIFF_CLIPS);
+
+/** The clip a strip is looked at through, keys alone and played: its own, else the first. */
+function clipsOf(fighter: Fighter, guides: Guides, sheet: string): { keys: Clip; played: Clip } {
+  const entries = Object.entries(guides.clips).filter(([, clip]) => clip.sheet === sheet);
+  const [id, keys] = entries.find(([name]) => name === sheet) ?? entries[0] ?? [];
+  const frames = fighter.keys(sheet)?.length ?? fighter.sheets[sheet]?.frames ?? 1;
+  if (!id || !keys) {
+    const all = Array.from({ length: frames }, (_, index) => index);
+    const clip = { sheet, frames: all, ticks: all.map(() => 1) };
+    return { keys: clip, played: clip };
+  }
+  const played = playedClips({ [id]: keys } as never, fighter.played, { [sheet]: { frames } });
+  return { keys, played: (played as Record<string, Clip>)[id] ?? keys };
+}
+
+/** The frames of a strip in the order its clip plays them, the others after. */
+function playOrder(frames: number, clip: Clip): number[] {
+  const order = [...new Set(clip.frames)];
+  for (let frame = 0; frame < frames; frame++) if (!order.includes(frame)) order.push(frame);
+  return order;
+}
 
 interface Box {
   readonly left: number;
@@ -84,6 +122,7 @@ async function render(
   sheet: string,
   colorway: Colorway,
   drawn: ReadonlyMap<string, Drawn>,
+  ticksMode: boolean,
 ): Promise<void> {
   // A strip drawn by hand (art-src/) as the game gets it, else the code's.
   // The front effects go over both fighters in the game: over the body here.
@@ -131,14 +170,97 @@ async function render(
   const folder = fighter === NAYO ? '' : `${fighter.name}/`;
   const name = `${folder}${colorway === 'main' ? sheet : `${sheet}-alt`}`;
   await mkdir(new URL(folder, PREVIEW), { recursive: true });
+  const frames = canvas.width / CELL_SIZE;
+  const keys = fighter.keys(sheet)?.length ?? frames;
+  const { keys: keyClip, played } = clipsOf(fighter, guides, sheet);
+  const bar = { key: slot(KEY), inbetween: slot(INBETWEEN), held: slot(HELD) };
+  const file = new URL(`${name}${ticksMode ? '-ticks' : ''}.png`, PREVIEW);
+  const image = ticksMode
+    ? tickCells(pixels, canvas.width, [keyClip, played], keys, bar)
+    : orderedCells(pixels, canvas.width, playOrder(frames, played), keys, bar);
   await writeFile(
-    new URL(`${name}.png`, PREVIEW),
-    await encodeIndexedPng(canvas.width, canvas.height, pixels, palette, ZOOM),
+    file,
+    await encodeIndexedPng(image.width, image.height, image.pixels, palette, ZOOM),
   );
   const { ticks } = fighter.timing(sheet);
   const timing = ticks.map((tick, frame) => (boxes.has(frame) ? `[${tick}]` : `${tick}`));
-  const frames = canvas.width / CELL_SIZE;
-  console.log(`tools/sprites/preview/${name}.png (${frames} frames, ticks ${timing.join(' ')})`);
+  const shown = file.pathname.slice(file.pathname.indexOf('tools/sprites/'));
+  console.log(`${shown} (${keys} keys + ${frames - keys}, key ticks ${timing.join(' ')})`);
+}
+
+interface Cells {
+  readonly width: number;
+  readonly height: number;
+  readonly pixels: Uint8Array;
+}
+
+interface Bars {
+  readonly key: number;
+  readonly inbetween: number;
+  readonly held: number;
+}
+
+/** Copies cell `frame` of a strip `width` wide to cell `at` of `out`, a bar of `color` over it. */
+function copyCell(strip: Uint8Array, width: number, frame: number, out: Cells, at: number): void {
+  for (let y = 0; y < CELL_SIZE; y++) {
+    const from = y * width + frame * CELL_SIZE;
+    out.pixels.set(strip.subarray(from, from + CELL_SIZE), (BAR + y) * out.width + at * CELL_SIZE);
+  }
+}
+
+function paintBar(out: Cells, at: number, top: number, color: number): void {
+  for (let y = top; y < top + BAR - 1; y++) {
+    out.pixels.fill(color, y * out.width + at * CELL_SIZE, y * out.width + (at + 1) * CELL_SIZE);
+  }
+}
+
+/** The cells in `order`, each under its bar: a key's or an in-between's. */
+function orderedCells(
+  strip: Uint8Array,
+  width: number,
+  order: readonly number[],
+  keys: number,
+  bars: Bars,
+): Cells {
+  const size = { width: order.length * CELL_SIZE, height: CELL_SIZE + BAR };
+  const cells = { ...size, pixels: new Uint8Array(size.width * size.height) };
+  order.forEach((frame, at) => {
+    paintBar(cells, at, 0, frame < keys ? bars.key : bars.inbetween);
+    copyCell(strip, width, frame, cells, at);
+  });
+  return cells;
+}
+
+/**
+ * One cell per tick of each clip, each clip on its row: the drawing on screen, under a bar of
+ * its kind, dimmed when it was already there the tick before.
+ */
+function tickCells(
+  strip: Uint8Array,
+  width: number,
+  clips: readonly Clip[],
+  keys: number,
+  bars: Bars,
+): Cells {
+  const ticks = Math.max(...clips.map((clip) => clip.ticks.reduce((sum, t) => sum + t, 0)));
+  const rowHeight = CELL_SIZE + BAR;
+  const cells = {
+    width: ticks * CELL_SIZE,
+    height: rowHeight * clips.length,
+    pixels: new Uint8Array(ticks * CELL_SIZE * rowHeight * clips.length),
+  };
+  clips.forEach((clip, row) => {
+    const band = { ...cells, height: rowHeight, pixels: new Uint8Array(cells.width * rowHeight) };
+    for (let tick = 0; tick < ticks; tick++) {
+      const frame = clip.frames[clipFrameAt(clip, tick)] ?? 0;
+      const before = tick > 0 ? clip.frames[clipFrameAt(clip, tick - 1)] : -1;
+      const color = frame === before ? bars.held : frame < keys ? bars.key : bars.inbetween;
+      paintBar(band, tick, 0, color);
+      copyCell(strip, width, frame, band, tick);
+    }
+    cells.pixels.set(band.pixels, row * band.pixels.length);
+  });
+  return cells;
 }
 
 async function main(): Promise<void> {
@@ -174,7 +296,7 @@ async function main(): Promise<void> {
   for (const { fighter, guides, sheet } of jobs) {
     const drawn = drawnOf.get(fighter) ?? (await loadDrawn(fighter));
     drawnOf.set(fighter, drawn);
-    await render(fighter, guides, sheet, colorway, drawn);
+    await render(fighter, guides, sheet, colorway, drawn, args.includes('--ticks'));
   }
 }
 

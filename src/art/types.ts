@@ -166,8 +166,16 @@ export type FighterClips<C extends Clip = Clip> = Readonly<Record<StateClipId | 
 export interface FighterArt {
   /** Prefix of the texture keys, unique per fighter. */
   readonly key: string;
+  /** Every strip with its frames: its keys, then its in-betweens (`Played`). */
   readonly sheets: Readonly<Record<string, SheetSpec>>;
+  /** The clips the game plays: the keys and their in-betweens (`playedClips`). */
   readonly clips: FighterClips;
+  /**
+   * The clips of the keys alone, as drawn before the in-betweens (docs/art/animation-plan.md
+   * §3.3, F2): the animation of before (`AnimOptions.legacy`) plays them. The same as `clips`
+   * when absent.
+   */
+  readonly keyClips?: FighterClips;
   /** Image URL of every strip, by sheet name. */
   readonly urls: Readonly<Record<string, string>>;
   /**
@@ -252,4 +260,87 @@ export function playedEffects(art: FighterArt): ReadonlySet<string> {
   const effects = new Set(playedSheets(art));
   for (const clip of Object.values<Clip>(art.clips)) effects.add(effectsOf(clip));
   return effects;
+}
+
+// ---------------------------------------------------------------------------------------------
+// In-betweens (docs/art/animation-plan.md §3.1, §3.3, F2)
+
+/** A clip as played with its in-betweens: its strip, its sheet and its effects stay the key's. */
+export interface PlayedClip {
+  readonly frames: readonly number[];
+  readonly ticks: readonly number[];
+  readonly loopFrom?: number;
+}
+
+/**
+ * What `npm run sprites` writes in src/art/<fighter>/played.ts: the strips that have in-betweens
+ * (drawn after their keys, numbered from `keys` on), and the clips that play them. Every key is
+ * on screen on the same tick as in its clip, every clip lasts as long, and its active frames are
+ * keys: the frame data and the boxes do not move. Nothing is interpolated on screen (D23).
+ */
+export interface Played {
+  readonly sheets: Readonly<Record<string, { readonly keys: number; readonly frames: number }>>;
+  readonly clips: Readonly<Partial<Record<ClipId, PlayedClip>>>;
+}
+
+/**
+ * The clips played: each one `played` knows, on a strip it knows with as many keys as `sheets`
+ * says, with its in-betweens; any other one as its keys (a clip or a strip added since the last
+ * `npm run sprites`, the Finisher's `finale` before it is smoothed).
+ */
+export function playedClips<C extends Clip>(
+  keyClips: FighterClips<C>,
+  played: Played,
+  sheets: Readonly<Record<string, SheetSpec>>,
+): FighterClips<C> {
+  const clips: Record<string, C> = {};
+  for (const [id, clip] of Object.entries(keyClips) as [ClipId, C][]) {
+    const smoothed = played.clips[id];
+    const strip = played.sheets[clip.sheet];
+    const known = smoothed !== undefined && strip?.keys === sheets[clip.sheet]?.frames;
+    clips[id] = known ? withPlayed(clip, smoothed) : clip;
+  }
+  return clips as FighterClips<C>;
+}
+
+/** `clip` as played: its frames, ticks and loop from `played` (a clip loops in both, or neither). */
+function withPlayed<C extends Clip>(clip: C, played: PlayedClip): C {
+  const loop = played.loopFrom === undefined ? {} : { loopFrom: played.loopFrom };
+  return { ...clip, frames: played.frames, ticks: played.ticks, ...loop };
+}
+
+/** The strips with their frames once played: their keys, then the in-betweens `played` knows. */
+export function playedStrips<S extends Readonly<Record<string, SheetSpec>>>(
+  sheets: S,
+  played: Played,
+): Readonly<Record<keyof S, SheetSpec>> {
+  const out: Record<string, SheetSpec> = {};
+  for (const [sheet, spec] of Object.entries(sheets)) {
+    const strip = played.sheets[sheet];
+    out[sheet] = strip?.keys === spec.frames ? { frames: strip.frames } : spec;
+  }
+  return out as Record<keyof S, SheetSpec>;
+}
+
+/**
+ * The frames played from key `keyFrom` to key `keyTo` of `sheet`, both included, in the order a
+ * clip plays them (the clip named after the strip first): for a script that plays part of a
+ * strip on its own clock (the Finisher's, `jumpForward` f2 to f4), the in-betweens between those
+ * keys included. Just the keys when no clip plays them so.
+ */
+export function playedRange(
+  art: FighterArt,
+  sheet: string,
+  keyFrom: number,
+  keyTo: number,
+): number[] {
+  const clips: [string, Clip][] = Object.entries(art.clips);
+  const ordered = [...clips].sort(([a], [b]) => Number(b === sheet) - Number(a === sheet));
+  for (const [, clip] of ordered) {
+    if (clip.sheet !== sheet) continue;
+    const start = clip.frames.indexOf(keyFrom);
+    const end = clip.frames.indexOf(keyTo, start);
+    if (start >= 0 && end >= start) return clip.frames.slice(start, end + 1);
+  }
+  return Array.from({ length: keyTo - keyFrom + 1 }, (_, index) => keyFrom + index);
 }

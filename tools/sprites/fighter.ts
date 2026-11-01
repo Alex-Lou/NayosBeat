@@ -4,7 +4,8 @@
  * Each character's generator (tools/sprites/<name>/) exports one.
  */
 
-import type { SheetSpec } from '../../src/art/types.ts';
+import type { Played, SheetSpec } from '../../src/art/types.ts';
+import type { Planned } from './inbetweens.ts';
 import type { Colorway } from './palette.ts';
 import type { Rgba } from './png.ts';
 import type { PixelCanvas, Point } from './raster.ts';
@@ -47,13 +48,23 @@ export interface Strike {
 export interface Fighter {
   /** Folder of the assets (src/art/<name>/) and prefix of the generated names. */
   readonly name: string;
+  /** Every strip, with its frames: its keys, then its in-betweens (inbetweens.ts). */
   readonly sheets: Readonly<Record<string, SheetSpec>>;
   readonly body: Body;
-  /** Poses of a strip, one per frame; undefined for a strip of effects only (a projectile). */
+  /**
+   * The key poses of a strip, as its poses/ draw them; undefined for a strip of effects only (a
+   * projectile).
+   */
+  readonly keys: (sheet: string) => readonly Pose[] | undefined;
+  /** Poses of a strip, one per frame: its keys, then its in-betweens. */
   readonly poses: (sheet: string) => readonly Pose[] | undefined;
+  /** The in-betweens of a strip, drawn after its keys in this order (none: just the keys). */
+  readonly inbetweens: (sheet: string) => readonly Planned[];
+  /** The clips played with the in-betweens, as src/art/<name>/played.ts holds them. */
+  readonly played: Played;
   /** Effects of a strip drawn without a body (a projectile), those of each frame. */
   readonly effectsOnly?: (sheet: string) => readonly (readonly Effect[])[] | undefined;
-  /** Ticks of every frame of a strip, and whether it loops. */
+  /** Ticks of every key of a strip (the clips of the keys), and whether it loops. */
   readonly timing: (sheet: string) => {
     readonly ticks: readonly number[];
     readonly loops: boolean;

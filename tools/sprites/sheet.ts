@@ -1,6 +1,7 @@
 import type { NayoSheet } from '../../src/art/nayo/sheets.ts';
-import { CELL_SIZE } from '../../src/art/types.ts';
+import { ANCHOR, ART_SCALE, CELL_SIZE } from '../../src/art/types.ts';
 import { STILL, type Fighter, type Motion, type Spring } from './fighter.ts';
+import type { Planned } from './inbetweens.ts';
 import { NAYO } from './nayo/index.ts';
 import type { PosedSheet } from './nayo/poses/index.ts';
 import { PixelCanvas, type Point } from './raster.ts';
@@ -10,27 +11,128 @@ import { drawEffect, inkAt } from './vfx.ts';
 /**
  * Draws one strip of a fighter, one cell per frame, shaded and outlined as a whole. The pixels
  * hold palette slots: the same strip is saved once per colorway, with that colorway's palette.
+ * Its keys are drawn exactly as they were before the in-betweens, then its in-betweens
+ * (inbetweens.ts), each one's hanging parts swung between those of its two keys, and brought
+ * down to the floor when both its keys touch it (`groundedPoses`).
  */
 export function drawStrip(fighter: Fighter, sheet: string): PixelCanvas {
   const frames = framesOf(fighter, sheet);
-  const canvas = new PixelCanvas(CELL_SIZE * frames, CELL_SIZE);
   const effects = fighter.effectsOnly?.(sheet);
-  if (effects) {
-    expectFrames(sheet, effects.length, frames);
-    effects.forEach((drawn, frame) => {
-      const ink = inkAt(canvas, frame * CELL_SIZE, fighter.fx);
-      for (const effect of drawn) drawEffect(ink, effect);
-    });
-  } else {
-    const poses = posesOf(fighter, sheet);
-    expectFrames(sheet, poses.length, frames);
-    const motions = motionsOf(fighter, sheet, poses);
-    poses.forEach((pose, frame) => {
-      fighter.draw(canvas, solve(pose, fighter.body), frame * CELL_SIZE, motions[frame] ?? STILL);
-    });
+  if (!effects) {
+    const poses = groundedPoses(fighter, sheet);
+    // The draft groundedPoses painted, when it brought nothing down: the very same pixels.
+    const draft = drafts.get(fighter)?.get(sheet);
+    drafts.get(fighter)?.delete(sheet);
+    return draft ?? paintBodies(fighter, sheet, poses);
   }
+  const canvas = new PixelCanvas(CELL_SIZE * frames, CELL_SIZE);
+  expectFrames(sheet, effects.length, frames);
+  effects.forEach((drawn, frame) => {
+    const ink = inkAt(canvas, frame * CELL_SIZE, fighter.fx);
+    for (const effect of drawn) drawEffect(ink, effect);
+  });
   canvas.finish();
   return canvas;
+}
+
+/**
+ * The bodies of a strip in `poses`: its keys with the motion of their clips, as always, then
+ * its in-betweens with a motion mixed between their keys'.
+ */
+function paintBodies(fighter: Fighter, sheet: string, poses: readonly Pose[]): PixelCanvas {
+  const frames = framesOf(fighter, sheet);
+  expectFrames(sheet, poses.length, frames);
+  const keys = keysOf(fighter, sheet);
+  const inbetweens = fighter.inbetweens(sheet);
+  expectFrames(sheet, keys.length + inbetweens.length, frames);
+  const canvas = new PixelCanvas(CELL_SIZE * frames, CELL_SIZE);
+  const motions = motionsOf(fighter, sheet, keys);
+  const motionOf = (frame: number): Motion => {
+    const inbetween = inbetweens[frame - keys.length];
+    if (!inbetween) return motions[frame] ?? STILL;
+    return mixMotion(motions[inbetween.from] ?? STILL, motions[inbetween.to] ?? STILL, inbetween.t);
+  };
+  poses.forEach((pose, frame) => {
+    fighter.draw(canvas, solve(pose, fighter.body), frame * CELL_SIZE, motionOf(frame));
+  });
+  canvas.finish();
+  return canvas;
+}
+
+/** A motion `t` of the way from `a` to `b`, its hanging parts too. */
+function mixMotion(a: Motion, b: Motion, t: number): Motion {
+  const mix = (p: number, q: number): number => p + (q - p) * t;
+  const motion = { vx: mix(a.vx, b.vx), vy: mix(a.vy, b.vy) };
+  if (!a.hang || !b.hang) return motion;
+  const to = b.hang;
+  const hang = a.hang.map((p, i) => ({
+    x: mix(p.x, to[i]?.x ?? p.x),
+    y: mix(p.y, to[i]?.y ?? p.y),
+  }));
+  return { ...motion, hang };
+}
+
+/** The lowest row a body touching the floor reaches, in the cell (its feet's anchor row). */
+const FLOOR_ROW = ANCHOR.y - 2;
+
+const grounded = new WeakMap<Fighter, Map<string, readonly Pose[]>>();
+/** A draft painted by groundedPoses that it did not change, handed once to drawStrip. */
+const drafts = new WeakMap<Fighter, Map<string, PixelCanvas>>();
+
+/**
+ * The poses of a strip as drawn: its keys, then its in-betweens, each one whose two keys touch
+ * the floor and that does not (a roll, a fall between two frames on the floor) brought down by
+ * as much, measured on the drawing (a translation: the anatomy does not change).
+ */
+export function groundedPoses(fighter: Fighter, sheet: string): readonly Pose[] {
+  let known = grounded.get(fighter);
+  if (!known) grounded.set(fighter, (known = new Map<string, readonly Pose[]>()));
+  const done = known.get(sheet);
+  if (done) return done;
+  const poses = posesOf(fighter, sheet);
+  const inbetweens = fighter.inbetweens(sheet);
+  let result = poses;
+  if (inbetweens.length > 0) {
+    const draft = paintBodies(fighter, sheet, poses);
+    const keys = poses.length - inbetweens.length;
+    const lowered = inbetweens.map((inbetween: Planned, rank): Pose => {
+      const [a, b, own] = [inbetween.from, inbetween.to, keys + rank].map((f) =>
+        bottomRow(draft, f),
+      ) as [number, number, number];
+      if (a < FLOOR_ROW || b < FLOOR_ROW || own >= FLOOR_ROW) return inbetween.pose;
+      return lower(inbetween.pose, (Math.min(a, b) - own) / ART_SCALE);
+    });
+    result = [...poses.slice(0, keys), ...lowered];
+    if (lowered.every((pose, rank) => pose === inbetweens[rank]?.pose)) {
+      let spare = drafts.get(fighter);
+      if (!spare) drafts.set(fighter, (spare = new Map<string, PixelCanvas>()));
+      spare.set(sheet, draft);
+    }
+  }
+  known.set(sheet, result);
+  return result;
+}
+
+/** The lowest row a cell draws on, -1 when it draws nothing. */
+export function bottomRow(canvas: PixelCanvas, frame: number): number {
+  for (let row = CELL_SIZE - 1; row >= 0; row--) {
+    const from = row * canvas.width + frame * CELL_SIZE;
+    if (canvas.pixels.subarray(from, from + CELL_SIZE).some((slot) => slot !== 0)) return row;
+  }
+  return -1;
+}
+
+/** `pose` lowered by `by` world pixels. */
+function lower(pose: Pose, by: number): Pose {
+  const down = <T extends Point>(p: T): T => ({ ...p, y: p.y - by });
+  return {
+    ...pose,
+    hip: down(pose.hip),
+    nearFist: down(pose.nearFist),
+    farFist: down(pose.farFist),
+    nearFoot: down(pose.nearFoot),
+    farFoot: down(pose.farFoot),
+  };
 }
 
 /**
@@ -43,7 +145,7 @@ export function drawStripEffects(
   recolor: (effect: Effect) => Effect = (effect) => effect,
 ): PixelCanvas | undefined {
   if (fighter.effectsOnly?.(sheet)) return undefined;
-  const poses = posesOf(fighter, sheet);
+  const poses = groundedPoses(fighter, sheet);
   const front = poses.map((pose) =>
     (pose.effects ?? []).filter((effect) => effect.kind !== 'smear').map(recolor),
   );
@@ -88,6 +190,12 @@ function posesOf(fighter: Fighter, sheet: string): readonly Pose[] {
   const poses = fighter.poses(sheet);
   if (!poses) throw new Error(`${fighter.name}: no poses for ${sheet}`);
   return poses;
+}
+
+function keysOf(fighter: Fighter, sheet: string): readonly Pose[] {
+  const keys = fighter.keys(sheet);
+  if (!keys) throw new Error(`${fighter.name}: no key poses for ${sheet}`);
+  return keys;
 }
 
 /**

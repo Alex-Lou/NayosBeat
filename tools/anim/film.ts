@@ -17,11 +17,20 @@ import { cpuStep, createCpu, type CpuLevel } from '../../src/ai/cpu.ts';
 import type { Colorway } from '../../src/art/index.ts';
 import { NAYO_CELLS } from '../../src/art/nayo/cells.ts';
 import { NAYO_CLIPS, NAYO_PROJECTILES } from '../../src/art/nayo/clips.ts';
+import { NAYO_PLAYED } from '../../src/art/nayo/played.ts';
 import { NAYO_SHEETS } from '../../src/art/nayo/sheets.ts';
 import { RIFF_CELLS } from '../../src/art/riff/cells.ts';
 import { RIFF_CLIPS } from '../../src/art/riff/clips.ts';
+import { RIFF_PLAYED } from '../../src/art/riff/played.ts';
 import { RIFF_SHEETS } from '../../src/art/riff/sheets.ts';
-import { clipOf, effectsOf, type ClipId, type FighterArt } from '../../src/art/types.ts';
+import {
+  clipOf,
+  effectsOf,
+  playedClips,
+  playedStrips,
+  type ClipId,
+  type FighterArt,
+} from '../../src/art/types.ts';
 import type { MatchConfig } from '../../src/core/config.ts';
 import { toPx } from '../../src/core/constants.ts';
 import { createInitialState, type GameState, type RoundPhase } from '../../src/core/state.ts';
@@ -117,17 +126,28 @@ export interface Film {
   readonly ticks: readonly FilmTick[];
 }
 
-/** The art of a fighter as the game plays it, without its images (the bundler's alone). */
+/**
+ * The art of a fighter as the game plays it (src/art/<fighter>/index.ts), without its images (the
+ * bundler's alone): the keys and their in-betweens, the keys alone for the animation of before.
+ */
 const ARTS: Readonly<Record<FighterId, FighterArt>> = {
   nayo: {
     key: 'nayo',
-    sheets: NAYO_SHEETS,
-    clips: NAYO_CLIPS,
+    sheets: playedStrips(NAYO_SHEETS, NAYO_PLAYED),
+    clips: playedClips(NAYO_CLIPS, NAYO_PLAYED, NAYO_SHEETS),
+    keyClips: NAYO_CLIPS,
     projectiles: NAYO_PROJECTILES,
     cells: NAYO_CELLS,
     urls: {},
   },
-  riff: { key: 'riff', sheets: RIFF_SHEETS, clips: RIFF_CLIPS, cells: RIFF_CELLS, urls: {} },
+  riff: {
+    key: 'riff',
+    sheets: playedStrips(RIFF_SHEETS, RIFF_PLAYED),
+    clips: playedClips(RIFF_CLIPS, RIFF_PLAYED, RIFF_SHEETS),
+    keyClips: RIFF_CLIPS,
+    cells: RIFF_CELLS,
+    urls: {},
+  },
 };
 
 /** A golden replay played whole, then `then` ticks with nothing pressed. */

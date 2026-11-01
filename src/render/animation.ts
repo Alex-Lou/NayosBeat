@@ -84,6 +84,28 @@ export function showFighter(
   else if (fighter.action === 'hitstun' || fighter.action === 'blockstun') {
     shown.tick = stunTick(clipOf(art, shown.clip), shown.tick, fighter.stunTotal);
   }
+  if (context.options.legacy) shown.tick = keyTick(art, shown.clip, shown.tick);
+}
+
+/**
+ * The animation of before (docs/art/animation-plan.md §3.3, F2): the clip of the keys alone
+ * (`FighterArt.keyClips`) shows, `tick` ticks in, the key that the played clip shows from the
+ * tick this returns on, the tick that key came on. Each key comes on at the same tick in both,
+ * so the in-betweens are skipped and the keys held as long as they were. A clip without
+ * in-betweens, and the last hold, never cut, keep `tick` itself.
+ */
+function keyTick(art: FighterArt, id: ClipId, tick: number): number {
+  const keys = art.keyClips?.[id];
+  const total = keys ? sumTicks(keys, 0) : 0;
+  const same = !keys || keys === art.clips[id];
+  if (same || !Number.isFinite(tick) || (tick >= total && keys.loopFrom === undefined)) {
+    return tick;
+  }
+  const index = clipFrameAt(keys, tick);
+  const start = total - sumTicks(keys, index);
+  if (tick < total || keys.loopFrom === undefined) return start;
+  const loopStart = total - sumTicks(keys, keys.loopFrom);
+  return tick - ((tick - loopStart) % (total - loopStart)) - loopStart + start;
 }
 
 /**
