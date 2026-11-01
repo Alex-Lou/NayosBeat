@@ -120,7 +120,7 @@ describe('the veils over the fight (docs/flashs.md §2)', () => {
 
   it('never follows a colored veil with one of another color within a second', () => {
     const { effects: fx, eclat, vignette } = effects();
-    const cyan = koVeil('finisher', CYAN, GREYBOX_COLORS);
+    const cyan = koVeil('ultimate', CYAN, GREYBOX_COLORS);
     const magenta = koVeil('combo', MAGENTA, GREYBOX_COLORS);
     if (!cyan || !magenta) throw new Error('Missing veils');
     fx.veil(cyan, { x: 0, y: 0 });

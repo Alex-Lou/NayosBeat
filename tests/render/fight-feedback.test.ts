@@ -4,7 +4,12 @@ import type { Sfx } from '../../src/audio/sfx';
 import { px } from '../../src/core/constants';
 import type { Comfort } from '../../src/app/comfort';
 import { FightFeedback, MUTED_DELAY, type FeedbackStage } from '../../src/render/fight-feedback';
-import { HAPTICS, SHATTER_RUMBLE, type FightEvent } from '../../src/render/fight-events';
+import {
+  HAPTICS,
+  SHATTER_RUMBLE,
+  type FightEvent,
+  type KoFinish,
+} from '../../src/render/fight-events';
 import { FlashBudget, PLACE_STEP, type FlashMode } from '../../src/render/flash-budget';
 import { GREYBOX_COLORS } from '../../src/render/greybox-stage';
 import { hitStyleOf } from '../../src/render/hit-styles';
@@ -245,7 +250,7 @@ describe('a KO that blows a Boost gauge up (docs/combos-v3.md §1.8.6)', () => {
   });
 
   /** The final blow, landed by player 1, `finish` saying how. */
-  const ko = (finish: 'plain' | 'combo' | 'finisher'): FightEvent => ({
+  const ko = (finish: KoFinish): FightEvent => ({
     type: 'ko',
     finish,
     x: px(200),
@@ -277,15 +282,18 @@ describe('a KO that blows a Boost gauge up (docs/combos-v3.md §1.8.6)', () => {
     };
   };
 
-  it('rumbles the gamepads and buzzes the phone hard, an Ultime only', () => {
+  it('rumbles the gamepads and buzzes the phone hard, an Ultime or a Finisher only', () => {
     const vibrate = vi.fn();
     const rumble = vi.fn();
-    withHaptics(vibrate, rumble).react(ko('finisher'));
-    expect(rumble).toHaveBeenCalledWith(SHATTER_RUMBLE.ms, SHATTER_RUMBLE.strength);
-    // Player 1 landed it: their phone buzzes all the same.
-    expect(vibrate).toHaveBeenCalledWith(HAPTICS.shatter);
-    rumble.mockClear();
-    vibrate.mockClear();
+    // The Finisher's KO plays as an Ultime's until its scene comes (docs/finisher.md §5.10).
+    for (const finish of ['ultimate', 'finale'] as const) {
+      withHaptics(vibrate, rumble).react(ko(finish));
+      expect(rumble, finish).toHaveBeenCalledWith(SHATTER_RUMBLE.ms, SHATTER_RUMBLE.strength);
+      // Player 1 landed it: their phone buzzes all the same.
+      expect(vibrate, finish).toHaveBeenCalledWith(HAPTICS.shatter);
+      rumble.mockClear();
+      vibrate.mockClear();
+    }
     withHaptics(vibrate, rumble).react(ko('plain'));
     withHaptics(vibrate, rumble).react(ko('combo'));
     expect(rumble).not.toHaveBeenCalled();
@@ -298,7 +306,7 @@ describe('the veils and the shake, never a flash over the whole screen (docs/fla
     vi.clearAllMocks();
   });
 
-  const ko = (finish: 'plain' | 'combo' | 'finisher'): FightEvent => ({
+  const ko = (finish: KoFinish): FightEvent => ({
     type: 'ko',
     finish,
     x: px(200),
@@ -321,11 +329,16 @@ describe('the veils and the shake, never a flash over the whole screen (docs/fla
     expect(veils()).toMatchObject([{ kind: 'vignette', color: NAYO_STYLE.energy }]);
     expect(shown.jolt).toHaveBeenLastCalledWith(TRAUMA.ko.combo, -1);
     shown.veil.mockClear();
-    feedback().react(ko('finisher'));
+    feedback().react(ko('ultimate'));
     expect(veils()).toMatchObject([{ kind: 'eclat', color: NAYO_STYLE.energy }]);
     // The éclat bursts from the impact, in world pixels.
     expect(shown.veil).toHaveBeenLastCalledWith(expect.anything(), { x: 200, y: 350 });
-    expect(shown.jolt).toHaveBeenLastCalledWith(TRAUMA.ko.finisher, -1);
+    expect(shown.jolt).toHaveBeenLastCalledWith(TRAUMA.ko.ultimate, -1);
+    // The Finisher's, as an Ultime's until its scene comes (docs/finisher.md §5.10).
+    shown.veil.mockClear();
+    feedback().react(ko('finale'));
+    expect(veils()).toMatchObject([{ kind: 'eclat', color: NAYO_STYLE.energy }]);
+    expect(shown.jolt).toHaveBeenLastCalledWith(TRAUMA.ko.finale, -1);
   });
 
   it("darkens the stage on the super's freeze, a platine halo behind its fighter", () => {
@@ -362,7 +375,7 @@ describe('the flash budget, asked once a tick (docs/flashs.md §4)', () => {
     const hit = blow('hit', false, true) as Extract<FightEvent, { type: 'hit' }>;
     return { ...hit, by, counter };
   };
-  const ko = (by: 0 | 1, finish: 'plain' | 'finisher' = 'plain'): FightEvent => {
+  const ko = (by: 0 | 1, finish: 'plain' | 'ultimate' = 'plain'): FightEvent => {
     const final = blow('ko', false) as Extract<FightEvent, { type: 'ko' }>;
     return { ...final, by, finish };
   };
@@ -428,7 +441,7 @@ describe('the flash budget, asked once a tick (docs/flashs.md §4)', () => {
     fight.react(ko(0));
     expect(sparks()).toEqual(['pulse', 'koMuted']);
     fight.wait(60);
-    fight.react(ko(0, 'finisher'));
+    fight.react(ko(0, 'ultimate'));
     expect(veils()).toMatchObject([{ kind: 'eclat', color: DIM_COLOR }]);
     // An Ultime's: the gauges it blows up on the HUD leave no room for its spark.
     expect(sparks()).toEqual(['pulse', 'koMuted']);
@@ -445,13 +458,13 @@ describe('the flash budget, asked once a tick (docs/flashs.md §4)', () => {
   it('tells the HUD how a fighter fell: its gauges break still when no room is left', () => {
     const knockOut = vi.fn();
     const fight = new Fight({ ...stageOf('off'), knockOut });
-    fight.react(ko(0, 'finisher'));
-    expect(knockOut).toHaveBeenLastCalledWith(1, 'finisher', false);
+    fight.react(ko(0, 'ultimate'));
+    expect(knockOut).toHaveBeenLastCalledWith(1, 'ultimate', false);
     fight.wait(60);
     // What already lights there (another piece that waited) leaves no room for the shards.
     fight.stage.budget.show(400);
-    fight.react(ko(1, 'finisher'));
-    expect(knockOut).toHaveBeenLastCalledWith(0, 'finisher', true);
+    fight.react(ko(1, 'ultimate'));
+    expect(knockOut).toHaveBeenLastCalledWith(0, 'ultimate', true);
   });
 
   it('asks for the stamps that are no blow, and for a guard spark: refused, calm, or none', () => {

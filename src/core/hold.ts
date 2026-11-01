@@ -3,6 +3,7 @@ import { agedBuffer, readInput } from './commands';
 import type { FighterTemplate, MatchConfig } from './config';
 import { enter, nextFrame } from './fighter/action';
 import { startAttack } from './fighter/move';
+import { dangerMarked, inDanger } from './finisher';
 import { Input, type InputBits } from './input';
 import type { MoveData } from './move-data';
 import { holdMove, isHoldChoice, moveDuration, moveOf } from './moves';
@@ -241,8 +242,9 @@ function holderTick(
 /**
  * The holder's move lands on its startup frame: a pummel hurts the held fighter, who reels
  * again (the `held` loop starts over on the impact); a throw lets it go, flying, and the hold
- * is over. Fixed damage, no scaling; it counts in the combo. A KO ends the hold too, the
- * holder finishing its move as a plain attack.
+ * is over. Fixed damage, no scaling; it counts in the combo, whose first blow marks a fighter in
+ * danger (FLAG_DANGER, as `applyHit` does). A KO ends the hold too, the holder finishing its
+ * move as a plain attack.
  */
 function lands(
   hold: HoldState,
@@ -252,11 +254,14 @@ function lands(
   config: MatchConfig,
 ): HoldTick {
   const health = Math.max(config.training ? 1 : 0, held.health - move.damage);
+  const comboCount = held.comboCount + 1;
+  const danger = inDanger(held, config.fighters[heldOf(hold)].maxHealth);
   const hurt: FighterState = {
     ...held,
     health,
     actionFrame: 0,
-    comboCount: held.comboCount + 1,
+    comboCount,
+    flags: dangerMarked(held.flags, comboCount, danger),
   };
   const thrown = move.knockdown !== undefined;
   const kind = thrown ? 'throw' : 'pummel';

@@ -1,10 +1,18 @@
-import { Input, type InputBits } from '../core/input';
+import type { FinisherState } from '../core/finisher';
+import { has, Input, type InputBits } from '../core/input';
 import { BOOST_BAR, BOOST_MAX } from '../core/rules';
+import type { Facing, FighterAction } from '../core/state';
 import { nearestButton, TOUCH_BUTTONS } from './touch-layout';
-import { bitsFromStick, followFinger, type Point } from './touch-stick';
+import { bitsFromStick, finisherBack, followFinger, type Point } from './touch-stick';
 
 /** How far the knob goes from the stick center; beyond it, the center follows the thumb. */
 const KNOB_TRAVEL_PX = 36;
+/**
+ * The stuns in which the guard reads the stick held, on every tick (core/combat.ts,
+ * BLOCKING_ACTIONS), while a BOOST press is only buffered: there, the 35° read would take down
+ * off the crouch guard on the ticks of the press, and let a low blow through.
+ */
+const GUARDING_STUNS: ReadonlySet<FighterAction> = new Set(['blockstun', 'tech']);
 /** The arc filling on the BOOST button's ring moves by a twentieth of a bar, as the HUD's. */
 const RING_STEPS = 20;
 
@@ -44,6 +52,9 @@ export class TouchControls {
   private readonly boostButton: HTMLDivElement | undefined;
   private shownBars = -1;
   private shownPart = -1;
+  /** FINISH lit for player 1: the button wears it, and the fighter's back (Left or Right). */
+  private finisher = false;
+  private finisherBack: InputBits = 0;
 
   /**
    * @param onFirstTouch Called once, from inside a user gesture (e.g. to go fullscreen).
@@ -109,7 +120,14 @@ export class TouchControls {
     // (back + DASH is a backdash, → + S the forward special), and it outranks a double tap on
     // that tick anyway.
     const latched = this.passedNeutral && this.tappedBits === 0;
-    let bits = (latched ? 0 : this.stickBits) | this.tappedBits;
+    let stick = latched ? 0 : this.stickBits;
+    // BOOST pressed with FINISH lit: a thumb a little low on the back side still reads back, on
+    // the read of the press, whose directions the core keeps with the command.
+    if (this.finisherBack !== 0 && has(this.tappedBits, Input.Boost)) {
+      const { finger, stickOrigin: origin } = this;
+      stick = finisherBack(stick, finger.x - origin.x, finger.y - origin.y, this.finisherBack);
+    }
+    let bits = stick | this.tappedBits;
     for (let index = 0; index < this.holders.length; index++) {
       if ((this.holders[index] ?? 0) > 0) bits |= TOUCH_BUTTONS[index]?.flag ?? 0;
     }
@@ -139,6 +157,23 @@ export class TouchControls {
       button.style.setProperty('--boost-part', String(part / RING_STEPS));
       this.shownPart = part;
     }
+  }
+
+  /**
+   * Player 1's Finisher signal (docs/finisher.md §1.2), its fighter facing `facing`, doing
+   * `action`: ready, the BOOST button wears its steady mark (`.finisher`: its fill and its label
+   * in the energy, nothing pulsing; blocked, it stays `.full`), and back reads down to 35° under
+   * the horizontal as BOOST is pressed (§1.3), but not in blockstun or a tech, where the press is
+   * only buffered and the guard reads the stick held (GUARDING_STUNS). Written to the page only
+   * when it changes.
+   */
+  showFinisher(signal: FinisherState, facing: Facing, action: FighterAction): void {
+    const ready = signal === 'ready';
+    const back = facing === 1 ? Input.Left : Input.Right;
+    this.finisherBack = ready && !GUARDING_STUNS.has(action) ? back : 0;
+    if (ready === this.finisher || !this.boostButton) return;
+    toggle(this.boostButton, 'finisher', ready);
+    this.finisher = ready;
   }
 
   /** Removing the elements also drops every listener attached to them. */

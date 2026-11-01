@@ -2,6 +2,7 @@ import type Phaser from 'phaser';
 import { clipOf, effectsOf, type FighterArt } from '../art/types';
 import type { FighterTemplate, MatchConfig } from '../core/config';
 import { toPx } from '../core/constants';
+import type { FinisherState } from '../core/finisher';
 import { isActiveFrame, moveOf, tierOf } from '../core/moves';
 import type { FighterState, GameState } from '../core/state';
 import { AnchoredSprite } from './anchored-sprite';
@@ -10,6 +11,7 @@ import { BoostEcho } from './boost-echo';
 import { DashTrail } from './dash-trail';
 import { DEPTH } from './depth';
 import type { DissolveStyle } from './dissolve';
+import { FinisherHalo } from './finisher-halo';
 import { FxGate, type FlashBudget } from './flash-budget';
 import { FxDissolve } from './fx-dissolve';
 import { FxPixels } from './fx-pixels';
@@ -36,10 +38,12 @@ export interface SpriteFighterLook {
  * have front effects play them in step, over both fighters; a dash leaves afterimages in the
  * fighter's energy color (`trailColor`), a Boost move white echoes (`BoostEcho`). What the
  * effects of a special, a Remix or a super stop showing dissolves (`FxDissolve`). A clip of
- * effects that would flash beyond the budget plays dark (`FxGate`, docs/flashs.md §4). Its boxes
- * show in the debug view (BoxOverlay).
+ * effects that would flash beyond the budget plays dark (`FxGate`, docs/flashs.md §4). Its
+ * Finisher ready, a halo glows on the floor under its feet (`FinisherHalo`). Its boxes show in
+ * the debug view (BoxOverlay).
  */
 export class SpriteFighterView {
+  private readonly halo: FinisherHalo;
   private readonly shadow: Phaser.GameObjects.Ellipse;
   private readonly body: AnchoredSprite;
   private readonly effects: AnchoredSprite | undefined;
@@ -65,6 +69,8 @@ export class SpriteFighterView {
   ) {
     this.budget = look.budget;
     this.pixels = new FxPixels(scene, art, look.stage);
+    // Under the shadow: the glow shows around the feet.
+    this.halo = new FinisherHalo(scene, groundY, trailColor, look.stage);
     this.shadow = scene.add.ellipse(
       0,
       groundY,
@@ -88,11 +94,12 @@ export class SpriteFighterView {
   /**
    * The player's comfort options, at once (the pause's options): `calm`, the flashes reduced or
    * off (one fainter echo, fainter afterimages); `still`, the screen keeping still (the
-   * dissolving effects do not drift).
+   * dissolving effects do not drift); either, the Finisher's halo holds its breath.
    */
   setComfort(calm: boolean, still: boolean): void {
     this.echo.calm = calm;
     this.trail.calm = calm;
+    this.halo.calm = calm || still;
     if (this.dissolve) this.dissolve.still = still;
   }
 
@@ -101,8 +108,11 @@ export class SpriteFighterView {
     this.body.setDepth(front ? DEPTH.fighterFront : DEPTH.fighterBack);
   }
 
-  /** `frames`: display frames of 1/60 s since the last update (the dissolves go by them). */
-  update(state: GameState, frames = 1): void {
+  /**
+   * `frames`: display frames of 1/60 s since the last update (the dissolves go by them);
+   * `finisher`: the fighter's Finisher signal (finisher-signal.ts).
+   */
+  update(state: GameState, frames = 1, finisher: FinisherState = 'off'): void {
     const fighter = state.fighters[this.player];
     const template = this.config.fighters[this.player];
     const round = state.round;
@@ -154,6 +164,7 @@ export class SpriteFighterView {
     this.before.flip = flip;
     const shrink = SHADOW_HALF_HEIGHT / (SHADOW_HALF_HEIGHT + height);
     this.shadow.setPosition(x, this.groundY).setScale(shrink);
+    this.halo.update(x, finisher, state.frame);
   }
 }
 

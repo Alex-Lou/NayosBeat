@@ -8,6 +8,7 @@ import { hudComfortOf, isCalm, isStill, type Comfort } from '../app/comfort';
 import { matchConfigOf, player2Behavior, type MatchSetup } from '../app/match-setup';
 import type { MatchConfig } from '../core/config';
 import { TICK_RATE, toPx } from '../core/constants';
+import type { FinisherState } from '../core/finisher';
 import type { InputBits } from '../core/input';
 import { matchWinner } from '../core/round';
 import { MATCH_END_FRAMES } from '../core/rules';
@@ -27,6 +28,7 @@ import { DebugOverlay, describeGame, isDebugEnabled } from './debug-overlay';
 import { dissolveStyleOf } from './dissolve';
 import { detectEvents, type FightEvent } from './fight-events';
 import { FightFeedback } from './fight-feedback';
+import { FinisherSignal, sirenPitchOf } from './finisher-signal';
 import { FlashBudget } from './flash-budget';
 import { FighterView } from './fighter-view';
 import { drawGreyboxStage, GREYBOX_COLORS, GROUND_Y } from './greybox-stage';
@@ -61,11 +63,14 @@ type Mutable<T> = { -readonly [K in keyof T]: T[K] };
 
 /** A fighter on screen: sprites when it has art, a grey box otherwise. */
 interface FighterDisplay {
-  /** `frames`: display frames of 1/60 s since the last update. */
-  update(state: GameState, frames: number): void;
+  /**
+   * `frames`: display frames of 1/60 s since the last update; `finisher`: the fighter's Finisher
+   * signal (its halo).
+   */
+  update(state: GameState, frames: number, finisher: FinisherState): void;
   setFront(front: boolean): void;
-  /** The comfort options (sprites only): `calm`, the flashes not normal; `still`, no motion. */
-  setComfort?(calm: boolean, still: boolean): void;
+  /** The comfort options: `calm`, the flashes not normal; `still`, no motion. */
+  setComfort(calm: boolean, still: boolean): void;
 }
 
 /** Everything that exists only while the scene runs, created in `create`, freed on shutdown. */
@@ -78,6 +83,11 @@ interface Runtime {
   readonly projectileView: ProjectileView;
   /** How many flashes the fight may still show (docs/flashs.md §4): the effects ask it. */
   readonly budget: FlashBudget;
+  /**
+   * Both players' Finisher signals (docs/finisher.md §1.2), read once a frame: the HUD's plate,
+   * the BOOST button, the halos and the siren all show the same.
+   */
+  readonly finisher: FinisherSignal;
   readonly feedback: FightFeedback;
   readonly hud: Hud;
   /** The time a hold has left, around the fighter held. */
@@ -199,6 +209,13 @@ export class FightScene extends Phaser.Scene {
       ],
       projectileView: new ProjectileView(this, this.config, GROUND_Y, this.arts),
       budget,
+      // Both players hear the siren, each fighter's in its own key.
+      finisher: new FinisherSignal(this.config, (player) => {
+        this.sceneData.sfx.play(
+          'finisherReady',
+          sirenPitchOf(this.sceneData.setup.fighters[player]),
+        );
+      }),
       // Touch is player 1's: its phone vibrates when player 1 is grabbed or hit hard. The
       // gamepads rumble when a KO blows a Boost gauge up. The screen keeps still for those who
       // chose so (Options, or their system's « reduce motion »).
@@ -249,7 +266,7 @@ export class FightScene extends Phaser.Scene {
     runtime.feedback.setComfort(comfort);
     runtime.hud.setComfort(hudComfortOf(comfort));
     runtime.holdRing.calm = isCalm(comfort);
-    for (const view of runtime.fighterViews) view.setComfort?.(isCalm(comfort), isStill(comfort));
+    for (const view of runtime.fighterViews) view.setComfort(isCalm(comfort), isStill(comfort));
   }
 
   /**
@@ -278,7 +295,15 @@ export class FightScene extends Phaser.Scene {
           stage: GREYBOX_COLORS,
           budget,
         })
-      : new FighterView(this, color, GROUND_Y, player, this.config.fighters[player]);
+      : new FighterView(
+          this,
+          color,
+          GROUND_Y,
+          player,
+          this.config.fighters[player],
+          style.energy,
+          GREYBOX_COLORS,
+        );
   }
 
   /** Resumes after the pause menu. The paused time is not simulated. */
@@ -357,14 +382,17 @@ export class FightScene extends Phaser.Scene {
   private syncViews(runtime: Runtime, elapsed: number): void {
     const [viewA, viewB] = runtime.fighterViews;
     const [a, b] = this.state.fighters;
+    runtime.finisher.update(this.state);
+    const finisher = runtime.finisher.states;
     this.front = frontFighter(this.front, a, b);
     viewA.setFront(this.front === 0);
     viewB.setFront(this.front === 1);
-    viewA.update(this.state, elapsed);
-    viewB.update(this.state, elapsed);
+    viewA.update(this.state, elapsed, finisher[0]);
+    viewB.update(this.state, elapsed, finisher[1]);
     runtime.projectileView.update(this.state.projectiles, this.state.frame);
-    runtime.hud.update(this.state);
+    runtime.hud.update(this.state, finisher);
     runtime.touch?.showBoost(a.boost);
+    runtime.touch?.showFinisher(finisher[0], a.facing, a.action);
     runtime.holdRing.update(this.state);
     runtime.caption?.update(this.state);
     runtime.holdPrompt?.update(this.state);

@@ -4,7 +4,9 @@ Spec de design, version 2. Elle intègre la revue adverse de la v1 (7 bloquants,
 
 - **Sources** : le code de `main` avec la dissolution des effets (`e996dac`), `docs/flashs.md`, `docs/art/direction-hud.md`, `docs/art/dissolution.md`, `docs/combat-v2.md`, `docs/combos-v3.md`.
 - **Déjà livré, pris en compte**
-  - **Flashs, étape 1** : `veils.ts`, `luminance.ts`, `shake.ts`, l'événement `freeze`, le drapeau `pulse`. Les étapes 2 (le budget, `flash-budget.ts`) et 3 (les options « Effets de flash » et « Tremblement ») ne sont pas codées, et il n'y a pas d'écran Options dans `src/ui` : ce sont des prérequis, la PR 0 (§5.10), à faire d'abord.
+  - **Flashs, étape 1** : `veils.ts`, `luminance.ts`, `shake.ts`, l'événement `freeze`, le drapeau `pulse`. Les étapes 2 (le budget, `flash-budget.ts`) et 3 (les options « Effets de flash » et « Tremblement ») n'étaient pas codées à l'écriture de la spec : c'était la PR 0 (§5.10), **livrée depuis** (`ac05999`, voir `docs/flashs.md`).
+  - **Finisher, PR 1 (le cœur)** : livrée, voir §5.11.
+  - **Finisher, PR 2 (le signal)** : livrée, voir §5.11.
   - **Bras arrière de Nayo sur la Mégabasse** (PR #48) : sur s2, s3 et s4, il est balayé le long du dos, poing passé la hanche ; la boîte de corps de la 3e frappe (tics 14 à 17) descend de 55,5 à 49,5 px.
   - **Dissolution des effets** (`dissolve.ts`, `fx-dissolve.ts`) : la mise en scène s'en sert (§1.14, §4.3).
   - **En cours** : la reprise de l'anatomie de toutes les poses ; les poses citées ici peuvent encore bouger.
@@ -89,7 +91,7 @@ Tout passe par un seul prédicat pur, `finisherReady(state, player, config)`, en
 
 **La règle (b) est générique.** Elle vient de la super, pas d'une liste de routes : toute super qui quitte le sol exige une victime au sol. La Mégabasse reste au sol, elle n'est pas concernée : ses routes en l'air passent 3 sur 3.
 
-**Revérifié au premier contact.** Les voyants 3 et 4 sont relus sur le tic du premier contact de la super (la jauge, elle, est déjà dépensée). Entre l'appui et ce contact, la victime a pu sauter (le Slam bondit 10 tics avant son gel) ou prendre un Vinyle. S'ils tombent, pas de verrou : c'est une super ordinaire (§1.6).
+**Revérifié au premier contact.** Les voyants 3 et 4 sont relus sur le tic du premier contact de la super (la jauge, elle, est déjà dépensée). Entre l'appui et ce contact, la victime a pu sauter (le Slam bondit 10 tics avant son gel) ou prendre un Vinyle. S'ils tombent, pas de verrou : c'est une super ordinaire (§1.6). Sur ce même tic, le voyant 4 demande aussi que toutes les frappes à venir trouvent la victime (la garantie, §1.6) : ce contact est la 1re frappe de la super, et le corps, suivi jusqu'à chaque frappe, reste dans sa boîte sans retomber en chemin.
 
 **Comment se lit le voyant 3**
 - Au neutre ou en garde (`comboCount === 0`), on lit la vie actuelle de l'adversaire.
@@ -186,6 +188,7 @@ Touches vérifiées dans `keyboard.ts` (positions physiques, `KeyboardEvent.code
 - Un pouce qui tire « arrière » un peu bas donne la Montée platine (1 barre) : le Finisher devient impossible.
 - **Correction** : quand FINISH est allumé, à l'appui de BOOST, le stick lit « arrière » jusqu'à 35° sous l'horizontale, côté dos seulement. ↙ franc (45°) reste bas.
 - Choix : c'est l'option la plus simple et la plus sûre, car rien ne change hors de l'état armé. Avancer « Ultime en un appui » ajouterait un bouton.
+  - Dans l'état armé, la garde ne change pas non plus : en blockstun et en tech, où l'appui n'est que mis en buffer et où la garde lit le stick tenu, le stick se lit comme d'habitude (§5.11).
 - Le seuil est à mesurer sur téléphone.
 
 **D'où il part** : exactement d'où part la super (`cancelMove`, `tierOf`).
@@ -247,6 +250,7 @@ Touches vérifiées dans `keyboard.ts` (positions physiques, `KeyboardEvent.code
 C'est celle de la super.
 - **Mégabasse** : hitbox de 4 à 60 px devant, de 0 à 90 px de haut. Elle touche jusqu'à environ 75 px de centre à centre, au sol comme en l'air. Depuis la tâche 52, la boîte de corps de Nayo sur la 3e frappe (tics 14 à 17) monte à 49,5 px au lieu de 55,5.
 - **Slam** : 30 px d'avance (f2 à f12) plus 44 px de hitbox, soit environ 90 px. C'est un overhead. Il quitte le sol de f2 à f16 (sommet à 40 px).
+- **Le verrou porte un peu moins loin.** Chaque frappe repousse la victime de 2,5 px au sol : il ne prend que si la dernière l'atteint encore (§1.6). Mesuré à vide, au neutre, au milieu comme au coin : la Mégabasse verrouille jusqu'à 69 px sur Riff et 68 px sur Nayo, le Slam jusqu'à 84 px sur Nayo et 86 px sur Riff. Au-delà, la super touche encore, mais c'est une super ordinaire.
 
 ### 1.6 Ce que fait la super armée : le verrou
 
@@ -254,12 +258,13 @@ C'est celle de la super.
 
 **Au départ**, si `finisherReady` est vrai, `startGroundMove` pose **`FLAG_FINISHER`** (bit 128, libre) sur l'attaquant. Comme `FLAG_MOVE_HIT`, ce drapeau survit à la fin de la super : seul le prochain `startAttack` l'efface. Le verrou ne se déduit donc jamais des drapeaux seuls.
 
-**Au premier contact de la super, le verrou prend si les trois conditions tiennent :**
-1. la frappe touche (elle n'est pas parée) ;
+**Au premier contact de la super, le verrou prend si les quatre conditions tiennent :**
+1. la frappe touche (elle n'est pas parée), et c'est la 1re de la super. Si la 1re ne trouve personne (une victime encore au sol, invulnérable, qui se relève pendant la super), une frappe plus tardive ne verrouille pas : seule, la dernière prendrait toute la vie d'un coup ;
 2. l'attaquant n'est pas touché lui-même sur ce tic, ni par une frappe, ni par un projectile. `step.ts` trouve les deux frappes d'un tic avant d'en appliquer aucune : un échange n'arme rien ;
-3. les voyants 3 et 4 tiennent encore sur ce tic (§1.1).
+3. les voyants 3 et 4 tiennent encore sur ce tic (§1.1) ;
+4. toutes les frappes à venir trouveront la victime (la garantie, ci-dessous).
 
-Sinon `FLAG_FINISHER` tombe : c'est une super ordinaire, parée, échangée ou ratée.
+Sinon `FLAG_FINISHER` tombe : c'est une super ordinaire, parée, échangée, ratée ou hors de portée.
 
 **La définition** : `finisherLocked(state, p)` est vrai quand
 - l'attaquant est en `action === 'attack'`, avec `move === 'super'`, `FLAG_FINISHER` et `FLAG_MOVE_HIT` ;
@@ -285,8 +290,20 @@ Sinon `FLAG_FINISHER` tombe : c'est une super ordinaire, parée, échangée ou r
 **La garantie, imposée par un test** (§5.8, test 3)
 - Si la première frappe d'une super verrouillée touche, les suivantes touchent aussi.
 - Elle était fausse en v1 : Riff ←+H (Retourné sauté) puis Slam touchait une fois une victime en l'air, puis ratait. Avec `floor`, la victime restait à 1 PV, sans KO. La règle (b) du voyant 4 l'exclut.
-- Mesuré : toutes les routes de Riff qui marchent ont la victime au sol en `hitstun` avant le Slam (H ; H, H ; L, L, H, H ; →+S ; ↓+L). Toutes les routes de Nayo en l'air passent 3 sur 3 (↓+S, →+S, ←+H).
-- Le test couvre la matrice des routes, aux distances 24, 36 et 48 px, au milieu et au coin, pour J1 et J2.
+- Elle l'était encore dans la 1re version de la PR 1 (revue adverse), dans trois cas :
+  - au bout de la portée, la dernière frappe ratait une victime repoussée par les frappes d'avant : la Mégabasse à vide de 70 à 74 px, ou en anti-air sur un saut, le Slam à vide de 85 à 87 px ;
+  - une annulation tardive sur un corps jonglé bas : ↓ + S, puis arrière + BOOST au bout de sa fenêtre, et Riff retombait en `knockdown` à f14, avant la dernière frappe ;
+  - une super dont la 1re frappe ne trouvait personne (un réveil) verrouillait sur une frappe plus tardive, voire sur la dernière, qui prenait tout d'un coup.
+- **La règle d'état** (`everyBlowLands`, `finisher.ts`), lue au premier contact :
+  - ce contact doit être la 1re frappe de la super ;
+  - le corps de la victime est ensuite suivi jusqu'à chaque frappe à venir, comme les frappes l'envoient. Au sol, il glisse en arrière, freiné par le frottement. En l'air, chaque frappe le relance (la super ne dépense aucun point de jongle), le porte un peu plus loin, et la gravité le ramène ;
+  - chaque frappe doit le trouver dans sa boîte, sur son image, et un corps en l'air ne doit pas retomber avant la dernière ;
+  - sinon, pas de verrou. `validate-boost.ts` garantit que les frappes d'avant la dernière envoient le corps comme n'importe quel coup, et le tiennent en hitstun jusqu'à la suivante.
+- Le calcul est exact au milieu de la scène. Ailleurs, il est prudent :
+  - au coin, le recul reporté sur l'attaquant perd le dernier quart de pixel de chaque glissade ; le verrou y refuse donc jusqu'à un demi-pixel trop tôt, et la super ordinaire place parfois toutes ses frappes ;
+  - une frappe qui toucherait un tic après son image (un corps au ras du haut de la boîte : Nayo pris au sommet de son saut, en miroir) ne compte pas.
+- Mesuré : toutes les routes de Riff qui marchent ont la victime au sol en `hitstun` avant le Slam (H ; H, H ; L, L, H, H ; →+S ; ↓+L). Toutes les routes de Nayo en l'air passent 3 sur 3 (↓+S, →+S, ←+H) quand l'annulation part tôt ; au bout de la fenêtre, ↓ + S et → + S ne verrouillent plus.
+- Le test couvre la matrice des routes, à chaque pixel de 14 à 96 px, au milieu et au coin, pour J1 et J2 ; l'annulation appuyée de 0 à 40 tics après la sortie de l'étape d'avant ; la super en anti-air sur un saut.
 - Si un cas échoue, on corrige la règle d'état, pas les boîtes : le voyant s'éteint dans ce cas.
 
 **Ce que la frappe mortelle change vraiment**
@@ -317,10 +334,11 @@ Sinon `FLAG_FINISHER` tombe : c'est une super ordinaire, parée, échangée ou r
 - **Contre Nayo**
   - Parer : la Mégabasse est un mid, elle se pare debout comme accroupi.
   - Ne pas lancer de spécial qui se fait toucher à 80 px ou moins : c'est la route d'annulation.
-  - Rester à plus de 75 px pour faire sortir la Mégabasse à vide, puis punir le −16.
+  - Rester à plus de 75 px pour faire sortir la Mégabasse à vide, puis punir le −16. Dès 70 px, elle touche encore mais ne verrouille plus (§1.5) : c'est une super ordinaire.
 - **Contre Riff**
   - Elle bondit 10 tics, bien visibles, avant le gel.
   - C'est un overhead : se relever et parer debout.
+  - À 85 px ou plus, le Slam touche encore Nayo mais ne verrouille plus (§1.5).
   - La Mégabasse (invincible de f0 à f7) bat le Slam au réveil.
   - En l'air, on ne craint pas son Finisher (voyant 4, règle b).
 - **Ne pas se faire ouvrir sous 30 %** : c'est au premier coup du combo que le seuil se lit.
@@ -918,7 +936,8 @@ Le gel, l'aplat de couleur, les silhouettes, le gros plan ×2,0, le silence, le 
   - `inDanger(fighter, maxHealth)` ;
   - `finisherState(state, player, config)`, qui renvoie `'ready' | 'blocked' | 'off'` ;
   - `finisherReady(...)`, avec la règle d'état (b) ;
-  - `finisherLocked(state, player, config)`, la définition du §1.6.
+  - `finisherLocked(state, player, config)`, la définition du §1.6 ;
+  - la garantie, relue au premier contact (`everyBlowLands`) : c'est la 1re frappe de la super, et toutes les frappes à venir trouveront la victime (§1.6).
 - **`state.ts`** :
   - `FLAG_DANGER = 64`, ajouté à `VICTIM_FLAGS` ;
   - `FLAG_FINISHER = 128`, effacé par `startAttack` comme `FLAG_MOVE_HIT`.
@@ -928,17 +947,18 @@ Le gel, l'aplat de couleur, les silhouettes, le gros plan ×2,0, le silence, le 
 - **`step.ts`** :
   - calcule `armed` pour les deux joueurs, une fois par tic, et le passe à `updateFighter` comme `discOut` ;
   - `startGroundMove` pose `FLAG_FINISHER` sur la super si le joueur est armé ;
-  - au premier contact de la super, après avoir trouvé toutes les frappes du tic : le verrou prend si la frappe touche, si l'attaquant n'est pas touché sur ce tic, et si les voyants 3 et 4 tiennent ; sinon `FLAG_FINISHER` tombe ;
+  - au premier contact de la super, après avoir trouvé toutes les frappes du tic : le verrou prend si la frappe touche, si l'attaquant n'est pas touché sur ce tic, si les voyants 3 et 4 tiennent, et si la garantie tient ; sinon `FLAG_FINISHER` tombe ;
   - `struck` choisit le mode de dégâts selon que la frappe est la dernière ou non ;
   - pendant le verrou : aucune frappe de la victime, aucun projectile sur la paire (`canBeHit` faux, comme pour une prise).
 - **`round.ts`** : le chrono ne décompte pas tant que `finisherLocked` est vrai.
 - **`config.ts`** : ajout de `trainingFinisher` et `trainingDummyHealth`. **`training.ts`** : `trainingRefill` prend le pourcentage de vie. **`tools/replays/replay.ts`** : les deux champs dans `Replay` et `replayConfig`.
 - **Validation** (`validate-boost.ts`) :
   - la dernière frappe de chaque super met au sol, pour que le KO tombe sur un grand coup ;
+  - les frappes d'avant la dernière tiennent le corps jusqu'à la suivante : ni mise au sol, ni extension, ni CONTRE à elles, et un hitstun qui dure jusqu'à la frappe suivante, même au bout d'un combo ;
   - le Finisher n'a aucune donnée à lui.
 - **Entrées** : rien dans le cœur en version 1. L'option « Ultime en un appui » (§1.3) viendra plus tard.
 - **Pas de nouveau `MoveId`** : ni `OPTIONAL_KINDS`, ni `MOVE_ORDER`, ni clip de coup.
-- **Coût en temps** : une fonction par tic, environ 15 comparaisons d'entiers, aucune allocation, moins de 0,05 ms par tic.
+- **Coût en temps** : une fonction par tic, environ 15 comparaisons d'entiers, aucune allocation, moins de 0,05 ms par tic. La garantie ne tourne qu'au tic du premier contact : une douzaine de pas au plus, sans allocation.
 
 ### 5.2 Rendu
 
@@ -1049,7 +1069,7 @@ Estimation : environ 1 h pour le moteur, environ 1 h par perso.
 
 1. **Prédicat** : `finisherReady` suit sa table de vérité (balle de match, jauge, seuil au début du combo, place, `FLAG_LIMIT`, `FLAG_BOUNCE`, victime en l'air pour le Slam), pour J1 et J2.
 2. **Prise du verrou** : il ne prend ni sur une frappe parée, ni si l'attaquant est touché sur ce tic, ni si la victime a sauté pendant le bond du Slam.
-3. **Garantie** : sur la matrice des routes, à 24, 36 et 48 px, au milieu et au coin, pour J1 et J2, si la 1re frappe verrouillée touche, toutes touchent.
+3. **Garantie** : sur la matrice des routes, à chaque pixel de 14 px jusqu'au-delà de la portée, au milieu et au coin, pour J1 et J2, avec l'annulation appuyée tôt ou tard dans sa fenêtre, et en anti-air sur un saut : si le verrou prend, toutes les frappes touchent et le KO tombe.
 4. **Frappe mortelle** : les frappes d'avant arrêtent la vie à 1 PV, la dernière met à 0, en miroir J1 et J2.
 5. **Fin sans KO** : la victime écartée à la main après la 1re frappe garde sa vie (≥ 1), `finisherLocked` repasse à faux et le chrono repart.
 6. **Échanges** : deux Mégabasses au même tic (96 PV chacune, aucun verrou), Slam contre jab au même tic, Vinyle qui touche l'attaquant au tic du 1er contact.
@@ -1077,14 +1097,95 @@ Estimation : environ 1 h pour le moteur, environ 1 h par perso.
 
 | # | PR | Contenu | Estimation |
 |---|---|---|---|
-| 0 | Flashs, étapes 2 et 3 (**prérequis**, à faire d'abord) | `flash-budget.ts` (compté en images de `visualClock`, sur la surface affichée, fx de planche compris) ; écran Options (« Effets de flash », « Tremblement ») ; persistance comme le son ; accès depuis la pause, appliqué à chaud ; avis au premier lancement ; drapeaux `flashes` et `motion` du HUD | 0,5 à 1 jour |
-| 1 | Finisher : cœur | `finisher.ts`, drapeaux, verrou (prise, échanges, paire intouchable, fin), frappe mortelle, chrono, renommage de `KoFinish` et de `FINISHER`, options d'entraînement dans `Replay`, `finisher.json`, tests 1 à 11 et 19 | 1 jour |
-| 2 | Finisher : signal | FINISH, `.finisher`, lecture d'arrière à 35°, halo, sirène, tests 12 et 13 | 0,25 jour |
+| 0 | Flashs, étapes 2 et 3 (**prérequis**, **livrée**) | `flash-budget.ts` (compté en images de `visualClock`, sur la surface affichée, fx de planche compris) ; écran Options (« Effets de flash », « Tremblement ») ; persistance comme le son ; accès depuis la pause, appliqué à chaud ; avis au premier lancement ; drapeaux `flashes` et `motion` du HUD | 0,5 à 1 jour |
+| 1 | Finisher : cœur (**livrée**, §5.11) | `finisher.ts`, drapeaux, verrou (prise, échanges, paire intouchable, fin), frappe mortelle, chrono, renommage de `KoFinish` et de `FINISHER`, options d'entraînement dans `Replay`, `finisher.json`, tests 1 à 11 et 19 | 1 jour |
+| 2 | Finisher : signal (**livrée**, §5.11) | FINISH, `.finisher`, lecture d'arrière à 35°, halo, sirène, tests 12 et 13 | 0,25 jour |
 | 3 | Finisher : mise en scène | `finisher-scene.ts`, piste de tics, horloges, bus `fight`, avance rapide, passage, caméra et textes à ×2,0, effets × 0,725, `Shake` à axe, scripts, cartes, foule, option « Mise en scène », tests 14 et 15 (avec les poses de repli) | 0,75 à 1 jour |
 | 4 | Finisher : art et sons | casque de Nayo (nouvelle attache) et 3 poses, 2 poses de Riff, revue du propriétaire ; 10 sons, moteur `sfx.ts`. Part de main, après la tâche 52 (livrée) | 0,75 à 1,25 jour |
 | 5 | Finisher : CPU, entraînement, aide | plans, défense, options d'entraînement, textes, docs, D24, re-mesure de l'IA, tests 16 à 18 | 0,5 jour |
 
 Total : environ 4 à 5 jours-agent. C'est une estimation, pas une mesure.
+
+### 5.11 Livré : les PR 1 et 2
+
+#### La PR 1, « Finisher : cœur »
+
+**Ce qui est fait** (le détail de §5.1, plus le `KoFinish` de §5.2 et §5.9)
+- **`src/core/finisher.ts`** : `FINISHER_DANGER_PERCENT = 30`, `inDanger`, `finisherState` (`'ready' | 'blocked' | 'off'`), `finisherReady`, `finisherLocked`, et ce que `step.ts` en tire : `locks` (le verrou sur une paire d'états), `finisherBlowOf` (le mode d'une frappe : `'floor'`, `'lethal'` ou rien), qui relit au premier contact la garantie (`everyBlowLands`, §1.6), et `dangerMarked` (le drapeau du 1er coup). En entiers, sans allocation.
+- **`state.ts`** : `FLAG_DANGER = 64` (dans `VICTIM_FLAGS`) et `FLAG_FINISHER = 128` (effacé par `startAttack`, comme `FLAG_MOVE_HIT`).
+- **`step.ts`** : `armed` est lu une fois par tic sur l'état d'avant et passé à `updateFighter`, `actOnGround`, `updateMove` et `startGroundMove`, qui marque la super. Au premier contact, le verrou prend si la frappe touche, si rien n'a touché l'attaquant sur ce tic, si les voyants 3 et 4 tiennent encore et si la garantie tient ; sinon `FLAG_FINISHER` tombe (`connected`). Pendant le verrou, seule la super de l'attaquant est cherchée, et aucun projectile.
+- **`combat.ts`** : `applyHit` pose ou retire `FLAG_DANGER` au 1er coup du combo, après `flightOf`, et applique `floor` (1 PV au moins) ou `lethal` (`minHealth`).
+- **`round.ts`** : le chrono ne décompte pas tant que `finisherLocked` est vrai, y compris sur le tic du premier contact.
+- **`validate-boost.ts`** : la dernière frappe de chaque super met au sol, et celles d'avant tiennent le corps jusqu'à la suivante (ce que suit `everyBlowLands`).
+- **`juggle.ts`** : `juggleLift` (la relance d'un corps jonglé selon ses points) sort de `juggleHit`, pour que la garantie la reprenne.
+- **Entraînement** : `config.trainingFinisher` (`'match'` par défaut, `'always'`, `'off'`) et `config.trainingDummyHealth` (100, 50, 30 ou 10) ; `trainingRefill` prend le pourcentage. Les deux champs sont dans `Replay` et `replayConfig`. Le menu viendra avec la PR 5.
+- **Rendu** (`fight-events.ts`) : `KoFinish` vaut `'plain' | 'combo' | 'ultimate' | 'finale'`, `koFinishOf(tier, comboHits, finale)`, et `shatters(finish)` dit quand la jauge éclate. Les événements `finisherLock { by, name, x, y }` et `finisherBlow { by, x, y, away }` partent, en match comme en entraînement. Les clés de `TRAUMA.ko` suivent.
+- **Textes** : `FINISHER` devient `LIGHT_FINISHER` (`data/texts/shared.ts`).
+- **Tests** (§5.8) : 1, 2 et 4 à 8, 10 et 19 dans `tests/core/finisher.test.ts`, avec un cas par défaut de la revue (réveil, portée, annulation tardive) ; 3 (et 9) dans `tests/core/finisher-guarantee.test.ts` ; 11 et les événements dans `tests/render/fight-events.test.ts` ; la règle de validation dans `tests/data/fighters.test.ts` ; les options dans `tests/core/training.test.ts`.
+- **Replays** : les 29 hachages n'ont pas bougé. `finisher.json` (entraînement, « Toujours prêt », jauge pleine) rejoue `L, L, H, H, arrière + BOOST` de Nayo sur Riff : verrou au 1er contact, trois frappes, la dernière arrêtée à 1 PV, `finisherBlow`, puis la recharge.
+
+**Mesuré sur le cœur, figé par les tests**
+- La matrice du test 3 couvre 14 routes (Nayo : `L, L, H, H`, ↓ + S, → + S, ← + H, H, à vide ; Riff : `L, L, H, H`, H, `H, H`, → + S, ↓ + L, ← + H, ↓ + S, à vide), à chaque pixel de 14 à 96 px, au milieu et au coin, pour J1 et J2. Les routes à ouverture sont rejouées avec arrière + BOOST appuyé de 0 à 40 tics après la sortie de l'étape d'avant (à 24, 36 et 48 px), et la super sert d'anti-air sur des sauts sur place, en avant et en arrière (Nayo sur Riff et sur Nayo, Riff sur Nayo). Avec la règle d'état du §1.6, chaque fois que le verrou prend, toutes les frappes touchent et le KO tombe. Le Genou de Riff (↓ + S) ne verrouille jamais de 24 à 48 px ; son ← + H ne verrouille pas à 24 px (règle b) et ne verrouille plus loin que parce qu'il rate, la super partant à vide.
+- Hors des tests, un balayage plus large (235 000 supers armées : les routes de 14 à 110 px avec tous les délais, des sauts, des réponses de la victime à chaque tic, des réveils) donne 144 000 verrous et aucun sans KO. Sans la règle d'état, le même balayage en trouvait 15 400.
+- La portée du verrou à vide, au neutre, au milieu comme au coin : Mégabasse jusqu'à 69 px sur Riff (à 70 px, la super ordinaire place deux frappes et laisse Riff à 118 PV) et 68 px sur Nayo ; Slam jusqu'à 84 px sur Nayo (à 85 px, une frappe, Nayo à 180 PV) et 86 px sur Riff.
+- Sur un réveil, une super dont la 1re frappe ne trouve personne reste ordinaire : le Slam sur un Nayo à 300 PV qui se relève au 16e tic prend 170 PV, et la Mégabasse sur une Riff à 270 PV, 140 PV (relevée au 14e tic) ou 80 + 126 (au 8e).
+- ↓ + S de Nayo, puis arrière + BOOST 25 tics après sa sortie, verrouille et tue ; 26 tics après, Riff retomberait avant la dernière frappe : super ordinaire, Riff à 24 PV.
+- La Mégabasse ordinaire sur une Riff à 270 PV la laisse à 6 PV (80 + 72 + 112) ; armée, elle tue.
+- Deux Mégabasses au même tic s'échangent à f8 pour 96 PV chacune, sans verrou. Le Slam s'échange de même avec un jab ou avec un Vinyle au tic de son premier contact.
+- Un Vinyle lancé par la victime traverse la paire verrouillée. Sans verrou (au round 1), il touche Nayo au milieu de sa super, qui ne place que deux frappes.
+
+**Écarts à la spec, et pourquoi**
+- **`finisherLocked(state, player)` sans `config`** : la définition du §1.6 n'en a pas besoin.
+- **La paire intouchable se règle dans `step.ts`**, pas dans `canBeHit` : le verrou est une propriété de la paire, alors que `canBeHit` ne lit qu'un combattant. L'effet est celui du §1.6.
+- **`applyHit` ne reçoit pas `maxHealth`** : `HitDetail` porte `danger` (la victime était en danger avant le coup, lu par `inDanger` chez l'appelant) et `finisher` (le mode de la frappe). Les appels existants ne changent pas.
+- **Le 1er coup d'une prise pose aussi `FLAG_DANGER`** (`hold.ts`) : un combo ouvert par une prise se lit comme les autres, puisque la super touche un corps projeté qui est encore dans le combo.
+- **Un attaquant touché au tic du premier contact garde `FLAG_FINISHER`** jusqu'à son prochain coup, comme `FLAG_MOVE_HIT` sur un coup interrompu. Sa super est coupée, il n'est plus en `attack` : le verrou ne peut pas prendre.
+- **« Vie du mannequin » vaut pour le joueur 2**, le mannequin. Le joueur 1 revient toujours à 100 %.
+- **Les noms « Le Quatre » et « Larsen »** sont dans `src/data/roster.ts` (`finisherNameOf`), pour `finisherLock`. Le cœur n'en sait rien. Les scripts de la PR 3 pourront les reprendre.
+- **Un KO `finale` se rend pour l'instant comme celui d'un Ultime** : éclat au contact, jauge éclatée au contact, secousse 1, vibrations. Le passage par le metteur en scène vient avec la PR 3 (`TRAUMA.ko.finale` passera à 0,6 au contact).
+- **Test 9** : les tests `infinite*` et les combos de référence de `combos.test.ts` passent sans changement ; la matrice vérifie en plus qu'un Finisher ne prend jamais plus que les 30 % de départ.
+- **La garantie est prudente hors du milieu de la scène** (§1.6) : au coin, le verrou refuse jusqu'à un demi-pixel trop tôt, et une frappe qui toucherait un tic après son image ne compte pas. Le balayage compte 1 200 refus de ce genre, tous au coin ou sur un saut en miroir Nayo contre Nayo : ce sont des supers ordinaires.
+
+#### La PR 2, « Finisher : signal »
+
+**Ce qui est fait** (le signal du §1.2, l'entrée tactile du §1.3, la sirène du §5.4)
+- **Une lecture par image** (`src/render/finisher-signal.ts`) : `finisherSignalOf(state, player, config)` lit `finisherState` sur l'état affiché, et `FinisherSignal` garde les deux états pour tout ce qui les montre : la plaque, le bouton tactile, les halos et la sirène. `FightScene` le lit au début de `syncViews`. `SIGNAL_FADE_TICKS = 6`.
+- **La plaque** (`boost-gauge.ts`) : `FINISH_WORD`, `WORD_WIDTH = 48`, `GAUGE_WIDTH = WORD_X + 48 = 174`. `wordOf` donne le mot de chaque état :
+  - `ready` : FINISH en platine `#F2F6FF`, cerné de 1 px dans la couleur de HUD du perso (un trait de 2, comme le noir d'aujourd'hui), fixe ;
+  - `blocked` : le même à `BLOCKED_ALPHA = 0.4`, fixe ;
+  - `off` : comme avant, MAX qui clignote à 2 Hz, BOOST en dessous. Une jauge fissurée ou éclatée ne montre aucun signal.
+- **Le fondu de 6 tics** (`fadedWord`) : le même mot qui baisse va d'une opacité à l'autre sur les 6 tics ; le même mot qui monte (de `blocked` à `ready`) attend 3 tics, puis monte en 3, de 0,2 par tic ; un mot nouveau efface l'ancien en 3 tics, puis apparaît en 3. Ce qui s'allume s'allume donc sur la seconde moitié, à partir de `LIGHTS_AT = 4`, la première image où le mot se voit (un tiers). Jamais les deux à la fois, jamais plus d'un tiers d'opacité par tic.
+- **La plaque passe par le budget de flashs** : le changement part tout de suite, mais un mot qui s'allume demande au budget d'admettre `FINISH_PLATE_AREA = 380` px² de vue à `LIGHTS_AT`, pas à l'image où le signal change. La place que garde le budget couvre ainsi les images où le mot s'allume (les âges 4 à 6, dans `FLASH_MERGE`). Refusé, le mot attend là sans rien montrer (l'ancien déjà effacé, ou le même mot à son opacité d'avant) et redemande à chaque image (`admit` : la plaque ne prend jamais de créneau). Mesuré sur les lettres (Press Start 2P à 8 px, trait de 2) : 373 px² pour FINISH cerné, 139 pour BOOST, 92 pour MAX. De `ready` à `blocked`, le mot ne fait que baisser : rien à demander. `Hud.update(state, finisher)` passe à chaque jauge le signal de son perso.
+- **Le halo** (`finisher-halo.ts`, dans `SpriteFighterView` et dans `FighterView`, les boîtes grises) : une ellipse de 44 × 6 px du monde dans l'énergie du perso, sous son ombre.
+  - Son alpha vient d'`alphaOver(énergie, scène, VEIL_DELTA)` : 0,27 en cyan, 0,47 pour Nayo en tenue 2, 0,53 pour Riff, 0,28 pour Riff en tenue 2 (son or). Il n'allume rien à ΔL 0,10 : rien à demander au budget.
+  - Il respire sur 120 tics (un cosinus), de cet alpha au plus faible qui reste à ΔL 0,05 de lui sur chaque couleur de la scène.
+  - Il est fixe, à son plus clair, avec les effets de flash réduits ou le tremblement à « aucun », donc aussi avec `prefers-reduced-motion`. Il apparaît et part en 6 tics.
+- **Le bouton tactile** : `showFinisher(signal, facing, action)` (`touch-controls.ts`) pose `.finisher` en `ready` seulement ; en `blocked`, il reste `.full`. `.touch-boost.finisher` (`styles.css`) : fond `color-mix(in srgb, var(--boost-energy) 35%, transparent)`, libellé `var(--boost-energy)`, rien qui pulse. Aucun bouton de plus.
+- **La lecture d'arrière à 35°** (`finisherBack`, `touch-stick.ts`) : sur la lecture où BOOST est appuyé, FINISH allumé, un stick tiré entre 22,5° et 35° sous l'horizontale, côté dos (selon `facing`), perd son bas. Au-delà de 35°, ↙ reste bas ; côté avant, rien ne change ; BOOST tenu ensuite, le stick se lit comme d'habitude. C'est la direction que le cœur garde avec la commande (`bufferedInput`). Pas en blockstun ni en tech (`GUARDING_STUNS`, voir les écarts).
+- **La sirène** (`sfx.ts`, `finisherReady`) : elle part au front montant de `ready`, au plus une fois par round et par joueur (`round.number`). `play(name, pitch)` multiplie les fréquences : `sirenPitchOf` vaut 1 pour Nayo, 330/262 pour Riff (mi → si, à 0,3 Hz près).
+- **Tests** (§5.8)
+  - 12 : `tests/render/boost-gauge.test.ts` (48 px, les trois états, jamais de clignotement, le fondu, l'attente du budget à `LIGHTS_AT`, à 30 Hz aussi) et `tests/render/hud.test.ts` (ni le disque ni la piste du Crossfader, 38 px du disque de chaque côté ; le HUD suit le prédicat pour J1 et J2 sur de vrais états ; rien entre les rounds ; la plaque attend le budget, et sa place compte sur les images où FINISH s'allume, pas sur celle où le signal change).
+  - 13 : `tests/input/touch.test.ts` (`.finisher` change le fond et le libellé de `.full`, la classe seulement en `ready`, arrière lu jusqu'à 35° côté dos et à l'appui seulement, jamais en blockstun ni en tech, la grappe à 7 boutons).
+  - En plus : `tests/render/finisher-signal.test.ts` (le signal éteint hors du combat, la sirène une fois par round et par joueur), `tests/render/finisher-halo.test.ts` (ΔL ≤ 0,08, respiration ≤ 0,05, fixe au calme, fondu), `tests/audio/sfx.test.ts` (0,8 s, do → sol, 9 dB sous `heavyHit`), la surface de la plaque (`flash-areas.test.ts`) et ses lettres dans la police (`glyphs.test.ts`).
+
+**Écarts à la spec, et pourquoi**
+- **Le signal est éteint hors du combat** (`finisherSignalOf`) : entre deux rounds, les quatre voyants peuvent être allumés (le gagnant du round 1 passe à la balle de match, plein, face à un perdant à 0 PV), alors que personne ne peut jouer. Le prédicat du cœur ne change pas : c'est le rendu qui se tait.
+- **Le fondu se compte en tics** (`state.frame`), comme tout le HUD (direction-hud §1) : 6 images à vitesse normale, arrêté par la pause.
+- **Un mot nouveau passe par le vide** au lieu d'un fondu enchaîné : un seul texte par jauge, comme le compte le coût du HUD (direction-hud §6).
+- **FINISH bloqué garde son liseré d'énergie** : le même mot, à 40 %.
+- **La plaque passe par le budget**, ce que la spec ne demande pas (« ce n'est pas un flash ») : seule, elle ne flashe jamais (380 px² de vue, moins de la moitié des 990 des effets réduits), mais elle pourrait s'additionner à une gerbe étouffée qui part pendant qu'elle s'allume. Par exemple, Riff à 30 % sort d'un combo, Nayo passe à `ready` en balle de match, et son lourd touche 4 ou 5 images plus tard : 904 px² de vue (430 du monde à ×1,45), plus les 373 de FINISH, font 1 277 px² en 3 images, au-dessus des 990 que le budget laisse aux effets réduits. Sa place est donc gardée sur les images où FINISH s'allume, et c'est la gerbe qui prend un créneau, ou reste étouffée. Si la gerbe part avant, la plaque attend une ou deux images sans rien montrer.
+- **Le halo est fixe aussi avec les effets de flash réduits**, pas seulement en mouvement réduit : comme l'anneau de prise, blanc fixe au calme.
+- **Le halo de Riff en tenue 2 est or**, son énergie (comme ses traînées), alors que son HUD passe au cramoisi.
+- **En entraînement, la sirène sonne une fois par séance** : l'entraînement ne joue qu'un round.
+- **La sirène est un remplaçant** fait avec le moteur actuel : trois ondes carrées qui tirent vers la quinte (262 → 320, 320 → 392, puis 392 tenu), 0,8 s, à 9 dB sous le carré de `heavyHit` (0,35 × 10^(−9/20) ≈ 0,124). Ni passe-bas à 2 kHz ni vibrato de 6 Hz : la PR 4 fera la vraie.
+- **`.finisher` utilise `color-mix`** (Chrome 111, Safari 16.2) : un navigateur plus ancien ignore ce fond et garde celui de `.full`, mais le libellé passe quand même à l'énergie.
+- **« FINISH allumé » se lit `ready`**, pour la lecture à 35° comme pour `.finisher` : en `blocked`, arrière + BOOST ne donne qu'une super ordinaire, et élargir l'arrière y changerait des Remix d'anti-air en supers.
+- **Pas de lecture à 35° en blockstun ni en tech** (`GUARDING_STUNS`, `touch-controls.ts`) : la garde y lit le stick tenu à chaque tic, et l'appui de BOOST n'y est que mis en buffer. Sans son bas, la garde basse se levait sur la lecture de l'appui (1 tic, 2 à 30 i/s) et un coup bas passait, ce que le clavier et la manette ne font pas. Un reversal mis en buffer depuis la garde, pouce entre 22,5° et 35°, donne donc le Remix, comme avant la PR. Ailleurs (debout, accroupi, en marche arrière, en garde), l'appui lance la super sur son tic : la garde n'y est plus lue. Faire mieux demanderait au cœur de séparer la direction gardée avec la commande de celle que lit la garde, et le cœur est figé par la PR 1. `.finisher` suit toujours `ready` seul.
+- **Le seuil de 35° reste à mesurer sur téléphone** (§1.3).
+
+#### Ce qui reste (PR 3 à 5)
+- La mise en scène et le passage du KO `finale` par elle (PR 3) ; l'art et les sons, dont la vraie sirène (PR 4) ; l'IA, l'aide, le menu d'entraînement et les docs du §5.6, dont la plaque FINISH dans direction-hud (PR 5).
+- En entraînement avec « Toujours prêt », la ligne « Combo » montre aujourd'hui toute la vie prise par la dernière frappe ; la PR 5 doit y afficher les dégâts ordinaires de la super, et la raison d'un refus (test 16).
 
 ---
 

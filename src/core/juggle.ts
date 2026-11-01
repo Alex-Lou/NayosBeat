@@ -97,6 +97,10 @@ function juggleHit(defender: FighterState, move: MoveData, away: -1 | 1): Flight
   if (floors && floors.juggle === undefined) {
     return { vy: floors.vy, vx: signed(away, floors.vx), juggle: 0, flags };
   }
-  const vy = Math.min(AIR_HIT_LIFT, JUGGLE_LIFT_MIN + JUGGLE_LIFT_PER_POINT * left);
-  return { vy, vx: signed(away, JUGGLE_CARRY), juggle: left, flags };
+  return { vy: juggleLift(left), vx: signed(away, JUGGLE_CARRY), juggle: left, flags };
+}
+
+/** How high a plain blow pops a juggled body with `points` left: less as they run out. */
+export function juggleLift(points: number): number {
+  return Math.min(AIR_HIT_LIFT, JUGGLE_LIFT_MIN + JUGGLE_LIFT_PER_POINT * points);
 }

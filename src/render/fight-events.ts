@@ -1,7 +1,9 @@
 import type { FighterTemplate, MatchConfig } from '../core/config';
+import { finisherLocked } from '../core/finisher';
 import type { MoveId } from '../core/move-data';
 import { moveOf, tierOf } from '../core/moves';
 import type { Contact, CounterHit, FighterState, GameState, RoundPhase } from '../core/state';
+import { finisherNameOf } from '../data/roster';
 
 /**
  * Things worth a sound or a visual effect, found by comparing two consecutive states.
@@ -42,17 +44,28 @@ interface Blow extends Impact {
 
 /**
  * How the final blow knocked its fighter out, what the Boost gauge shows of it
- * (docs/combos-v3.md §1.8.6): `plain`, a blow on its own (the gauge stays whole); `combo`, the end
- * of a combo of COMBO_KO_HITS blows or more (it cracks); `finisher`, a super (it shatters).
+ * (docs/combos-v3.md §1.8.6, docs/finisher.md §1.13): `plain`, a blow on its own (the gauge stays
+ * whole); `combo`, the end of a combo of COMBO_KO_HITS blows or more (it cracks); `ultimate`, a
+ * super (it shatters); `finale`, the last blow of a super the Finisher locks (it shatters too,
+ * on the landing once the Finisher's scene plays: until then, as an Ultime's).
  */
-export type KoFinish = 'plain' | 'combo' | 'finisher';
+export type KoFinish = 'plain' | 'combo' | 'ultimate' | 'finale';
 /** Blows of a combo, the final one included, from which its KO cracks the gauge. */
 export const COMBO_KO_HITS = 3;
 
-/** How a KO lands: the final blow's tier (3: a super), the blows of the combo it ends. */
-export function koFinishOf(tier: number, comboHits: number): KoFinish {
-  if (tier >= 3) return 'finisher';
+/**
+ * How a KO lands: the final blow's tier (3: a super), the blows of the combo it ends, and
+ * whether it is the last blow of the Finisher's lock (`finale`).
+ */
+export function koFinishOf(tier: number, comboHits: number, finale: boolean): KoFinish {
+  if (finale) return 'finale';
+  if (tier >= 3) return 'ultimate';
   return comboHits >= COMBO_KO_HITS ? 'combo' : 'plain';
+}
+
+/** The KO blows the loser's Boost gauge up: an Ultime's, the Finisher's. */
+export function shatters(finish: KoFinish): boolean {
+  return finish === 'ultimate' || finish === 'finale';
 }
 
 export type FightEvent =
@@ -89,6 +102,25 @@ export type FightEvent =
    * her dive), `by` facing `toward`: once, never if the super was cut short before it.
    */
   | ({ readonly type: 'freeze'; readonly toward: 1 | -1 } & Spender)
+  /**
+   * The Finisher (docs/finisher.md §1.6): `by`'s armed super locks the pair on its first contact,
+   * at `x`, `y` (stage sub-pixels), its name shown only then; then its last blow lands, pushing
+   * `away`, in a match (with the KO) as in training (the dummy kept at 1 HP).
+   */
+  | {
+      readonly type: 'finisherLock';
+      readonly by: 0 | 1;
+      readonly name: string;
+      readonly x: number;
+      readonly y: number;
+    }
+  | {
+      readonly type: 'finisherBlow';
+      readonly by: 0 | 1;
+      readonly x: number;
+      readonly y: number;
+      readonly away: 1 | -1;
+    }
   | { readonly type: 'projectile' }
   | { readonly type: 'jump' }
   | { readonly type: 'land' }
@@ -131,7 +163,12 @@ export function detectEvents(
     // grabs teched on the same tick are one tech.
     const contact = contactOn(next.contacts, player);
     const sameTech = contact?.kind === 'tech' && events.some((event) => event.type === 'tech');
-    if (contact && !sameTech) events.push(contactEvent(contact, next, config));
+    if (contact && !sameTech) {
+      const event = contactEvent(contact, next, config);
+      events.push(event);
+      if (event.type === 'hit' || event.type === 'ko')
+        finisherEvents(prev, next, event, config, events);
+    }
 
     if (after.move && after.actionFrame === 0 && startedNewMove(before, after)) {
       const move = moveOf(config.fighters[player], after.move);
@@ -205,10 +242,32 @@ function contactEvent(contact: Contact, next: GameState, config: MatchConfig): F
   const pulse = last !== undefined && attacker.move === contact.move && attacker.actionFrame < last;
   const blow = { ...impact, damage, held, counter, tier, pulse };
   if (defender.health === 0) {
-    return { type: 'ko', ...blow, finish: koFinishOf(tier, defender.comboCount) };
+    // A double KO is never the Finisher's: it locks only a pair that nothing else touches.
+    const finale = finisherLocked(next, contact.by) && attacker.health > 0;
+    return { type: 'ko', ...blow, finish: koFinishOf(tier, defender.comboCount, finale) };
   }
   if (contact.kind === 'throw') return { type: 'throw', ...impact, damage };
   return { type: 'hit', ...blow, heavy: move.damage >= HEAVY_HIT_DAMAGE };
+}
+
+/**
+ * The Finisher's moments on a blow of its super (docs/finisher.md §1.6): the lock that takes on
+ * this contact, its name with it; the last blow, the KO's in a match, the 1 HP floor's on the
+ * training dummy.
+ */
+function finisherEvents(
+  prev: GameState,
+  next: GameState,
+  blow: Blow,
+  config: MatchConfig,
+  events: FightEvent[],
+): void {
+  const { by, x, y } = blow;
+  if (!finisherLocked(next, by)) return;
+  if (!finisherLocked(prev, by)) {
+    events.push({ type: 'finisherLock', by, name: finisherNameOf(config.fighters[by]), x, y });
+  }
+  if (!blow.pulse) events.push({ type: 'finisherBlow', by, x, y, away: blow.away });
 }
 
 function startedNewMove(before: FighterState, after: FighterState): boolean {
@@ -239,7 +298,7 @@ export function vibrationFor(event: FightEvent, player: 0 | 1): number {
     case 'grab':
       return event.by === player ? 0 : HAPTICS.grabbed;
     case 'ko':
-      if (event.finish === 'finisher') return HAPTICS.shatter;
+      if (shatters(event.finish)) return HAPTICS.shatter;
       return event.by === player ? 0 : HAPTICS.heavyHit;
     case 'throw':
       return event.by === player ? 0 : HAPTICS.heavyHit;

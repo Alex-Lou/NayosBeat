@@ -11,7 +11,8 @@ import { startGroundMove, superGauge } from './move';
  * Neutral grounded state: the only place where the player chooses what to do next. A command
  * buffered while busy comes out first (attack, grab, dash, jump), then what is held: up jumps,
  * back guards in place when the opponent threatens (`threatened`) and walks back otherwise.
- * `discOut`: the fighter's projectile still flies (see `groundMove`).
+ * `discOut`: the fighter's projectile still flies (see `groundMove`); `armed`: the Finisher is
+ * ready (see `startGroundMove`).
  */
 export function actOnGround(
   fighter: FighterState,
@@ -19,6 +20,7 @@ export function actOnGround(
   opponentX: number,
   threatened: boolean,
   discOut = false,
+  armed = false,
 ): FighterState {
   const f: FighterState = {
     ...fighter,
@@ -45,7 +47,7 @@ export function actOnGround(
         discOut,
       )
     : null;
-  if (move) return startGroundMove(f, move, template);
+  if (move) return startGroundMove(f, move, template, false, armed);
   if (command === 'jump' || has(input, Input.Up) || has(input, Input.Jump)) {
     return { ...enter(f, 'preJump'), crouching: false, bufferedCommand: null, bufferFrames: 0 };
   }

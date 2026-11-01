@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { MatchConfig } from '../../src/core/config';
 import { Input } from '../../src/core/input';
-import type { GameState } from '../../src/core/state';
+import { createInitialState, type GameState } from '../../src/core/state';
 import { step } from '../../src/core/step';
 import { NAYO as P } from '../../src/data/fighters/nayo';
 import { RIFF } from '../../src/data/fighters/riff';
@@ -12,10 +12,19 @@ import {
   detectEvents,
   HAPTICS,
   koFinishOf,
+  shatters,
   vibrationFor,
   type FightEvent,
+  type KoFinish,
 } from '../../src/render/fight-events';
+import { playReplay, replayConfig, type Replay } from '../../tools/replays/replay';
+import { armedStart, matchOf } from '../core/finisher-helpers';
 import { facingOff, MIRROR_MATCH, repeat } from '../core/helpers';
+
+const FINISHER_REPLAY = import.meta.glob<Replay>('../core/replays/finisher.json', {
+  eager: true,
+  import: 'default',
+});
 
 /** Plays scripted ticks and collects every event detected along the way. */
 function eventsOf(
@@ -84,10 +93,10 @@ describe('detectEvents', () => {
   });
 
   it('tells how the KO landed, for the Boost gauge: a blow alone, a combo, a super', () => {
-    expect(koFinishOf(0, 1)).toBe('plain');
-    expect(koFinishOf(1, COMBO_KO_HITS - 1)).toBe('plain');
-    expect(koFinishOf(0, COMBO_KO_HITS)).toBe('combo');
-    expect(koFinishOf(3, 1)).toBe('finisher');
+    expect(koFinishOf(0, 1, false)).toBe('plain');
+    expect(koFinishOf(1, COMBO_KO_HITS - 1, false)).toBe('plain');
+    expect(koFinishOf(0, COMBO_KO_HITS, false)).toBe('combo');
+    expect(koFinishOf(3, 1, false)).toBe('ultimate');
     // A jab alone.
     const jab = facingOff(30, MIRROR_MATCH, [{}, { health: 5 }]);
     const plain = eventsOf(jab, [[Input.Light, 0], ...idle(10)]).find((e) => e.type === 'ko');
@@ -95,7 +104,90 @@ describe('detectEvents', () => {
     // The super: BOOST and back, the gauge full.
     const full = facingOff(30, MIRROR_MATCH, [{ boost: BOOST_MAX }, { health: 5 }]);
     const events = eventsOf(full, [[Input.Boost | Input.Left, 0], ...idle(120)]);
-    expect(events.find((e) => e.type === 'ko')).toMatchObject({ type: 'ko', finish: 'finisher' });
+    expect(events.find((e) => e.type === 'ko')).toMatchObject({ type: 'ko', finish: 'ultimate' });
+  });
+
+  it("tells the Finisher's KO from an Ultime's: the last blow of its lock (finisher.md §1.13, test 11)", () => {
+    expect(koFinishOf(3, 1, true)).toBe('finale');
+    expect(koFinishOf(3, COMBO_KO_HITS, true)).toBe('finale');
+    // Both supers' KOs blow the gauge up (the Finisher's on its landing, once its scene plays).
+    const finishes: readonly KoFinish[] = ['plain', 'combo', 'ultimate', 'finale'];
+    expect(finishes.map(shatters)).toEqual([false, false, true, true]);
+    // Armed at match point on a victim at 30 %: the Mégabasse locks, its KO is the Finisher's.
+    const config = matchOf(P, RIFF, 0);
+    const armed = armedStart(config, 0, { distance: 40 });
+    const finisher = eventsOf(armed, [[Input.Boost | Input.Left, 0], ...idle(150)], config);
+    expect(finisher.find((e) => e.type === 'ko')).toMatchObject({ finish: 'finale', by: 0 });
+    // The same super in round 1 deals 80 + 72 + 112 and leaves her 6 HP (§1.6); lower, an Ultime.
+    const round1 = (health: number): GameState => {
+      const [nayo, riff] = armed.fighters;
+      return {
+        ...armed,
+        round: { ...armed.round, wins: [0, 0] },
+        fighters: [nayo, { ...riff, health }],
+      };
+    };
+    const plain = (health: number) =>
+      eventsOf(round1(health), [[Input.Boost | Input.Left, 0], ...idle(150)], config);
+    expect(types(plain(270))).not.toContain('ko');
+    expect(plain(260).find((e) => e.type === 'ko')).toMatchObject({ finish: 'ultimate' });
+  });
+
+  it('never calls a double KO the Finisher: two Mégabasses armed on the same tick', () => {
+    const start = armedStart(MIRROR_MATCH, 0, {
+      distance: 40,
+      wins: [1, 1],
+      health: 50,
+      attacker: { health: 50 },
+      victim: { boost: BOOST_MAX },
+    });
+    const events = eventsOf(start, [
+      [Input.Boost | Input.Left, Input.Boost | Input.Right],
+      ...idle(60),
+    ]);
+    const kos = events.flatMap((e) => (e.type === 'ko' ? [e.finish] : []));
+    expect(kos).toEqual(['ultimate', 'ultimate']);
+    expect(types(events)).not.toContain('finisherLock');
+    expect(types(events)).not.toContain('finisherBlow');
+  });
+
+  it("reports the Finisher's lock with its name, then its last blow, in a match (finisher.md §5.2)", () => {
+    for (const [attacker, victim, name] of [
+      [P, RIFF, 'Le Quatre'],
+      [RIFF, P, 'Larsen'],
+    ] as const) {
+      const config = matchOf(attacker, victim, 0);
+      const start = armedStart(config, 0, { distance: 40 });
+      const events = eventsOf(start, [[Input.Boost | Input.Left, 0], ...idle(150)], config);
+      const finisher = events.filter((e) => e.type === 'finisherLock' || e.type === 'finisherBlow');
+      expect(finisher).toMatchObject([
+        { type: 'finisherLock', by: 0, name },
+        { type: 'finisherBlow', by: 0, away: 1 },
+      ]);
+      // The blow and its KO on the same tick, the lock on the first blow's.
+      const order = types(events).filter((t) => t === 'ko' || t.startsWith('finisher'));
+      expect(order).toEqual(['finisherLock', 'ko', 'finisherBlow']);
+    }
+  });
+
+  it('reports the last blow on the training dummy too, kept at 1 HP: finisher.json', () => {
+    const [replay] = Object.values(FINISHER_REPLAY);
+    if (!replay) throw new Error('finisher.json is missing');
+    const config = replayConfig(replay);
+    const events: FightEvent[] = [];
+    let before = createInitialState(config);
+    playReplay(replay, (state) => {
+      const tick: FightEvent[] = [];
+      detectEvents(before, state, config, tick);
+      events.push(...tick);
+      before = state;
+    });
+    const finisher = events.filter((e) => e.type === 'finisherLock' || e.type === 'finisherBlow');
+    expect(finisher).toMatchObject([
+      { type: 'finisherLock', by: 0, name: 'Le Quatre' },
+      { type: 'finisherBlow', by: 0 },
+    ]);
+    expect(types(events)).not.toContain('ko');
   });
 
   it('reports projectiles, jumps and landings', () => {
@@ -355,8 +447,8 @@ describe('vibrationFor', () => {
       tier: 1,
       pulse: false,
     } as const;
-    expect(vibrationFor({ ...ko, finish: 'finisher' }, 0)).toBe(HAPTICS.shatter);
-    expect(vibrationFor({ ...ko, finish: 'finisher' }, 1)).toBe(HAPTICS.shatter);
+    expect(vibrationFor({ ...ko, finish: 'ultimate' }, 0)).toBe(HAPTICS.shatter);
+    expect(vibrationFor({ ...ko, finish: 'ultimate' }, 1)).toBe(HAPTICS.shatter);
     expect(HAPTICS.shatter).toBeGreaterThan(HAPTICS.heavyHit * 5);
     expect(vibrationFor({ ...ko, finish: 'combo' }, 0)).toBe(0);
     expect(vibrationFor({ ...ko, finish: 'combo' }, 1)).toBe(HAPTICS.heavyHit);

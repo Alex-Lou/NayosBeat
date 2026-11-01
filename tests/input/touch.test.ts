@@ -1,5 +1,7 @@
+import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { Input } from '../../src/core/input';
+import { has, Input } from '../../src/core/input';
+import type { FighterAction } from '../../src/core/state';
 import { TouchControls } from '../../src/input/touch-controls';
 import {
   LABEL_PADDING_PX,
@@ -8,6 +10,7 @@ import {
   TOUCH_SLOP_PX,
   type TouchButton,
 } from '../../src/input/touch-layout';
+import { bitsFromStick, FINISHER_BACK_DEGREES, finisherBack } from '../../src/input/touch-stick';
 import { installFakePage, type FakeElement } from '../render/fake-dom';
 
 /** Landscape phones: an iPhone SE (no notch) and an iPhone 12 (notch and home bar). */
@@ -141,6 +144,12 @@ function pointer(type: string, pointerId: number, clientX: number, clientY: numb
   return Object.assign(new Event(type), { pointerId, clientX, clientY });
 }
 
+/** A finger down on the button labelled `label` of a 667×375 screen, in screen coordinates. */
+function press(zone: FakeElement, label: string, pointerId: number): void {
+  const button = byLabel(label);
+  zone.dispatchEvent(pointer('pointerdown', pointerId, 667 - button.right, 375 - button.bottom));
+}
+
 describe('TouchControls', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
@@ -155,12 +164,6 @@ describe('TouchControls', () => {
     if (!stick || !buttons) throw new Error('Touch zones missing');
     buttons.rect = { left: 333, top: 0, right: 667, bottom: 375 };
     return { controls, stick, buttons };
-  }
-
-  /** A finger down on the button labelled `label`, in screen coordinates. */
-  function press(zone: FakeElement, label: string, pointerId: number): void {
-    const button = byLabel(label);
-    zone.dispatchEvent(pointer('pointerdown', pointerId, 667 - button.right, 375 - button.bottom));
   }
 
   it("dresses the special button, ring and letter, in the fighter's energy color", () => {
@@ -270,5 +273,199 @@ describe('TouchControls', () => {
     stick.dispatchEvent(pointer('pointermove', 8, 130, 200));
     expect(controls.read()).toBe(0);
     expect(controls.read()).toBe(Input.Right);
+  });
+});
+
+describe('the BOOST button with FINISH lit (docs/finisher.md §1.2, §1.3, §5.8 test 13)', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  /** The declarations of each rule of the stylesheet, by selector, its comments left out. */
+  function rules(): Map<string, Map<string, string>> {
+    const css = readFileSync(new URL('../../src/styles.css', import.meta.url), 'utf8').replace(
+      /\/\*[\s\S]*?\*\//g,
+      '',
+    );
+    const found = new Map<string, Map<string, string>>();
+    for (const [, selectors = '', body = ''] of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+      for (const selector of selectors.split(',').map((part) => part.trim())) {
+        const declarations = found.get(selector) ?? new Map<string, string>();
+        for (const declaration of body.split(';')) {
+          const colon = declaration.indexOf(':');
+          if (colon < 0) continue;
+          declarations.set(declaration.slice(0, colon).trim(), declaration.slice(colon + 1).trim());
+        }
+        found.set(selector, declarations);
+      }
+    }
+    return found;
+  }
+
+  it('changes the fill and the label of .full: the energy, at 35 % behind, nothing pulsing', () => {
+    const styles = rules();
+    const finisher = styles.get('.touch-boost.finisher');
+    const full = styles.get('.touch-boost.full');
+    if (!finisher || !full) throw new Error('styles.css styles .full and .finisher');
+    // What .full shows, it takes from the button and from BOOST: it changes neither.
+    expect(full.has('background')).toBe(false);
+    expect(full.has('color')).toBe(false);
+    const fill = styles.get('.touch-button')?.get('background');
+    const label = styles.get('.touch-boost')?.get('color');
+    expect([fill, label]).toEqual(['rgba(255, 255, 255, 0.15)', '#f2f6ff']);
+    expect(finisher.get('background')).not.toBe(fill);
+    expect(finisher.get('color')).not.toBe(label);
+    expect(finisher.get('background')).toMatch(/var\(--boost-energy\) 35%/);
+    expect(finisher.get('color')).toBe('var(--boost-energy)');
+    for (const property of ['animation', 'transition', 'opacity']) {
+      expect(finisher.has(property), property).toBe(false);
+    }
+  });
+
+  /** Touch controls on a 667×375 screen, and their BOOST button. */
+  function setup() {
+    const page = installFakePage();
+    const controls = new TouchControls(page.body as unknown as HTMLElement, undefined, 0xff3ca0);
+    const [root] = page.body.children;
+    const [stick, , buttons] = root?.children ?? [];
+    const boost = buttons?.children[TOUCH_BUTTONS.indexOf(byLabel('BOOST'))];
+    if (!stick || !buttons || !boost) throw new Error('Touch zones missing');
+    buttons.rect = { left: 333, top: 0, right: 667, bottom: 375 };
+    return { controls, stick, buttons, boost };
+  }
+
+  it('wears .finisher when ready only, written only when it changes, no button added', () => {
+    const { controls, buttons, boost } = setup();
+    const add = vi.spyOn(boost.classList, 'add');
+    const remove = vi.spyOn(boost.classList, 'remove');
+    controls.showBoost(3000);
+    controls.showFinisher('blocked', 1, 'idle');
+    expect(boost.classList.contains('full')).toBe(true);
+    expect(boost.classList.contains('finisher')).toBe(false);
+    controls.showFinisher('ready', 1, 'idle');
+    controls.showFinisher('ready', -1, 'walkBack');
+    expect(boost.classList.contains('finisher')).toBe(true);
+    expect(add.mock.calls.filter(([name]) => name === 'finisher')).toHaveLength(1);
+    controls.showFinisher('off', 1, 'idle');
+    expect(boost.classList.contains('finisher')).toBe(false);
+    expect(remove.mock.calls.filter(([name]) => name === 'finisher')).toHaveLength(1);
+    // Its label keeps its text, the cluster its seven buttons (touch layout, above).
+    expect(boost.textContent).toBe('BOOST');
+    expect(buttons.children).toHaveLength(7);
+    expect(TOUCH_BUTTONS).toHaveLength(7);
+  });
+
+  /** The stick held `degrees` under the horizontal, 30 px out, toward `side` (-1: left). */
+  function hold(stick: FakeElement, degrees: number, side: -1 | 1): void {
+    const angle = (degrees * Math.PI) / 180;
+    stick.dispatchEvent(pointer('pointerdown', 7, 100, 200));
+    stick.dispatchEvent(
+      pointer('pointermove', 7, 100 + side * 30 * Math.cos(angle), 200 + 30 * Math.sin(angle)),
+    );
+  }
+
+  /** What the read of a BOOST press gives, the stick `degrees` down toward `side`. */
+  function boostWith(
+    signal: 'ready' | 'blocked' | 'off',
+    facing: 1 | -1,
+    degrees: number,
+    side: -1 | 1,
+    action: FighterAction = 'crouch',
+  ) {
+    const { controls, stick, buttons } = setup();
+    controls.showFinisher(signal, facing, action);
+    hold(stick, degrees, side);
+    expect(controls.read()).toBe(
+      (side < 0 ? Input.Left : Input.Right) | (degrees > 22.5 ? Input.Down : 0),
+    );
+    press(buttons, 'BOOST', 1);
+    return { first: controls.read(), next: controls.read() };
+  }
+
+  it('reads back down to 35° under the horizontal as BOOST is pressed with FINISH lit', () => {
+    for (const degrees of [25, 30, 34.5]) {
+      expect(boostWith('ready', 1, degrees, -1).first, `${degrees}°`).toBe(
+        Input.Left | Input.Boost,
+      );
+      // Facing left, the back is on the right.
+      expect(boostWith('ready', -1, degrees, 1).first, `${degrees}°`).toBe(
+        Input.Right | Input.Boost,
+      );
+    }
+    // A clear down-back stays one: the anti-air's Remix.
+    for (const degrees of [35.5, 40, 45]) {
+      expect(boostWith('ready', 1, degrees, -1).first, `${degrees}°`).toBe(
+        Input.Left | Input.Down | Input.Boost,
+      );
+    }
+  });
+
+  it('reads the stick as ever otherwise: FINISH unlit, forward, or BOOST held on', () => {
+    for (const signal of ['blocked', 'off'] as const) {
+      expect(boostWith(signal, 1, 30, -1).first, signal).toBe(
+        Input.Left | Input.Down | Input.Boost,
+      );
+    }
+    // The forward side: down-forward + BOOST stays the Remix it gives.
+    expect(boostWith('ready', 1, 30, 1).first).toBe(Input.Right | Input.Down | Input.Boost);
+    // Only the read of the press: held on, the thumb reads as it is.
+    expect(boostWith('ready', 1, 30, -1).next).toBe(Input.Left | Input.Down | Input.Boost);
+  });
+
+  it('keeps the crouch guard in blockstun and a tech, where the press is only buffered', () => {
+    // There the guard reads the stick on the ticks of the press: down stays, a low blow is parried.
+    for (const action of ['blockstun', 'tech'] as const) {
+      expect(boostWith('ready', 1, 30, -1, action).first, action).toBe(
+        Input.Left | Input.Down | Input.Boost,
+      );
+    }
+    // Wherever the press lets the super go at once, back reads down to 35°, guard included.
+    for (const action of ['idle', 'crouch', 'walkBack', 'guard'] as const) {
+      expect(boostWith('ready', 1, 30, -1, action).first, action).toBe(Input.Left | Input.Boost);
+    }
+    // The button still wears FINISH in blockstun, and the read comes back with the stun's end.
+    const { controls, stick, buttons, boost } = setup();
+    controls.showBoost(3000);
+    controls.showFinisher('ready', 1, 'blockstun');
+    expect(boost.classList.contains('finisher')).toBe(true);
+    hold(stick, 30, -1);
+    press(buttons, 'BOOST', 1);
+    expect(controls.read()).toBe(Input.Left | Input.Down | Input.Boost);
+    controls.showFinisher('ready', 1, 'crouch');
+    press(buttons, 'BOOST', 2);
+    expect(controls.read()).toBe(Input.Left | Input.Boost);
+  });
+});
+
+describe('finisherBack (docs/finisher.md §1.3)', () => {
+  const at = (degrees: number, side: -1 | 1): [number, number] => {
+    const angle = (degrees * Math.PI) / 180;
+    return [side * 30 * Math.cos(angle), 30 * Math.sin(angle)];
+  };
+
+  it('drops down from the back diagonal up to 35°, nothing else', () => {
+    expect(FINISHER_BACK_DEGREES).toBe(35);
+    const downBack = Input.Left | Input.Down;
+    expect(finisherBack(downBack, ...at(30, -1), Input.Left)).toBe(Input.Left);
+    expect(finisherBack(downBack, ...at(40, -1), Input.Left)).toBe(downBack);
+    // The back is the other way, or not given (FINISH unlit): untouched.
+    expect(finisherBack(downBack, ...at(30, -1), Input.Right)).toBe(downBack);
+    expect(finisherBack(downBack, ...at(30, -1), 0)).toBe(downBack);
+    // Back alone, down alone, up-back: untouched.
+    expect(finisherBack(Input.Left, ...at(10, -1), Input.Left)).toBe(Input.Left);
+    expect(finisherBack(Input.Down, 0, 30, Input.Left)).toBe(Input.Down);
+    expect(finisherBack(Input.Left | Input.Up, -25, -15, Input.Left)).toBe(Input.Left | Input.Up);
+  });
+
+  it('agrees with the stick on what it reads down-back', () => {
+    for (let degrees = 0; degrees <= 90; degrees += 0.5) {
+      const [dx, dy] = at(degrees, -1);
+      const bits = bitsFromStick(dx, dy, 0);
+      const read = finisherBack(bits, dx, dy, Input.Left);
+      const back = degrees <= FINISHER_BACK_DEGREES;
+      expect(has(read, Input.Down), `${degrees}°`).toBe(has(bits, Input.Down) && !back);
+      // Back stays back wherever the stick read it.
+      expect(has(read, Input.Left)).toBe(has(bits, Input.Left));
+    }
   });
 });
