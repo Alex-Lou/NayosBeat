@@ -95,6 +95,17 @@ describe('PlayerInputs', () => {
     expect(inputs.read([pad(0)])[0]).toBe(0);
   });
 
+  it('shows a gamepad button let go at the next read, polled held or not', () => {
+    // Above 60 Hz, frames without a tick come between two reads: a release there must show, or
+    // the neutral between the two taps of a dash is lost.
+    const { inputs } = setup([pad(0)]);
+    inputs.poll([pad(0, [PadButton.West])]);
+    expect(inputs.read([pad(0, [PadButton.West])])[0]).toBe(Input.Light);
+    inputs.poll([pad(0, [PadButton.West])]);
+    inputs.poll([pad(0)]);
+    expect(inputs.read([pad(0)])[0]).toBe(0);
+  });
+
   it('forgets the gamepad presses polled while a menu was open', () => {
     const { inputs } = setup([pad(0)]);
     inputs.poll([pad(0, [PadButton.West])]);

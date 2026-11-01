@@ -19,8 +19,13 @@ export class PlayerInputs {
   private readonly padIndices: [number | null, number | null] = [null, null];
   /** Buttons held when the last menu closed: ignored until released. */
   private readonly suppressed: [InputBits, InputBits] = [0, 0];
-  /** Gamepad buttons `poll` saw since the last read: pressed and released in between, they count. */
+  /**
+   * Gamepad buttons `poll` saw pressed since the last read: pressed and released in between,
+   * they count once, as a key tapped. Only presses: a release shows at the next read.
+   */
   private readonly polled: [InputBits, InputBits] = [0, 0];
+  /** What each gamepad held at the last poll, to tell a press from a button still held. */
+  private readonly lastPolled: [InputBits, InputBits] = [0, 0];
   /** Reused every frame to avoid allocating. */
   private readonly current: [InputBits, InputBits] = [0, 0];
 
@@ -36,10 +41,17 @@ export class PlayerInputs {
   /**
    * Call on every display frame, read or not, with the gamepads connected right now. A gamepad
    * keeps no press of its own, unlike the keyboard and the touch controls: one pressed and
-   * released between two reads (a slowed fight reads every 2 or 4 frames) still counts at the next.
+   * released between two reads (a slowed fight reads every 2 or 4 frames) still counts at the
+   * next. Only its presses are kept, as the keyboard keeps its taps: a button let go shows at
+   * once, or a quick release between two reads (above 60 Hz) would be lost, and with it the
+   * neutral between the two taps of a dash.
    */
   poll(pads: readonly Gamepad[]): void {
-    for (const player of [0, 1] as const) this.polled[player] |= this.padBits(player, pads);
+    for (const player of [0, 1] as const) {
+      const held = this.padBits(player, pads);
+      this.polled[player] |= held & ~this.lastPolled[player];
+      this.lastPolled[player] = held;
+    }
   }
 
   /** Call on the frames that play a tick, with the gamepads connected right now. */
@@ -64,6 +76,7 @@ export class PlayerInputs {
     this.keyboard.endFrame();
     for (const player of [0, 1] as const) {
       this.polled[player] = 0;
+      this.lastPolled[player] = this.padBits(player, pads);
       this.suppressed[player] = this.raw(player, pads) & PRESS_BUTTONS;
     }
   }
