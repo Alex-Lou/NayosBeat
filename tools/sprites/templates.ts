@@ -2,7 +2,7 @@
  * Writes the Aseprite templates (see aseprite-template.ts) into art-src/gabarits/<folder>/
  * <name>.json, not committed: one per strip, per Remix's platine effects and per fighter's
  * portrait, one per UI image (the title's vinyl, the icons' master: art-src/gabarits/ui/), and one
- * per layer of the stage (art-src/gabarits/entrepot/). The Aseprite extension (tools/aseprite/)
+ * per layer of the stage (art-src/gabarits/rue/). The Aseprite extension (tools/aseprite/)
  * builds a new drawing from one. Run again whenever the frame data or the palette change: the
  * guides follow.
  *
@@ -10,7 +10,7 @@
  *   npm run sprites:templates -- riff             # one fighter's
  *   npm run sprites:templates -- nayo idle super  # some of one fighter's (portrait: its portrait)
  *   npm run sprites:templates -- ui               # the UI images (-- ui vinyl: one)
- *   npm run sprites:templates -- entrepot         # the stage's layers (-- entrepot far: one)
+ *   npm run sprites:templates -- rue              # the stage's layers (-- rue far: one)
  */
 
 import { mkdir, writeFile } from 'node:fs/promises';
@@ -82,7 +82,7 @@ async function writeStage(names: readonly string[]): Promise<void> {
   const drawn = await loadStageDrawn();
   const chosen = (names.length > 0 ? names : STAGE_LAYER_NAMES).filter(isStageLayer);
   for (const layer of chosen) {
-    await save(stageTemplateOf(layer, drawn[layer]), drawn[layer] ? 'the drawing' : 'the grey box');
+    await save(stageTemplateOf(layer, drawn[layer]), drawn[layer] ? 'the drawing' : 'the code');
   }
 }
 

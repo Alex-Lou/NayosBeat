@@ -10,10 +10,11 @@
  *
  * A strip drawn by hand (art-src/<fighter>/, see drawn.ts) takes the place of the code's, and is
  * cut and packed into its atlas just the same. The title's vinyl and the icons' master may be
- * drawn too (art-src/ui/, see ui-drawn.ts). A fighter's portrait (drawn.ts) and the stage
- * (art-src/entrepot/, see stage-drawn.ts) are drawn by hand only and saved whole, one image each:
- * no atlas. Nayo's run also writes the stage, src/art/entrepot/. Every drawing is checked first,
- * and nothing is written when one is wrong.
+ * drawn too (art-src/ui/, see ui-drawn.ts). A fighter's portrait (drawn.ts) is drawn by hand
+ * only and saved whole: no atlas. Nayo's run also writes the stage, src/art/rue/: the code's
+ * street (tools/stage/rue/), each of its layers replaced by one drawn by hand when there is one
+ * (art-src/rue/, see stage-drawn.ts), and its props. Every drawing is checked first, and nothing
+ * is written when one is wrong.
  */
 
 import { mkdir, rm, writeFile } from 'node:fs/promises';
@@ -290,9 +291,11 @@ async function main(): Promise<void> {
     console.log(`title vinyl: ${ui.vinyl ? 'drawn (art-src/ui/vinyl.png)' : "the code's"}`);
   }
   if (stage) {
-    await writeStage(stage);
-    const layers = Object.keys(stage);
-    console.log(`stage: ${layers.length > 0 ? `drawn (${layers.join(', ')})` : 'the grey box'}`);
+    const { drawn, props, dropped } = await writeStage(stage);
+    console.log(
+      `stage: ${drawn.length > 0 ? `drawn by hand (${drawn.join(', ')}), the code's elsewhere` : "the code's"}, ${props} props`,
+    );
+    for (const line of dropped) console.warn(`stage prop left out: ${line}`);
   }
 }
 

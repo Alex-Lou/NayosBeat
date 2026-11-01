@@ -23,7 +23,7 @@ Les deux tenues ont le même atlas : c'est le même dessin, dans d'autres couleu
 **Ce qui n'est pas en atlas.**
 
 - **Le portrait dessiné** (`portrait.png`, 96 × 96 px) : une seule image, sans case ni ancre, que la vignette affiche en entier. Il est écrit tel quel dans les deux tenues.
-- **Le stage** (`src/art/entrepot/`) : une image par calque (fond, plan moyen, sol), chacune affichée en entier et décalée en parallaxe par sa propre texture. Il n'y a ni images à ranger ensemble, ni case autour du dessin. Le fond est opaque partout et le sol couvre toute sa largeur : il n'y a rien à recadrer. Seul le plan moyen peut avoir du vide. Or les trois calques pèsent 1,5 Mo au plus : un atlas ne gagnerait presque rien, et compliquerait le chargement et le défilement.
+- **Le stage** (`src/art/rue/`) : une image par calque (fond, plan moyen, sol), chacune affichée en entier et décalée en parallaxe par sa propre texture. Il n'y a ni images à ranger ensemble, ni case autour du dessin. Le fond est opaque partout et le sol couvre toute sa largeur : il n'y a rien à recadrer. Seul le plan moyen peut avoir du vide. Dessinés au grain des combattants (×2), les trois calques pèsent 6,3 Mo : un atlas ne gagnerait presque rien, et compliquerait le chargement et le défilement. Seules les animations du décor (les props) sont découpées et rangées dans une planche, `props.png` ([decor-rue.md](decor-rue.md) §6).
 
 **La découpe.** C'est la boîte de ce que l'image dessine, avec 2 pixels vides autour, sans sortir de la case. Une image vide garde un seul pixel transparent.
 

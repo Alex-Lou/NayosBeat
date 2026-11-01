@@ -13,7 +13,12 @@
  * pixels.
  */
 
-import { STAGE_LAYERS, STAGE_NAME, type StageLayer } from '../../src/art/stage-layers.ts';
+import {
+  STAGE_LAYERS,
+  STAGE_NAME,
+  STAGE_SCALE,
+  type StageLayer,
+} from '../../src/art/stage-layers.ts';
 import { ANCHOR, ART_SCALE, CELL_SIZE } from '../../src/art/types.ts';
 import type { Box, FighterTemplate } from '../../src/core/config.ts';
 import { toPx } from '../../src/core/constants.ts';
@@ -303,19 +308,19 @@ function portraitStart(fighter: Fighter, drawn: ReadonlyMap<string, Drawn>): Uin
 
 /**
  * The template of a stage layer (stage-drawn.ts): in a free palette, starting from the one drawn,
- * else from the grey box; the ground line as a guide behind the floor.
+ * else from the code's; the ground line as a guide behind the floor (its STAGE_SCALE rows).
  */
 export function stageTemplateOf(layer: StageLayer, drawn: IndexedImage | undefined): Template {
   const rules = stageRulesOf(layer);
   const { pixels, palette } = stageStart(layer, drawn);
-  const { y: ground } = STAGE_LAYERS.floor;
+  const ground = STAGE_LAYERS.floor.y * STAGE_SCALE;
   const guides =
     layer === 'floor'
       ? undefined
       : new Uint8Array(rules.width * rules.height).fill(
           1,
           ground * rules.width,
-          (ground + 1) * rules.width,
+          (ground + STAGE_SCALE) * rules.width,
         );
   return imageTemplateOf({
     folder: STAGE_NAME,

@@ -202,7 +202,7 @@ Aujourd'hui, le jeu dessine ses étincelles et son sang lui-même. Ces planches 
 | Sol | Les pieds sont à **y = 230** : la bande 230–270 est le sol, vue de face |
 | Calques | `far.png` (fond, défile à 25 % : 600 × 270), `mid.png` (plan moyen, 50 % : 720 × 270), `floor.png` (sol, 100 % : 960 × 40) |
 | Animations | Facultatives, en bandes de 4 images : `far-anim.png`, `mid-anim.png` (foule, pluie, lanternes) |
-| Fichiers | `art-src/<stage>/far.png`, `mid.png`, `floor.png`, avec `<stage>` = `entrepot`, `toit`, `temple` : `npm run sprites` les vérifie et les copie dans `src/art/<stage>/` (voir [aseprite.md](aseprite.md)). Le jeu ne lit encore que l'Entrepôt |
+| Fichiers | `art-src/<stage>/far.png`, `mid.png`, `floor.png`, avec `<stage>` = `rue`, `toit`, `temple` : `npm run sprites` les vérifie et les installe dans `src/art/<stage>/` (voir [aseprite.md](aseprite.md)). Le jeu ne lit encore que la rue devant L'Entrepôt ([decor-rue.md](decor-rue.md)) |
 | Lisibilité | Contraste faible et couleurs moins saturées que les combattants : les persos doivent ressortir |
 
 ### 3.4 Prompt Agent B
