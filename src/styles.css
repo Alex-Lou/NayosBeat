@@ -229,6 +229,12 @@ body {
     justify-content: flex-start;
   }
 }
+/* The menus' text sizes, on the pixel font's grid (docs/polish/AUDIT-ET-PLAN.md, P22). */
+#ui {
+  --text-small: 8px;
+  --text-tiny: 7px;
+  --text-item: 12px;
+}
 .menu {
   position: fixed;
   inset: 0;
@@ -294,7 +300,7 @@ body {
   min-height: 44px;
   padding: 10px 14px;
   font:
-    12px/1.4 'Press Start 2P',
+    var(--text-item) / 1.4 'Press Start 2P',
     monospace;
   color: #dde;
   text-align: left;
@@ -311,12 +317,12 @@ body {
 .menu-hint {
   display: block;
   margin-top: 6px;
-  font-size: 8px;
+  font-size: var(--text-small);
   opacity: 0.75;
 }
 .menu-help {
   margin: 0;
-  font-size: 8px;
+  font-size: var(--text-small);
   color: #778;
 }
 /* The keys for a keyboard or a gamepad, what to touch on a touch screen (src/ui/menu.ts). */
@@ -354,7 +360,7 @@ body {
 /* The notice of the first launch: a paragraph to read, on the grid of 8. */
 .menu-notice {
   margin: 0 0 14px;
-  font-size: 8px;
+  font-size: var(--text-small);
   line-height: 2;
   color: #dde;
   text-align: left;
@@ -455,14 +461,14 @@ body {
 }
 .title-prompt {
   margin: 0;
-  font-size: 12px;
+  font-size: var(--text-item);
   animation: blink 1s steps(2, start) infinite;
 }
 /* The simplified mode, told under the prompt (title-screen.ts): still and muted, never blinking. */
 .title-notice {
   max-width: 520px;
   margin: 0;
-  font-size: 8px;
+  font-size: var(--text-small);
   line-height: 1.6;
   text-align: center;
   color: #aab;
@@ -504,7 +510,7 @@ body {
 .controls table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 8px;
+  font-size: var(--text-small);
   line-height: 1.4;
 }
 .controls td {
@@ -603,7 +609,7 @@ body {
 .select-description {
   min-height: 3.2em;
   margin: 0;
-  font-size: 8px;
+  font-size: var(--text-small);
   line-height: 1.6;
   color: #aab;
 }
@@ -650,7 +656,7 @@ body {
   bottom: 0;
   left: 0;
   padding: 3px 0 2px;
-  font-size: 7px;
+  font-size: var(--text-tiny);
   color: #fff;
   background: rgba(10, 10, 25, 0.7);
 }
@@ -664,7 +670,7 @@ body {
   top: 2px;
   left: 2px;
   padding: 2px 3px;
-  font-size: 7px;
+  font-size: var(--text-tiny);
   color: #11111f;
   background: #fff;
   border-radius: 2px;
