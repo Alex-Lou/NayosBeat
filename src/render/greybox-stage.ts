@@ -1,4 +1,6 @@
 import type Phaser from 'phaser';
+import { over } from './luminance';
+import type { SilhouetteLook } from './silhouette';
 import { VIEW_SIZE } from './view';
 
 const GROUND_HEIGHT = 40;
@@ -54,8 +56,20 @@ export const WALL = {
   shade: { width: 24, darkest: 0.25 },
 } as const;
 
-/** What the grey box draws besides its sky, its ground, its marks and its walls. */
+/**
+ * The backlight (silhouette.ts, option B): the sky lightening over the last 100 px above the
+ * ground, by 4 px steps, and a band behind the fighters' chests. Drawn over the sky, not in its
+ * place: the veils keep the large colors they are set on (GREYBOX_COLORS).
+ */
+export const BACKLIGHT = {
+  gradient: { height: 100, step: 4, from: COLORS.background, to: 0x3a3550 },
+  band: { top: 90, bottom: 60, color: 0x4a4870 },
+} as const;
+
+/** What the grey box draws besides its sky, its ground and its marks. */
 export interface GreyboxLook {
+  /** The backlight bands show with `backlight` only. */
+  readonly silhouette: SilhouetteLook;
   /** The 1 px screen border, to spot scaling artifacts: in the debug view only (`?debug`). */
   readonly debug: boolean;
 }
@@ -68,6 +82,7 @@ export function drawGreyboxStage(scene: Phaser.Scene, stageWidth: number, look: 
   scene.cameras.main.setBackgroundColor(COLORS.background);
 
   const stage = scene.add.graphics();
+  if (look.silhouette === 'backlight') drawBacklight(stage, stageWidth);
   stage.fillStyle(COLORS.ground);
   stage.fillRect(0, GROUND_Y, stageWidth, GROUND_HEIGHT);
   drawFloorMarks(stage, stageWidth);
@@ -105,4 +120,17 @@ function drawWalls(stage: Phaser.GameObjects.Graphics, stageWidth: number): void
   stage.fillStyle(WALL.edge);
   stage.fillRect(width - 1, 0, 1, GROUND_Y);
   stage.fillRect(stageWidth - width, 0, 1, GROUND_Y);
+}
+
+/** Option B: the sky lighter just above the ground, a band behind the chests. */
+function drawBacklight(stage: Phaser.GameObjects.Graphics, stageWidth: number): void {
+  const { gradient, band } = BACKLIGHT;
+  const steps = gradient.height / gradient.step;
+  for (let i = 0; i < steps; i++) {
+    // A step lighter every 4 px, down to the lightest at the ground.
+    stage.fillStyle(over(gradient.to, gradient.from, (i + 1) / steps));
+    stage.fillRect(0, GROUND_Y - gradient.height + i * gradient.step, stageWidth, gradient.step);
+  }
+  stage.fillStyle(band.color);
+  stage.fillRect(0, GROUND_Y - band.top, stageWidth, band.top - band.bottom);
 }

@@ -6,8 +6,8 @@ import Phaser from 'phaser';
  * renderer/canvas): a white texture tinted comes out white, a sprite tinted dark in its own
  * colors. Simplified, nothing that a tint colors or darkens is drawn: the tinted veils (the KO's
  * vignette and éclat, the super's halo), the effects the flash budget turned dark (FX_DARK), the
- * flat silhouettes (the Boost's echoes, the dash's afterimages, the Finisher's outline) and the
- * tinted pieces of the hit effects. Each would show white or lit, a flash the budget never
+ * flat silhouettes (the Boost's echoes, the dash's afterimages, the Finisher's outline, the
+ * fighters' contour of `?silhouette=a`) and the tinted pieces of the hit effects. Each would show white or lit, a flash the budget never
  * granted (docs/flashs.md). The super's dark stays: a rectangle's fill, which Canvas draws.
  * Read once, from the renderer, when the game starts (main.ts).
  */

@@ -1,13 +1,16 @@
 import type Phaser from 'phaser';
 import { describe, expect, it } from 'vitest';
 import {
+  BACKLIGHT,
   drawGreyboxStage,
   FLOOR,
+  GREYBOX_COLORS,
   GROUND_Y,
   WALL,
   type GreyboxLook,
 } from '../../src/render/greybox-stage';
 import { over, relativeLuminance } from '../../src/render/luminance';
+import type { SilhouetteLook } from '../../src/render/silhouette';
 import { VIEW_SIZE } from '../../src/render/view';
 
 const WIDTH = 960;
@@ -69,7 +72,7 @@ function paint(look: Partial<GreyboxLook> = {}): Painted {
     cameras: { main: { setBackgroundColor: (color: number) => pixels.fill(color) } },
     add: { graphics: makeGraphics },
   } as unknown as Phaser.Scene;
-  drawGreyboxStage(scene, WIDTH, { debug: false, ...look });
+  drawGreyboxStage(scene, WIDTH, { silhouette: 'outline', debug: false, ...look });
   return {
     at: (x, y) => pixels[y * WIDTH + x] ?? Number.NaN,
     borders,
@@ -156,5 +159,35 @@ describe('the grey box screen border', () => {
   it('is drawn once, with the stage: nothing redrawn, nothing to flash', () => {
     expect(paint({ debug: false }).graphics).toBe(1);
     expect(paint({ debug: true }).graphics).toBe(2);
+  });
+});
+
+describe('the backlight behind the fighters (option B, silhouette.ts)', () => {
+  const at = (silhouette: SilhouetteLook, above: number) =>
+    paint({ silhouette }).at(WIDTH / 2, GROUND_Y - above);
+
+  it('lightens the sky over the last 100 px above the ground, down to #3a3550', () => {
+    expect(at('backlight', 1)).toBe(BACKLIGHT.gradient.to);
+    expect(at('backlight', 101)).toBe(SKY);
+    const steps = [100, 96, 50, 20, 4, 1].map((above) => relativeLuminance(at('backlight', above)));
+    expect(steps).toEqual([...steps].sort((a, b) => a - b));
+    expect(at('backlight', 100)).not.toBe(SKY);
+  });
+
+  it('lays a band behind the chests, 90 to 60 px above the ground', () => {
+    expect(at('backlight', 90)).toBe(BACKLIGHT.band.color);
+    expect(at('backlight', 61)).toBe(BACKLIGHT.band.color);
+    expect(at('backlight', 91)).not.toBe(BACKLIGHT.band.color);
+    expect(at('backlight', 60)).not.toBe(BACKLIGHT.band.color);
+  });
+
+  it('shows with the backlight alone, the sky plain otherwise', () => {
+    for (const silhouette of ['outline', 'none'] as const) {
+      for (const above of [1, 50, 75, 100]) expect(at(silhouette, above)).toBe(SKY);
+    }
+  });
+
+  it('leaves the large colors the veils are set on as they were', () => {
+    expect(GREYBOX_COLORS).toEqual([SKY, GROUND]);
   });
 });

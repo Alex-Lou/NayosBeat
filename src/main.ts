@@ -13,6 +13,7 @@ import { canTurnLandscape, requestLandscapeFullscreen } from './render/fullscree
 import { computeZoom, uiScaleFor, type Size } from './render/pixel-scaling';
 import { rendererChoice } from './render/lean-context';
 import { renderModeOf } from './render/render-mode';
+import { silhouetteFromUrl } from './render/silhouette';
 import { renderScaleFor, renderSizeOf } from './render/view';
 
 /**
@@ -137,6 +138,8 @@ async function start(): Promise<void> {
         new Sfx(),
         renderModeOf(game.renderer),
         viewingFromUrl(window.location.search),
+        // `?silhouette=a|b|aucune`: the contour, the backlight or neither (render/silhouette.ts).
+        silhouetteFromUrl(window.location.search),
       );
       started.start();
       app = started;
