@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { helpPages, withArrows, type ControlDevices } from '../../src/app/controls-content';
 import { MOVE_IDS } from '../../src/core/move-data';
+import { assignButton, assignKey, DEFAULT_BINDINGS } from '../../src/input/bindings';
+import { PadButton } from '../../src/input/gamepad-buttons';
 import { BASICS, MOVE_ORDER, MOVE_TEXTS } from '../../src/data/move-texts';
 import { ROSTER } from '../../src/data/roster';
 
@@ -29,6 +31,28 @@ describe('helpPages', () => {
     expect(player2?.rows.every(([keys, effect]) => keys.length > 0 && effect.length > 0)).toBe(
       true,
     );
+  });
+
+  it("says the player's own keys and buttons, not the defaults (P24)", () => {
+    const keys = assignKey(DEFAULT_BINDINGS, 0, 'light', 'KeyB');
+    if (!keys.ok) throw new Error('refused');
+    const p2 = assignKey(keys.bindings, 1, 'dash', 'Numpad5');
+    if (!p2.ok) throw new Error('refused');
+    const pad = assignButton(p2.bindings, 1, 'jump', PadButton.LeftTrigger);
+    if (!pad.ok) throw new Error('refused');
+    const [page] = helpPages({ touch: false, gamepad: true }, pad.bindings);
+    const rows = page?.sections.map((section) => [section.title, section.rows] as const) ?? [];
+    const section = (title: string) => rows.find(([name]) => name === title)?.[1] ?? [];
+    expect(section('Clavier')).toContainEqual(['B', 'Coup léger (L) : rapide']);
+    // The grab of both attacks follows them too.
+    expect(section('Clavier')).toContainEqual([
+      'I, B + K',
+      "Prise : saisir l'adversaire de près, puis le frapper ou le lancer",
+    ]);
+    expect(section('Joueur 2')).toContainEqual(['Pavé 5', 'Dash']);
+    // The players' gamepads differ: one table each.
+    expect(section('Manette J1')).toContainEqual(['A (Croix)', 'Sauter']);
+    expect(section('Manette J2')).toContainEqual(['LT (L2)', 'Sauter']);
   });
 
   it('adds the gamepad when one is connected', () => {

@@ -8,6 +8,8 @@ import { DebugOverlay } from '../../src/render/debug-overlay';
 import { FinisherProps } from '../../src/render/finisher-props';
 import { HoldRing } from '../../src/render/hold-ring';
 import type { RenderMode } from '../../src/render/render-mode';
+import { ControlsStore } from '../../src/input/controls-store';
+import { BindingsScreen } from '../../src/ui/bindings-screen';
 import { FighterSelect } from '../../src/ui/fighter-select';
 import { Menu } from '../../src/ui/menu';
 import { TitleScreen } from '../../src/ui/title-screen';
@@ -75,6 +77,32 @@ const CASES: readonly [string, (page: FakePage) => Disposable][] = [
       }),
   ],
   [
+    'BindingsScreen',
+    (page) =>
+      new BindingsScreen(asParent(page), {
+        tabs: ['keys1', 'pad1'],
+        onBack: () => undefined,
+        store: new ControlsStore(),
+        pads: () => [],
+      }),
+  ],
+  [
+    'BindingsScreen, waiting for a key',
+    (page) => {
+      const screen = new BindingsScreen(asParent(page), {
+        tabs: ['keys1'],
+        onBack: () => undefined,
+        store: new ControlsStore(),
+        pads: () => [],
+      });
+      // To the first action, then waiting for its key: the countdown runs.
+      for (const code of ['Enter', 'Enter']) {
+        page.window.dispatchEvent(Object.assign(new Event('keydown'), { code, repeat: false }));
+      }
+      return screen;
+    },
+  ],
+  [
     'DebugOverlay',
     (page) => {
       const overlay = new DebugOverlay(asParent(page));
@@ -89,16 +117,20 @@ const CASES: readonly [string, (page: FakePage) => Disposable][] = [
 
 describe('disposal', () => {
   afterEach(() => {
+    vi.useRealTimers();
     vi.unstubAllGlobals();
   });
 
   it.each(CASES)('%s lets go of the page once disposed', (_, create) => {
+    vi.useFakeTimers();
     const page = installFakePage();
     const disposable = create(page);
     expect(page.listeners() + page.body.children.length).toBeGreaterThan(0);
 
     disposable.dispose();
     expect(page.listeners()).toBe(0);
+    // No timer left either: a countdown would run on, the screen gone.
+    expect(vi.getTimerCount()).toBe(0);
     expect(page.pendingFrames()).toBe(0);
     expect(page.runningAnimations()).toBe(0);
     expect(page.body.children).toHaveLength(0);

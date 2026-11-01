@@ -72,7 +72,7 @@ export const KEY_NAMES: Readonly<Record<string, KeyName>> = {
   NumpadSubtract: { name: 'Pavé -', cap: '-' },
   NumpadMultiply: { name: 'Pavé *', cap: '*' },
   NumpadDivide: { name: 'Pavé /', cap: '/' },
-  NumpadEnter: { name: 'Pavé Entrée', cap: 'Entr' },
+  NumpadEnter: { name: 'Pavé Entrée', cap: 'Ent' },
 };
 
 /** A key's name in the help, its code if it has none (never shown: such a key cannot be taken). */

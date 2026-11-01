@@ -72,6 +72,7 @@ export class FakeElement extends CountingTarget {
   type = '';
   tabIndex = 0;
   readonly style: Record<string, string> = {};
+  readonly dataset: Record<string, string> = {};
   readonly classList = new FakeClassList();
   readonly children: FakeElement[] = [];
   parent: FakeElement | null = null;
@@ -96,8 +97,23 @@ export class FakeElement extends CountingTarget {
     return this.root || (this.parent?.isConnected ?? false);
   }
 
-  append(...nodes: FakeElement[]): void {
-    for (const node of nodes) this.appendChild(node);
+  /** Text appended is kept with the element's own (`text` reads it all, in order). */
+  append(...nodes: (FakeElement | string)[]): void {
+    for (const node of nodes) {
+      if (typeof node === 'string') this.textContent += node;
+      else this.appendChild(node);
+    }
+  }
+
+  replaceChildren(...nodes: (FakeElement | string)[]): void {
+    for (const child of [...this.children]) child.remove();
+    this.textContent = '';
+    this.append(...nodes);
+  }
+
+  /** Its text and its children's, in order (their own text after the element's). */
+  get text(): string {
+    return this.textContent + this.children.map((child) => child.text).join('');
   }
 
   appendChild(node: FakeElement): FakeElement {
@@ -113,8 +129,10 @@ export class FakeElement extends CountingTarget {
     this.parent = null;
   }
 
-  setAttribute(): void {
-    // Attributes (labels) play no part in what is counted.
+  /** Attributes (labels, roles), kept to be read by the tests that look at them. */
+  readonly attributes: Record<string, string> = {};
+  setAttribute(name: string, value: string): void {
+    this.attributes[name] = value;
   }
 
   setPointerCapture(): void {
@@ -163,6 +181,8 @@ export interface FakePage {
   listeners(): number;
   /** Animation frames requested and not yet run or cancelled. */
   pendingFrames(): number;
+  /** Runs the animation frames requested so far (those they request wait for the next call). */
+  runFrames(): void;
   /** Animations started on the page's elements and not stopped. */
   runningAnimations(): number;
 }
@@ -174,7 +194,7 @@ export function installFakePage(): FakePage {
   const body = new FakeElement('body', true);
   const queries: FakeMediaQueryList[] = [];
   const elements: FakeElement[] = [];
-  const frames = new Set<number>();
+  const frames = new Map<number, FrameRequestCallback>();
   let nextFrame = 1;
 
   Object.assign(window, {
@@ -192,11 +212,16 @@ export function installFakePage(): FakePage {
       elements.push(node);
       return node;
     },
+    createElementNS: (_: string, tag: string) => {
+      const node = new FakeElement(tag);
+      elements.push(node);
+      return node;
+    },
   });
   vi.stubGlobal('window', window);
   vi.stubGlobal('document', document);
-  vi.stubGlobal('requestAnimationFrame', () => {
-    frames.add(nextFrame);
+  vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+    frames.set(nextFrame, callback);
     return nextFrame++;
   });
   vi.stubGlobal('cancelAnimationFrame', (id: number) => frames.delete(id));
@@ -210,6 +235,11 @@ export function installFakePage(): FakePage {
       queries.reduce((sum, query) => sum + query.listenerCount, 0) +
       body.treeListenerCount,
     pendingFrames: () => frames.size,
+    runFrames: () => {
+      const due = [...frames];
+      frames.clear();
+      for (const [, callback] of due) callback(0);
+    },
     runningAnimations: () =>
       elements.reduce(
         (sum, node) => sum + node.animations.filter(({ cancelled }) => !cancelled).length,

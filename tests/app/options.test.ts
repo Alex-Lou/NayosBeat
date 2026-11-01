@@ -2,6 +2,8 @@ import type Phaser from 'phaser';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { App } from '../../src/app/app';
 import { DEFAULT_SETUP, matchConfigOf } from '../../src/app/match-setup';
+import { assignKey, DEFAULT_BINDINGS } from '../../src/input/bindings';
+import { CONTROLS_KEY, serializeControls } from '../../src/input/controls-store';
 import { CARD_FADE_MS } from '../../src/ui/fight-card';
 import { viewingFromUrl, type Viewing } from '../../src/app/viewing';
 import type { Sfx } from '../../src/audio/sfx';
@@ -9,10 +11,16 @@ import type { RenderMode } from '../../src/render/render-mode';
 import { SIMPLE_MODE_NOTICE } from '../../src/ui/title-screen';
 import { installFakePage, type FakeElement } from '../render/fake-dom';
 
+/** The help pages shown, in order. */
+const shownPages = vi.hoisted(() => [] as import('../../src/app/controls-content').HelpPage[]);
+
 // The help's tables need a real page: here, the screen around them is what is looked at.
 vi.mock('../../src/app/controls-content', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../src/app/controls-content')>()),
-  controlsContent: () => document.createElement('div'),
+  controlsContent: (page: import('../../src/app/controls-content').HelpPage) => {
+    shownPages.push(page);
+    return document.createElement('div');
+  },
 }));
 
 /** The elements under `node` that have the class `name`, in page order. */
@@ -154,6 +162,38 @@ describe('the options (docs/flashs.md §4)', () => {
     expect(screen().subtitle).toBe('Nayo');
   });
 
+  it('opens « Touches » from the options, and comes back to it (P24)', () => {
+    const { press, screen, choose, page } = launch({ 'nayosbeat.notice': 'seen' });
+    press('Enter');
+    choose('Options');
+    choose('Touches');
+    const [root] = page.body.children;
+    expect(screen().title).toBe('Touches');
+    expect(byClass(root as FakeElement, 'bindings-tab').map((tab) => tab.textContent)).toEqual([
+      'Clavier J1',
+      'Clavier J2',
+      'Manette J1',
+      'Manette J2',
+    ]);
+    press('Escape');
+    expect(screen().title).toBe('Options');
+    expect(screen().items[screen().selected]).toBe('Touches');
+  });
+
+  it('shows the keys the player chose in « Commandes », not the defaults (P24)', () => {
+    const keys = assignKey(DEFAULT_BINDINGS, 0, 'light', 'KeyB');
+    if (!keys.ok) throw new Error('refused');
+    const { press, choose } = launch({
+      'nayosbeat.notice': 'seen',
+      [CONTROLS_KEY]: serializeControls({ bindings: keys.bindings }),
+    });
+    press('Enter');
+    shownPages.length = 0;
+    choose('Commandes');
+    const rows = shownPages[0]?.sections[0]?.rows ?? [];
+    expect(rows).toContainEqual(['B', 'Coup léger (L) : rapide']);
+  });
+
   it('moves the sound from the main menu into the options screen', () => {
     const { press, screen, choose } = launch({ 'nayosbeat.notice': 'seen' });
     press('Enter');
@@ -166,6 +206,7 @@ describe('the options (docs/flashs.md §4)', () => {
       "Tremblement de l'écran : normal",
       'Mise en scène : complète',
       'Taille du texte : normale',
+      'Touches',
       'Retour',
     ]);
     choose('Son');

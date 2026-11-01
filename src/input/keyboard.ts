@@ -22,13 +22,13 @@ export class KeyboardInput {
   private readonly held = new Set<string>();
   /** Keys pressed since the last `endFrame`, even if already released. */
   private readonly tapped = new Set<string>();
-  private readonly boundCodes: ReadonlySet<string>;
+  private boundCodes: ReadonlySet<string> = new Set();
 
   constructor(
     private readonly target: Window,
-    private readonly bindings: readonly KeyBindings[],
+    private bindings: readonly KeyBindings[],
   ) {
-    this.boundCodes = new Set(bindings.flatMap((b) => Object.keys(b)));
+    this.setBindings(bindings);
     target.addEventListener('keydown', this.onKeyDown);
     target.addEventListener('keyup', this.onKeyUp);
     target.addEventListener('blur', this.onBlur);
@@ -44,6 +44,17 @@ export class KeyboardInput {
   heldBits(player: number): InputBits {
     const bindings = this.bindings[player];
     return bindings ? bitsFromKeys(this.held, bindings) : 0;
+  }
+
+  /**
+   * Takes new keys (the « Touches » screen, under the pause menu). What was held is let go: a key
+   * no longer bound would never see its key-up, and stay held.
+   */
+  setBindings(bindings: readonly KeyBindings[]): void {
+    this.bindings = bindings;
+    this.boundCodes = new Set(bindings.flatMap((b) => Object.keys(b)));
+    this.held.clear();
+    this.tapped.clear();
   }
 
   /** Call once all players have been read for the current frame. */

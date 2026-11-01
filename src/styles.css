@@ -539,30 +539,293 @@ body {
   white-space: nowrap;
   color: #f0c94a;
 }
-/* An arrow of the help: the pixel font's ↑, turned (controls-content.ts). */
-.controls .arrow {
+/* An arrow of the help and of the drawn keys: the pixel font's ↑, turned (controls-content.ts). */
+.arrow {
   display: inline-block;
 }
-.controls .arrow[data-turn='45'] {
+.arrow[data-turn='45'] {
   transform: rotate(45deg);
 }
-.controls .arrow[data-turn='90'] {
+.arrow[data-turn='90'] {
   transform: rotate(90deg);
 }
-.controls .arrow[data-turn='135'] {
+.arrow[data-turn='135'] {
   transform: rotate(135deg);
 }
-.controls .arrow[data-turn='180'] {
+.arrow[data-turn='180'] {
   transform: rotate(180deg);
 }
-.controls .arrow[data-turn='225'] {
+.arrow[data-turn='225'] {
   transform: rotate(225deg);
 }
-.controls .arrow[data-turn='270'] {
+.arrow[data-turn='270'] {
   transform: rotate(270deg);
 }
-.controls .arrow[data-turn='315'] {
+.arrow[data-turn='315'] {
   transform: rotate(315deg);
+}
+/*
+ * « Touches » (src/ui/bindings-screen.ts, P24): a tab per player and device, the keyboard or the
+ * gamepad drawn, the actions under it. Each action has the color of its touch button, on every
+ * device; written on them, the menus' dark ink reads at 7:1 and more (tests/ui/bindings-screen).
+ */
+#ui {
+  --act-up: #b8b8d0;
+  --act-down: #b8b8d0;
+  --act-left: #b8b8d0;
+  --act-right: #b8b8d0;
+  --act-jump: #7bea8a;
+  --act-light: #ffffff;
+  --act-heavy: #ffb347;
+  --act-special: #30e8ff;
+  --act-grab: #ffd84a;
+  --act-dash: #6aa8ff;
+  --act-boost: #d9a6ff;
+}
+.act-up {
+  --act: var(--act-up);
+}
+.act-down {
+  --act: var(--act-down);
+}
+.act-left {
+  --act: var(--act-left);
+}
+.act-right {
+  --act: var(--act-right);
+}
+.act-jump {
+  --act: var(--act-jump);
+}
+.act-light {
+  --act: var(--act-light);
+}
+.act-heavy {
+  --act: var(--act-heavy);
+}
+.act-special {
+  --act: var(--act-special);
+}
+.act-grab {
+  --act: var(--act-grab);
+}
+.act-dash {
+  --act: var(--act-dash);
+}
+.act-boost {
+  --act: var(--act-boost);
+}
+.bindings-panel {
+  width: min(640px, 100%);
+}
+.bindings-panel .menu-title {
+  margin-bottom: 6px;
+}
+.bindings-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+.bindings-tabs .menu-item {
+  flex: 1 1 0;
+  min-height: 0;
+  padding: 6px 4px;
+  font-size: var(--text-small);
+  text-align: center;
+}
+/* The tab shown, when the cursor is elsewhere: its edge stays lit. */
+.bindings-tab.active:not(.selected) {
+  color: #f0c94a;
+  border-color: #f0c94a;
+}
+.bindings-drawing {
+  margin: 0 auto;
+}
+.bindings-note {
+  margin: 4px 0 0;
+  font-size: var(--text-tiny);
+  color: #9a9ab0;
+}
+.kb {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 22.75 / 5;
+}
+.kb-key {
+  position: absolute;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* The gap between two keys, inside each one's box. */
+  border: 1px solid #11111f;
+  outline: 1px solid #3a3a5c;
+  outline-offset: -2px;
+  background: #22223a;
+  background-clip: padding-box;
+  border-radius: 3px;
+  font-size: var(--text-tiny);
+  line-height: 1;
+  color: #aab;
+  white-space: nowrap;
+}
+.kb-unavailable {
+  background-color: #191928;
+  outline-color: #2c2c44;
+  color: #8a8aa8;
+}
+/* Escape and P: the pause, fixed. */
+.kb-fixed {
+  background-color: #191928;
+  outline: 1px dotted #f0c94a;
+  color: #f0c94a;
+}
+/* The other player's keys: taken, dashed. */
+.kb-other {
+  outline: 1px dashed #9a9ab0;
+  color: #9a9ab0;
+}
+.kb-own {
+  background-color: var(--act);
+  outline-color: var(--act);
+  color: #11111f;
+}
+/* The action chosen: its keys outlined, its tag above them, steady (nothing blinks). */
+.kb-key.chosen,
+.pad-button.chosen {
+  z-index: 1;
+  outline: 2px solid #fff;
+  outline-offset: 1px;
+  box-shadow: 0 0 0 4px #11111f;
+}
+.kb-tag {
+  position: absolute;
+  bottom: calc(100% + 5px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 3px 4px;
+  border-radius: 2px;
+  font-size: var(--text-tiny);
+  color: #11111f;
+  background: #fff;
+}
+.pad {
+  position: relative;
+  width: min(100%, 320px);
+  margin: 0 auto;
+  aspect-ratio: 200 / 90;
+}
+.pad-body {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.pad-body path {
+  fill: #1b1b30;
+  stroke: #3a3a5c;
+  stroke-width: 1.5;
+}
+.pad-button {
+  position: absolute;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #3a3a5c;
+  background: #22223a;
+  font-size: var(--text-tiny);
+  line-height: 1;
+  color: #aab;
+  white-space: nowrap;
+}
+.pad-round {
+  border-radius: 50%;
+}
+.pad-bar {
+  border-radius: 6px 6px 3px 3px;
+}
+.pad-pill {
+  border-radius: 999px;
+}
+.pad-arm {
+  border-radius: 2px;
+}
+.pad-button[class*='act-'] {
+  background: var(--act);
+  border-color: var(--act);
+  color: #11111f;
+}
+.pad-fixed {
+  border-style: dotted;
+  border-color: #f0c94a;
+  color: #f0c94a;
+}
+.pad-unavailable {
+  background: #191928;
+  border-color: #2c2c44;
+}
+.bindings-cells {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin: 6px 0 4px;
+}
+.bindings-cells .menu-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-height: 0;
+  padding: 4px 2px;
+  font-size: var(--text-small);
+  text-align: center;
+  overflow: hidden;
+}
+.bindings-swatch {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 4px;
+  vertical-align: 1px;
+  background: var(--act);
+}
+.bindings-label {
+  white-space: nowrap;
+}
+.bindings-value {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-tiny);
+  color: #f0c94a;
+}
+.bindings-cell.selected .bindings-value {
+  color: #11111f;
+}
+/* Waiting for its key: outlined white, not filled, so it reads apart from the cursor. */
+.bindings-cell.listening {
+  color: #fff;
+  background: #22223a;
+  border-color: #fff;
+}
+.bindings-cell.listening .bindings-value {
+  color: #fff;
+}
+.bindings-status {
+  min-height: 1.3em;
+  margin: 0 0 6px;
+  font-size: var(--text-small);
+  line-height: 1.3;
+  color: #dde;
+}
+.bindings-status.listening {
+  color: #f0c94a;
+}
+.bindings-status.refused {
+  color: #ff9a8a;
 }
 /* The character select screen (src/ui/fighter-select.ts): the fighter under the frame, in
    guard, beside the tiles. Sized from the screen's height, so it fits a phone held sideways. */
