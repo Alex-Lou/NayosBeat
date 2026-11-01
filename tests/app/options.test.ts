@@ -455,6 +455,11 @@ describe('how a fight is watched (docs/art/animation-plan.md §2, V0)', () => {
     app.showPause();
     expect(cards()).toHaveLength(0);
     expect(screen().title).toBe('Pause');
+    // Closed before its first frame: the card goes with the fight.
+    choose('Recommencer');
+    expect(cards()).toHaveLength(1);
+    (app as unknown as { stopFight(): void }).stopFight();
+    expect(cards()).toHaveLength(0);
     vi.useRealTimers();
   });
 

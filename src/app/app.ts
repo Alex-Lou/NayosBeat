@@ -652,6 +652,9 @@ export class App {
   private stopFight(): void {
     this.game.scene.stop(FIGHT_SCENE);
     this.game.loop.sleep();
+    // Closed before its first frame: its card goes with it.
+    this.card?.dispose();
+    this.card = undefined;
   }
 
   /** `initialIndex`: the item selected (the options', coming back from them). */
