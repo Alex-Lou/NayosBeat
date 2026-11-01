@@ -12,20 +12,15 @@
  */
 
 import { mkdir, writeFile } from 'node:fs/promises';
-import { NAYO_CLIPS } from '../../src/art/nayo/clips.ts';
-import { RIFF_CLIPS } from '../../src/art/riff/clips.ts';
 import { ANCHOR, ART_SCALE, CELL_SIZE } from '../../src/art/types.ts';
 import type { FighterTemplate } from '../../src/core/config.ts';
 import { toPx } from '../../src/core/constants.ts';
-import { NAYO as NAYO_TEMPLATE } from '../../src/data/fighters/nayo.ts';
-import { RIFF as RIFF_TEMPLATE } from '../../src/data/fighters/riff.ts';
 import { strikeOf, type Clips } from './clips.ts';
 import { loadDrawn, reportingDrawingProblems, stripPixels, type Drawn } from './drawn.ts';
 import type { Fighter, Strike } from './fighter.ts';
-import { NAYO } from './nayo/index.ts';
+import { TOOL_FIGHTERS, type ToolFighter } from './fighters.ts';
 import type { Colorway } from './palette.ts';
 import { encodeIndexedPng, type Rgba } from './png.ts';
-import { RIFF } from './riff/index.ts';
 
 const PREVIEW = new URL('./preview/', import.meta.url);
 const ZOOM = 2;
@@ -51,8 +46,8 @@ function guidesOf(template: FighterTemplate, clips: Clips): Guides {
   };
 }
 
-const NAYO_GUIDES = guidesOf(NAYO_TEMPLATE, NAYO_CLIPS);
-const RIFF_GUIDES = guidesOf(RIFF_TEMPLATE, RIFF_CLIPS);
+/** The first fighter of the list: its strips are named bare, its previews at the root. */
+const [FIRST, ...OTHERS] = TOOL_FIGHTERS as readonly [ToolFighter, ...ToolFighter[]];
 
 interface Box {
   readonly left: number;
@@ -128,7 +123,7 @@ async function render(
       pixels[index] = color;
     }
   }
-  const folder = fighter === NAYO ? '' : `${fighter.name}/`;
+  const folder = fighter === FIRST.fighter ? '' : `${fighter.name}/`;
   const name = `${folder}${colorway === 'main' ? sheet : `${sheet}-alt`}`;
   await mkdir(new URL(folder, PREVIEW), { recursive: true });
   await writeFile(
@@ -144,7 +139,8 @@ async function render(
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
   const colorway: Colorway = args.includes('--alt') ? 'alt' : 'main';
-  const riffOnly = args.includes('--riff');
+  // `--riff` (one option per fighter after the first): that fighter's strips, named bare.
+  const only = OTHERS.find(({ fighter }) => args.includes(`--${fighter.name}`));
   const names = args.filter((arg) => !arg.startsWith('--'));
   const jobs: { fighter: Fighter; guides: Guides; sheet: string }[] = [];
   const add = (fighter: Fighter, guides: Guides, sheets: readonly string[]): void => {
@@ -156,18 +152,30 @@ async function main(): Promise<void> {
       jobs.push({ fighter, guides, sheet });
     }
   };
-  const riffNames = names.filter((name) => name.startsWith('riff/')).map((name) => name.slice(5));
-  const plain = names.filter((name) => !name.startsWith('riff/'));
+  // `riff/idle`: a strip of a fighter after the first, by its folder.
+  const prefixed = (entry: ToolFighter): string[] =>
+    names
+      .filter((name) => name.startsWith(`${entry.fighter.name}/`))
+      .map((name) => name.slice(entry.fighter.name.length + 1));
+  const plain = names.filter(
+    (name) => !OTHERS.some(({ fighter }) => name.startsWith(`${fighter.name}/`)),
+  );
   const all = args.includes('--all');
-  if (riffOnly) {
-    add(RIFF, RIFF_GUIDES, all ? Object.keys(RIFF.sheets) : [...plain, ...riffNames]);
+  const guides = (entry: ToolFighter): Guides => guidesOf(entry.template, entry.clips);
+  if (only) {
+    const sheets = all ? Object.keys(only.fighter.sheets) : [...plain, ...prefixed(only)];
+    add(only.fighter, guides(only), sheets);
   } else {
-    add(NAYO, NAYO_GUIDES, all ? Object.keys(NAYO.sheets) : plain);
-    add(RIFF, RIFF_GUIDES, riffNames);
+    add(FIRST.fighter, guides(FIRST), all ? Object.keys(FIRST.fighter.sheets) : plain);
+    for (const other of OTHERS) add(other.fighter, guides(other), prefixed(other));
   }
   if (jobs.length === 0) {
+    const others = OTHERS.map(({ fighter: { name } }) => {
+      const title = `${name.charAt(0).toUpperCase()}${name.slice(1)}`;
+      return `${title}'s with --${name}`;
+    });
     throw new Error(
-      `Name at least one strip: ${Object.keys(NAYO.sheets).join(', ')}; Riff's with --riff`,
+      `Name at least one strip: ${Object.keys(FIRST.fighter.sheets).join(', ')}; ${others.join('; ')}`,
     );
   }
   const drawnOf = new Map<Fighter, ReadonlyMap<string, Drawn>>();

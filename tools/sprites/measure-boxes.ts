@@ -12,18 +12,13 @@
  */
 
 import { readFile } from 'node:fs/promises';
-import { NAYO_CELLS } from '../../src/art/nayo/cells.ts';
-import { NAYO_CLIPS } from '../../src/art/nayo/clips.ts';
-import { RIFF_CELLS } from '../../src/art/riff/cells.ts';
-import { RIFF_CLIPS } from '../../src/art/riff/clips.ts';
 import { FULL_CELL, type Atlas, type Cell } from '../../src/art/types.ts';
 import type { Box, FighterTemplate } from '../../src/core/config.ts';
 import { toPx } from '../../src/core/constants.ts';
 import { MOVE_IDS } from '../../src/core/move-data.ts';
-import { NAYO } from '../../src/data/fighters/nayo.ts';
-import { RIFF } from '../../src/data/fighters/riff.ts';
 import { cellReader } from './atlas.ts';
 import type { Clips } from './clips.ts';
+import { cellsOf, TOOL_FIGHTERS } from './fighters.ts';
 import {
   BAND,
   calibrate,
@@ -46,11 +41,6 @@ interface Measured {
   readonly clips: Clips;
   readonly cells: Readonly<Record<string, Cell>>;
 }
-
-const FIGHTERS: readonly Measured[] = [
-  { name: 'nayo', template: NAYO, clips: NAYO_CLIPS, cells: NAYO_CELLS },
-  { name: 'riff', template: RIFF, clips: RIFF_CLIPS, cells: RIFF_CELLS },
-];
 
 function hurtboxes(template: FighterTemplate, posture: Posture): readonly Box[] {
   switch (posture) {
@@ -182,8 +172,11 @@ async function measureMoves(fighter: Measured): Promise<void> {
 
 const args = process.argv.slice(2);
 const names = args.filter((arg) => !arg.startsWith('--'));
-for (const fighter of FIGHTERS) {
-  if (names.length > 0 && !names.includes(fighter.name)) continue;
+for (const { fighter: generator, template, clips } of TOOL_FIGHTERS) {
+  const { name } = generator;
+  if (names.length > 0 && !names.includes(name)) continue;
+  // Its cells read once it is chosen: one without strips yet does not stop the others.
+  const fighter: Measured = { name, template, clips, cells: await cellsOf(name) };
   for (const posture of Object.keys(POSTURE_CLIPS) as Posture[]) await measure(fighter, posture);
   if (args.includes('--moves')) await measureMoves(fighter);
 }
