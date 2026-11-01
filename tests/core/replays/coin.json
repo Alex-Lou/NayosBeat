@@ -1,0 +1,15 @@
+{
+  "description": "Training from the left corner (docs/combat-v2.md D32): player 1 starts against the wall and guards there, player 2 walks in and strikes; the corner pushes the attacker back.",
+  "fighters": ["nayo", "riff"],
+  "training": true,
+  "trainingStart": "leftCorner",
+  "inputs": [
+    [70, "left", "left"],
+    [1, "left", "light"],
+    [24, "left", ""],
+    [1, "down+left", "down+heavy"],
+    [40, "down+left", ""],
+    [90, "", ""]
+  ],
+  "hash": "c6b4313c"
+}

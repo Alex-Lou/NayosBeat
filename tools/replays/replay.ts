@@ -12,6 +12,7 @@ import type {
   TrainingDummyHealth,
   TrainingFinisher,
   TrainingGauge,
+  TrainingStart,
 } from '../../src/core/config.ts';
 import { Input, type InputBits } from '../../src/core/input.ts';
 import { createInitialState, type FighterState, type GameState } from '../../src/core/state.ts';
@@ -32,6 +33,8 @@ export interface Replay {
   /** The training options of the Finisher (docs/finisher.md §1.12): 'match' and 100 unless told. */
   readonly trainingFinisher?: TrainingFinisher;
   readonly trainingDummyHealth?: TrainingDummyHealth;
+  /** Where training starts (docs/combat-v2.md D32): 'center' unless told. */
+  readonly trainingStart?: TrainingStart;
   /** The whole match from its first tick (round intro included). */
   readonly inputs: readonly InputRun[];
   /** `replayHash` of the replay: the state on every tick. */
@@ -72,6 +75,7 @@ export function replayConfig(replay: Replay): MatchConfig {
     ...(replay.trainingGauge && { trainingGauge: replay.trainingGauge }),
     ...(replay.trainingFinisher && { trainingFinisher: replay.trainingFinisher }),
     ...(replay.trainingDummyHealth && { trainingDummyHealth: replay.trainingDummyHealth }),
+    ...(replay.trainingStart && { trainingStart: replay.trainingStart }),
   };
 }
 
