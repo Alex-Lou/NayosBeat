@@ -1,12 +1,9 @@
 /**
- * Saphir (Sound Clash, docs/saphir.md §9): a stage outfit in op-art. A short ivory jacket cut
- * straight down the back, its high collar up to the jaw, closed on a black line across the chest;
- * a sapphire sash at the waist; wide dance trousers banded in black, each band bowed so that the
- * cloth seems to turn; black gloves; two-tone savate shoes. The mask is the head (head.ts).
- * Drawn in profile like Nayo, upright: nothing hangs, nothing swings.
- *
- * The bands are few and wide (2 world px and more): they read as one pattern at the game's
- * scale and never shimmer (docs/flashs.md).
+ * Saphir (Sound Clash, docs/saphir.md §9), in three colors: sapphire, ivory, black. A short
+ * ivory jacket cut straight down the back, its high collar up to the jaw edged in sapphire,
+ * closed on a black line across the chest; a sapphire sash at the waist; wide black dance
+ * trousers with a sapphire piping down the seam; black gloves; two-tone savate shoes. The mask
+ * is the head (head.ts). Drawn in profile like Nayo, upright: nothing hangs, nothing swings.
  *
  * Everything is placed in world pixels (character space, see skeleton.ts) and drawn ART_SCALE
  * times finer.
@@ -74,7 +71,7 @@ export function drawSaphir(
   }
   drawArm(ctx, skeleton.far, 'far');
   drawLeg(ctx, skeleton.far, 'far');
-  canvas.ellipse(at(skeleton.hip), 5.0 * S, 4.4 * S, 0, CLOTH, { group: 'hips' });
+  canvas.ellipse(at(skeleton.hip), 5.0 * S, 4.4 * S, 0, BAND, { group: 'hips' });
   drawLeg(ctx, skeleton.near, 'near');
   drawNeck(ctx);
   drawTorso(ctx);
@@ -165,8 +162,7 @@ function drawHand(ctx: Ctx, side: Side, near: boolean): void {
 function drawLeg(ctx: Ctx, side: Side, which: 'near' | 'far'): void {
   const { canvas, at } = ctx;
   const near = which === 'near';
-  const cloth = near ? CLOTH : CLOTH_FAR;
-  const band = near ? BAND : BAND_FAR;
+  const cloth = near ? BAND : BAND_FAR;
   const group = `${which}Leg`;
   drawShoe(ctx, side, near);
   // Wide dance trousers: the thigh, then the leg flaring down over the top of the shoe.
@@ -175,29 +171,24 @@ function drawLeg(ctx: Ctx, side: Side, which: 'near' | 'far'): void {
   canvas.capsule(at(side.hip), at(side.knee), 4.4 * S, 3.8 * S, cloth, { group });
   canvas.capsule(at(side.knee), at(hem), 3.8 * S, 4.6 * S, cloth, { group });
   creases(ctx, side.hip, side.knee, hem, cloth, group);
-  // The op-art: two black stripes waving down the leg, swelling toward the hem, crossing
-  // phases so the cloth seems to twist.
-  const leg = [side.hip, side.knee, hem];
-  wavyStripe(ctx, leg, [4.4, 3.8, 4.6], -0.42, 0.3, 0, band, group);
-  wavyStripe(ctx, leg, [4.4, 3.8, 4.6], 0.4, 0.3, Math.PI, band, group);
+  // The sapphire piping down the outer seam, echoing the collar and the sash.
+  piping(ctx, [side.hip, side.knee, hem], [4.4, 3.8, 4.6], 0.7, near ? SASH : farOf(SASH), group);
 }
 
 /**
- * A stripe along a limb's polyline `points` (half widths `widths` at each point): its middle at
- * `center` (−1 behind, 1 in front, in half widths), waving `amplitude` half widths about it,
- * its thickness a quarter of the limb's. Clipped to `group`: the limb's contour stays.
+ * A thin line down a limb's polyline `points` (half widths `widths` at each point), at `across`
+ * half widths from its middle (−1 behind, 1 in front), a tenth of the limb wide. Clipped to
+ * `group`: the limb's contour stays.
  */
-function wavyStripe(
+function piping(
   ctx: Ctx,
   points: readonly Point[],
   widths: readonly number[],
-  center: number,
-  amplitude: number,
-  phase: number,
+  across: number,
   material: Material,
   group: string,
 ): void {
-  const STEPS = 14;
+  const STEPS = 10;
   const left: Point[] = [];
   const right: Point[] = [];
   const segments = points.length - 1;
@@ -212,12 +203,11 @@ function wavyStripe(
     const u = unit(sub(b, a));
     const v = { x: -u.y, y: u.x };
     const p = add(a, scale(sub(b, a), local));
-    const middle = (center + amplitude * Math.sin(phase + (i / STEPS) * Math.PI * 2.2)) * w;
-    const half = w * 0.24;
-    left.push(ctx.at(add(p, scale(v, middle - half))));
-    right.push(ctx.at(add(p, scale(v, middle + half))));
+    const half = w * 0.11;
+    left.push(ctx.at(add(p, scale(v, across * w - half))));
+    right.push(ctx.at(add(p, scale(v, across * w + half))));
   }
-  ctx.canvas.decal([...left, ...right.reverse()], material, group);
+  ctx.canvas.decal([...left, ...right.reverse()], material, group, { flat: true });
 }
 
 /**
@@ -284,7 +274,7 @@ function drawShoe(ctx: Ctx, side: Side, near: boolean): void {
 }
 
 // ---------------------------------------------------------------------------------------------
-// Torso: the blouse, the tailored jacket
+// Torso: the jacket, its collar, the sash
 
 function drawTorso(ctx: Ctx): void {
   const { canvas, at, torso, s } = ctx;
@@ -316,12 +306,12 @@ function drawTorso(ctx: Ctx): void {
     CLOTH,
     { group: 'jacket', axis, tilt: { x: 0.1, y: 0.15 } },
   );
-  // The high collar, up the neck to the jaw.
+  // The high collar, up the neck to the jaw, edged in sapphire.
   canvas.polygon([t(20.4, -3.2), t(25.6, -2.6), t(26.0, 2.0), t(20.6, 3.4)], CLOTH, {
     group: 'collar',
     axis,
   });
-  canvas.decal([t(25.0, -2.7), t(26.1, -2.6), t(26.1, 2.1), t(25.0, 2.2)], BAND, 'collar', {
+  canvas.decal([t(25.0, -2.7), t(26.1, -2.6), t(26.1, 2.1), t(25.0, 2.2)], SASH, 'collar', {
     flat: true,
   });
   // The closure: a black line from the collar across the chest down to the sash.

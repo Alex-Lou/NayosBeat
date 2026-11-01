@@ -1,4 +1,4 @@
-import { at, GUARD, planted, raised, smear, type Pose } from './common.ts';
+import { at, behindBack, GUARD, planted, raised, smear, type Pose } from './common.ts';
 
 /**
  * specialAntiAir (Contre-ut, docs/saphir.md §4): 8 frames, 2, 3, 3, 3, 6, 6, 6, 6 ticks (38),
@@ -11,26 +11,24 @@ import { at, GUARD, planted, raised, smear, type Pose } from './common.ts';
  * on the active frames (the guard's: 35.5), her hurtboxes follow the drawing. Whether the game
  * lifts her instead is the same open question as Riff's.
  *
- * - 0: the drop: the hips sink, the fists come down a little.
+ * - 0: the drop: the hips sink.
  * - 1: the launch: the rear foot pushes off, the lead leg swings up, her energy rings on the
  *   floor (the Remix redraws it in platine).
  * - 2: the high note, kiai: the leg straight up, the toes on the top of the hitbox, the rear leg
- *   tucked, the torso leaning back, the fists in; the trail up the leg's path.
+ *   tucked, the torso leaning back, the hands at her back; the trail up the leg's path.
  * - 3: held a hair higher, the follow-through.
  * - 4: the fall: the leg comes down, the knees fold for the floor.
  * - 5: the landing, low on the guard's marks.
  * - 6: rising.
  * - 7: back in her guard.
  */
-export const POSES: readonly Pose[] = [
+const FRAMES: readonly Pose[] = [
   {
     ...GUARD,
     hip: at(-2, 31.5),
     torso: 6,
     nearFoot: planted(8, -14),
     farFoot: planted(-13, -20),
-    nearFist: at(11, 50),
-    farFist: at(6, 52.5),
   },
   {
     ...GUARD,
@@ -39,8 +37,6 @@ export const POSES: readonly Pose[] = [
     farFoot: raised(-6, 12, -40),
     nearFoot: raised(21.1, 74.7, 105),
     bends: { ...GUARD.bends, nearKnee: 'back' },
-    nearFist: at(12, 63),
-    farFist: at(6, 64),
     face: 'effort',
     effects: [
       smear(3, [12, 40], [15, 54], [17, 66]),
@@ -53,8 +49,6 @@ export const POSES: readonly Pose[] = [
     torso: -22,
     farFoot: raised(-4, 36, -50),
     nearFoot: raised(17.7, 98.6, 115),
-    nearFist: at(10, 90),
-    farFist: at(12, 82),
     bends: { ...GUARD.bends, nearKnee: 'back', farKnee: 'down' },
     face: 'kiai',
     effects: [smear(3.5, [17, 66], [18, 82], [18, 98])],
@@ -65,8 +59,6 @@ export const POSES: readonly Pose[] = [
     torso: -23,
     farFoot: raised(-4, 37, -50),
     nearFoot: raised(19.5, 99.1, 115),
-    nearFist: at(10, 91),
-    farFist: at(12, 83),
     bends: { ...GUARD.bends, nearKnee: 'back', farKnee: 'down' },
     face: 'effort',
     effects: [smear(3, [18, 84], [19, 92], [19.5, 99])],
@@ -77,8 +69,6 @@ export const POSES: readonly Pose[] = [
     torso: -6,
     farFoot: raised(-8, 22, -20),
     nearFoot: raised(16, 32, 0),
-    nearFist: at(13, 70),
-    farFist: at(7, 70),
   },
   {
     ...GUARD,
@@ -86,16 +76,15 @@ export const POSES: readonly Pose[] = [
     torso: 6,
     nearFoot: planted(9, -6),
     farFoot: planted(-13, -28),
-    nearFist: at(11, 49.5),
-    farFist: at(6, 52),
   },
   {
     ...GUARD,
     hip: at(-3, 33.5),
     torso: 4,
     farFoot: planted(-14, -10),
-    nearFist: at(11.5, 52),
-    farFist: at(6.5, 54.5),
   },
   GUARD,
 ];
+
+/** Her hands stay at her back through the whole move: the legs do everything. */
+export const POSES: readonly Pose[] = FRAMES.map(behindBack);

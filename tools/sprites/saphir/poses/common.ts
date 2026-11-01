@@ -28,20 +28,41 @@ export function raised(x: number, y: number, angle = 0): Foot {
 }
 
 /**
- * The guard of the savate: upright and in profile, the weight on the rear leg, the lead heel up
- * so the front foot can leave at once; the lead fist out at chin height, the rear one by the
- * chin, elbows in. She stands taller than Nayo's crouched boxer and lighter than Riff's base:
- * ready to step out as much as in (docs/saphir.md §9). The torso nearly upright (2 degrees),
- * the head over the back and not ahead of it; head angle 2, under head.ts's 20: the mask is the
- * one drawn, never turned.
+ * Where her hands rest with the torso of `pose`: clasped at the small of her back, the elbows
+ * out behind her. Her signature (docs/saphir.md §9): she fights with her legs alone, the hands
+ * leave her back only to grab.
  */
-export const GUARD: Pose = {
+export function behindBack(pose: Pose): Pose {
+  const t = (pose.torso * Math.PI) / 180;
+  const up = { x: Math.sin(t), y: Math.cos(t) };
+  const back = { x: -Math.cos(t), y: Math.sin(t) };
+  const hand = (distance: number, behind: number): Point =>
+    at(
+      pose.hip.x + up.x * distance + back.x * behind,
+      pose.hip.y + up.y * distance + back.y * behind,
+    );
+  return {
+    ...pose,
+    nearFist: hand(3, 3.5),
+    farFist: hand(3.5, 3),
+    bends: { ...pose.bends, nearElbow: 'back', farElbow: 'back' },
+  };
+}
+
+/**
+ * The guard, her signature: upright and in profile, the hands clasped at the small of her back,
+ * the chin up, the weight on the rear leg and the lead foot on its toes, poised like a dancer's:
+ * she will fight with her legs alone (docs/saphir.md §9). Nothing like Nayo's crouched boxer or
+ * Riff's brawler: no fists up, nothing to read but the feet. The torso nearly upright (2
+ * degrees), the head over the back and not ahead of it, raised a little; under head.ts's 20
+ * degrees, the mask is the one drawn, never turned.
+ */
+export const GUARD: Pose = behindBack({
   hip: at(-3, 35.5),
   torso: 2,
-  head: 0,
-  nearFoot: planted(8, -12),
+  head: -3,
+  nearFoot: planted(8, -24),
   farFoot: planted(-14),
-  nearFist: at(12, 54),
-  farFist: at(7, 56.5),
-  bends: { nearElbow: 'down', farElbow: 'down' },
-};
+  nearFist: at(0, 0),
+  farFist: at(0, 0),
+});

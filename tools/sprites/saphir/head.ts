@@ -1,10 +1,12 @@
 /**
- * Saphir's head, drawn from scratch (docs/art/perso-3.md §2.4: no source): a full-head mask in
- * sapphire lacquer. At the front, a face sculpted in planes, a brow ridge, a slit for the eye,
- * closed lips, a tear painted from the slit down the cheek; at the back, another face painted
- * on it, an open eye and a smile, looking the other way. A seam runs between the two from the
- * crown to the jaw. A black ponytail falls out of the crown, behind the painted face. One
- * character per pixel (legend below). The mask is rigid: it turns with the head and never
+ * Saphir's head, drawn from scratch (docs/art/perso-3.md §2.4: no source): a full-head Janus
+ * mask in sapphire lacquer. At the front, a face sculpted in planes, lit by the key light: a
+ * brow ridge, a slit for the eye, closed lips, a tear painted from the slit down the cheek. At
+ * the back, its twin looking the other way, in shade but caught by a cool rim light from
+ * behind: its brow, the deep socket and slit, the nose, the lips, the chin, each with its glint,
+ * and its own painted tear. A groove engraved from the crown to the jaw joins the two faces. A
+ * high black ponytail falls out of the crown, clear of the back face. One character per pixel
+ * (legend below). The mask is rigid: it turns with the head and never
  * swings. Expressions are patches over it (face.ts); the head turns with the skeleton by
  * RotSprite beyond 20 degrees, upright below.
  */
@@ -19,26 +21,26 @@ export const HEAD: readonly string[] = [
   '........kdbblk................',
   '.....kdblbbyxk................',
   '...kdbblbbx0777777............',
-  '..kdbblk...79900xx7...........',
-  '.kdbbk..78990800xxxx7.........',
-  '.kdbk..7899908000xxxxx7.......',
-  'kdbk..7899900800xxxxxx7.......',
-  'kdk..789999008000xxxxxx7......',
-  'kdk..789999008000xxxxxx7......',
-  '....799999000800xxxxxxx7......',
-  '...7y899990008000xxxyyyy7.....',
-  '....799999900800xx999997......',
-  '....79KKK9000800xxxKKK77......',
-  '....799W99000800xxxxxWx7......',
-  '...7x89W990008000xxyyWxx7.....',
-  '..7y88899990080000xxxWxxxx....',
-  '..7x898899990800000xxxx9x07...',
-  '....7888999908000xxxxxx87.....',
-  '...7x889999008000xxxx8887.....',
-  '.....7989999080000xxxxxx7.....',
-  '......79888998900xxxxxx7......',
-  '.......79888989900xxxxx7......',
-  '..........78899900xxxx7.......',
+  '..kdbblk...7xx00xx7...........',
+  '.kdbbk..7x098700xxxx7.........',
+  '.kdbk..7x09987000xxxxx7.......',
+  'kdbk..7x09988700xxxxxx7.......',
+  'kdk..7x0999887000xxxxxx7......',
+  'kdk..7x0999887000xxxxxx7......',
+  '....7x0999988700xxxxxxx7......',
+  '...7yx09998887000xxxyyyy7.....',
+  '....7x8889988700xx999997......',
+  '....7xKKK8988700xxxKKK77......',
+  '....7x0W09988700xxxxxWx7......',
+  '...7xx0W099887000xxyyWxx7.....',
+  '..7yx00W9998870000xxxWxxxx....',
+  '..7x809999988700000xxxx9x07...',
+  '....7988999887000xxxxxx87.....',
+  '...7yx99999887000xxxx8887.....',
+  '.....7x89998870000xxxxxx7.....',
+  '......7x099887900xxxxxx7......',
+  '.......7x098879900xxxxx7......',
+  '..........7x879900xxxx7.......',
   '.............78990xx7.........',
   '...............OBBBO..........',
   '...............OBBBO..........',

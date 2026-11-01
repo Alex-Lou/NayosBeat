@@ -6,10 +6,12 @@ import { SAPHIR as SAPHIR_TEMPLATE } from '../../src/data/fighters/saphir';
 import { CELL_MARGIN, GROUND_ROW, GROUNDED_STRIPS, LOWEST_ROW } from '../../tools/sprites/cell';
 import { strikesOf, type StripStrike } from '../../tools/sprites/clips';
 import type { PixelCanvas } from '../../tools/sprites/raster';
+import { SAPHIR_BODY } from '../../tools/sprites/saphir/body';
 import { SAPHIR } from '../../tools/sprites/saphir/index';
 import { GUARD } from '../../tools/sprites/saphir/poses/common';
 import { SAPHIR_POSES } from '../../tools/sprites/saphir/poses/index';
 import { drawStrip, drawStripEffects } from '../../tools/sprites/sheet';
+import { solve } from '../../tools/sprites/skeleton';
 import { reachCheck } from './fighters';
 
 const SHEETS = Object.keys(SAPHIR_SHEETS) as SaphirSheet[];
@@ -29,6 +31,23 @@ describe('Saphir strips: the set', () => {
   it('her idle starts on her guard, and its clip loops it', () => {
     expect(SAPHIR_POSES.idle[0]).toBe(GUARD);
     expect(SAPHIR_CLIPS.idle.loopFrom).toBe(0);
+  });
+});
+
+/**
+ * Her signature (docs/saphir.md §9): she fights with her hands clasped at her back. In her guard,
+ * her idle and her three signature moves, both wrists stay behind her hips, every frame.
+ */
+describe('Saphir strips: hands behind her back', () => {
+  it.each(['idle', 'standHeavy', 'special', 'specialAntiAir'] as const)('%s', (sheet) => {
+    SAPHIR_POSES[sheet].forEach((pose, frame) => {
+      const skeleton = solve(pose, SAPHIR_BODY);
+      const ahead = (wrist: { x: number; y: number }) =>
+        (wrist.x - skeleton.hip.x) * skeleton.front.x +
+        (wrist.y - skeleton.hip.y) * skeleton.front.y;
+      expect(ahead(skeleton.near.wrist), `frame ${frame} near`).toBeLessThan(0);
+      expect(ahead(skeleton.far.wrist), `frame ${frame} far`).toBeLessThan(0);
+    });
   });
 });
 

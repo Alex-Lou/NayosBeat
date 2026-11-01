@@ -1,13 +1,12 @@
 /**
- * Saphir's colors (docs/saphir.md §8): a full-head mask in sapphire blue, a face sculpted at the
- * front and another painted at the back; a black ponytail out of its crown. A stage outfit in
- * op-art: a short ivory jacket with a high collar, wide dance trousers banded in black, black
- * gloves, a sapphire sash, two-tone savate shoes. Her energy is a green (#20b464), measured
- * against the cast's hues and in simulated colorblindness.
+ * Saphir's colors (docs/saphir.md §8), in three: sapphire, ivory, black. A full-head Janus mask
+ * in sapphire lacquer, a black ponytail out of its crown; a short ivory jacket with a high
+ * collar edged in sapphire, a sapphire sash, wide black dance trousers with a sapphire piping
+ * down the seam, black gloves, two-tone savate shoes. Her energy is sapphire too (#3a6cf0),
+ * brighter than the mask, measured against the cast's hues and in simulated colorblindness.
  *
- * Second colorway (mirror match): the outfit inverted, black banded in ivory, her energy lilac
- * (#c0a0ff). Ivory against black changes the value of her biggest mass at once, so the two
- * Saphirs part at a glance; the mask, the hair and the shoes stay. Same layout as Nayo's and
+ * Second colorway (mirror match): the outfit inverted, a black jacket over ivory trousers, her
+ * energy lilac (#c0a0ff). The mask, the hair and the shoes stay. Same layout as Nayo's and
  * Riff's palettes: drawn once, saved twice.
  */
 
@@ -31,14 +30,17 @@ const MATERIALS = {
     main: ['#060c2a', '#0e1a52', '#1a3088', '#2a4cb8', '#4a74e0', '#9ab8ff', '#9ab8ff'],
   },
   /**
-   * The outfit's cloth, ivory; black on the second colorway. Her biggest mass: the two
-   * colorways part by its value first.
+   * The jacket's cloth, ivory; black on the second colorway. The two colorways part by its
+   * value first.
    */
   cloth: {
     main: ['#2e2a26', '#5e5850', '#a49c90', '#d8d2c6', '#ece8de', '#faf8f2', '#c8c4bc'],
     alt: ['#030305', '#09090c', '#121216', '#1c1c22', '#2a2a32', '#3c3c48', '#50505e'],
   },
-  /** The op-art bands on the cloth: black; ivory on the second colorway, the outfit inverted. */
+  /**
+   * The trousers and the jacket's lines (closure, cuffs), black; ivory on the second colorway,
+   * the outfit inverted.
+   */
   band: {
     main: ['#030305', '#09090c', '#121216', '#1c1c22', '#2a2a32', '#3c3c48', '#50505e'],
     alt: ['#2e2a26', '#5e5850', '#a49c90', '#d8d2c6', '#ece8de', '#faf8f2', '#c8c4bc'],
@@ -71,12 +73,12 @@ const DETAILS = {
   eyeWhite: { main: '#eef0f6' },
   /** The painted eye's pupil. */
   irisDeep: { main: '#05060e' },
-  /** Energy (steps, trails, specials): her green; lilac on the second colorway. */
-  soundDeep: { main: '#0f5a30', alt: '#4a3080' },
-  sound: { main: '#20b464', alt: '#c0a0ff' },
-  soundLight: { main: '#8ae8b4', alt: '#e0d0ff' },
-  soundCore: { main: '#e8fff2', alt: '#f6f0ff' },
-  soundGlow: { main: '#20b46458', alt: '#c0a0ff58' },
+  /** Energy (steps, trails, specials): sapphire, brighter than the mask; lilac on the second. */
+  soundDeep: { main: '#142a6e', alt: '#4a3080' },
+  sound: { main: '#3a6cf0', alt: '#c0a0ff' },
+  soundLight: { main: '#9cb8ff', alt: '#e0d0ff' },
+  soundCore: { main: '#eef3ff', alt: '#f6f0ff' },
+  soundGlow: { main: '#3a6cf058', alt: '#c0a0ff58' },
   /** Strikes (impacts, cross sparks): cream, her ivory struck; the same on both colorways. */
   strikeDeep: { main: '#6a5e44' },
   strike: { main: '#f0e2bc' },
@@ -86,8 +88,8 @@ const DETAILS = {
   /** The dark smoky heart of a heavy hit spark. */
   strikeSmoke: { main: '#302a24' },
   /** Motion trails of the limbs, in the energy color, translucent (alpha last). */
-  trail: { main: '#20b464b4', alt: '#c0a0ffb4' },
-  trailFaint: { main: '#20b4645c', alt: '#c0a0ff5c' },
+  trail: { main: '#3a6cf0b4', alt: '#c0a0ffb4' },
+  trailFaint: { main: '#3a6cf05c', alt: '#c0a0ff5c' },
   /** Dust kicked up from the floor. */
   dustLight: { main: '#584a54' },
   sandDeep: { main: '#7a6440' },
@@ -105,5 +107,5 @@ export const MATERIAL = PALETTE.material;
 export const DETAIL = PALETTE.detail;
 export const paletteOf = PALETTE.paletteOf;
 
-/** Saphir's effects: green energy, cream strikes and cross sparkles, grey-gold dust. */
-export const EFFECTS: EffectStyle = { slots: DETAIL, sparkle: 'cross' };
+/** Saphir's effects: sapphire energy, cream strikes, cut-gem (diamond) sparkles, grey-gold dust. */
+export const EFFECTS: EffectStyle = { slots: DETAIL, sparkle: 'diamond' };
