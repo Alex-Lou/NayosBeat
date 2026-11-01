@@ -79,6 +79,13 @@ export type TrainingFinisher = 'match' | 'always' | 'off';
 /** The health the training dummy refills to, in percent of its own (docs/finisher.md §1.12). */
 export type TrainingDummyHealth = 100 | 50 | 30 | 10;
 
+/**
+ * Where training starts, and starts over (docs/combat-v2.md D32): both fighters at the center, as
+ * a round starts, or against a wall, the same distance apart: the left one at player 1's back,
+ * the right one at player 2's.
+ */
+export type TrainingStart = 'center' | 'leftCorner' | 'rightCorner';
+
 export interface MatchConfig {
   readonly stage: StageConfig;
   readonly fighters: readonly [FighterTemplate, FighterTemplate];
@@ -90,4 +97,6 @@ export interface MatchConfig {
   readonly trainingFinisher?: TrainingFinisher;
   /** Training mode's dummy (player 2) refills to this: 100 when left out. */
   readonly trainingDummyHealth?: TrainingDummyHealth;
+  /** Training mode's start: 'center' when left out. */
+  readonly trainingStart?: TrainingStart;
 }

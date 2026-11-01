@@ -1,7 +1,7 @@
 import type Phaser from 'phaser';
 import type { CpuLevel } from '../ai/cpu';
 import type { Sfx } from '../audio/sfx';
-import type { TrainingGauge } from '../core/config';
+import type { TrainingGauge, TrainingStart } from '../core/config';
 import { ROSTER, templateOf, type FighterId } from '../data/roster';
 import { ANIM_OPTIONS, LEGACY_ANIM } from '../render/anim-options';
 import type { FightScene, FightSceneData } from '../render/fight-scene';
@@ -71,6 +71,17 @@ const GAUGES: readonly { readonly gauge: TrainingGauge; readonly label: string }
   { gauge: 'normal', label: 'normale' },
 ];
 
+/** Where training starts, and starts over (docs/combat-v2.md D32), in the order the option cycles. */
+const POSITIONS: readonly {
+  readonly position: TrainingStart;
+  readonly label: string;
+  readonly hint: string;
+}[] = [
+  { position: 'center', label: 'centre', hint: 'Au milieu, comme un début de round' },
+  { position: 'leftCorner', label: 'coin gauche', hint: 'Joueur 1 dos au mur de gauche' },
+  { position: 'rightCorner', label: 'coin droit', hint: 'Mannequin dos au mur de droite' },
+];
+
 /**
  * Screen flow: title → (the notice, the first time) → main menu → fighter selection → fight →
  * results, with pause; the options from the main menu and the pause. Owns the current screen,
@@ -101,6 +112,8 @@ export class App {
   private boxes = false;
   /** Training shows its input history and frame meter (its pause's « Données »). */
   private trainingData = true;
+  /** Where the fight on screen started: its pause's « Position » changed, resuming starts over. */
+  private startedPosition: TrainingStart = DEFAULT_SETUP.position;
 
   constructor(
     private readonly root: HTMLElement,
@@ -522,11 +535,12 @@ export class App {
   }
 
   /**
-   * The training pause's « Mannequin », « Boîtes » and « Données » (docs/polish/AUDIT-ET-PLAN.md,
-   * P19 and lot 13), each cycled in place and applied to the fight at once: what player 2 does,
-   * the boxes `?debug` shows (hit, hurt and push), the input history and the frame meter, to
-   * learn the reach and the openings without leaving the session. `again`: shows the pause again,
-   * the item still selected.
+   * The training pause's « Mannequin », « Position », « Boîtes » and « Données »
+   * (docs/polish/AUDIT-ET-PLAN.md, P19 and lot 13), each cycled in place: what player 2 does, where
+   * both fighters start over (as the pause closes, and on every « Recommencer »), the boxes
+   * `?debug` shows (hit, hurt and push), the input history and the frame meter, to learn the reach
+   * and the openings without leaving the session. The others apply to the fight at once. `again`:
+   * shows the pause again, the item still selected.
    */
   private trainingItems(fight: FightScene, again: (item: MenuItem) => void): MenuItem[] {
     const index = DUMMIES.findIndex(({ dummy }) => dummy === this.setup.dummy);
@@ -540,6 +554,16 @@ export class App {
           fight.setDummy(next.dummy);
         }
         again(dummy);
+      },
+    };
+    const at = POSITIONS.findIndex(({ position }) => position === this.setup.position);
+    const position: MenuItem = {
+      label: `Position : ${POSITIONS[at]?.label ?? ''}`,
+      hint: `${POSITIONS[at]?.hint ?? ''}, dès la reprise`,
+      onSelect: () => {
+        const next = POSITIONS[(at + 1) % POSITIONS.length] ?? POSITIONS[0];
+        if (next) this.setup = { ...this.setup, position: next.position };
+        again(position);
       },
     };
     const boxes: MenuItem = {
@@ -560,12 +584,13 @@ export class App {
         again(data);
       },
     };
-    return [dummy, boxes, data];
+    return [dummy, position, boxes, data];
   }
 
   private startFight(): void {
     this.screen?.dispose();
     this.screen = undefined;
+    this.startedPosition = this.setup.position;
     const data: FightSceneData = {
       setup: this.setup,
       sfx: this.sfx,
@@ -596,6 +621,11 @@ export class App {
   private showPause(initialIndex = 0): void {
     const fight = this.game.scene.getScene(FIGHT_SCENE) as FightScene;
     const resume = () => {
+      // Training: both fighters go where « Position » now says, as « Recommencer » puts them.
+      if (this.setup.position !== this.startedPosition) {
+        this.startFight();
+        return;
+      }
       this.screen?.dispose();
       this.screen = undefined;
       fight.resumeMatch();

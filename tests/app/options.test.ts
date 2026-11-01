@@ -1,6 +1,7 @@
 import type Phaser from 'phaser';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { App } from '../../src/app/app';
+import { DEFAULT_SETUP, matchConfigOf } from '../../src/app/match-setup';
 import { viewingFromUrl, type Viewing } from '../../src/app/viewing';
 import type { Sfx } from '../../src/audio/sfx';
 import type { RenderMode } from '../../src/render/render-mode';
@@ -352,11 +353,54 @@ describe('how a fight is watched (docs/art/animation-plan.md §2, V0)', () => {
     );
   });
 
+  it('starts training over where « Position » says, as the pause closes (docs/combat-v2.md D32)', () => {
+    const { app, screen, choose, fight, start } = training();
+    const startedAt = (position: string) => {
+      expect(start).toHaveBeenLastCalledWith(
+        'fight',
+        expect.objectContaining({ setup: expect.objectContaining({ position }) as unknown }),
+      );
+    };
+    choose('Immobile');
+    startedAt('center');
+    app.showPause();
+    expect(screen().items).toContain('Position : centre');
+    choose('Position');
+    expect(screen().title).toBe('Pause');
+    expect(screen().items[screen().selected]).toBe('Position : coin gauche');
+    expect(start).toHaveBeenCalledTimes(1);
+    // Resumed, the fight starts over there.
+    choose('Reprendre');
+    expect(fight.resumeMatch).not.toHaveBeenCalled();
+    expect(start).toHaveBeenCalledTimes(2);
+    startedAt('leftCorner');
+    // Unchanged, the pause resumes the fight as it was.
+    app.showPause();
+    choose('Reprendre');
+    expect(fight.resumeMatch).toHaveBeenCalledTimes(1);
+    expect(start).toHaveBeenCalledTimes(2);
+    // « Recommencer » puts them back there, every time.
+    app.showPause();
+    choose('Position');
+    choose('Recommencer');
+    startedAt('rightCorner');
+    app.showPause();
+    choose('Recommencer');
+    startedAt('rightCorner');
+  });
+
+  it('gives the core the start of training only (docs/combat-v2.md D32)', () => {
+    const setup = { ...DEFAULT_SETUP, position: 'leftCorner' } as const;
+    expect(matchConfigOf({ ...setup, mode: 'training' }).trainingStart).toBe('leftCorner');
+    expect(matchConfigOf(setup)).not.toHaveProperty('trainingStart');
+  });
+
   it('keeps the dummy and the boxes out of the pause of a match', () => {
     const { app, screen } = launch({ 'nayosbeat.notice': 'seen' });
     (app as unknown as { showPause(): void }).showPause();
     expect(screen().items.some((item) => item.startsWith('Mannequin'))).toBe(false);
     expect(screen().items.some((item) => item.startsWith('Boîtes'))).toBe(false);
+    expect(screen().items.some((item) => item.startsWith('Position'))).toBe(false);
   });
 
   it('leaves the matches as the address asks, whatever training chose, and training its own', () => {

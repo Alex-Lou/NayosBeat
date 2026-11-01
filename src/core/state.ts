@@ -1,8 +1,9 @@
 import type { Command } from './commands';
-import type { FighterTemplate, MatchConfig } from './config';
+import type { FighterTemplate, MatchConfig, TrainingStart } from './config';
 import type { InputBits } from './input';
 import type { MoveId } from './move-data';
 import type { Motion } from './motion';
+import { followCamera } from './positions';
 import { ROUND_TIME } from './rules';
 import { trainingStartBoost } from './training';
 
@@ -251,12 +252,16 @@ export function createRound(
   wins: readonly [number, number],
   boosts: readonly [number, number],
 ): GameState {
-  const center = Math.trunc(config.stage.width / 2);
-  const halfDistance = Math.trunc(config.stage.startDistance / 2);
+  const start = config.training ? (config.trainingStart ?? 'center') : 'center';
+  const [xA, xB] = startXs(config, start);
   const [templateA, templateB] = config.fighters;
+  const a = createFighter(xA, 1, templateA, boosts[0]);
+  const b = createFighter(xB, -1, templateB, boosts[1]);
   return {
     frame,
-    cameraX: center,
+    // Against a wall, the camera already where it follows them: its edge is the wall.
+    cameraX:
+      start === 'center' ? Math.trunc(config.stage.width / 2) : followCamera(a, b, config.stage),
     hitstop: 0,
     round: {
       number: roundNumber,
@@ -267,15 +272,37 @@ export function createRound(
       phaseFrame: 0,
       result: null,
     },
-    fighters: [
-      createFighter(center - halfDistance, 1, templateA, boosts[0]),
-      createFighter(center + halfDistance, -1, templateB, boosts[1]),
-    ],
+    fighters: [a, b],
     projectiles: NO_PROJECTILES,
     contacts: EMPTY_CONTACTS,
     // A new round always starts free: a hold never outlives its round.
     hold: null,
   };
+}
+
+/**
+ * Where both fighters start, `startDistance` apart: around the stage's center, or, in training,
+ * one of them against a wall as its option says (docs/combat-v2.md D32), touching it as the walls
+ * keep a fighter (positions.ts).
+ */
+function startXs(config: MatchConfig, start: TrainingStart): readonly [number, number] {
+  const { width, startDistance } = config.stage;
+  const [templateA, templateB] = config.fighters;
+  switch (start) {
+    case 'center': {
+      const center = Math.trunc(width / 2);
+      const halfDistance = Math.trunc(startDistance / 2);
+      return [center - halfDistance, center + halfDistance];
+    }
+    case 'leftCorner': {
+      const left = Math.trunc(templateA.standingPushbox.width / 2);
+      return [left, left + startDistance];
+    }
+    case 'rightCorner': {
+      const right = width - Math.trunc(templateB.standingPushbox.width / 2);
+      return [right - startDistance, right];
+    }
+  }
 }
 
 function createFighter(

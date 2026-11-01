@@ -4,6 +4,7 @@ import type {
   TrainingDummyHealth,
   TrainingFinisher,
   TrainingGauge,
+  TrainingStart,
 } from '../core/config';
 import { templateOf, type FighterId } from '../data/roster';
 import { TRAINING_STAGE } from '../data/stages';
@@ -23,6 +24,8 @@ export interface MatchSetup {
   readonly finisher: TrainingFinisher;
   /** Training only: the health the dummy refills to, in percent (docs/finisher.md §1.12). */
   readonly dummyHealth: TrainingDummyHealth;
+  /** Training only: where it starts, and starts over (docs/combat-v2.md D32). */
+  readonly position: TrainingStart;
 }
 
 export const DEFAULT_SETUP: MatchSetup = {
@@ -34,6 +37,7 @@ export const DEFAULT_SETUP: MatchSetup = {
   gauge: 'full',
   finisher: 'match',
   dummyHealth: 100,
+  position: 'center',
 };
 
 /**
@@ -62,6 +66,7 @@ export function matchConfigOf(setup: MatchSetup): MatchConfig {
       trainingGauge: setup.gauge,
       trainingFinisher: setup.finisher,
       trainingDummyHealth: setup.dummyHealth,
+      trainingStart: setup.position,
     }),
   };
 }

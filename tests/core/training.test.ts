@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import type { MatchConfig, TrainingFinisher } from '../../src/core/config';
+import type { MatchConfig, TrainingFinisher, TrainingStart } from '../../src/core/config';
 import { px } from '../../src/core/constants';
 import { finisherState } from '../../src/core/finisher';
 import { Input } from '../../src/core/input';
+import { wallsAt } from '../../src/core/positions';
 import { BOOST_MAX, ROUND_TIME, TRAINING_REFILL_FRAMES } from '../../src/core/rules';
 import { createInitialState } from '../../src/core/state';
 import { step } from '../../src/core/step';
@@ -125,4 +126,36 @@ describe('training mode', () => {
     expect(lowest).toBe(1);
     expect(state.round.phase).toBe('fight');
   });
+});
+
+describe('training start (docs/combat-v2.md D32)', () => {
+  const at = (trainingStart: TrainingStart): MatchConfig => ({ ...TRAINING, trainingStart });
+
+  it('starts at the center as a round does, left out or asked, and a match ignores it', () => {
+    expect(createInitialState(at('center'))).toEqual(createInitialState(TRAINING));
+    expect(createInitialState({ ...MATCH, trainingStart: 'leftCorner' })).toEqual(
+      createInitialState(MATCH),
+    );
+  });
+
+  it.each([
+    ['leftCorner', 0, Input.Left],
+    ['rightCorner', 1, Input.Right],
+  ] as const)(
+    'starts %s with player %i against the wall, as far apart as a round starts',
+    (start, cornered, back) => {
+      const config = at(start);
+      const state = createInitialState(config);
+      const [a, b] = state.fighters;
+      expect(b.x - a.x).toBe(config.stage.startDistance);
+      const walls = wallsAt(state.cameraX, config.stage);
+      expect(cornered === 0 ? walls.min : walls.max).toBe(cornered === 0 ? 0 : config.stage.width);
+      // Walking back a second, the cornered fighter does not move: it started touching the wall.
+      const inputs: [number, number] = cornered === 0 ? [back, 0] : [0, back];
+      const after = run(60, inputs, state, config);
+      expect(after.fighters[cornered].x).toBe(state.fighters[cornered].x);
+      expect(after.fighters[1 - cornered]?.x).toBe(state.fighters[1 - cornered]?.x);
+      expect(after.cameraX).toBe(state.cameraX);
+    },
+  );
 });
