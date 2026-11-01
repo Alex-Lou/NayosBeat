@@ -7,6 +7,7 @@ import { ANIM_OPTIONS, LEGACY_ANIM } from '../render/anim-options';
 import type { FightScene, FightSceneData } from '../render/fight-scene';
 import { requestLandscapeFullscreen } from '../render/fullscreen';
 import type { RenderMode } from '../render/render-mode';
+import { DEFAULT_SILHOUETTE, type SilhouetteLook } from '../render/silhouette';
 import { isTouchDevice } from '../input/touch-controls';
 import { FightCard } from '../ui/fight-card';
 import { FighterSelect } from '../ui/fighter-select';
@@ -131,6 +132,8 @@ export class App {
     /** How the game is drawn (render-mode.ts): simplified, the title says why. */
     private readonly mode: RenderMode,
     private readonly fromUrl: Viewing = DEFAULT_VIEWING,
+    /** How the fighters stand out from the sky, as the address asks (silhouette.ts). */
+    private readonly silhouette: SilhouetteLook = DEFAULT_SILHOUETTE,
   ) {
     this.viewing = fromUrl;
   }
@@ -633,6 +636,7 @@ export class App {
       boxes: this.setup.mode === 'training' && this.boxes,
       trainingData: this.trainingData,
       mode: this.mode,
+      silhouette: this.silhouette,
       onPause: () => {
         this.showPause();
       },

@@ -59,6 +59,7 @@ import type { ShakeMode } from './shake';
 import { ProjectileView } from './projectile-view';
 import { isContextLost, type RenderMode } from './render-mode';
 import { loadArt } from './art-textures';
+import { contourOf, type SilhouetteLook } from './silhouette';
 import { SpriteFighterView } from './sprite-fighter-view';
 import { drawStage, FIGHT_STAGE_COLORS, loadStage } from './stage-view';
 import { VIEW_SIZE } from './view';
@@ -82,6 +83,8 @@ export interface FightSceneData {
   readonly trainingData?: boolean;
   /** How the game is drawn, read once from the renderer when it starts (render-mode.ts). */
   readonly mode: RenderMode;
+  /** How the fighters stand out from the sky, read once from the address (silhouette.ts). */
+  readonly silhouette: SilhouetteLook;
   /** Also called when the picture is lost with the GPU: the player resumes once it is back. */
   readonly onPause: () => void;
   /** Called once, a moment after the final KO, with the winner's index. */
@@ -266,7 +269,7 @@ export class FightScene extends Phaser.Scene {
     const stageWidth = toPx(this.config.stage.width);
     // The Warehouse once drawn (docs/art/aseprite.md), the grey box until then.
     if (STAGE_ART) drawStage(this, STAGE_ART);
-    else drawGreyboxStage(this, stageWidth);
+    else drawGreyboxStage(this, stageWidth, { silhouette: this.sceneData.silhouette, debug });
     const { comfort, mode } = this.sceneData;
     const budget = new FlashBudget(comfort.flashes);
     const touch = isTouchDevice()
@@ -440,6 +443,7 @@ export class FightScene extends Phaser.Scene {
           stage: FIGHT_STAGE_COLORS,
           budget,
           mode: this.sceneData.mode,
+          contour: this.sceneData.silhouette === 'outline' ? contourOf(style.energy) : null,
         })
       : new FighterView(
           this,

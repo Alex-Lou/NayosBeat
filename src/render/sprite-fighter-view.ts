@@ -29,6 +29,8 @@ const OUTLINE = [
 ] as const;
 /** Just under its body. */
 const OUTLINE_DEPTH = 0.01;
+/** The contour (option A): under the Finisher's outline, which takes its place. */
+const CONTOUR_DEPTH = 0.02;
 
 const SHADOW_WIDTH = 36;
 const SHADOW_HEIGHT = 6;
@@ -45,6 +47,11 @@ export interface SpriteFighterLook {
   readonly budget: FlashBudget;
   /** How the game is drawn: without tints, nothing tinted shows (render-mode.ts). */
   readonly mode: RenderMode;
+  /**
+   * The color of the light 1 px contour drawn around its body at all times, to stand out from
+   * the sky (silhouette.ts, option A); null, none.
+   */
+  readonly contour: number | null;
 }
 
 /**
@@ -58,7 +65,9 @@ export interface SpriteFighterLook {
  * docs/flashs.md §4). Its Finisher ready, a halo glows on the floor under its feet
  * (`FinisherHalo`). The Finisher's scene may impose a pose on its own clock, lifted, and turn it
  * into a black silhouette, outlined in its energy (`StagedLook`, finisher-scene.ts); its effects
- * and their dissolve follow the pose shown. Its boxes show in the debug view (BoxOverlay).
+ * and their dissolve follow the pose shown. With a contour (`look.contour`), the body is outlined
+ * at all times, on the pixels it is drawn on, until the Finisher's silhouette takes its place.
+ * Its boxes show in the debug view (BoxOverlay).
  */
 export class SpriteFighterView {
   private readonly halo: FinisherHalo;
@@ -67,6 +76,8 @@ export class SpriteFighterView {
   /** The silhouette's outline: the body filled, drawn around it. */
   private readonly outline: readonly AnchoredSprite[];
   private outlineColor: number | null = null;
+  /** The contour (option A): the body filled in its color, around it; none without one. */
+  private readonly contour: readonly AnchoredSprite[];
   private readonly effects: AnchoredSprite | undefined;
   private readonly trail: DashTrail;
   private readonly echo: BoostEcho;
@@ -113,6 +124,15 @@ export class SpriteFighterView {
       sprite.hide();
       return sprite;
     });
+    const { contour } = look;
+    this.contour =
+      contour === null
+        ? []
+        : OUTLINE.map(() =>
+            new AnchoredSprite(scene, art, 'body', mode)
+              .setDepth(DEPTH.fighterBack - CONTOUR_DEPTH)
+              .fill(contour),
+          );
     this.effects = art.fx
       ? new AnchoredSprite(scene, art, 'fx', mode).setDepth(DEPTH.effects)
       : undefined;
@@ -142,6 +162,7 @@ export class SpriteFighterView {
     const depth = front ? DEPTH.fighterFront : DEPTH.fighterBack;
     this.body.setDepth(depth);
     for (const sprite of this.outline) sprite.setDepth(depth - OUTLINE_DEPTH);
+    for (const sprite of this.contour) sprite.setDepth(depth - CONTOUR_DEPTH);
   }
 
   /**
@@ -175,12 +196,13 @@ export class SpriteFighterView {
     const flip = fighter.facing < 0;
     // The body alone trembles: its shadow, afterimages and effects stay where the game has it.
     const trembling = hitShakeOf(state, this.player, context, this.shake);
-    this.body.show(clip.sheet, frame, x + trembling, this.groundY - height, flip);
+    const y = this.groundY - height;
+    this.body.show(clip.sheet, frame, x + trembling, y, flip);
     this.body.shade(staged.silhouette);
-    this.showOutline(staged, clip.sheet, frame, x + trembling, this.groundY - height, flip);
+    this.showOutline(staged, clip.sheet, frame, x + trembling, y, flip);
+    this.showContour(staged.silhouette, clip.sheet, frame, x + trembling, y, flip);
     const gliding = isGliding(fighter, template);
     // The round clock counts ticks and stops with the hitstop: the afterimages do too.
-    const y = this.groundY - height;
     this.trail.update(round.phaseFrame, gliding, clip.sheet, frame, x, y, flip);
     this.echo.update(
       round.phaseFrame,
@@ -240,6 +262,26 @@ export class SpriteFighterView {
     this.outline.forEach((sprite, index) => {
       const [dx, dy] = OUTLINE[index] ?? [0, 0];
       sprite.setAlpha(silhouette).show(sheet, frame, x + dx, y + dy, flip);
+    });
+  }
+
+  /**
+   * The contour, around the pose shown, where the body is: fading as the Finisher's silhouette
+   * comes (its own outline then, or none), back as it leaves.
+   */
+  private showContour(
+    silhouette: number,
+    sheet: string,
+    frame: number,
+    x: number,
+    y: number,
+    flip: boolean,
+  ): void {
+    const alpha = 1 - silhouette;
+    this.contour.forEach((sprite, index) => {
+      const [dx, dy] = OUTLINE[index] ?? [0, 0];
+      if (alpha <= 0) sprite.hide();
+      else sprite.setAlpha(alpha).show(sheet, frame, x + dx, y + dy, flip);
     });
   }
 }
