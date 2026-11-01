@@ -4,7 +4,7 @@ import type { MatchConfig } from '../core/config';
 import { toPx } from '../core/constants';
 import { pushboxOf } from '../core/fighter';
 import type { FighterState, GameState } from '../core/state';
-import type { TouchControls } from '../input/touch-controls';
+import type { ButtonCircle, TouchControls } from '../input/touch-controls';
 import type { Framing } from './camera-framing';
 import { VIEW_SIZE } from './view';
 
@@ -63,8 +63,13 @@ export function onPage(view: Rect, canvas: Rect): Rect {
   };
 }
 
-export function overlaps(a: Rect, b: Rect): boolean {
-  return a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+/** Whether `rect` (empty when its left is past its right) reaches into the round `button`. */
+export function touches(rect: Rect, button: ButtonCircle): boolean {
+  if (rect.left >= rect.right || rect.top >= rect.bottom) return false;
+  // The point of the rectangle nearest the button's center.
+  const x = Math.min(Math.max(button.x, rect.left), rect.right);
+  const y = Math.min(Math.max(button.y, rect.top), rect.bottom);
+  return Math.hypot(x - button.x, y - button.y) < button.radius;
 }
 
 /** What `a` and `b` share (empty, its left past its right, when they do not touch). */
@@ -79,13 +84,14 @@ function intersection(a: Rect, b: Rect): Rect {
 
 /**
  * Player 1's touch buttons fade while a fighter is under them (docs/polish/AUDIT-ET-PLAN.md, P21,
- * L35): on a 16:9 phone they cover the right quarter of the fight, and a fighter cornered there
- * vanished under the thumbs. Where the canvas and the buttons are on the page is measured once,
- * and again after every resize (a turn, fullscreen); the fighters, on every frame.
+ * L35), each on its own: on a 16:9 phone the cluster covers the right of the fight, and a fighter
+ * there vanished under the thumbs; the buttons over nobody stay as they are. Where the canvas and
+ * the buttons are on the page is measured once, and again after every resize (a turn,
+ * fullscreen); the fighters, on every frame.
  */
 export class TouchCover {
   private canvasRect: Rect | undefined;
-  private buttonsRect: Rect | undefined;
+  private buttons: readonly ButtonCircle[] | undefined;
 
   constructor(
     private readonly canvas: HTMLElement,
@@ -99,8 +105,8 @@ export class TouchCover {
   /** Once a frame, after the camera is framed. `now`: in milliseconds. */
   update(state: GameState, framing: Framing, now: number): void {
     const canvas = (this.canvasRect ??= this.canvas.getBoundingClientRect());
-    const buttons = (this.buttonsRect ??= this.touch.buttonsRect());
-    const covered = PLAYERS.some((player) => {
+    const buttons = (this.buttons ??= this.touch.buttonCircles());
+    const bodies = PLAYERS.map((player) => {
       const body = bodyOnScreen(
         state.fighters[player],
         this.config.fighters[player],
@@ -108,9 +114,12 @@ export class TouchCover {
         this.groundY,
       );
       // Only what the canvas shows: a hurtbox past the wall is off screen, nobody misses it.
-      return overlaps(intersection(onPage(body, canvas), canvas), buttons);
+      return intersection(onPage(body, canvas), canvas);
     });
-    this.touch.setCovered(covered, now);
+    this.touch.setCovered(
+      buttons.map((button) => bodies.some((body) => touches(body, button))),
+      now,
+    );
   }
 
   dispose(): void {
@@ -119,6 +128,6 @@ export class TouchCover {
 
   private readonly forget = (): void => {
     this.canvasRect = undefined;
-    this.buttonsRect = undefined;
+    this.buttons = undefined;
   };
 }
