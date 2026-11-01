@@ -525,6 +525,9 @@ export class BindingsScreen {
       ),
     );
     if (this.row > 0) this.selectedElement?.scrollIntoView({ block: 'nearest' });
+    // What it waits for, or why it refused: in view, even on a screen grown past its height
+    // (« Taille du texte : grande »).
+    if (listening) status.scrollIntoView({ block: 'nearest' });
   }
 
   private selectedElement: HTMLElement | undefined;

@@ -122,11 +122,13 @@ describe('the « Touches » screen, keyboard (P24)', () => {
   });
 
   it('takes the next key pressed, keeps it, and draws it lit', () => {
-    const { goTo, tap, store, status, drawnKey, cell, screen } = setup();
+    const { goTo, tap, store, status, drawnKey, cell, screen, root } = setup();
     goTo(LIGHT);
     tap('Enter');
     expect(screen.listeningFor).toBe('light');
     expect(status()).toContain('appuie sur une touche');
+    // Shown, even below a screen grown past its height.
+    expect(byClass(root(), 'bindings-status')[0]?.scrolledIntoView).toBe(1);
     tap('KeyB', 'b');
     expect(screen.listeningFor).toBeUndefined();
     expect(store.get().bindings.keyboard[0].light).toEqual(['KeyB']);
