@@ -1,4 +1,6 @@
+import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { relativeLuminance } from '../../src/render/luminance';
 import { Menu, type MenuOptions } from '../../src/ui/menu';
 import { installFakePage, type FakeElement } from '../render/fake-dom';
 
@@ -64,6 +66,14 @@ describe('Menu, for a touch screen (docs/polish/AUDIT-ET-PLAN.md, L21)', () => {
     second.dispatchEvent(new Event('pointerenter'));
     expect(second.classList.contains('selected')).toBe(true);
     expect(second.scrolledIntoView).toBe(1);
+  });
+
+  it("writes its help readable, at least 4.5:1 on the menus' background (P22, WCAG 1.4.3)", () => {
+    const css = readFileSync(new URL('../../src/styles.css', import.meta.url), 'utf8');
+    const hex = (rule: RegExp) => Number.parseInt(rule.exec(css)?.[1] ?? '', 16);
+    const help = relativeLuminance(hex(/\.menu-help \{[^}]*?color: #([0-9a-f]{6})/));
+    const background = relativeLuminance(hex(/\.menu \{[^}]*?background: #([0-9a-f]{6})/));
+    expect((help + 0.05) / (background + 0.05)).toBeGreaterThanOrEqual(4.5);
   });
 
   it('removes « Retour » with itself', () => {

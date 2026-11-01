@@ -331,7 +331,8 @@ body {
 .menu-help {
   margin: 0;
   font-size: var(--text-small);
-  color: #778;
+  /* 6.8:1 on the menus' background, above WCAG's 4.5:1 (P22). */
+  color: #9a9ab0;
 }
 /* The keys for a keyboard or a gamepad, what to touch on a touch screen (src/ui/menu.ts). */
 .menu-help-touch,
