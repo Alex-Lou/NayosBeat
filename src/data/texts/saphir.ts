@@ -27,7 +27,7 @@ import {
 
 /** Saphir's help page (docs/saphir.md §4, §5), as she plays in the grey box. */
 export const SAPHIR_TEXTS: FighterTexts = {
-  title: 'La disquaire : elle esquive, attend et punit',
+  title: 'La masquée : elle esquive, attend et punit',
   moves: {
     special: {
       input: SPECIAL,

@@ -103,13 +103,14 @@ Entrepôt reconverti en club, la nuit. Mur d'enceintes empilées au fond, néons
 
 ### Saphir — Contreuse
 
-> Ancienne disquaire, savate et chapeau, polie et redoutable. Elle entre d'un pas, touche, et n'est déjà plus là. Sa spec : [saphir.md](../saphir.md).
+> Une légende du circuit, masquée, polie et redoutable : personne ne sait qui est dessous, ni si c'est la même d'un soir à l'autre. Elle entre d'un pas, touche, et n'est déjà plus là. Sa spec : [saphir.md](../saphir.md).
 
-- **Silhouette** : une femme d'environ soixante-cinq ans, droite, de profil, talon avant levé. Détail signature : le **chapeau de feutre à ruban vert**, rigide, qui suit la tête (aucun ressort).
-- **Tenue** : tailleur-pantalon crème, chemisier vert bouteille, chaussures bicolores cirées (noir et blanc cassé).
-- **Tenue 2** (miroir) : smoking noir, chapeau noir, ruban et chemisier **lilas** ; peau, cheveux et chaussures inchangés.
-- **Visage et cheveux** : dessinés de zéro ; cheveux blancs coupés court, peau brun chaud. Expressions sobres, yeux mi-clos quand elle écoute.
-- **Palette** (proposée, figée à la porte 2) : masse crème `#E4D6B4` (tenue 2 : noir `#15151A`) ; énergie verte `#20B464` (tenue 2 : lilas `#C0A0FF`).
+- **Silhouette** : une femme d'une trentaine d'années, droite, de profil, talon avant levé. Détail signature : le **masque de Janus**, plein, en laque saphir : un profil sculpté devant, un autre derrière, l'un vers l'adversaire, l'autre vers la salle. Rigide, il suit la tête ; une queue de cheval noire sort du sommet.
+- **Tenue** (de scène, en op-art) : veste courte ivoire à col montant, ceinture saphir, pantalon large de danse rayé d'ondes noires, gants noirs, chaussures bicolores de savate (noir et blanc cassé). Les bandes sont larges et peu nombreuses : elles ne scintillent pas (`docs/flashs.md`).
+- **Tenue 2** (miroir) : la même, inversée : noire, rayée d'ondes ivoire ; énergie **lilas**. Le masque, les cheveux et les chaussures ne changent pas.
+- **Costume pour plus tard** : le tailleur-pantalon crème, en tenue à débloquer (une coupe à part : chaque coup redessiné, hors v1).
+- **Masque et cheveux** : dessinés de zéro. Le masque ne bouge pas : seule la fente de l'œil s'allume de son énergie quand elle force (`effort`) et au pic d'un spécial (`kiai`). Un peu de peau brun chaud au cou, entre le col et le masque.
+- **Palette** (figée à la porte 2) : masse ivoire `#ECE8DE` (tenue 2 : noir `#121216`) ; masque saphir `#2A4CB8` dans les deux tenues ; énergie verte `#20B464` (tenue 2 : lilas `#C0A0FF`).
 - **Effets de coup** : arcs de coups de pied **verts** (forme `slash`), éclats crème, étincelles en croix ; son énergie (Syncope, Rubato, Contre-ut) est verte. Tenue 2 : lilas.
 
 | Coup (gabarit) | Nom | Mise en scène |
@@ -128,8 +129,8 @@ Entrepôt reconverti en club, la nuit. Mur d'enceintes empilées au fond, néons
 | specialAntiAir | Contre-ut | Elle bondit, la jambe tendue droit vers le ciel |
 | throwForward, throwBack | Croc-en-jambe, Valse | Un pied derrière la cheville ; un tour de valse, par-dessus l'épaule |
 
-- **Entrée** : elle descend l'escalier sans se presser, ajuste son chapeau d'un doigt, salue la salle, et tombe en garde sur le temps long.
-- **Victoire** : elle soulève son chapeau vers l'adversaire, et le remet.
+- **Entrée** : elle descend l'escalier sans se presser, s'incline vers la salle, puis tombe en garde sur le temps long.
+- **Victoire** : elle s'incline vers l'adversaire au sol ; le profil du dos regarde la salle.
 - **Temps écoulé** : elle regarde sa montre, la remonte, et salue quand même.
 
 ---

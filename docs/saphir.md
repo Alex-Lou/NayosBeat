@@ -2,6 +2,8 @@
 
 *Porte 1a (`docs/art/perso-3.md` §5), à valider par le propriétaire. Concept choisi à la porte 0 : B, la contreuse de mi-distance, dans Sound Clash, avec sa propre histoire et sans lien avec le passé de Nayo ni de Riff. Les chiffres de jeu ont été écrits en données hors du dépôt, passés à `validateTemplate`, `comboProblems` et `boostProblems` (aucun problème), à la loi du gel (`tests/data/hitstop.test.ts`), puis joués dans le moteur : portées, saut, L, L, L, routes, Coda. Ils entrent dans `src/data/fighters/saphir*.ts` à la porte 1b, où ils se figent. Les hurtbox sont provisoires jusqu'au dessin (portes 2 et 3). Ce qui est une estimation est marqué comme tel.*
 
+*Porte 2 : refonte de l'allure, choix du propriétaire. La dame au chapeau ne l'inspirait pas : Saphir devient une légende masquée, la trentaine, au masque de Janus et en tenue de scène op-art. Ses coups, ses chiffres et ses tests ne changent pas ; son histoire est réécrite (`docs/art/histoire.md`).*
+
 Id : `saphir`. Nom affiché : `Saphir` (aucune capitale accentuée).
 
 ---
@@ -10,10 +12,10 @@ Id : `saphir`. Nom affiché : `Saphir` (aucune capitale accentuée).
 
 ### Saphir, Contreuse : « un pas, une touche, dehors »
 
-- **Look** : une femme d'environ soixante-cinq ans, droite, de profil. Cheveux blancs coupés court, peau brun chaud. Tailleur-pantalon crème, chemisier vert bouteille, chaussures bicolores cirées (les armes de la savate). Le **chapeau de feutre** à ruban vert, son détail signature. Tenue 2 : smoking noir, ruban lilas.
-- **Couleurs** : masse crème `#E4D6B4`, énergie verte `#20B464`. Tenue 2 : masse noire `#15151A`, énergie lilas `#C0A0FF`. Mesures au §8.
+- **Look** : une femme d'une trentaine d'années, droite, de profil. Un **masque de Janus** plein, en laque saphir : un profil sculpté devant, un autre derrière, son détail signature ; une queue de cheval noire sort du sommet. Tenue de scène en op-art : veste courte ivoire à col montant, ceinture saphir, pantalon large de danse rayé d'ondes noires, gants noirs, chaussures bicolores de savate (les armes de la savate). Tenue 2 : la même, inversée, noire rayée d'ivoire.
+- **Couleurs** : masse ivoire `#ECE8DE`, masque saphir `#2A4CB8`, énergie verte `#20B464`. Tenue 2 : masse noire `#121216`, énergie lilas `#C0A0FF`. Mesures au §8.
 - **Effets** : arcs de coups de pied (`slash`, la forme de Nayo, en vert), étincelles en croix ; dissolution `rise` ; lettrage néon. Une forme neuve serait du code (§4.11 du cahier) : ce n'est pas demandé.
-- **Personnalité** : polie, chaleureuse, elle vouvoie tout le monde. Elle invite, attend, puis punit. Elle salue après chaque combat.
+- **Personnalité** : polie, elle vouvoie tout le monde et parle peu. Elle invite, attend, puis punit. Elle salue après chaque combat, sans jamais ôter le masque. Personne ne sait qui est dessous, ni si c'est la même d'un soir à l'autre.
 - **Plan de jeu** : tenir l'adversaire entre 60 et 100 px ; le Chassé (71,5 px) pour gagner les échanges de pieds ; la Syncope pour toucher de loin et ressortir ; le Rubato pour punir un coup raté de très loin ; l'Esquive (52 px) pour sortir du contact ; le Contre-ut contre les sauts.
 - **Forces** (dans les données) :
   1. la plus longue portée sans bouger du jeu : Chassé 71,5 px, contre Crochet 65 et Coude 56 ;
@@ -26,9 +28,9 @@ Id : `saphir`. Nom affiché : `Saphir` (aucune capitale accentuée).
 
 **Le test d'identité** (`tests/data/fighters.test.ts`, porte 1b) : Saphir a la plus longue portée immobile de H, la marche arrière la plus rapide et le plus long backdash du casting ; son coup le plus rapide est le plus lent.
 
-**Description du roster** (68 signes) : « Disquaire en savate · mi-distance · Syncope · Rubato · sans reversal ».
+**Description du roster** (68 signes) : « Masquée en savate · mi-distance · Syncope · Rubato · sans reversal ».
 
-**Titre de l'aide** : « La disquaire : elle esquive, attend et punit ».
+**Titre de l'aide** : « La masquée : elle esquive, attend et punit ».
 
 ## 2. Statistiques comparées (au format de combat-v2 §6.3, mesurées dans le moteur)
 
@@ -88,13 +90,13 @@ Les noms des normaux sont des gestes de savate ; la métaphore musicale est rés
 | en l'air, H | **Chassé sauté** | Chassé en l'air, semelle en avant | overhead | le saut lourd | l'Uppercut, le Genou montant |
 | S | **Syncope** | Un pas de swing sur le temps long (28 px), un fouetté qui claque sur le temps court, et elle repart en arrière (28 px). Un arc vert, très court | milieu | **l'outil signature** : toucher à 99,5 px et ressortir avant la riposte | la garder (−10 au contact) et la punir **si** elle ne ressort pas assez ; la Glissade passe dessous |
 | → + S | **Rubato** | Elle retient son poids en arrière, puis fond de 36 px et fouette, en retard exprès | milieu, met au sol | punir un coup raté de très loin (103,5 px) | −9 en garde ; un projectile la prend en course |
-| ↓ + S | **Contre-ut** | Elle bondit, la jambe tendue droit vers le ciel, le chapeau tenu d'une main | milieu, met au sol | l'anti-air, **sans invincibilité** | sauter tard, ou la feinte ; −17 en garde |
+| ↓ + S | **Contre-ut** | Elle bondit, la jambe tendue droit vers le ciel | milieu, met au sol | l'anti-air, **sans invincibilité** | sauter tard, ou la feinte ; −17 en garde |
 | PRISE | **Prise** | Saisie au revers de la veste | — | la prise ordinaire (43,5 px) | dégager |
 | en tenant, L | **Paume** | Petits coups de paume au plexus | — | le tabassage | se débattre |
 | en tenant, H | **Croc-en-jambe** | Elle glisse un pied derrière la cheville, une poussée : l'adversaire tombe tout près | — | la pression au réveil | — |
 | en tenant, ← + H | **Valse** | Elle le fait tourner au bras, un tour de valse, et le passe par-dessus son épaule | — | changer de côté (projection debout : planches des victimes existantes) | — |
 | DASH | **Fente** | La fente avant de la savate, 48 px | — | entrer à mi-distance | un coup qui la cueille |
-| ← + DASH | **Esquive** | Un pas en arrière, chapeau tenu, 52 px | — | sortir du contact ; anti-prise f0–10 | un coup long qui la rattrape |
+| ← + DASH | **Esquive** | Un pas en arrière, 52 px | — | sortir du contact ; anti-prise f0–10 | un coup long qui la rattrape |
 
 `jabRepeat` n'est pas pris (comme chez Riff) : 28 ids sur 29.
 
@@ -206,7 +208,7 @@ Son mot de Remix : **forte** (la nuance musicale). Les Remix gardent le timing e
 ### 7.2 Pourquoi c'est elle
 - **Ce qu'elle veut** (histoire) : « Passer la face B. Que, pour une fois, toute une salle danse sur l'autre côté du disque. » Le Finisher le fait à la lettre.
 - **Le swing** : la reprise tombe sur le temps court, à contretemps : la trame `'hold'`, celle de Riff, lui va sans code neuf.
-- **Le chapeau** : elle ne l'enlève que pour saluer, après le combat. Elle le soulève pendant la carte.
+- **Le masque** : deux profils, deux faces, comme le disque. Elle s'incline pendant la carte ; le profil du dos regarde la salle.
 - **Son rôle** : la Coda reste une fin de combo, sans invincibilité. Saphir n'a toujours pas de reversal.
 
 ### 7.3 Storyboard (t0 = l'image du KO, sur la 3e frappe)
@@ -218,13 +220,13 @@ Son mot de Remix : **forte** (la nuance musicale). Les Remix gardent le timing e
 | t0 → t0 + 45 | le silence | **image tenue** (`'hold'`) | **image tenue** | gros plan ×2,0 ; aucun flash | coupé net (`hush`) : un disque qui s'arrête |
 | t0 + 45 (R) | la reprise, sur le temps court | petit saut de swing [R : ses clips de saut et d'atterrissage, comme le rebond de Riff] | retombe [R] | le seul éclat, les jauges et la barre du perdant éclatent ; la foule danse (`crowd`) | la musique revient : face B |
 | R → R + 30 | la suite | retour en garde [R] | au sol [R] | caméra de ×2,0 à ×1,0 | — |
-| R + 30 | la carte | elle soulève son chapeau (pose de victoire) [R] | — | carte « FACE B. », en néon | — |
+| R + 30 | la carte | elle s'incline (pose de victoire) [R] | — | carte « FACE B. », en néon | — |
 | après | la victoire | `victory` [R] | — | — | — |
 
 Toutes les poses sont réutilisées [R] : aucune pose neuve n'est demandée pour le Finisher (la pose `finale` reste hors v1).
 
 ### 7.4 à 7.10, en bref
-- **Caméra** : celle du contrat commun (`finisher.md` §1.14) ; Saphir reste sous 96 px au gros plan (la super et la victoire sont mesurées à la porte 2 ; sa garde fait 82 px, chapeau compris).
+- **Caméra** : celle du contrat commun (`finisher.md` §1.14) ; Saphir reste sous 96 px au gros plan (la super et la victoire sont mesurées à la porte 2 ; sa garde fait 74 px, mesurée au squelette).
 - **Fond** : un aplat vert sombre par tenue, sous ΔL 0,06 contre le ciel et le sol (proposition : `0x0f3a26` et `0x2a1e46`, à mesurer par `finisher-flashes.test.ts`).
 - **VFX et palette** : son vert, le platine du Boost ; aucun rouge saturé ; au plus 3 flashs comptés.
 - **Typographie** : tampons « DOU », « BI », « DOUM » (`count`) ; carte « FACE B. » (`'neon'`), aucune carte propre à un rival (`rival: null`).
@@ -239,7 +241,7 @@ Mesurées avec `hue` (`tests/render/hit-styles.test.ts`), `relativeLuminance` et
 
 | | Tenue 1 | Tenue 2 |
 |---|---|---|
-| Masse | crème `#E4D6B4` (laine du tailleur) | noir `#15151A` (smoking) |
+| Masse | ivoire `#ECE8DE` (la tenue de scène) | noir `#121216` (la même, inversée) |
 | Énergie, et HUD | vert `#20B464` | lilas `#C0A0FF` |
 | Teinte | 148° | 260° |
 | Écart au cyan 187° / magentas 319°, 329° / or 43° / jaune 46° / oranges 28°, 35° | 39° / 171°, 179° / 105° / 102° / 120°, 113° | 73° / 59°, 69° / 143° / 146° / 128°, 135° |
@@ -249,29 +251,29 @@ Mesurées avec `hue` (`tests/render/hit-styles.test.ts`), `relativeLuminance` et
 
 - Le HUD est à 102° (tenue 1) et 146° (tenue 2) du jaune de la vie : bien plus que 20°.
 - En simulation, le vert tombe à 0,32 et 0,37, loin du jaune simulé (0,63 et 0,56) : séparé par la valeur.
-- La tenue 2 tranche sur la tenue 1 (masse noire contre crème, lilas contre vert), n'est ni cyan, ni magenta, ni platine, et se détache de la nuit violette par la valeur (0,44 contre 0,01). **À regarder en jeu** : le lilas sur les néons violets du stage.
-- **Les matières** (palette par matériau, figée à la porte 2) : peau brun chaud ; cheveux blancs ; feutre du chapeau (crème, tenue 2 noir) ; ruban (vert, tenue 2 lilas) ; laine du tailleur (crème, tenue 2 noir) ; soie du chemisier (vert bouteille, tenue 2 lilas sombre) ; cuir verni des chaussures bicolores (noir et blanc cassé, dans les deux tenues). Puis les détails d'effets, puis les 5 du platine.
-- **Les effets** (`hit-styles.ts`, PR E) : forme `slash`, énergie verte, couleur de frappe crème (`#F0E2BC`, à mesurer contre le platine à la porte 3) ; le triplet est unique dans le roster. Étincelles en croix (`'cross'`).
+- La tenue 2 tranche sur la tenue 1 (masse noire contre ivoire, lilas contre vert), n'est ni cyan, ni magenta, ni platine, et se détache de la nuit violette par la valeur (0,44 contre 0,01). **À regarder en jeu** : le lilas sur les néons violets du stage.
+- **Les matières** (palette par matériau, figée à la porte 2) : peau brun chaud (au cou seulement) ; cheveux noirs ; laque du masque (saphir, dans les deux tenues) ; drap de la tenue (ivoire, tenue 2 noir) ; ondes de l'op-art (noir, tenue 2 ivoire) ; cuir noir des gants et des chaussures ; cuir blanc des chaussures bicolores ; semelles. Puis la peinture du masque (la fente, les larmes), puis les détails d'effets, puis les 5 du platine.
+- **Les effets** (`hit-styles.ts`, PR E) : forme `slash`, énergie verte, couleur de frappe crème (`#F0E2BC`, l'ivoire frappé, à mesurer contre le platine à la porte 3) ; le triplet est unique dans le roster. Étincelles en croix (`'cross'`).
 
 ## 9. La fiche de design
 
-- **Silhouette** : 82 × 43 px en garde, chapeau compris (77 sans), mesurée sur la planche de la porte 0 ; à refaire au squelette à la porte 2. Sous 85 px : la prise tombe dans les fourchettes sans rien plier.
+- **Silhouette** : 74 × 37 px en garde, mesurée au squelette à la porte 2 (82 × 43 avec le chapeau, sur la planche de la porte 0). Sous 85 px : la prise tombe dans les fourchettes sans rien plier.
 - **Corps** (`Body`) : de profil (écarts d'épaules et de hanches positifs, comme Nayo) ; jambes longues pour sa taille ; buste droit ; épaules étroites.
-- **La garde** (`GUARD`) : droite, de profil ; talon avant levé, le poids sur la jambe arrière ; poings hauts et souples, le bras avant plus loin ; le menton rentré sous le bord du chapeau. Elle raconte l'archétype : prête à partir en arrière autant qu'en avant.
-- **La tête** : dessinée de zéro (aucune source Zen-Tazzer) ; cheveux blancs courts sous le chapeau ; un visage de soixante-cinq ans, sobre.
-- **Le visage**, 8 expressions : `focus` (paupières mi-closes, attentive), `effort`, `kiai` (au pic d'un spécial seulement), `smirk` (un coin de bouche), `cool` (yeux fermés, elle écoute), `hurt`, `out`, `tired`.
-- **Le détail signature** : le chapeau de feutre à ruban vert. Rigide, il suit la tête : aucun ressort. Il tient sur les tours (Revers tournant, Valse) : une main le retient sur le Contre-ut et l'Esquive. Il sort de la scène au Finisher, soulevé pour saluer.
-- **Son mouvement** : la garde sautille à peine sur la pointe, en swing (le temps long, puis le court) ; la marche glisse ; le saut avant se fait jambes groupées, en ciseau ; l'Esquive retient le chapeau.
+- **La garde** (`GUARD`) : droite, de profil ; talon avant levé, le poids sur la jambe arrière ; poings hauts et souples, le bras avant plus loin ; le buste droit, la tête au-dessus du dos et non devant (le retour du propriétaire à la porte 2 : pas de dos voûté). Elle raconte l'archétype : prête à partir en arrière autant qu'en avant.
+- **La tête** : dessinée de zéro (aucune source Zen-Tazzer) : le masque plein, un profil sculpté devant (arcade, fente de l'œil, nez, lèvres closes, une larme peinte), un autre derrière, éclairé à contre-jour ; une couture du sommet à la mâchoire ; la queue de cheval haute, qui dégage le profil du dos.
+- **Le visage**, 8 expressions, sur un masque qui ne bouge pas : `effort` allume la fente de l'œil de son énergie, `kiai` l'embrase (au pic d'un spécial seulement) ; `focus`, `smirk`, `cool`, `hurt`, `out` et `tired` montrent le masque tel quel. On ne sait jamais ce qu'elle ressent.
+- **Le détail signature** : le masque de Janus. Rigide, il suit la tête : aucun ressort. Sur les tours (Revers tournant, Valse), un profil passe, puis l'autre : on ne sait plus dans quel sens elle regarde.
+- **Son mouvement** : la garde sautille à peine sur la pointe, en swing (le temps long, puis le court) ; la marche glisse ; le saut avant se fait jambes groupées, en ciseau ; les ondes du pantalon suivent ses jambes.
 - **Le son et le temps** : la syncope, le swing ; thème « chaud, qui swingue ». Aucun son à elle en v1 : une proposition pour plus tard (contrebasse, cuivres, craquement de 78 tours).
 - **Les 3 coups signatures**, animés à la porte 2 et retouchés à la porte 4 : **Syncope** (S), **Chassé** (H), **Contre-ut** (↓ + S). Chacun a un membre actif clair : une jambe tendue.
-- **Les retours passés du propriétaire** (D25 à D27) : les coups de pied hauts d'un corps de soixante-cinq ans restent dans les limites d'anatomie, sans exception ; aucun bras tiré en arrière et plié.
+- **Les retours passés du propriétaire** (D25 à D27) : les coups de pied hauts restent dans les limites d'anatomie, sans exception ; aucun bras tiré en arrière et plié.
 
 ## 10. La liste de coupes
 
 Si le temps manque, dans cet ordre :
 1. le Rebond du Plongé (le Plongé reste un overhead de corde) ;
 2. le Pas glissé (`forwardLight` retombe sur la Pointe) ;
-3. la main qui retient le chapeau (le chapeau suit la tête, simplement) ;
+3. le profil sculpté du dos (un masque simple, une seule face) ;
 4. la Chandelle glissée (la Chandelle seule) ;
 5. une 2e expression de `focus` en garde.
 
@@ -280,9 +282,10 @@ Si le temps manque, dans cet ordre :
 - **La Syncope trop forte contre le CPU** : elle ressort hors de sa portée de punition. À mesurer en boîte grise ; la réponse est dans les plans du CPU (session principale), ou dans ses chiffres (plus de récupération), à la porte 1b.
 - **La pente contre Nayo** repose sur l'échange de normaux, que le CPU joue beaucoup ; entre humains, le Vinyle pèse plus. Estimation.
 - **Les hurtbox provisoires** : un coup de pied tendu expose la jambe. Mesurées sur le dessin aux portes 2 et 3, elles peuvent raccourcir sa portée utile.
-- **Le chapeau sur les tours** : un détail rigide à garder lisible et sans « aile ».
-- **Les coups de pied hauts** et l'anatomie (D25) d'un corps âgé.
-- **La crème de la tenue 1** est claire : ses éclats de frappe crème sont à mesurer contre le platine (porte 3).
+- **L'op-art en mouvement** : des bandes contrastées qui bougent peuvent fatiguer l'œil. Elles restent larges et peu nombreuses ; à regarder en jeu, sur un téléphone.
+- **Les coups de pied hauts** et l'anatomie (D25).
+- **L'ivoire de la tenue 1** est clair : ses éclats de frappe crème sont à mesurer contre le platine (porte 3).
+- **Le tailleur** : la première allure, en costume à débloquer plus tard. Une coupe à part redessine chaque coup : hors v1.
 
 **Estimation** : 9 jours-agent pour les portes 1a à 4. Côté session principale, environ 1,5 jour : les plans du CPU (l'espacement, la Syncope), l'équilibrage, le Finisher branché en données ; ni cœur, ni planche de victime.
 
