@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { DUMMY_HEALTHS, TRAINING_FINISHERS } from '../../src/app/match-setup';
 import { FLASH_LABELS, NOTICE, SHAKE_LABELS, STAGING_LABELS } from '../../src/app/comfort';
 import { helpPages, withArrows } from '../../src/app/controls-content';
 import type { RoundState } from '../../src/core/state';
@@ -10,6 +11,8 @@ import { buttonsOf } from '../../src/render/input-history';
 import { Input } from '../../src/core/input';
 import { wordFor, type BlowKind } from '../../src/render/onomatopoeia';
 import { boostStamp, STAMP_TEXTS } from '../../src/render/stamps';
+import { noteText } from '../../src/render/training-combo';
+import { NOTES } from './finisher-notes';
 import { glyphsOf } from './font-glyphs';
 
 /**
@@ -66,6 +69,8 @@ function hudTexts(): string[] {
     '↑',
     comboText(1, 30),
     comboText(12, 345),
+    // What the training line says of its super (docs/finisher.md §1.12).
+    ...NOTES.map((note) => comboText(12, 1000, noteText(note))),
     // The advantage of an exchange (advantage-meter.ts): ahead, behind, even.
     advantageText(2),
     advantageText(-23),
@@ -139,6 +144,9 @@ describe('glyphs', () => {
         `Mise en scène : ${label}`,
         hint,
       ]),
+      // Training's menu (docs/finisher.md §5.7).
+      ...TRAINING_FINISHERS.map(({ label }) => `Finisher : ${label}`),
+      ...DUMMY_HEALTHS.map((health) => `Vie du mannequin : ${health} %`),
     ];
     expect(missing(await glyphsOf(PIXEL), texts)).toEqual([]);
     expect(texts.filter((text) => CAPITAL_ACCENTED.test(text))).toEqual([]);

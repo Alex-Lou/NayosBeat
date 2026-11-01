@@ -1,15 +1,17 @@
-import type { FighterTemplate } from '../core/config';
+import type { FighterTemplate, MatchConfig } from '../core/config';
 import { toPx } from '../core/constants';
+import { finisherReady, inDanger } from '../core/finisher';
 import { DIRECTIONS, Input, type InputBits } from '../core/input';
 import type { MoveId } from '../core/move-data';
 import { superGauge } from '../core/fighter/move';
 import { moveOf } from '../core/moves';
-import { BOOST_BAR, BOOST_MAX } from '../core/rules';
+import { BOOST_BAR, BOOST_MAX, ROUNDS_TO_WIN } from '../core/rules';
 import {
   FLAG_MOVE_HIT,
   FLAG_SPENT_CANCEL,
   type FighterAction,
   type FighterState,
+  type GameState,
 } from '../core/state';
 import type { CpuLevel } from './profiles';
 import { nextRandom } from './rng';
@@ -41,6 +43,8 @@ export interface PlanCondition {
    * with a DASH step (the Rewind) only while the sequence has not spent it.
    */
   readonly minBoost?: number;
+  /** Only while its Finisher is ready: FINISH lit on its gauge (docs/finisher.md §1.11). */
+  readonly finisher?: true;
 }
 
 export interface Plan {
@@ -63,6 +67,11 @@ const JUGGLE = { easy: 0, normal: 0, hard: 3 } as const;
 const REMIX = { easy: 0, normal: 2, hard: 2 } as const;
 /** The Rewind, the super, a Remix that juggles: hard only. */
 const SPEND = { easy: 0, normal: 0, hard: 3 } as const;
+/**
+ * A route that ends on the super weighs this many times its weight while the CPU's Finisher is
+ * ready (docs/finisher.md §1.11): 12 instead of 3 for hard.
+ */
+const FINISHER_WEIGHT = 4;
 const HIT = { hit: true } as const;
 const BLOCKED = { hit: false } as const;
 /**
@@ -74,6 +83,9 @@ const within = (maxDistancePx: number) => ({ hit: true, maxDistancePx }) as cons
 /** A hit from this close at most, with this much gauge to spend. */
 const spending = (maxDistancePx: number, minBoost: number) =>
   ({ hit: true, maxDistancePx, minBoost }) as const;
+/** A hit from this close at most, the CPU's Finisher ready: its three bars spent on it. */
+const finishing = (maxDistancePx: number) =>
+  ({ hit: true, maxDistancePx, minBoost: BOOST_MAX, finisher: true }) as const;
 
 /** Nayo's plans: the routes of combos-v3 §3.1 that need no gauge, from the move that connected. */
 const NAYO_PLANS: readonly Plan[] = [
@@ -158,6 +170,9 @@ const NAYO_PLANS: readonly Plan[] = [
   },
   { after: 'standLight', when: spending(52, BOOST_MAX), steps: [L, H, H, B | X], weight: SPEND },
   { after: 'standHeavy', when: spending(60, BOOST_MAX), steps: [H, B | X], weight: SPEND },
+  // The Finisher from the Uppercut that hit (docs/finisher.md §1.3, §1.11): the Mégabasse
+  // catches the body sent up. Riff's Genou montant has none: the body falls before her Slam.
+  { after: 'specialAntiAir', when: finishing(38), steps: [B | X], weight: SPEND },
 ];
 
 /** Riff's plans: her routes of combos-v3 §4 that need no gauge. */
@@ -225,10 +240,33 @@ interface Connected {
 }
 
 /**
+ * How a CPU weighs its super as its move connects (docs/finisher.md §1.11): its Finisher ready
+ * (`finisher`: FINISH lit on its gauge); on its match point, the opponent's bar not orange yet
+ * (`hold`: no plain super, the bars kept for the Finisher); or as ever (`free`). Hard alone
+ * plays for its Finisher: normal never lets it go, easy spends nothing.
+ */
+export type SuperOutlook = 'finisher' | 'hold' | 'free';
+
+/** What `player`, a CPU at `level`, sees of its Finisher on `state` (`SuperOutlook`). */
+export function superOutlook(
+  state: GameState,
+  player: 0 | 1,
+  config: MatchConfig,
+  level: CpuLevel,
+): SuperOutlook {
+  if (level !== 'hard') return 'free';
+  if (finisherReady(state, player, config)) return 'finisher';
+  const opponent = state.fighters[player === 0 ? 1 : 0];
+  const matchPoint = state.round.wins[player] === ROUNDS_TO_WIN - 1;
+  const orange = inDanger(opponent, config.fighters[player === 0 ? 1 : 0].maxHealth);
+  return matchPoint && !orange ? 'hold' : 'free';
+}
+
+/**
  * The steps of a plan for the move `me` plays, which has just connected on `opponent`, drawn
  * among those that apply by their weight for the level, and the seed after the draw. When none
  * applies, the special alone if the move cancels into one, as the CPU always did; else nothing.
- * A fighter without plans of its own always has that one.
+ * A fighter without plans of its own always has that one. `outlook`: how it weighs its super.
  */
 export function planFor(
   me: FighterState,
@@ -236,16 +274,20 @@ export function planFor(
   template: FighterTemplate,
   level: CpuLevel,
   seed: number,
+  outlook: SuperOutlook = 'free',
 ): { steps: readonly InputBits[]; seed: number } {
   const [value, next] = nextRandom(seed);
-  // Hard keeps its bars for its super once it has two: it spends no single one then.
-  const saving = level === 'hard' && savesForSuper(superGauge(me));
-  const applying = plansFor(me, opponent, template).filter(
+  // Hard keeps its bars for its super once it has two (all three for its Finisher): it spends
+  // no single one then.
+  const saving = level === 'hard' && savesForSuper(superGauge(me), outlook !== 'free');
+  const applying = plansFor(me, opponent, template, outlook).filter(
     (plan) => !(saving && plan.when.minBoost === BOOST_BAR),
   );
-  let left = value * applying.reduce((total, plan) => total + plan.weight[level], 0);
+  const weightOf = (plan: Plan): number =>
+    plan.weight[level] * (outlook === 'finisher' && endsOnSuper(plan) ? FINISHER_WEIGHT : 1);
+  let left = value * applying.reduce((total, plan) => total + weightOf(plan), 0);
   for (const plan of applying) {
-    left -= plan.weight[level];
+    left -= weightOf(plan);
     if (left < 0) return { steps: plan.steps, seed: next };
   }
   const special = me.move && moveOf(template, me.move).cancelInto?.includes('special');
@@ -254,17 +296,27 @@ export function planFor(
 
 /**
  * Whether a hard CPU with `boost` keeps it for its super (docs/combos-v3.md §6.4): from two bars
- * on, it spends no single one, and lets the super go at three.
+ * on, it spends no single one, and lets the super go at three. Playing for its Finisher
+ * (`forFinisher`, docs/finisher.md §1.11), it keeps the three too: they are the Finisher's.
  */
-export function savesForSuper(boost: number): boolean {
-  return boost >= 2 * BOOST_BAR && boost < BOOST_MAX;
+export function savesForSuper(boost: number, forFinisher = false): boolean {
+  return boost >= 2 * BOOST_BAR && (forFinisher || boost < BOOST_MAX);
 }
 
-/** The plans of `template` that apply to the move `me` plays, which has just connected. */
+/** The route spends the three bars: it ends on the super. */
+function endsOnSuper(plan: Plan): boolean {
+  return plan.when.minBoost === BOOST_MAX;
+}
+
+/**
+ * The plans of `template` that apply to the move `me` plays, which has just connected, as the CPU
+ * weighs its super (`outlook`): the Finisher's only while it is ready, no super on hold.
+ */
 export function plansFor(
   me: FighterState,
   opponent: FighterState,
   template: FighterTemplate,
+  outlook: SuperOutlook = 'free',
 ): readonly Plan[] {
   if (!me.move) return [];
   const connected: Connected = {
@@ -276,7 +328,12 @@ export function plansFor(
     crouching: opponent.crouching,
     distancePx: toPx(Math.abs(opponent.x - me.x)),
   };
-  return (PLANS[template.name] ?? []).filter((plan) => applies(plan, connected));
+  return (PLANS[template.name] ?? []).filter(
+    (plan) =>
+      applies(plan, connected) &&
+      (!plan.when.finisher || outlook === 'finisher') &&
+      !(outlook === 'hold' && endsOnSuper(plan)),
+  );
 }
 
 function applies({ after, when, steps }: Plan, connected: Connected): boolean {

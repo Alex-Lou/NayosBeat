@@ -99,6 +99,10 @@ export const BASICS: readonly (readonly [string, string])[] = [
     "La jauge sous ta vie : 3 barres, remplies en frappant, en parant et en encaissant, gardées d'un round à l'autre. BOOST + direction donne le Remix de ton spécial (1 barre), arrière + BOOST ta super (3 barres). DASH pendant un coup qui touche : le Rewind de Nayo, le Pogo de Riff (1 barre). Sans assez de barres, rien ne sort",
   ],
   [
+    'Finisher',
+    "En balle de match, avec 3 barres, quand l'adversaire est à 30 % ou moins (barre orange) au début de ton combo, le mot FINISH remplace MAX. Arrière + BOOST lance alors ta super en Finisher : même départ, mais si elle touche, le match est fini. Parée ou ratée, c'est une super parée ou ratée. Contre un Finisher : tu vois le gel et tu n'attaques pas, pare",
+  ],
+  [
     'Manips',
     "↓↘→ + un coup donne aussi le spécial, →↓↘ + un coup l'anti-air, d'un seul geste. Jamais obligatoire, aucun bonus",
   ],

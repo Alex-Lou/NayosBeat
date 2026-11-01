@@ -28,7 +28,14 @@ import {
 } from './comfort';
 import { controlsContent, currentDevices, helpPages } from './controls-content';
 import { installMethod, onInstallChange, promptInstall } from './install';
-import { DEFAULT_SETUP, type DummyBehavior, type GameMode, type MatchSetup } from './match-setup';
+import {
+  DEFAULT_SETUP,
+  DUMMY_HEALTHS,
+  TRAINING_FINISHERS,
+  type DummyBehavior,
+  type GameMode,
+  type MatchSetup,
+} from './match-setup';
 import { SELECT_COLUMNS, SELECT_SLOTS, selectFighters } from './select-fighters';
 import { animLabel, DEFAULT_VIEWING, nextSlowdown, SLOWDOWN_LABELS, type Viewing } from './viewing';
 
@@ -434,6 +441,27 @@ export class App {
         this.chooseDummy(items.indexOf(gaugeItem));
       },
     };
+    // The Finisher and the dummy's health (docs/finisher.md §1.12), cycled in place the same way.
+    const finisher = TRAINING_FINISHERS.findIndex((f) => f.finisher === this.setup.finisher);
+    const finisherItem: MenuItem = {
+      label: `Finisher : ${TRAINING_FINISHERS[finisher]?.label ?? ''}`,
+      hint: 'Comme en match, toujours prêt, ou la super seule',
+      onSelect: () => {
+        const next = TRAINING_FINISHERS[(finisher + 1) % TRAINING_FINISHERS.length];
+        if (next) this.setup = { ...this.setup, finisher: next.finisher };
+        this.chooseDummy(items.indexOf(finisherItem));
+      },
+    };
+    const health = DUMMY_HEALTHS.indexOf(this.setup.dummyHealth);
+    const healthItem: MenuItem = {
+      label: `Vie du mannequin : ${this.setup.dummyHealth} %`,
+      hint: 'La vie à laquelle il revient après chaque combo',
+      onSelect: () => {
+        const next = DUMMY_HEALTHS[(health + 1) % DUMMY_HEALTHS.length];
+        if (next) this.setup = { ...this.setup, dummyHealth: next };
+        this.chooseDummy(items.indexOf(healthItem));
+      },
+    };
     const items: MenuItem[] = [
       ...DUMMIES.map(({ dummy, label, hint }) => ({
         label,
@@ -444,6 +472,8 @@ export class App {
         },
       })),
       gaugeItem,
+      finisherItem,
+      healthItem,
       ...this.viewingItems((item) => {
         this.chooseDummy(items.indexOf(item));
       }),

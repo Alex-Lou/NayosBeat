@@ -263,6 +263,29 @@ describe('how a fight is watched (docs/art/animation-plan.md §2, V0)', () => {
     );
   });
 
+  it('cycles « Finisher » and « Vie du mannequin » in place next to « Jauge », given to the match (docs/finisher.md §5.7)', () => {
+    const { screen, choose, start } = training();
+    const items = screen().items;
+    const gauge = items.findIndex((item) => item.startsWith('Jauge'));
+    expect(items.slice(gauge + 1, gauge + 3)).toEqual([
+      'Finisher : comme en match',
+      'Vie du mannequin : 100 %',
+    ]);
+    choose('Finisher');
+    expect(screen().items[screen().selected]).toBe('Finisher : toujours prêt');
+    choose('Finisher');
+    expect(screen().items[screen().selected]).toBe('Finisher : désactivé');
+    choose('Finisher');
+    choose('Finisher');
+    for (const health of [50, 30, 10, 100, 50, 30]) {
+      choose('Vie du mannequin');
+      expect(screen().items[screen().selected]).toBe(`Vie du mannequin : ${health} %`);
+    }
+    choose('Immobile');
+    const setup = expect.objectContaining({ finisher: 'always', dummyHealth: 30 }) as unknown;
+    expect(start).toHaveBeenLastCalledWith('fight', expect.objectContaining({ setup }));
+  });
+
   it("starts from the address's choice, and changes it at once from training's pause", () => {
     const { app, screen, choose, fight } = training(viewingFromUrl('?vitesse=2'));
     expect(screen().items).toContain('Vitesse : ½');

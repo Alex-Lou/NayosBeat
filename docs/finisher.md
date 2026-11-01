@@ -8,6 +8,7 @@ Spec de design, version 2. Elle intègre la revue adverse de la v1 (7 bloquants,
   - **Finisher, PR 1 (le cœur)** : livrée, voir §5.11.
   - **Finisher, PR 2 (le signal)** : livrée, voir §5.11.
   - **Finisher, PR 3 (la mise en scène)** : livrée avec des poses et des sons de repli, voir §5.11.
+  - **Finisher, PR 5 (CPU, entraînement, aide)** : livrée, voir §5.11. Il reste la PR 4 (art et sons).
   - **Bras arrière de Nayo sur la Mégabasse** (PR #48) : sur s2, s3 et s4, il est balayé le long du dos, poing passé la hanche ; la boîte de corps de la 3e frappe (tics 14 à 17) descend de 55,5 à 49,5 px.
   - **Dissolution des effets** (`dissolve.ts`, `fx-dissolve.ts`) : la mise en scène s'en sert (§1.14, §4.3).
   - **En cours** : la reprise de l'anatomie de toutes les poses ; les poses citées ici peuvent encore bouger.
@@ -374,6 +375,7 @@ Sinon `FLAG_FINISHER` tombe : c'est une super ordinaire, parée, échangée, rat
 
 **Constat**
 - Les chiffres de la v1 (7 Finishers en 200 matchs, tous des Mégabasses en reversal, 0 pour Riff) venaient d'une autre règle (frappe mortelle dès la première frappe). Ils sont à re-mesurer avec la règle finale (PR 5).
+- **Re-mesuré par la PR 5** (§5.11) : 2 % des matchs gagnés en difficile finissaient sur un Finisher avant elle, 4 % après (200 matchs, Nayo contre Riff), avec la défense ci-dessous : la cible de 15 à 35 % n'est pas tenue. Celle de 40 à 60 % de victoires par perso ne l'est pas non plus, ni avant ni après : Nayo gagne 95 à 98 % des matchs entre CPU difficiles.
 
 **Données**
 - Nouvelle condition de plan `PlanCondition.finisher?: true` : le plan n'est tiré que si `finisherReady` vaut `ready` pour le CPU.
@@ -1103,11 +1105,11 @@ Estimation : environ 1 h pour le moteur, environ 1 h par perso.
 | 2 | Finisher : signal (**livrée**, §5.11) | FINISH, `.finisher`, lecture d'arrière à 35°, halo, sirène, tests 12 et 13 | 0,25 jour |
 | 3 | Finisher : mise en scène (**livrée**, §5.11) | `finisher-scene.ts`, piste de tics, horloges, bus `fight`, avance rapide, passage, caméra et textes à ×2,0, effets × 0,725, `Shake` à axe, scripts, cartes, foule, option « Mise en scène », tests 14 et 15 (avec les poses de repli) | 0,75 à 1 jour |
 | 4 | Finisher : art et sons | casque de Nayo (nouvelle attache) et 3 poses, 2 poses de Riff, revue du propriétaire ; 10 sons, moteur `sfx.ts`. Part de main, après la tâche 52 (livrée) | 0,75 à 1,25 jour |
-| 5 | Finisher : CPU, entraînement, aide | plans, défense, options d'entraînement, textes, docs, D24, re-mesure de l'IA, tests 16 à 18 | 0,5 jour |
+| 5 | Finisher : CPU, entraînement, aide (**livrée**, §5.11) | plans, défense, options d'entraînement, textes, docs, D24, re-mesure de l'IA, tests 16 à 18 | 0,5 jour |
 
 Total : environ 4 à 5 jours-agent. C'est une estimation, pas une mesure.
 
-### 5.11 Livré : les PR 1 à 3
+### 5.11 Livré : les PR 1, 2, 3 et 5
 
 #### La PR 1, « Finisher : cœur »
 
@@ -1238,9 +1240,89 @@ Total : environ 4 à 5 jours-agent. C'est une estimation, pas une mesure.
 - **Le bus** : le frein de Nayo partait sur l'image de TROIS (gain 0 dès t0 + 5), et le premier saut d'aiguille de Riff, sur le bus coupé l'image suivante, ne s'entendait que 17 ms.
 - **L'entraînement** : le joueur reprenait la main sous la scène ; le `fall` de la scène doublait celui du mannequin.
 
-#### Ce qui reste (PR 4 et 5)
+#### La PR 5, « Finisher : CPU, entraînement, aide »
+
+**Ce qui est fait** (le CPU du §1.11 et du §5.5, l'entraînement du §1.12, l'aide et les docs du §5.6, le menu du §5.7)
+- **Le CPU en attaque** (`src/ai/plans.ts`, `cpu.ts`)
+  - `PlanCondition.finisher` : un plan qui n'est tiré que si le CPU voit FINISH allumé sur sa jauge. `superOutlook(state, player, config, level)` dit comment il pèse sa super quand son coup touche : `finisher` (prêt), `hold` (balle de match, l'adversaire au-dessus de 30 % : aucune super ordinaire), `free` (comme avant). Seul le difficile joue pour le Finisher : le normal ne le lance jamais (`SPEND.normal = 0`), le facile ne dépense rien.
+  - Prêt, les routes qui finissent sur la super (`minBoost = BOOST_MAX`) pèsent `FINISHER_WEIGHT = 4` fois leur poids : 12 au lieu de 3. Ce sont les plans qui existaient : `L, H, H, arrière + BOOST` après le Direct, `H, arrière + BOOST` après le Crochet, pour les deux persos.
+  - Nayo seul : `arrière + BOOST` après l'Uppercut qui touche, jusqu'à 38 px (le plus loin où l'Uppercut touche une Riff debout ; à chaque pixel, il verrouille et tue). Aucune route pour Riff après son Genou montant.
+  - En balle de match, le difficile garde ses 3 barres (`savesForSuper(boost, forFinisher)`) : ni Remix ni Rewind à 3 barres tant qu'il joue pour le Finisher. `reversal()` ne change pas.
+- **Le CPU en défense** (`src/ai/defense.ts`, `profiles.ts`, `cpu.ts`)
+  - `finisherMenace` : l'adversaire menace d'un Finisher quand sa plaque FINISH est allumée, ou quand la super qu'il joue, vue avec le délai du CPU, est partie armée (`armedSuper` : `FLAG_FINISHER`, que le cœur pose au départ d'après les voyants du tic d'avant, ce que la plaque montrait en s'éteignant).
+  - Le difficile (`wary`) : contre une super armée qui quitte le sol (le Slam), vue en l'air, il garde debout tout de suite, sans tirer sa chance de parade (`finisherGuard`). Contre une super armée qui reste au sol (la Mégabasse, `keepsAway`), il ne vient plus à sa portée : ni marche ni dash à mi-distance, ni saut (`jumpIn`, de loin comme à mi-distance ; par-dessus un projectile non plus, il le pare), ni spécial du neutre à 80 px ou moins (`NO_SPECIAL_RANGE`) ou qui le porterait à 75 px ou moins (`mayThrow` : le Saut de l'ange avance de 35 px, `advancePx` le lit dans les données du coup). À 75 px ou moins (`KEEP_AWAY_RANGE`), il recule, jusqu'au contact : de près, il ne presse plus. Il pare, punit et contre en l'air comme avant.
+  - Le normal pare un peu plus contre un adversaire qui menace : `finisherBlock = 0,66` au lieu de 0,55 (× 1,2). Le facile n'a aucun levier contre le Finisher (0,25) : seul le compte du gel le change (voir les écarts). Le difficile garde 0,85.
+- **Le compte des tics gelés** (`cpu.ts`, voir les écarts) : ce que le CPU voit garde l'horloge des tics joués (`Sight.clock`), et une ouverture se compte en tics joués depuis, plus en temps de réaction.
+- **L'entraînement**
+  - Le menu du mannequin (`app.ts`, `match-setup.ts`) : « Finisher : comme en match / toujours prêt / désactivé » et « Vie du mannequin : 100 / 50 / 30 / 10 % », juste après « Jauge », cyclés sur place comme elle ; `matchConfigOf` les passe au `MatchConfig` (`trainingFinisher`, `trainingDummyHealth`). « Recommencer » les garde.
+  - La ligne « Combo » (`src/render/training-combo.ts`, `hud.ts`, `hud-text.ts`) : mesurée à chaque tic comme l'avantage (`trackCombo`, depuis `FightScene`), elle ajoute « · FINISHER » ou la raison du refus : « début > 30 % », « plus de place », « en l'air », « 2 barres » (le nombre de barres qu'il y avait), « échange », « paré », « hors de portée ». La raison se lit au départ de la super (les voyants, `lightsNote`), puis au premier contact (paré, échange, la règle b ou la garantie). Avec le Finisher, les dégâts de sa dernière frappe sont ceux de la super ordinaire (`scaledDamage` de sa frappe, sous le plancher de 1 PV), pas la vie entière du mannequin.
+  - La casse du HUD (`hud.ts`) : un combattant mis KO reste cassé tant que sa vie ne remonte pas au-dessus de celle qu'il avait en tombant (`downAt`) : 0 en match (le round suivant), le plancher de 1 PV du mannequin en entraînement (sa recharge).
+  - La dernière frappe sur le mannequin (`fight-feedback.ts`) : comme le KO d'un match, elle laisse le son et la secousse à la scène (plus de `heavyHit` doublé, plus de `TRAUMA.heavy` par-dessus `finisherShake`).
+  - Le nom du coup (`move-caption.ts`) passe de « Mégabasse » ou « Slam » à « Le Quatre » ou « Larsen » au premier contact verrouillé.
+  - Le signal du mannequin (`finisher-signal.ts`) : ni plaque, ni halo, ni sirène pour le joueur 2 en entraînement (voir les écarts).
+- **L'aide** (`src/data/move-texts.ts`, `src/data/texts/`) : l'entrée « Finisher » de `BASICS` (le texte du §5.6) ; une phrase de plus dans le texte de chaque super ; une 7e ligne de combo, `L, L, H, H, arrière + BOOST (FINISH allumé)` pour Nayo, `H, arrière + BOOST (FINISH allumé)` pour Riff, avec les phrases du §5.6 (`FINISH_LIT`).
+- **Les docs** : combos-v3 §1.8.6 (les quatre sortes de KO, la plaque FINISH), combat-v2 §8.4 (la musique sur l'horloge visuelle pendant la scène) et §8.5 (pas de flash plus grand sur le compte), direction-hud §4 (la plaque FINISH, la casse gardée en entraînement, la ligne « Combo »). D24 était au journal ; le HUD entier et la carte à la place de « K.O. » étaient écrits par la PR 3.
+- **Tests** (§5.8)
+  - 16 : `tests/render/training-finisher.test.ts` (sur le vrai cœur, avec les options du menu : le mannequin à 1 PV, `finisherBlow`, chaque raison sur une vraie route, les dégâts ordinaires avec « Toujours prêt », la vie à 30 % qui arme « Comme en match », arrière + BOOST rappuyé après la super qui garde sa raison, 480 px au plus ; `lightsNote` d'accord avec `finisherState`), `finisher-signal.test.ts` (le mannequin sans signal en « toujours prêt »), `hud.test.ts` (la casse jusqu'à la recharge), `fight-feedback.test.ts` (la dernière frappe sans son ni secousse à elle), `move-caption.test.ts`, `options.test.ts` et `match-setup.test.ts` (le menu et la config). La scène courte en entraînement est déjà jouée par `finisher-scene.test.ts`.
+  - 17 : `tests/ai/finisher.test.ts` : les leviers un par un (`superOutlook`, le poids × 4, rien en `hold`, le plan de l'Uppercut, la garde debout contre un Slam armé à toutes les graines, la distance contre une Mégabasse armée : ni marche, ni dash, ni saut, ni spécial, aucun tic à 75 px ou moins ; le gel jamais pris pour une ouverture), puis de vrais matchs (voir les mesures), où aucun CPU ne saute vers un Nayo armé. `tests/ai/cpu.test.ts` fige le punish après le vrai gel d'une garde. `tests/ai/plan-routes.test.ts` joue le plan de l'Uppercut et toutes les routes qui finissent sur la super armées : à chaque distance où elles sont tirées, elles verrouillent et tuent.
+  - 18 : `tests/app/controls-content.test.ts` (chaque entrée de `BASICS` et chaque combo dépassent 20 caractères, aucune capitale accentuée dans les pages d'aide, `MOVE_ORDER` égal à `MOVE_IDS`, les textes du Finisher là où il faut, la page tient sur un téléphone) et `glyphs.test.ts` (la ligne « Combo » et ses raisons, les libellés du menu, dans la police).
+  - 19 : les 30 replays ne bougent pas (`npm run replays:update` : « unchanged » partout), le cœur n'est pas touché.
+  - Chaque test clé a été vu rouge en cassant le code exprès : la garde debout, la distance, le compte du gel, les dégâts ordinaires, l'échange, la casse gardée, le son de la dernière frappe ; et chaque correction de la revue adverse aussi (voir plus bas).
+
+**Mesuré sur de vrais matchs** (CPU difficile contre CPU difficile, `TRAINING_STAGE`, graines `1000 + 2m` et `1001 + 2m` pour le match `m`, les côtés en alternance ; avant = `main` avec la PR 3)
+
+| | Avant | Après |
+|---|---|---|
+| Matchs gagnés finis par un Finisher, Nayo contre Riff, 200 matchs | 4 (2,0 %) : Nayo 2, Riff 2 | 8 (4,0 %) : Nayo 8, Riff 0 |
+| Les mêmes, par tranche de 40 matchs | 1, 2, 0, 0, 1 | 0, 0, 2, 3, 3 |
+| Matchs où FINISH s'allume, 200 matchs | Nayo 94, Riff 10 | Nayo 104, Riff 10 |
+| Miroir Nayo, 200 matchs ; les 40 premiers | 13 (6,5 %) ; 3 | 14 (7,0 %, un match nul) ; 2 |
+| Miroir Riff, 200 matchs ; les 40 premiers | 9 (4,5 %) ; 0 | 25 (12,5 %) ; 4 |
+| Victoires de Nayo contre Riff, 200 matchs | 191 (95,5 %) | 195 (97,5 %) |
+| Supers ordinaires en balle de match, l'adversaire au-dessus de 30 % | 9 | 0 |
+| Supers armées ; verrous | 4 ; 4 | 8 ; 8 |
+| BOOST appuyé sans la barre pour (arrière + BOOST sous 3 000 compris) | 0 | 0 |
+| Sauts de Riff vers un Nayo armé ; ses retombées à 75 px ou moins de lui | 38 ; 23 | 0 ; 2 (des sauts partis avant que FINISH s'allume) |
+| Normal et facile, 100 matchs chacun | Nayo 92 % et 97 %, aucun Finisher | victoires et Finishers inchangés ; 75 et 89 matchs sur 100 se jouent autrement (le compte du gel, voir les écarts) |
+
+- Avant la correction de la revue adverse (voir plus bas), la même PR mesurait 32 Finishers sur 200 (16 %) : Riff sautait 89 fois vers un Nayo armé. La colonne « Après » est celle de la défense corrigée.
+- D'où partent les 8 supers armées des 200 matchs : 5 après `L, H, H` ou `H` (le Crochet enchaîné), 3 après l'Uppercut (le plan nouveau), aucune en reversal au réveil. Avant la correction : 12, 13 et 8.
+- Sur le tic où le jeu repart après le gel d'une super vue à son flash, le difficile appuyait son punish dedans avant la correction du compte : 24 graines sur 100 contre la Mégabasse (vue à f0), 84 contre le Slam (vu à f10) ; jamais après.
+- La Mégabasse armée lancée au neutre par un attaquant scripté, à 40 ou 50 px d'une Riff difficile qui l'a regardé 30 tics (100 graines) : elle la pare 85 fois sur 100, contre 55 avant la PR et 66 avant la correction de la revue. Le verrou ne prend que 15 fois : elle n'attaque plus de près, elle voit le gel, elle pare (§1.8).
+- Contre un Nayo armé immobile à 110 px, sur 40 graines de 240 tics : le difficile ne vient plus jamais à 75 px ou moins de lui (aucun tic sur 9 600, contre 7 886 sans la menace et 6 236 avant la correction) : ni marche, ni dash, ni saut (23 sans la menace, 56 avant la correction), ni spécial du neutre à 80 px ou moins. Depuis 200 px, de même (aucun tic, contre 6 149 et 37 sauts sans la menace). En vrai match, Nayo vient à elle et la coince : elle passe encore 43 % de ses tics libres, FINISH allumé, à 75 px ou moins de lui (55 % avant la correction, 70 % avant la PR).
+
+**Écarts à la spec, et pourquoi**
+- **« Chaque perso garde 40 à 60 % de victoires » n'est pas tenu, ni avant ni après la PR** : Nayo gagne 95,5 % des 200 matchs difficiles avant, 97,5 % après (et 90,5 % avant D31, 97 % en facile, 92 % en normal). C'est l'équilibre du match entre les deux CPU, pas le Finisher : FINISH ne s'allume pour Riff que dans 10 matchs sur 200, pour Nayo dans 104. Le corriger demanderait de toucher aux données des persos (interdites ici) ou de tordre l'IA de Riff : c'est un chantier d'équilibrage à part. Le test fige la mesure (Riff gagne 1 à 10 % des 200 matchs, 2,5 % mesurés) : le jour où l'équilibre change, il le dit.
+- **« 15 à 35 % des matchs gagnés » n'est pas tenu** : 4,0 % sur 200 matchs (8, tous de Nayo ; 0, 0, 2, 3 et 3 par tranche de 40), avec la défense que demande le §1.11 (rester à plus de 75 px d'un Nayo armé). Les 16 % mesurés d'abord venaient d'une défense percée : privée de marche, Riff sautait vers un Nayo armé (89 sauts, contre 38 avant la PR), pressait au contact et lançait son Saut de l'ange dans sa portée ; sur 33 supers armées, 13 partaient de l'Uppercut sur une Riff en l'air et 8 du neutre, au réveil de Nayo (contre 3 et 0 maintenant). Hors de portée, elle oblige Nayo à venir la chercher, et il la finit souvent par un combo ordinaire, qui tue sans la super. Les leviers de la spec (× 4, les 3 barres gardées, l'Uppercut) sont appliqués tels quels, sans poids de plus : l'IA n'est pas tordue pour atteindre la cible. Le test joue 200 matchs (120 avant : 2 Finishers seulement y tombent) et fige « 2,5 à 35 % ».
+- **« Au moins un Finisher par perso en 40 matchs » n'est tenu que dans les miroirs** : contre Riff, Nayo n'en place aucun dans les 40 premiers matchs ni dans les 40 suivants (puis 2, 3, 3), et Riff aucun en 200 (elle en gagne 5). En miroir, Nayo en place 2 dans ses 40 premiers matchs (1 à 5 par tranche de 40), Riff 4 (4 à 8). Le test fige les miroirs : Nayo au moins 1, Riff au moins 2.
+- **Le compte des tics gelés, corrigé** (un piège de D31, PR #61) : pour dire si le coup vu est fini, le CPU ajoutait son temps de réaction à l'image vue. Pendant un gel (l'impact, le flash d'une super), rien ne bouge : une super vue sur son flash, gelée 20 tics, lui semblait finie, et il appuyait son punish dedans. La Mégabasse et le Slam à vide le touchaient ainsi, alors que le §1.8 veut qu'on les pare au gel. Il compte maintenant les tics joués depuis ce qu'il a vu (`Sight.clock`). Les temps de réaction (24, 16, 12 et la gigue de 0 à 6), la vue retardée et les chances de punir (0,15, 0,5, 0,85) ne changent pas. Mais le CPU voit maintenant, à tous les niveaux, les ouvertures qui suivent un gel d'impact : l'ancien compte le croyait plus avancé dans le coup qu'il n'était, et la récupération finie. Joué depuis le neutre, gel de garde compris (200 graines, `cpu.test.ts`), le difficile punit 33 des 38 → + S de Nayo gardés au lieu de 18, et 28 des 43 ← + H au lieu de 11 ; le normal 32 des 44 → + S au lieu de 3, et 19 des 40 ← + H au lieu de 0 ; le facile 6 des 42 → + S au lieu de 4. Le Direct gardé n'est jamais puni. Les victoires sur 100 matchs ne bougent pas (Nayo 97, 92 et 98 % en facile, normal et difficile), mais 89, 75 et 35 matchs sur 100 se jouent autrement, et le facile pare 12 Slams armés lancés au neutre à 60 px sur 100 au lieu de 6. C'est consigné sous D31 (`docs/combat-v2.md`).
+- **« Garde debout dès qu'elle quitte le sol »** se lit sur la super armée vue en l'air, pas sur tout saut d'une Riff armée : le Finisher ne part jamais en l'air, et un saut garde ses réponses (l'anti-air). Comme la plaque s'éteint au départ de la super (les 3 barres sont dépensées), le CPU lit `FLAG_FINISHER` sur sa vue retardée : c'est exactement ce que la plaque montrait le tic d'avant.
+- **La plaque se lit sur l'état en cours**, pas avec le délai de réaction : c'est un signal du HUD, allumé 412 tics en médiane, pas un coup à voir partir.
+- **Le poids × 4 est un multiplicateur** sur les routes qui finissent sur la super, pas des plans recopiés : les routes restent les mêmes, leurs distances aussi.
+- **En balle de match, à 3 barres, ni Remix ni Rewind** : sans cela, une barre dépensée à 3 barres éteignait le Finisher (« il garde ses barres dès qu'il en a 2 » laissait partir la 3e). `reversal()` reste tel quel, comme le veut la spec : Riff peut encore y dépenser une barre.
+- **La ligne « Combo »**
+  - « pas balle de match » n'apparaît jamais : la ligne n'existe qu'en entraînement, où « Comme en match » joue la balle de match comme atteinte, et où « Désactivé » n'ajoute aucune raison (c'est la super qu'on travaille).
+  - « hors de portée » s'ajoute : sans elle, une super armée qui touche mais ne verrouille pas (la garantie, §1.5 et §1.6 : la Mégabasse à 72 px) n'aurait aucune raison. La plus longue ligne fait donc 47 caractères (376 px), pas 51.
+  - « 2 barres » dit les barres qu'il y avait (« 1 barre », « 0 barre ») ; elle part quand arrière + BOOST est appuyé dans un combo sans 3 barres, avant que sa super ne soit partie, et que rien ne sort. Une fois la super du combo partie, la jauge est vide de ce qu'elle a coûté : rappuyer ne change pas sa raison (`ComboMeter.played`). Une super qui ouvre le combo (au neutre, en reversal) le garde, puisque le combo commence à son premier contact.
+  - Une super parée à vide fait sa propre ligne : « Combo : 0 coup · 45 dégâts · paré » (le chip).
+  - Les voyants sont relus côté rendu (`lightsNote`), qui ne fait que nommer celui qui manque ; c'est `finisherState` qui décide, et un test vérifie qu'ils sont d'accord. Le cœur reste figé.
+  - Les dégâts ordinaires se calculent côté rendu, depuis les données de la dernière frappe : le cœur donne la vie vraiment prise, et il ne change pas.
+- **Les options d'entraînement sont dans le menu du mannequin**, pas dans la pause : comme « Jauge », elles font partie de la config du match ; « Mannequin » et « Boîtes », eux, s'appliquent à chaud.
+- **`leavesGround` existe deux fois** (`src/core/finisher.ts`, privé, et `src/ai/defense.ts`, que le rendu reprend) : le cœur est figé par la PR 1.
+- **Le signal du mannequin est éteint en entraînement** (`finisherSignalOf` rend `off` pour le joueur 2) : avec « toujours prêt », le cœur arme aussi le mannequin, et sa plaque FINISH, son halo et sa sirène s'allumaient avec ceux du joueur 1, pour une super qu'aucun mannequin ne lance (Immobile et Pare tout ne jouent pas ; l'Ordinateur joue en normal, qui ne la lance jamais). Le cœur l'arme toujours : seul le rendu se tait. Le bouton tactile, la ligne Combo et le CPU lisent ailleurs, et rien ne change pour eux.
+- **La défense du difficile recule aussi dans le coin** : coincée, Riff tient arrière, c'est-à-dire sa garde. Elle ne cherche pas à sortir du coin par un saut, qui la mettrait à portée.
+
+**Corrigé après la revue adverse** (chaque correction a son test, vu rouge sans elle)
+- **La distance contre un Nayo armé** (bloquant) : privée de marche et de dash, Riff sautait vers lui (`jumpIn` à mi-distance et de loin) et pressait au contact, où rien ne lisait `keepsAway`. Contre un Nayo armé immobile à 110 px, elle sautait 56 fois et passait 6 236 tics sur 9 600 à 75 px ou moins ; le test ne comptait que la marche et le dash. Il compte maintenant les sauts et les tics à 75 px ou moins (0 et 0), et les vrais matchs comptent les sauts vers un Nayo armé (0 ; 89 avant). Le Saut de l'ange lancé de 81 à 110 px la posait aussi à portée (24 graines sur 40) ; et un saut par-dessus le Vinyle, vers lui (18 dans les 200 matchs).
+- **« Tenu de justesse »** : les 16 % reposaient sur cette défense percée. Re-mesurés avec la défense corrigée, 4 %, écrits comme un écart (plus haut), avec la cible « par perso en 40 matchs ».
+- **Le compte du gel**, présenté comme sans effet sur D31 : il change le punish après chaque gel d'impact, à tous les niveaux. Mesuré, consigné au journal, figé par `cpu.test.ts`.
+- **« 0 barre » après la super** : rappuyer arrière + BOOST dans le combo de la super, la jauge dépensée, effaçait sa raison (« début > 30 % » devenait « 0 barre »), ou ajoutait « 0 barre » en « désactivé ».
+- **Le mannequin armé** : son signal en « toujours prêt » (voir les écarts).
+- `plans.test.ts` (« hard CPUs spend every Boost move ») tient encore, de peu : Riff y lance sa super 2 fois en 400 000 tics.
+
+#### Ce qui reste (PR 4)
 - **PR 4** : la planche `finale` des deux persos (le casque de Nayo et son attache, Rebond et L'Ange de Riff), à brancher dans `FighterClips` (la scène les prend d'elle-même par `poseClipOf`, puis ajuster `winnerPoseOf` aux nouvelles images) ; les 10 sons du §5.4 et le moteur (`WaveShaperNode`, balayages, boucles), à mettre à la place des repères de repli des scripts ; la vraie sirène ; le spot sur le perdant à la coupure de courant.
-- **PR 5** : l'IA, l'aide, le menu d'entraînement et les docs du §5.6, dont la plaque FINISH dans direction-hud ; la casse du HUD gardée jusqu'à la recharge du mannequin, la ligne « Combo » (dégâts ordinaires de la super, raison d'un refus, test 16).
+- **Hors du Finisher** : l'équilibre entre les deux CPU (Nayo gagne 95 à 98 % des matchs difficiles), à mesurer et à régler à part. Avec lui, le taux de Finisher entre CPU difficiles (4 % des matchs gagnés, pour une cible de 15 à 35 %) : la défense du §1.11 le tient bas, et le relever demanderait de changer la cible ou les leviers, ce qui revient au propriétaire.
 
 ---
 

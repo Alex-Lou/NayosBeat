@@ -64,7 +64,7 @@
 | D28 | Le **verrou du Finisher** ne prend que sur la 1re frappe de la super, et seulement si toutes les frappes suivantes toucheront (corps suivi jusqu'à chaque frappe). Sinon, c'est une super ordinaire | revue adverse de la PR 1 du Finisher | La garantie du §1.6 de `docs/finisher.md` : un verrou qui gèle le chrono sans finir sur un KO, ou un Finisher d'une seule frappe, trahiraient la règle |
 | D29 | **Animation en tranche verticale** : gains sans art (victoire entière, victime qui tremble, KO qui claque), images intermédiaires sur les vols, chutes, KO et réactions, 2 morts par perso, 1 lot de réactions. Chaque étape passe une porte où le propriétaire juge un avant/après. Coupé pour plus tard : lissage de toutes les planches, prises, 2e lot de réactions, vie au repos | propriétaire, charte du studio (« couper plutôt qu'étirer ») | Le plan complet faisait environ 24 jours-agent ; la tranche vise d'abord ce que l'œil regarde vraiment |
 | D30 | **Mise en ligne automatique** : une PR est fusionnée et publiée dès que la CI est verte et que tout est vérifié, puis le résultat est montré au propriétaire | propriétaire | Accord permanent du propriétaire, confirmé face à la charte du studio qui demande sinon une confirmation à chaque publication |
-| D31 | Le **CPU ne lit que ce qu'il a vu**, avec son délai, y compris pendant sa garde : réaction de 24, 16 ou 12 tics (Facile, Normal, Difficile), plus une gigue de 0 à 6 tics. Il punit une ouverture à sa portée à 15, 50 ou 85 % selon le niveau, et jamais un coup sûr | audit de polish (L17 à L19), décision Q3 du propriétaire (PR #61) | Il parait tous les overheads au tic 0 et ne punissait pas, alors que le fun du jeu, c'est lire et punir |
+| D31 | Le **CPU ne lit que ce qu'il a vu**, avec son délai, y compris pendant sa garde : réaction de 24, 16 ou 12 tics (Facile, Normal, Difficile), plus une gigue de 0 à 6 tics. Il punit une ouverture à sa portée à 15, 50 ou 85 % selon le niveau, et jamais un coup sûr. Depuis la PR 5 du Finisher, l'ouverture se compte en **tics joués** depuis ce qu'il a vu, sans les tics gelés (un impact, le flash d'une super), et plus en temps de réaction : il voit donc aussi celles qui suivent un gel de garde (le difficile punit 33 des 38 → + S de Nayo gardés au lieu de 18 ; `docs/finisher.md` §5.11) | audit de polish (L17 à L19), décision Q3 du propriétaire (PR #61) ; PR 5 du Finisher | Il parait tous les overheads au tic 0 et ne punissait pas, alors que le fun du jeu, c'est lire et punir. Compté en temps de réaction, un gel le faisait se croire plus loin dans le coup vu : il appuyait dans une super vue à son flash, et laissait passer les coups punissables gardés |
 
 ---
 
@@ -735,11 +735,13 @@ L'inspiration avouée est le GRD d'Under Night In-Birth (un tug-of-war qui réco
 - Le niveau du curseur pilote un **fondu enchaîné à puissance constante** entre les deux thèmes. Au DROP, la section « drop » du thème du joueur part sur le temps fort.
 - **Synchronisation** : l'horloge de rythme est `state.frame`, qui avance aussi pendant le hitstop, donc reste alignée sur le temps réel. Le son est programmé 100 ms à l'avance sur l'horloge de l'`AudioContext`. Si la dérive dépasse 40 ms, on se recale au temps fort suivant. Pause et onglet caché : `suspend()`. Au KO, « vinyl brake » (le disque ralentit pendant le ralenti).
 - **Rien de jeu ne dépend de l'audio** : la musique lit l'état, jamais l'inverse. Le jeu se joue sans le son.
+- **Pendant la mise en scène du Finisher** (`docs/finisher.md` §1.14), la simulation avance à l'échelle 1, 1/2, 1/3 ou 0 : calée sur `state.frame`, la musique se décalerait. La musique et sa grille des temps suivent donc l'horloge visuelle (`visualClock`) pendant la scène. Elle se coupe au silence (Nayo : le frein après TROIS ; Riff : l'aiguille) et repart à la retombée, sur le « un » d'une mesure (Nayo) ou sur un contretemps (Riff) : la retombée ne glisse jamais pour attendre la grille.
 
 ### 8.5 Le tempo, toujours cosmétique
 
 - Le décor, la foule, les lumières et la piste du Crossfader battent au tempo du stage.
 - Un coup qui touche à ±2 tics d'un temps joue un « stab » musical et un flash un peu plus grand : **aucun effet sur les dégâts** (D17).
+  - Sauf les coups du Finisher : le compte de Nayo (UN, DEUX, TROIS) tombe sur les temps sans flash plus grand. Son registre de flashs est fixé et mesuré (`docs/finisher.md` §4.3 : 3 pour Le Quatre, 2 pour Larsen), et un flash de plus le casserait.
 - Entraînement : métronome audible activable.
 
 ### 8.6 Déterminisme, KISS et réglage

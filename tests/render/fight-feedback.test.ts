@@ -683,6 +683,28 @@ describe("the Finisher's blows, its scene's (docs/finisher.md §1.14, §5.2)", (
     );
   });
 
+  it('leaves the last blow on the training dummy, kept at 1 HP, to the scene: no heavy sound nor shake of its own (§1.12)', () => {
+    const fight = new Fight();
+    fight.react(superBlow(true), lock);
+    // UN: its own heavy sound and shake, as in a match.
+    expect(played).toHaveBeenLastCalledWith('heavyHit');
+    expect(shown.jolt).toHaveBeenCalledTimes(1);
+    played.mockClear();
+    shown.jolt.mockClear();
+    // The last blow, a hit on the dummy: the scene sounds it and shakes it (finisherShake).
+    fight.react(superBlow(false));
+    expect(played).not.toHaveBeenCalled();
+    expect(shown.jolt).not.toHaveBeenCalled();
+    expect(shown.burst).toHaveBeenLastCalledWith(
+      NAYO_STYLE,
+      'pulse',
+      px(200),
+      px(50),
+      1,
+      CLOSE_UP_EFFECTS,
+    );
+  });
+
   it('counts the lock’s blows in the scene’s stamps, not in words, until the next super', () => {
     const fight = new Fight();
     fight.react(superBlow(true), lock);

@@ -8,6 +8,7 @@ import {
   CHAIN_HIGH,
   CHAIN_LAUNCH,
   DASH,
+  FINISH_LIT,
   FORWARD_HEAVY,
   FORWARD_LIGHT,
   FORWARD_REMIX,
@@ -54,7 +55,7 @@ export const NAYO_TEXTS: FighterTexts = {
     },
     super: {
       input: SUPER,
-      text: "La super. Tout se fige, puis Nayo frappe trois fois le sol : BOUM, BOUM, BOUUUM. Invincible au départ, elle touche du sol jusqu'au-dessus d'un saut et rattrape un adversaire en l'air dans un combo.",
+      text: "La super. Tout se fige, puis Nayo frappe trois fois le sol : BOUM, BOUM, BOUUUM. Invincible au départ, elle touche du sol jusqu'au-dessus d'un saut et rattrape un adversaire en l'air dans un combo. Avec FINISH allumé, c'est son Finisher, Le Quatre : si elle touche, le match est fini.",
     },
     standLight: {
       input: 'L',
@@ -139,7 +140,8 @@ export const NAYO_TEXTS: FighterTexts = {
       text: 'Un bond en retrait qui fait rater les prises, pas les coups.',
     },
   },
-  // docs/combos-v3.md §3.1: D1, I1, I8, I6, A2, E3.
+  // docs/combos-v3.md §3.1: D1, I1, I8, I6, A2, E3, then E3 as the Finisher (docs/finisher.md
+  // §5.6).
   combos: [
     { input: 'L, L, L', text: 'Le premier mot, partout où le Direct touche, debout ou accroupi.' },
     { input: 'L, L, H, avant + S', text: 'La une-deux qui finit au crochet, puis le Pied fendu.' },
@@ -153,5 +155,9 @@ export const NAYO_TEXTS: FighterTexts = {
       text: "Les Quatre temps : en l'air, le Marteau écrase l'adversaire au sol ; il rebondit, et tu recommences.",
     },
     { input: SUPER_COMBO, text: 'Le combo de base qui finit sur la Mégabasse.' },
+    {
+      input: `L, L, H, H, arrière + BOOST ${FINISH_LIT}`,
+      text: "Le Quatre : un, deux, trois, et l'adversaire tombe sur le quatre.",
+    },
   ],
 };

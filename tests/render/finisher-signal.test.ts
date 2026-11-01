@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import { DEFAULT_SETUP, matchConfigOf } from '../../src/app/match-setup';
 import type { MatchConfig } from '../../src/core/config';
 import { finisherState } from '../../src/core/finisher';
-import { FLAG_DANGER, type GameState } from '../../src/core/state';
+import { createInitialState, FLAG_DANGER, type GameState } from '../../src/core/state';
 import { NAYO } from '../../src/data/fighters/nayo';
 import { RIFF } from '../../src/data/fighters/riff';
 import { TRAINING_STAGE } from '../../src/data/stages';
@@ -80,6 +81,20 @@ describe('the Finisher signal (docs/finisher.md §1.2)', () => {
     signal.update(next(ready(1)));
     signal.update(next(ready(0)));
     expect(sirens).toEqual([0, 1, 0, 1]);
+  });
+
+  it('shows nothing for the dummy in training, armed by « toujours prêt » as much as player 1', () => {
+    // Regression: the dummy's plate, halo and siren lit with player 1's, the whole session long,
+    // for a super no dummy ever lets go.
+    const config = matchConfigOf({ ...DEFAULT_SETUP, mode: 'training', finisher: 'always' });
+    const state = createInitialState(config);
+    const sirens: (0 | 1)[] = [];
+    const signal = new FinisherSignal(config, (player) => sirens.push(player));
+    signal.update(state);
+    expect(signal.states).toEqual(['ready', 'off']);
+    expect(sirens).toEqual([0]);
+    // The core still arms it: only the signal is quiet.
+    expect(finisherState(state, 1, config)).toBe('ready');
   });
 
   it("plays each fighter's siren in its own key: Nayo's do, Riff's mi", () => {

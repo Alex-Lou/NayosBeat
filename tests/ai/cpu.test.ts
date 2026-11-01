@@ -228,6 +228,54 @@ describe('cpu punish', () => {
   it('the hard CPU punishes a whiffed Uppercut in its reach', () => {
     expect(punishRate('hard', 'specialAntiAir', 11, 0, 40)).toBeGreaterThanOrEqual(60);
   });
+
+  /**
+   * Over 200 seeds, player 1 presses `input` from neutral, `at` px from a CPU that watched 30
+   * quiet ticks, the block's real freeze included: the times the CPU blocked it, and the times
+   * it then hurt player 1 during that move.
+   */
+  function blockPunish(level: CpuBehavior, input: InputBits, at: number) {
+    let blocked = 0;
+    let punished = 0;
+    for (let seed = 0; seed < 200; seed++) {
+      const start = facingOff(at, MATCH);
+      let cpu = createCpu(1, level, seed * 7919 + 11);
+      for (let tick = 0; tick < 30; tick++) cpu = cpuStep(cpu, start, MATCH).cpu;
+      let state = start;
+      let block = false;
+      let hurt = false;
+      for (let tick = 0; tick < 90; tick++) {
+        const decision = cpuStep(cpu, state, MATCH);
+        cpu = decision.cpu;
+        const before = state.fighters[0];
+        state = step(state, [tick === 0 ? input : 0, decision.input], MATCH);
+        const attacker = state.fighters[0];
+        if (state.fighters[1].action === 'blockstun') block = true;
+        if (before.action === 'attack' && attacker.health < before.health) hurt = true;
+        if (before.action === 'attack' && attacker.action !== 'attack') break;
+      }
+      if (block) blocked++;
+      if (block && hurt) punished++;
+    }
+    return { blocked, punished };
+  }
+
+  it('punishes a blocked move after the block’s real freeze, never a safe one', () => {
+    // Regression: it counted its reaction time from the frame it saw, frozen ticks included,
+    // and took the recovery left after a block's freeze for over (hard: 18 of 38 lunges, 11 of
+    // 43 back + H; normal: 3 of 44 lunges). Measured now: 33 of 38, 28 of 43, 32 of 44.
+    const lunge = blockPunish('hard', Input.Right | Input.Special, 50);
+    expect(lunge.punished).toBeGreaterThanOrEqual(lunge.blocked * 0.7);
+    const back = blockPunish('hard', Input.Left | Input.Heavy, 34);
+    expect(back.punished).toBeGreaterThanOrEqual(back.blocked * 0.5);
+    const normal = blockPunish('normal', Input.Right | Input.Special, 50);
+    expect(normal.punished).toBeGreaterThanOrEqual(normal.blocked * 0.4);
+    for (const level of ['easy', 'normal', 'hard'] as const) {
+      const light = blockPunish(level, Input.Light, 34);
+      expect(light.blocked, level).toBeGreaterThan(50);
+      expect(light.punished, level).toBe(0);
+    }
+  });
 });
 
 describe('training dummies', () => {

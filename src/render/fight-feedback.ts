@@ -359,8 +359,9 @@ export class FightFeedback {
     }
     if (staged) {
       // Its words are the scene's count; its KO, its scene's alone: no blood at the close up, no
-      // veil, no shake, no slow motion, no KO sound (docs/finisher.md §5.2).
-      if (ko) return;
+      // veil, no shake, no slow motion, no KO sound (docs/finisher.md §5.2). So is its last blow
+      // on the training dummy, kept at 1 HP: the scene sounds and shakes it (§1.12).
+      if (ko || !event.pulse) return;
       this.sfx.play(heavy ? 'heavyHit' : 'lightHit');
       if (heavy) effects.kick(TRAUMA.heavy, event.away);
       return;

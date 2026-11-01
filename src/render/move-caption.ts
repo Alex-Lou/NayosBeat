@@ -68,11 +68,17 @@ export class MoveCaption {
     }
   }
 
-  /** `frame`: the match tick the event happened on. */
+  /**
+   * `frame`: the match tick the event happened on. A super locked by the Finisher takes its
+   * name (« Le Quatre », « Larsen »: docs/finisher.md §1.12), on its first contact only (§1.2).
+   */
   react(event: FightEvent, frame: number): void {
-    if (event.type !== 'attack') return;
+    if (event.type !== 'attack' && event.type !== 'finisherLock') return;
     const caption = this.captions[event.by];
-    const name = moveOf(this.config.fighters[event.by], event.move).name;
+    const name =
+      event.type === 'attack'
+        ? moveOf(this.config.fighters[event.by], event.move).name
+        : event.name;
     if (caption.text.text !== name) caption.text.setText(name);
     caption.since = frame;
   }

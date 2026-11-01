@@ -32,9 +32,13 @@ export function announcementOf(round: RoundState, names: readonly [string, strin
   }
 }
 
-/** Training: the hits and damage of player 1's last combo on the dummy. */
-export function comboText(hits: number, damage: number): string {
-  return `Combo : ${hits > 1 ? `${hits} coups` : '1 coup'} · ${damage} dégâts`;
+/**
+ * Training: the hits and damage of player 1's last combo on the dummy, and what its super was
+ * (`note`: « FINISHER », or why not, training-combo.ts).
+ */
+export function comboText(hits: number, damage: number, note?: string): string {
+  const line = `Combo : ${hits > 1 ? `${hits} coups` : `${hits} coup`} · ${damage} dégâts`;
+  return note ? `${line} · ${note}` : line;
 }
 
 /**

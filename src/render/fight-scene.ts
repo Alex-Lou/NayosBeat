@@ -26,6 +26,7 @@ import { TickPacer } from '../loop/tick-pacer';
 import type { AnimOptions } from './anim-options';
 import { frontFighter, type ShowContext } from './animation';
 import { NO_ADVANTAGE, trackAdvantage, type Advantage } from './advantage-meter';
+import { NO_COMBO, trackCombo, type ComboMeter } from './training-combo';
 import { TrainingView } from './training-view';
 import { BoxOverlay } from './box-overlay';
 import {
@@ -172,6 +173,8 @@ export class FightScene extends Phaser.Scene {
   private cpu: CpuState | undefined;
   /** Training: the advantage of the exchanges, measured on every tick (advantage-meter.ts). */
   private advantage: Advantage = NO_ADVANTAGE;
+  /** Training: player 1's last combo on the dummy, measured on every tick (training-combo.ts). */
+  private combo: ComboMeter = NO_COMBO;
   private arts: readonly [FighterArt | undefined, FighterArt | undefined] = [undefined, undefined];
   private styles!: readonly [HitStyle, HitStyle];
   private paused = false;
@@ -226,6 +229,7 @@ export class FightScene extends Phaser.Scene {
     // A rematch starts over in its intro, with no event to tell the views: they forget it all.
     this.memory.reset();
     this.advantage = NO_ADVANTAGE;
+    this.combo = NO_COMBO;
     this.watch(data.viewing);
     const behavior = player2Behavior(data.setup);
     this.cpu = behavior === 'human' ? undefined : createCpu(1, behavior, Date.now() | 0);
@@ -508,7 +512,10 @@ export class FightScene extends Phaser.Scene {
       this.state = step(previous, this.tickInputs, this.config);
       detectEvents(previous, this.state, this.config, this.tickEvents);
       this.memory.note(this.state, this.tickEvents);
-      if (this.config.training) this.advantage = trackAdvantage(this.advantage, this.state);
+      if (this.config.training) {
+        this.advantage = trackAdvantage(this.advantage, this.state);
+        this.combo = trackCombo(this.combo, previous, this.state, this.config);
+      }
       runtime.trainingView?.record(this.state);
       const viewLeft = toPx(this.state.cameraX) - VIEW_SIZE.width / 2;
       runtime.feedback.beginTick();
@@ -582,6 +589,7 @@ export class FightScene extends Phaser.Scene {
     runtime.projectileView.update(this.state.projectiles, this.state.frame);
     runtime.hud.update(this.state, finisher);
     runtime.hud.showAdvantage(this.advantage.last);
+    runtime.hud.showCombo(this.combo.line);
     runtime.touch?.showBoost(a.boost);
     runtime.touch?.showFinisher(finisher[0], a.facing, a.action);
     runtime.holdRing.update(this.state);

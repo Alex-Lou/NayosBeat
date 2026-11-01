@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { helpPages, withArrows, type ControlDevices } from '../../src/app/controls-content';
 import { MOVE_IDS } from '../../src/core/move-data';
-import { MOVE_ORDER, MOVE_TEXTS } from '../../src/data/move-texts';
+import { BASICS, MOVE_ORDER, MOVE_TEXTS } from '../../src/data/move-texts';
 import { ROSTER } from '../../src/data/roster';
 
 const PHONE: ControlDevices = { touch: true, gamepad: false };
@@ -50,15 +50,25 @@ describe('helpPages', () => {
     }
   });
 
-  it("ends each fighter's page on its combos to learn first, the last on the super (combos-v3 §3.2)", () => {
+  it("ends each fighter's page on its combos to learn first, then the super, then its Finisher (combos-v3 §3.2, finisher §5.6)", () => {
     for (const page of helpPages(PHONE).slice(2)) {
       const combos = page.sections.at(-1);
       expect(combos?.title).toBe('Combos');
       expect(combos?.rows[0]).toEqual(['L, L, L', expect.any(String)]);
-      expect(combos?.rows).toHaveLength(6);
-      expect(combos?.rows.slice(0, -1).join(' ')).not.toMatch(/BOOST/);
-      expect(combos?.rows.at(-1)?.[0]).toMatch(/arrière \+ BOOST \(3 barres\)$/);
+      expect(combos?.rows).toHaveLength(7);
+      expect(combos?.rows.slice(0, -2).join(' ')).not.toMatch(/BOOST/);
+      expect(combos?.rows.at(-2)?.[0]).toMatch(/arrière \+ BOOST \(3 barres\)$/);
+      expect(combos?.rows.at(-1)?.[0]).toMatch(/arrière \+ BOOST \(FINISH allumé\)$/);
     }
+  });
+
+  it('tells the Finisher in « Les bases », in the super of each fighter, and in its demo line (finisher §5.6)', () => {
+    expect(textOf('Les bases')).toMatch(/Finisher .*balle de match.*FINISH remplace MAX/);
+    expect(textOf('Les bases')).toContain("tu vois le gel et tu n'attaques pas, pare");
+    expect(textOf('Nayo')).toMatch(/Mégabasse : .*Le Quatre/);
+    expect(textOf('Riff')).toMatch(/Slam : .*Larsen/);
+    expect(textOf('Nayo')).toContain("l'adversaire tombe sur le quatre");
+    expect(textOf('Riff')).toContain('toute la salle saute sur ton temps');
   });
 
   it('shows BOOST on every device (combos-v3 §1.8.5)', () => {
@@ -95,6 +105,9 @@ describe('helpPages', () => {
   });
 });
 
+/** Capital letters with an accent: Press Start 2P has none (its 8 px cell has no room). */
+const CAPITAL_ACCENTED = /[\u00c0-\u00d6\u00d8-\u00de\u0152]/u;
+
 describe('move texts', () => {
   it('give every move of each fighter a text and a way to do it, in page order', () => {
     expect([...MOVE_ORDER].sort()).toEqual([...MOVE_IDS].sort());
@@ -105,6 +118,20 @@ describe('move texts', () => {
         expect(text?.text.length, `${id} ${move}`).toBeGreaterThan(20);
       }
     }
+  });
+
+  it('give every basic and every combo more than 20 characters, none a capital accented (finisher §5.8, test 18)', () => {
+    const rows = [
+      ...BASICS,
+      ...ROSTER.flatMap(({ id }) => MOVE_TEXTS[id].combos.map(({ input, text }) => [input, text])),
+    ];
+    for (const [title, text] of rows) expect(text.length, title).toBeGreaterThan(20);
+    const shown = helpPages(PHONE).flatMap((page) => [
+      page.title,
+      ...page.sections.flatMap((section) => [section.title, ...section.rows.flat()]),
+    ]);
+    expect(shown.filter((text) => CAPITAL_ACCENTED.test(text))).toEqual([]);
+    expect(CAPITAL_ACCENTED.test('Écran')).toBe(true);
   });
 });
 

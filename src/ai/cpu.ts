@@ -7,9 +7,23 @@ import { BOOST_BAR, BOOST_MAX, THREAT_MARGIN } from '../core/rules';
 import type { FighterAction, FighterState, GameState } from '../core/state';
 import { moveOf } from '../core/moves';
 import { strikeThreatens, threatReach, upcomingMove } from '../core/threat';
-import { guardInput, incomingProjectile } from './defense';
+import {
+  armedSuper,
+  finisherMenace,
+  guardInput,
+  incomingProjectile,
+  leavesGround,
+} from './defense';
 import { holdInput } from './hold-tactics';
-import { planFor, playString, savesForSuper, startString, type StringPlay } from './plans';
+import {
+  planFor,
+  playString,
+  savesForSuper,
+  startString,
+  superOutlook,
+  type StringPlay,
+  type SuperOutlook,
+} from './plans';
 import { PROFILES, REACTION_JITTER, type CpuLevel, type Profile } from './profiles';
 import { nextRandom } from './rng';
 
@@ -33,13 +47,28 @@ const ANTI_AIR_RANGE = 80;
 const BLOCK_HOLD_FRAMES = 14;
 /** How often a hard CPU with the gauge for it reverses a blow (docs/combos-v3.md §6.4). */
 const REVERSAL_CHANCE = 0.25;
+/**
+ * A wary CPU against an armed super that stays on the ground: no closer than its lock reaches
+ * (the Mégabasse, 69 px at most: docs/finisher.md §1.5), no special this close (§1.8).
+ */
+const KEEP_AWAY_RANGE = 75;
+const NO_SPECIAL_RANGE = 80;
+
+/** The opponent as the CPU saw it on a tick. */
+interface Sight {
+  readonly fighter: FighterState;
+  /** The ticks the game had played by then, the frozen ones not counted: nothing moved on them. */
+  readonly clock: number;
+}
 
 export interface CpuState {
   readonly player: 0 | 1;
   readonly behavior: CpuBehavior;
   readonly seed: number;
-  /** Opponent snapshots, oldest first, one per tick: the CPU acts on what it saw `reaction` ago. */
-  readonly seen: readonly FighterState[];
+  /** What it saw, oldest first, one per tick: the CPU acts on what it saw `reaction` ago. */
+  readonly seen: readonly Sight[];
+  /** The ticks played so far, frozen ones not counted (`Sight.clock` of the next sight). */
+  readonly clock: number;
   /** Its reaction time now, in ticks: the profile's, plus a jitter drawn at each opponent move. */
   readonly reaction: number;
   /** The opening it sees now (a move that can no longer hit, still recovering) was considered. */
@@ -60,6 +89,7 @@ export function createCpu(player: 0 | 1, behavior: CpuBehavior, seed: number): C
     behavior,
     seed,
     seen: [],
+    clock: 0,
     reaction: behavior in PROFILES ? PROFILES[behavior as CpuLevel].reactionFrames : 0,
     punishHandled: false,
     plan: [],
@@ -72,23 +102,32 @@ export function createCpu(player: 0 | 1, behavior: CpuBehavior, seed: number): C
 /**
  * One tick of perception: the live opponent joins what the CPU saw, and each move the opponent
  * starts draws a new reaction time. It goes on through hitstop and blockstun: a player sees the
- * frozen frames too, and guards on what they saw, never on what is about to come.
+ * frozen frames too, and guards on what they saw, never on what is about to come. `frozen`: the
+ * game does not move on this tick (an impact, a super's flash), as everyone sees.
  */
-function perceive(cpu: CpuState, profile: Profile, live: FighterState): CpuState {
+function perceive(cpu: CpuState, profile: Profile, live: FighterState, frozen: boolean): CpuState {
   const last = cpu.seen[cpu.seen.length - 1];
   let { reaction, seed } = cpu;
-  if (last && live.move !== null && live.move !== last.move) {
+  if (last && live.move !== null && live.move !== last.fighter.move) {
     const [value, next] = nextRandom(seed);
     reaction = profile.reactionFrames + Math.floor(value * (REACTION_JITTER + 1));
     seed = next;
   }
-  const seen = [...cpu.seen, live].slice(-(profile.reactionFrames + REACTION_JITTER + 1));
-  return { ...cpu, seen, reaction, seed };
+  const sight = { fighter: live, clock: cpu.clock };
+  const seen = [...cpu.seen, sight].slice(-(profile.reactionFrames + REACTION_JITTER + 1));
+  return { ...cpu, seen, clock: frozen ? cpu.clock : cpu.clock + 1, reaction, seed };
 }
 
-/** The opponent as the CPU sees it: `reaction` ticks ago, or as far back as it has seen. */
-function seenOpponent(cpu: CpuState): FighterState | undefined {
+/** What the CPU sees now: `reaction` ticks ago, or as far back as it has seen. */
+function seenSight(cpu: CpuState): Sight | undefined {
   return cpu.seen[Math.max(0, cpu.seen.length - 1 - cpu.reaction)];
+}
+
+/** The ticks the game played since what the CPU sees now: none while it was frozen. */
+function playedSince(cpu: CpuState): number {
+  const seen = seenSight(cpu);
+  const latest = cpu.seen[cpu.seen.length - 1];
+  return seen && latest ? latest.clock - seen.clock : 0;
 }
 
 /** Decides the CPU's input for this tick. Pure: same state, same decision. */
@@ -112,7 +151,7 @@ export function cpuStep(
     return { cpu: { ...cpu, plan: [], seen: [], string: null, punishHandled: false }, input: 0 };
   }
   const profile = PROFILES[cpu.behavior];
-  const perceived = perceive(cpu, profile, liveOpponent);
+  const perceived = perceive(cpu, profile, liveOpponent, state.hitstop > 0);
   // The game is frozen on impact: keep holding the current input, do not use up the plan (a
   // string's step pressed before the freeze stays buffered through it).
   if (state.hitstop > 0) return { cpu: perceived, input: cpu.string ? 0 : (cpu.plan[0] ?? 0) };
@@ -121,7 +160,7 @@ export function cpuStep(
     const hold = holdInput(cpu.player, profile, state, state.hold, config, perceived.seed);
     return { cpu: { ...perceived, seed: hold.seed, plan: [], string: null }, input: hold.input };
   }
-  const opponent = seenOpponent(perceived) ?? liveOpponent;
+  const opponent = seenSight(perceived)?.fighter ?? liveOpponent;
   // While blocking, keep blocking: dropping the guard mid-string would be a free hit. A string
   // of its own is over once it blocks: from neutral afterwards, it would hit nothing. Its guard
   // follows what it saw, like a player's: an overhead it has not seen yet meets its low guard.
@@ -146,6 +185,10 @@ class Decider {
   private readonly opening: InputBits | null;
   /** That opening was considered: kept by every plan it returns this tick. */
   private punishHandled: boolean;
+  /** The opponent's Finisher threatens it (defense.ts). */
+  private readonly menace: boolean;
+  /** How it weighs its own super (plans.ts). */
+  private readonly outlook: SuperOutlook;
 
   private readonly profile: Profile;
 
@@ -165,6 +208,8 @@ class Decider {
     this.opening = this.openingBlow();
     // A new opening is a new decision; none seen, nothing to remember.
     this.punishHandled = this.opening !== null && cpu.punishHandled;
+    this.menace = finisherMenace(state, cpu.player, config, opponent);
+    this.outlook = superOutlook(state, cpu.player, config, level);
   }
 
   decide(): { cpu: CpuState; input: InputBits } {
@@ -181,13 +226,16 @@ class Decider {
     if (me.action === 'attack' && me.moveConnected && !this.cpu.cancelHandled) {
       if (!this.chance(this.profile.combo)) return this.withPlan([], { cancelHandled: true });
       const template = this.config.fighters[this.cpu.player];
-      const { steps, seed } = planFor(me, opponent, template, this.level, this.seed);
+      const { steps, seed } = planFor(me, opponent, template, this.level, this.seed, this.outlook);
       this.seed = seed;
       const { input, next } = playString(startString(steps, me), me, opponent);
       return next ? this.withString(next, input) : this.withPlan([], { cancelHandled: true });
     }
     const cancelHandled = me.action === 'attack' ? this.cpu.cancelHandled : false;
     if (!DECISION_ACTIONS.has(me.action)) return this.withPlan(this.cpu.plan, { cancelHandled });
+
+    const finisherGuard = this.finisherGuard();
+    if (finisherGuard !== null) return this.withPlan([finisherGuard], { cancelHandled });
 
     const punish = this.punish();
     if (punish !== null) return this.withPlan(punish, { cancelHandled });
@@ -228,10 +276,11 @@ class Decider {
       // The invincible anti-air, or now and then the launcher, which opens a juggle (plans.ts).
       return this.chance(0.35) ? [this.away | Input.Heavy, 0] : [Input.Down | Input.Special, 0];
     }
-    if (threat === 'projectile' && this.chance(0.25)) {
+    // Over the projectile, toward the thrower: not into a Mégabasse's reach, it blocks then.
+    if (threat === 'projectile' && !this.keepsAway() && this.chance(0.25)) {
       return repeat(Input.Up | this.toward, 5);
     }
-    if (this.chance(this.profile.block)) {
+    if (this.chance(this.menace ? this.profile.finisherBlock : this.profile.block)) {
       const move = upcomingMove(this.opponent, this.opponentTemplate());
       return repeat(guardInput(this.me, this.opponent, move), BLOCK_HOLD_FRAMES);
     }
@@ -240,17 +289,18 @@ class Decider {
 
   /**
    * The blow an opening allows, if any. The opponent's move, as seen, can no longer hit by now
-   * (its active ticks are over, counting the reaction time since) and keeps enough recovery for
-   * the blow to land, in its reach. The count is careful: frozen ticks only make it think less
-   * recovery is left. Easy jabs; the others take the heavy blow when it fits (docs/polish/
-   * AUDIT-ET-PLAN.md, P18).
+   * (its active ticks are over, counting the ticks played since it was seen) and keeps enough
+   * recovery for the blow to land, in its reach. The ticks frozen since (an impact, a super's
+   * flash) are not counted: nothing moved on them. Counted, a super seen at its flash looked
+   * over, and the CPU walked into it (docs/finisher.md §1.8). Easy jabs; the others take the
+   * heavy blow when it fits (docs/polish/AUDIT-ET-PLAN.md, P18).
    */
   private openingBlow(): InputBits | null {
     const opponent = this.opponent;
     if (opponent.action !== 'attack' || opponent.move === null) return null;
     const move = moveOf(this.opponentTemplate(), opponent.move);
     if (move.kind === 'movement') return null;
-    const now = opponent.actionFrame + this.cpu.reaction;
+    const now = opponent.actionFrame + playedSince(this.cpu);
     if (now < move.startup + move.active) return null;
     const left = move.startup + move.active + move.recovery - now;
     const template = this.config.fighters[this.cpu.player];
@@ -259,6 +309,35 @@ class Decider {
       blow.startup < left && reach <= threatReach(blow) + THREAT_MARGIN;
     if (this.level !== 'easy' && fits(moveOf(template, 'standHeavy'))) return Input.Heavy;
     return fits(moveOf(template, 'standLight')) ? Input.Light : null;
+  }
+
+  /**
+   * A wary CPU against an armed super that leaves the ground, seen in the air (Riff's Slam, an
+   * overhead): its guard, standing, at once, whatever its block's chance (docs/finisher.md
+   * §1.11). Null otherwise.
+   */
+  private finisherGuard(): InputBits | null {
+    const opponent = this.opponent;
+    if (!this.profile.wary || !armedSuper(opponent) || opponent.y === 0) return null;
+    return guardInput(this.me, opponent, this.opponentTemplate().moves.super ?? null);
+  }
+
+  /**
+   * A wary CPU against an opponent whose Finisher threatens it and stays on the ground (Nayo's
+   * Mégabasse, docs/finisher.md §1.11): it keeps out of its reach.
+   */
+  private keepsAway(): boolean {
+    return this.profile.wary && this.menace && !leavesGround(this.opponentTemplate().moves.super);
+  }
+
+  /**
+   * A special from neutral is fine, unless it keeps away from a Mégabasse (`wary`): then none
+   * within 80 px (docs/finisher.md §1.8), nor one whose motion would carry it within 75 px (the
+   * Saut de l'ange goes 35 px forward).
+   */
+  private mayThrow(move: MoveData | undefined, wary: boolean): boolean {
+    if (!wary) return true;
+    return this.distance > NO_SPECIAL_RANGE && this.distance - advancePx(move) > KEEP_AWAY_RANGE;
   }
 
   /** An opening gets one decision: punish it, by the level's chance, before anything planned. */
@@ -288,35 +367,44 @@ class Decider {
   private offense(): InputBits[] {
     const { toward, away } = this;
     const aggression = this.profile.aggression;
+    const { moves } = this.config.fighters[this.cpu.player];
     // The CPU zones with Special alone, which performs the `special` move.
-    const hasProjectile =
-      this.config.fighters[this.cpu.player].moves.special.projectile !== undefined;
+    const hasProjectile = moves.special.projectile !== undefined;
+    // Wary of a Mégabasse: it never comes into its reach, by walking, dashing, jumping (Riff's
+    // jump goes 73 px forward) or a special that carries it there, and never presses in it.
+    const wary = this.keepsAway();
 
     // Now and then the Remix of the special it would throw, when the gauge pays for it (hard
-    // keeps two bars for its super, docs/combos-v3.md §6.4).
+    // keeps two bars for its super, docs/combos-v3.md §6.4, and three for its Finisher).
     const boost = superGauge(this.me);
-    const saving = this.level === 'hard' && savesForSuper(boost);
+    const saving = this.level === 'hard' && savesForSuper(boost, this.outlook !== 'free');
     const remix = boost >= BOOST_BAR && !saving && this.chance(this.profile.remix);
     if (this.distance > MID_RANGE) {
       if (hasProjectile && this.chance(0.35)) {
         return [remix ? Input.Boost : Input.Special, ...repeat(0, 20)];
       }
-      if (this.chance(0.12)) return this.jumpIn();
+      if (!wary && this.chance(0.12)) return this.jumpIn();
       return repeat(toward, this.between(12, 30));
     }
     if (this.distance > CLOSE_RANGE) {
-      if (this.chance(aggression * 0.6)) {
+      if (!wary && this.chance(aggression * 0.6)) {
         // The dash button: no double tap to simulate.
         if (this.chance(this.profile.dash)) return [Input.Dash, 0];
         return repeat(toward, this.between(8, 18));
       }
-      if (this.chance(0.18)) return this.jumpIn();
-      if (this.chance(0.15)) {
+      if (!wary && this.chance(0.18)) return this.jumpIn();
+      if (wary && this.distance <= KEEP_AWAY_RANGE) return repeat(away, this.between(6, 14));
+      const forward = moves[remix ? 'specialForwardBoost' : 'specialForward'];
+      if (this.mayThrow(forward, wary) && this.chance(0.15)) {
         return [toward | (remix ? Input.Boost : Input.Special), ...repeat(0, 10)];
       }
-      if (hasProjectile && this.chance(0.2)) return [Input.Special, ...repeat(0, 15)];
+      if (hasProjectile && this.mayThrow(moves.special, wary) && this.chance(0.2)) {
+        return [Input.Special, ...repeat(0, 15)];
+      }
       return repeat(this.chance(0.5) ? away : 0, this.between(6, 14));
     }
+    // Up close to a Mégabasse: out of its reach, no pressure.
+    if (wary) return repeat(away, this.between(6, 14));
     if (this.chance(this.profile.throw)) return [Input.Grab, 0];
     if (this.chance(0.1)) return [away | Input.Heavy, 0];
     if (this.chance(0.35)) return [Input.Light, 0, 0, 0];
@@ -393,6 +481,11 @@ class Decider {
 function isReversal(move: MoveData | undefined): boolean {
   const range = move?.invincible;
   return range !== undefined && range.from === 0 && range.against !== 'air';
+}
+
+/** How far forward a move carries its fighter, in pixels (its root motion). */
+function advancePx(move: MoveData | undefined): number {
+  return toPx(move?.motion?.dx.reduce((total, dx) => total + dx, 0) ?? 0);
 }
 
 function repeat(input: InputBits, count: number): InputBits[] {

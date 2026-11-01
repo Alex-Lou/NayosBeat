@@ -8,6 +8,7 @@ import {
   CHAIN_HIGH,
   CHAIN_LAUNCH,
   DASH,
+  FINISH_LIT,
   FORWARD_HEAVY,
   FORWARD_LIGHT,
   FORWARD_REMIX,
@@ -54,7 +55,7 @@ export const RIFF_TEXTS: FighterTexts = {
     },
     super: {
       input: SUPER,
-      text: "La super. Riff bondit dans la foule et retombe rangers en avant sur l'adversaire, une onde au sol. Un coup d'en haut, sans invincibilité : une fin de combo, pas un reversal.",
+      text: "La super. Riff bondit dans la foule et retombe rangers en avant sur l'adversaire, une onde au sol. Un coup d'en haut, sans invincibilité : une fin de combo, pas un reversal. Avec FINISH allumé, c'est son Finisher, Larsen : si elle touche, le match est fini (sur un adversaire au sol).",
     },
     standLight: {
       input: 'L',
@@ -141,7 +142,8 @@ export const RIFF_TEXTS: FighterTexts = {
       text: 'Un bond en retrait qui fait rater les prises, pas les coups.',
     },
   },
-  // docs/combos-v3.md §4: her measured routes without gauge, easiest first.
+  // docs/combos-v3.md §4: her measured routes without gauge, easiest first, then the super and
+  // the Finisher (docs/finisher.md §5.6).
   combos: [
     { input: 'L, L, L', text: 'Jab, Revers, Swipe : partout où le Jab touche.' },
     { input: 'Bas + L, bas + L, H, S', text: "En partant bas, jusqu'à la Glissade." },
@@ -158,5 +160,9 @@ export const RIFF_TEXTS: FighterTexts = {
       text: 'Après la Vrille, rattrape-le : deux coups encore, puis le Genou montant.',
     },
     { input: SUPER_COMBO, text: 'Le combo de base qui finit sur le Slam.' },
+    {
+      input: `H, arrière + BOOST ${FINISH_LIT}`,
+      text: "Larsen : l'aiguille saute, un temps de silence, et toute la salle saute sur ton temps.",
+    },
   ],
 };

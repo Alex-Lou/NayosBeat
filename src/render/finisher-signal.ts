@@ -34,13 +34,16 @@ export function sirenPitchOf(fighter: FighterId): number {
 /**
  * `player`'s signal on the state shown: the core's lights (finisherState) while the fight runs,
  * nothing otherwise. Between rounds no one can let the super go, while the lights may all be on
- * (the winner of round 1 at match point, full, over a loser at 0 HP).
+ * (the winner of round 1 at match point, full, over a loser at 0 HP). Nothing for the dummy in
+ * training either: none of them lets the super go (the CPU dummy plays normal, which never does),
+ * and « toujours prêt » lights it as much as player 1.
  */
 export function finisherSignalOf(
   state: GameState,
   player: 0 | 1,
   config: MatchConfig,
 ): FinisherState {
+  if (config.training === true && player === 1) return 'off';
   return state.round.phase === 'fight' ? finisherState(state, player, config) : 'off';
 }
 

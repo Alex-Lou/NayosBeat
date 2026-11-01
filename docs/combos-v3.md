@@ -336,15 +336,18 @@ Le dessin et ses références sont dans `docs/art/direction-hud.md`.
   - La jauge monte vers la valeur au lieu de sauter : une barre en 20 tics.
   - Une lumière balaie la barre qui vient de se compléter (14 tics).
   - Une dépense se vide vite, le front en blanc : une barre en 10 tics, la super en une demi-seconde (la Tension de Guilty Gear Strive).
-  - Au KO, la jauge du perdant dit comment il est tombé (`koFinishOf`, `src/render/fight-events.ts`) :
-    - **un coup seul** (moins de 3 coups dans le combo) : elle reste normale ;
-    - **la fin d'un combo** de 3 coups ou plus : elle se **fissure**. Le tube s'assombrit, trois fissures le traversent et coupent son liseré, et quatre éclats tombent en 30 tics ; son Boost reste visible au travers ;
-    - **l'Ultime** (la super, et plus tard le Finisher) : elle **éclate** (King of Fighters XV), puis reste éteinte :
+  - Au KO, la jauge du perdant dit comment il est tombé (`koFinishOf`, `src/render/fight-events.ts`). Il y a quatre sortes de KO (`KoFinish`, `docs/finisher.md` §1.13) :
+    - **`plain`, un coup seul** (moins de 3 coups dans le combo) : elle reste normale ;
+    - **`combo`, la fin d'un combo** de 3 coups ou plus : elle se **fissure**. Le tube s'assombrit, trois fissures le traversent et coupent son liseré, et quatre éclats tombent en 30 tics ; son Boost reste visible au travers ;
+    - **`ultimate`, l'Ultime** (la super qui tue sans le verrou du Finisher) : elle **éclate** au contact (King of Fighters XV), puis reste éteinte :
       - la jauge tremble de 2 px, puis 1, pendant 12 tics ;
       - ses carrés, de trois tailles et chauds pendant les 4 premiers tics (le reflet de leur barre, jamais le blanc), sont projetés vers le haut, puis retombent et s'effacent en 48 tics ; 14 étincelles partent plus vite et s'éteignent en 18 tics ;
       - l'écran tremble plus fort qu'à un KO ordinaire (8 px au lieu de 6) ;
       - les téléphones des deux joueurs vibrent 180 ms, les manettes 260 ms à pleine force (`SHATTER_RUMBLE`, `rumble` dans `src/input/haptics.ts`).
-    - Dans tous les cas, elle revient entière au round suivant, avec son Boost.
+    - **`finale`, le Finisher** (la dernière frappe d'une super verrouillée) : elle éclate de même, mais sur la **retombée** que joue sa mise en scène (QUATRE de Nayo à KO + 60 images, la reprise de Riff à KO + 45), pas au contact ; la secousse et les vibrations partent avec elle.
+    - Après `plain`, `combo` et `ultimate`, elle revient entière au round suivant, avec son Boost. Après `finale`, le match est fini.
+    - En entraînement, le Finisher laisse le mannequin à 1 PV : sa jauge et sa barre éclatent sur la retombée et restent cassées jusqu'à ce qu'il se recharge.
+  - **Le Finisher prêt** (`docs/finisher.md` §1.2) : en balle de match, à 3 barres, l'adversaire à 30 % ou moins au début du combo, le mot « FINISH » (48 px) remplace « MAX », fixe, en platine cerné de l'énergie ; à 40 % d'opacité quand il manque de la place (`blocked`). MAX cesse de clignoter : c'est le signal.
 - **Mouvement réduit** (`prefers-reduced-motion` du système) : ni balayage, ni reflet, ni éclats, ni clignotement ; les fissures apparaissent d'un coup.
 - **Coût.** Par joueur : 1 Graphics et 2 textes, créés une fois. Le Graphics n'est repeint que quand ce qu'il montre change (longueur en pixels, palier, balayage, éclats) ; les textes, quand leur contenu change.
 - **Crossfader.** Il reste au centre sous le chronomètre (§8.3). Les formes et les places diffèrent : une piste avec un curseur au centre, un tube et sa capsule au bord.

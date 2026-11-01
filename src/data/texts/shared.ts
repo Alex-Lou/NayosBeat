@@ -21,7 +21,8 @@ export interface FighterTexts {
     Readonly<Partial<Record<OptionalMoveId, MoveText>>>;
   /**
    * Its combos to learn first (docs/combos-v3.md §3.1, §4), easiest first: how to play them,
-   * and what they are for; the last one ends on the super.
+   * and what they are for; the last but one ends on the super, the last on its Finisher
+   * (docs/finisher.md §5.6).
    */
   readonly combos: readonly MoveText[];
 }
@@ -51,3 +52,5 @@ export const SUPER = 'Arrière + BOOST (3 barres)';
 export const REWIND = 'DASH sur un coup qui touche (1 barre)';
 /** The combo that ends on the super (§3.1 E3, §4). */
 export const SUPER_COMBO = 'L, L, H, H, arrière + BOOST (3 barres)';
+/** The Finisher's plate lit: back + BOOST lets the super go armed (docs/finisher.md §1.2). */
+export const FINISH_LIT = '(FINISH allumé)';

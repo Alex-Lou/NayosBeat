@@ -131,6 +131,42 @@ describe('the HUD asks the flash budget for what it lights (docs/flashs.md §4)'
   });
 });
 
+describe("the training dummy's breakage (docs/finisher.md §1.12, test 16)", () => {
+  const TRAINING: MatchConfig = { ...CONFIG, training: true };
+
+  /**
+   * What the HUD paints on each frame of a training session where the dummy is down to its 1 HP
+   * floor from frame 60 and refills at frame 200, the Finisher's landing on frame 61 (`landed`).
+   */
+  function paints(landed: boolean): string[] {
+    const { scene, graphics } = fakeScene();
+    const hud = new Hud(
+      scene,
+      TRAINING,
+      [0x30e8ff, 0xff3ca0],
+      { flashes: true, motion: false },
+      new FlashBudget('normal'),
+    );
+    const shots: string[] = [];
+    for (let frame = 0; frame <= 260; frame++) {
+      const health = frame < 60 ? 900 : frame < 200 ? 1 : 900;
+      if (landed && frame === 61) hud.knockOut(1, 'finale', true);
+      hud.update(stateAt(frame, {}, [1000, health]));
+      shots.push(JSON.stringify(graphics.map((view) => view.spans)));
+    }
+    return shots;
+  }
+
+  it('stays broken, kept at 1 HP, until it refills, then comes back whole', () => {
+    const plain = paints(false);
+    const broken = paints(true);
+    // Regression: the HUD repaired it at once, its health above 0.
+    expect(broken[120]).not.toBe(plain[120]);
+    expect(broken[199]).not.toBe(plain[199]);
+    expect(broken[260]).toBe(plain[260]);
+  });
+});
+
 describe('the FINISH plate on the HUD (docs/finisher.md §1.2, §5.8 test 12)', () => {
   /** The future track of the Crossfader, under the timer's disc (docs/finisher.md §1.2). */
   const CROSSFADER = { from: 192, to: 288 };

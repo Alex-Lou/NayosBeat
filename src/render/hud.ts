@@ -3,7 +3,7 @@ import type { MatchConfig } from '../core/config';
 import { TICK_RATE } from '../core/constants';
 import { finisherLocked } from '../core/finisher';
 import { ROUNDS_TO_WIN } from '../core/rules';
-import type { FighterState, GameState, RoundState } from '../core/state';
+import type { GameState, RoundState } from '../core/state';
 import { BoostGauge } from './boost-gauge';
 import type { Breakage } from './boost-motion';
 import { shatters, type KoFinish } from './fight-events';
@@ -14,6 +14,7 @@ import { DISC_SIZE, discSpans, MARK_TICKS, markSpan, PIP_SIZE, pipSpans } from '
 import { paintSpans, spanTexture, type Span } from './hud-paint';
 import { advantageText } from './advantage-meter';
 import { announcementOf, comboText, NO_TIMER } from './hud-text';
+import { noteText, type ComboLine } from './training-combo';
 
 /** The advantage's colors (docs/polish/AUDIT-ET-PLAN.md, P19); its sign is always written. */
 const ADVANTAGE_COLORS = { ahead: '#7bea8a', behind: '#ffa04a', even: '#ffffff' } as const;
@@ -77,14 +78,17 @@ export class Hud {
   /** Training only: hits and damage of player 1's last combo on the dummy. */
   private readonly trainingInfo: Phaser.GameObjects.Text | undefined;
   private readonly advantageInfo: Phaser.GameObjects.Text | undefined;
-  private dummyHealthBefore = 0;
   /** Round wins currently painted; -1 forces the first paint. */
   private shownWins: readonly [number, number] = [-1, -1];
-  private dummyComboBefore = 0;
-  private comboStartHealth = 0;
   private readonly names: readonly [string, string];
   /** How each fighter was knocked out this round (its Boost gauge shows it), null while up. */
   private readonly finishes: [KoFinish | null, KoFinish | null] = [null, null];
+  /**
+   * The health each fighter was knocked out at, read on the update after `knockOut` (null in
+   * between): 0 in a match, the training dummy's 1 HP floor after a Finisher (docs/finisher.md
+   * §1.12). Its gauges stay broken until its health rises above it: the next round, the refill.
+   */
+  private readonly downAt: [number | null, number | null] = [0, 0];
   /** Whether each fighter's gauges break still (no room left in the flash budget for shards). */
   private readonly stills: [boolean, boolean] = [false, false];
   /** Whether `view` px² of the HUD may light up now (the fight's flash budget). */
@@ -220,7 +224,9 @@ export class Hud {
       const max = this.config.fighters[player]?.maxHealth ?? 1;
       // A KO ends the combo: the trail of the last one drains.
       const comboed = fighter.comboCount > 0 && fighter.health > 0;
-      if (fighter.health > 0) this.finishes[player] = null;
+      // Knocked out, it stays broken until its health rises above what it fell at.
+      const downAt = (this.downAt[player] ??= fighter.health);
+      if (fighter.health > downAt) this.finishes[player] = null;
       const breakage = breakageOf(this.finishes[player] ?? null);
       const still = breakage !== null && this.stills[player];
       this.bars[player]?.update(fighter.health / max, comboed, frame, breakage, still);
@@ -239,8 +245,6 @@ export class Hud {
       this.shownSpin = spin;
       paintSpans(this.mark, [markSpan(spin)]);
     }
-    const [, b] = fighters;
-    if (this.trainingInfo) this.updateTrainingInfo(this.trainingInfo, b);
     this.finale = finaleOf(state, this.finale);
     this.announce(this.finale ? '' : announcementOf(state.round, this.names));
   }
@@ -269,20 +273,18 @@ export class Hud {
   knockOut(player: 0 | 1, finish: KoFinish, still = false): void {
     this.finishes[player] = finish;
     this.stills[player] = still;
+    this.downAt[player] = null;
   }
 
-  /** Keeps the last combo's result on screen until the next one starts. */
-  private updateTrainingInfo(info: Phaser.GameObjects.Text, dummy: FighterState): void {
-    // A new combo; a dummy hit again on the tick it recovers goes from N straight to 1.
-    const fresh = this.dummyComboBefore === 0 || dummy.comboCount < this.dummyComboBefore;
-    if (dummy.comboCount > 0 && fresh) {
-      this.comboStartHealth = this.dummyHealthBefore;
-    }
-    if (dummy.comboCount > 0) {
-      setTextIfChanged(info, comboText(dummy.comboCount, this.comboStartHealth - dummy.health));
-    }
-    this.dummyHealthBefore = dummy.health;
-    this.dummyComboBefore = dummy.comboCount;
+  /**
+   * Training: player 1's last combo on the dummy (training-combo.ts), kept until the next one
+   * starts; nothing before the first, nothing out of training.
+   */
+  showCombo(line: ComboLine | null): void {
+    const info = this.trainingInfo;
+    if (!info || !line) return;
+    const note = line.note ? noteText(line.note) : undefined;
+    setTextIfChanged(info, comboText(line.hits, line.damage, note));
   }
 
   /** Repaints round markers only when the score changes. */
