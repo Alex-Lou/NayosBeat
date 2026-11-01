@@ -377,7 +377,7 @@ Toutes sont vérifiées au chargement (`validateTemplate`, `src/core/validate.ts
 - Un Remix qui achète un trait : un reversal, un projectile plus rapide, une levée.
 - Une super à plusieurs frappes, invincible ou non, au sol ou en bond.
 
-**Impossible sans code de cœur** : il faut alors chiffrer le coût, proposer une décision Dxx (à confirmer : le prochain numéro libre du journal au moment de la PR ; D32 est pris par la PR #69, donc D33 ou plus), et attendre la PR de cœur de la session principale.
+**Impossible sans code de cœur** : il faut alors chiffrer le coût, proposer une décision Dxx (à confirmer : le prochain numéro libre du journal au moment de la PR ; le journal s'arrête à D32, donc D33 ou plus), et attendre la PR de cœur de la session principale.
 
 | Idée | Pourquoi | Le plus proche en données |
 |---|---|---|
@@ -774,7 +774,7 @@ Toutes les durées sont des **estimations** en jours-agent, pas des mesures. Cô
 
 ### 6.1 Les PR
 
-Le perso reste **hors du roster jusqu'à la PR E**. Le jeu en ligne ne change donc pas, les 30 replays dorés ne bougent pas, et chaque PR se fusionne seule.
+Le perso reste **hors du roster jusqu'à la PR E**. Le jeu en ligne ne change donc pas, les 31 replays dorés ne bougent pas, et chaque PR se fusionne seule.
 
 | PR | Branche proposée | Contenu | Touche hors du perso | Ordre |
 |---|---|---|---|---|
@@ -850,8 +850,8 @@ Pour filmer ou faire jouer le perso avant la PR E :
   - dit « prête pour revue » dans la PR et dans son rapport.
 
   La session principale relit, fusionne, publie et montre le résultat. Une fois la revue commencée, l'agent ne réécrit plus l'historique sans le dire.
-- **Le journal des décisions** (combat-v2 §0.2) : l'agent n'y écrit pas. Sa PR contient une section « **Décision proposée pour le journal** », avec une ligne prête à coller, numérotée « D<prochain numéro libre> (à confirmer) » : le journal s'arrête à D31, mais D32 est pris par la PR #69, ouverte. Le numéro se vérifie dans `docs/combat-v2.md` §0.2 **et** dans les PR ouvertes, au moment de chaque PR. La session principale l'inscrit après la fusion, dans un commit `docs(journal) : …`, comme D31 (`9a40bca`).
-- **Les replays dorés** (`tests/core/replays/`, 30 fichiers) : **aucun ne doit bouger**. S'il en rougit un, la PR a touché ce qu'elle ne devait pas : on revient en arrière, on cherche la cause, et on la signale. **L'agent ne lance jamais `npm run replays:update`.** Seul l'instantané des portées (`tests/data/__snapshots__/ranges.test.ts.snap`) se réenregistre exprès. Dans `tests/data/ranges.test.ts`, `FIGHTERS` sert aussi de liste des **défenseurs** de chaque tableau : l'étendre ajoute deux colonnes (contre <perso>, debout et accroupi) à chaque ligne des tableaux de Nayo et de Riff, l'en-tête codé en dur (`'against             Nayo  crouch  Riff  crouch'`) est à étendre, et un bloc `it("<Perso>'s")` s'ajoute. On réenregistre avec `npx vitest run -u tests/data/ranges.test.ts`. La PR dit : « les tableaux de Nayo et de Riff gagnent deux colonnes, aucune valeur existante ne change ; le bloc de <perso> s'ajoute », vérifié colonne par colonne dans le diff du `.snap`.
+- **Le journal des décisions** (combat-v2 §0.2) : l'agent n'y écrit pas. Sa PR contient une section « **Décision proposée pour le journal** », avec une ligne prête à coller, numérotée « D<prochain numéro libre> (à confirmer) » : le journal s'arrête à D32 (la PR #69, fusionnée). Le numéro se vérifie dans `docs/combat-v2.md` §0.2 **et** dans les PR ouvertes, au moment de chaque PR. La session principale l'inscrit après la fusion, dans un commit `docs(journal) : …`, comme D31 (`9a40bca`).
+- **Les replays dorés** (`tests/core/replays/`, 31 fichiers) : **aucun ne doit bouger**. S'il en rougit un, la PR a touché ce qu'elle ne devait pas : on revient en arrière, on cherche la cause, et on la signale. **L'agent ne lance jamais `npm run replays:update`.** Seul l'instantané des portées (`tests/data/__snapshots__/ranges.test.ts.snap`) se réenregistre exprès. Dans `tests/data/ranges.test.ts`, `FIGHTERS` sert aussi de liste des **défenseurs** de chaque tableau : l'étendre ajoute deux colonnes (contre <perso>, debout et accroupi) à chaque ligne des tableaux de Nayo et de Riff, l'en-tête codé en dur (`'against             Nayo  crouch  Riff  crouch'`) est à étendre, et un bloc `it("<Perso>'s")` s'ajoute. On réenregistre avec `npx vitest run -u tests/data/ranges.test.ts`. La PR dit : « les tableaux de Nayo et de Riff gagnent deux colonnes, aucune valeur existante ne change ; le bloc de <perso> s'ajoute », vérifié colonne par colonne dans le diff du `.snap`.
 - **La mémoire vidéo** : chaque PR d'art annonce son coût mesuré (`docs/art/atlas.md` §3). Le plafond est de 90 Mo dans le pire appariement, miroir compris, avec des pages de 2 048 px au plus (`tests/build/vram-budget.test.ts`, qui lit `ROSTER`, donc dès la PR E). Avant, on mesure à part. Repère : Nayo contre Nayo, le pire aujourd'hui, fait 41,2 Mo.
 
 ### 6.6 Ce qui est en cours ailleurs, et les fichiers chauds
@@ -865,11 +865,11 @@ gh api "repos/Alex-Lou/NayosBeat/pulls?state=open" --jq '.[] | "\(.number) \(.dr
 
 | Fichier ou dossier | Qui d'autre le touche | Règle |
 |---|---|---|
-| `src/core/**` | toute mécanique ; la PR #69 (`config.ts`, `state.ts`) | **jamais** ; une décision Dxx et une PR de la session principale |
+| `src/core/**` | toute mécanique | **jamais** ; une décision Dxx et une PR de la session principale |
 | `src/data/fighters/shared.ts`, `nayo*.ts`, `riff*.ts` | les replays | jamais un comportement changé ; une aide **ajoutée**, oui, si rien d'existant ne change |
 | `tools/sprites/{generate,sheet,fighter,skeleton,anatomy,cell,drawn,atlas}.ts`, `src/art/types.ts`, `strip-urls.ts` | F2, F3, PR 4 du Finisher | seulement les lignes du registre (PR 0) ; tout autre besoin est signalé |
 | `src/art/{nayo,riff}/**`, `tools/sprites/{nayo,riff}/**` | PR 4 du Finisher, morts, réactions | **jamais** |
-| `src/render/{animation,sprite-fighter-view,fight-scene,fight-feedback,hit-fx}.ts` | V1, F2, Finisher, qualité adaptative (la cadence, PR #71, est fusionnée ; la sûreté, PR B, est en cours) | **jamais** |
+| `src/render/{animation,sprite-fighter-view,fight-scene,fight-feedback,hit-fx}.ts` | V1, F2, Finisher, qualité adaptative (la cadence #71, la sûreté #73 et le contexte maigre #75 sont fusionnés) | **jamais** |
 | `src/audio/sfx.ts` | PR 4 du Finisher, lot 2 du polish | **jamais** |
 | `src/render/finisher-scripts.ts`, `finisher-signal.ts`, `src/data/move-texts.ts` | PR 4 du Finisher | une entrée chacun, en PR E |
 | `src/render/hit-styles.ts`, `src/art/index.ts`, `src/data/roster.ts`, `tools/anim/{film,compare}.ts` | — | une entrée chacun, en PR E |
@@ -970,7 +970,7 @@ S'y ajoutent :
 
 ### 7.3 Ce qui ne change pas
 
-`src/core/**`, sauf une mécanique décidée au journal (Dxx). `src/data/fighters/shared.ts`, en comportement. Les données, les planches et les poses de Nayo et de Riff. `src/app/match-setup.ts`, le match par défaut restant Nayo contre Riff. `src/data/stages.ts`. Les 30 replays dorés.
+`src/core/**`, sauf une mécanique décidée au journal (Dxx). `src/data/fighters/shared.ts`, en comportement. Les données, les planches et les poses de Nayo et de Riff. `src/app/match-setup.ts`, le match par défaut restant Nayo contre Riff. `src/data/stages.ts`. Les 31 replays dorés.
 
 ---
 
