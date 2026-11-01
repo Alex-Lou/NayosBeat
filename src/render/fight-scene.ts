@@ -20,6 +20,7 @@ import { connectedGamepads } from '../input/gamepad';
 import { PauseInput } from '../input/pause-input';
 import { rumble, vibrate } from '../input/haptics';
 import { PlayerInputs } from '../input/player-inputs';
+import { HeldStruggle } from '../input/held-struggle';
 import { isTouchDevice, TouchControls } from '../input/touch-controls';
 import { clockGrainMs, FrameClock } from '../loop/cadence';
 import { TickPacer } from '../loop/tick-pacer';
@@ -89,6 +90,8 @@ export interface FightSceneData {
   readonly boxes?: boolean;
   /** Training: its input history and frame meter shown as it starts (then `setTrainingData`). */
   readonly trainingData?: boolean;
+  /** « Lutte en prise : tenir » as it starts (then `setHeldStruggle`): held-struggle.ts. */
+  readonly heldStruggle?: boolean;
   /** How the game is drawn, read once from the renderer when it starts (render-mode.ts). */
   readonly mode: RenderMode;
   /** How the fighters stand out from the sky, read once from the address (silhouette.ts). */
@@ -136,6 +139,8 @@ interface Runtime {
   readonly touchCover: TouchCover | undefined;
   /** Each player's gamepad rumbles for its own blows (pad-haptics.ts). */
   readonly padHaptics: PadHaptics;
+  /** A button held in a grab struggling as mashed, for the humans who chose so (P25). */
+  readonly heldStruggle: HeldStruggle;
   readonly pauseInput: PauseInput;
   readonly fighterViews: readonly [FighterDisplay, FighterDisplay];
   readonly projectileView: ProjectileView;
@@ -312,6 +317,7 @@ export class FightScene extends Phaser.Scene {
       padHaptics: new PadHaptics((player) =>
         this.runtime?.inputs.padOf(player, connectedGamepads()),
       ),
+      heldStruggle: new HeldStruggle(this.sceneData.heldStruggle === true),
       touch,
       touchCover: touch
         ? new TouchCover(this.game.canvas, touch, this.config, GROUND_Y)
@@ -433,6 +439,11 @@ export class FightScene extends Phaser.Scene {
   /** Training: the input history and the frame meter shown or not (the pause's « Données »). */
   setTrainingData(on: boolean): void {
     this.runtime?.trainingView?.show(on);
+  }
+
+  /** « Lutte en prise : tenir » or not, at once (the pause's « Options »). */
+  setHeldStruggle(on: boolean): void {
+    this.runtime?.heldStruggle.set(on);
   }
 
   /** Training: player 2 plays as `dummy` from now on (the pause's « Mannequin »). */
@@ -568,8 +579,13 @@ export class FightScene extends Phaser.Scene {
     const seized = scene.seizesInputs();
     const [player1, player2] = runtime.inputs.read(pads);
     for (let i = 0; i < count; i++) {
-      this.tickInputs[0] = seized ? 0 : player1;
-      this.tickInputs[1] = seized ? 0 : this.cpu ? this.cpuInput(this.cpu) : player2;
+      const { heldStruggle } = runtime;
+      this.tickInputs[0] = seized ? 0 : heldStruggle.apply(0, player1, this.state);
+      this.tickInputs[1] = seized
+        ? 0
+        : this.cpu
+          ? this.cpuInput(this.cpu)
+          : heldStruggle.apply(1, player2, this.state);
       const previous = this.state;
       this.state = step(previous, this.tickInputs, this.config);
       detectEvents(previous, this.state, this.config, this.tickEvents);

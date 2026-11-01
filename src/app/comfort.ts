@@ -155,6 +155,26 @@ export function saveTextSize(size: TextSize): void {
   write(TEXT_KEY, size);
 }
 
+/**
+ * « Lutte en prise » (docs/polish/AUDIT-ET-PLAN.md, P25): mash the buttons out of a hold, or hold
+ * one down (src/input/held-struggle.ts), for those who cannot mash.
+ */
+export type StruggleMode = 'mash' | 'hold';
+export const STRUGGLE_LABELS: Readonly<Record<StruggleMode, { label: string; hint: string }>> = {
+  mash: { label: 'marteler', hint: "Appuyer vite pour se dégager d'une prise" },
+  hold: { label: 'tenir', hint: 'Tenir un bouton : 5 appuis par seconde' },
+};
+const STRUGGLE_KEY = 'nayosbeat.struggle';
+
+/** What was stored, mashing otherwise (or unreadable). */
+export function loadStruggle(): StruggleMode {
+  return read(STRUGGLE_KEY) === 'hold' ? 'hold' : 'mash';
+}
+
+export function saveStruggle(mode: StruggleMode): void {
+  write(STRUGGLE_KEY, mode);
+}
+
 /** Whether the notice of the first launch was read already. */
 export function noticeSeen(): boolean {
   return read(NOTICE_KEY) === 'seen';

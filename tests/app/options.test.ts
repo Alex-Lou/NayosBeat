@@ -60,6 +60,7 @@ function launch(
     setDummy: vi.fn(),
     setBoxes: vi.fn(),
     setTrainingData: vi.fn(),
+    setHeldStruggle: vi.fn(),
   };
   const start = vi.fn();
   const game = {
@@ -234,6 +235,7 @@ describe('the options (docs/flashs.md §4)', () => {
       "Tremblement de l'écran : normal",
       'Mise en scène : complète',
       'Taille du texte : normale',
+      'Lutte en prise : marteler',
       'Touches',
       'Retour',
     ]);
@@ -265,6 +267,27 @@ describe('the options (docs/flashs.md §4)', () => {
     choose('Retour');
     expect(screen().title).toBe('NAYOSBEAT');
     expect(screen().items[screen().selected]).toBe('Options');
+  });
+
+  it('cycles « Lutte en prise » in place, keeps it, and gives it to the fight at once (P25)', () => {
+    const { press, screen, choose, kept, fight } = launch({ 'nayosbeat.notice': 'seen' });
+    press('Enter');
+    choose('Options');
+    choose('Lutte en prise');
+    expect(screen().items[screen().selected]).toBe('Lutte en prise : tenir');
+    expect(kept.get('nayosbeat.struggle')).toBe('hold');
+    expect(fight.setHeldStruggle).toHaveBeenLastCalledWith(true);
+    choose('Lutte en prise');
+    expect(screen().items[screen().selected]).toBe('Lutte en prise : marteler');
+    expect(fight.setHeldStruggle).toHaveBeenLastCalledWith(false);
+    // Kept for the next launch, and given to the fights it starts.
+    const again = launch({ 'nayosbeat.notice': 'seen', 'nayosbeat.struggle': 'hold' });
+    const flow = again.app as unknown as { setup: object; startFight(): void };
+    flow.startFight();
+    expect(again.start).toHaveBeenLastCalledWith(
+      'fight',
+      expect.objectContaining({ heldStruggle: true }),
+    );
   });
 
   it("cycles « Taille du texte » in place, keeps it, and turns the menus' text up (P22)", () => {
