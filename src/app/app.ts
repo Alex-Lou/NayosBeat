@@ -8,6 +8,7 @@ import type { FightScene, FightSceneData } from '../render/fight-scene';
 import { requestLandscapeFullscreen } from '../render/fullscreen';
 import type { RenderMode } from '../render/render-mode';
 import { isTouchDevice } from '../input/touch-controls';
+import { FightCard } from '../ui/fight-card';
 import { FighterSelect } from '../ui/fighter-select';
 import { element, Menu, type MenuFeedback, type MenuItem, type MenuOptions } from '../ui/menu';
 import { TitleScreen } from '../ui/title-screen';
@@ -93,6 +94,8 @@ const POSITIONS: readonly {
  */
 export class App {
   private screen: { dispose(): void } | undefined;
+  /** Who fights whom, over the fight until its first frame (src/ui/fight-card.ts). */
+  private card: FightCard | undefined;
   private setup: MatchSetup = DEFAULT_SETUP;
   /** « Effets de flash » and « Tremblement de l'écran » (src/app/comfort.ts). */
   private comfort: Comfort = loadComfort();
@@ -157,6 +160,8 @@ export class App {
     this.onTitle = false;
     this.screen?.dispose();
     this.screen = screen;
+    this.card?.dispose();
+    this.card = undefined;
   }
 
   private showTitle(): void {
@@ -610,6 +615,14 @@ export class App {
   private startFight(): void {
     this.screen?.dispose();
     this.screen = undefined;
+    // No black screen while the fight loads and builds (L16): the card, then the fight.
+    this.card?.dispose();
+    const [first, second] = this.setup.fighters;
+    const card = new FightCard(
+      this.root,
+      `${templateOf(first).name} contre ${templateOf(second).name}`,
+    );
+    this.card = card;
     this.startedPosition = this.setup.position;
     const data: FightSceneData = {
       setup: this.setup,
@@ -625,6 +638,10 @@ export class App {
       },
       onMatchEnd: (winner) => {
         this.showResults(winner);
+      },
+      onShown: () => {
+        card.leave();
+        if (this.card === card) this.card = undefined;
       },
     };
     // The render loop only runs during fights: menus are plain HTML and need no redraw.

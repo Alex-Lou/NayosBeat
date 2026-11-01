@@ -2,6 +2,7 @@ import type Phaser from 'phaser';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { App } from '../../src/app/app';
 import { DEFAULT_SETUP, matchConfigOf } from '../../src/app/match-setup';
+import { CARD_FADE_MS } from '../../src/ui/fight-card';
 import { viewingFromUrl, type Viewing } from '../../src/app/viewing';
 import type { Sfx } from '../../src/audio/sfx';
 import type { RenderMode } from '../../src/render/render-mode';
@@ -429,6 +430,32 @@ describe('how a fight is watched (docs/art/animation-plan.md §2, V0)', () => {
     const setup = { ...DEFAULT_SETUP, position: 'leftCorner' } as const;
     expect(matchConfigOf({ ...setup, mode: 'training' }).trainingStart).toBe('leftCorner');
     expect(matchConfigOf(setup)).not.toHaveProperty('trainingStart');
+  });
+
+  it('covers the fight with who fights whom until its first frame, never a black screen (L16)', () => {
+    vi.useFakeTimers();
+    const { app, screen, choose, start, root } = training();
+    const cards = () => root.children.filter((child) => child.className.includes('fight-card'));
+    choose('Immobile');
+    // The menu gone, the card up while the fight loads and builds.
+    expect(root.children.map((child) => child.className)).toEqual(['menu fight-card']);
+    expect(root.children[0]?.children[0]?.children[0]?.textContent).toBe('Nayo contre Riff');
+    const shown = () => {
+      (start.mock.lastCall?.[1] as { onShown?: () => void } | undefined)?.onShown?.();
+    };
+    // Its first frame drawn: the card fades, then goes.
+    shown();
+    expect(cards()[0]?.classList.contains('leaving')).toBe(true);
+    vi.advanceTimersByTime(CARD_FADE_MS);
+    expect(cards()).toHaveLength(0);
+    // Started over, another screen first: the card goes at once.
+    app.showPause();
+    choose('Recommencer');
+    expect(cards()).toHaveLength(1);
+    app.showPause();
+    expect(cards()).toHaveLength(0);
+    expect(screen().title).toBe('Pause');
+    vi.useRealTimers();
   });
 
   it('keeps the dummy and the boxes out of the pause of a match', () => {
