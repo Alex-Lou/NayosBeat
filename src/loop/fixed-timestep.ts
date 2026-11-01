@@ -7,6 +7,8 @@ const EPSILON_MS = 1e-6;
  */
 export class FixedTimestep {
   private accumulatorMs = 0;
+  /** Where the accumulator restarts when a backlog is dropped: 0 until `rephase`. */
+  private phaseMs = 0;
 
   /**
    * @param tickMs Duration of one simulation tick.
@@ -23,6 +25,20 @@ export class FixedTimestep {
     }
   }
 
+  /**
+   * Puts the leftover time at `phaseMs`, now and after every dropped backlog. Frames of a whole
+   * number of periods then keep it on a few fixed points, which a well-chosen phase holds away
+   * from the tick boundaries: the timestamps' rounding and jitter can no longer move a tick to the
+   * next frame (src/loop/cadence.ts, `phaseOffsetMs`).
+   */
+  rephase(phaseMs: number): void {
+    if (!(phaseMs >= 0 && phaseMs < this.tickMs)) {
+      throw new RangeError(`phaseMs must be in [0, ${this.tickMs}), got ${phaseMs}`);
+    }
+    this.phaseMs = phaseMs;
+    this.accumulatorMs = phaseMs;
+  }
+
   /** Returns how many ticks to simulate for a frame that lasted `deltaMs`. */
   advance(deltaMs: number): number {
     if (!(deltaMs > 0)) return 0;
@@ -31,7 +47,7 @@ export class FixedTimestep {
     const ticks = Math.floor((this.accumulatorMs + EPSILON_MS) / this.tickMs);
 
     if (ticks > this.maxTicksPerFrame) {
-      this.accumulatorMs = 0;
+      this.accumulatorMs = this.phaseMs;
       return this.maxTicksPerFrame;
     }
 

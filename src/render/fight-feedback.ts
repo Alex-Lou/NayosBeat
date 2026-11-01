@@ -124,7 +124,7 @@ export class FightFeedback {
   private readonly blows: PendingBlow[] = [];
   /** Frames of game time the KO's slow motion has left. */
   private slowMotionFrames = 0;
-  /** Its ticks in whole ticks, when the viewing paces the game (`ticksFor`); anew at each KO. */
+  /** Its ticks in whole ticks (`ticksFor`); anew at each KO. */
   private slowMotionPacer = new TickPacer(KO_SLOW_MOTION.ticks, KO_SLOW_MOTION.frames);
   /** How the round's KO landed, null before it: the Finisher's lands in silence (landingOf). */
   private koFinish: KoFinish | null = null;
@@ -566,9 +566,10 @@ export class FightFeedback {
   }
 
   /**
-   * The ticks to play for `gameFrames` frames of game time, when the viewing paces them (FightScene,
-   * slowed down to watch the animation): one a frame, or 7 every 20 in the KO's slow motion. In
-   * whole ticks, so the slow motion still slows a slowed game, as much as the game's own.
+   * The ticks to play for `gameFrames` frames of game time (FightScene, steps of its visual clock,
+   * fewer when the viewing slows the game down): one a frame, or 7 every 20 in the KO's slow
+   * motion. In whole ticks, so the slow motion holds each tick a whole number of frames, and still
+   * slows a slowed game as much as the game's own.
    */
   ticksFor(gameFrames: number): number {
     return this.slowMotionFrames > 0 ? this.slowMotionPacer.advance(gameFrames) : gameFrames;

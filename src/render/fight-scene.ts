@@ -21,7 +21,7 @@ import { PauseInput } from '../input/pause-input';
 import { rumble, vibrate } from '../input/haptics';
 import { PlayerInputs } from '../input/player-inputs';
 import { isTouchDevice, TouchControls } from '../input/touch-controls';
-import { FixedTimestep } from '../loop/fixed-timestep';
+import { clockGrainMs, FrameClock } from '../loop/cadence';
 import { TickPacer } from '../loop/tick-pacer';
 import type { AnimOptions } from './anim-options';
 import { frontFighter, type ShowContext } from './animation';
@@ -149,17 +149,21 @@ export class FightScene extends Phaser.Scene {
   private sceneData!: FightSceneData;
   private config!: MatchConfig;
   private state!: GameState;
-  private timestep!: FixedTimestep;
   /**
    * Visual effects count steps of 1/60 s (their durations are written in 60 Hz frames), not
    * display frames: a KO lasts as long on a 144 Hz screen as on a 60 Hz one. Unscaled by slow
-   * motion, which only slows the simulation.
+   * motion, which only slows the simulation. The ticks are counted on these steps too, the frame's
+   * delta snapped on the screen's cadence first (loop/cadence.ts): one clock, no stutter. It
+   * outlives the fight, to start the next one on its cadence.
    */
-  private visualClock!: FixedTimestep;
+  private readonly visualClock = new FrameClock(
+    clockGrainMs(() => performance.now()),
+    MAX_TICKS_PER_FRAME,
+  );
   /**
    * Slowed down to watch the animation (Viewing): exactly one frame of game time every so many
-   * frames of the visual clock, in place of the simulation's timestep; the KO's slow motion then
-   * paces its ticks within those (FightFeedback.ticksFor), slowing the slowed game as much.
+   * frames of the visual clock; the KO's slow motion then paces its ticks within those
+   * (FightFeedback.ticksFor), slowing the slowed game as much.
    */
   private pacer: TickPacer | undefined;
   private viewing: Viewing = DEFAULT_VIEWING;
@@ -224,8 +228,7 @@ export class FightScene extends Phaser.Scene {
       const art = this.arts[player];
       if (art) assertValidArt(art, this.config.fighters[player]);
     }
-    this.timestep = new FixedTimestep(1000 / TICK_RATE, MAX_TICKS_PER_FRAME);
-    this.visualClock = new FixedTimestep(1000 / TICK_RATE, MAX_TICKS_PER_FRAME);
+    this.visualClock.restart();
     // A rematch starts over in its intro, with no event to tell the views: they forget it all.
     this.memory.reset();
     this.advantage = NO_ADVANTAGE;
@@ -440,7 +443,7 @@ export class FightScene extends Phaser.Scene {
     this.paused = false;
   }
 
-  override update(_time: number, deltaMs: number): void {
+  override update(time: number, deltaMs: number): void {
     const runtime = this.runtime;
     if (!runtime || this.paused) return;
 
@@ -452,7 +455,7 @@ export class FightScene extends Phaser.Scene {
       return;
     }
 
-    const visualFrames = this.visualClock.advance(deltaMs);
+    const visualFrames = this.visualClock.advance(time, deltaMs);
     // Everything that lights up during this display frame asks the budget at the same moment,
     // at the zoom it shows at (the last frame's: it eases slowly).
     runtime.budget.advance(visualFrames);
@@ -474,17 +477,21 @@ export class FightScene extends Phaser.Scene {
         this.stage(runtime, pads);
       }
     } else {
-      const due = this.pacer
-        ? runtime.feedback.ticksFor(gameFrames)
-        : this.timestep.advance(deltaMs * runtime.feedback.timeScale());
-      ticks = this.playTicks(runtime, due, pads);
+      // A tick a frame of game time, 7 for 20 in the KO's slow motion: whole ticks on the steps.
+      ticks = this.playTicks(runtime, runtime.feedback.ticksFor(gameFrames), pads);
       // Locked on one of them: its scene takes the pace over from the next frame.
       if (scene.isActive()) this.stage(runtime, pads);
     }
     runtime.feedback.update(visualFrames, gameFrames);
 
     runtime.debugOverlay?.record(
-      { frameMs: deltaMs, ticks, tickTimeMs: performance.now() - startMs },
+      {
+        frameMs: deltaMs,
+        steps: visualFrames,
+        cadenceHz: this.visualClock.hz,
+        ticks,
+        tickTimeMs: performance.now() - startMs,
+      },
       this.describeState,
     );
     this.syncViews(runtime, deltaMs / (1000 / TICK_RATE));
