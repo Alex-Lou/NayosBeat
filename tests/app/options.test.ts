@@ -58,13 +58,13 @@ function launch(
     loop: { sleep: vi.fn(), wake: vi.fn() },
     scene: { getScene: () => fight, start, stop: vi.fn() },
   } as unknown as Phaser.Game;
-  let sound = true;
+  let volumes = { effects: 100, music: 100 };
   const sfx = {
-    get isEnabled() {
-      return sound;
+    get volumes() {
+      return volumes;
     },
-    setEnabled: (enabled: boolean) => {
-      sound = enabled;
+    setVolume: (kind: 'effects' | 'music', percent: number) => {
+      volumes = { ...volumes, [kind]: percent };
     },
     unlock: vi.fn(),
     play: vi.fn(),
@@ -161,16 +161,23 @@ describe('the options (docs/flashs.md §4)', () => {
     choose('Options');
     expect(screen().title).toBe('Options');
     expect(screen().items).toEqual([
-      'Son : oui',
+      'Volume des effets : 100 %',
+      'Volume de la musique : 100 %',
       'Effets de flash : normaux',
       "Tremblement de l'écran : normal",
       'Mise en scène : complète',
       'Taille du texte : normale',
       'Retour',
     ]);
-    choose('Son');
-    expect(screen().items[0]).toBe('Son : non');
-    expect(screen().selected).toBe(0);
+    // By steps of 25, back to 100 after silence (P16).
+    for (const percent of [75, 50, 25, 0, 100]) {
+      choose('Volume des effets');
+      expect(screen().items[0]).toBe(`Volume des effets : ${String(percent)} %`);
+      expect(screen().selected).toBe(0);
+    }
+    choose('Volume de la musique');
+    expect(screen().items[1]).toBe('Volume de la musique : 75 %');
+    expect(screen().items[0]).toBe('Volume des effets : 100 %');
   });
 
   it('cycles « Effets de flash » in place, keeps that choice alone, and marks the menus calm', () => {
@@ -178,19 +185,19 @@ describe('the options (docs/flashs.md §4)', () => {
     press('Enter');
     choose('Options');
     choose('Effets de flash');
-    expect(screen().items[1]).toBe('Effets de flash : réduits');
-    expect(screen().selected).toBe(1);
+    expect(screen().items[2]).toBe('Effets de flash : réduits');
+    expect(screen().selected).toBe(2);
     expect(kept.get('nayosbeat.flashes')).toBe('reduced');
     expect(kept.has('nayosbeat.shake')).toBe(false);
     expect(root.classList.contains('calm')).toBe(true);
     choose('Effets de flash');
-    expect(screen().items[1]).toBe('Effets de flash : aucun');
+    expect(screen().items[2]).toBe('Effets de flash : aucun');
     choose('Effets de flash');
-    expect(screen().items[1]).toBe('Effets de flash : normaux');
+    expect(screen().items[2]).toBe('Effets de flash : normaux');
     expect(root.classList.contains('calm')).toBe(false);
     choose('Tremblement');
     choose('Tremblement');
-    expect(screen().items[2]).toBe("Tremblement de l'écran : aucun");
+    expect(screen().items[3]).toBe("Tremblement de l'écran : aucun");
     expect(root.classList.contains('still')).toBe(true);
     // Back to the main menu, on the options.
     choose('Retour');
@@ -219,16 +226,16 @@ describe('the options (docs/flashs.md §4)', () => {
     press('Enter');
     choose('Options');
     choose('Mise en scène');
-    expect(screen().items[3]).toBe('Mise en scène : courte');
-    expect(screen().selected).toBe(3);
+    expect(screen().items[4]).toBe('Mise en scène : courte');
+    expect(screen().selected).toBe(4);
     expect(kept.get('nayosbeat.staging')).toBe('short');
     expect(kept.has('nayosbeat.flashes')).toBe(false);
     choose('Mise en scène');
-    expect(screen().items[3]).toBe('Mise en scène : complète');
+    expect(screen().items[4]).toBe('Mise en scène : complète');
     const again = launch({ 'nayosbeat.notice': 'seen', 'nayosbeat.staging': 'short' });
     again.press('Enter');
     again.choose('Options');
-    expect(again.screen().items[3]).toBe('Mise en scène : courte');
+    expect(again.screen().items[4]).toBe('Mise en scène : courte');
   });
 
   it('opens from the pause, applies at once to the fight, and goes back to the pause', () => {
@@ -253,7 +260,7 @@ describe('the options (docs/flashs.md §4)', () => {
     expect(root.classList.contains('still')).toBe(true);
     press('Enter');
     choose('Options');
-    expect(screen().items.slice(1, 3)).toEqual([
+    expect(screen().items.slice(2, 4)).toEqual([
       'Effets de flash : réduits',
       "Tremblement de l'écran : aucun",
     ]);

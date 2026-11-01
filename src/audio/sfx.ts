@@ -34,8 +34,56 @@ export type SoundName =
   | 'menuConfirm'
   | 'menuBack';
 
-const STORAGE_KEY = 'nayosbeat.sound';
 const MASTER_VOLUME = 0.5;
+
+/**
+ * The volumes of « Options » (docs/polish/AUDIT-ET-PLAN.md, P16), in percent: the effects (every
+ * sound of the fight and the menus) and the music, apart.
+ */
+export interface Volumes {
+  readonly effects: number;
+  readonly music: number;
+}
+/** The steps the volumes take, in the order they cycle. */
+export const VOLUME_STEPS = [100, 75, 50, 25, 0] as const;
+/** Where they are kept, versioned (a format the page's storage keeps is a contract). */
+const AUDIO_KEY = 'nayosbeat.audio.v1';
+/** Before the volumes: the sound on or off, read once to carry the choice over. */
+const LEGACY_KEY = 'nayosbeat.sound';
+/** The music, when there is some, under the effects (P13). */
+const MUSIC_DB = -14;
+
+/** The volume after `percent`, as the option cycles. */
+export function nextVolume(percent: number): number {
+  const index = VOLUME_STEPS.findIndex((step) => step === percent);
+  return VOLUME_STEPS[(index + 1) % VOLUME_STEPS.length] ?? 100;
+}
+
+/**
+ * The volumes kept (`stored`, JSON), read with tolerance: a value off the steps goes to the
+ * nearest, a missing or unreadable one to 100. Never kept yet: the sound's old choice, off
+ * becoming 0. Pure.
+ */
+export function volumesOf(stored: string | null, legacy: string | null): Volumes {
+  const step = (value: unknown): number =>
+    typeof value === 'number' && Number.isFinite(value)
+      ? VOLUME_STEPS.reduce((best, candidate) =>
+          Math.abs(candidate - value) < Math.abs(best - value) ? candidate : best,
+        )
+      : 100;
+  if (stored === null) return { effects: legacy === 'off' ? 0 : 100, music: 100 };
+  try {
+    const parsed = JSON.parse(stored) as Partial<Record<keyof Volumes, unknown>> | null;
+    return { effects: step(parsed?.effects), music: step(parsed?.music) };
+  } catch {
+    return { effects: 100, music: 100 };
+  }
+}
+
+/** A volume in percent as a gain: squared, closer to what the ear hears than a straight line. */
+function gainOf(percent: number): number {
+  return (percent / 100) ** 2;
+}
 
 /** The sounds of the menus: they play on the master, past the `fight` bus. */
 const MENU_SOUNDS: ReadonlySet<SoundName> = new Set(['menuMove', 'menuConfirm', 'menuBack']);
@@ -110,7 +158,7 @@ interface Voice {
   /** When its last layer ends, in the context's time. */
   readonly end: number;
 }
-/** Where a sound plays: through the `fight` bus, or straight on the master. */
+/** Where a sound plays: through the `fight` bus, or past it, straight on the effects' volume. */
 export type Bus = 'fight' | 'master';
 /** The `fight` bus at rest: whole, its low-pass open (above anything a sound here plays). */
 export const FIGHT_BUS_OPEN = { gain: 1, cutoff: 20000 } as const;
@@ -263,14 +311,23 @@ interface FightBus {
 export class Sfx {
   private context: AudioContext | undefined;
   private master: GainNode | undefined;
+  /** The volume of the effects, before the master: every sound goes through it. */
+  private effects: GainNode | undefined;
+  /** The music's bus, before the master: where the music will play (none yet). */
+  private music: GainNode | undefined;
   private fightBus: FightBus | undefined;
   private noiseBuffer: AudioBuffer | undefined;
-  private enabled = loadEnabled();
+  private levels: Volumes = loadVolumes();
   /** The sounds playing, oldest first. */
   private voices: Voice[] = [];
 
-  get isEnabled(): boolean {
-    return this.enabled;
+  get volumes(): Volumes {
+    return this.levels;
+  }
+
+  /** Where the music plays, once the context is up: under the effects, its volume applied. */
+  get musicBus(): AudioNode | undefined {
+    return this.music;
   }
 
   /** Creates or resumes the audio context. Call from a user gesture (click, key, touch). */
@@ -283,10 +340,15 @@ export class Sfx {
       const clipper = this.context.createWaveShaper();
       clipper.curve = softClipCurve();
       this.master.connect(clipper).connect(this.context.destination);
+      this.effects = this.context.createGain();
+      this.effects.connect(this.master);
+      this.music = this.context.createGain();
+      this.music.connect(this.master);
+      this.applyVolumes();
       const gain = this.context.createGain();
       const filter = this.context.createBiquadFilter();
       filter.type = 'lowpass';
-      gain.connect(filter).connect(this.master);
+      gain.connect(filter).connect(this.effects);
       this.fightBus = { gain, filter, shown: { gain: Number.NaN, cutoff: Number.NaN } };
       this.setFightBus(FIGHT_BUS_OPEN.gain, FIGHT_BUS_OPEN.cutoff);
       this.noiseBuffer = createNoise(this.context);
@@ -299,9 +361,19 @@ export class Sfx {
     }
   }
 
-  setEnabled(enabled: boolean): void {
-    this.enabled = enabled;
-    saveEnabled(enabled);
+  /** One of the volumes, in percent (`VOLUME_STEPS`): kept, and heard at once. */
+  setVolume(kind: keyof Volumes, percent: number): void {
+    this.levels = { ...this.levels, [kind]: percent };
+    saveVolumes(this.levels);
+    this.applyVolumes();
+  }
+
+  private applyVolumes(): void {
+    const { context, effects, music } = this;
+    if (!context || !effects || !music) return;
+    const now = context.currentTime;
+    effects.gain.setValueAtTime(gainOf(this.levels.effects), now);
+    music.gain.setValueAtTime(gainOf(this.levels.music) * 10 ** (MUSIC_DB / 20), now);
   }
 
   /**
@@ -338,15 +410,15 @@ export class Sfx {
    * the Finisher's scene plays under the bus it silenced).
    */
   play(name: SoundName, pitch = 1, bus: Bus = MENU_SOUNDS.has(name) ? 'master' : 'fight'): void {
-    const { context, master } = this;
-    if (!this.enabled || !context || !master || context.state !== 'running') return;
+    const { context, effects } = this;
+    if (this.levels.effects === 0 || !context || !effects || context.state !== 'running') return;
     const now = context.currentTime;
     const pool = MENU_SOUNDS.has(name) ? 'menu' : 'fight';
     const priority = PRIORITIES[name];
     if (!this.makeRoom(pool, priority, now)) return;
     // Its own gain, whole: the voice can be cut without touching its layers.
     const gain = context.createGain();
-    gain.connect(bus === 'fight' ? (this.fightBus?.gain ?? master) : master);
+    gain.connect(bus === 'fight' ? (this.fightBus?.gain ?? effects) : effects);
     const sound = SOUNDS[name];
     const sources: AudioScheduledSourceNode[] = [];
     let end = now;
@@ -457,17 +529,17 @@ function createNoise(context: AudioContext): AudioBuffer {
 }
 
 /** The preference is a convenience: storage may be unavailable (private mode), that is fine. */
-function loadEnabled(): boolean {
+function loadVolumes(): Volumes {
   try {
-    return localStorage.getItem(STORAGE_KEY) !== 'off';
+    return volumesOf(localStorage.getItem(AUDIO_KEY), localStorage.getItem(LEGACY_KEY));
   } catch {
-    return true;
+    return { effects: 100, music: 100 };
   }
 }
 
-function saveEnabled(enabled: boolean): void {
+function saveVolumes(volumes: Volumes): void {
   try {
-    localStorage.setItem(STORAGE_KEY, enabled ? 'on' : 'off');
+    localStorage.setItem(AUDIO_KEY, JSON.stringify(volumes));
   } catch {
     // Not persisted: the setting still applies for this session.
   }

@@ -2,11 +2,13 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   FIGHT_BUS_OPEN,
   KNEE,
+  nextVolume,
   PRIORITIES,
   Sfx,
   softClip,
   soundOf,
   VOICES,
+  volumesOf,
   type SoundName,
 } from '../../src/audio/sfx';
 
@@ -129,8 +131,13 @@ function fakeAudio() {
     const master = nodes.find((node) => node.to.includes(shaper as FakeNode));
     const filter = nodes.find((node) => node.kind === 'filter');
     const bus = nodes.find((node) => node.to.includes(filter as FakeNode));
-    if (!shaper || !master || !filter || !bus) throw new Error('Graph missing');
-    return { sfx, context, master, shaper, bus, filter };
+    const effects = filter?.to[0];
+    if (!shaper || !master || !filter || !bus || !effects) throw new Error('Graph missing');
+    const music = nodes.find(
+      (node) => node.kind === 'gain' && node !== effects && node.to[0] === master,
+    );
+    if (!music) throw new Error('No music bus');
+    return { sfx, context, master, shaper, effects, music, bus, filter };
   };
   /**
    * The voice gains of the sounds played from node `from` on: their own gains, which feed a node
@@ -150,21 +157,22 @@ describe("the fight's bus (docs/finisher.md §1.14)", () => {
     vi.unstubAllGlobals();
   });
 
-  it('plays the fight through its bus, a gain then a low-pass, and the menus on the master', () => {
+  it('plays the fight through its bus, a gain then a low-pass, and the menus past it', () => {
     const { nodes, unlocked, voicesFrom } = fakeAudio();
-    const { sfx, master, bus, filter } = unlocked();
+    const { sfx, master, effects, bus, filter } = unlocked();
     expect(bus.to).toEqual([filter]);
-    expect(filter.to).toEqual([master]);
+    expect(filter.to).toEqual([effects]);
+    expect(effects.to).toEqual([master]);
     const fight = nodes.length;
     sfx.play('heavyHit');
     expect(voicesFrom(fight).map((voice) => voice.to)).toEqual([[bus]]);
     const menu = nodes.length;
     sfx.play('menuMove');
-    expect(voicesFrom(menu).map((voice) => voice.to)).toEqual([[master]]);
-    // A sound the scene plays under the bus it silenced: straight on the master.
+    expect(voicesFrom(menu).map((voice) => voice.to)).toEqual([[effects]]);
+    // A sound the scene plays under the bus it silenced: past it, on the effects' volume.
     const under = nodes.length;
     sfx.play('block', 1, 'master');
-    expect(voicesFrom(under).map((voice) => voice.to)).toEqual([[master]]);
+    expect(voicesFrom(under).map((voice) => voice.to)).toEqual([[effects]]);
   });
 
   it('is set frame by frame, schedules nothing for a frame that changes nothing, and comes back whole', () => {
@@ -266,6 +274,53 @@ describe('the voices, bounded (docs/polish/AUDIT-ET-PLAN.md, P13)', () => {
     sfx.play('swing');
     expect(voicesFrom(later)).toHaveLength(1);
     expect(nodes.every((node) => node.gain.targets.length === 0)).toBe(true);
+  });
+});
+
+describe('the volumes of the effects and the music (docs/polish/AUDIT-ET-PLAN.md, P16)', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('reads them with tolerance, and carries the old sound off over as silence', () => {
+    expect(volumesOf(null, null)).toEqual({ effects: 100, music: 100 });
+    expect(volumesOf(null, 'off')).toEqual({ effects: 0, music: 100 });
+    expect(volumesOf(null, 'on')).toEqual({ effects: 100, music: 100 });
+    expect(volumesOf('{"effects":50,"music":25}', 'off')).toEqual({ effects: 50, music: 25 });
+    // Off the steps: the nearest one; missing or unreadable: 100.
+    expect(volumesOf('{"effects":60,"music":-5}', null)).toEqual({ effects: 50, music: 0 });
+    expect(volumesOf('{"effects":"loud"}', null)).toEqual({ effects: 100, music: 100 });
+    expect(volumesOf('not json', null)).toEqual({ effects: 100, music: 100 });
+  });
+
+  it('cycles by steps of 25, from 100 down to silence and back', () => {
+    expect([100, 75, 50, 25, 0].map(nextVolume)).toEqual([75, 50, 25, 0, 100]);
+  });
+
+  it('keeps them versioned, and hears them at once: squared, the music 14 dB under', () => {
+    const { unlocked } = fakeAudio();
+    const kept = new Map<string, string>();
+    const { sfx, effects, music } = unlocked();
+    vi.stubGlobal('localStorage', {
+      getItem: (key: string) => kept.get(key) ?? null,
+      setItem: (key: string, value: string) => kept.set(key, value),
+    });
+    expect(effects.gain.value).toBe(1);
+    sfx.setVolume('effects', 50);
+    expect(effects.gain.value).toBe(0.25);
+    sfx.setVolume('music', 100);
+    expect(20 * Math.log10(music.gain.value)).toBeCloseTo(-14, 9);
+    expect(JSON.parse(kept.get('nayosbeat.audio.v1') ?? '')).toEqual({ effects: 50, music: 100 });
+  });
+
+  it('plays nothing with the effects at 0, as the sound off did', () => {
+    const { nodes, unlocked, voicesFrom } = fakeAudio();
+    const { sfx } = unlocked();
+    sfx.setVolume('effects', 0);
+    const from = nodes.length;
+    sfx.play('heavyHit');
+    sfx.play('menuMove');
+    expect(voicesFrom(from)).toHaveLength(0);
   });
 });
 

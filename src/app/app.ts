@@ -1,6 +1,6 @@
 import type Phaser from 'phaser';
 import type { CpuLevel } from '../ai/cpu';
-import type { Sfx } from '../audio/sfx';
+import { nextVolume, type Sfx } from '../audio/sfx';
 import type { TrainingGauge, TrainingStart } from '../core/config';
 import { ROSTER, templateOf, type FighterId } from '../data/roster';
 import { ANIM_OPTIONS, LEGACY_ANIM } from '../render/anim-options';
@@ -274,8 +274,8 @@ export class App {
   }
 
   /**
-   * The « Options » screen: the sound, « Effets de flash », « Tremblement de l'écran », « Mise en
-   * scène », « Taille du texte », each cycled in place (the screen comes back with it still selected), kept at once
+   * The « Options » screen: the volumes of the effects and of the music (P16), « Effets de
+   * flash », « Tremblement de l'écran », « Mise en scène », « Taille du texte », each cycled in place (the screen comes back with it still selected), kept at once
    * and applied at once, to a fight under the pause menu too (`paused`). `back`: where « Retour »
    * goes.
    */
@@ -285,11 +285,21 @@ export class App {
     const again = (item: MenuItem) => {
       this.showOptions(paused, back, items.indexOf(item));
     };
-    const sound: MenuItem = {
-      label: `Son : ${this.sfx.isEnabled ? 'oui' : 'non'}`,
+    const { volumes } = this.sfx;
+    const effects: MenuItem = {
+      label: `Volume des effets : ${volumes.effects} %`,
+      hint: 'Les coups, les annonces et les menus',
       onSelect: () => {
-        this.sfx.setEnabled(!this.sfx.isEnabled);
-        again(sound);
+        this.sfx.setVolume('effects', nextVolume(volumes.effects));
+        again(effects);
+      },
+    };
+    const music: MenuItem = {
+      label: `Volume de la musique : ${volumes.music} %`,
+      hint: "Pas encore de musique : le réglage l'attend",
+      onSelect: () => {
+        this.sfx.setVolume('music', nextVolume(volumes.music));
+        again(music);
       },
     };
     const flash: MenuItem = {
@@ -326,7 +336,7 @@ export class App {
         again(text);
       },
     };
-    items.push(sound, flash, tremble, scene, text, { label: 'Retour', onSelect: back });
+    items.push(effects, music, flash, tremble, scene, text, { label: 'Retour', onSelect: back });
     this.showMenu({ title: 'Options', overlay: paused, items, onBack: back, initialIndex });
   }
 
