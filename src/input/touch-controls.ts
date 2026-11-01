@@ -32,6 +32,8 @@ export class TouchControls {
   private readonly root: HTMLDivElement;
   private readonly stickBase: HTMLDivElement;
   private readonly stickKnob: HTMLDivElement;
+  /** A faint ring where the left thumb goes, until it first touches the stick's half. */
+  private stickGhost: HTMLDivElement | undefined;
   private readonly buttonZone: HTMLDivElement;
   private readonly buttons: readonly HTMLDivElement[];
 
@@ -70,6 +72,9 @@ export class TouchControls {
     this.stickBase = createDiv('touch-stick-base');
     this.stickKnob = createDiv('touch-stick-knob');
     this.stickBase.appendChild(this.stickKnob);
+    // The stick floats under the thumb, invisible at rest: this ring says where it lives.
+    this.stickGhost = createDiv('touch-stick-ghost');
+    stickZone.appendChild(this.stickGhost);
     this.buttonZone = createDiv('touch-button-zone');
     this.buttons = TOUCH_BUTTONS.map((spec) => {
       const button = createDiv(`touch-button ${spec.className}`);
@@ -193,6 +198,8 @@ export class TouchControls {
     this.stickPointer = event.pointerId;
     this.stickOrigin.x = event.clientX;
     this.stickOrigin.y = event.clientY;
+    this.stickGhost?.remove();
+    this.stickGhost = undefined;
     this.placeBase();
     this.stickBase.classList.add('active');
     this.moveKnob(0, 0);

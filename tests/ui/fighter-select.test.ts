@@ -312,6 +312,17 @@ describe('FighterSelect', () => {
     expect(feedback).toHaveBeenLastCalledWith('back');
   });
 
+  it('goes back with « Retour » on a touch screen, and tells what to touch', () => {
+    const onBack = vi.fn();
+    const { page, feedback } = setup({ onBack });
+    const [root] = page.body.children;
+    if (!root) throw new Error('No select screen');
+    only(root, 'menu-back').dispatchEvent(new Event('click'));
+    expect(onBack).toHaveBeenCalledOnce();
+    expect(feedback).toHaveBeenLastCalledWith('back');
+    expect(only(root, 'menu-help-touch').textContent).toBe('Touche un combattant');
+  });
+
   it('stays on Escape without a way back', () => {
     const { page, feedback } = setup();
     press(page, 'Escape');

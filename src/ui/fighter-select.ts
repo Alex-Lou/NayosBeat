@@ -1,5 +1,7 @@
 import {
+  backButton,
   element,
+  helpLine,
   MENU_KEYS,
   MENU_PAD_ACTIONS,
   readMenuPad,
@@ -120,8 +122,9 @@ export class FighterSelect<Id extends string> {
     panel.appendChild(body);
     // "Echap" without accent: the pixel font has no capital É.
     panel.appendChild(
-      element('p', 'menu-help', 'Flèches choisir · Entrée / A valider · Echap / B retour'),
+      helpLine('Flèches choisir · Entrée / A valider · Echap / B retour', 'Touche un combattant'),
     );
+    if (options.onBack) this.root.appendChild(backButton(options.onBack, options.feedback));
     this.root.appendChild(panel);
     parent.appendChild(this.root);
 

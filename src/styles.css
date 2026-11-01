@@ -65,6 +65,20 @@ body {
 .touch-stick-base.active {
   visibility: visible;
 }
+/* Where the stick lives, until the left thumb first touches it (src/input/touch-controls.ts). */
+.touch-stick-ghost {
+  position: absolute;
+  left: calc(110px + env(safe-area-inset-left, 0px));
+  bottom: calc(90px + env(safe-area-inset-bottom, 0px));
+  width: 96px;
+  height: 96px;
+  margin: 0 0 -48px -48px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  border: 2px solid rgba(255, 255, 255, 0.18);
+  box-sizing: border-box;
+  pointer-events: none;
+}
 .touch-stick-knob {
   position: absolute;
   top: 50%;
@@ -188,9 +202,21 @@ body {
   border-radius: 4px;
   cursor: pointer;
 }
+/* A target of 48 x 48 px (Android's 48 dp, Apple's 44 pt) around the small button: it grows
+   inward, the screen's corner would cut it on the outer sides. */
+.pause-button::before {
+  content: '';
+  position: absolute;
+  inset: -4px -4px -20px -12px;
+}
 @media (pointer: coarse) {
   .pause-button {
     display: block;
+  }
+  /* The canvas on the left: the free strip of a wide phone goes under the right-hand buttons,
+     instead of half of it on each side while the buttons cover the stage (docs/polish/AUDIT-ET-PLAN.md, L35). */
+  #game {
+    justify-content: flex-start;
   }
 }
 .menu {
@@ -282,6 +308,38 @@ body {
   margin: 0;
   font-size: 8px;
   color: #778;
+}
+/* The keys for a keyboard or a gamepad, what to touch on a touch screen (src/ui/menu.ts). */
+.menu-help-touch,
+.menu-back {
+  display: none;
+}
+@media (pointer: coarse) {
+  .menu-help-keys {
+    display: none;
+  }
+  .menu-help-touch {
+    display: inline;
+  }
+  /* A touch screen has no Escape key nor B button: the way back is this corner button. */
+  .menu-back {
+    display: block;
+    position: fixed;
+    top: calc(8px + env(safe-area-inset-top, 0px));
+    left: calc(8px + env(safe-area-inset-left, 0px));
+    z-index: 6;
+    min-width: 48px;
+    height: 48px;
+    padding: 0 12px;
+    font:
+      10px 'Press Start 2P',
+      monospace;
+    color: #dde;
+    background: #22223a;
+    border: 2px solid #3a3a5c;
+    border-radius: 4px;
+    cursor: pointer;
+  }
 }
 /* The notice of the first launch: a paragraph to read, on the grid of 8. */
 .menu-notice {

@@ -263,6 +263,14 @@ describe('TouchControls', () => {
     expect(controls.read()).toBe(Input.Left | Input.Dash);
   });
 
+  it('shows where the stick lives until the left thumb first touches it', () => {
+    const { stick } = setup();
+    const ghosts = () => stick.children.filter((child) => child.className === 'touch-stick-ghost');
+    expect(ghosts()).toHaveLength(1);
+    stick.dispatchEvent(pointer('pointerdown', 7, 100, 200));
+    expect(ghosts()).toHaveLength(0);
+  });
+
   it('reads a lifted thumb as neutral, then the new touch', () => {
     const { controls, stick } = setup();
     stick.dispatchEvent(pointer('pointerdown', 7, 100, 200));

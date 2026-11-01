@@ -105,8 +105,9 @@ export class Menu {
     panel.appendChild(list);
     // "Echap" without accent: the pixel font has no capital É.
     panel.appendChild(
-      element('p', 'menu-help', '↑↓ choisir · Entrée / A valider · Echap / B retour'),
+      helpLine('↑↓ choisir · Entrée / A valider · Echap / B retour', 'Touche un choix'),
     );
+    if (options.onBack) this.root.appendChild(backButton(options.onBack, options.feedback));
     this.root.appendChild(panel);
     parent.appendChild(this.root);
 
@@ -179,6 +180,34 @@ export class Menu {
   private activate(index: number): void {
     this.options.items[index]?.onSelect();
   }
+}
+
+/**
+ * The bottom line of a screen of choices: its keys for a keyboard or a gamepad, what to touch
+ * for a touch screen, which has neither. styles.css shows one or the other by the main pointer.
+ */
+export function helpLine(keys: string, touch: string): HTMLParagraphElement {
+  const help = element('p', 'menu-help');
+  help.append(element('span', 'menu-help-keys', keys), element('span', 'menu-help-touch', touch));
+  return help;
+}
+
+/**
+ * « Retour » in the top-left corner, for a touch screen, which has no Escape key nor B button
+ * (styles.css shows it there only). It does what Escape does.
+ */
+export function backButton(
+  onBack: () => void,
+  feedback?: (action: MenuFeedback) => void,
+): HTMLButtonElement {
+  const button = element('button', 'menu-back', '‹ Retour');
+  button.type = 'button';
+  button.tabIndex = -1;
+  button.addEventListener('click', () => {
+    feedback?.('back');
+    onBack();
+  });
+  return button;
 }
 
 /** Menu-relevant buttons held on any gamepad (standard mapping), as a bitmask. */
