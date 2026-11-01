@@ -12,6 +12,7 @@ const BLOW = {
   tier: 0,
   pulse: false,
   freeze: 0,
+  aim: 0,
 };
 
 const hit = (heavy: boolean, held = false): FightEvent => ({ type: 'hit', ...BLOW, heavy, held });
@@ -29,7 +30,7 @@ describe("each player's gamepad (docs/polish/AUDIT-ET-PLAN.md, P23)", () => {
   });
 
   it('brushes the guard, and shakes who is grabbed or thrown, never who does it', () => {
-    const block: FightEvent = { type: 'block', ...BY_PLAYER_1 };
+    const block: FightEvent = { type: 'block', heavy: false, ...BY_PLAYER_1 };
     const grab: FightEvent = { type: 'grab', ...BY_PLAYER_1, punish: false, freeze: 0 };
     const thrown: FightEvent = { type: 'throw', ...BY_PLAYER_1, damage: 100 };
     expect(rumbleFor(block, 1)).toBe(RUMBLES.guard);

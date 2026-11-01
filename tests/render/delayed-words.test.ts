@@ -247,6 +247,7 @@ describe('what waits shows on the frame the flash budget keeps it for (docs/flas
       tier: 0,
       pulse: false,
       freeze: 10,
+      aim: 0,
     }) as const;
   const contre = (by: 0 | 1): FightEvent => ({
     type: 'hit',

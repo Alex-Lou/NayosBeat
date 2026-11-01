@@ -161,6 +161,7 @@ function blow(type: 'hit' | 'ko', low: boolean, heavy = false): FightEvent {
     tier: 0,
     pulse: false,
     freeze: 10,
+    aim: 0,
   } as const;
   return type === 'hit' ? { type, heavy, ...impact } : { type, finish: 'plain', ...impact };
 }
@@ -178,6 +179,71 @@ describe('the weight of a blow on the screen (docs/polish/AUDIT-ET-PLAN.md, P2)'
     feedback().react(blow('hit', false, true));
     expect(shown.jolt).toHaveBeenCalledWith(TRAUMA.heavy, 1);
     expect(shown.lightJolt).not.toHaveBeenCalled();
+  });
+});
+
+describe('the weight of a guard (docs/polish/AUDIT-ET-PLAN.md, P3)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  /** A blow of `by` blocked, `heavy` or not. */
+  const block = (heavy: boolean, by: 0 | 1 = 0): FightEvent => ({
+    type: 'block',
+    heavy,
+    x: px(200),
+    y: px(50),
+    away: -1,
+    by,
+    low: false,
+  });
+
+  it('plays a bigger spark and jolts the picture for a heavy blow blocked, nothing more for a light one', () => {
+    feedback().react(block(true));
+    expect(shown.burst).toHaveBeenCalledWith(NAYO_STYLE, 'blockHeavy', px(200), px(50), -1);
+    expect(shown.lightJolt).toHaveBeenCalledWith(-1);
+    expect(shown.jolt).not.toHaveBeenCalled();
+    vi.clearAllMocks();
+    feedback().react(block(false));
+    expect(shown.burst).toHaveBeenCalledWith(NAYO_STYLE, 'block', px(200), px(50), -1);
+    expect(shown.lightJolt).not.toHaveBeenCalled();
+  });
+
+  it("vibrates the phone of who guards a heavy blow, 8 ms, never the attacker's", () => {
+    const vibrate = vi.fn();
+    const feedback = new FightFeedback(
+      {} as Phaser.Scene,
+      400,
+      SILENT,
+      [NAYO_STYLE, NAYO_STYLE],
+      stageOf(),
+      vibrate,
+    );
+    feedback.react(block(true, 1), 0);
+    expect(vibrate).toHaveBeenCalledWith(8);
+    vibrate.mockClear();
+    feedback.react(block(true), 0);
+    feedback.react(block(false, 1), 0);
+    expect(vibrate).not.toHaveBeenCalled();
+  });
+});
+
+describe('a heavy blow that touched nothing (docs/polish/AUDIT-ET-PLAN.md, P4)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('ripples at the end of its reach, silent, if it makes no flash', () => {
+    const whiff = { type: 'whiff', by: 0, x: px(240), y: px(52), toward: 1 } as const;
+    feedback().react(whiff);
+    expect(shown.burst).toHaveBeenCalledWith(NAYO_STYLE, 'whiff', px(240), px(52), 1);
+    expect(shown.word).not.toHaveBeenCalled();
+    expect(played).not.toHaveBeenCalled();
+    vi.clearAllMocks();
+    const full = new Fight(stageOf('off'));
+    full.stage.budget.show(470);
+    full.react(whiff);
+    expect(shown.burst).not.toHaveBeenCalled();
   });
 });
 
@@ -241,7 +307,7 @@ describe('the spark of a blow (docs/combat-v2.md §9.3)', () => {
 
   it('bursts on a hit higher up, without the grazing spark', () => {
     feedback().react(blow('hit', false, true));
-    expect(shown.burst).toHaveBeenCalledWith(NAYO_STYLE, 'heavy', px(200), px(50), 1, 1);
+    expect(shown.burst).toHaveBeenCalledWith(NAYO_STYLE, 'heavy', px(200), px(50), 1, 1, 0);
     expect(shown.graze).not.toHaveBeenCalled();
     expect(shown.kick).not.toHaveBeenCalled();
     expect(shown.bleed).toHaveBeenCalledOnce();
@@ -249,7 +315,7 @@ describe('the spark of a blow (docs/combat-v2.md §9.3)', () => {
 
   it('keeps the burst of a low KO, the final blow, with the grazing spark and no blood', () => {
     feedback().react(blow('ko', true));
-    expect(shown.burst).toHaveBeenCalledWith(NAYO_STYLE, 'ko', px(200), px(9), 1, 1);
+    expect(shown.burst).toHaveBeenCalledWith(NAYO_STYLE, 'ko', px(200), px(9), 1, 1, 0);
     expect(shown.graze).toHaveBeenCalledWith(NAYO_STYLE, 'heavy', px(200), px(9), 1);
     expect(shown.bleed).not.toHaveBeenCalled();
   });
@@ -276,9 +342,10 @@ describe('a counter-hit (docs/combat-v2.md §7.4)', () => {
         tier: 0,
         pulse: false,
         freeze: 10,
+        aim: 0,
       };
       feedback().react(hit);
-      expect(shown.burst).toHaveBeenLastCalledWith(NAYO_STYLE, 'heavy', px(200), px(50), 1, 1);
+      expect(shown.burst).toHaveBeenLastCalledWith(NAYO_STYLE, 'heavy', px(200), px(50), 1, 1, 0);
       expect(shown.stamp).toHaveBeenLastCalledWith(
         STAMP_TEXTS[counter],
         hit,
@@ -439,6 +506,7 @@ describe('a KO that blows a Boost gauge up (docs/combos-v3.md §1.8.6)', () => {
     tier: 3,
     pulse: false,
     freeze: 10,
+    aim: 0,
   });
   const withHaptics = (vibrate: () => void, rumble: () => void) => {
     const haptic = new FightFeedback(
@@ -497,6 +565,7 @@ describe('the veils and the shake, never a flash over the whole screen (docs/fla
     tier: 3,
     pulse: false,
     freeze: 10,
+    aim: 0,
   });
 
   it('veils a KO by how it fell: nothing alone, a vignette for a combo, the éclat for an Ultime', () => {
@@ -536,11 +605,11 @@ describe('the veils and the shake, never a flash over the whole screen (docs/fla
   it("plays a super's blows before its last smaller: their spark, a small BOUM", () => {
     const hit = blow('hit', false, true);
     feedback().react({ ...hit, pulse: true } as FightEvent);
-    expect(shown.burst).toHaveBeenCalledWith(NAYO_STYLE, 'pulse', px(200), px(50), 1, 1);
+    expect(shown.burst).toHaveBeenCalledWith(NAYO_STYLE, 'pulse', px(200), px(50), 1, 1, 0);
     expect(shown.word).toHaveBeenCalledWith('pulse', expect.anything(), 0, 0, false);
     expect(shown.jolt).toHaveBeenCalledWith(TRAUMA.heavy, 1);
     feedback().react(hit);
-    expect(shown.burst).toHaveBeenLastCalledWith(NAYO_STYLE, 'heavy', px(200), px(50), 1, 1);
+    expect(shown.burst).toHaveBeenLastCalledWith(NAYO_STYLE, 'heavy', px(200), px(50), 1, 1, 0);
     expect(shown.word).toHaveBeenLastCalledWith('heavy', expect.anything(), 0, 0, false);
   });
 });
@@ -655,13 +724,21 @@ describe('the flash budget, asked once a tick (docs/flashs.md §4)', () => {
     fight.react({ type: 'boost', ...at });
     // Too soon after a flash: calm, at once, since that makes none.
     expect(shown.stamp).toHaveBeenLastCalledWith('REMIX !', expect.anything(), 0, 0, true, {});
+    const block = { type: 'block', heavy: false, away: 1, low: false, ...at } as const;
     const spent = new Fight(stageOf('off'));
     spent.stage.budget.show(450);
-    spent.react({ type: 'block', away: 1, low: false, ...at });
-    expect(shown.burst).not.toHaveBeenCalled();
+    spent.react(block);
+    // Refused: its two streaks instead (P3), which light next to nothing.
+    expect(shown.burst).toHaveBeenCalledOnce();
+    expect(shown.burst).toHaveBeenCalledWith(NAYO_STYLE, 'blockMuted', px(200), 0, 1);
     spent.wait(3);
-    spent.react({ type: 'block', away: 1, low: false, ...at });
-    expect(shown.burst).toHaveBeenCalledWith(NAYO_STYLE, 'block', px(200), 0, 1);
+    spent.react(block);
+    expect(shown.burst).toHaveBeenLastCalledWith(NAYO_STYLE, 'block', px(200), 0, 1);
+    // No room even for them: nothing.
+    const full = new Fight(stageOf('off'));
+    full.stage.budget.show(470);
+    full.react(block);
+    expect(shown.burst).toHaveBeenCalledTimes(2);
   });
 
   it("lets the super's halo flash with the flashes normal, if the budget lets it", () => {
@@ -733,6 +810,7 @@ describe("the Finisher's blows, its scene's (docs/finisher.md §1.14, §5.2)", (
       px(50),
       1,
       CLOSE_UP_EFFECTS,
+      0,
     );
     expect(shown.bleed).not.toHaveBeenCalled();
     expect(shown.veil).not.toHaveBeenCalled();
@@ -756,6 +834,7 @@ describe("the Finisher's blows, its scene's (docs/finisher.md §1.14, §5.2)", (
       px(50),
       1,
       CLOSE_UP_EFFECTS,
+      0,
     );
   });
 
@@ -778,6 +857,7 @@ describe("the Finisher's blows, its scene's (docs/finisher.md §1.14, §5.2)", (
       px(50),
       1,
       CLOSE_UP_EFFECTS,
+      0,
     );
   });
 
@@ -794,6 +874,7 @@ describe("the Finisher's blows, its scene's (docs/finisher.md §1.14, §5.2)", (
       px(50),
       1,
       CLOSE_UP_EFFECTS,
+      0,
     );
     // A new super is a new sequence: its blows are its own again.
     fight.react({ type: 'super', by: 0, name: 'Mégabasse', x: px(200), y: 0 });

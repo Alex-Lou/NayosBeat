@@ -176,6 +176,7 @@ describe('the victim trembles through the impact freeze (docs/art/animation-plan
       tier: 1,
       pulse: false,
       freeze: 10,
+      aim: 0,
     };
     const base = facingOff(30, MIRROR_MATCH);
     memory.note({ ...base, frame: 10, hitstop: 6 }, [hit]);

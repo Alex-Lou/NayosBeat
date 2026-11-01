@@ -284,9 +284,11 @@ export class FightFeedback {
         this.blows.push({ event, viewLeft });
         break;
       case 'block':
-        this.guardSpark(event);
+        this.guardSpark(event, event.heavy);
         // A low blow blocked still kicks up the dust it scrapes.
         if (event.low) this.dust.kick(event.x, event.away);
+        // A heavy one jolts the picture as a light hit does (P3).
+        if (event.heavy) effects.jolt(event.away);
         sfx.play('block');
         break;
       case 'grab':
@@ -328,6 +330,13 @@ export class FightFeedback {
       case 'attack':
         sfx.play(event.heavy ? 'heavySwing' : 'swing');
         break;
+      case 'whiff': {
+        // A heavy blow that touched nothing: its reach ripples, the recovery to punish (P4).
+        const style = this.styles[event.by];
+        if (this.budget.admit(SPARK_AREAS[style.shape].whiff))
+          this.hitFx.play(style, 'whiff', event.x, event.y, event.toward);
+        break;
+      }
       case 'dash':
         this.dust.puff(event.x, event.toward);
         sfx.play('dash');
@@ -411,7 +420,8 @@ export class FightFeedback {
     if (event.low) this.lowBlow(style, heavy ? 'heavy' : 'light', event, sparks);
     if (sparks && (!event.low || ko)) {
       const look = lit ? ask.look : ask.muted;
-      this.hitFx.play(style, look, event.x, event.y, event.away, this.sizeOf(event));
+      // Its spray flies where its move sends it (P6).
+      this.hitFx.play(style, look, event.x, event.y, event.away, this.sizeOf(event), event.aim);
     }
     if (staged) {
       // Its words are the scene's count; its KO, its scene's alone: no blood at the close up, no
@@ -599,11 +609,20 @@ export class FightFeedback {
     this.stamps.show(text, at, viewLeft, delay, calm, look);
   }
 
-  /** A blocked blow, or hands knocked away: the guard's spark, if it makes no flash. */
-  private guardSpark(event: { by: 0 | 1; x: number; y: number; away: 1 | -1 }): void {
+  /**
+   * A blocked blow, a `heavy` one bigger (P3), or hands knocked away: the guard's spark, if it
+   * makes no flash; else its two streaks, if they make none.
+   */
+  private guardSpark(
+    event: { by: 0 | 1; x: number; y: number; away: 1 | -1 },
+    heavy = false,
+  ): void {
     const style = this.styles[event.by];
-    if (!this.budget.admit(SPARK_AREAS[style.shape].block)) return;
-    this.hitFx.play(style, 'block', event.x, event.y, event.away);
+    const areas = SPARK_AREAS[style.shape];
+    const kind = heavy ? 'blockHeavy' : 'block';
+    if (this.budget.admit(areas[kind])) this.hitFx.play(style, kind, event.x, event.y, event.away);
+    else if (this.budget.admit(areas.blockMuted))
+      this.hitFx.play(style, 'blockMuted', event.x, event.y, event.away);
   }
 
   /** Where stage sub-pixels `x`, `y` (above the ground) are, in world pixels. */
