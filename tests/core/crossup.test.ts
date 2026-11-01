@@ -6,6 +6,7 @@ import type { FighterState, GameState } from '../../src/core/state';
 import { step } from '../../src/core/step';
 import { NAYO } from '../../src/data/fighters/nayo';
 import { RIFF } from '../../src/data/fighters/riff';
+import { SAPHIR } from '../../src/data/fighters/saphir';
 import { TRAINING_STAGE } from '../../src/data/stages';
 import { facingOff, MIRROR_MATCH } from './helpers';
 
@@ -25,7 +26,7 @@ interface CrossUp {
  * The farthest distance from which a forward jump lands behind a still opponent, far from the
  * walls (§3.5). The air pushbox is the only setting: this table pins it. Over a lying opponent
  * (whose body stays under the raised air pushbox) the range is the jump's length itself, 70.4 px
- * for Nayo and 72.8 for Riff (§3.1); §3.5's 76 and 78 were measured with the earlier jump speeds
+ * for Nayo, 72.8 for Riff and 66 for Saphir (§3.1); §3.5's 76 and 78 were measured with the earlier jump speeds
  * (2.4 and 2.8 px/tick), which §3.1 replaced.
  */
 const CROSS_UPS: readonly CrossUp[] = [
@@ -41,6 +42,21 @@ const CROSS_UPS: readonly CrossUp[] = [
   { jumper: RIFF, target: RIFF, posture: 'standing', range: 57 },
   { jumper: RIFF, target: RIFF, posture: 'crouching', range: 67 },
   { jumper: RIFF, target: RIFF, posture: 'lying', range: 72 },
+  { jumper: SAPHIR, target: NAYO, posture: 'standing', range: 50 },
+  { jumper: SAPHIR, target: NAYO, posture: 'crouching', range: 59 },
+  { jumper: SAPHIR, target: NAYO, posture: 'lying', range: 65 },
+  { jumper: SAPHIR, target: RIFF, posture: 'standing', range: 52 },
+  { jumper: SAPHIR, target: RIFF, posture: 'crouching', range: 61 },
+  { jumper: SAPHIR, target: RIFF, posture: 'lying', range: 65 },
+  { jumper: SAPHIR, target: SAPHIR, posture: 'standing', range: 50 },
+  { jumper: SAPHIR, target: SAPHIR, posture: 'crouching', range: 61 },
+  { jumper: SAPHIR, target: SAPHIR, posture: 'lying', range: 65 },
+  { jumper: NAYO, target: SAPHIR, posture: 'standing', range: 57 },
+  { jumper: NAYO, target: SAPHIR, posture: 'crouching', range: 65 },
+  { jumper: NAYO, target: SAPHIR, posture: 'lying', range: 70 },
+  { jumper: RIFF, target: SAPHIR, posture: 'standing', range: 54 },
+  { jumper: RIFF, target: SAPHIR, posture: 'crouching', range: 67 },
+  { jumper: RIFF, target: SAPHIR, posture: 'lying', range: 72 },
 ];
 
 /** The target holds its posture for the whole jump (a knockdown lasting long enough). */

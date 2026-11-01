@@ -4,6 +4,7 @@ import { toPx } from '../../src/core/constants';
 import { MOVE_IDS, type MoveData } from '../../src/core/move-data';
 import { NAYO } from '../../src/data/fighters/nayo';
 import { RIFF } from '../../src/data/fighters/riff';
+import { SAPHIR } from '../../src/data/fighters/saphir';
 
 /**
  * The frozen reaches (docs/combat-v2.md §10.4): how far, from center to center, every strike of
@@ -13,7 +14,7 @@ import { RIFF } from '../../src/data/fighters/riff';
  * posture (a launcher on a crouching body). Re-record on purpose only (`vitest -u`).
  */
 
-const FIGHTERS: readonly FighterTemplate[] = [NAYO, RIFF];
+const FIGHTERS: readonly FighterTemplate[] = [NAYO, RIFF, SAPHIR];
 
 /** The farthest any of `boxes` reaches forward, among those level with `from`..`to`. */
 function frontAt(boxes: readonly Box[], from: number, to: number): number | null {
@@ -57,7 +58,7 @@ function table(attacker: FighterTemplate): string {
     );
     return [`${id.padEnd(20)}${reaches.join('')}`];
   });
-  return ['against             Nayo  crouch  Riff  crouch', ...lines].join('\n');
+  return ['against             Nayo  crouch  Riff  crouch  Saphir  crouch', ...lines].join('\n');
 }
 
 describe('reaches (§10.4)', () => {
@@ -67,5 +68,9 @@ describe('reaches (§10.4)', () => {
 
   it("Riff's", () => {
     expect(table(RIFF)).toMatchSnapshot();
+  });
+
+  it("Saphir's", () => {
+    expect(table(SAPHIR)).toMatchSnapshot();
   });
 });

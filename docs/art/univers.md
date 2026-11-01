@@ -1,12 +1,12 @@
 # NayosBeat — bible des univers
 
-Trois univers, par ordre de priorité. Chacun apporte **un stage** et **deux combattants** : un sur le gabarit **Polyvalent** (portée, projectile, uppercut), un sur le gabarit **Rushdown** (vitesse, ruée, saut plongeant). Les gabarits fixent le gameplay (coups, frame data, hitbox) ; l'univers fixe tout le reste (look, noms, ambiance).
+Trois univers, par ordre de priorité. Chacun apporte **un stage** et ses combattants : d'abord un sur le gabarit **Polyvalent** (portée, projectile, uppercut) et un sur le gabarit **Rushdown** (vitesse, ruée, saut plongeant), puis, s'il en a un troisième, un **archétype neuf** (Sound Clash : Saphir, la **Contreuse**, à mi-distance). Le gabarit ou l'archétype fixe le gameplay (coups, frame data, hitbox) ; l'univers fixe tout le reste (look, noms, ambiance).
 
-| Priorité | Univers | Polyvalent | Rushdown | Stage |
-|---|---|---|---|---|
-| 1 | **Sound Clash** | Nayo | Riff | Entrepôt-club |
-| 2 | **Néon Underground** | Kaï | Vexa | Toit sous la pluie |
-| Bonus | **Archipel des Légendes** | Sora | Kitsune | Cour de temple |
+| Priorité | Univers | Polyvalent | Rushdown | 3e | Stage |
+|---|---|---|---|---|---|
+| 1 | **Sound Clash** | Nayo | Riff | Saphir (Contreuse) | Entrepôt-club |
+| 2 | **Néon Underground** | Kaï | Vexa | — | Toit sous la pluie |
+| Bonus | **Archipel des Légendes** | Sora | Kitsune | — | Cour de temple |
 
 Règles communes à tous les personnages :
 
@@ -100,6 +100,37 @@ Entrepôt reconverti en club, la nuit. Mur d'enceintes empilées au fond, néons
 - **Entrée** : plantée comme si la rue était à elle, elle rejette sa frange d'une main, tend l'autre paume en l'air (« viens »), puis tombe en garde sur le temps.
 - **Victoire** : freeze sur une main, la jambe au ciel, clin d'œil.
 - **Temps écoulé** : bras croisés, elle boude en tapant du pied.
+
+### Saphir — Contreuse
+
+> Ancienne disquaire, savate et chapeau, polie et redoutable. Elle entre d'un pas, touche, et n'est déjà plus là. Sa spec : [saphir.md](../saphir.md).
+
+- **Silhouette** : une femme d'environ soixante-cinq ans, droite, de profil, talon avant levé. Détail signature : le **chapeau de feutre à ruban vert**, rigide, qui suit la tête (aucun ressort).
+- **Tenue** : tailleur-pantalon crème, chemisier vert bouteille, chaussures bicolores cirées (noir et blanc cassé).
+- **Tenue 2** (miroir) : smoking noir, chapeau noir, ruban et chemisier **lilas** ; peau, cheveux et chaussures inchangés.
+- **Visage et cheveux** : dessinés de zéro ; cheveux blancs coupés court, peau brun chaud. Expressions sobres, yeux mi-clos quand elle écoute.
+- **Palette** (proposée, figée à la porte 2) : masse crème `#E4D6B4` (tenue 2 : noir `#15151A`) ; énergie verte `#20B464` (tenue 2 : lilas `#C0A0FF`).
+- **Effets de coup** : arcs de coups de pied **verts** (forme `slash`), éclats crème, étincelles en croix ; son énergie (Syncope, Rubato, Contre-ut) est verte. Tenue 2 : lilas.
+
+| Coup (gabarit) | Nom | Mise en scène |
+|---|---|---|
+| standLight | Pointe | Fouetté rapide de la pointe du pied avant |
+| chainLight | Fouetté | La jambe arrière fouette en arc |
+| lightFinisher | Revers tournant | Elle tourne sur sa jambe d'appui, le talon balaie |
+| forwardLight | Pas glissé | Pas glissé, puis une pointe |
+| standHeavy | Chassé | Chassé latéral, semelle en avant, jambe tendue |
+| forwardHeavy | Fouetté plongeant | Le pied monte puis plonge par-dessus la garde |
+| backHeavy | Chandelle | Coup de pied droit vers le ciel |
+| crouchLight | Coup de pied bas | Au tibia, presque à plat |
+| crouchHeavy | Fauche | Revers bas aux chevilles, une main au sol |
+| special | Syncope | Un pas de swing, un fouetté qui claque, et elle repart en arrière |
+| specialForward | Rubato | Elle retient son poids, puis fond et fouette, en retard exprès |
+| specialAntiAir | Contre-ut | Elle bondit, la jambe tendue droit vers le ciel |
+| throwForward, throwBack | Croc-en-jambe, Valse | Un pied derrière la cheville ; un tour de valse, par-dessus l'épaule |
+
+- **Entrée** : elle descend l'escalier sans se presser, ajuste son chapeau d'un doigt, salue la salle, et tombe en garde sur le temps long.
+- **Victoire** : elle soulève son chapeau vers l'adversaire, et le remet.
+- **Temps écoulé** : elle regarde sa montre, la remonte, et salue quand même.
 
 ---
 

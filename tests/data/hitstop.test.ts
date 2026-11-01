@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import type { MoveData } from '../../src/core/move-data';
 import { COUNTER_HITSTOP, EXTENDER_HITSTOP } from '../../src/core/rules';
-import { MATCH } from '../core/helpers';
+import { NAYO } from '../../src/data/fighters/nayo';
+import { RIFF } from '../../src/data/fighters/riff';
+import { SAPHIR } from '../../src/data/fighters/saphir';
 
 /**
  * The rules of the freeze on impact, written as tests of the data (docs/polish/AUDIT-ET-PLAN.md,
@@ -9,10 +11,10 @@ import { MATCH } from '../core/helpers';
  * « the more damage an attack inflicts, the longer the hitstop », projectiles less, and a cap.
  */
 
-/** Every move of both fighters, and each blow of a multi-hit one, named for the messages. */
+/** Every move of every fighter, and each blow of a multi-hit one, named for the messages. */
 function blows(): { name: string; move: MoveData }[] {
   const all: { name: string; move: MoveData }[] = [];
-  for (const fighter of MATCH.fighters) {
+  for (const fighter of [NAYO, RIFF, SAPHIR]) {
     for (const [id, move] of Object.entries(fighter.moves)) {
       all.push({ name: `${fighter.name} ${id}`, move });
       move.pulses?.forEach((pulse, index) => {

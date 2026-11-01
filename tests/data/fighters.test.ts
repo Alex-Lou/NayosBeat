@@ -7,6 +7,7 @@ import { TRAINING_STAGE } from '../../src/data/stages';
 import { MATCH } from '../core/helpers';
 import { NAYO } from '../../src/data/fighters/nayo';
 import { RIFF } from '../../src/data/fighters/riff';
+import { SAPHIR } from '../../src/data/fighters/saphir';
 import { box, kd } from '../../src/data/fighters/shared';
 
 /** A jump attack firing the fireball: valid types, invalid data. */
@@ -46,6 +47,7 @@ describe('fighter templates', () => {
   it('are valid', () => {
     expect(validateTemplate(NAYO)).toEqual([]);
     expect(validateTemplate(RIFF)).toEqual([]);
+    expect(validateTemplate(SAPHIR)).toEqual([]);
   });
 
   it('play differently: rushdown is faster but frailer and shorter-ranged', () => {
@@ -55,6 +57,30 @@ describe('fighter templates', () => {
     const reach = (t: typeof NAYO) =>
       (t.moves.standHeavy.hitbox?.x ?? 0) + (t.moves.standHeavy.hitbox?.width ?? 0);
     expect(reach(RIFF)).toBeLessThan(reach(NAYO));
+  });
+
+  // Saphir, the counter-fighter at mid-range (docs/saphir.md §1): the longest heavy without
+  // moving, the quickest walk back and the longest backdash of the cast, the slowest quickest
+  // blow; neither a reversal nor a projectile.
+  it('play differently: the counter-fighter reaches farthest, steps back best, starts slowest', () => {
+    const others = [NAYO, RIFF];
+    const reach = (t: FighterTemplate) =>
+      (t.moves.standHeavy.hitbox?.x ?? 0) + (t.moves.standHeavy.hitbox?.width ?? 0);
+    const backdash = (t: FighterTemplate) =>
+      -(t.moves.dashBack.motion?.dx ?? []).reduce((total, step) => total + step, 0);
+    const quickest = (t: FighterTemplate) =>
+      Math.min(t.moves.standLight.startup, t.moves.crouchLight.startup);
+    for (const other of others) {
+      expect(reach(SAPHIR), other.name).toBeGreaterThan(reach(other));
+      expect(SAPHIR.walkBackSpeed, other.name).toBeGreaterThan(other.walkBackSpeed);
+      expect(backdash(SAPHIR), other.name).toBeGreaterThan(backdash(other));
+      expect(quickest(SAPHIR), other.name).toBeGreaterThan(quickest(other));
+    }
+    const moves = Object.values(SAPHIR.moves);
+    expect(moves.some((move) => move.projectile)).toBe(false);
+    const fromStart = (move: MoveData | undefined) =>
+      move?.invincible?.from === 0 && (move.invincible.against ?? 'all') === 'all';
+    expect(moves.some(fromStart)).toBe(false);
   });
 
   it('reports every authoring mistake at once', () => {

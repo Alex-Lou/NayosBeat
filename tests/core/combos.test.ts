@@ -3,6 +3,7 @@ import type { MatchConfig } from '../../src/core/config';
 import { Input, type InputBits } from '../../src/core/input';
 import { NAYO } from '../../src/data/fighters/nayo';
 import { RIFF } from '../../src/data/fighters/riff';
+import { SAPHIR } from '../../src/data/fighters/saphir';
 import { TRAINING_STAGE } from '../../src/data/stages';
 import { damageOf, floored, playCombo, unbroken, type ComboRun } from './combo-helpers';
 import { facingOff, run } from './helpers';
@@ -128,6 +129,11 @@ describe('L, L, L (§7.2)', () => {
     ['Riff on Nayo', RIFF_VS_NAYO],
     ['Nayo on Nayo', { stage: TRAINING_STAGE, fighters: [NAYO, NAYO] }],
     ['Riff on Riff', { stage: TRAINING_STAGE, fighters: [RIFF, RIFF] }],
+    ['Saphir on Nayo', { stage: TRAINING_STAGE, fighters: [SAPHIR, NAYO] }],
+    ['Saphir on Riff', { stage: TRAINING_STAGE, fighters: [SAPHIR, RIFF] }],
+    ['Nayo on Saphir', { stage: TRAINING_STAGE, fighters: [NAYO, SAPHIR] }],
+    ['Riff on Saphir', { stage: TRAINING_STAGE, fighters: [RIFF, SAPHIR] }],
+    ['Saphir on Saphir', { stage: TRAINING_STAGE, fighters: [SAPHIR, SAPHIR] }],
   ];
   /** From bodies touching, every half pixel. */
   const NEAREST = 26;
