@@ -86,6 +86,8 @@ export interface FightSceneData {
   readonly onPause: () => void;
   /** Called once, a moment after the final KO, with the winner's index. */
   readonly onMatchEnd: (winner: 0 | 1 | null) => void;
+  /** Called once, as the fight's first frame is drawn: what covered the loading may go. */
+  readonly onShown?: () => void;
   /**
    * The fighters whose Finisher the session has played (the app's, across matches): from the
    * second one on, its scene plays short (docs/finisher.md §1.14). The fight notes its own.
@@ -360,6 +362,9 @@ export class FightScene extends Phaser.Scene {
     });
     this.addScreenCamera();
     this.syncViews(this.runtime, 0);
+    this.events.once(Phaser.Scenes.Events.RENDER, () => {
+      this.sceneData.onShown?.();
+    });
   }
 
   /**

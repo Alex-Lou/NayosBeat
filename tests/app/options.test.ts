@@ -2,11 +2,18 @@ import type Phaser from 'phaser';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { App } from '../../src/app/app';
 import { DEFAULT_SETUP, matchConfigOf } from '../../src/app/match-setup';
+import { CARD_FADE_MS } from '../../src/ui/fight-card';
 import { viewingFromUrl, type Viewing } from '../../src/app/viewing';
 import type { Sfx } from '../../src/audio/sfx';
 import type { RenderMode } from '../../src/render/render-mode';
 import { SIMPLE_MODE_NOTICE } from '../../src/ui/title-screen';
 import { installFakePage, type FakeElement } from '../render/fake-dom';
+
+// The help's tables need a real page: here, the screen around them is what is looked at.
+vi.mock('../../src/app/controls-content', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../src/app/controls-content')>()),
+  controlsContent: () => document.createElement('div'),
+}));
 
 /** The elements under `node` that have the class `name`, in page order. */
 function byClass(node: FakeElement, name: string): FakeElement[] {
@@ -75,6 +82,7 @@ function launch(
     if (!root) throw new Error('Nothing on screen');
     return {
       title: byClass(root, 'menu-title')[0]?.textContent,
+      subtitle: byClass(root, 'menu-subtitle')[0]?.textContent,
       items: byClass(root, 'menu-item').map((item) => item.textContent),
       selected: byClass(root, 'menu-item').findIndex((item) => item.classList.contains('selected')),
       notice: byClass(root, 'menu-notice')[0]?.textContent,
@@ -134,6 +142,18 @@ describe('the options (docs/flashs.md §4)', () => {
     expect(screen().title).toBe('Avant de jouer');
   });
 
+  it("says « Commandes » once: the devices' tab named after them, a fighter's page by its name (L23)", () => {
+    const { press, screen, choose } = launch({ 'nayosbeat.notice': 'seen' });
+    press('Enter');
+    choose('Commandes');
+    expect(screen().title).toBe('Commandes');
+    expect(screen().subtitle).toBeUndefined();
+    expect(screen().items.filter((item) => item === 'Commandes')).toHaveLength(0);
+    expect(screen().items[0]).toBe('Clavier');
+    choose('Nayo');
+    expect(screen().subtitle).toBe('Nayo');
+  });
+
   it('moves the sound from the main menu into the options screen', () => {
     const { press, screen, choose } = launch({ 'nayosbeat.notice': 'seen' });
     press('Enter');
@@ -145,6 +165,7 @@ describe('the options (docs/flashs.md §4)', () => {
       'Effets de flash : normaux',
       "Tremblement de l'écran : normal",
       'Mise en scène : complète',
+      'Taille du texte : normale',
       'Retour',
     ]);
     choose('Son');
@@ -175,6 +196,22 @@ describe('the options (docs/flashs.md §4)', () => {
     choose('Retour');
     expect(screen().title).toBe('NAYOSBEAT');
     expect(screen().items[screen().selected]).toBe('Options');
+  });
+
+  it("cycles « Taille du texte » in place, keeps it, and turns the menus' text up (P22)", () => {
+    const { press, screen, choose, kept, root } = launch({ 'nayosbeat.notice': 'seen' });
+    press('Enter');
+    choose('Options');
+    expect(root.classList.contains('large-text')).toBe(false);
+    choose('Taille du texte');
+    expect(screen().items[screen().selected]).toBe('Taille du texte : grande');
+    expect(kept.get('nayosbeat.text')).toBe('large');
+    expect(root.classList.contains('large-text')).toBe(true);
+    // The next launch reads it back, from the title on.
+    const again = launch({ 'nayosbeat.notice': 'seen', 'nayosbeat.text': 'large' });
+    expect(again.root.classList.contains('large-text')).toBe(true);
+    choose('Taille du texte');
+    expect(root.classList.contains('large-text')).toBe(false);
   });
 
   it('cycles « Mise en scène » in place and keeps it (docs/finisher.md §1.14)', () => {
@@ -393,6 +430,37 @@ describe('how a fight is watched (docs/art/animation-plan.md §2, V0)', () => {
     const setup = { ...DEFAULT_SETUP, position: 'leftCorner' } as const;
     expect(matchConfigOf({ ...setup, mode: 'training' }).trainingStart).toBe('leftCorner');
     expect(matchConfigOf(setup)).not.toHaveProperty('trainingStart');
+  });
+
+  it('covers the fight with who fights whom until its first frame, never a black screen (L16)', () => {
+    vi.useFakeTimers();
+    const { app, screen, choose, start, root } = training();
+    const cards = () => root.children.filter((child) => child.className.includes('fight-card'));
+    choose('Immobile');
+    // The menu gone, the card up while the fight loads and builds.
+    expect(root.children.map((child) => child.className)).toEqual(['menu fight-card']);
+    expect(root.children[0]?.children[0]?.children[0]?.textContent).toBe('Nayo contre Riff');
+    const shown = () => {
+      (start.mock.lastCall?.[1] as { onShown?: () => void } | undefined)?.onShown?.();
+    };
+    // Its first frame drawn: the card fades, then goes.
+    shown();
+    expect(cards()[0]?.classList.contains('leaving')).toBe(true);
+    vi.advanceTimersByTime(CARD_FADE_MS);
+    expect(cards()).toHaveLength(0);
+    // Started over, another screen first: the card goes at once.
+    app.showPause();
+    choose('Recommencer');
+    expect(cards()).toHaveLength(1);
+    app.showPause();
+    expect(cards()).toHaveLength(0);
+    expect(screen().title).toBe('Pause');
+    // Closed before its first frame: the card goes with the fight.
+    choose('Recommencer');
+    expect(cards()).toHaveLength(1);
+    (app as unknown as { stopFight(): void }).stopFight();
+    expect(cards()).toHaveLength(0);
+    vi.useRealTimers();
   });
 
   it('keeps the dummy and the boxes out of the pause of a match', () => {

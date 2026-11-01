@@ -61,10 +61,20 @@ const KEYBOARD: HelpSection = {
     ['Maj gauche', 'Dash ; avec arrière : bond en retrait'],
     ['2 fois avant', 'Dash aussi (2 fois arrière : bond en retrait)'],
     ['Echap, P', 'Pause'],
-    [
-      'Joueur 2',
-      'Flèches ; pavé 1 / 2 / 3 (ou : ! ù) léger, lourd, spécial ; pavé 4 (ou M) prise ; pavé 6 (ou ^) boost ; pavé 0 (ou Maj droite) dash',
-    ],
+  ],
+};
+
+/** Player 2 on the same keyboard (input/keyboard.ts): the keypad, or the keys around right Shift. */
+const PLAYER2: HelpSection = {
+  title: 'Joueur 2',
+  rows: [
+    ['Flèches', 'Se déplacer, haut pour sauter'],
+    ['Pavé 1 (ou :)', 'Coup léger (L)'],
+    ['Pavé 2 (ou !)', 'Coup lourd (H)'],
+    ['Pavé 3 (ou ù)', 'Coup spécial (S)'],
+    ['Pavé 4 (ou M)', 'Prise'],
+    ['Pavé 6 (ou ^)', 'Boost'],
+    ['Pavé 0 (ou Maj droite)', 'Dash'],
   ],
 };
 
@@ -83,11 +93,15 @@ const GAMEPAD: HelpSection = {
   ],
 };
 
-/** The devices in use: touch on phones, keyboard otherwise, gamepad if one is on. */
+/**
+ * The devices in use: touch on phones, keyboard otherwise (player 2's too), gamepad if one is on.
+ * Named after them, its tab says what it shows (docs/polish/AUDIT-ET-PLAN.md, L23).
+ */
 function devicePage(devices: ControlDevices): HelpPage {
-  const sections = [devices.touch ? TOUCH : KEYBOARD];
+  const sections = devices.touch ? [TOUCH] : [KEYBOARD, PLAYER2];
   if (devices.gamepad) sections.push(GAMEPAD);
-  return { title: 'Commandes', sections };
+  const title = `${devices.touch ? 'Tactile' : 'Clavier'}${devices.gamepad ? ' / manette' : ''}`;
+  return { title, sections };
 }
 
 /**

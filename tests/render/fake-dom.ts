@@ -121,6 +121,12 @@ export class FakeElement extends CountingTarget {
     // Pointer capture plays no part in what is counted.
   }
 
+  /** Times the element was scrolled into view (`scrollIntoView`). */
+  scrolledIntoView = 0;
+  scrollIntoView(): void {
+    this.scrolledIntoView++;
+  }
+
   /** Where the element is on the page: placed by hand in tests that touch it. */
   rect = { left: 0, top: 0, right: 0, bottom: 0 };
   getBoundingClientRect(): { left: number; top: number; right: number; bottom: number } {

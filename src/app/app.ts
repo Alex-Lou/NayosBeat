@@ -8,6 +8,7 @@ import type { FightScene, FightSceneData } from '../render/fight-scene';
 import { requestLandscapeFullscreen } from '../render/fullscreen';
 import type { RenderMode } from '../render/render-mode';
 import { isTouchDevice } from '../input/touch-controls';
+import { FightCard } from '../ui/fight-card';
 import { FighterSelect } from '../ui/fighter-select';
 import { element, Menu, type MenuFeedback, type MenuItem, type MenuOptions } from '../ui/menu';
 import { TitleScreen } from '../ui/title-screen';
@@ -16,16 +17,20 @@ import {
   isCalm,
   isStill,
   loadComfort,
+  loadTextSize,
   markNoticeSeen,
   nextMode,
   nextStaging,
   NOTICE,
   noticeSeen,
   saveComfort,
+  saveTextSize,
   SHAKE_LABELS,
   STAGING_LABELS,
+  TEXT_LABELS,
   watchReducedMotion,
   type Comfort,
+  type TextSize,
 } from './comfort';
 import { controlsContent, currentDevices, helpPages } from './controls-content';
 import { installMethod, onInstallChange, promptInstall } from './install';
@@ -89,11 +94,15 @@ const POSITIONS: readonly {
  */
 export class App {
   private screen: { dispose(): void } | undefined;
+  /** Who fights whom, over the fight until its first frame (src/ui/fight-card.ts). */
+  private card: FightCard | undefined;
   private setup: MatchSetup = DEFAULT_SETUP;
   /** « Effets de flash » and « Tremblement de l'écran » (src/app/comfort.ts). */
   private comfort: Comfort = loadComfort();
   /** What the player chose this session: it holds even where the storage refuses it. */
   private chosen: Partial<Comfort> = {};
+  /** « Taille du texte »: the menus' only (src/app/comfort.ts). */
+  private textSize: TextSize = loadTextSize();
   /**
    * The fighters whose Finisher this session has played already: from the second one on, its
    * scene plays short (docs/finisher.md §1.14). The fights note it.
@@ -151,6 +160,8 @@ export class App {
     this.onTitle = false;
     this.screen?.dispose();
     this.screen = screen;
+    this.card?.dispose();
+    this.card = undefined;
   }
 
   private showTitle(): void {
@@ -264,7 +275,7 @@ export class App {
 
   /**
    * The « Options » screen: the sound, « Effets de flash », « Tremblement de l'écran », « Mise en
-   * scène », each cycled in place (the screen comes back with it still selected), kept at once
+   * scène », « Taille du texte », each cycled in place (the screen comes back with it still selected), kept at once
    * and applied at once, to a fight under the pause menu too (`paused`). `back`: where « Retour »
    * goes.
    */
@@ -305,7 +316,17 @@ export class App {
         again(scene);
       },
     };
-    items.push(sound, flash, tremble, scene, { label: 'Retour', onSelect: back });
+    const text: MenuItem = {
+      label: `Taille du texte : ${TEXT_LABELS[this.textSize].label}`,
+      hint: TEXT_LABELS[this.textSize].hint,
+      onSelect: () => {
+        this.textSize = this.textSize === 'normal' ? 'large' : 'normal';
+        saveTextSize(this.textSize);
+        this.applyComfortClasses();
+        again(text);
+      },
+    };
+    items.push(sound, flash, tremble, scene, text, { label: 'Retour', onSelect: back });
     this.showMenu({ title: 'Options', overlay: paused, items, onBack: back, initialIndex });
   }
 
@@ -325,7 +346,8 @@ export class App {
 
   /**
    * The menus' own animations (styles.css): `calm`, nothing blinks or glows on and off (the
-   * prompt, the frame of the tile chosen); `still`, nothing turns (the title's vinyl).
+   * prompt, the frame of the tile chosen); `still`, nothing turns (the title's vinyl). And their
+   * text, `large-text` (« Taille du texte »).
    */
   private applyComfortClasses(): void {
     const set = (name: string, on: boolean) => {
@@ -334,6 +356,7 @@ export class App {
     };
     set('calm', isCalm(this.comfort));
     set('still', isStill(this.comfort));
+    set('large-text', this.textSize === 'large');
   }
 
   /**
@@ -350,8 +373,10 @@ export class App {
     };
     this.showMenu({
       title: 'Commandes',
-      subtitle: page.title,
+      // Whose moves a fighter's page lists; the other pages' headings say what they are.
+      ...(page.fighter ? { subtitle: page.title } : {}),
       overlay: paused,
+      row: true,
       content: controlsContent(page),
       items: [
         ...pages.map((other, at) => ({
@@ -590,6 +615,14 @@ export class App {
   private startFight(): void {
     this.screen?.dispose();
     this.screen = undefined;
+    // No black screen while the fight loads and builds (L16): the card, then the fight.
+    this.card?.dispose();
+    const [first, second] = this.setup.fighters;
+    const card = new FightCard(
+      this.root,
+      `${templateOf(first).name} contre ${templateOf(second).name}`,
+    );
+    this.card = card;
     this.startedPosition = this.setup.position;
     const data: FightSceneData = {
       setup: this.setup,
@@ -606,6 +639,10 @@ export class App {
       onMatchEnd: (winner) => {
         this.showResults(winner);
       },
+      onShown: () => {
+        card.leave();
+        if (this.card === card) this.card = undefined;
+      },
     };
     // The render loop only runs during fights: menus are plain HTML and need no redraw.
     this.game.loop.wake();
@@ -615,6 +652,9 @@ export class App {
   private stopFight(): void {
     this.game.scene.stop(FIGHT_SCENE);
     this.game.loop.sleep();
+    // Closed before its first frame: its card goes with it.
+    this.card?.dispose();
+    this.card = undefined;
   }
 
   /** `initialIndex`: the item selected (the options', coming back from them). */

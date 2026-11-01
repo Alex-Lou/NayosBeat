@@ -229,6 +229,18 @@ body {
     justify-content: flex-start;
   }
 }
+/* The menus' text sizes, on the pixel font's grid (docs/polish/AUDIT-ET-PLAN.md, P22). */
+#ui {
+  --text-small: 8px;
+  --text-tiny: 7px;
+  --text-item: 12px;
+}
+/* « Taille du texte : grande » (src/app/comfort.ts). */
+#ui.large-text {
+  --text-small: 12px;
+  --text-tiny: 10px;
+  --text-item: 16px;
+}
 .menu {
   position: fixed;
   inset: 0;
@@ -246,7 +258,17 @@ body {
 .menu-overlay {
   background: rgba(10, 10, 25, 0.82);
 }
+/* Who fights whom, until the fight's first frame (src/ui/fight-card.ts, CARD_FADE_MS). */
+.fight-card {
+  transition: opacity 150ms;
+}
+.fight-card.leaving {
+  opacity: 0;
+  pointer-events: none;
+}
 .menu-panel {
+  /* Bigger on a bigger screen, by whole steps (src/render/pixel-scaling.ts, uiScaleFor). */
+  zoom: var(--ui-scale, 1);
   width: min(560px, 100%);
   max-height: 100%;
   /* Centers like the flex alignment, but a panel taller than the screen still scrolls from its top. */
@@ -294,7 +316,7 @@ body {
   min-height: 44px;
   padding: 10px 14px;
   font:
-    12px/1.4 'Press Start 2P',
+    var(--text-item) / 1.4 'Press Start 2P',
     monospace;
   color: #dde;
   text-align: left;
@@ -311,13 +333,14 @@ body {
 .menu-hint {
   display: block;
   margin-top: 6px;
-  font-size: 8px;
+  font-size: var(--text-small);
   opacity: 0.75;
 }
 .menu-help {
   margin: 0;
-  font-size: 8px;
-  color: #778;
+  font-size: var(--text-small);
+  /* 6.8:1 on the menus' background, above WCAG's 4.5:1 (P22). */
+  color: #9a9ab0;
 }
 /* The keys for a keyboard or a gamepad, what to touch on a touch screen (src/ui/menu.ts). */
 .menu-help-touch,
@@ -354,7 +377,7 @@ body {
 /* The notice of the first launch: a paragraph to read, on the grid of 8. */
 .menu-notice {
   margin: 0 0 14px;
-  font-size: 8px;
+  font-size: var(--text-small);
   line-height: 2;
   color: #dde;
   text-align: left;
@@ -455,14 +478,14 @@ body {
 }
 .title-prompt {
   margin: 0;
-  font-size: 12px;
+  font-size: var(--text-item);
   animation: blink 1s steps(2, start) infinite;
 }
 /* The simplified mode, told under the prompt (title-screen.ts): still and muted, never blinking. */
 .title-notice {
   max-width: 520px;
   margin: 0;
-  font-size: 8px;
+  font-size: var(--text-small);
   line-height: 1.6;
   text-align: center;
   color: #aab;
@@ -504,7 +527,7 @@ body {
 .controls table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 8px;
+  font-size: var(--text-small);
   line-height: 1.4;
 }
 .controls td {
@@ -603,7 +626,7 @@ body {
 .select-description {
   min-height: 3.2em;
   margin: 0;
-  font-size: 8px;
+  font-size: var(--text-small);
   line-height: 1.6;
   color: #aab;
 }
@@ -650,7 +673,7 @@ body {
   bottom: 0;
   left: 0;
   padding: 3px 0 2px;
-  font-size: 7px;
+  font-size: var(--text-tiny);
   color: #fff;
   background: rgba(10, 10, 25, 0.7);
 }
@@ -664,7 +687,7 @@ body {
   top: 2px;
   left: 2px;
   padding: 2px 3px;
-  font-size: 7px;
+  font-size: var(--text-tiny);
   color: #11111f;
   background: #fff;
   border-radius: 2px;
