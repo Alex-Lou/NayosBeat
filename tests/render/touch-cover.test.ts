@@ -1,9 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { MatchConfig, TrainingStart } from '../../src/core/config';
 import { toPx } from '../../src/core/constants';
-import { createInitialState } from '../../src/core/state';
+import { createInitialState, type GameState } from '../../src/core/state';
 import { COVER_HOLD_MS, TouchControls } from '../../src/input/touch-controls';
-import type { Framing } from '../../src/render/camera-framing';
+import { TOUCH_BUTTONS } from '../../src/input/touch-layout';
+import { frameAround, MAX_CLOSE_UP, type Framing } from '../../src/render/camera-framing';
 import { GROUND_Y } from '../../src/render/greybox-stage';
 import { bodyOnScreen, onPage, TouchCover } from '../../src/render/touch-cover';
 import { VIEW_SIZE } from '../../src/render/view';
@@ -44,77 +45,105 @@ describe('a fighter on screen (touch-cover.ts)', () => {
   });
 });
 
-describe('touch buttons over a fighter (docs/polish/AUDIT-ET-PLAN.md, P21)', () => {
+describe('touch buttons over a fighter, each on its own (docs/polish/AUDIT-ET-PLAN.md, P21)', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
   });
 
+  /** The fight framed as its first frame frames it: as close as it gets, the fighters centered. */
+  function firstFrame(state: GameState): Framing {
+    const [a, b] = state.fighters;
+    const viewLeft = toPx(state.cameraX) - VIEW_SIZE.width / 2;
+    return frameAround((toPx(a.x) + toPx(b.x)) / 2, MAX_CLOSE_UP, viewLeft, GROUND_Y);
+  }
+
   /**
-   * A 16:9 phone: the canvas over the whole 640×360 screen, every button in the right quarter
-   * (560 to 640, under the HUD), as the cluster covers it.
+   * A phone of `width`×`height` CSS px in landscape: the canvas from its left edge, 16:9, the
+   * buttons where touch-layout.ts puts them from the bottom right corner.
    */
-  function phone() {
+  function phone(width = 667, height = 375) {
     const page = installFakePage();
     const touch = new TouchControls(page.body as unknown as HTMLElement, undefined);
     const zone = page.body.children[0]?.children[2];
     if (!zone) throw new Error('Button zone missing');
-    for (const button of zone.children)
-      button.rect = { left: 560, top: 160, right: 640, bottom: 360 };
+    TOUCH_BUTTONS.forEach((spec, index) => {
+      const button = zone.children[index];
+      if (!button) throw new Error(`Button ${spec.label} missing`);
+      const [x, y, r] = [width - spec.right, height - spec.bottom, spec.diameter / 2];
+      button.rect = { left: x - r, top: y - r, right: x + r, bottom: y + r };
+    });
     const canvas = document.createElement('canvas') as unknown as FakeElement;
-    canvas.rect = { left: 0, top: 0, right: 640, bottom: 360 };
+    canvas.rect = { left: 0, top: 0, right: Math.min(width, (height * 16) / 9), bottom: height };
     const cover = new TouchCover(canvas as unknown as HTMLElement, touch, TRAINING, GROUND_Y);
-    /** Training started at `start`, seen whole, at `now` milliseconds. */
+    /** Training started at `start`, as its first frame shows it, at `now` milliseconds. */
     const show = (start: TrainingStart, now: number) => {
       const state = createInitialState({ ...TRAINING, trainingStart: start });
-      cover.update(state, wholeView(state.cameraX), now);
+      cover.update(state, firstFrame(state), now);
     };
-    return { page, zone, canvas, cover, show };
+    /** The faded buttons, by label. */
+    const faded = () =>
+      TOUCH_BUTTONS.filter((_, index) => zone.children[index]?.classList.contains('covered')).map(
+        (spec) => spec.label,
+      );
+    /** Fighters under these buttons, at `now`. */
+    const under = (labels: readonly string[], now: number) => {
+      touch.setCovered(
+        TOUCH_BUTTONS.map((spec) => labels.includes(spec.label)),
+        now,
+      );
+    };
+    return { page, canvas, cover, show, faded, under };
   }
 
-  it('fade while a fighter is under them, and leave it at the center', () => {
-    const { zone, show } = phone();
+  it('fade on a 16:9 phone over Riff at the start, the others staying as they are', () => {
+    const { show, faded } = phone(667, 375);
     show('center', 0);
-    expect(zone.classList.contains('covered')).toBe(false);
-    // The dummy against the right wall: under the thumbs.
-    show('rightCorner', 10);
-    expect(zone.classList.contains('covered')).toBe(true);
+    expect(faded()).toEqual(expect.arrayContaining(['S', 'H']));
+    // Over nobody: full.
+    expect(faded()).not.toContain('SAUT');
+    expect(faded()).not.toContain('DASH');
   });
 
-  it('change at most once a second, a fade and never a flicker', () => {
-    const { zone, show } = phone();
-    show('rightCorner', 0);
-    show('center', COVER_HOLD_MS - 1);
-    expect(zone.classList.contains('covered')).toBe(true);
-    show('center', COVER_HOLD_MS);
-    expect(zone.classList.contains('covered')).toBe(false);
-    show('rightCorner', COVER_HOLD_MS + 1);
-    expect(zone.classList.contains('covered')).toBe(false);
+  it('leave a wider phone alone at the start, and fade over a fighter cornered under them', () => {
+    const { show, faded } = phone(844, 390);
+    show('center', 0);
+    expect(faded()).toEqual([]);
+    const { show: cornered, faded: then } = phone(844, 390);
+    cornered('rightCorner', 0);
+    expect(then().length).toBeGreaterThan(0);
+    expect(then().length).toBeLessThan(TOUCH_BUTTONS.length);
   });
 
-  it('stay faded while fighters dance at their edge, and come back a second after they leave', () => {
-    const { zone, show } = phone();
-    show('rightCorner', 0);
-    show('center', 400);
-    show('rightCorner', 1500);
-    show('center', 2000);
-    expect(zone.classList.contains('covered')).toBe(true);
-    show('center', 2499);
-    expect(zone.classList.contains('covered')).toBe(true);
-    show('center', 2500);
-    expect(zone.classList.contains('covered')).toBe(false);
+  it('fade the next button at once as a fighter slides onto it, and never flicker the first', () => {
+    const { faded, under } = phone();
+    // On L until 299 ms, on H from 300 ms.
+    under(['L'], 0);
+    under(['L'], 299);
+    under(['H'], 300);
+    expect(faded()).toEqual(['L', 'H']);
+    // L comes back a second after the fighter was last on it, once.
+    under(['H'], 299 + COVER_HOLD_MS - 1);
+    expect(faded()).toEqual(['L', 'H']);
+    under(['H'], 299 + COVER_HOLD_MS);
+    expect(faded()).toEqual(['H']);
+    // Back on L at once: L waits its second before fading again.
+    under(['L', 'H'], 300 + COVER_HOLD_MS);
+    expect(faded()).toEqual(['H']);
+    under(['L', 'H'], 299 + 2 * COVER_HOLD_MS);
+    expect(faded()).toEqual(['L', 'H']);
   });
 
   it('measure the page again after a resize (a turn, fullscreen)', () => {
-    const { page, zone, canvas, show } = phone();
+    const { page, canvas, show, faded } = phone(844, 390);
     show('rightCorner', 0);
-    expect(zone.classList.contains('covered')).toBe(true);
+    expect(faded().length).toBeGreaterThan(0);
     // The canvas now ends where the buttons start: nothing of the fight under them.
-    canvas.rect = { left: 0, top: 0, right: 560, bottom: 315 };
+    canvas.rect = { left: 0, top: 0, right: 400, bottom: 225 };
     show('rightCorner', COVER_HOLD_MS);
-    expect(zone.classList.contains('covered')).toBe(true);
+    expect(faded().length).toBeGreaterThan(0);
     page.window.dispatchEvent(new Event('resize'));
     show('rightCorner', 2 * COVER_HOLD_MS);
-    expect(zone.classList.contains('covered')).toBe(false);
+    expect(faded()).toEqual([]);
   });
 
   it('let go of the window when the fight ends', () => {

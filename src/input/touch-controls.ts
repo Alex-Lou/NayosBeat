@@ -16,12 +16,21 @@ const GUARDING_STUNS: ReadonlySet<FighterAction> = new Set(['blockstun', 'tech']
 /** The arc filling on the BOOST button's ring moves by a twentieth of a bar, as the HUD's. */
 const RING_STEPS = 20;
 /**
- * The buttons fade under a fighter and come back once nobody has been under them this long, and
- * never change sooner than this after their last change: their fill swings about ΔL 0.10 over
+ * A button fades under a fighter and comes back once nobody has been under it this long, and never
+ * changes sooner than this after its last change: the cluster's fill swings about ΔL 0.10 over
  * more than the flash surface (docs/flashs.md §1.1), so a fade and its return are two seconds
- * apart at least, never a flicker, and fighters dancing at the cluster's edge keep them faded.
+ * apart at least, never a flicker, and a fighter dancing at a button's edge keeps it faded.
  */
 export const COVER_HOLD_MS = 1000;
+/** The ring of the BOOST button, past its edge (styles.css, `.touch-boost::before`, inset -6px). */
+const BOOST_RING_PX = 6;
+
+/** A round button on the page, in CSS pixels. */
+export interface ButtonCircle {
+  readonly x: number;
+  readonly y: number;
+  readonly radius: number;
+}
 
 export function isTouchDevice(): boolean {
   return window.matchMedia('(pointer: coarse)').matches;
@@ -64,10 +73,12 @@ export class TouchControls {
   /** FINISH lit for player 1: the button wears it, and the fighter's back (Left or Right). */
   private finisher = false;
   private finisherBack: InputBits = 0;
-  /** The buttons faded (`setCovered`), since when, and when a fighter was last under them. */
-  private faded = false;
-  private fadedSince = -Infinity;
-  private coveredAt = -Infinity;
+  /** Each button faded (`setCovered`), since when, and when a fighter was last under it. */
+  private readonly covers = TOUCH_BUTTONS.map(() => ({
+    faded: false,
+    fadedSince: -Infinity,
+    coveredAt: -Infinity,
+  }));
 
   /**
    * @param onFirstTouch Called once, from inside a user gesture (e.g. to go fullscreen).
@@ -205,29 +216,34 @@ export class TouchControls {
     this.finisher = ready;
   }
 
-  /** Where the buttons are on the page, in CSS pixels: the box around all of them. */
-  buttonsRect(): { left: number; top: number; right: number; bottom: number } {
-    const rects = this.buttons.map((button) => button.getBoundingClientRect());
-    return {
-      left: Math.min(...rects.map((rect) => rect.left)),
-      top: Math.min(...rects.map((rect) => rect.top)),
-      right: Math.max(...rects.map((rect) => rect.right)),
-      bottom: Math.max(...rects.map((rect) => rect.bottom)),
-    };
+  /** Where each button is on the page (TOUCH_BUTTONS' order), round, BOOST with its ring. */
+  buttonCircles(): ButtonCircle[] {
+    return this.buttons.map((button, index) => {
+      const rect = button.getBoundingClientRect();
+      const ring = TOUCH_BUTTONS[index]?.flag === Input.Boost ? BOOST_RING_PX : 0;
+      return {
+        x: (rect.left + rect.right) / 2,
+        y: (rect.top + rect.bottom) / 2,
+        radius: (rect.right - rect.left) / 2 + ring,
+      };
+    });
   }
 
   /**
-   * A fighter is under the buttons or not (`src/render/touch-cover.ts`), at `now` in milliseconds:
-   * they fade (`.covered`, the one pressed less), and come back after COVER_HOLD_MS with nobody
-   * under them; never twice in COVER_HOLD_MS.
+   * Which buttons a fighter is under (`src/render/touch-cover.ts`, TOUCH_BUTTONS' order), at `now`
+   * in milliseconds: each fades on its own (`.covered`, less when pressed), and comes back after
+   * COVER_HOLD_MS with nobody under it; never twice in COVER_HOLD_MS.
    */
-  setCovered(covered: boolean, now: number): void {
-    if (covered) this.coveredAt = now;
-    const fade = now - this.coveredAt < COVER_HOLD_MS;
-    if (fade === this.faded || now - this.fadedSince < COVER_HOLD_MS) return;
-    toggle(this.buttonZone, 'covered', fade);
-    this.faded = fade;
-    this.fadedSince = now;
+  setCovered(covered: readonly boolean[], now: number): void {
+    this.covers.forEach((cover, index) => {
+      if (covered[index]) cover.coveredAt = now;
+      const fade = now - cover.coveredAt < COVER_HOLD_MS;
+      const button = this.buttons[index];
+      if (!button || fade === cover.faded || now - cover.fadedSince < COVER_HOLD_MS) return;
+      toggle(button, 'covered', fade);
+      cover.faded = fade;
+      cover.fadedSince = now;
+    });
   }
 
   /** Removing the elements also drops every listener attached to them. */

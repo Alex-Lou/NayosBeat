@@ -120,12 +120,12 @@ body {
   background: rgba(255, 255, 255, 0.3);
   box-shadow: 0 0 8px 1px currentColor;
 }
-/* A fighter under the buttons (src/render/touch-cover.ts): they fade to let it be seen, the one
-   pressed a little less (BOOST under a bar stays faded, as it stays greyed). */
-.touch-button-zone.covered .touch-button {
+/* A fighter under a button (src/render/touch-cover.ts): it fades to let it be seen, a little less
+   when pressed (BOOST under a bar stays faded, as it stays greyed); the others stay as they are. */
+.touch-button.covered {
   opacity: 0.35;
 }
-.touch-button-zone.covered .touch-button.pressed:not(.empty) {
+.touch-button.covered.pressed:not(.empty) {
   opacity: 0.8;
 }
 .touch-light {
