@@ -151,10 +151,17 @@ export function isHeavy(move: MoveData): boolean {
 
 /**
  * Vibration, in ms, of a player's phone: being grabbed (the cue to break free is felt in the
- * hand), each pummel taken in the hold, and a heavy blow taken (a throw is one). Short: the
- * thumbs play on that screen.
+ * hand), each pummel taken in the hold, and a heavy blow taken (a throw is one); a heavy blow
+ * given, a tick of the hand (docs/polish/AUDIT-ET-PLAN.md, P23). Short: the thumbs play on that
+ * screen.
  */
-export const HAPTICS = { grabbed: 30, pummel: 12, heavyHit: 15, shatter: 180 } as const;
+export const HAPTICS = {
+  grabbed: 30,
+  pummel: 12,
+  heavyHit: 15,
+  heavyGiven: 6,
+  shatter: 180,
+} as const;
 /** The gamepads' rumble when a KO blows a Boost gauge up (an Ultime's): its length, its strength. */
 export const SHATTER_RUMBLE = { ms: 260, strength: 1 } as const;
 
@@ -353,7 +360,7 @@ export function vibrationFor(event: FightEvent, player: 0 | 1): number {
     case 'throw':
       return event.by === player ? 0 : HAPTICS.heavyHit;
     case 'hit':
-      if (event.by === player) return 0;
+      if (event.by === player) return event.heavy && !event.held ? HAPTICS.heavyGiven : 0;
       if (event.held) return HAPTICS.pummel;
       return event.heavy ? HAPTICS.heavyHit : 0;
     default:
