@@ -525,7 +525,7 @@ Toutes sont vérifiées au chargement (`validateTemplate`, `src/core/validate.ts
 
 **Le stage**
 - Le décor reste entre 10 et 40 % de valeur, et aucun aplat saturé « cyan ou magenta » n'entre dans la bande de 20 à 110 px derrière les combattants (combat-v2 §12.1). La couleur du 3e s'ajoute à cette liste.
-- Aujourd'hui, les flashs se mesurent sur la boîte grise (`FIGHT_STAGE_COLORS`, `src/render/stage-view.ts`). Quand L'Entrepôt sera dessiné, tout se remesurera sur ses grandes couleurs (`src/art/entrepot/colors.ts`).
+- Les flashs se mesurent sur les grandes couleurs du stage (`FIGHT_STAGE_COLORS`, `src/render/stage-view.ts`), celles de la rue devant L'Entrepôt (`src/art/rue/colors.ts`), et sur la boîte grise sans elle.
 
 ### 4.8 Le design
 
@@ -809,7 +809,7 @@ Le perso reste **hors du roster jusqu'à la PR E**. Le jeu en ligne ne change do
 - Les docs et les messages de commit sont en français, les commentaires du code et les identifiants en anglais.
 - **Les messages de commit** suivent la forme `type(portée) : phrase en français`, avec une espace avant le deux-points : `feat(art) : …`, `docs : …`, `test(…) : …`. Un corps dit **pourquoi**, en tirets courts, puis viennent les lignes d'attribution de **sa** session.
 - **Pas de `git add -A`.** On ajoute fichier par fichier, ou dossier par dossier pour son perso, et on relit `git status` avant chaque commit.
-- **Après `npm run sprites`, on vérifie `git status`.** On préfère `npm run sprites -- <perso>` : un passage complet réécrit aussi `public/icons/`, `src/ui/title-vinyl.png` et `src/art/entrepot/`. Deux passes de suite doivent donner les mêmes octets.
+- **Après `npm run sprites`, on vérifie `git status`.** On préfère `npm run sprites -- <perso>` : un passage complet réécrit aussi `public/icons/`, `src/ui/title-vinyl.png` et `src/art/rue/`. Deux passes de suite doivent donner les mêmes octets.
 - **Les fichiers générés ne s'éditent pas** : `cells.ts`, les PNG, les JSON d'atlas, et plus tard `played.ts`. Après un rebase, on régénère au lieu de résoudre un conflit à la main.
 - **Jamais commités** (`.gitignore`) : `art-src/gabarits/`, `tools/sprites/preview/`, `tools/aseprite/dist/`, `tools/anim/out/`.
 - **Avant de pousser**, on lance ce que fait la CI (`.github/workflows/ci.yml`) :

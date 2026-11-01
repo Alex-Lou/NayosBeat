@@ -1,5 +1,6 @@
 import type Phaser from 'phaser';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { STAGE_LAYERS, type StageProp } from '../../src/art/stage-layers';
 import { KeyboardInput, PLAYER1_KEYS, PLAYER2_KEYS } from '../../src/input/keyboard';
 import { PauseInput } from '../../src/input/pause-input';
 import { PlayerInputs } from '../../src/input/player-inputs';
@@ -7,6 +8,7 @@ import { TouchControls } from '../../src/input/touch-controls';
 import { DebugOverlay } from '../../src/render/debug-overlay';
 import { FinisherProps } from '../../src/render/finisher-props';
 import { HoldRing } from '../../src/render/hold-ring';
+import { StagePropsView } from '../../src/render/stage-props';
 import type { RenderMode } from '../../src/render/render-mode';
 import { ControlsStore } from '../../src/input/controls-store';
 import { BindingsScreen } from '../../src/ui/bindings-screen';
@@ -196,5 +198,69 @@ describe('disposal of textures', () => {
     expect(textures.keys()).toHaveLength(1);
     props.dispose();
     expect(textures.keys()).toEqual([]);
+  });
+});
+
+describe('disposal of the stage props', () => {
+  /** A scene that counts the images the props lay and the textures anyone would make. */
+  function propScene() {
+    const images: { destroyed: boolean }[] = [];
+    const made: string[] = [];
+    const frames = new Set<string>();
+    const scene = {
+      add: {
+        image: () => {
+          const image = { destroyed: false };
+          images.push(image);
+          const chain = {
+            setOrigin: () => chain,
+            setScale: () => chain,
+            setScrollFactor: () => chain,
+            setDepth: () => chain,
+            setVisible: () => chain,
+            setFrame: () => chain,
+            setPosition: () => chain,
+            destroy: () => {
+              image.destroyed = true;
+            },
+          };
+          return chain;
+        },
+      },
+      textures: {
+        get: () => ({
+          has: (name: string) => frames.has(name),
+          add: (name: string) => frames.add(name),
+        }),
+        createCanvas: (key: string) => made.push(key),
+        addCanvas: (key: string) => made.push(key),
+      },
+    } as unknown as Phaser.Scene;
+    return { scene, images, made, frames };
+  }
+
+  it('lets go of every image it laid at the end of the fight, and makes no texture', () => {
+    const { scene, images, made, frames } = propScene();
+    const props = new StagePropsView();
+    const layer = { ...STAGE_LAYERS.mid, name: 'mid' as const, url: 'mid.png' };
+    const prop: StageProp = {
+      name: 'queue',
+      layer: 'mid',
+      frames: [null, { x: 2, y: 4, width: 6, height: 8, sheetX: 0, sheetY: 0 }],
+      timeline: [
+        [0, 15],
+        [1, 15],
+      ],
+    };
+    props.add(scene, layer, [prop, { ...prop, name: 'bouncer' }]);
+    props.update(20);
+    expect(images).toHaveLength(2);
+    props.dispose();
+    expect(images.every(({ destroyed }) => destroyed)).toBe(true);
+    // Its frames are named in the sheet the loader made, for the next fight: no texture of its own.
+    expect(made).toEqual([]);
+    expect([...frames]).toEqual(['queue/1', 'bouncer/1']);
+    // Disposed, it plays nothing more.
+    props.update(15);
   });
 });

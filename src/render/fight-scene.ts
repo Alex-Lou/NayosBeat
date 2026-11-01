@@ -47,7 +47,7 @@ import type { StagedLook } from './finisher-scripts';
 import { FinisherSignal, sirenPitchOf } from './finisher-signal';
 import { FlashBudget } from './flash-budget';
 import { FighterView } from './fighter-view';
-import { STAGE_ART } from '../art/entrepot';
+import { STAGE_ART } from '../art/rue';
 import { drawGreyboxStage, GROUND_Y } from './greybox-stage';
 import { hitStyleOf, hudColorOf, type HitStyle } from './hit-styles';
 import { requestLandscapeFullscreen } from './fullscreen';
@@ -62,6 +62,7 @@ import { loadArt } from './art-textures';
 import { contourOf, type SilhouetteLook } from './silhouette';
 import { SpriteFighterView } from './sprite-fighter-view';
 import { drawStage, FIGHT_STAGE_COLORS, loadStage } from './stage-view';
+import type { StagePropsView } from './stage-props';
 import { VIEW_SIZE } from './view';
 
 /** Caps the catch-up after a long stall (~83 ms of simulation at 60 Hz). */
@@ -150,6 +151,8 @@ interface Runtime {
   readonly boxOverlay: BoxOverlay | undefined;
   /** Training: player 1's input history and the frame meter (training-view.ts). */
   readonly trainingView: TrainingView | undefined;
+  /** The stage's animations, when the stage is drawn (stage-props.ts). */
+  readonly stageProps: StagePropsView | undefined;
 }
 
 /**
@@ -267,9 +270,11 @@ export class FightScene extends Phaser.Scene {
     // origin at the top left, the scroll stays the world x of the screen's left edge.
     this.cameras.main.setZoom(this.scale.width / VIEW_SIZE.width).setOrigin(0, 0);
     const stageWidth = toPx(this.config.stage.width);
-    // The Warehouse once drawn (docs/art/aseprite.md), the grey box until then.
-    if (STAGE_ART) drawStage(this, STAGE_ART);
-    else drawGreyboxStage(this, stageWidth, { silhouette: this.sceneData.silhouette, debug });
+    // The street in front of the Warehouse (docs/art/decor-rue.md), the grey box without it.
+    const stageProps = STAGE_ART ? drawStage(this, STAGE_ART) : undefined;
+    if (!STAGE_ART) {
+      drawGreyboxStage(this, stageWidth, { silhouette: this.sceneData.silhouette, debug });
+    }
     const { comfort, mode } = this.sceneData;
     const budget = new FlashBudget(comfort.flashes);
     const touch = isTouchDevice()
@@ -334,6 +339,7 @@ export class FightScene extends Phaser.Scene {
       boxOverlay:
         debug || this.config.training ? new BoxOverlay(this, this.config, GROUND_Y) : undefined,
       trainingView: this.config.training ? new TrainingView(this, this.config) : undefined,
+      stageProps,
     };
     // The Finisher's director: what it draws is made now, with the rest (addScreenCamera).
     const [first, second] = this.sceneData.setup.fighters;
@@ -485,6 +491,7 @@ export class FightScene extends Phaser.Scene {
     // at the zoom it shows at (the last frame's: it eases slowly).
     runtime.budget.advance(visualFrames);
     runtime.budget.setZoom(this.closeUp);
+    runtime.stageProps?.update(visualFrames);
     // Slowed down, the game lives fewer frames than the screen shows.
     const gameFrames = this.pacer ? this.pacer.advance(visualFrames) : visualFrames;
     const startMs = runtime.debugOverlay ? performance.now() : 0;
@@ -670,6 +677,7 @@ export class FightScene extends Phaser.Scene {
     this.runtime.touchCover?.dispose();
     this.runtime.pauseInput.dispose();
     this.runtime.debugOverlay?.destroy();
+    this.runtime.stageProps?.dispose();
     this.runtime = undefined;
   }
 

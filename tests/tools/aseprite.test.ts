@@ -210,14 +210,14 @@ describe('Aseprite templates of the portraits and the stage', () => {
     }
   });
 
-  it('draw the stage layers at their sizes, in free palettes, from the grey box', () => {
+  it("draw the stage layers at their sizes (as fine as the fighters), in free palettes, from the code's street", () => {
     for (const [layer, width, height] of [
-      ['far', 600, 270],
-      ['mid', 720, 270],
-      ['floor', 960, 40],
+      ['far', 1200, 540],
+      ['mid', 1440, 540],
+      ['floor', 1920, 80],
     ] as const) {
       const template = stageTemplateOf(layer, undefined);
-      expect(template, layer).toMatchObject({ folder: 'entrepot', name: layer, width, height });
+      expect(template, layer).toMatchObject({ folder: 'rue', name: layer, width, height });
       expect(template.palette.free).toBe(true);
       expect(template.layers[0]).toMatchObject({ name: 'dessin', file: `${layer}.png` });
     }
@@ -229,16 +229,17 @@ describe('Aseprite templates of the portraits and the stage', () => {
     const guide = far.palette.main.length - 1;
     expect(far.palette.main[guide]).toBe(GUIDE_COLORS.ground);
     const runs = far.layers[1]?.frames[0] ?? [];
-    const pixels = new Uint8Array(600 * 270);
+    const pixels = new Uint8Array(1200 * 540);
     let at = 0;
     for (let index = 0; index < runs.length; index += 2) {
       pixels.fill(runs[index + 1] ?? 0, at, at + (runs[index] ?? 0));
       at += runs[index] ?? 0;
     }
     const rows = new Set(
-      [...pixels.keys()].filter((i) => pixels[i] === guide).map((i) => Math.floor(i / 600)),
+      [...pixels.keys()].filter((i) => pixels[i] === guide).map((i) => Math.floor(i / 1200)),
     );
-    expect([...rows]).toEqual([230]);
+    // World row 230, two image rows.
+    expect([...rows]).toEqual([460, 461]);
     expect(stageTemplateOf('floor', undefined).layers).toHaveLength(1);
   });
 });

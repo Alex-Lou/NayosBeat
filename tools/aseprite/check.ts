@@ -3,16 +3,16 @@
  * stand-in for Aseprite's Lua API (test/aseprite-mock.lua): the templates are written here, the
  * extension makes and exports documents from them as an artist would (test/scenario.lua), and its
  * exports are read back by `npm run sprites`'s own checks and compared with the drawings they
- * started from: a fighter's strips, the title's vinyl and the icons' master. It tests the extension's logic, not Aseprite itself. Needs Lua 5.4 (`lua5.4`, or
+ * started from: a fighter's strips, the title's vinyl, the icons' master and the stage's layers
+ * (the code's street). It tests the extension's logic, not Aseprite itself. Needs Lua 5.4 (`lua5.4`, or
  * `lua`). Run with `npm run aseprite:check`; CI runs it too.
  */
 
 import { spawnSync } from 'node:child_process';
 import { mkdir, rm, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import { STAGE_LAYER_NAMES } from '../../src/art/stage-layers.ts';
+import { STAGE_LAYER_NAMES, STAGE_NAME } from '../../src/art/stage-layers.ts';
 import { CELL_SIZE } from '../../src/art/types.ts';
-import { GREYBOX_COLORS } from '../../src/render/greybox-stage.ts';
 import {
   portraitTemplateOf,
   stageTemplateOf,
@@ -26,6 +26,7 @@ import { NAYO } from '../sprites/nayo/index.ts';
 import type { IndexedImage, Rgba } from '../sprites/png.ts';
 import { drawStrip, drawStripEffects, toPlatine } from '../sprites/sheet.ts';
 import { largeColorsOf, loadStageDrawn, stageStart } from '../sprites/stage-drawn.ts';
+import { drawRue } from '../stage/rue/index.ts';
 import { loadUiDrawn, uiStart } from '../sprites/ui-drawn.ts';
 
 const ROOT = new URL('./dist/check/', import.meta.url);
@@ -100,8 +101,8 @@ async function main(): Promise<void> {
   await mkdir(new URL('nayo/fx/', ROOT), { recursive: true });
   await mkdir(new URL('gabarits/ui/', ROOT), { recursive: true });
   await mkdir(new URL('ui/', ROOT), { recursive: true });
-  await mkdir(new URL('gabarits/entrepot/', ROOT), { recursive: true });
-  await mkdir(new URL('entrepot/', ROOT), { recursive: true });
+  await mkdir(new URL(`gabarits/${STAGE_NAME}/`, ROOT), { recursive: true });
+  await mkdir(new URL(`${STAGE_NAME}/`, ROOT), { recursive: true });
   for (const name of STRIPS) {
     const template = templateOf(NAYO, frameDataOf(NAYO), name, new Map());
     await writeFile(new URL(`gabarits/nayo/${name}.json`, ROOT), JSON.stringify(template));
@@ -116,7 +117,7 @@ async function main(): Promise<void> {
   await writeFile(new URL(`gabarits/nayo/${PORTRAIT}.json`, ROOT), JSON.stringify(portrait));
   for (const layer of STAGE_LAYER_NAMES) {
     await writeFile(
-      new URL(`gabarits/entrepot/${layer}.json`, ROOT),
+      new URL(`gabarits/${STAGE_NAME}/${layer}.json`, ROOT),
       JSON.stringify(stageTemplateOf(layer, undefined)),
     );
   }
@@ -180,15 +181,16 @@ async function main(): Promise<void> {
   // The portrait, in Nayo's slots: as its template started it.
   const start = unrun(portrait.layers[0]?.frames[0] ?? [], PORTRAIT_SIZE, PORTRAIT_SIZE);
   expect('nayo/portrait', differences(drawn.get(PORTRAIT)?.body, start), []);
-  // The stage exported as the grey box it starts from, without its empty middle layer: its large
-  // colors are then the grey box's.
+  // The stage exported as the code's street it starts from, without its emptied middle layer:
+  // the large colors of its far layer and floor are then the code's.
   const stage = await loadStageDrawn(ROOT);
-  expect('entrepot/far', colorDifferences(stage.far, stageStart('far', undefined)), []);
-  expect('entrepot/floor', colorDifferences(stage.floor, stageStart('floor', undefined)), []);
-  if (stage.mid) failures.push('entrepot/mid: an empty layer was exported');
+  expect(`${STAGE_NAME}/far`, colorDifferences(stage.far, stageStart('far', undefined)), []);
+  expect(`${STAGE_NAME}/floor`, colorDifferences(stage.floor, stageStart('floor', undefined)), []);
+  if (stage.mid) failures.push(`${STAGE_NAME}/mid: an empty layer was exported`);
   const colors = largeColorsOf([stage.far, stage.floor].filter((layer) => layer !== undefined));
-  if (colors.join() !== GREYBOX_COLORS.join()) {
-    failures.push(`entrepot: large colors ${colors.join(', ')}, not the grey box's`);
+  const code = largeColorsOf([drawRue().layers.far, drawRue().layers.floor]);
+  if (colors.join() !== code.join()) {
+    failures.push(`${STAGE_NAME}: large colors ${colors.join(', ')}, not the code's`);
   }
   if (failures.length > 0) throw new Error(`Aseprite extension:\n  ${failures.join('\n  ')}`);
   const count = drawn.size + Object.keys(ui).length + Object.keys(stage).length;

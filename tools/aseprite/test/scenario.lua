@@ -195,30 +195,35 @@ assert(#ALERTS == alerts, "a portrait has two colorways: " .. lastAlert())
 click("NayosBeatColorway")
 exported(portrait, "nayo/portrait.png")
 
--- The stage's far layer: 600 × 270, opaque everywhere. A hole is refused, then mended.
-local far = newSheet("far", "entrepot")
-assert(far.width == 600 and far.height == 270, "the far layer's size")
+-- The stage's far layer: 1200 × 540 (as fine as the fighters), from the code's street, opaque
+-- everywhere. A hole is refused, then mended.
+local far = newSheet("far", "rue")
+assert(far.width == 1200 and far.height == 540, "the far layer's size")
 assert(#far.layers == 2 and far.layers[2].name == "guides", "the ground line as a guide")
 local sky = far.layers[1]:cel(1).image
+local was = sky:getPixel(5, 5)
+assert(was ~= 0, "the code's sky is opaque")
 sky:drawPixel(5, 5, 0)
 refused(far, "doit être opaque partout")
-sky:drawPixel(5, 5, 1)
-exported(far, "entrepot/far.png")
+sky:drawPixel(5, 5, was)
+exported(far, "rue/far.png")
 
--- The floor: 960 × 40, whole pixels only. A half-transparent color is refused, then made opaque.
-local floor = newSheet("floor", "entrepot")
-assert(floor.width == 960 and floor.height == 40, "the floor's size")
+-- The floor: 1920 × 80, whole pixels only. A half-transparent color is refused, then made opaque.
+local floor = newSheet("floor", "rue")
+assert(floor.width == 1920 and floor.height == 80, "the floor's size")
 local ground = floor.palettes[1]:getColor(2)
 floor.palettes[1]:setColor(2, Color { r = ground.red, g = ground.green, b = ground.blue, a = 128 })
 refused(floor, "à demi transparente")
 floor.palettes[1]:setColor(2, Color { r = ground.red, g = ground.green, b = ground.blue, a = 255 })
-exported(floor, "entrepot/floor.png")
+exported(floor, "rue/floor.png")
 
--- The middle layer may stay empty: nothing written.
-local mid = newSheet("mid", "entrepot")
+-- The middle layer, emptied, writes nothing: the code's stays.
+local mid = newSheet("mid", "rue")
+assert(mid.width == 1440 and mid.height == 540, "the middle layer's size")
+mid.layers[1]:cel(1).image:clear()
 local before = #ALERTS
 export(mid)
 assert(#ALERTS == before + 1 and not lastAlert():find("mid.png", 1, true), lastAlert())
-assert(not exists("entrepot/mid.png"), "an empty middle layer was written")
+assert(not exists("rue/mid.png"), "an empty middle layer was written")
 
 print("scenario.lua: every step passed")
