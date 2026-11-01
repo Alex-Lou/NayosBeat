@@ -11,7 +11,8 @@ import { isTouchDevice } from './input/touch-controls';
 import { FightScene } from './render/fight-scene';
 import { canTurnLandscape, requestLandscapeFullscreen } from './render/fullscreen';
 import { computeZoom, type Size } from './render/pixel-scaling';
-import { renderModeOf, rendererTypeFromUrl } from './render/render-mode';
+import { rendererChoice } from './render/lean-context';
+import { renderModeOf } from './render/render-mode';
 import { renderScaleFor, renderSizeOf } from './render/view';
 
 /**
@@ -69,19 +70,27 @@ async function loadFonts(): Promise<void> {
 async function start(): Promise<void> {
   await loadFonts();
 
+  // WebGL on the lean context (render/lean-context.ts), else on Phaser's own; Canvas without
+  // WebGL, drawn simplified then (render/render-mode.ts), as `?rendu=canvas` asks.
+  const renderer = rendererChoice(window.location.search, () => document.createElement('canvas'));
   const game = new Phaser.Game({
-    // WebGL, else Canvas: drawn simplified then (render/render-mode.ts), as `?rendu=canvas` asks.
-    type: rendererTypeFromUrl(window.location.search),
+    type: renderer.type,
+    ...('context' in renderer && {
+      canvas: renderer.canvas,
+      // Phaser's types know only a 2D context here; its Config.js takes a WebGL one too.
+      context: renderer.context as unknown as CanvasRenderingContext2D,
+    }),
     parent: 'game',
     width: RENDER_SIZE.width,
     height: RENDER_SIZE.height,
     // Pixel art kept crisp at any zoom, even fractional (the fight camera closes in smoothly).
+    // The multisampling it turns on applies only to Phaser's own context, not to the lean one.
     // One texture per draw call, a workaround for Phaser 4.2: its shader picks a batched quad's
     // texture by testing its interpolated texture index with `==`. A rasterizer that does not
     // interpolate that constant exactly (SwiftShader, headless Chromium's software GL, for any
     // index but 0, 1, 2, 4, 8...) matches no texture there and cuts holes in the quad: the comic
-    // words, last in a crowded batch, came out torn. A fight frame takes 10 to 17 draw calls
-    // instead of 5 to 7.
+    // words, last in a crowded batch, came out torn. A fight frame takes 20 draw calls on average
+    // (25 at most), a Finisher's 37 to 50 (72 at most), instead of 12 (14 at most) in a fight.
     render: { smoothPixelArt: true, maxTextures: 1 },
     // The raw frame time: the fixed timesteps of the fight already bound the catch-up. Phaser's
     // smoothing clamps it to 60 Hz for 120 frames after every resume, which would run the game
