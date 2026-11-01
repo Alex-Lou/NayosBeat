@@ -182,6 +182,7 @@ export function film(route: Route, take: Take = {}): Film {
     feedback,
     budget,
     comfort,
+    mode: 'full',
     humans: [0],
     seen: take.seen ?? new Set(),
   });

@@ -253,6 +253,7 @@ describe('what waits shows on the frame the flash budget keeps it for (docs/flas
         colors: GREYBOX_COLORS,
         budget,
         comfort: { flashes: 'off', shake: 'normal', staging: 'full' },
+        mode: 'full',
       },
     );
     const shown: number[] = [];

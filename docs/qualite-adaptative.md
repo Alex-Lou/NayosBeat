@@ -469,3 +469,40 @@ La règle du plan pour lire la cadence, remise à la place de la nouvelle, fait 
 Ces cas tiennent tous à un appareil chargé ou très bruité. Le compteur d'A dira sur tes appareils s'ils existent. Une lecture de la cadence qui tienne sous la charge (la période la plus longue dont presque tous les deltas sont des multiples) ne se ferait que sur une trace qui le montre.
 
 À vérifier (§7, point 2) : avec `?debug`, un combat CPU contre CPU entier, sur iPhone, iPad, Android et PC/Mac. Le compteur « hors cadence » doit rester à 0 ; sur un écran qui n'est pas à 60 Hz, le 1er combat de la session peut en compter quelques-uns à son début.
+
+**B livrée** le 1er novembre 2026. Elle comprend :
+- `src/render/render-mode.ts` : l'aiguillage, `full` en WebGL, `simple` en Canvas. Il est lu une seule fois, au démarrage (`main.ts`, sur le renderer de Phaser), puis donné à l'app et à chaque combat. `?rendu=canvas` force le Canvas ;
+- en Canvas, rien de ce qu'une teinte colore ou assombrit n'est dessiné :
+  - les voiles teintés sont coupés (halo du super, éclat et vignette du KO, à l'encre compris). La mise au noir du super reste : c'est le remplissage d'un rectangle, que le Canvas dessine ;
+  - les effets éteints par le budget (`FX_DARK`) sont masqués : sprite d'effets (`anchored-sprite.ts`), fantômes de la dissolution (`fx-dissolve.ts`), carte du Finisher (`finisher-card.ts`) ;
+  - les silhouettes pleines sont masquées : écho du Boost, traînée du dash, contour du Finisher ;
+  - les pièces teintes des étincelles (`hit-fx.ts`) ne sont pas jouées ; les formes peintes de Nayo, si ;
+- l'avis « Mode simplifié : ton navigateur n'offre pas l'accélération graphique. », sous l'invite de l'écran titre ;
+- la pause sur une perte du contexte : à chaque image, `FightScene` demande si le contexte est perdu, et `PauseInput` ouvre alors la pause existante, avant tout tic ;
+- `audio: { noAudio: true }` : Phaser ne crée plus de contexte audio. Rien n'utilisait son son.
+
+Preuve :
+- `tests/render/render-mode.test.ts` (l'aiguillage, les sprites, l'écho, la traînée, la carte), `effects.test.ts` (les voiles), `fx-dissolve.test.ts` (les fantômes), `flash-areas.test.ts` (les étincelles, composées comme le Canvas les dessine : sans teinte), `tests/input/pause-input.test.ts` (la pause), `tests/app/options.test.ts` (l'avis, le mode donné aux combats), `glyphs.test.ts` (l'avis dans la police pixel) ;
+- chaque règle cassée exprès fait rougir son test (8 mutations) ;
+- les étincelles en Canvas : avec la coupe, au plus 48 % de leur table (KO de Nayo : 1 574 px² pour 3 300) ; sans elle, 19 cas sur 24 dépassent leur table (KO de Nayo : 3 538 px², de Riff : 1 001 pour 920).
+
+**Essai jetable**, hors du dépôt : le build de production servi par `vite preview`, dans Chromium headless (SwiftShader), avec un KO de fin de combo provoqué.
+
+| Mesure | main | B |
+|---|---|---|
+| Sans WebGL, KO de combo : ΔL des bords de l'écran au pic | 0,148 (voile blanc) | 0,00004 |
+| `?rendu=canvas`, WebGL présent | — | Canvas, ΔL 0,00004 |
+| Avis sur l'écran titre | non | oui |
+| Contextes audio créés | 2 | 1 |
+| Perte du contexte en combat : tics joués en 2 s | 122 | 0, la pause s'ouvre |
+| « Reprendre » pendant la perte | — | 0 tic, la pause revient |
+| Après la restauration | — | la pause tient jusqu'à la reprise ; 235 textures recréées et renvoyées depuis leur source, rien ne manque à l'image |
+
+**Écarts au plan**
+- **La perte se lit à chaque image, et non sur l'événement `LOSE_WEBGL` (§5).** Un événement ne passe qu'une fois : un « Reprendre » ou un « Recommencer » pendant la perte faisait rejouer à l'aveugle. L'état, lui, vaut tant que la perte dure. Le contexte le sait dès `loseContext()`, alors que l'événement n'arrive qu'à la tâche suivante (une image peut passer entre les deux) ; le drapeau de Phaser le garde ensuite jusqu'à ce que ses textures soient refaites. Aucun écouteur n'est ajouté, il n'y a donc rien à libérer à la fermeture de la scène : Phaser garde les siens sur le canvas.
+- **L'avis est sur l'écran titre**, le premier écran de chaque lancement : une ligne fixe, jamais en combat, sans fenêtre à fermer.
+- **En Canvas, presque toutes les étincelles disparaissent.** Toutes leurs pièces sont teintes, sauf le jet peint de Nayo ; Riff n'en garde presque rien (de 0 à 120 px² allumés). C'est le prix de « rien ne flashe hors budget » sans teinte.
+- **La silhouette noire du Finisher reste en couleurs en Canvas** (`shade` est une teinte). Elle n'est jamais plus claire que le combattant, ce n'est donc pas un flash ; son contour, lui, est masqué.
+- **Aucune regénération des textures (R16)** : l'essai n'a montré aucun trou après la restauration.
+
+À vérifier (§7, point 3) : sur iPhone, l'app 1 min en arrière-plan puis le retour (la pause, puis l'image entière à la reprise) ; en Mode Isolement, si tu acceptes de l'activer, l'avis sur l'écran titre et un KO qui ne sort pas blanc.

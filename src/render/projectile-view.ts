@@ -7,6 +7,7 @@ import type { ProjectileState } from '../core/state';
 import { clipFrameAt } from './animation';
 import { DEPTH } from './depth';
 import { AnchoredSprite } from './anchored-sprite';
+import type { RenderMode } from './render-mode';
 
 const COLOR = 0xffb347;
 
@@ -27,6 +28,7 @@ export class ProjectileView {
     private readonly config: MatchConfig,
     private readonly groundY: number,
     private readonly arts: readonly [FighterArt | undefined, FighterArt | undefined],
+    mode: RenderMode,
   ) {
     const rectangle = (): Phaser.GameObjects.Rectangle =>
       scene.add
@@ -37,7 +39,7 @@ export class ProjectileView {
     this.rectangles = [rectangle(), rectangle()];
     const sprite = (art: FighterArt | undefined): AnchoredSprite | undefined => {
       if (!art?.projectiles) return undefined;
-      const view = new AnchoredSprite(scene, art).setDepth(DEPTH.effects);
+      const view = new AnchoredSprite(scene, art, 'body', mode).setDepth(DEPTH.effects);
       view.hide();
       return view;
     };

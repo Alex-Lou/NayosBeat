@@ -11,6 +11,7 @@ import { isTouchDevice } from './input/touch-controls';
 import { FightScene } from './render/fight-scene';
 import { canTurnLandscape, requestLandscapeFullscreen } from './render/fullscreen';
 import { computeZoom, type Size } from './render/pixel-scaling';
+import { renderModeOf, rendererTypeFromUrl } from './render/render-mode';
 import { renderScaleFor, renderSizeOf } from './render/view';
 
 /**
@@ -69,7 +70,8 @@ async function start(): Promise<void> {
   await loadFonts();
 
   const game = new Phaser.Game({
-    type: Phaser.AUTO,
+    // WebGL, else Canvas: drawn simplified then (render/render-mode.ts), as `?rendu=canvas` asks.
+    type: rendererTypeFromUrl(window.location.search),
     parent: 'game',
     width: RENDER_SIZE.width,
     height: RENDER_SIZE.height,
@@ -89,6 +91,9 @@ async function start(): Promise<void> {
     scale: { mode: Phaser.Scale.NONE, zoom: currentZoom() },
     // Devices are read by `input/`; Phaser's own listeners would only duplicate the work.
     input: { keyboard: false, mouse: false, touch: false, gamepad: false },
+    // Every sound is Sfx's (audio/sfx.ts), on its own AudioContext: Phaser's sound manager, unused,
+    // would open a second one for nothing.
+    audio: { noAudio: true },
     // The fight scene is started by the menus.
     scene: [],
   });
@@ -109,7 +114,14 @@ async function start(): Promise<void> {
   const startApp = (): void => {
     try {
       // `?vitesse=2`, `?anim=avant`: to watch the animation in any mode (src/app/viewing.ts).
-      const started = new App(uiRoot(), game, new Sfx(), viewingFromUrl(window.location.search));
+      // The renderer is known once the game has booted: its mode is read here, once.
+      const started = new App(
+        uiRoot(),
+        game,
+        new Sfx(),
+        renderModeOf(game.renderer),
+        viewingFromUrl(window.location.search),
+      );
       started.start();
       app = started;
     } catch (error) {

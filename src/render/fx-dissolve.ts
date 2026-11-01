@@ -13,6 +13,7 @@ import {
   type Ghost,
 } from './dissolve';
 import { FxPixels } from './fx-pixels';
+import type { RenderMode } from './render-mode';
 import { FX_DARK } from './veils';
 
 /** Ghosts going at once, per fighter: the oldest is reused. */
@@ -50,6 +51,7 @@ interface Slot {
  * special, a Remix or a super gives way to one that no longer shows some of it (or to none, the
  * move over or cut short), what goes dissolves where it was (src/render/dissolve.ts), in the
  * look it had (lit, or dark). The pixels of each frame are read once from its strip (FxPixels).
+ * Drawn without tints (`mode` simple), a dark ghost does not show: it would dissolve lit.
  */
 export class FxDissolve {
   private readonly slots: Slot[];
@@ -68,6 +70,7 @@ export class FxDissolve {
      * drifting. Read at each repaint, so the pause's options apply at once.
      */
     public still: boolean,
+    private readonly mode: RenderMode,
     private readonly pixels: FxPixels = new FxPixels(scene, art),
   ) {
     const size = largestCell(art);
@@ -138,6 +141,7 @@ export class FxDissolve {
   }
 
   private spawn(from: ShownFrame, to: ShownFrame | null, dark: boolean): void {
+    if (dark && this.mode === 'simple') return;
     const source = this.pixels.of(from.sheet, from.frame);
     if (!source) return;
     const cell = cellOf(this.art, stripName(from.sheet, 'fx'));

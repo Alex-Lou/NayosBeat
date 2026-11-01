@@ -2,6 +2,7 @@ import type Phaser from 'phaser';
 import { px } from '../../src/core/constants';
 import { HitFx, type HitKind } from '../../src/render/hit-fx';
 import type { HitStyle } from '../../src/render/hit-styles';
+import type { RenderMode } from '../../src/render/render-mode';
 import { darkestOf, FIGHT_STAGE_COLORS } from '../../src/render/stage-view';
 
 /**
@@ -9,8 +10,12 @@ import { darkestOf, FIGHT_STAGE_COLORS } from '../../src/render/stage-view';
  * keeps its images, and each display frame is composited pixel by pixel over the stage's sky as
  * WebGL blends (sRGB, alpha or added), then the world px² whose WCAG luminance rose by 0.1 or
  * more are counted. The test that uses it seeds Math.random: the same effect every run.
- * Phaser must be mocked by the test (its blend modes: NORMAL 0, ADD 1).
+ * Phaser must be mocked by the test (its blend modes: NORMAL 0, ADD 1). Drawn by Canvas, the
+ * same, every tint ignored (Phaser's Canvas renderer has none: render-mode.ts).
  */
+
+/** Who composites the images: WebGL tints them, Canvas does not. */
+export type Compositor = 'webgl' | 'canvas';
 
 /** The stage's sky, its darkest large color: what a spark lights the most (docs/flashs.md §3). */
 const SKY = darkestOf(FIGHT_STAGE_COLORS);
@@ -131,7 +136,7 @@ function luminance(red: number, green: number, blue: number): number {
 }
 
 /** World px² lit at ΔL ≥ 0.1 over the sky, the images as they are now. */
-function litArea(atlas: Atlas, images: readonly FakeImage[]): number {
+function litArea(atlas: Atlas, images: readonly FakeImage[], drawnBy: Compositor): number {
   const columns = WIDTH * SAMPLES;
   const count = columns * HEIGHT * SAMPLES;
   const red = new Float32Array(count).fill((SKY >> 16) & 0xff);
@@ -143,7 +148,8 @@ function litArea(atlas: Atlas, images: readonly FakeImage[]): number {
     const cos = Math.cos(image.rotation);
     const sin = Math.sin(image.rotation);
     const reach = Math.hypot(image.width, image.height) / 2;
-    const tint = [(image.tint >> 16) & 0xff, (image.tint >> 8) & 0xff, image.tint & 0xff];
+    const shown = drawnBy === 'webgl' ? image.tint : 0xffffff;
+    const tint = [(shown >> 16) & 0xff, (shown >> 8) & 0xff, shown & 0xff];
     const [tintRed = 255, tintGreen = 255, tintBlue = 255] = tint.map((channel) => channel / 255);
     const left = Math.max(0, Math.floor((image.x - reach) * SAMPLES));
     const right = Math.min(columns, Math.ceil((image.x + reach) * SAMPLES));
@@ -186,10 +192,20 @@ function litArea(atlas: Atlas, images: readonly FakeImage[]): number {
   return lit / (SAMPLES * SAMPLES);
 }
 
-/** Plays effects on one HitFx and measures them, one at a time. */
+/**
+ * Plays effects on one HitFx, in `mode`, and measures them as `drawnBy` draws them (by default,
+ * the renderer of that mode), one at a time.
+ */
 export class SparkMeter {
   private readonly recorded = recordingScene();
-  private readonly fx = new HitFx(this.recorded.scene, GROUND_Y);
+  private readonly fx: HitFx;
+
+  constructor(
+    mode: RenderMode = 'full',
+    private readonly drawnBy: Compositor = mode === 'full' ? 'webgl' : 'canvas',
+  ) {
+    this.fx = new HitFx(this.recorded.scene, GROUND_Y, mode);
+  }
 
   /**
    * The most world px² a blow's effect lights on one display frame, over its first `frames`
@@ -202,7 +218,7 @@ export class SparkMeter {
     let peak = 0;
     for (let frame = 0; frame < frames; frame++) {
       this.fx.update();
-      peak = Math.max(peak, litArea(this.recorded.atlas, this.recorded.images));
+      peak = Math.max(peak, litArea(this.recorded.atlas, this.recorded.images, this.drawnBy));
     }
     return peak;
   }

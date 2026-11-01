@@ -6,6 +6,7 @@ import { ROSTER, templateOf, type FighterId } from '../data/roster';
 import { ANIM_OPTIONS, LEGACY_ANIM } from '../render/anim-options';
 import type { FightScene, FightSceneData } from '../render/fight-scene';
 import { requestLandscapeFullscreen } from '../render/fullscreen';
+import type { RenderMode } from '../render/render-mode';
 import { isTouchDevice } from '../input/touch-controls';
 import { FighterSelect } from '../ui/fighter-select';
 import { element, Menu, type MenuFeedback, type MenuItem, type MenuOptions } from '../ui/menu';
@@ -105,6 +106,8 @@ export class App {
     private readonly root: HTMLElement,
     private readonly game: Phaser.Game,
     private readonly sfx: Sfx,
+    /** How the game is drawn (render-mode.ts): simplified, the title says why. */
+    private readonly mode: RenderMode,
     private readonly fromUrl: Viewing = DEFAULT_VIEWING,
   ) {
     this.viewing = fromUrl;
@@ -139,14 +142,18 @@ export class App {
 
   private showTitle(): void {
     this.show(
-      new TitleScreen(this.root, () => {
-        // A user gesture: the only moment browsers allow audio and (on mobile) fullscreen.
-        this.sfx.unlock();
-        this.sfx.play('menuConfirm');
-        if (isTouchDevice()) requestLandscapeFullscreen();
-        if (noticeSeen()) this.showMainMenu();
-        else this.showNotice();
-      }),
+      new TitleScreen(
+        this.root,
+        () => {
+          // A user gesture: the only moment browsers allow audio and (on mobile) fullscreen.
+          this.sfx.unlock();
+          this.sfx.play('menuConfirm');
+          if (isTouchDevice()) requestLandscapeFullscreen();
+          if (noticeSeen()) this.showMainMenu();
+          else this.showNotice();
+        },
+        this.mode === 'simple',
+      ),
     );
     this.onTitle = true;
   }
@@ -567,6 +574,7 @@ export class App {
       viewing: this.setup.mode === 'training' ? this.viewing : this.fromUrl,
       boxes: this.setup.mode === 'training' && this.boxes,
       trainingData: this.trainingData,
+      mode: this.mode,
       onPause: () => {
         this.showPause();
       },

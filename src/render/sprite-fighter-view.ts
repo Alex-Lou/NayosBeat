@@ -17,6 +17,7 @@ import { FxGate, type FlashBudget } from './flash-budget';
 import { FxDissolve } from './fx-dissolve';
 import { FxPixels } from './fx-pixels';
 import { hitShakeOf } from './hit-shake';
+import type { RenderMode } from './render-mode';
 import type { ShakeMode } from './shake';
 
 /** Where the 1 px outline of a silhouette is drawn: the body, filled, a world pixel each way. */
@@ -42,6 +43,8 @@ export interface SpriteFighterLook {
   readonly stage: readonly number[];
   /** The fight's flash budget, which its front effects ask (docs/flashs.md §4). */
   readonly budget: FlashBudget;
+  /** How the game is drawn: without tints, nothing tinted shows (render-mode.ts). */
+  readonly mode: RenderMode;
 }
 
 /**
@@ -99,20 +102,23 @@ export class SpriteFighterView {
       0x000000,
       SHADOW_ALPHA,
     );
-    this.trail = new DashTrail(scene, art, trailColor, look.stage);
-    this.echo = new BoostEcho(scene, art);
-    this.body = new AnchoredSprite(scene, art).setDepth(DEPTH.fighterBack);
+    const { mode } = look;
+    this.trail = new DashTrail(scene, art, trailColor, look.stage, mode);
+    this.echo = new BoostEcho(scene, art, mode);
+    this.body = new AnchoredSprite(scene, art, 'body', mode).setDepth(DEPTH.fighterBack);
     this.outline = OUTLINE.map(() => {
-      const sprite = new AnchoredSprite(scene, art).setDepth(DEPTH.fighterBack - OUTLINE_DEPTH);
+      const sprite = new AnchoredSprite(scene, art, 'body', mode).setDepth(
+        DEPTH.fighterBack - OUTLINE_DEPTH,
+      );
       sprite.hide();
       return sprite;
     });
     this.effects = art.fx
-      ? new AnchoredSprite(scene, art, 'fx').setDepth(DEPTH.effects)
+      ? new AnchoredSprite(scene, art, 'fx', mode).setDepth(DEPTH.effects)
       : undefined;
     this.effects?.hide();
     this.dissolve = art.fx
-      ? new FxDissolve(scene, art, look.dissolve, trailColor, false, this.pixels)
+      ? new FxDissolve(scene, art, look.dissolve, trailColor, false, mode, this.pixels)
       : undefined;
   }
 

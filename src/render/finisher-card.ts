@@ -4,6 +4,7 @@ import { COMIC_FONT, hex } from './comic-lettering';
 import { DEPTH } from './depth';
 import type { CardScript } from './finisher-scripts';
 import { PIXEL_FONT } from './hud';
+import type { RenderMode } from './render-mode';
 import { FX_DARK } from './veils';
 
 /**
@@ -11,7 +12,8 @@ import { FX_DARK } from './veils';
  * « QUATRE. » in a neon tube (a cyan line of 2 px, a platine core, a dark rim), Riff's words cut
  * out of paper, a letter on each scrap at an angle from a fixed table, a staple on each word;
  * « FINISHER » small over both, in the pixel font. It comes in once, then holds still: no
- * letter ever trembles. Made once, filled with its words when its scene starts.
+ * letter ever trembles. Made once, filled with its words when its scene starts. Drawn without
+ * tints (`mode` simple), a dark card does not show: its letters would stay lit.
  */
 
 /** Platine and silver, the Boost's and Riff's studs (never gold); the rim's ink. */
@@ -98,6 +100,8 @@ export class FinisherCard {
   private readonly scraps: readonly Scrap[];
   private readonly label: Phaser.GameObjects.Text;
   private look: CardLook = 'lit';
+  /** Dark, drawn without tints: it stays hidden. */
+  private unseen = false;
   private height = 0;
   /** World px, once filled with its words. */
   private cardWidth = 0;
@@ -109,6 +113,7 @@ export class FinisherCard {
     private readonly card: CardScript,
     private readonly energy: number,
     private readonly flat: number,
+    private readonly mode: RenderMode,
   ) {
     const resolution = textResolution(scene.scale.width);
     this.container = scene.add.container(0, 0).setDepth(DEPTH.words).setVisible(false);
@@ -143,6 +148,7 @@ export class FinisherCard {
     const words = this.card.rival?.fighter === victim ? this.card.rival.text : this.card.text;
     this.look = look;
     const dark = look === 'dark';
+    this.unseen = dark && this.mode === 'simple';
     const tint = (object: Phaser.GameObjects.Text) => {
       if (dark) object.setTint(FX_DARK);
       else object.clearTint();
@@ -218,7 +224,7 @@ export class FinisherCard {
     still: boolean,
     since: number,
   ): void {
-    if (!card.shown) {
+    if (!card.shown || this.unseen) {
       this.container.setVisible(false);
       return;
     }

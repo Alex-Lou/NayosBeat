@@ -117,6 +117,35 @@ describe('what a spark lights (docs/flashs.md §1.1)', () => {
       }
     }
   }, 60_000);
+
+  it('drawn by Canvas (no WebGL), never lights more than its table either: tinted pieces are cut', () => {
+    const kinds: HitKind[] = ['light', 'heavy', 'ko', 'pulse', 'koMuted', 'block'];
+    const blows = (['nayo', 'riff'] as const).flatMap((fighter) =>
+      (['main', 'alt'] as const).flatMap((colorway) =>
+        kinds.map((kind) => ({ name: `${fighter} ${colorway} ${kind}`, kind, fighter, colorway })),
+      ),
+    );
+    // One meter after the other: the atlas is painted once a game, by the last HitFx made.
+    const simple = new SparkMeter('simple');
+    const lit = blows.map(({ fighter, colorway, kind }) =>
+      simple.peak(hitStyleOf(fighter, colorway), kind),
+    );
+    blows.forEach(({ name, fighter, kind }, i) => {
+      expect(lit[i], name).toBeLessThanOrEqual(SPARK_AREAS[hitStyleOf(fighter).shape][kind]);
+    });
+    // Nayo's painted burst still shows.
+    expect(lit[blows.findIndex(({ name }) => name === 'nayo main ko')]).toBeGreaterThan(0);
+    // What the cut prevents: every piece played, drawn by Canvas, its tint lost (white).
+    const uncut = new SparkMeter('full', 'canvas');
+    const beyond = blows.filter(
+      ({ fighter, colorway, kind }) =>
+        uncut.peak(hitStyleOf(fighter, colorway), kind) >
+        SPARK_AREAS[hitStyleOf(fighter).shape][kind],
+    );
+    expect(beyond.map(({ name }) => name)).toEqual(
+      expect.arrayContaining(['nayo main ko', 'riff main ko']),
+    );
+  }, 120_000);
 });
 
 const FONTS = new URL('../../node_modules/@fontsource/', import.meta.url);

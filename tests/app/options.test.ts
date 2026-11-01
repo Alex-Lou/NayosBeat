@@ -3,6 +3,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { App } from '../../src/app/app';
 import { viewingFromUrl, type Viewing } from '../../src/app/viewing';
 import type { Sfx } from '../../src/audio/sfx';
+import type { RenderMode } from '../../src/render/render-mode';
+import { SIMPLE_MODE_NOTICE } from '../../src/ui/title-screen';
 import { installFakePage, type FakeElement } from '../render/fake-dom';
 
 /** The elements under `node` that have the class `name`, in page order. */
@@ -13,9 +15,14 @@ function byClass(node: FakeElement, name: string): FakeElement[] {
 
 /**
  * The app on a fake page, its storage `stored`, the system asking for less motion or not, a
- * fight scene that records what it is given.
+ * fight scene that records what it is given, the game drawn in `mode`.
  */
-function launch(stored: Record<string, string> = {}, reducedMotion = false, viewing?: Viewing) {
+function launch(
+  stored: Record<string, string> = {},
+  reducedMotion = false,
+  viewing?: Viewing,
+  mode: RenderMode = 'full',
+) {
   const page = installFakePage();
   if (reducedMotion) {
     Object.assign(page.window, {
@@ -57,7 +64,7 @@ function launch(stored: Record<string, string> = {}, reducedMotion = false, view
   // What the title screen tells a key press by.
   class KeyboardEvent extends Event {}
   vi.stubGlobal('KeyboardEvent', KeyboardEvent);
-  const app = new App(page.body as unknown as HTMLElement, game, sfx, viewing);
+  const app = new App(page.body as unknown as HTMLElement, game, sfx, mode, viewing);
   app.start();
   const press = (code: string) => {
     page.window.dispatchEvent(Object.assign(new KeyboardEvent('keydown'), { code, repeat: false }));
@@ -379,5 +386,38 @@ describe('how a fight is watched (docs/art/animation-plan.md §2, V0)', () => {
     flow.afterFighterChosen(1);
     expect(screen().items).toContain('Vitesse : ¼');
     expect(screen().items).toContain("Animation : d'avant");
+  });
+});
+
+describe('the simplified mode, without WebGL (docs/qualite-adaptative.md §2.3)', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  const titleNotice = (root: FakeElement) => byClass(root, 'title-notice')[0]?.textContent;
+
+  it('says so on the title, and tells every fight', () => {
+    const { app, root, choose, start } = launch(
+      { 'nayosbeat.notice': 'seen' },
+      false,
+      undefined,
+      'simple',
+    );
+    expect(titleNotice(root)).toBe(SIMPLE_MODE_NOTICE);
+    const flow = app as unknown as { setup: object; chooseDummy(): void };
+    flow.setup = { ...flow.setup, mode: 'training' };
+    flow.chooseDummy();
+    choose('Immobile');
+    expect(start).toHaveBeenLastCalledWith('fight', expect.objectContaining({ mode: 'simple' }));
+  });
+
+  it('says nothing with WebGL, its fights drawn whole', () => {
+    const { app, root, choose, start } = launch({ 'nayosbeat.notice': 'seen' });
+    expect(titleNotice(root)).toBeUndefined();
+    const flow = app as unknown as { setup: object; chooseDummy(): void };
+    flow.setup = { ...flow.setup, mode: 'training' };
+    flow.chooseDummy();
+    choose('Immobile');
+    expect(start).toHaveBeenLastCalledWith('fight', expect.objectContaining({ mode: 'full' }));
   });
 });

@@ -2,6 +2,7 @@ import type Phaser from 'phaser';
 import type { FighterArt } from '../art/types';
 import { AnchoredSprite } from './anchored-sprite';
 import { DEPTH } from './depth';
+import type { RenderMode } from './render-mode';
 import { alphaOver, VEIL_DELTA } from './veils';
 
 /** Afterimages per fighter: a fixed pool, the oldest one recycled. */
@@ -16,7 +17,8 @@ const ALPHA = 0.45;
  * The afterimages a dash leaves behind it: silhouettes of the fighter in its energy color, left
  * on the frames the dash glides and fading out. They count the match clock's ticks, so they
  * freeze with the hitstop, and a quiet frame writes nothing. Calm (the flashes reduced or off:
- * docs/flashs.md §4), fainter: they change the stage by less than VEIL_DELTA.
+ * docs/flashs.md §4), fainter: they change the stage by less than VEIL_DELTA. Drawn without tints
+ * (`mode` simple), none shows: a silhouette is a tint.
  */
 export class DashTrail {
   /** Read every frame, so the pause's options apply at once. */
@@ -30,10 +32,16 @@ export class DashTrail {
   private lastLeft: number | null = null;
 
   /** `stage`: the stage's large colors. */
-  constructor(scene: Phaser.Scene, art: FighterArt, color: number, stage: readonly number[]) {
+  constructor(
+    scene: Phaser.Scene,
+    art: FighterArt,
+    color: number,
+    stage: readonly number[],
+    mode: RenderMode,
+  ) {
     this.calmAlpha = Math.min(ALPHA, alphaOver(color, stage, VEIL_DELTA));
     this.images = Array.from({ length: AFTERIMAGES }, () => {
-      const image = new AnchoredSprite(scene, art).setDepth(DEPTH.trail).fill(color);
+      const image = new AnchoredSprite(scene, art, 'body', mode).setDepth(DEPTH.trail).fill(color);
       image.hide();
       return image;
     });

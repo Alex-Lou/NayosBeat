@@ -448,6 +448,15 @@ body {
   font-size: 12px;
   animation: blink 1s steps(2, start) infinite;
 }
+/* The simplified mode, told under the prompt (title-screen.ts): still and muted, never blinking. */
+.title-notice {
+  max-width: 520px;
+  margin: 0;
+  font-size: 8px;
+  line-height: 1.6;
+  text-align: center;
+  color: #aab;
+}
 @keyframes blink {
   to {
     visibility: hidden;

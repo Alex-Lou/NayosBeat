@@ -205,6 +205,7 @@ describe('the victim trembles through the impact freeze (docs/art/animation-plan
       dissolve: 'rise',
       stage: GREYBOX_COLORS,
       budget: new FlashBudget('normal'),
+      mode: 'full',
     });
     const memory = new FightMemory();
     const events: FightEvent[] = [];

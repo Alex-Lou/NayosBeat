@@ -13,6 +13,7 @@ import {
   type HdShapeName,
 } from './hd-shapes';
 import type { HitStyle } from './hit-styles';
+import type { RenderMode } from './render-mode';
 import { VIEW_SIZE } from './view';
 
 /**
@@ -287,6 +288,8 @@ const STRETCH = 1.15;
 /** The KO's smoke: the burst's slate, tinged with the winner's energy (never a grey smudge). */
 const SMOKE_SLATE = 0x33334a;
 const EMBER_TINT = 0xff6a1a;
+/** No tint: a shape in its own colors (a white shape white, a painted one as painted). */
+const WHITE = 0xffffff;
 
 function random(min: number, max: number): number {
   return min + Math.random() * (max - min);
@@ -420,7 +423,9 @@ function paintAtlas(budget: number): void {
  * streaks, his neon energy all around it (an aura, a splash on heavy blows, motion arcs, speed
  * lines, a shock front). Riff cuts with additive blades and shards. Effects run on the display
  * clock (hitstop freezes the fighters, not them). Every piece comes from a fixed pool: nothing
- * is created during a fight.
+ * is created during a fight. Drawn without tints (`mode` simple), a piece tinted any color but
+ * white is not played: its white shape would show white, brighter than the budget counted it;
+ * the painted shapes play as ever.
  */
 export class HitFx {
   /** Pieces of each layer, and its frames (a flipbook's keys, in order). */
@@ -432,6 +437,7 @@ export class HitFx {
   constructor(
     scene: Phaser.Scene,
     private readonly groundY: number,
+    private readonly mode: RenderMode,
   ) {
     createAtlas(scene);
     for (const name of Object.keys(LAYERS) as LayerName[]) {
@@ -1141,6 +1147,8 @@ export class HitFx {
 
   /** Places a piece; the next update() shows it (after its delay). */
   private spawn(spec: PieceSpec, x: number, y: number): void {
+    const tint = spec.color ?? WHITE;
+    if (this.mode === 'simple' && tint !== WHITE) return;
     const pool = this.pools.get(spec.layer);
     const piece = pool?.pieces[pool.next];
     if (!pool || !piece) return;
@@ -1158,7 +1166,7 @@ export class HitFx {
     piece.vy = Math.sin(direction) * speed;
     piece.size = origin.size;
     piece.image
-      .setTint(spec.color ?? 0xffffff)
+      .setTint(tint)
       .setRotation(spec.angle ?? 0)
       .setFlip(spec.mirror ?? false, false)
       .setVisible(false);

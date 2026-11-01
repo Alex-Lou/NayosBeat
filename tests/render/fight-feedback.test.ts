@@ -99,7 +99,7 @@ const SILENT = { play: played } as unknown as Sfx;
 function stageOf(flashes: FlashMode = 'normal'): FeedbackStage {
   const comfort: Comfort = { flashes, shake: 'normal', staging: 'full' };
   const budget = new FlashBudget(flashes);
-  return { width: 640, colors: GREYBOX_COLORS, budget, comfort };
+  return { width: 640, colors: GREYBOX_COLORS, budget, comfort, mode: 'full' };
 }
 
 /** Each tick's events go in, then its blows light up together. */

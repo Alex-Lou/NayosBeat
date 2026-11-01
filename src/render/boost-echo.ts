@@ -2,6 +2,7 @@ import type Phaser from 'phaser';
 import type { FighterArt } from '../art/types';
 import { AnchoredSprite } from './anchored-sprite';
 import { DEPTH } from './depth';
+import type { RenderMode } from './render-mode';
 
 /** The Boost's platine: the silhouettes are white whoever spends. */
 const COLOR = 0xffffff;
@@ -20,6 +21,7 @@ const HISTORY = 7;
  * before, while it plays a move that spends the gauge (a Remix, the Rewind, the super). They
  * count the match clock's ticks, so they freeze with the hitstop and the flash. Calm, a single
  * fainter one. Everything is created up front, and a frame without a Boost move only hides them.
+ * Drawn without tints (`mode` simple), none shows: a silhouette is a tint.
  */
 export class BoostEcho {
   /** Read every frame, so the pause's options apply at once. */
@@ -33,9 +35,9 @@ export class BoostEcho {
   private readonly ys = new Array<number>(HISTORY).fill(0);
   private readonly flips = new Array<boolean>(HISTORY).fill(false);
 
-  constructor(scene: Phaser.Scene, art: FighterArt) {
+  constructor(scene: Phaser.Scene, art: FighterArt, mode: RenderMode) {
     this.images = ECHOES.map(() => {
-      const image = new AnchoredSprite(scene, art).setDepth(DEPTH.trail).fill(COLOR);
+      const image = new AnchoredSprite(scene, art, 'body', mode).setDepth(DEPTH.trail).fill(COLOR);
       image.hide();
       return image;
     });

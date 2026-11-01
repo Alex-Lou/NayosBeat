@@ -18,6 +18,7 @@ import type { FightEvent } from './fight-events';
 import type { FightFeedback } from './fight-feedback';
 import { FinisherCard, type CardLook } from './finisher-card';
 import { FinisherProps, type Scratch } from './finisher-props';
+import type { RenderMode } from './render-mode';
 import {
   busOf,
   cardOf,
@@ -79,6 +80,8 @@ export interface FinisherCast {
   readonly feedback: FightFeedback;
   readonly budget: FlashBudget;
   readonly comfort: Comfort;
+  /** How the game is drawn: without tints, a dark card does not show (render-mode.ts). */
+  readonly mode: RenderMode;
   /** The players who skip the scene by holding a button: the humans. */
   readonly humans: readonly (0 | 1)[];
   /** The fighters whose Finisher the session has played already (the next plays short). */
@@ -187,6 +190,7 @@ export class FinisherScene {
         script.card,
         cast.energies[player],
         script.flats[cast.colorways[player]],
+        cast.mode,
       );
     };
     this.cards = [card(0), card(1)];

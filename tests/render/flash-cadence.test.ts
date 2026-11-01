@@ -326,6 +326,7 @@ function play(route: Route, mode: FlashMode): Played {
     colors: FIGHT_STAGE_COLORS,
     budget,
     comfort,
+    mode: 'full',
     knockOut: (player, finish, still) => {
       hud.knockOut(player, finish, still);
     },
@@ -505,6 +506,7 @@ describe('what waits to show, played tick by tick (docs/flashs.md §4)', () => {
         colors: FIGHT_STAGE_COLORS,
         budget: screen.budget,
         comfort: { flashes: mode, shake: 'normal', staging: 'full' },
+        mode: 'full',
       },
     );
     for (let frame = 1; frame <= 120; frame++) {

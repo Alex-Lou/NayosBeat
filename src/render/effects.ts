@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { DEPTH } from './depth';
+import type { RenderMode } from './render-mode';
 import { Shake, type ShakeAxis } from './shake';
 import {
   GLOW_SIZE,
@@ -26,6 +27,8 @@ export interface EffectsOptions {
   readonly stageWidth: number;
   /** How far the screen shakes (SHAKE_STRENGTH of the player's « Tremblement »). */
   readonly shake: number;
+  /** How the game is drawn: without tints, only the dark shows (render-mode.ts). */
+  readonly mode: RenderMode;
 }
 
 interface Layer {
@@ -43,16 +46,20 @@ interface Layer {
 /**
  * The screen shake and the veils over the fight (docs/flashs.md §2), purely visual, driven by
  * fight events. The dark and the glows are in the world, behind the fighters, who stay lit; the
- * vignette is on the screen, under the HUD. Never a flash over the whole screen.
+ * vignette is on the screen, under the HUD. Never a flash over the whole screen. Drawn without
+ * tints (`mode` simple), the glows and the vignette, white textures tinted per veil, would show
+ * white: they are cut, the dark alone stays (a rectangle's fill).
  */
 export class Effects {
   private readonly shake: Shake;
   private readonly layers: Readonly<Record<VeilKind, Layer>>;
+  private readonly mode: RenderMode;
   private frame = 0;
   private lastColor: { readonly color: number; readonly frame: number } | null = null;
 
   constructor(scene: Phaser.Scene, options: EffectsOptions) {
     this.shake = new Shake(options.shake);
+    this.mode = options.mode;
     paintTextures(scene);
     const { width, height } = VIEW_SIZE;
     const dim = scene.add
@@ -106,13 +113,15 @@ export class Effects {
   /**
    * Starts a veil; `at`: world pixels a glow bursts from; `size`: a glow's size over its own
    * (GLOW_SIZE), smaller at the Finisher's close up (docs/finisher.md §1.14). A colored veil (a
-   * KO's) of another color within COLOR_GAP frames of the last one is dropped.
+   * KO's) of another color within COLOR_GAP frames of the last one is dropped; without tints,
+   * every one but the dark.
    */
   veil(
     look: VeilLook,
     at: { readonly x: number; readonly y: number } = { x: 0, y: 0 },
     size = 1,
   ): void {
+    if (this.mode === 'simple' && look.kind !== 'dim') return;
     if (look.kind === 'vignette' || look.kind === 'eclat') {
       const last = this.lastColor;
       if (last && last.color !== look.color && this.frame - last.frame < COLOR_GAP) return;

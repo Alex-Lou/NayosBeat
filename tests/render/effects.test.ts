@@ -2,6 +2,7 @@ import type Phaser from 'phaser';
 import { describe, expect, it, vi } from 'vitest';
 import { COLOR_GAP, Effects } from '../../src/render/effects';
 import { DEPTH } from '../../src/render/depth';
+import type { RenderMode } from '../../src/render/render-mode';
 import { FIGHT_STAGE_COLORS } from '../../src/render/stage-view';
 import { koVeil, superDim, superHalo, veilLife } from '../../src/render/veils';
 
@@ -55,7 +56,7 @@ class FakeObject {
 }
 
 /** The dark, the halo, the éclat and the vignette, in the order Effects makes them. */
-function effects(): {
+function effects(mode: RenderMode = 'full'): {
   effects: Effects;
   dim: FakeObject;
   halo: FakeObject;
@@ -82,7 +83,7 @@ function effects(): {
     add: { rectangle: make, image: make },
     textures: { exists: () => false, createCanvas: () => texture },
   } as unknown as Phaser.Scene;
-  const fx = new Effects(scene, { stageWidth: 640, shake: 1 });
+  const fx = new Effects(scene, { stageWidth: 640, shake: 1, mode });
   const [dim, halo, eclat, vignette] = made;
   if (!dim || !halo || !eclat || !vignette) throw new Error('Missing layers');
   return { effects: fx, dim, halo, eclat, vignette };
@@ -140,5 +141,44 @@ describe('the veils over the fight (docs/flashs.md §2)', () => {
     fx.update();
     expect(vignette.visible).toBe(true);
     expect(vignette.tint).toBe(MAGENTA);
+  });
+});
+
+describe('the veils drawn without tints (render-mode.ts)', () => {
+  const CYAN_KO = koVeil('ultimate', CYAN, FIGHT_STAGE_COLORS);
+  const MAGENTA_KO = koVeil('combo', MAGENTA, FIGHT_STAGE_COLORS);
+  // The flashes off: the KO's veils in ink, tinted dark all the same.
+  const INK_KO = koVeil('combo', CYAN, FIGHT_STAGE_COLORS, 'off');
+
+  /** Each veil played as the fight plays it, then every frame it could show. */
+  function play(mode: RenderMode) {
+    const layers = effects(mode);
+    const seen = { dim: false, halo: false, eclat: false, vignette: false };
+    const looks = [
+      superDim(FIGHT_STAGE_COLORS),
+      superHalo(FIGHT_STAGE_COLORS),
+      CYAN_KO,
+      MAGENTA_KO,
+      INK_KO,
+    ];
+    for (const look of looks) {
+      if (!look) throw new Error('Missing veil');
+      layers.effects.veil(look, { x: 120, y: 190 });
+      for (let frame = 0; frame <= veilLife(look) + COLOR_GAP; frame++) {
+        layers.effects.update();
+        for (const kind of ['dim', 'halo', 'eclat', 'vignette'] as const) {
+          if (layers[kind].visible) seen[kind] = true;
+        }
+      }
+    }
+    return seen;
+  }
+
+  it('cuts every tinted veil, which would come out white: the dark alone stays', () => {
+    expect(play('simple')).toEqual({ dim: true, halo: false, eclat: false, vignette: false });
+  });
+
+  it('shows them all with WebGL', () => {
+    expect(play('full')).toEqual({ dim: true, halo: true, eclat: true, vignette: true });
   });
 });

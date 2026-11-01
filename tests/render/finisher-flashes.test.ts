@@ -237,6 +237,7 @@ function counted(route: Route, mode: FlashMode, shake: Comfort['shake'] = 'norma
     colors: GREYBOX_COLORS,
     budget,
     comfort,
+    mode: 'full',
     knockOut: (player, finish, still) => {
       hud.knockOut(player, finish, still);
     },

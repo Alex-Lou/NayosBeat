@@ -44,7 +44,9 @@ const CASES: readonly [string, (page: FakePage) => Disposable][] = [
     (page) => new PlayerInputs(asWindow(page), new TouchControls(asParent(page), undefined), []),
   ],
   ['PauseInput', (page) => new PauseInput(asParent(page))],
-  ['TitleScreen', (page) => new TitleScreen(asParent(page), () => undefined)],
+  ['TitleScreen', (page) => new TitleScreen(asParent(page), () => undefined, false)],
+  // Drawn without WebGL, it says so: its notice goes with it.
+  ['TitleScreen, simplified', (page) => new TitleScreen(asParent(page), () => undefined, true)],
   [
     'Menu',
     (page) =>

@@ -7,7 +7,7 @@ const PORTRAIT_PHONE = '(orientation: portrait) and (pointer: coarse)';
 /**
  * Pause requests during a fight: Escape or P, a gamepad's Start button, the on-screen pause
  * button, or the game becoming unplayable for a moment (tab hidden, window left, phone
- * locked or turned to portrait).
+ * locked or turned to portrait, the picture lost with the GPU).
  */
 export class PauseInput {
   private requested = false;
@@ -32,13 +32,18 @@ export class PauseInput {
     document.addEventListener('visibilitychange', this.onVisibilityChange);
   }
 
-  /** Returns true once per pause request. Call once per frame with the connected gamepads. */
-  consume(pads: readonly Gamepad[]): boolean {
+  /**
+   * Returns true once per pause request, and on every call while the fight cannot be seen
+   * (`blind`: the browser took the GPU away, a lost WebGL context): a fight resumed or started
+   * again before the picture is back pauses at once, no tick played unseen. Call once per frame
+   * with the connected gamepads.
+   */
+  consume(pads: readonly Gamepad[], blind: boolean): boolean {
     const startHeld = pads.some((pad) => isPressed(pad, PadButton.Start));
     if (startHeld && !this.startHeld) this.request();
     this.startHeld = startHeld;
 
-    const requested = this.requested;
+    const requested = this.requested || blind;
     this.requested = false;
     return requested;
   }

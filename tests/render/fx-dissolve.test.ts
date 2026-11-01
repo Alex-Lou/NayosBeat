@@ -3,6 +3,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { FighterArt } from '../../src/art/types';
 import { DISSOLVE_FRAMES } from '../../src/render/dissolve';
 import { FxDissolve, type ShownFrame } from '../../src/render/fx-dissolve';
+import type { RenderMode } from '../../src/render/render-mode';
+import { FX_DARK } from '../../src/render/veils';
 
 const CELL = { width: 20, height: 20, anchor: { x: 10, y: 18 } };
 /**
@@ -21,6 +23,8 @@ class FakeImage {
   x = 0;
   y = 0;
   flip = false;
+  /** Its tint, white when it has none. */
+  tint = 0xffffff;
   setScale(): this {
     return this;
   }
@@ -43,9 +47,17 @@ class FakeImage {
     this.flip = flip;
     return this;
   }
+  setTint(tint: number): this {
+    this.tint = tint;
+    return this;
+  }
+  clearTint(): this {
+    this.tint = 0xffffff;
+    return this;
+  }
 }
 
-function setup() {
+function setup(mode: RenderMode = 'full') {
   const images: FakeImage[] = [];
   const uploads = vi.fn();
   const imageData = (width: number, height: number) => ({
@@ -104,7 +116,7 @@ function setup() {
     fx: { big: 'big.png' },
     cells: { 'fx/big': CELL },
   } as unknown as FighterArt;
-  return { dissolve: new FxDissolve(scene, art, 'rise', 0x30e8ff, false), images, uploads };
+  return { dissolve: new FxDissolve(scene, art, 'rise', 0x30e8ff, false, mode), images, uploads };
 }
 
 const at = (frame: number): ShownFrame => ({ sheet: 'big', frame, x: 100, y: 200, flip: false });
@@ -162,5 +174,30 @@ describe('the ghosts of the effects (docs/art/dissolution.md)', () => {
     const first = uploads.mock.calls.length;
     for (let frame = 0; frame < 6; frame++) dissolve.follow(null, false, 1);
     expect(uploads.mock.calls.length - first).toBe(3);
+  });
+});
+
+describe('the ghosts drawn without tints (render-mode.ts)', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  /** A special's effects fading out, drawn dark (the budget refused them) or lit. */
+  function fade(mode: RenderMode, dark: boolean): FakeImage[] {
+    const { dissolve, images } = setup(mode);
+    dissolve.follow(at(0), true, 1, dark);
+    dissolve.follow(at(1), true, 1, dark);
+    return images.filter((image) => image.visible);
+  }
+
+  it('lets a dark ghost go unseen: it would dissolve lit', () => {
+    expect(fade('simple', true)).toEqual([]);
+    const [lit] = fade('simple', false);
+    expect(lit?.tint).toBe(0xffffff);
+  });
+
+  it('dissolves it dark with WebGL', () => {
+    const [ghost] = fade('full', true);
+    expect(ghost?.tint).toBe(FX_DARK);
   });
 });

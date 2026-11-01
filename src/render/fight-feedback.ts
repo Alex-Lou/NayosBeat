@@ -32,6 +32,7 @@ import { SHATTER_VIEW } from './health-bar';
 import { HitFx } from './hit-fx';
 import type { HitStyle } from './hit-styles';
 import { Onomatopoeia } from './onomatopoeia';
+import type { RenderMode } from './render-mode';
 import { SHAKE_STRENGTH, TRAUMA, type ShakeAxis } from './shake';
 import { boostStamp, STAMP_TEXTS, Stamps, type StampLook } from './stamps';
 import { glowFlashArea, koVeil, superDim, superHalo, type VeilLook } from './veils';
@@ -79,6 +80,8 @@ export interface FeedbackStage {
   readonly budget: FlashBudget;
   /** The player's comfort options as the fight starts (then `setComfort`). */
   readonly comfort: Comfort;
+  /** How the game is drawn: without tints, the tinted veils and pieces are cut (render-mode.ts). */
+  readonly mode: RenderMode;
   /**
    * Tells the HUD how `player` fell, on the tick it falls (Hud.knockOut): `still`, its gauges
    * break without their shards, the flash budget leaving no room for them.
@@ -148,7 +151,7 @@ export class FightFeedback {
   ) {
     this.budget = stage.budget;
     const shake = SHAKE_STRENGTH[stage.comfort.shake];
-    this.effects = new Effects(scene, { stageWidth: stage.width, shake });
+    this.effects = new Effects(scene, { stageWidth: stage.width, shake, mode: stage.mode });
     this.superDim = superDim(stage.colors);
     this.superHalo = superHalo(stage.colors);
     this.haloArea = glowFlashArea(this.superHalo, stage.colors);
@@ -157,7 +160,7 @@ export class FightFeedback {
       return look ? glowFlashArea(look, stage.colors) : 0;
     };
     this.eclatAreas = [eclat(styles[0]), eclat(styles[1])];
-    this.hitFx = new HitFx(scene, groundY);
+    this.hitFx = new HitFx(scene, groundY, stage.mode);
     this.blood = new Blood(scene, groundY);
     this.dust = new Dust(scene, groundY);
     this.graze = new Graze(scene, groundY);

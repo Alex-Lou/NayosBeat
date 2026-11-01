@@ -56,6 +56,7 @@ import { Hud } from './hud';
 import { MoveCaption } from './move-caption';
 import type { ShakeMode } from './shake';
 import { ProjectileView } from './projectile-view';
+import { isContextLost, type RenderMode } from './render-mode';
 import { loadArt } from './art-textures';
 import { SpriteFighterView } from './sprite-fighter-view';
 import { drawStage, FIGHT_STAGE_COLORS, loadStage } from './stage-view';
@@ -78,6 +79,9 @@ export interface FightSceneData {
   readonly boxes?: boolean;
   /** Training: its input history and frame meter shown as it starts (then `setTrainingData`). */
   readonly trainingData?: boolean;
+  /** How the game is drawn, read once from the renderer when it starts (render-mode.ts). */
+  readonly mode: RenderMode;
+  /** Also called when the picture is lost with the GPU: the player resumes once it is back. */
   readonly onPause: () => void;
   /** Called once, a moment after the final KO, with the winner's index. */
   readonly onMatchEnd: (winner: 0 | 1 | null) => void;
@@ -258,7 +262,7 @@ export class FightScene extends Phaser.Scene {
     // The Warehouse once drawn (docs/art/aseprite.md), the grey box until then.
     if (STAGE_ART) drawStage(this, STAGE_ART);
     else drawGreyboxStage(this, stageWidth);
-    const { comfort } = this.sceneData;
+    const { comfort, mode } = this.sceneData;
     const budget = new FlashBudget(comfort.flashes);
     const touch = isTouchDevice()
       ? new TouchControls(document.body, requestLandscapeFullscreen, this.styles[0].energy)
@@ -279,7 +283,7 @@ export class FightScene extends Phaser.Scene {
         this.fighterDisplay(0, COLORS.player1, budget),
         this.fighterDisplay(1, COLORS.player2, budget),
       ],
-      projectileView: new ProjectileView(this, this.config, GROUND_Y, this.arts),
+      projectileView: new ProjectileView(this, this.config, GROUND_Y, this.arts, mode),
       budget,
       // Both players hear the siren, each fighter's in its own key.
       finisher: new FinisherSignal(this.config, (player) => {
@@ -301,6 +305,7 @@ export class FightScene extends Phaser.Scene {
           colors: FIGHT_STAGE_COLORS,
           budget,
           comfort,
+          mode,
           knockOut: (player, finish, still) => {
             hud.knockOut(player, finish, still);
           },
@@ -334,6 +339,7 @@ export class FightScene extends Phaser.Scene {
       feedback: runtime.feedback,
       budget,
       comfort,
+      mode,
       humans: this.cpu ? [0] : [0, 1],
       seen: this.sceneData.finishersSeen,
     });
@@ -422,6 +428,7 @@ export class FightScene extends Phaser.Scene {
           dissolve: dissolveStyleOf(style.shape),
           stage: FIGHT_STAGE_COLORS,
           budget,
+          mode: this.sceneData.mode,
         })
       : new FighterView(
           this,
@@ -448,8 +455,11 @@ export class FightScene extends Phaser.Scene {
     if (!runtime || this.paused) return;
 
     const pads = connectedGamepads();
-    // Once the results screen is up, there is nothing left to pause.
-    if (!this.matchEndReported && runtime.pauseInput.consume(pads)) {
+    // Once the results screen is up, there is nothing left to pause. The picture lost with the
+    // GPU, Phaser's loop runs on (docs/qualite-adaptative.md §2.3): the fight pauses before any
+    // tick, on every frame until the picture is back, so that none is played unseen.
+    const blind = isContextLost(this.renderer);
+    if (!this.matchEndReported && runtime.pauseInput.consume(pads, blind)) {
       this.paused = true;
       this.sceneData.onPause();
       return;

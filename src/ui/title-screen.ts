@@ -1,6 +1,17 @@
 import { connectedGamepads } from '../input/gamepad';
 
-/** Title screen: any key, click, tap or gamepad button continues. */
+/**
+ * Why some effects are missing, said on the title (the first screen of every launch), never
+ * during a fight: the browser draws without WebGL (render-mode.ts). In the pixel font: no
+ * capital accented letter.
+ */
+export const SIMPLE_MODE_NOTICE =
+  "Mode simplifié : ton navigateur n'offre pas l'accélération graphique.";
+
+/**
+ * Title screen: any key, click, tap or gamepad button continues. `simplified`: the game is
+ * drawn without WebGL, which it tells under the prompt.
+ */
 export class TitleScreen {
   private readonly root: HTMLDivElement;
   private frameRequest = 0;
@@ -14,6 +25,7 @@ export class TitleScreen {
   constructor(
     parent: HTMLElement,
     private readonly onStart: () => void,
+    simplified: boolean,
   ) {
     this.root = document.createElement('div');
     this.root.className = 'menu title-screen';
@@ -32,6 +44,12 @@ export class TitleScreen {
     version.className = 'title-version';
     version.textContent = `Version du ${buildDate()}`;
     this.root.append(title, prompt, version);
+    if (simplified) {
+      const notice = document.createElement('p');
+      notice.className = 'title-notice';
+      notice.textContent = SIMPLE_MODE_NOTICE;
+      this.root.append(notice);
+    }
     parent.appendChild(this.root);
 
     window.addEventListener('keydown', this.start);

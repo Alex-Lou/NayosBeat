@@ -13,6 +13,7 @@ import { wordFor, type BlowKind } from '../../src/render/onomatopoeia';
 import { boostStamp, STAMP_TEXTS } from '../../src/render/stamps';
 import { noteText } from '../../src/render/training-combo';
 import { NOTES } from './finisher-notes';
+import { SIMPLE_MODE_NOTICE } from '../../src/ui/title-screen';
 import { glyphsOf } from './font-glyphs';
 
 /**
@@ -132,6 +133,8 @@ describe('glyphs', () => {
     const texts = [
       NOTICE.title,
       NOTICE.text,
+      // The title's, drawn without WebGL (render-mode.ts).
+      SIMPLE_MODE_NOTICE,
       ...Object.values(FLASH_LABELS).flatMap(({ label, hint }) => [
         `Effets de flash : ${label}`,
         hint,
