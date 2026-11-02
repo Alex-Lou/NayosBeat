@@ -69,6 +69,7 @@
 | D33 | Le **CPU ne presse que ce qui touche** : au contact, un coup ne part que si sa portée (`threatReach`), plus l'avant du corps adverse tel qu'il le voit, couvre l'écart (son dos s'il est passé derrière, son corps debout s'il est au sol) ; hors de portée de son jab, il avance selon son agressivité. Pour **punir**, le normal et le difficile prennent le coup de leur kit qui fait le plus mal et arrive à temps (lourd, balayage, spécial qui porte, jamais un projectile) ; le facile garde le jab. Mesuré sur 500 matchs entre CPU, chaque perso de chaque côté : Nayo gagne 87 % en difficile (96 avant), 86 % en normal (94) et 94 % en facile (96) ; le Finisher conclut 6 % des matchs gagnés difficiles (4 avant, `docs/finisher.md` §1.11). Le reste de l'écart vient des données, la portée de Riff d'abord (5 px de plus sur ses normaux : 73 % environ, 300 matchs, mesure d'étude), à trancher par le propriétaire | étude d'équilibrage, recommandation suivie à la demande du propriétaire | Le CPU pressait au hasard sous 60 px, quelle que soit sa portée : Riff, plus courte de 8 à 10 px, frappait dans le vide et se faisait punir, et sa Glissade (113 px) ne punissait jamais. Écartés : retoucher ses données (sa portée courte et ses 900 PV sont son identité, et ses boîtes viennent du dessin), lui donner un CPU plus rapide (injuste), un plan propre à Riff (le défaut était le même pour les deux). La Glissade sous le Vinyle ne changeait rien (96,8 %) |
 | D34 | Le **3e combattant de Sound Clash est Saphir**, une contreuse de mi-distance (savate), en données seules : la plus longue portée immobile et la meilleure marche arrière du casting, une Syncope qui touche et ressort, ni reversal ni projectile. Son histoire est indépendante de celles de Nayo et de Riff. Hors du roster jusqu'à la PR E (`docs/art/perso-3.md` §6.1) | propriétaire (porte 0 : concept B ; portes 1a et 1b validées), PR #80 | Un archétype neuf, qui ferme le triangle des matchs ; en données seules, sans PR de cœur. Écartés : les concepts A et C de la porte 0 (`docs/saphir.md`) |
 | D35 | Le **décor se dessine au grain des combattants** (`STAGE_SCALE` = 2 pixels d'image par pixel du monde) et **par le code** (`tools/stage/rue/`), chaque calque pouvant être redessiné à la main dans Aseprite. Ses animations (props) sont jouées par le rendu, image entière par image entière, et retirées d'un calque retouché sous elles. Premier décor : la rue devant L'Entrepôt, la nuit (`docs/art/decor-rue.md`). Ses grandes couleurs restent dans la bande où les effets sont réglés : la plus sombre est le ciel de la boîte grise | propriétaire (« pixel art hyper propre », décor généré par le code puis retouché) | Deux grains de pixel à l'écran se voient tout de suite ; ×2 coûte 7 Mo de mémoire vidéo sur 90. Écartés : garder 1 px = 1 px (décor deux fois plus grossier que les combattants), un décor seulement à la main (pas de premier jet pour le propriétaire), retoucher les règles de flashs pour des vitrines plus claires (le décor reste plus sombre que les combattants, §3 de `docs/flashs.md`) |
+| D36 | **Saphir se bat les mains jointes dans le dos** : tous ses coups aux jambes. Les deux mains au dos au repos et sur ses petits coups, une main lâchée pour l'équilibre sur ses grands coups, les bras libres en l'air et au sol ; ses mains ne prennent vraiment qu'à la prise. Masque de Janus, énergie saphir `#3A6CF0`, et des coups qui la **retournent** (`Pose.turned`) : revers et chassé retournés, Coda en tornade, Chandelle en salto arrière, Valse par-dessus l'épaule ; ses sauts sont dessinés dans la cellule, comme le Contre-ut | propriétaire (porte 2 : « un style de combat bien différent », « il se retourne jamais ? », « il est humain »), PR #90, #100 et #101 | Une silhouette sans poings levés, unique dans le casting ; le Janus garde un visage vers l'adversaire même retournée. Écartés : une garde de boxe (Nayo et Riff l'ont), une garde d'escrimeuse, les bras croisés ; les mains au dos partout (raide) ; faire semblant de la retourner sans outil (l'anatomie la refusait) |
 
 ---
 
@@ -539,6 +540,8 @@ Le Remix n'attend plus le DROP du Crossfader : c'est la version **Boost** d'un s
 
 ## 6. Identités
 
+Le roster compte trois combattants : **Nayo** (§6.1), **Riff** (§6.2) et **Saphir** (§6.6 ; D34, entrée au roster avec les PR #110 et F). La spec complète de Saphir est `docs/saphir.md`. Les numéros des sections ne bougent pas : d'autres documents les citent.
+
 ### 6.1 Nayo, Polyvalent : « il mixe ses combats »
 
 - **Look** (`docs/art/univers.md`) : le visage et le look de Tazz, techwear noir, néon **cyan**, casque audio. Tenue 2 : gris clair et magenta. Effets : croissants néon cyan, gerbes or.
@@ -559,19 +562,19 @@ Le Remix n'attend plus le DROP du Crossfader : c'est la version **Boost** d'un s
 
 ### 6.3 Statistiques comparées
 
-| | Nayo | Riff |
-|---|---|---|
-| PV | 1000 | 900 |
-| Marche avant / arrière | 1,5 / 1,2 | 1,9 / 1,4 |
-| Dash / backdash | 18 tics, 56 px / 22 tics, 44 px | 16 tics, 64 px, annulable f8 / 20 tics, 48 px |
-| Saut (en l'air, sommet, distance) | 31 tics, 79,6 px, 70 px | 27 tics, 66,5 px, 73 px |
-| Coup le plus rapide | 4 tics (Direct, Coup bas) | 3 tics (Jab, Coup bas) |
-| Plus longue portée sans bouger | Crochet 65 px | Coude 56 px |
-| Overheads | Overhand 19 tics | Talon 17 tics, Saut de l'ange 16 tics |
-| Reversal | Uppercut, invincible à tout f0–6 | aucun au sol (Genou : invincible aux attaques aériennes f0–5) |
-| Projectile | Vinyle 3,5 px/tic | aucun (la Glissade passe dessous) |
-| Lancers (devant / derrière, tabassage max) | 100 / 90, 2 × 15 | 85 / 80, 3 × 10 |
-| Combo de base / lanceur | 163 / 164 | 143 / 140 |
+| | Nayo | Riff | Saphir |
+|---|---|---|---|
+| PV | 1000 | 900 | 950 |
+| Marche avant / arrière | 1,5 / 1,2 | 1,9 / 1,4 | 1,6 / 1,6 |
+| Dash / backdash | 18 tics, 56 px / 22 tics, 44 px | 16 tics, 64 px, annulable f8 / 20 tics, 48 px | 18 tics, 48 px / 18 tics, 52 px, anti-prise f0–10 |
+| Saut (en l'air, sommet, distance) | 31 tics, 79,6 px, 70 px | 27 tics, 66,5 px, 73 px | 29 tics, 70,8 px, 66 px |
+| Coup le plus rapide | 4 tics (Direct, Coup bas) | 3 tics (Jab, Coup bas) | 5 tics (Pointe, Coup de pied bas) |
+| Plus longue portée sans bouger | Crochet 65 px | Coude 56 px | Chassé 71,5 px |
+| Overheads | Overhand 19 tics | Talon 17 tics, Saut de l'ange 16 tics | Fouetté plongeant 18 tics (Plongé en corde) |
+| Reversal | Uppercut, invincible à tout f0–6 | aucun au sol (Genou : invincible aux attaques aériennes f0–5) | aucun (Rubato forte : invincible f3–12, pas dès f0) |
+| Projectile | Vinyle 3,5 px/tic | aucun (la Glissade passe dessous) | aucun |
+| Lancers (devant / derrière, tabassage max) | 100 / 90, 2 × 15 | 85 / 80, 3 × 10 | 80 / 85, 3 × 10 |
+| Combo de base / lanceur | 163 / 164 | 143 / 140 | 99 (L, L, L) / 141 (←H → ↓S) |
 
 `tests/data/fighters.test.ts` vérifie ces écarts : chaque personnage a au moins trois forces et trois faiblesses mesurables dans les données (vitesse, PV, démarrage le plus rapide, portée, reversal, projectile).
 
@@ -584,6 +587,21 @@ Le Remix n'attend plus le DROP du Crossfader : c'est la version **Boost** d'un s
 - Le Retourné et le Genou montant passent au-dessus du Coup bas et du Balayage (de f6 à f10, de f4 à f15) : Nayo les prend au démarrage, ou frappe moyen.
 - Le cross-up de Riff au réveil oblige Nayo à deviner, à backdasher (contre la prise) ou à sortir l'Uppercut.
 
+**Avec Saphir** (`docs/saphir.md` §3). Pente visée : favorable contre Nayo, défavorable contre Riff, à 6-4 au plus, un triangle (Saphir bat Nayo, Riff bat Saphir, Nayo bat Riff).
+- Saphir veut 60 à 100 px. Contre Nayo, son Chassé (71,5 px) dépasse le Crochet et la Syncope touche à 99,5 px puis ressort ; le Vinyle reste la réponse de Nayo, que le Rubato forte traverse.
+- Contre Riff, le Jab (3 tics) passe avant la Pointe (5) sous 60 px, et la Glissade passe sous le Chassé et la Syncope ; le Coup de pied bas et la Fauche la touchent.
+
+**Mesuré entre CPU** (PR F, banc hors du dépôt, 400 matchs par paire et par niveau, chaque perso de chaque côté à tour de rôle). Taux de victoire de la ligne :
+
+| | Facile | Normal | Difficile |
+|---|---|---|---|
+| Saphir contre Nayo | 19 % | 24 % | 14 % |
+| Saphir contre Riff | 72 % | 62 % | 61 % |
+| Nayo contre Riff (rappel) | 94 % | 88 % | 86 % |
+| Saphir en miroir, joueur 1 | 57 % | 47 % | 55 % |
+
+Entre CPU, le triangle visé n'existe pas : Nayo bat tout le monde, et Saphir bat Riff. Ses plans du CPU font l'écart (en difficile, sans plans : 4 % contre Nayo, 34 % contre Riff). Un CPU ne presse ses normaux qu'en deçà de 60 px (`CLOSE_RANGE`, `src/ai/cpu.ts`) : sa mi-distance ne se joue pas entre eux. Aucune donnée de Saphir n'est changée ici. Les leviers mesurés en difficile, sans être appliqués, gagnent peu contre Nayo et creusent l'écart contre Riff : 1000 PV, 15,5 % (Riff : 66 %) ; 1050 PV, 21 % (72 %) ; dégâts +15 %, 22,5 % (77 %) ; 1000 PV et dégâts +10 %, 23 % (76,5 %) ; Chassé en 9 tics, 18,5 % (67 %) ; Pointe en 4 tics, 18 % (64,5 %). Le choix est au propriétaire.
+
 ### 6.5 Les quatre suivants (`univers.md`) : une mécanique chacun, codée le jour où on les fait (YAGNI)
 
 | Perso | Archétype | Mécanique signature | Force | Faiblesse |
@@ -594,6 +612,17 @@ Le Remix n'attend plus le DROP du Crossfader : c'est la version **Boost** d'un s
 | **Kitsune** (Archipel) | Filou | « Bond du renard » : téléportation courte derrière l'adversaire | Mélanges | Dégâts faibles, téléport punissable |
 
 Règle de casting : les **mêmes directions** pour les mêmes rôles (§5.1), seuls le contenu et l'outil signature changent. Un fichier de données par personnage (`data/fighters/<nom>.ts`) : les gabarits POLYVALENT et RUSHDOWN deviennent des archétypes (une intention), plus des chiffres partagés.
+
+### 6.6 Saphir, Contreuse : « un pas, une touche, dehors »
+
+Résumé de `docs/saphir.md` §1, qui fait foi.
+- **Look** : une légende masquée d'une trentaine d'années, au **masque de Janus** en laque saphir, en tenue de scène ivoire, noire et saphir, qui se bat **les mains jointes dans le dos** : seules ses jambes frappent (D36). Tenue 2 : la même, inversée.
+- **Couleurs et effets** : énergie saphir `#3A6CF0` (tenue 2 : lilas `#C0A0FF`), arcs `slash`, éclats crème `#F0E2BC`.
+- **Personnalité** : polie, elle vouvoie et parle peu ; elle invite, attend, puis punit.
+- **Plan de jeu** : tenir l'adversaire entre 60 et 100 px ; le Chassé pour gagner les échanges de pieds, la Syncope pour toucher de loin et ressortir, le Rubato pour punir de très loin, l'Esquive pour sortir du contact, le Contre-ut contre les sauts.
+- **Forces** : la plus longue portée sans bouger (Chassé 71,5 px) ; la marche arrière la plus rapide (1,6) et le plus long backdash (52 px) ; la Syncope (99,5 px, puis 28 px de recul) et le Rubato (103,5 px).
+- **Faiblesses** : le coup le plus rapide le plus lent (5 tics) ; ni reversal, ni projectile, un Contre-ut sans invincibilité ; des combos courts (10 à 21 % de la vie de Nayo sans jauge par ses routes ; la recherche en faisceau trouve au plus 31 % de celle de Riff) et un tabassage faible.
+- **Finisher** : « Face B », la Coda lancée armée (`docs/saphir.md` §7, `docs/finisher.md`).
 
 ---
 
@@ -918,6 +947,10 @@ Un Remix garde la planche et le timing de son spécial (D18) ; le chip reste cel
 | Riff | specialAntiAirBoost | ↓ + BOOST | Genou à fond | 4/6/24 (34) | 115 (17) | lance (5, 2 points)/12 | 12 | mid | 1 | **invincible à tout** f0–6 : son seul reversal au sol |
 | Riff | super | ← + BOOST | **Slam** | 12/8/26 (46) | 120, 170 (18, 25) | 24, KD (5 ; vx 2,5)/14 | 12, 22 | overhead | 3 | bondit à 40 px, 30 px en avant (tics 2–11), flash de 20 tics à f10, frappes à f12 et f16 ; **sans invincibilité** ; **−15** en garde |
 | Riff | boostCancel | DASH après le contact | **Pogo** | 1/6/3 (10) | — | — | — | — | 1 | un bond de 24 px ; flash de 6 tics ; annulable dès f3 |
+
+### 10.6 Saphir (950 PV)
+
+Sa frame data, ses prises, ses déplacements et son Boost sont dans `docs/saphir.md` (§4.2, §6), au même format ; ses portées sont figées avec celles des autres (`tests/data/ranges.test.ts`).
 
 ---
 
@@ -1465,9 +1498,17 @@ Chaque phase (et chaque PR à l'intérieur) laisse une build **jouable sur PC et
 - **CONTRE** : frappe quelqu'un qui attaque, ça fait plus mal. **PUNITION** : frappe-le quand il rate.
 - **Le Crossfader** (phase 5) : avance, attaque, fais garder ton projectile : le curseur vient vers toi et la musique devient la tienne. Curseur à fond : **DROP** sur le prochain temps fort. Tu frappes plus fort et la foule te donne une barre de Boost.
 
-Descriptions de sélection (`roster.ts`) : Nayo « Boxeur-DJ posé · portée · Vinyle · Uppercut invincible · Mégabasse » ; Riff « Punk de rue explosive · dash · Glissade · deux overheads · moins de vie ».
+Descriptions de sélection (`roster.ts`) : Nayo « Boxeur-DJ posé · portée · Vinyle · Uppercut invincible · Mégabasse » ; Riff « Punk de rue explosive · dash · Glissade · deux overheads · moins de vie » ; Saphir « Masquée en savate · mi-distance · Syncope · Rubato · sans reversal ».
 
 Écran de sélection (`ui/fighter-select.ts`, `app/select-fighters.ts`) : une grille de 10 cases (2 rangées de 5), les combattants dans l'ordre du roster, puis des cases « ? » gardées pour ceux à venir ; un cadre jaune lumineux sur la case choisie ; à côté, le combattant en garde, son idle à la cadence du jeu (pas inégaux compris), son nom et sa description. Clavier (flèches, ZQSD), manette (croix ou stick, A, B), souris et tactile (un clic ou un tap choisit). Quand le joueur 2 choisit, la case du joueur 1 porte « J1 », et le même combattant s'affiche dans sa seconde tenue ; « Aléatoire » sous la grille, contre le CPU et le mannequin. Le buste de chaque case est un carré de la première image de l'idle (`portrait` de l'art, vérifié par `validateArt`). Mouvements réduits : le combattant reste sur sa première image, le cadre ne pulse plus.
+
+### 17.4 Saphir, la masquée : elle esquive, attend et punit
+
+Le texte de son écran est `src/data/texts/saphir.ts` ; l'essentiel :
+- **Syncope** (S, ou ↓↘→ + un coup) : un pas de swing, la jambe passe par-dessus sa tête et retombe de loin, puis elle repart en arrière. Parée tout près, elle se punit ; de loin, Saphir est déjà repartie.
+- **Rubato** (→ + S) : elle retient son poids, puis fond sur l'adversaire, en retard exprès. Il punit un coup raté de très loin et met au sol ; un projectile l'arrête en route.
+- **Contre-ut** (↓ + S) : elle bondit, la jambe tendue vers le ciel, contre les sauts. **Sans invincibilité** : Saphir n'a aucun coup magique pour sortir d'une pression.
+- **Son Boost**, « forte » (BOOST, une barre) : la Syncope forte, qui met au sol ; le **Rubato forte** (→ + BOOST), invincible pendant son élan, qui traverse le Vinyle ; le Contre-ut forte (↓ + BOOST), sûr contre les sauts. La **Coda** (← + BOOST, 3 barres) finit un combo ; FINISH allumé, c'est **Face B**.
 
 ---
 
