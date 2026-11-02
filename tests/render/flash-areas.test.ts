@@ -115,6 +115,33 @@ describe('what a spark lights (docs/flashs.md §1.1)', () => {
     }
   }, 60_000);
 
+  // P3, P4: a heavy guard bigger, its spark refused two streaks, a whiff two faint ripples.
+  it('measures the guards and the whiff under their table, the streaks and the ripples next to nothing', () => {
+    const kinds = ['blockHeavy', 'blockMuted', 'whiff'] as const;
+    for (const mode of ['full', 'simple'] as const) {
+      const meter = new SparkMeter(mode);
+      for (const fighter of ['nayo', 'riff'] as const) {
+        for (const colorway of ['main', 'alt'] as const) {
+          const style = hitStyleOf(fighter, colorway);
+          for (const kind of kinds) {
+            expect(
+              meter.peak(style, kind),
+              `${mode} ${fighter} ${colorway} ${kind}`,
+            ).toBeLessThanOrEqual(SPARK_AREAS[style.shape][kind]);
+          }
+        }
+      }
+    }
+    for (const areas of Object.values(SPARK_AREAS)) {
+      expect(areas.blockHeavy).toBeGreaterThan(areas.block);
+      expect(areas.blockMuted).toBeLessThan(60);
+      expect(areas.whiff).toBeLessThan(150);
+    }
+    // Nayo's heavy guard, the brightest, is measured: within 10 %.
+    const nayo = new SparkMeter().peak(hitStyleOf('nayo'), 'blockHeavy');
+    expect(nayo).toBeGreaterThan(SPARK_AREAS.slash.blockHeavy * 0.9);
+  }, 60_000);
+
   it('drawn by Canvas (no WebGL), never lights more than its table either: tinted pieces are cut', () => {
     const kinds: HitKind[] = ['light', 'heavy', 'ko', 'pulse', 'koMuted', 'block', 'pinpoint'];
     const blows = (['nayo', 'riff'] as const).flatMap((fighter) =>

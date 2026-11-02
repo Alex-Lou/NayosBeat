@@ -218,7 +218,15 @@ describe('the camera push on a strong blow (P12)', () => {
     expect(pushOf([], frozenState, BEFORE, heavy)).toBe(NO_PUSH);
     expect(pushOf([], BEFORE, { ...BEFORE, hitstop: 20 }, NO_PUSH)).toBe(NO_PUSH);
     expect(pushOf([hit(250)], BEFORE, BEFORE, heavy)).toBe(NO_PUSH);
-    const block = { type: 'block', x: px(250), y: 0, away: 1, by: 0, low: false } as const;
+    const block = {
+      type: 'block',
+      heavy: true,
+      x: px(250),
+      y: 0,
+      away: 1,
+      by: 0,
+      low: false,
+    } as const;
     expect(pushOf([block], BEFORE, BEFORE, heavy)).toBe(NO_PUSH);
     // A trade: the stronger blow.
     expect(pushed([hit(250, { heavy: true }), ko(240, 'plain', 1)])).toEqual({

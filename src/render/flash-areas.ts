@@ -1,5 +1,5 @@
 import { pinpoints, type FightEvent } from './fight-events';
-import type { HitKind } from './hit-fx';
+import type { FxKind, HitKind } from './hit-fx';
 import type { HitStyle } from './hit-styles';
 import { POP_PEAK, type BlowKind } from './onomatopoeia';
 import { ARRIVAL_PEAK, SLAM_FROM } from './stamps';
@@ -15,9 +15,31 @@ import { ARRIVAL_PEAK, SLAM_FROM } from './stamps';
 
 export type SparkLook = Exclude<HitKind, 'block'>;
 
-export const SPARK_AREAS: Readonly<Record<HitStyle['shape'], Readonly<Record<HitKind, number>>>> = {
-  slash: { light: 400, heavy: 1330, ko: 3300, pulse: 430, koMuted: 440, block: 95, pinpoint: 115 },
-  claw: { light: 120, heavy: 490, ko: 920, pulse: 490, koMuted: 440, block: 95, pinpoint: 148 },
+export const SPARK_AREAS: Readonly<Record<HitStyle['shape'], Readonly<Record<FxKind, number>>>> = {
+  slash: {
+    light: 400,
+    heavy: 1330,
+    ko: 3300,
+    pulse: 430,
+    koMuted: 440,
+    block: 95,
+    pinpoint: 115,
+    blockHeavy: 175,
+    blockMuted: 10,
+    whiff: 10,
+  },
+  claw: {
+    light: 120,
+    heavy: 490,
+    ko: 920,
+    pulse: 490,
+    koMuted: 440,
+    block: 95,
+    pinpoint: 148,
+    blockHeavy: 160,
+    blockMuted: 10,
+    whiff: 10,
+  },
 };
 /**
  * A low blow's grazing spark, at most: its flat flash (14 × 2) and its streaks along the floor on

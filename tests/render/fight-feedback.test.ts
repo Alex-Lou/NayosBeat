@@ -181,6 +181,71 @@ describe('the weight of a blow on the screen (docs/polish/AUDIT-ET-PLAN.md, P2)'
   });
 });
 
+describe('the weight of a guard (docs/polish/AUDIT-ET-PLAN.md, P3)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  /** A blow of `by` blocked, `heavy` or not. */
+  const block = (heavy: boolean, by: 0 | 1 = 0): FightEvent => ({
+    type: 'block',
+    heavy,
+    x: px(200),
+    y: px(50),
+    away: -1,
+    by,
+    low: false,
+  });
+
+  it('plays a bigger spark and jolts the picture for a heavy blow blocked, nothing more for a light one', () => {
+    feedback().react(block(true));
+    expect(shown.burst).toHaveBeenCalledWith(NAYO_STYLE, 'blockHeavy', px(200), px(50), -1);
+    expect(shown.lightJolt).toHaveBeenCalledWith(-1);
+    expect(shown.jolt).not.toHaveBeenCalled();
+    vi.clearAllMocks();
+    feedback().react(block(false));
+    expect(shown.burst).toHaveBeenCalledWith(NAYO_STYLE, 'block', px(200), px(50), -1);
+    expect(shown.lightJolt).not.toHaveBeenCalled();
+  });
+
+  it("vibrates the phone of who guards a heavy blow, 8 ms, never the attacker's", () => {
+    const vibrate = vi.fn();
+    const feedback = new FightFeedback(
+      {} as Phaser.Scene,
+      400,
+      SILENT,
+      [NAYO_STYLE, NAYO_STYLE],
+      stageOf(),
+      vibrate,
+    );
+    feedback.react(block(true, 1), 0);
+    expect(vibrate).toHaveBeenCalledWith(8);
+    vibrate.mockClear();
+    feedback.react(block(true), 0);
+    feedback.react(block(false, 1), 0);
+    expect(vibrate).not.toHaveBeenCalled();
+  });
+});
+
+describe('a heavy blow that touched nothing (docs/polish/AUDIT-ET-PLAN.md, P4)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('ripples at the end of its reach, silent, if it makes no flash', () => {
+    const whiff = { type: 'whiff', by: 0, x: px(240), y: px(52), toward: 1 } as const;
+    feedback().react(whiff);
+    expect(shown.burst).toHaveBeenCalledWith(NAYO_STYLE, 'whiff', px(240), px(52), 1);
+    expect(shown.word).not.toHaveBeenCalled();
+    expect(played).not.toHaveBeenCalled();
+    vi.clearAllMocks();
+    const full = new Fight(stageOf('off'));
+    full.stage.budget.show(470);
+    full.react(whiff);
+    expect(shown.burst).not.toHaveBeenCalled();
+  });
+});
+
 describe('the trail of a fighter pushed along the floor (P7)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -655,13 +720,21 @@ describe('the flash budget, asked once a tick (docs/flashs.md §4)', () => {
     fight.react({ type: 'boost', ...at });
     // Too soon after a flash: calm, at once, since that makes none.
     expect(shown.stamp).toHaveBeenLastCalledWith('REMIX !', expect.anything(), 0, 0, true, {});
+    const block = { type: 'block', heavy: false, away: 1, low: false, ...at } as const;
     const spent = new Fight(stageOf('off'));
     spent.stage.budget.show(450);
-    spent.react({ type: 'block', away: 1, low: false, ...at });
-    expect(shown.burst).not.toHaveBeenCalled();
+    spent.react(block);
+    // Refused: its two streaks instead (P3), which light next to nothing.
+    expect(shown.burst).toHaveBeenCalledOnce();
+    expect(shown.burst).toHaveBeenCalledWith(NAYO_STYLE, 'blockMuted', px(200), 0, 1);
     spent.wait(3);
-    spent.react({ type: 'block', away: 1, low: false, ...at });
-    expect(shown.burst).toHaveBeenCalledWith(NAYO_STYLE, 'block', px(200), 0, 1);
+    spent.react(block);
+    expect(shown.burst).toHaveBeenLastCalledWith(NAYO_STYLE, 'block', px(200), 0, 1);
+    // No room even for them: nothing.
+    const full = new Fight(stageOf('off'));
+    full.stage.budget.show(470);
+    full.react(block);
+    expect(shown.burst).toHaveBeenCalledTimes(2);
   });
 
   it("lets the super's halo flash with the flashes normal, if the budget lets it", () => {

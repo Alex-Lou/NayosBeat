@@ -1,7 +1,7 @@
 import type Phaser from 'phaser';
 import { px } from '../../src/core/constants';
 import { FxRandom } from '../../src/render/fx-random';
-import { HitFx, type HitKind } from '../../src/render/hit-fx';
+import { HitFx, type FxKind, type HitKind } from '../../src/render/hit-fx';
 import type { HitStyle } from '../../src/render/hit-styles';
 import type { RenderMode } from '../../src/render/render-mode';
 import { darkestOf, FIGHT_STAGE_COLORS } from '../../src/render/stage-view';
@@ -277,7 +277,7 @@ export class SparkMeter {
    * The most world px² a blow's effect lights on one display frame, over its first `frames`
    * (its peak is in its first frames: the burst, the aura, the splash).
    */
-  peak(style: HitStyle, kind: HitKind, frames = 14): number {
+  peak(style: HitStyle, kind: FxKind, frames = 14): number {
     // What the last effect left is long gone.
     for (let i = 0; i < 200; i++) this.fx.update();
     this.fx.play(style, kind, px(CENTER_X), px(GROUND_Y - CENTER_Y), 1);

@@ -24,6 +24,17 @@ import { VIEW_SIZE } from './view';
  * hiding the victim (docs/polish/AUDIT-ET-PLAN.md, P5).
  */
 export type HitKind = 'light' | 'heavy' | 'block' | 'ko' | 'pulse' | 'koMuted' | 'pinpoint';
+/**
+ * Everything HitFx plays: a blow's effect (HitKind); a heavy blow blocked, its guard's spark
+ * HEAVY_GUARD times bigger, and the two streaks a guard plays when the flash budget refuses its
+ * spark (docs/polish/AUDIT-ET-PLAN.md, P3); a heavy blow's whiff, two faint ripples at the end of
+ * its reach (P4).
+ */
+export type FxKind = HitKind | 'blockHeavy' | 'blockMuted' | 'whiff';
+/** A heavy blow blocked: its guard's spark this many times bigger, every piece (P3). */
+const HEAVY_GUARD = 1.3;
+/** The streaks glancing off Nayo's guard: more for a heavy blow blocked (P3). */
+const GUARD_STREAKS = { light: 6, heavy: 10 } as const;
 
 type FlipbookName = keyof typeof HD_FLIPBOOKS;
 /** What a piece draws: a shape of its own, or a flipbook of several. */
@@ -527,7 +538,7 @@ export class HitFx {
    * the blow going `away` (1: to the right); `size` times its own, every piece around the impact
    * (the Finisher's close up: docs/finisher.md §1.14).
    */
-  play(style: HitStyle, kind: HitKind, x: number, y: number, away: 1 | -1, size = 1): void {
+  play(style: HitStyle, kind: FxKind, x: number, y: number, away: 1 | -1, size = 1): void {
     // A blow before the atlas is all painted (never seen: the intro is longer) waits for it.
     paintAtlas(Infinity);
     // A special's or a projectile's, on the contact: a little back toward the attacker.
@@ -537,12 +548,18 @@ export class HitFx {
     const py = this.groundY - Math.max(toPx(y), ko ? KO_LIFT : 0);
     this.origin.x = px;
     this.origin.y = py;
-    this.origin.size = size;
+    this.origin.size = kind === 'blockHeavy' ? size * HEAVY_GUARD : size;
     const direction = away > 0 ? 0 : Math.PI;
-    if (style.shape === 'slash') {
-      if (kind === 'block') this.guard(style, px, py, direction);
+    const guard = kind === 'block' || kind === 'blockHeavy';
+    if (kind === 'whiff') {
+      this.whiff(style, px, py, direction);
+    } else if (kind === 'blockMuted') {
+      this.glance(style, px, py, direction);
+    } else if (style.shape === 'slash') {
+      const streaks = GUARD_STREAKS[kind === 'blockHeavy' ? 'heavy' : 'light'];
+      if (guard) this.guard(style, px, py, direction, streaks);
       else this.star(style, STARS[kind], px, py, direction);
-    } else if (kind === 'block') {
+    } else if (guard) {
       this.clawBlock(style, px, py, direction);
     } else if (kind === 'pinpoint') {
       this.clawPinpoint(style, px, py, direction);
@@ -923,7 +940,7 @@ export class HitFx {
     angle: number,
     distance: number,
     radius: number,
-    motion: Pick<PieceSpec, 'delay' | 'life' | 'alpha' | 'speed'>,
+    motion: Pick<PieceSpec, 'delay' | 'life' | 'alpha' | 'speed' | 'ramp'>,
   ): void {
     const scale = radius / ARC.radius;
     const size: [number, number] = [ARC.width * scale, ARC.height * scale];
@@ -937,10 +954,10 @@ export class HitFx {
 
   /**
    * Nayo's blocked blow: his energy deflected off the guard. A shield flares up bulging back
-   * toward him with a glint where the blow met it, ripples run off it, sparks glance away. No
+   * toward him with a glint where the blow met it, ripples run off it, `streaks` glance away. No
    * fire: nothing went through.
    */
-  private guard(style: HitStyle, x: number, y: number, direction: number): void {
+  private guard(style: HitStyle, x: number, y: number, direction: number, streaks: number): void {
     const back = direction + Math.PI;
     const guardX = x + Math.cos(back) * 2;
     const pale = lighten(style.energy, 0.55);
@@ -1003,7 +1020,7 @@ export class HitFx {
         speed: 1.4,
       });
     }
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < streaks; i++) {
       // Glancing off the guard, never straight back.
       const side = i % 2 === 0 ? 1 : -1;
       const angle = back + side * this.random.between(0.5, 1.25);
@@ -1137,7 +1154,10 @@ export class HitFx {
     this.sparks(style, 5, 0.8, x, y, direction);
   }
 
-  /** Riff's blocked blow: a ring in her energy, shards glancing back off the guard. */
+  /**
+   * Riff's blocked blow: a ring in her energy, shards and short streaks glancing back off the
+   * guard (P3: 12 pieces, as Nayo's guard reads).
+   */
   private clawBlock(style: HitStyle, x: number, y: number, direction: number): void {
     this.spawn(
       { layer: 'halo', color: style.energy, life: 7, from: [10, 10], to: [22, 22], alpha: 0.5 },
@@ -1167,6 +1187,73 @@ export class HitFx {
         x,
         y,
       );
+    }
+    const pale = lighten(style.energy, 0.45);
+    for (let i = 0; i < 4; i++) {
+      // Glancing off the guard past the ring, never straight back.
+      const side = i % 2 === 0 ? 1 : -1;
+      this.spawn(
+        {
+          layer: 'streak',
+          color: i < 2 ? pale : style.energy,
+          life: this.random.between(6, 8),
+          from: [this.random.between(9, 12), 2],
+          to: [4, 0.9],
+          hold: 0.4,
+          fade: 1,
+          direction: direction + Math.PI + side * this.random.between(0.5, 1.2),
+          speed: this.random.between(3, 4.5),
+          drag: 0.86,
+          gravity: 0.12,
+          align: true,
+        },
+        x,
+        y,
+      );
+    }
+  }
+
+  /**
+   * A guard's spark the flash budget refused (P3): two short streaks glancing off it, in the
+   * attacker's energy, instead of nothing.
+   */
+  private glance(style: HitStyle, x: number, y: number, direction: number): void {
+    const back = direction + Math.PI;
+    for (const side of [-1, 1]) {
+      // Each from its own side of the guard: two streaks, never a cross.
+      const angle = back + side * 0.8;
+      this.spawn(
+        {
+          layer: 'line',
+          color: style.energy,
+          life: 4,
+          from: [9, 1.6],
+          to: [4, 0.8],
+          direction: angle,
+          speed: 3,
+          drag: 0.8,
+          align: true,
+        },
+        x + Math.cos(angle) * 6,
+        y + Math.sin(angle) * 6,
+      );
+    }
+  }
+
+  /**
+   * A heavy blow that touched nothing (P4): two ripples of air at the end of its reach, in the
+   * attacker's energy, faint, 2 frames full and then cooling down to the slate (P7). No word, no
+   * flash: it lights next to nothing (SPARK_AREAS in flash-areas.ts).
+   */
+  private whiff(style: HitStyle, x: number, y: number, direction: number): void {
+    const colors = [style.energy, blend(style.energy, SMOKE_SLATE, 0.5), SMOKE_SLATE];
+    for (let i = 0; i < 2; i++) {
+      this.ripple(style.energy, x, y, direction, 2 + i * 6, 12, {
+        life: 6,
+        alpha: 0.4,
+        speed: 1,
+        ramp: { colors, step: 2 },
+      });
     }
   }
 
