@@ -4,7 +4,7 @@ import type { FighterId } from '../data/roster';
 /**
  * A fighter's signature (docs/art/nayo-vfx.md): what its moves light around them and the effects
  * they play over the pixel art, as data. Rendering only: read from the state and the fight
- * events, never written back (D17). A fighter without one (Riff, Saphir) shows none of it.
+ * events, never written back (D17). A fighter without one (Riff) shows none of it.
  */
 
 /** Whose color a light or an effect takes: the fighter's energy, or the Boost's platine. */
@@ -220,7 +220,66 @@ const NAYO_SIGNATURE: Signature = {
   presence: { leds: { main: 0x62c4d0, alt: 0xd878b8 } },
 };
 
-const SIGNATURES: Partial<Readonly<Record<FighterId, Signature>>> = { nayo: NAYO_SIGNATURE };
+/** Her heel out at hip height (the Syncope's and the Chassé's hitbox, 34 to 48 px high). */
+const HEEL = { height: 41, reach: 40 } as const;
+/** The Rubato's lunge, its foot out low. */
+const LUNGE = { height: 44, reach: 36 } as const;
+
+/**
+ * Saphir (docs/saphir.md §9, porte 4): her light lives on her three signature blows, the
+ * Syncope, the Chassé and the Contre-ut, in her sapphire; their Remixes, the Coda and the Reprise
+ * in platine. Her specials leave afterimages. Between her blows, a glint deep in both slits of
+ * her mask: her presence (tools/sprites/saphir/face.ts). No effects of Nayo's (rings, the
+ * equalizer, speed arcs): hers come with her own signature. Frames from her data
+ * (src/data/fighters/saphir.ts, saphir-strings.ts, saphir-boost.ts).
+ */
+const SAPHIR_SIGNATURE: Signature = {
+  moves: {
+    // Syncope: the crescent, the heel down through the hitbox on frames 12 to 14.
+    special: {
+      light: { from: 7, to: 18, tone: 'energy', strength: 0.8, ...HEEL },
+      echo: { from: 8, to: 15, every: 2, life: 8, tone: 'energy' },
+    },
+    specialBoost: { light: { from: 4, to: 20, tone: 'platine', strength: 1, ...HEEL } },
+    // Rubato: the lunge (frames 4 to 16), the kick out on frame 16.
+    specialForward: { echo: { from: 4, to: 16, every: 3, life: 9, tone: 'energy' } },
+    specialForwardBoost: { light: { from: 4, to: 22, tone: 'platine', strength: 1, ...LUNGE } },
+    // Contre-ut: out on frame 5, the leg to the sky up to frame 10; the light rises with the foot.
+    specialAntiAir: {
+      light: { from: 2, to: 14, tone: 'energy', strength: 1, height: 30, reach: 14, toHeight: 100 },
+      echo: { from: 2, to: 10, every: 2, life: 8, tone: 'energy' },
+    },
+    specialAntiAirBoost: {
+      light: {
+        from: 0,
+        to: 16,
+        tone: 'platine',
+        strength: 1,
+        height: 30,
+        reach: 14,
+        toHeight: 110,
+      },
+    },
+    // Chassé: the heel out at hip height on frames 10 to 12, her signature normal.
+    standHeavy: { light: { from: 7, to: 15, tone: 'energy', strength: 0.6, ...HEEL } },
+    // Coda: three blows from frame 10, the last on 22; she turns through them.
+    super: {
+      light: { from: 0, to: 34, tone: 'platine', strength: 1, height: 30, reach: 30, radius: 180 },
+    },
+    // Reprise: the swing step.
+    boostCancel: { light: { from: 0, to: 8, tone: 'platine', strength: 0.8, ...BODY } },
+  },
+  discs: {},
+  heavySwing: false,
+  flares: true,
+  // The glint in her mask's slits (tools/sprites/saphir/palette.ts, `maskGlow`).
+  presence: { leds: { main: 0x5c8cff, alt: 0xcbb2ff } },
+};
+
+const SIGNATURES: Partial<Readonly<Record<FighterId, Signature>>> = {
+  nayo: NAYO_SIGNATURE,
+  saphir: SAPHIR_SIGNATURE,
+};
 
 /** A fighter's signature, null for one without. */
 export function signatureOf(fighter: FighterId): Signature | null {

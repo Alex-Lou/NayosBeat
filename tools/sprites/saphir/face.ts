@@ -1,8 +1,8 @@
 /**
  * Saphir's expressions (docs/saphir.md §9), as patches over her head (head.ts). The mask does not
  * move: nothing reads on it but the slit of its eye, which her energy lights from inside when she
- * strains (`effort`) and blazes at the peak of a special (`kiai`). Every other face is the mask
- * as drawn: you never know what she feels.
+ * strains (`effort`) and blazes at the peak of a special (`kiai`). At rest a glint lingers deep in
+ * both slits; hit or out, they go dark. You never know what she feels.
  */
 
 import type { Face } from '../skeleton.ts';
@@ -13,10 +13,16 @@ function slit(row: string): Patch {
   return { x: 19, y: 12, rows: [row] };
 }
 
+/**
+ * At rest, both slits glow from deep inside, the front face's and the back one's (columns 6 to 8): her
+ * presence, which the game lets shine (src/render/presence.ts). Gone when she is hit or out.
+ */
+const GLINT: readonly Patch[] = [slit('LLL'), { x: 6, y: 12, rows: ['LLL'] }];
+
 const EXPRESSIONS: Readonly<Record<Face, readonly Patch[]>> = {
-  focus: [],
-  cool: [],
-  smirk: [],
+  focus: GLINT,
+  cool: GLINT,
+  smirk: GLINT,
   // A glint of her energy behind the slit.
   effort: [slit('KGK')],
   // The slit blazes.
