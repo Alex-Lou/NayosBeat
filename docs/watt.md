@@ -1,8 +1,8 @@
 # Watt — la spec du 4e combattant de Sound Clash
 
-*Porte 1a (`docs/art/perso-3.md` §5, passation `docs/art/passation-personnages.md`), à valider par le propriétaire. Concept choisi à la porte 0 : A, le colosse de la prise, tiré du colosse de Zen-Tazzer, avec une demande du propriétaire en plus : **une tête d'ampoule**, exploitée en jeu.*
+*Portes 1a et 1b (`docs/art/perso-3.md` §5, passation `docs/art/passation-personnages.md`). La 1a est validée par le propriétaire le 2 novembre 2026 ; la 1b est à valider. Concept choisi à la porte 0 : A, le colosse de la prise, tiré du colosse de Zen-Tazzer, avec une demande du propriétaire en plus : **une tête d'ampoule**, exploitée en jeu.*
 
-*Les chiffres de jeu ont été écrits en données hors du dépôt, puis passés aux validateurs du moteur : `validateTemplate`, `comboProblems` et `boostProblems` ne trouvent rien. Ils ont aussi été passés à la loi du gel et joués dans le moteur (portées, saut, prise, L, L, L, routes, super). Ils entrent dans `src/data/fighters/watt*.ts` à la porte 1b, où ils se figent. Les hurtbox restent provisoires jusqu'au dessin (portes 2 et 3). Ce qui est une estimation est marqué comme tel.*
+*Les chiffres de jeu ont été écrits en données hors du dépôt, puis passés aux validateurs du moteur : `validateTemplate`, `comboProblems` et `boostProblems` ne trouvent rien. Ils ont aussi été passés à la loi du gel et joués dans le moteur (portées, saut, prise, L, L, L, routes, super). Ils sont entrés à la porte 1b dans `src/data/fighters/watt.ts`, `watt-strings.ts` et `watt-boost.ts`, où ils se figent, avec son aide (`src/data/texts/watt.ts`) et ses routes testées (`tests/core/watt-combos.test.ts`). Le lanceur de corde s'appelle **Soulevé** : « Épaulé » commençait par une capitale accentuée, absente de la police du jeu. Les hurtbox restent provisoires jusqu'au dessin (portes 2 et 3). Ce qui est une estimation est marqué comme tel.*
 
 Id : `watt`. Nom affiché : `Watt`. Aucune capitale accentuée, ni dans son nom ni dans ceux de ses coups.
 
@@ -43,6 +43,7 @@ Id : `watt`. Nom affiché : `Watt`. Aucune capitale accentuée, ni dans son nom 
   1. **lent** : marche à 1,2 en avant et 1,0 en arrière, dash de 36 px, backdash de 32 px **sans protection contre la prise**, saut de 33 tics ;
   2. **un seul reversal, payé 3 barres** (Plein feu). Son anti-air n'est invincible qu'aux coups aériens ;
   3. **ni projectile, et une portée courte au sol** : son coup le plus rapide (Paume, 4 tics) ne porte qu'à 45,5 px. Le Marteau (67,5 px) est sous le Chassé de Saphir (71,5 px).
+  4. **pas de cross-up sur un adversaire debout comme Nayo ou lui-même** : son saut, bas, ne passe jamais au-dessus (mesuré, `tests/core/crossup.test.ts`). Sur Riff et Saphir debout, il passe jusqu'à 41 et 39 px.
 
 **Le test d'identité** (`tests/data/fighters.test.ts`, porte 1b) : Watt a le plus de vie, la prise la plus longue et les lancers les plus lourds du casting ; sa marche arrière est la plus lente. Il ne casse pas l'identité de Saphir (`fighters.test.ts:65`) :
 - sa boîte de H s'arrête à 54 px, contre 58 pour elle ;
@@ -122,7 +123,7 @@ Pente visée : **défavorable contre Nayo, favorable contre Riff, à 6-4 au plus
 
 ### 5.1 Ce qu'on voit (cahier §4.3.2)
 
-Les noms des normaux sont des gestes, ceux de l'haltérophilie : il **porte** (Épaulé, Jeté, Arraché). La métaphore électrique est réservée aux spéciaux, à la super et au Finisher.
+Les noms des normaux sont des gestes, ceux de l'haltérophilie : il **porte** (Soulevé, Jeté, Arraché). La métaphore électrique est réservée aux spéciaux, à la super et au Finisher.
 
 | Entrée | Nom | Ce qu'on voit | Où | À quoi ça sert | Comment le contrer |
 |---|---|---|---|---|---|
@@ -133,7 +134,7 @@ Les noms des normaux sont des gestes, ceux de l'haltérophilie : il **porte** (�
 | H | **Marteau** | Le poing avant tombe de haut en bas, à hauteur de poitrine ; **CONTRE qui plie** (hitstun +20, l'adversaire reste sur place) | milieu | sa portée (67,5 px) ; punir qui presse au contact | −7 en garde ; la Glissade passe dessous |
 | H, H | **Double marteau** | Les deux poings ensemble, 8 px en avant | milieu, met au sol | finir la corde lourde | −8 en garde |
 | L, L, → + H | **Coup de masse** | Le poing par-dessus la garde, dans la corde ; **Rebond** sur un corps jonglé | **overhead** | ouvrir une garde basse en combo | garder debout ; −6 |
-| L, L, ← + H | **Épaulé** | Il ramasse l'adversaire par en dessous et le monte aux épaules, après un pas de 10 px | milieu, **lanceur** (4 points) | le lanceur de corde | rate l'accroupi |
+| L, L, ← + H | **Soulevé** | Il ramasse l'adversaire par en dessous et le monte aux épaules, après un pas de 10 px | milieu, **lanceur** (4 points) | le lanceur de corde | rate l'accroupi |
 | → + H | **Coup de pilon** | Le poing monte haut derrière l'ampoule, puis tombe tout droit | **overhead** | ouvrir un adversaire accroupi (22 tics, très télégraphié) | garder debout ; −4 |
 | ← + H | **Arraché** | Les deux bras arrachent vers le ciel | milieu, **lanceur** (4 points) | anti-air normal | rate l'accroupi ; −7 |
 | ↓ + L | **Paume basse** | La pince à plat, au ras du sol | **bas** | le coup bas rapide | −2 en garde |
@@ -159,13 +160,13 @@ Portée : de centre à centre, contre Nayo debout, mesurée sur les boîtes (com
 | Id | Entrée | Nom | S/A/R (tot) | Dg | Gel | Garde | Hitbox x / y | Mouvement | Av. (touché / gardé) | Portée | Annule en |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | standLight | L | Paume | 4/2/9 (15) | 30 | 8 | mid | 8..32 / 40..54 | — | +3 / 0 | 45,5 | normal, spécial ; corde L (neutre, →, ←) Crochet court |
-| chainLight | L, L | Crochet court | 6/3/12 (21) | 38 | 8 | mid | 8..36 / 42..58 | +8 px f0–5 | +3 / −2 | 57,5 | spécial ; cordes : L (toute direction) Jeté, H Marteau, → + H Coup de masse, ↓ + H Ratissage, ← + H Épaulé |
+| chainLight | L, L | Crochet court | 6/3/12 (21) | 38 | 8 | mid | 8..36 / 42..58 | +8 px f0–5 | +3 / −2 | 57,5 | spécial ; cordes : L (toute direction) Jeté, H Marteau, → + H Coup de masse, ↓ + H Ratissage, ← + H Soulevé |
 | lightFinisher | L, L, L | Jeté | 9/3/18 (30) | 55 | 10 | mid | 8..40 / 34..62 | +10 px f0–8 | KD / −8 | 63,5 | — |
 | forwardLight | → + L | Pas lourd | 9/2/11 (22) | 32 | 8 | mid | 8..34 / 40..54 | +14 px f0–8 | +3 / −1 | 61,5 | spécial ; corde L (neutre, →, ←) Crochet court |
 | standHeavy | H | Marteau | 12/3/20 (35) | 85 | 13 | mid | **14..54** / 40..58 | — | −1 / −7 ; CONTRE +20, recul 0,5 | **67,5** | spécial ; cordes : H (neutre, →) Double marteau, ↓ + H Ratissage, ← + H Arraché ; jongle 2 |
 | chainHeavy | H, H | Double marteau | 11/3/20 (34) | 70 | 12 | mid | 12..48 / 30..64 | +8 px f0–7 | KD / −8 | 69,5 | spécial |
 | chainHigh | L, L, → + H | Coup de masse | 15/3/16 (34) | 60 | 11 | **overhead** | 10..42 / 36..76 | +10 px f0–7 | +1 / −6 | 65,5 | spécial ; **Rebond** une fois par combo |
-| chainLaunch | L, L, ← + H | Épaulé | 8/4/18 (30) | 55 | 10 | mid | 4..34 / 58..104 | +10 px f0–5 | lance (8 ; 4 points) / −7 | 57,5 (rate l'accroupi) | spécial |
+| chainLaunch | L, L, ← + H | Soulevé | 8/4/18 (30) | 55 | 10 | mid | 4..34 / 58..104 | +10 px f0–5 | lance (8 ; 4 points) / −7 | 57,5 (rate l'accroupi) | spécial |
 | forwardHeavy | → + H | Coup de pilon | 22/3/16 (41) | 75 | 12 | **overhead** | 12..46 / 36..76 | +12 px f6–17 | +2 / −4 | 71,5 | — |
 | backHeavy | ← + H | Arraché | 8/4/18 (30) | 65 | 11 | mid | 2..32 / 58..104 | — | lance (8 ; 4 points) / −7 | 45,5 (rate l'accroupi) | spécial |
 | crouchLight | ↓ + L | Paume basse | 5/2/9 (16) | 24 | 7 | low | 8..36 / 2..14 | — | +2 / −2 | 49,5 | normal, spécial |
@@ -208,7 +209,7 @@ Portée : de centre à centre, contre Nayo debout, mesurée sur les boîtes (com
 | Coup | Suites |
 |---|---|
 | Paume (L) | L (neutre, →, ←) : Crochet court ; le reste par `cancelInto` (Paume basse, Pas lourd, spéciaux) |
-| Crochet court (L, L) | L (toute direction) : Jeté ; H : Marteau ; → + H : **Coup de masse** ; ↓ + H : Ratissage ; ← + H : **Épaulé** |
+| Crochet court (L, L) | L (toute direction) : Jeté ; H : Marteau ; → + H : **Coup de masse** ; ↓ + H : Ratissage ; ← + H : **Soulevé** |
 | Marteau (H) | H (neutre, →) : **Double marteau** ; ↓ + H : Ratissage ; ← + H : Arraché ; coût de jongle 2 |
 | Pas lourd (→ + L) | L (neutre, →, ←) : Crochet court |
 
@@ -225,7 +226,7 @@ Son prolongateur est le **Rebond**, sur le Coup de masse : le corps jonglé est 
   - L, L, H → S (30 px) : 30 + 34 + 68 + 63 = **195** ;
   - L, L, H → → + S (Surcharge) (30 px) : 30 + 34 + 68 + 59 = **191** ;
   - L, L, → + H (Coup de masse) → S (30 px) : 30 + 34 + 48 + 63 = **175** ;
-  - L, L, ← + H (Épaulé) → ↓ + S (Plafonnier) (28 px) : 30 + 34 + 44 + 66 = **174** ;
+  - L, L, ← + H (Soulevé) → ↓ + S (Plafonnier) (28 px) : 30 + 34 + 44 + 66 = **174** ;
   - L, L, ← + H ⇢ L, L, L (28 px) : 30 + 34 + 44 + 21 + 22 + 27 = **178** ;
   - ← + H (Arraché) → ↓ + S (24 px) : 65 + 85 = **150** ;
   - H → S (40 px) : 85 + 81 = **166**.
@@ -245,7 +246,7 @@ Le contraste : ses combos sans jauge (108 à 195) sont sous ceux de Nayo (163 et
 1. L, L, L : Paume, Crochet court, puis le Jeté met au sol.
 2. L, H, puis S : le Coup de jus met au sol.
 3. L, L, H, puis avant + S : la Surcharge emporte l'adversaire.
-4. L, L, arrière + H, puis bas + S : l'Épaulé soulève, le Plafonnier rabat.
+4. L, L, arrière + H, puis bas + S : l'Soulevé soulève, le Plafonnier rabat.
 5. L, L, arrière + H, puis L, L, L sur le corps en l'air.
 6. L, L, H, H, puis arrière + BOOST (3 barres) : Plein feu.
 7. La même, puis arrière + BOOST (FINISH allumé) : son Finisher, Couvre-feu.

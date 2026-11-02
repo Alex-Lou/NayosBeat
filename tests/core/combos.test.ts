@@ -4,6 +4,7 @@ import { Input, type InputBits } from '../../src/core/input';
 import { NAYO } from '../../src/data/fighters/nayo';
 import { RIFF } from '../../src/data/fighters/riff';
 import { SAPHIR } from '../../src/data/fighters/saphir';
+import { WATT } from '../../src/data/fighters/watt';
 import { TRAINING_STAGE } from '../../src/data/stages';
 import { damageOf, floored, playCombo, unbroken, type ComboRun } from './combo-helpers';
 import { facingOff, run } from './helpers';
@@ -134,6 +135,13 @@ describe('L, L, L (§7.2)', () => {
     ['Nayo on Saphir', { stage: TRAINING_STAGE, fighters: [NAYO, SAPHIR] }],
     ['Riff on Saphir', { stage: TRAINING_STAGE, fighters: [RIFF, SAPHIR] }],
     ['Saphir on Saphir', { stage: TRAINING_STAGE, fighters: [SAPHIR, SAPHIR] }],
+    ['Watt on Nayo', { stage: TRAINING_STAGE, fighters: [WATT, NAYO] }],
+    ['Watt on Riff', { stage: TRAINING_STAGE, fighters: [WATT, RIFF] }],
+    ['Watt on Saphir', { stage: TRAINING_STAGE, fighters: [WATT, SAPHIR] }],
+    ['Nayo on Watt', { stage: TRAINING_STAGE, fighters: [NAYO, WATT] }],
+    ['Riff on Watt', { stage: TRAINING_STAGE, fighters: [RIFF, WATT] }],
+    ['Saphir on Watt', { stage: TRAINING_STAGE, fighters: [SAPHIR, WATT] }],
+    ['Watt on Watt', { stage: TRAINING_STAGE, fighters: [WATT, WATT] }],
   ];
   /** From bodies touching, every half pixel. */
   const NEAREST = 26;
