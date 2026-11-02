@@ -1,8 +1,9 @@
 import type { FighterTemplate } from '../core/config';
 import { NAYO } from './fighters/nayo';
 import { RIFF } from './fighters/riff';
+import { SAPHIR } from './fighters/saphir';
 
-export type FighterId = 'nayo' | 'riff';
+export type FighterId = 'nayo' | 'riff' | 'saphir';
 
 export interface RosterEntry {
   readonly id: FighterId;
@@ -29,6 +30,13 @@ export const ROSTER: readonly RosterEntry[] = [
     // The punk of Zen-Tazzer, her identity in combat v2 (docs/combat-v2.md §6.2, §17.3).
     description: 'Punk de rue explosive · dash · Glissade · deux overheads · moins de vie',
     finisher: 'Larsen',
+  },
+  {
+    id: 'saphir',
+    template: SAPHIR,
+    // The masked stage legend who fights with her legs (docs/saphir.md §1, §9).
+    description: 'Masquée en savate · mi-distance · Syncope · Rubato · sans reversal',
+    finisher: 'Face B',
   },
 ];
 

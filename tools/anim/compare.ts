@@ -13,6 +13,7 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { NAYO_CELLS } from '../../src/art/nayo/cells.ts';
 import { RIFF_CELLS } from '../../src/art/riff/cells.ts';
+import { SAPHIR_CELLS } from '../../src/art/saphir/cells.ts';
 import type { Atlas, Cell } from '../../src/art/types.ts';
 import { templateOf, type FighterId } from '../../src/data/roster.ts';
 import { TRAINING_STAGE } from '../../src/data/stages.ts';
@@ -23,6 +24,7 @@ import { fileUrl, option, type Film, type FilmTick } from './film.ts';
 const CELLS: Readonly<Record<FighterId, Readonly<Record<string, Cell>>>> = {
   nayo: NAYO_CELLS,
   riff: RIFF_CELLS,
+  saphir: SAPHIR_CELLS,
 };
 
 /** Everything the page plays from. */
@@ -129,7 +131,7 @@ export async function comparePage(before: Film, after: Film, note = ''): Promise
     films,
     names: [templateOf(first).name, templateOf(second).name],
     ...(await imagesOf(films)),
-    cells: { nayo: CELLS.nayo, riff: CELLS.riff },
+    cells: CELLS,
     groundY: GROUND_Y,
     stageWidth: toPx(TRAINING_STAGE.width),
     colors: [css(GREYBOX_COLORS[0] ?? 0), css(GREYBOX_COLORS[1] ?? 0)],

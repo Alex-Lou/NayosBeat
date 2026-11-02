@@ -39,6 +39,12 @@ const STYLES: Readonly<Record<FighterId, Readonly<Record<Colorway, HitStyle>>>> 
     // On the HUD, her crimson: her gold would be the health bar's yellow.
     alt: { shape: 'claw', energy: 0xffc83a, strike: 0xe0283c, core: 0xffe8ea, hud: 0xe0283c },
   },
+  // Saphir: sapphire slashes, the color of her mask, and cream sparks, her ivory struck; lilac
+  // in her second outfit (docs/saphir.md §8).
+  saphir: {
+    main: { shape: 'slash', energy: 0x3a6cf0, strike: 0xf0e2bc, core: 0xf4f6ff },
+    alt: { shape: 'slash', energy: 0xc0a0ff, strike: 0xf0e2bc, core: 0xf8f4ff },
+  },
 };
 
 export function hitStyleOf(fighter: FighterId, colorway: Colorway = 'main'): HitStyle {

@@ -202,9 +202,42 @@ export const RIFF_SCRIPT: FinisherScript = {
   ],
 };
 
+/**
+ * Saphir's « Face B » (docs/saphir.md §7): three blows on the swing, DOU, BI, DOUM; the record
+ * stops dead on the KO, a held silence, then the reprise on her offbeat, and the room dances on
+ * the other side of the record. Riff's held frame, no code of its own.
+ */
+export const SAPHIR_SCRIPT: FinisherScript = {
+  fighter: 'saphir',
+  name: 'FACE B',
+  count: ['DOU', 'BI', 'DOUM'],
+  stretch: 0,
+  silence: 'hold',
+  zoomFrom: 'ko',
+  flats: { main: 0x0e1a3e, alt: 0x2a1e46 },
+  flatLeaves: 'release',
+  card: { text: 'FACE B.', rival: null, style: 'neon' },
+  shake: 'x',
+  cone: false,
+  crowd: true,
+  needle: false,
+  shards: false,
+  powerCut: false,
+  // DOUM sounds whole (heavyHit, 8.4 frames), then the record stops dead: the bus cut, no fade.
+  hush: { from: 9, fade: 0, muffled: false },
+  // Stand-ins until her own sounds (§7.4: a walking double bass, a record turned over): DOUM's
+  // blow, then the fall and the music back on the reprise.
+  cues: [
+    { moment: 'ko', at: 0, sound: 'heavyHit' },
+    { moment: 'release', at: 0, sound: 'fall' },
+    { moment: 'release', at: 0, sound: 'remix' },
+  ],
+};
+
 const SCRIPTS: Readonly<Record<FighterId, FinisherScript>> = {
   nayo: NAYO_SCRIPT,
   riff: RIFF_SCRIPT,
+  saphir: SAPHIR_SCRIPT,
 };
 
 export function scriptOf(fighter: FighterId): FinisherScript {
