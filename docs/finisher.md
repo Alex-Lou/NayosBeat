@@ -43,6 +43,7 @@ Spec de design, version 2. Elle intègre la revue adverse de la v1 (7 bloquants,
 1. **Le design.**
    - Nayo a **« Le Quatre »** : il compte sur le temps, et l'autre tombe sur le quatre (§2).
    - Riff a **« Larsen »** : l'aiguille saute, un temps de silence, puis L'Entrepôt saute sur son contretemps (§3).
+   - Saphir, la 3e (D34), a **« Face B »** : DOU, BI, DOUM, le disque s'arrête net, un silence, puis la salle danse sur l'autre face. C'est la Coda lancée armée, sans donnée ni code de rendu à elle : la trame `'hold'` de Riff (`docs/saphir.md` §7, `SAPHIR_SCRIPT`).
 2. **Comment l'obtenir.** Il faut réunir (§1.1) :
    - la balle de match ;
    - 3 barres de Boost ;
@@ -64,7 +65,7 @@ Spec de design, version 2. Elle intègre la revue adverse de la v1 (7 bloquants,
 
 **Les flashs**
 - Comptés sur l'image affichée, au vrai zoom, selon la règle unique de `flashs.md` (§4.1).
-- **Le Quatre** : 3 flashs comptés (TROIS, QUATRE, la carte). **Larsen** : 2 (la reprise, la carte).
+- **Le Quatre** : 3 flashs comptés (TROIS, QUATRE, la carte). **Larsen** : 2 (la reprise, la carte). **Face B** : 2 (la reprise, la carte).
 - Jamais 2 climax dans la même seconde, jamais plus de 2 flashs par seconde, 30 images d'écart au moins.
 - Aucun voile blanc plein écran, aucun rouge saturé qui varie, pas de sang au gros plan.
 - Le spectacle passe par le gel, l'aplat de couleur, les silhouettes, le gros plan, le silence et le son (§4).
@@ -896,6 +897,18 @@ Mesuré au vrai zoom (scripts au bas de la page). Les fx de planche sont compté
 | 194 | coupure de courant, puis spot | plein écran ; spot | une baisse seule, −0,03 ; ≤ 0,08 | 0 |
 
 **Bilan** : 2 comptés, à 30 images d'écart.
+
+**Face B** (route `L, L, H, H, arrière + BOOST`, sur Nayo ; mesuré par `tests/render/finisher-flashes.test.ts`, PR F)
+
+| t | Événement | Compté |
+|---|---|---|
+| avant 0 | gerbes des deux H | jusqu'à 2, ordinaires : le budget décide |
+| 62 | KO sur DOUM : silhouettes, gros plan ; le bus coupé net 9 images plus tard (DOUM entier) | 0 |
+| 62 | le liseré de Saphir, autour de la tornade : 660,5 px² monde (`OUTLINE_AREAS`, 700), refusé par le budget, tracé dans le ton qui ne flashe pas | 0 |
+| 107 | **reprise** (t0 + 45) : l'éclat saphir × 0,725, la foule danse | **1**, climax |
+| 137 | carte « FACE B. » (R + 30) | **1** |
+
+**Bilan** : 2 comptés, à 30 images d'écart, les mêmes avec le tremblement à « aucun » ; la carte seule avec les flashs réduits.
 
 ### 4.4 Ce qui remplace les flashs
 

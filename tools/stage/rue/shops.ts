@@ -15,6 +15,7 @@ import {
   GLASS,
   NEON_ORANGE,
   NEON_VIOLET,
+  SIGN_RAMPS,
   STEEL,
   STONE,
   WARM,
@@ -65,7 +66,13 @@ export function drawGrocery(
   random: Random,
 ): { window: Rect } {
   const { x, width } = rect;
-  drawLightbox(canvas, { x: x + 22, y: 284, width: width - 44, height: 24 }, 'DELI GROCERY', 2);
+  drawLightbox(
+    canvas,
+    { x: x + 22, y: 284, width: width - 44, height: 24 },
+    'DELI GROCERY',
+    2,
+    SIGN_RAMPS,
+  );
   const window: Rect = { x: x + 8, y: 338, width: width - 52, height: 54 };
   const door: Rect = { x: x + width - 38, y: 330, width: 28, height: 70 };
   drawShelves(canvas, window, random);
@@ -167,9 +174,9 @@ function drawWashers(canvas: Canvas, rect: Rect): void {
 export function drawLaundromat(canvas: Canvas, rect: Rect): { window: Rect } {
   const { x, width } = rect;
   drawLedge(canvas, x - 4, 280, width + 8, 6, []);
-  drawNeonWord(canvas, x + 60, 296, 'LAUNDRY', 2, NEON_VIOLET, new Set([1, 5]));
+  drawNeonWord(canvas, x + 60, 296, 'LAUNDRY', 2, NEON_VIOLET, new Set([1, 5]), SIGN_RAMPS);
   // Its owners' sign in Chinese, 洗衣 (laundry), a lit box beside the neon.
-  drawLightbox(canvas, { x: x + 166, y: 288, width: 50, height: 30 }, '洗衣', 2, 'han');
+  drawLightbox(canvas, { x: x + 166, y: 288, width: 50, height: 30 }, '洗衣', 2, SIGN_RAMPS, 'han');
   const door: Rect = { x: x + 6, y: 326, width: 26, height: 74 };
   const window: Rect = { x: x + 40, y: 324, width: width - 44, height: 68 };
   drawWashers(canvas, window);
@@ -189,6 +196,7 @@ export function drawLaundromat(canvas: Canvas, rect: Rect): { window: Rect } {
     1,
     NEON_ORANGE,
     new Set(),
+    SIGN_RAMPS,
   );
   return { window };
 }

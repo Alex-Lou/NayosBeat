@@ -3,7 +3,7 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 /** Folders of the presentation and the application, which the pure layers never import. */
-const OUTER_LAYERS = ['render', 'loop', 'input', 'app', 'ui', 'art', 'audio'];
+const OUTER_LAYERS = ['render', 'loop', 'input', 'app', 'ui', 'art', 'audio', 'net'];
 
 /** Globals that tell the time or run code later: a replay would not play the same twice. */
 const CLOCK_GLOBALS = ['Date', 'performance', 'setTimeout', 'setInterval', 'requestAnimationFrame'];

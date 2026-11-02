@@ -32,6 +32,7 @@ import { VIEW_SIZE } from '../../src/render/view';
 import {
   armed,
   film,
+  FACE_B,
   LARSEN,
   LE_QUATRE,
   type Film,
@@ -97,6 +98,21 @@ describe("the scene's timeline on the core (§2.3, §2.9, §3.3, §3.9)", () => 
     expect(played.results).toBe(255);
   });
 
+  it('Face B in full: DOU, BI, DOUM, the KO at 62, the reprise at t0 + 45, the card at R + 30 (137 to 208), the results at 269', () => {
+    const played = film(FACE_B, FULL);
+    expect(cardShots(played)[0]?.card.words).toContain('FACE B.');
+    expect(played.ko).toBe(62);
+    expect(releaseOf(played)).toBe(62 + 45);
+    expect(touchdownOf(played)).toBe(164);
+    const card = cardShots(played);
+    expect([card[0]?.t, card.at(-1)?.t, card.length]).toEqual([107 + 30, 208, 72]);
+    expect(played.results).toBe(269);
+    const short = film(FACE_B, SHORT);
+    expect(releaseOf(short)).toBe(62 + 45);
+    expect(cardShots(short).map((shot) => shot.t)).toEqual(range(107 + 12, 48));
+    expect(short.results).toBe(167 + VICTORY_FRAMES);
+  });
+
   it('plays short: the natural count, the landing at t0 + 48, Riff without L’Ange, a card of 4 + 36 + 8 at R + 12', () => {
     const nayo = film(LE_QUATRE, SHORT);
     expect(nayo.ko).toBe(54);
@@ -145,6 +161,8 @@ describe('the track: whole ticks, each held 1, 2 or 3 frames (§1.14, D23)', () 
     [LE_QUATRE, SHORT, 1],
     [LARSEN, FULL, 3],
     [LARSEN, SHORT, 1],
+    [FACE_B, FULL, 3],
+    [FACE_B, SHORT, 1],
   ] as const) {
     it(`${route.name}, ${version.comfort.staging}: the victim flies one tick every ${pace} frames`, () => {
       const played = film(route, version);
@@ -159,7 +177,7 @@ describe('the track: whole ticks, each held 1, 2 or 3 frames (§1.14, D23)', () 
   }
 
   it('plays several ticks a frame only through the core’s freeze, which shows nothing that moves', () => {
-    for (const route of [LE_QUATRE, LARSEN]) {
+    for (const route of [LE_QUATRE, LARSEN, FACE_B]) {
       const played = film(route, FULL);
       const after = played.shots.filter((shot) => shot.t > played.ko);
       for (const [i, shot] of after.entries()) {
@@ -206,13 +224,14 @@ describe('the track: whole ticks, each held 1, 2 or 3 frames (§1.14, D23)', () 
     }
   });
 
-  it('measures the flight ahead on a copy of the core: 23 ticks for Riff, 19 for Nayo (§2.3, §3.3)', () => {
-    for (const [route, flight] of [
-      [LE_QUATRE, 23],
-      [LARSEN, 19],
+  it('measures the flight ahead on a copy of the core: 23 ticks for Riff, 19 for Nayo, by Riff as by Saphir (§2.3, §3.3)', () => {
+    for (const [route, freeze, flight] of [
+      [LE_QUATRE, 22, 23],
+      [LARSEN, 22, 19],
+      [FACE_B, 21, 19],
     ] as const) {
       const { config } = armed(route);
-      expect(measureFlight(koStateOf(route), 0, config)).toEqual({ freeze: 22, flight });
+      expect(measureFlight(koStateOf(route), 0, config)).toEqual({ freeze, flight });
     }
   });
 });
@@ -222,6 +241,7 @@ describe('the close up (§1.14, §2.4, §3.4)', () => {
     for (const [route, from] of [
       [LE_QUATRE, 76],
       [LARSEN, 48],
+      [FACE_B, 62],
     ] as const) {
       const played = film(route, FULL);
       const release = releaseOf(played) ?? Number.NaN;
@@ -239,6 +259,7 @@ describe('the close up (§1.14, §2.4, §3.4)', () => {
     for (const [route, art] of [
       [LE_QUATRE, RIFF_ART],
       [LARSEN, NAYO_ART],
+      [FACE_B, NAYO_ART],
     ] as const) {
       const played = film(route, FULL);
       // Nayo's victim tops out at ×2, Riff's as the camera opens again after her reprise.
@@ -364,9 +385,16 @@ describe('the skip (§1.14): a button held 15 frames, after the KO only', () => 
 
 describe('the match’s end (§1.10)', () => {
   it('fast-forwards from the card to the results: 292 ticks after the KO, then the pose', () => {
-    for (const route of [LE_QUATRE, LARSEN]) {
+    // The KO's freeze: the Coda's last blow freezes 21 ticks, the others 22.
+    for (const [route, freeze] of [
+      [LE_QUATRE, 22],
+      [LARSEN, 22],
+      [FACE_B, 21],
+    ] as const) {
       const played = film(route, FULL);
-      expect(played.ticksAfterKo).toBe(22 + ROUND_END_FRAMES + MATCH_END_FRAMES + VICTORY_FRAMES);
+      expect(played.ticksAfterKo).toBe(
+        freeze + ROUND_END_FRAMES + MATCH_END_FRAMES + VICTORY_FRAMES,
+      );
       // The results wait for the scene, then for the winner's pose.
       const last = played.shots.at(-1);
       expect(last?.holds).toBe(false);
@@ -422,6 +450,18 @@ describe('the fight’s bus (§1.14, §2.8, §3.8)', () => {
     expect(at(92)?.gain).toBe(0);
     expect(at(93)?.gain).toBe(1);
     expect(at(150)?.cutoff).toBe(20000);
+  });
+
+  it('Saphir: DOUM sounds whole, then the record stops dead, and the reprise puts it back on', () => {
+    const played = film(FACE_B, FULL);
+    const at = (t: number) => between(played, t, t)[0]?.bus;
+    expect(between(played, 62, 62)[0]?.sounds).toContain('heavyHit');
+    // DOUM's blow lasts 8.4 frames: the bus whole through it, then cut at once, no fade.
+    expect(at(62 + 8)?.gain).toBe(1);
+    expect(at(62 + 9)?.gain).toBe(0);
+    expect(at(106)?.gain).toBe(0);
+    expect(at(107)?.gain).toBe(1);
+    expect(between(played, 107, 107)[0]?.sounds).toEqual(['fall', 'remix']);
   });
 
   it('hands the bus back whole and lets go of everything on dispose, mid-scene too', () => {

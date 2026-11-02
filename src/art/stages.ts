@@ -1,4 +1,5 @@
 import type { StageVariant } from './stage-layers';
+import { STAGE_VARIANTS as DOCK } from './dock';
 import { STAGE_VARIANTS as GYM } from './gym';
 import { STAGE_VARIANTS as RUE } from './rue';
 
@@ -29,5 +30,11 @@ export const STAGE_MAPS: readonly StageMap[] = [
     title: 'Viaduct Gym',
     description: 'La salle de boxe sous les arches, où Nayo a appris',
     variants: GYM,
+  },
+  {
+    name: 'dock',
+    title: 'The Loading Dock',
+    description: 'La cour derrière le club, où les vigiles chassaient Riff',
+    variants: DOCK,
   },
 ].filter(({ variants }) => variants.length > 0);

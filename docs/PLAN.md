@@ -285,7 +285,7 @@ Chaque jalon se termine par une **build jouable** testée sur PC **et** téléph
 | Production de l'art sous-estimée | 🔴 | Boîtes grises d'abord, set d'anims réduit, placeholders |
 | Tactile peu précis/latent | 🔴 | Tactile dès M1, buffer indulgent, contrôles simplifiés, tests réels sur téléphone |
 | Bizarreries iOS Safari (plein écran, audio, orientation) | 🟠 | PWA, déblocage audio, overlay d'orientation, tests iOS tôt |
-| Scope creep (3e perso, online…) | 🟠 | Périmètre MVP figé (ce document), le reste en « plus tard » |
+| Scope creep (4e perso, online…) | 🟠 | Périmètre MVP figé (ce document), le reste en « plus tard ». Le 3e perso n'est plus une dérive : Saphir, décidée (D34) et faite en données seules, est au roster depuis les PR #110 et F |
 | Non-déterminisme qui s'infiltre (floats, `Math.random`) | 🟠 | Règle lint dans `core/` + test de hash |
 | Licences d'assets tiers | 🟡 | Uniquement CC0/licence explicite, fichier `CREDITS.md` |
 

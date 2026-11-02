@@ -46,12 +46,14 @@ import {
   CLEAR,
   CONCRETE,
   COOL,
+  FIGURE_RAMPS,
   NEON_VIOLET,
   GLASS,
   LAMP,
   SHUTTER,
   RIM_VIOLET,
   RIM_WARM,
+  SPRAY_RAMPS,
   STEAM,
   STEEL,
   STONE,
@@ -247,7 +249,7 @@ function drawSmoker(canvas: Canvas, frame: number): void {
   };
   const before = canvas.clip;
   canvas.clip = { left: x + 2, top: top + 2, right: x + WINDOW.width - 2, bottom: sill + 3 };
-  drawFigure(canvas, smoker);
+  drawFigure(canvas, smoker, FIGURE_RAMPS);
   canvas.clip = before;
   // The ember, and smoke rising from it, drifting a little more each frame.
   const ember = raised ? { x: x + 23, y: top + 22 } : { x: x + 31, y: sill - 3 };
@@ -302,32 +304,36 @@ function drawBalconyPair(canvas: Canvas, frame: number): void {
     pose: { ...POCKETS, lean: frame === 2 ? 2 : 0 },
     rim: { side: 1, above: true, ramp: RIM_WARM },
   };
-  drawFigure(canvas, talker);
-  drawFigure(canvas, listener);
+  drawFigure(canvas, talker, FIGURE_RAMPS);
+  drawFigure(canvas, listener, FIGURE_RAMPS);
 }
 
 /** Someone on the fire escape's middle platform, leaning on its rail, nodding on two beats. */
 const LEANER = { x: RED_BAYS[3] + 18, floor: FLOORS[1].sill + 4 } as const;
 
 function drawLeaner(canvas: Canvas, frame: number): void {
-  drawFigure(canvas, {
-    x: LEANER.x,
-    y: LEANER.floor,
-    height: 76,
-    shoulders: 20,
-    facing: -1,
-    head: 'hood',
-    coat: 'short',
-    pose: {
-      ...STANDING,
-      arms: [
-        { joint: [7, 8], end: [13, 9] },
-        { joint: [-2, 11], end: [8, 11] },
-      ],
-      lean: frame === 1 ? 4 : 3,
+  drawFigure(
+    canvas,
+    {
+      x: LEANER.x,
+      y: LEANER.floor,
+      height: 76,
+      shoulders: 20,
+      facing: -1,
+      head: 'hood',
+      coat: 'short',
+      pose: {
+        ...STANDING,
+        arms: [
+          { joint: [7, 8], end: [13, 9] },
+          { joint: [-2, 11], end: [8, 11] },
+        ],
+        lean: frame === 1 ? 4 : 3,
+      },
+      rim: { side: 1, above: true, ramp: RIM_WARM },
     },
-    rim: { side: 1, above: true, ramp: RIM_WARM },
-  });
+    FIGURE_RAMPS,
+  );
 }
 
 /** A silhouette crossing a curtained window, now and then (frames 0: gone, 1 to 3: passing). */
@@ -356,7 +362,7 @@ function drawCurtainWalker(canvas: Canvas, frame: number): void {
     rim: { side: 0, above: false, ramp: RIM_WARM },
     shadow: at(CURTAIN, 0),
   };
-  drawFigure(canvas, walker);
+  drawFigure(canvas, walker, FIGURE_RAMPS);
   canvas.clip = before;
 }
 
@@ -411,7 +417,7 @@ export const MID_ANIMATIONS: readonly Animation[] = [
       [3, BEAT / 2],
     ],
     draw: (canvas, frame) => {
-      for (const figure of queueAt(frame)) drawFigure(canvas, figure);
+      for (const figure of queueAt(frame)) drawFigure(canvas, figure, FIGURE_RAMPS);
     },
   },
   {
@@ -425,7 +431,11 @@ export const MID_ANIMATIONS: readonly Animation[] = [
       [1, BEAT],
     ],
     draw: (canvas, frame) => {
-      drawFigure(canvas, { ...BOUNCER, pose: { ...BOUNCER.pose, lean: frame === 1 ? 2 : 0 } });
+      drawFigure(
+        canvas,
+        { ...BOUNCER, pose: { ...BOUNCER.pose, lean: frame === 1 ? 2 : 0 } },
+        FIGURE_RAMPS,
+      );
     },
   },
   {
@@ -634,8 +644,8 @@ function drawScaffoldCorner(canvas: Canvas): void {
   drawPoster(canvas, { x: 10, y: fence.y + 18, width: 30, height: 42 }, random);
   drawPoster(canvas, { x: 44, y: fence.y + 24, width: 28, height: 38 }, random);
   drawPoster(canvas, { x: 72, y: fence.y + 14, width: 26, height: 44 }, random);
-  drawTag(canvas, { x: 6, y: fence.y + 88, width: 90, height: 30 }, random);
-  drawThrowUp(canvas, { x: 36, y: fence.y + 120, width: 60, height: 26 }, random);
+  drawTag(canvas, { x: 6, y: fence.y + 88, width: 90, height: 30 }, random, SPRAY_RAMPS);
+  drawThrowUp(canvas, { x: 36, y: fence.y + 120, width: 60, height: 26 }, random, SPRAY_RAMPS);
 }
 
 function drawEntrepot(canvas: Canvas): void {
@@ -655,14 +665,14 @@ function drawEntrepot(canvas: Canvas): void {
   );
   // The loading bay's shutter, tagged.
   drawShutter(canvas, { x: 494, y: 318, width: 146, height: 82 }, STREET_LIGHTS);
-  drawThrowUp(canvas, { x: 506, y: 340, width: 64, height: 26 }, random, TAG.violet);
-  drawTag(canvas, { x: 576, y: 340, width: 60, height: 22 }, random);
+  drawThrowUp(canvas, { x: 506, y: 340, width: 64, height: 26 }, random, SPRAY_RAMPS, TAG.violet);
+  drawTag(canvas, { x: 576, y: 340, width: 60, height: 22 }, random, SPRAY_RAMPS);
   drawIronDoor(canvas, IRON_DOOR, PAINTED);
   drawClubNeon(canvas, NEON.x, NEON.y, 0);
   drawCagedLamp(canvas, 792, 292);
   drawPoster(canvas, { x: 850, y: 312, width: 26, height: 36 }, random);
   drawPoster(canvas, { x: 880, y: 316, width: 24, height: 34 }, random);
-  drawTag(canvas, { x: 900, y: 352, width: 70, height: 24 }, random);
+  drawTag(canvas, { x: 900, y: 352, width: 70, height: 24 }, random, SPRAY_RAMPS);
   drawDrainpipe(canvas, 980, 214, BASE);
 }
 
@@ -732,7 +742,7 @@ function drawTanBuilding(canvas: Canvas): void {
   drawLaundromat(canvas, { x: 1070, y: 286, width: 226, height: 114 });
   drawDeadSign(canvas, { x: 1302, y: 288, width: 96, height: 16 });
   drawShutter(canvas, { x: 1304, y: 316, width: 92, height: 84 }, STREET_LIGHTS);
-  drawThrowUp(canvas, { x: 1310, y: 334, width: 64, height: 28 }, random);
+  drawThrowUp(canvas, { x: 1310, y: 334, width: 64, height: 28 }, random, SPRAY_RAMPS);
 }
 
 /** The people standing in front of everything else, at frame 0. */

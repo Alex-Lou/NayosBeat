@@ -545,7 +545,8 @@ export class FinisherScene {
     const calm = (): number => over(energy, flat, alphaForDelta(energy, flat, VEIL_DELTA));
     if (after.k >= after.timeline.release) return calm();
     if (after.outline === null && luminanceDelta(energy, flat, shade) >= FLASH_DELTA) {
-      after.outline = this.cast.budget.admit(OUTLINE_AREA) ? energy : calm();
+      const area = OUTLINE_AREAS[this.cast.fighters[by]];
+      after.outline = this.cast.budget.admit(area) ? energy : calm();
     }
     return after.outline ?? energy;
   }
@@ -725,10 +726,15 @@ export function playToResults(state: GameState, config: MatchConfig): GameState 
 /** World px² Riff's studs light at most (8 diamonds of 5 × 5 px). */
 const SHARD_AREA = 8 * 12.5;
 /**
- * World px² the winner's 1 px outline lights at most around its held pose, measured on the
- * planches (Nayo's s4: 236, Riff's s5: 291; tests/render/finisher-flashes.test.ts).
+ * World px² each winner's 1 px outline lights at most around its held pose, measured on the
+ * planches (Nayo's s4: 236, Riff's s5: 291; Saphir's tornado, a leg out and the arms open:
+ * 660.5; tests/render/finisher-flashes.test.ts).
  */
-export const OUTLINE_AREA = 300;
+export const OUTLINE_AREAS: Readonly<Record<FighterId, number>> = {
+  nayo: 300,
+  riff: 300,
+  saphir: 700,
+};
 
 /**
  * The KO's freeze and the victim's flight after it (§2.3: « calculé à l'avance, sur une copie de

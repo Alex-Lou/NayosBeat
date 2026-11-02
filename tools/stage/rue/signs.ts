@@ -1,13 +1,35 @@
 /**
  * Signs and tags (docs/art/decor-rue.md §3.2, §10): generic words in our own font, neon drawn as
  * tubes with a halo of whole pixels, a lit box, tags traced at random. No real name, brand or logo.
+ * Palette-free: each stage passes its own ramps (SignRamps, SprayRamps), so any stage can draw signs.
  */
 
 import { Canvas, Mask, at, tone } from '../kit/canvas.ts';
 import type { Rect } from './facade.ts';
 import { GLYPH_HEIGHT, HAN_SIZE, spell, spellHan } from '../kit/font.ts';
-import { LIGHTBOX, NEON_DEAD, SIGN_INK, STEEL, TAG } from './palette.ts';
 import type { Random } from '../kit/random.ts';
+
+/** The ramps of a sign's hardware, as slots of the stage's own palette. */
+export interface SignRamps {
+  /** A neon's backboard, a lightbox's frame: 0 to 4, its lit edge at 2 and 4. */
+  readonly steel: readonly number[];
+  /** A dead neon tube: 0 its shade, 1 its top. */
+  readonly deadTube: readonly number[];
+  /** A lightbox's face, darkest first. */
+  readonly lightbox: readonly number[];
+  /** A lightbox's letters: 0 where its tube died, 1 lit. */
+  readonly ink: readonly number[];
+}
+
+/** The ramps of a stage's spray paint, as slots of its own palette. */
+export interface SprayRamps {
+  /** A throw-up's dark outline. */
+  readonly outline: number;
+  /** A throw-up's pale ring, at 0. */
+  readonly pale: readonly number[];
+  /** The paints a tag or a throw-up picks from, each two steps (0 the drip). */
+  readonly colors: readonly (readonly number[])[];
+}
 
 /**
  * A neon's halo on what is behind it: within `reach` pixels of its tubes, the glow's two steps,
@@ -74,6 +96,7 @@ export function drawNeonWord(
   scale: number,
   ramp: readonly number[],
   dead: ReadonlySet<number>,
+  signs: SignRamps,
 ): Rect {
   const lit = new Mask(canvas.width, canvas.height);
   const off = new Mask(canvas.width, canvas.height);
@@ -87,13 +110,13 @@ export function drawNeonWord(
     width: width + 10,
     height: height + 10 + 2 * scale,
   };
-  canvas.fill(board.x, board.y, board.width, board.height, at(STEEL, 0));
-  canvas.hline(board.x, board.y, board.width, at(STEEL, 2));
+  canvas.fill(board.x, board.y, board.width, board.height, at(signs.steel, 0));
+  canvas.hline(board.x, board.y, board.width, at(signs.steel, 2));
   drawHalo(canvas, lit, ramp, 4.5);
   drawTubes(canvas, lit, ramp);
   for (let py = board.y; py < board.y + board.height; py++) {
     for (let px = board.x; px < board.x + board.width; px++) {
-      if (off.has(px, py)) canvas.set(px, py, at(NEON_DEAD, off.has(px, py - 1) ? 0 : 1));
+      if (off.has(px, py)) canvas.set(px, py, at(signs.deadTube, off.has(px, py - 1) ? 0 : 1));
     }
   }
   return board;
@@ -108,17 +131,18 @@ export function drawLightbox(
   rect: Rect,
   text: string,
   scale: number,
+  signs: SignRamps,
   script: 'latin' | 'han' = 'latin',
 ): void {
   const { x, y, width, height } = rect;
-  canvas.fill(x, y, width, height, at(STEEL, 1));
-  canvas.hline(x, y, width, at(STEEL, 4));
+  canvas.fill(x, y, width, height, at(signs.steel, 1));
+  canvas.hline(x, y, width, at(signs.steel, 4));
   const face: Rect = { x: x + 3, y: y + 3, width: width - 6, height: height - 6 };
   const dimFrom = face.x + face.width * 0.78;
   canvas.paint(face.x, face.y, face.width, face.height, (px, py) => {
     const middle = 1 - Math.abs((py - face.y) / face.height - 0.5) * 2;
     const dim = px > dimFrom ? -1.4 : 0;
-    return tone(LIGHTBOX, 0.9 + middle * 1.3 + dim, px, py);
+    return tone(signs.lightbox, 0.9 + middle * 1.3 + dim, px, py);
   });
   // Latin capitals sit a font pixel low, under their accents' rows; Chinese fills its square.
   const [write, size, low] =
@@ -127,7 +151,7 @@ export function drawLightbox(
   const left = face.x + Math.round((face.width - textWidth) / 2);
   const top = face.y + Math.round((face.height - size * scale) / 2) + low;
   write(text, scale, 1, (px, py) => {
-    canvas.set(left + px, top + py, at(SIGN_INK, left + px > dimFrom ? 0 : 1));
+    canvas.set(left + px, top + py, at(signs.ink, left + px > dimFrom ? 0 : 1));
   });
 }
 
@@ -144,14 +168,12 @@ export function drawPainted(
   });
 }
 
-const TAG_COLORS = [TAG.rose, TAG.teal, TAG.cream, TAG.violet, TAG.ochre] as const;
-
 /**
  * A hand tag: one cursive stroke across `rect`, two pixels thick, its loops a curve that runs
  * back on itself (x = t + a sin θ), each loop its own size, an underline, a drip or two.
  */
-export function drawTag(canvas: Canvas, rect: Rect, random: Random): void {
-  const ramp = random.pick(TAG_COLORS);
+export function drawTag(canvas: Canvas, rect: Rect, random: Random, spray: SprayRamps): void {
+  const ramp = random.pick(spray.colors);
   const color = at(ramp, 1);
   const loops = random.int(4, 6);
   const sizes = Array.from({ length: loops + 1 }, () => 0.5 + random.next() * 0.7);
@@ -192,7 +214,8 @@ export function drawThrowUp(
   canvas: Canvas,
   rect: Rect,
   random: Random,
-  ramp: readonly number[] = random.pick(TAG_COLORS),
+  spray: SprayRamps,
+  ramp: readonly number[] = random.pick(spray.colors),
 ): void {
   const letters = random.int(3, 4);
   const step = (rect.width - 8) / letters;
@@ -224,8 +247,8 @@ export function drawThrowUp(
     for (let y = ly - 3; y < ly + lh + 3; y++) {
       for (let x = lx - 3; x < lx + lw + 3; x++) {
         if (inside(x, y)) canvas.set(x, y, at(ramp, inside(x, y - 3) ? 0 : 1));
-        else if (near(x, y, 1)) canvas.set(x, y, TAG.outline);
-        else if (near(x, y, 2) && !hole.has(x, y)) canvas.set(x, y, at(TAG.cream, 0));
+        else if (near(x, y, 1)) canvas.set(x, y, spray.outline);
+        else if (near(x, y, 2) && !hole.has(x, y)) canvas.set(x, y, at(spray.pale, 0));
       }
     }
   }

@@ -52,6 +52,7 @@ import {
 } from './comfort';
 import { controlsContent, currentDevices, helpPages } from './controls-content';
 import { installMethod, onInstallChange, promptInstall } from './install';
+import { MultiScreen } from './multi-screen';
 import {
   DEFAULT_SETUP,
   DUMMY_HEALTHS,
@@ -107,7 +108,11 @@ const POSITIONS: readonly {
 ];
 
 /** What training's « Ambiance » says of each moment and weather (docs/art/decor-rue.md §13). */
-const MOMENT_LABELS: Readonly<Record<Moment, string>> = { midnight: 'minuit', dusk: 'crépuscule' };
+const MOMENT_LABELS: Readonly<Record<Moment, string>> = {
+  midnight: 'minuit',
+  dusk: 'crépuscule',
+  dawn: 'aube',
+};
 const WEATHER_LABELS: Readonly<Record<Weather, string>> = {
   clear: 'ciel clair',
   rain: 'pluie',
@@ -216,6 +221,8 @@ export class App {
     private readonly fromUrl: Viewing = DEFAULT_VIEWING,
     /** How the fighters stand out from the sky, as the address asks (silhouette.ts). */
     private readonly silhouette: SilhouetteLook = DEFAULT_SILHOUETTE,
+    /** The « Multi » screen, shown as the address asks (`?multi`) until gate 2 (multi-screen.ts). */
+    private readonly multi = false,
   ) {
     this.viewing = fromUrl;
   }
@@ -321,6 +328,17 @@ export class App {
       { label: "Contre l'ordinateur", hint: 'Un joueur', onSelect: choose('cpu') },
       { label: '2 joueurs', hint: 'Sur le même appareil', onSelect: choose('versus') },
       { label: 'Entraînement', hint: 'Sans chrono, vie infinie', onSelect: choose('training') },
+      ...(this.multi
+        ? [
+            {
+              label: 'Multi (test)',
+              hint: 'En ligne, à deux appareils',
+              onSelect: () => {
+                this.showMulti();
+              },
+            },
+          ]
+        : []),
       {
         label: 'Commandes',
         onSelect: () => {
@@ -356,6 +374,24 @@ export class App {
       initialIndex: initial === 'options' ? items.indexOf(optionsItem) : initial,
     });
     this.onMainMenu = true;
+  }
+
+  /**
+   * The « Multi » screen (docs/multijoueur.md §7): its network code, PeerJS with it, is loaded as
+   * the search first starts, never with the game. Back to the main menu closes it all.
+   */
+  private showMulti(): void {
+    this.show(
+      new MultiScreen(this.root, {
+        connect: () =>
+          import('../net/peer-matchmaker').then(({ peerMatchmaker }) => peerMatchmaker()),
+        now: () => performance.now(),
+        feedback: this.menuFeedback,
+        onBack: () => {
+          this.showMainMenu();
+        },
+      }),
+    );
   }
 
   /**
