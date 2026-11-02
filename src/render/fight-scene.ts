@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { cpuStep, createCpu, type CpuBehavior, type CpuState } from '../ai/cpu';
 import { artOf } from '../art';
 import type { FighterArt } from '../art/types';
+import type { StageVariant } from '../art/stage-layers';
 import { assertValidArt } from '../art/validate';
 import type { Sfx } from '../audio/sfx';
 import { hudComfortOf, isCalm, type Comfort } from '../app/comfort';
@@ -54,7 +55,6 @@ import type { StagedLook } from './finisher-scripts';
 import { FinisherSignal, sirenPitchOf } from './finisher-signal';
 import { FlashBudget } from './flash-budget';
 import { FighterView } from './fighter-view';
-import { STAGE_ART } from '../art/rue';
 import { drawGreyboxStage, GROUND_Y } from './greybox-stage';
 import { hitStyleOf, hudColorOf, type HitStyle } from './hit-styles';
 import { requestLandscapeFullscreen } from './fullscreen';
@@ -101,6 +101,8 @@ export interface FightSceneData {
   readonly heldStruggle?: boolean;
   /** How the game is drawn, read once from the renderer when it starts (render-mode.ts). */
   readonly mode: RenderMode;
+  /** The stage in the atmosphere drawn for the fight (stage-view.ts); none: the grey box. */
+  readonly stage: StageVariant | undefined;
   /** How the fighters stand out from the sky, read once from the address (silhouette.ts). */
   readonly silhouette: SilhouetteLook;
   /** Also called when the picture is lost with the GPU: the player resumes once it is back. */
@@ -301,7 +303,8 @@ export class FightScene extends Phaser.Scene {
 
   preload(): void {
     for (const art of this.arts) if (art) loadArt(this, art);
-    if (STAGE_ART) loadStage(this, STAGE_ART);
+    const { stage } = this.sceneData;
+    if (stage) loadStage(this, stage);
   }
 
   create(): void {
@@ -310,9 +313,11 @@ export class FightScene extends Phaser.Scene {
     // origin at the top left, the scroll stays the world x of the screen's left edge.
     this.cameras.main.setZoom(this.scale.width / VIEW_SIZE.width).setOrigin(0, 0);
     const stageWidth = toPx(this.config.stage.width);
-    // The street in front of the Warehouse (docs/art/decor-rue.md), the grey box without it.
-    const stageProps = STAGE_ART ? drawStage(this, STAGE_ART) : undefined;
-    if (!STAGE_ART) {
+    // The street in front of the Warehouse (docs/art/decor-rue.md), in the atmosphere drawn for
+    // the fight (§13); the grey box without it.
+    const { stage } = this.sceneData;
+    const stageProps = stage ? drawStage(this, stage) : undefined;
+    if (!stage) {
       drawGreyboxStage(this, stageWidth, { silhouette: this.sceneData.silhouette, debug });
     }
     const { comfort, mode } = this.sceneData;

@@ -1,6 +1,6 @@
 import { check, resolveConfig } from 'prettier';
 import { describe, expect, it } from 'vitest';
-import { STAGE_SCALE } from '../../src/art/stage-layers';
+import { atmosphereName, BASE_ATMOSPHERE, STAGE_SCALE } from '../../src/art/stage-layers';
 import { luminanceDelta, relativeLuminance } from '../../src/render/luminance';
 import { VEIL_DELTA } from '../../src/render/veils';
 import { VIEW_SIZE } from '../../src/render/view';
@@ -12,11 +12,13 @@ import {
   installedLayers,
   LARGE_SHARE,
   largeColorsOf,
+  recolored,
   loadStageDrawn,
   stageRulesOf,
   stageStart,
 } from '../../tools/sprites/stage-drawn';
 import { drawRue } from '../../tools/stage/rue';
+import { STREET_ATMOSPHERES } from '../../tools/stage/rue/atmospheres';
 
 const NONE: Rgba = { r: 0, g: 0, b: 0, a: 0 };
 const SKY: Rgba = { r: 0x1b, g: 0x1b, b: 0x2f, a: 255 };
@@ -124,26 +126,56 @@ describe('The stage large colors', () => {
     const colors = largeColorsOf(Object.values(drawRue().layers));
     // The darkest is the grey box's sky: the sparks and the words light the same over it.
     expect(Math.min(...colors.map(relativeLuminance))).toBe(relativeLuminance(0x1b1b2f));
-    // None so light that a black effect over it would change it by more than VEIL_DELTA.
-    for (const color of colors) {
-      expect(luminanceDelta(0x000000, color, 1), color.toString(16)).toBeLessThanOrEqual(
-        VEIL_DELTA,
-      );
+    // None so light that a black effect over it would change it by more than VEIL_DELTA, in any
+    // of the street's atmospheres (docs/art/decor-rue.md §13).
+    const { layers } = drawRue();
+    for (const { atmosphere, palette } of STREET_ATMOSPHERES) {
+      const shown = Object.values(layers).map((layer) => recolored(layer, palette));
+      for (const color of largeColorsOf(shown)) {
+        expect(
+          luminanceDelta(0x000000, color, 1),
+          `${atmosphereName(atmosphere)} ${color.toString(16)}`,
+        ).toBeLessThanOrEqual(VEIL_DELTA);
+      }
     }
+  });
+
+  it('give each atmosphere of the street a whole palette, slot for slot with the night', () => {
+    const [night, ...others] = STREET_ATMOSPHERES;
+    expect(night?.atmosphere).toEqual(BASE_ATMOSPHERE);
+    for (const { palette } of others) {
+      expect(palette).toHaveLength(night?.palette.length ?? 0);
+      // Slot 0 stays transparent, every other opaque: the stage takes whole pixels only.
+      expect(palette[0]?.a).toBe(0);
+      expect(palette.slice(1).every(({ a }) => a === 255)).toBe(true);
+    }
+    expect(
+      new Set(STREET_ATMOSPHERES.map(({ atmosphere }) => atmosphereName(atmosphere))).size,
+    ).toBe(STREET_ATMOSPHERES.length);
   });
 
   it('are written as Prettier writes them', async () => {
     const file = new URL('../../src/art/rue/colors.ts', import.meta.url);
     const options = { ...((await resolveConfig(file)) ?? {}), filepath: file.pathname };
     for (const colors of [
-      [],
-      [0x1b1b2f, 0x3a3a5c],
-      Array.from({ length: 37 }, (_, i) => i * 0x10101),
+      {},
+      { 'midnight-clear': [0x1b1b2f, 0x3a3a5c] },
+      {
+        'midnight-clear': Array.from({ length: 37 }, (_, i) => i * 0x10101),
+        'dusk-clear': [0x212a4c],
+      },
     ]) {
       const text = await colorsModule(colors, file);
-      expect(text).toContain('export const STAGE_COLORS: readonly number[] = [');
+      expect(text).toContain(
+        'export const STAGE_COLORS: Readonly<Record<string, readonly number[]>> = {',
+      );
       expect(await check(text, options)).toBe(true);
     }
-    expect(await colorsModule([0x1b1b2f, 0x3a3a5c], file)).toContain('[0x1b1b2f, 0x3a3a5c]');
+    const two = await colorsModule(
+      { 'midnight-clear': [0x1b1b2f], 'dusk-clear': [0x3a3a5c] },
+      file,
+    );
+    expect(two).toContain("'midnight-clear': [0x1b1b2f]");
+    expect(two).toContain("'dusk-clear': [0x3a3a5c]");
   });
 });
