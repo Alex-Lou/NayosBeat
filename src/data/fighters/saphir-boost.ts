@@ -56,6 +56,11 @@ export function saphirBoost(plain: PlainSpecials): BoostMoves {
         guard: 'mid',
         hitbox: box(10, 4, 44, 60),
         motion: advance(48, { from: 2, to: 12, distancePx: 24 }),
+        // Drawn leaping into the tornado (frames 3-5), her feet off the floor.
+        hurtboxes: [
+          { frames: { from: 8, to: 10 }, boxes: [box(-8, 9.5, 25.5, 70.5)] },
+          { frames: { from: 10, to: 22 }, boxes: [box(-18, 21, 43.5, 64.5)] },
+        ],
       }),
       [
         { frame: 16, damage: 80, stun: [22, 14], hitstop: 10, pushbackPx: 1 },

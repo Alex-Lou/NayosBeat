@@ -8,6 +8,7 @@ import { MATCH } from '../core/helpers';
 import { NAYO } from '../../src/data/fighters/nayo';
 import { RIFF } from '../../src/data/fighters/riff';
 import { SAPHIR } from '../../src/data/fighters/saphir';
+import { WATT } from '../../src/data/fighters/watt';
 import { box, kd } from '../../src/data/fighters/shared';
 
 /** A jump attack firing the fireball: valid types, invalid data. */
@@ -48,6 +49,7 @@ describe('fighter templates', () => {
     expect(validateTemplate(NAYO)).toEqual([]);
     expect(validateTemplate(RIFF)).toEqual([]);
     expect(validateTemplate(SAPHIR)).toEqual([]);
+    expect(validateTemplate(WATT)).toEqual([]);
   });
 
   it('play differently: rushdown is faster but frailer and shorter-ranged', () => {
@@ -63,7 +65,7 @@ describe('fighter templates', () => {
   // moving, the quickest walk back and the longest backdash of the cast, the slowest quickest
   // blow; neither a reversal nor a projectile.
   it('play differently: the counter-fighter reaches farthest, steps back best, starts slowest', () => {
-    const others = [NAYO, RIFF];
+    const others = [NAYO, RIFF, WATT];
     const reach = (t: FighterTemplate) =>
       (t.moves.standHeavy.hitbox?.x ?? 0) + (t.moves.standHeavy.hitbox?.width ?? 0);
     const backdash = (t: FighterTemplate) =>
@@ -81,6 +83,30 @@ describe('fighter templates', () => {
     const fromStart = (move: MoveData | undefined) =>
       move?.invincible?.from === 0 && (move.invincible.against ?? 'all') === 'all';
     expect(moves.some(fromStart)).toBe(false);
+  });
+
+  // Watt, the grappler without armor (docs/watt.md §1): the most health, the longest grab and the
+  // heaviest throws of the cast, the slowest walk back; no projectile, and one reversal only, his
+  // super.
+  it('play differently: the grappler grabs farthest, throws hardest, lasts longest', () => {
+    const others = [NAYO, RIFF, SAPHIR];
+    const grabReach = (t: FighterTemplate) =>
+      (t.moves.grab.hitbox?.x ?? 0) + (t.moves.grab.hitbox?.width ?? 0);
+    for (const other of others) {
+      expect(WATT.maxHealth, other.name).toBeGreaterThan(other.maxHealth);
+      expect(grabReach(WATT), other.name).toBeGreaterThan(grabReach(other));
+      expect(WATT.moves.throwForward.damage, other.name).toBeGreaterThan(
+        other.moves.throwForward.damage,
+      );
+      expect(WATT.moves.throwBack.damage, other.name).toBeGreaterThan(other.moves.throwBack.damage);
+      expect(WATT.walkBackSpeed, other.name).toBeLessThan(other.walkBackSpeed);
+    }
+    const moves = Object.entries(WATT.moves);
+    expect(moves.some(([, move]) => move.projectile)).toBe(false);
+    const reversals = moves.filter(
+      ([, move]) => move.invincible?.from === 0 && (move.invincible.against ?? 'all') === 'all',
+    );
+    expect(reversals.map(([id]) => id)).toEqual(['super']);
   });
 
   it('reports every authoring mistake at once', () => {

@@ -4,6 +4,7 @@ import { COUNTER_HITSTOP, EXTENDER_HITSTOP } from '../../src/core/rules';
 import { NAYO } from '../../src/data/fighters/nayo';
 import { RIFF } from '../../src/data/fighters/riff';
 import { SAPHIR } from '../../src/data/fighters/saphir';
+import { WATT } from '../../src/data/fighters/watt';
 
 /**
  * The rules of the freeze on impact, written as tests of the data (docs/polish/AUDIT-ET-PLAN.md,
@@ -14,7 +15,7 @@ import { SAPHIR } from '../../src/data/fighters/saphir';
 /** Every move of every fighter, and each blow of a multi-hit one, named for the messages. */
 function blows(): { name: string; move: MoveData }[] {
   const all: { name: string; move: MoveData }[] = [];
-  for (const fighter of [NAYO, RIFF, SAPHIR]) {
+  for (const fighter of [NAYO, RIFF, SAPHIR, WATT]) {
     for (const [id, move] of Object.entries(fighter.moves)) {
       all.push({ name: `${fighter.name} ${id}`, move });
       move.pulses?.forEach((pulse, index) => {

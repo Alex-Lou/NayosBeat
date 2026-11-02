@@ -1,5 +1,18 @@
 import type { FighterMoves } from '../../core/config';
+import type { MoveHurtbox } from '../../core/move-data';
 import { advance, box, HEAVY_CANCELS, kd, LIGHT_CANCELS, strike } from './shared';
+
+/**
+ * The Chandelle's salto, drawn in the air (its frames 1-4): her body off the floor, turning over
+ * behind the leg that kicks to the sky; the low blows pass under her. Played by the Chandelle
+ * and the Chandelle glissée alike.
+ */
+export const CHANDELLE_HURTBOXES: readonly MoveHurtbox[] = [
+  { frames: { from: 2, to: 4 }, boxes: [box(-19, 10, 27, 67.5)] },
+  { frames: { from: 4, to: 7 }, boxes: [box(-29, 50.5, 39.5, 31)] },
+  { frames: { from: 7, to: 11 }, boxes: [box(-31.5, 58, 45.5, 20.5)] },
+  { frames: { from: 11, to: 16 }, boxes: [box(-16.5, 23, 29, 37)] },
+];
 
 /**
  * Saphir's strings (docs/saphir.md §5): the same grammar as Nayo's and Riff's, her savate kicks.
@@ -63,6 +76,8 @@ export const SAPHIR_STRINGS: Pick<
     guard: 'overhead',
     hitbox: box(12, 36, 30, 34),
     motion: advance(31, { from: 0, to: 8, distancePx: 12 }),
+    // The Fouetté plongeant's leap (its frames 2-4), from the first tick.
+    hurtboxes: [{ frames: { from: 0, to: 16 }, boxes: [box(-13.5, 9.5, 31.5, 75)] }],
     cancelInto: HEAVY_CANCELS,
     extender: 'rebond',
   }),
@@ -77,6 +92,7 @@ export const SAPHIR_STRINGS: Pick<
     guard: 'mid',
     hitbox: box(4, 58, 28, 46),
     motion: advance(28, { from: 0, to: 6, distancePx: 12 }),
+    hurtboxes: CHANDELLE_HURTBOXES,
     knockdown: kd(8, 0.5, { juggle: 4 }),
     cancelInto: HEAVY_CANCELS,
   }),

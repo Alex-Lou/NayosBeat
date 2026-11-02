@@ -4,7 +4,7 @@ import type { FrameRange, RootMotion } from '../../core/move-data';
 import { GRAB_HITSTOP } from '../../core/rules';
 import { advance, box, dash, HEAVY_CANCELS, kd, LIGHT_CANCELS, strike, throwMove } from './shared';
 import { saphirBoost } from './saphir-boost';
-import { SAPHIR_STRINGS } from './saphir-strings';
+import { CHANDELLE_HURTBOXES, SAPHIR_STRINGS } from './saphir-strings';
 
 /**
  * A move that steps in, then back out (the Syncope): `there` forward, then `home` backward, each
@@ -25,7 +25,7 @@ function inAndOut(
  * former record dealer who fights in savate. The longest reach without moving and the best walk
  * back of the cast, a Syncope that strikes and steps out again; no reversal, no projectile, and
  * slow up close (5 ticks). Her Boost moves are written from her plain specials (`SAPHIR`,
- * below). Hurtboxes are provisional until her drawing measures them (docs/combat-v2.md §9.2).
+ * below). Her hurtboxes follow her drawing (docs/combat-v2.md §9.2, `npm run measure-boxes`).
  */
 const SAPHIR_PLAIN: FighterTemplate = {
   name: 'Saphir',
@@ -45,11 +45,11 @@ const SAPHIR_PLAIN: FighterTemplate = {
   crouchingPushbox: { width: px(30), height: px(48) },
   airPushbox: { width: px(22), height: px(42), lift: px(28) },
   lyingPushbox: { width: px(26), height: px(20) },
-  // Provisional: the guard of the silhouette sheet (82 px, the hat on top), until
-  // `npm run measure-boxes -- saphir` measures her drawing.
-  standingHurtboxes: [box(-20, 0, 34, 81)],
-  crouchingHurtboxes: [box(-18, 0, 32, 56)],
-  airHurtboxes: [box(-20, 4, 40, 40), box(-12, 44, 28, 38)],
+  // Measured on her drawing (`npm run measure-boxes -- saphir`): the front at her lead toes, the
+  // back at her rear foot, the top at the crown of the mask.
+  standingHurtboxes: [box(-20.5, 0, 34.5, 70.5)],
+  crouchingHurtboxes: [box(-16.5, 0, 30.5, 55.5)],
+  airHurtboxes: [box(-13.5, 4, 33.5, 40), box(-12, 44, 26, 32.5)],
   moves: {
     ...SAPHIR_STRINGS,
     // → + H: the foot rises, then plunges over the guard onto the head. An overhead, 18 ticks.
@@ -63,6 +63,8 @@ const SAPHIR_PLAIN: FighterTemplate = {
       guard: 'overhead',
       hitbox: box(12, 36, 32, 34),
       motion: advance(36, { from: 6, to: 14, distancePx: 10 }),
+      // Drawn leaping (frames 2-4): her body off the floor, the low blows pass under her.
+      hurtboxes: [{ frames: { from: 8, to: 21 }, boxes: [box(-13.5, 9.5, 31.5, 75)] }],
     }),
     // ← + H: a front kick straight to the sky. An anti-air without invincibility, and the
     // launcher (4 juggle points); its box starts above a crouching body: it whiffs on it.
@@ -75,6 +77,7 @@ const SAPHIR_PLAIN: FighterTemplate = {
       pushbackPx: 3,
       guard: 'mid',
       hitbox: box(4, 58, 28, 46),
+      hurtboxes: CHANDELLE_HURTBOXES,
       knockdown: kd(8, 0.5, { juggle: 4 }),
       cancelInto: HEAVY_CANCELS,
     }),
@@ -168,6 +171,11 @@ const SAPHIR_PLAIN: FighterTemplate = {
       pushbackPx: 3,
       guard: 'mid',
       hitbox: box(2, 36, 26, 70),
+      // Drawn leaping (frames 2-4), the striking leg over her head: her body alone is hit.
+      hurtboxes: [
+        { frames: { from: 5, to: 11 }, boxes: [box(-11, 27.5, 26, 73.5)] },
+        { frames: { from: 11, to: 17 }, boxes: [box(-13, 15, 26.5, 73)] },
+      ],
       knockdown: kd(3, 3),
     }),
     // The grab, then what she does with the opponent she holds (docs/combat-v2.md §4.3).
@@ -185,7 +193,7 @@ const SAPHIR_PLAIN: FighterTemplate = {
       guard: 'mid',
       hitbox: box(6, 20, 24, 38),
     },
-    pummel: throwMove({ name: 'Paume', startup: 5, recovery: 8, damage: 10, hitstop: 5 }),
+    pummel: throwMove({ name: 'Genou', startup: 5, recovery: 8, damage: 10, hitstop: 5 }),
     // A foot behind the ankle, a push: the opponent falls close by.
     throwForward: throwMove({
       name: 'Croc-en-jambe',
@@ -216,6 +224,11 @@ const SAPHIR_PLAIN: FighterTemplate = {
       distancePx: 52,
       back: true,
       throwInvincible: { from: 0, to: 11 },
+      // Drawn as a back somersault (frames 1-3), her body off the floor.
+      hurtboxes: [
+        { frames: { from: 1, to: 4 }, boxes: [box(-40.5, 32, 62.5, 30)] },
+        { frames: { from: 7, to: 11 }, boxes: [box(-28, 16, 60, 37.5)] },
+      ],
     }),
   },
 };

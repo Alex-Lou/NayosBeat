@@ -1,14 +1,17 @@
 import { NAYO as NAYO_ART } from '../../src/art/nayo';
 import { RIFF as RIFF_ART } from '../../src/art/riff';
+import { SAPHIR as SAPHIR_ART } from '../../src/art/saphir';
 import type { FighterArt } from '../../src/art/types';
 import type { FighterTemplate } from '../../src/core/config';
 import type { MoveId } from '../../src/core/move-data';
 import { NAYO as NAYO_TEMPLATE } from '../../src/data/fighters/nayo';
 import { RIFF as RIFF_TEMPLATE } from '../../src/data/fighters/riff';
+import { SAPHIR as SAPHIR_TEMPLATE } from '../../src/data/fighters/saphir';
 import type { Fighter } from '../../tools/sprites/fighter';
 import { NAYO } from '../../tools/sprites/nayo/index';
 import type { PixelCanvas } from '../../tools/sprites/raster';
 import { RIFF } from '../../tools/sprites/riff/index';
+import { SAPHIR } from '../../tools/sprites/saphir/index';
 import { drawStrip, drawStripEffects } from '../../tools/sprites/sheet';
 
 /**
@@ -35,7 +38,13 @@ export const DRAWN_RIFF: DrawnFighter = {
   art: RIFF_ART,
   generator: RIFF,
 };
-export const DRAWN_FIGHTERS: readonly DrawnFighter[] = [DRAWN_NAYO, DRAWN_RIFF];
+export const DRAWN_SAPHIR: DrawnFighter = {
+  name: 'Saphir',
+  template: SAPHIR_TEMPLATE,
+  art: SAPHIR_ART,
+  generator: SAPHIR,
+};
+export const DRAWN_FIGHTERS: readonly DrawnFighter[] = [DRAWN_NAYO, DRAWN_RIFF, DRAWN_SAPHIR];
 
 /** The name of a move's reach check, the same in every strip test (`-t <move>` picks it). */
 export function reachCheck(id: MoveId): string {

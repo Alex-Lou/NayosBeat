@@ -7,6 +7,7 @@ import { step } from '../../src/core/step';
 import { NAYO } from '../../src/data/fighters/nayo';
 import { RIFF } from '../../src/data/fighters/riff';
 import { SAPHIR } from '../../src/data/fighters/saphir';
+import { WATT } from '../../src/data/fighters/watt';
 import { TRAINING_STAGE } from '../../src/data/stages';
 import { facingOff, MIRROR_MATCH } from './helpers';
 
@@ -26,7 +27,7 @@ interface CrossUp {
  * The farthest distance from which a forward jump lands behind a still opponent, far from the
  * walls (§3.5). The air pushbox is the only setting: this table pins it. Over a lying opponent
  * (whose body stays under the raised air pushbox) the range is the jump's length itself, 70.4 px
- * for Nayo, 72.8 for Riff and 66 for Saphir (§3.1); §3.5's 76 and 78 were measured with the earlier jump speeds
+ * for Nayo, 72.8 for Riff, 66 for Saphir and 54 for Watt (§3.1); §3.5's 76 and 78 were measured with the earlier jump speeds
  * (2.4 and 2.8 px/tick), which §3.1 replaced.
  */
 const CROSS_UPS: readonly CrossUp[] = [
@@ -57,6 +58,25 @@ const CROSS_UPS: readonly CrossUp[] = [
   { jumper: RIFF, target: SAPHIR, posture: 'standing', range: 54 },
   { jumper: RIFF, target: SAPHIR, posture: 'crouching', range: 67 },
   { jumper: RIFF, target: SAPHIR, posture: 'lying', range: 72 },
+  { jumper: WATT, target: NAYO, posture: 'crouching', range: 49 },
+  { jumper: WATT, target: NAYO, posture: 'lying', range: 54 },
+  { jumper: WATT, target: RIFF, posture: 'standing', range: 41 },
+  { jumper: WATT, target: RIFF, posture: 'crouching', range: 49 },
+  { jumper: WATT, target: RIFF, posture: 'lying', range: 54 },
+  { jumper: WATT, target: SAPHIR, posture: 'standing', range: 39 },
+  { jumper: WATT, target: SAPHIR, posture: 'crouching', range: 49 },
+  { jumper: WATT, target: SAPHIR, posture: 'lying', range: 54 },
+  { jumper: WATT, target: WATT, posture: 'crouching', range: 47 },
+  { jumper: WATT, target: WATT, posture: 'lying', range: 54 },
+  { jumper: NAYO, target: WATT, posture: 'standing', range: 54 },
+  { jumper: NAYO, target: WATT, posture: 'crouching', range: 63 },
+  { jumper: NAYO, target: WATT, posture: 'lying', range: 70 },
+  { jumper: RIFF, target: WATT, posture: 'standing', range: 49 },
+  { jumper: RIFF, target: WATT, posture: 'crouching', range: 64 },
+  { jumper: RIFF, target: WATT, posture: 'lying', range: 72 },
+  { jumper: SAPHIR, target: WATT, posture: 'standing', range: 48 },
+  { jumper: SAPHIR, target: WATT, posture: 'crouching', range: 59 },
+  { jumper: SAPHIR, target: WATT, posture: 'lying', range: 65 },
 ];
 
 /** The target holds its posture for the whole jump (a knockdown lasting long enough). */
@@ -102,6 +122,19 @@ describe('cross-ups (§3.5)', () => {
     const contact = (jumper.standingPushbox.width + target.standingPushbox.width) / 2;
     for (let distance = Math.ceil(contact / px(1)); distance <= range; distance++) {
       expect(landsBehind(jumper, target, posture, distance), `${distance} px`).toBe(true);
+    }
+  });
+
+  // Watt's jump is low and heavy (docs/watt.md §3): it never clears a standing Nayo, nor a
+  // standing Watt. No cross-up on them: his way in is the ground, the grab.
+  it('Watt never crosses a standing Nayo or a standing Watt', () => {
+    for (const target of [NAYO, WATT]) {
+      for (let distance = 30; distance <= 80; distance++) {
+        expect(
+          landsBehind(WATT, target, 'standing', distance),
+          `${target.name}, ${distance} px`,
+        ).toBe(false);
+      }
     }
   });
 
