@@ -185,12 +185,7 @@ const TINTS = Object.fromEntries(
         const of = (colorway: 'main' | 'alt'): string => {
           const ramp = colorway === 'alt' ? (material.alt ?? material.main) : material.main;
           const color = colorway === 'alt' ? (light.alt ?? light.main) : light.main;
-          return tinted(
-            ramp[TINT[level].tone] ?? ramp[0] ?? '#000000',
-            color,
-            level,
-            LIFT[tone][level],
-          );
+          return tinted(ramp[TINT[level].tone], color, level, LIFT[tone][level]);
         };
         return [`${name}_${tone}_${level}`, { main: of('main'), alt: of('alt') }];
       }),
