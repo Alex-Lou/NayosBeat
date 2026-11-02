@@ -15,8 +15,9 @@ function play(sheet: NayoSheet, ticks: readonly number[], loopFrom?: number): Na
   return loopFrom === undefined ? { sheet, frames, ticks } : { sheet, frames, ticks, loopFrom };
 }
 
-// The specials, which their Remixes play too (D18): the same strip at the same timing, its
-// effects redrawn in platine under the Remix's name (docs/combos-v3.md §1.8.7, §5 row 8).
+// The specials, whose timing their Remixes keep (D18). A Remix plays its own strip, the special's
+// poses in the Boost's light (docs/art/nayo-essence.md §5), its effects redrawn in platine under
+// the Remix's name (docs/combos-v3.md §1.8.7, §5 row 8).
 const VINYLE = play('special', [3, 3, 3, 3, 8, 6, 5, 5, 5]); // the Vinyle leaves on frame 4
 const PIED_FENDU = play('specialForward', [3, 3, 3, 2, 4, 4, 5, 5, 4]); // active: frame 4
 const UPPERCUT = play('specialAntiAir', [3, 3, 5, 4, 4, 4, 4, 4, 4, 4]); // active: frames 1-2
@@ -112,9 +113,9 @@ export const NAYO_CLIPS: FighterClips<NayoClip> = {
   special: VINYLE,
   specialForward: PIED_FENDU,
   specialAntiAir: UPPERCUT,
-  specialBoost: { ...VINYLE, fx: 'specialBoost' },
-  specialForwardBoost: { ...PIED_FENDU, fx: 'specialForwardBoost' },
-  specialAntiAirBoost: { ...UPPERCUT, fx: 'specialAntiAirBoost' },
+  specialBoost: { ...VINYLE, sheet: 'specialRemix', fx: 'specialBoost' },
+  specialForwardBoost: { ...PIED_FENDU, sheet: 'specialForwardRemix', fx: 'specialForwardBoost' },
+  specialAntiAirBoost: { ...UPPERCUT, sheet: 'specialAntiAirRemix', fx: 'specialAntiAirBoost' },
   // Mégabasse: the cue (s0) held through the 20-tick freeze of its flash, the coil (s1), then
   // the three blows on the floor on action frames 2, 8 and 14 (s2, s2 again, s4, the speaker
   // rings of its effects on s2 to s4), the rise, the fist to the sky, the guard (§5, row 3).

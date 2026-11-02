@@ -128,7 +128,7 @@ export type DetailName = keyof typeof DETAILS;
 const EFFECT_LIGHTS = {
   sound: { kiss: { main: '#00c0d8', alt: '#d82896' }, lit: { main: '#40f0ff', alt: '#ff60cc' } },
   strike: { kiss: { main: '#f07818' }, lit: { main: '#ffc040' } },
-  platine: { kiss: { main: '#ffc040' }, lit: { main: '#f2f6ff' } },
+  platine: { kiss: { main: '#ffb21e' }, lit: { main: '#f2f6ff' } },
 } as const satisfies Record<Tone, Record<TintLevel, DetailColor>>;
 
 type TintLevel = 'kiss' | 'lit';
@@ -140,23 +140,33 @@ type TintName = `${MaterialName}_${Tone}_${TintLevel}`;
  * material still reads, lit.
  */
 const TINT = {
-  kiss: { tone: 3, gain: 1.5, lift: 0.1, amount: 0.7 },
-  lit: { tone: 4, gain: 1.8, lift: 0.32, amount: 0.9 },
-} as const satisfies Record<
-  TintLevel,
-  { tone: number; gain: number; lift: number; amount: number }
->;
+  kiss: { tone: 3, gain: 1.5, amount: 0.7 },
+  lit: { tone: 4, gain: 1.8, amount: 0.9 },
+} as const satisfies Record<TintLevel, { tone: number; gain: number; amount: number }>;
 
-function tinted(surface: string, light: string, level: TintLevel): string {
-  const { gain, lift, amount } = TINT[level];
+/**
+ * How much brighter than the surface each light makes it, grazed and squarely lit. A warm light
+ * needs more: a dim gold reads as brown dirt, not as light.
+ */
+const LIFT = {
+  sound: { kiss: 0.1, lit: 0.32 },
+  strike: { kiss: 0.3, lit: 0.45 },
+  platine: { kiss: 0.34, lit: 0.5 },
+} as const satisfies Record<Tone, Record<TintLevel, number>>;
+
+function tinted(surface: string, light: string, level: TintLevel, lift: number): string {
+  const { gain, amount } = TINT[level];
   const s = rgbOf(surface);
   const l = rgbOf(light);
   const target = Math.min(1, luminance(s) * gain + lift);
-  const scaled = l.map((c) => c * (target / Math.max(luminance(l), 1e-3)));
-  // Past white, the extra goes into the other channels: brighter, paler.
-  const over = Math.max(0, ...scaled.map((c) => c - 1));
-  const light2 = scaled.map((c) => Math.min(1, c + over * 0.6));
-  return hexOf(s.map((c, i) => c + ((light2[i] ?? 0) - c) * amount));
+  const own = Math.max(luminance(l), 1e-3);
+  // The light's hue at the target value: darker, it is scaled down; brighter than the light
+  // itself, it pales toward white (a lit cheek under the cyan is a pale cyan, not a green).
+  const hued =
+    target <= own
+      ? l.map((c) => c * (target / own))
+      : l.map((c) => c + (1 - c) * ((target - own) / (1 - own || 1)));
+  return hexOf(s.map((c, i) => c + ((hued[i] ?? 0) - c) * amount));
 }
 
 function rgbOf(hex: string): number[] {
@@ -188,7 +198,7 @@ const TINTS = Object.fromEntries(
         const of = (colorway: 'main' | 'alt'): string => {
           const ramp = colorway === 'alt' ? (material.alt ?? material.main) : material.main;
           const color = colorway === 'alt' ? (light.alt ?? light.main) : light.main;
-          return tinted(ramp[TINT[level].tone], color, level);
+          return tinted(ramp[TINT[level].tone], color, level, LIFT[tone][level]);
         };
         return [`${name}_${tone}_${level}`, { main: of('main'), alt: of('alt') }];
       }),

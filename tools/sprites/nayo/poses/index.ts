@@ -62,6 +62,7 @@ import { POSES as getupPoses } from './getup.ts';
 import * as chainHeavy from './chainHeavy.ts';
 import * as chainLaunch from './chainLaunch.ts';
 import * as megabasse from './super.ts';
+import { REMIXES } from './remixes.ts';
 
 export {
   PROJECTILE as NAYO_PROJECTILE,
@@ -172,4 +173,5 @@ export const NAYO_POSES: Readonly<Record<PosedSheet, readonly Pose[]>> = {
   chainHeavy: V3_STRIPS.chainHeavy.POSES,
   chainLaunch: V3_STRIPS.chainLaunch.POSES,
   super: V3_STRIPS.super.POSES,
+  ...REMIXES,
 };

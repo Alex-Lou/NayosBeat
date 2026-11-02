@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { NAYO_CLIPS } from '../../src/art/nayo/clips';
+import { NAYO_SHEETS } from '../../src/art/nayo/sheets';
 import { ANCHOR, CELL_SIZE } from '../../src/art/types';
 import { effectLightsOf, glowsOf } from '../../tools/sprites/effect-light';
 import { NAYO, NAYO_LIGHTING } from '../../tools/sprites/nayo/index';
@@ -264,4 +266,40 @@ describe("Nayo's effects light him", () => {
     expect(moved.length).toBe(0);
     expect(lit.some((slot, index) => slot !== plain[index])).toBe(true);
   });
+});
+
+describe("the Boost's own images (docs/art/nayo-essence.md §5)", () => {
+  const REMIXES = [
+    ['specialBoost', 'special', 'specialRemix'],
+    ['specialForwardBoost', 'specialForward', 'specialForwardRemix'],
+    ['specialAntiAirBoost', 'specialAntiAir', 'specialAntiAirRemix'],
+  ] as const;
+
+  it.each(REMIXES)('%s plays its own strip at its special’s timing', (remix, special, strip) => {
+    const own = NAYO_CLIPS[remix];
+    const plain = NAYO_CLIPS[special];
+    if (!own) throw new Error(`no clip for ${remix}`);
+    expect(own.sheet).toBe(strip);
+    expect(own.frames).toEqual(plain.frames);
+    expect(own.ticks).toEqual(plain.ticks);
+    expect(NAYO_SHEETS[strip].frames).toBe(NAYO_SHEETS[special].frames);
+  });
+
+  it.each(REMIXES)(
+    '%s: its own pixels, lit gold and white, its special’s cyan',
+    (_, special, strip) => {
+      const plain = drawStrip(NAYO, special).pixels;
+      const own = drawStrip(NAYO, strip).pixels;
+      const count = (pixels: Uint8Array, slots: ReadonlySet<number>): number =>
+        pixels.filter((slot) => slots.has(slot)).length;
+      const platine = TINT_SLOTS.platine ?? new Set<number>();
+      const sound = TINT_SLOTS.sound ?? new Set<number>();
+      expect(count(own, platine)).toBeGreaterThan(150);
+      expect(count(own, sound)).toBe(0);
+      expect(count(plain, sound)).toBeGreaterThan(150);
+      expect(count(plain, platine)).toBe(0);
+      // The same poses: the same silhouette, what the game measures does not move.
+      expect(own.filter((slot, index) => (slot === 0) !== (plain[index] === 0)).length).toBe(0);
+    },
+  );
 });

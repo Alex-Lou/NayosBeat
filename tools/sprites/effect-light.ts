@@ -25,7 +25,7 @@ export function glowsOfEffect(effect: Effect): Glow[] {
   switch (effect.kind) {
     case 'disc':
       // A record of light in the hand: it lights the glove, the forearm, the jaw.
-      return [glow(effect.center, effect.radius * 4.5 + 8, 1.2, effect.tone)];
+      return [glow(effect.center, effect.radius * 4 + 8, 1.05, effect.tone)];
     case 'energy':
       return [glow(effect.center, effect.radius * 4 + 8, 1.1, effect.tone)];
     case 'flash':

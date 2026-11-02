@@ -55,6 +55,12 @@ export const NAYO_SHEETS = {
   chainHeavy: { frames: 7 },
   chainLaunch: { frames: 7 },
   super: { frames: 10 },
+
+  // The Remixes' own strips (docs/art/nayo-essence.md §5): their special's frames, in the Boost's
+  // light.
+  specialRemix: { frames: 9 },
+  specialForwardRemix: { frames: 9 },
+  specialAntiAirRemix: { frames: 10 },
 } as const satisfies Record<string, SheetSpec>;
 
 export type NayoSheet = keyof typeof NAYO_SHEETS;

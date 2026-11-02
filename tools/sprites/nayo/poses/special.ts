@@ -1,6 +1,16 @@
 import type { Point } from '../../raster.ts';
 import { add, BODY, scale, solve, sub, type Bend } from '../../skeleton.ts';
-import { at, GUARD, lifted, planted, smear, type Effect, type Foot, type Pose } from './common.ts';
+import {
+  at,
+  energy,
+  GUARD,
+  lifted,
+  planted,
+  smear,
+  type Effect,
+  type Foot,
+  type Pose,
+} from './common.ts';
 
 type Body = Omit<Pose, 'nearFist' | 'farFist'>;
 
@@ -105,11 +115,10 @@ const DRAW: Pose = {
   bends: { nearElbow: 'down', farElbow: 'down' },
 };
 
-// Frame 1: the record comes out and sweeps down to the rear hip, coiled on the rear leg (its
-// heel up on the ball), chest turned away, the lead shoulder up at the chin; the palms hold the
-// record by its rim at the hip (lead palm on top, rear one under it). Both arms hang to it, the
-// lead elbow bent back behind the hip the way a hand goes to a back pocket: never an arm folded
-// the wrong way across the belly.
+// Frame 1: the record comes out of the jacket at the chest, the palms on its rim, and he looks
+// down at it as it lights up: its cyan on the gloves, the forearms, under the chin (the effect's
+// light, docs/art/nayo-essence.md). Coiled on the rear leg already (its heel up on the ball),
+// the chest turning away, the lead shoulder up at the chin.
 const COIL_BODY: Body = {
   ...GUARD,
   hip: at(-9.2, 34),
@@ -122,10 +131,18 @@ const COIL_BODY: Body = {
   nearFoot: onToes(LEAD_TOE, -8),
   farFoot: onToes(REAR_TOE, -22),
 };
-const COIL_ARMS = posed(COIL_BODY, [-44, 78], [-8, 14]);
+const PRESENT_ARMS = posed({ ...COIL_BODY, head: 18 }, [28, 104], [36, 96]);
+/** The record between the palms, in front of the chest. */
+const PRESENTED = at(
+  (PRESENT_ARMS.nearFist.x + PRESENT_ARMS.farFist.x) / 2 + 1.5,
+  (PRESENT_ARMS.nearFist.y + PRESENT_ARMS.farFist.y) / 2 - 0.5,
+);
 const COIL: Pose = {
-  ...COIL_ARMS,
-  effects: [smear(2.5, [1, 56], [-4, 49], [-10, 40]), record(-10.5, 34.5, 0)],
+  ...PRESENT_ARMS,
+  effects: [
+    smear(2.5, [1, 56], [1, 52], [PRESENTED.x - 2, PRESENTED.y]),
+    record(PRESENTED.x, PRESENTED.y, 0),
+  ],
 };
 
 // Frame 2: the scratch: the lead palm drags the record back hard, the head nods down on the
@@ -140,7 +157,12 @@ const SCRATCH_BODY: Body = {
 };
 const SCRATCH: Pose = {
   ...posed(SCRATCH_BODY, [-50, 75], [-16, 12]),
-  effects: [record(-13.5, 34, -0.15)],
+  effects: [
+    // The record swept down from the chest to the hip.
+    smear(3, [PRESENTED.x, PRESENTED.y], [-6, 44], [-12, 36]),
+    record(-13.5, 34, -0.15),
+    energy(-13.5, 34, 2.6),
+  ],
 };
 
 // Frame 3: the scratch back and the deepest coil, low on the rear leg, the chest turned right
@@ -164,7 +186,11 @@ const LOAD_ARMS = posed(LOAD_BODY, [8, 112], [-26, 14]);
 const LOAD: Pose = {
   ...LOAD_ARMS,
   nearHand: 'fist',
-  effects: [record(LOAD_ARMS.farFist.x - 2.4, LOAD_ARMS.farFist.y + 0.8, 0.05)],
+  effects: [
+    record(LOAD_ARMS.farFist.x - 2.4, LOAD_ARMS.farFist.y + 0.8, 0.05),
+    // Charged to the full: it lights the arm that holds it, the back, the hip.
+    energy(LOAD_ARMS.farFist.x - 2.4, LOAD_ARMS.farFist.y + 0.8, 4.2),
+  ],
 };
 
 // Frame 4 (8 ticks, the Vinyle leaves at x 24, y 42): the hips drive through off the rear toe,
@@ -191,9 +217,14 @@ const THROW: Pose = {
   farFist: at(19, 43),
   bends: { nearElbow: arm(THROW_BODY, 'near', -24, 138).bend, farElbow: 'down' },
   effects: [
+    // The whip: the throwing hand's path from behind the hip, flat out to the release.
+    smear(4, [-17, 36], [-6, 40.5], [7, 42.8], [17, 43]),
     { kind: 'speed', center: at(17, 43), length: 9, spread: 4, direction: 0, tone: 'sound' },
     { kind: 'dust', x: 11.5, size: 2.6, progress: 0.15 },
   ],
+  // The record just let go (the flying Vinyle takes over at x 24, y 42): it lights the open
+  // palm, the forearm and the face from the front.
+  glows: [{ center: at(24, 42), reach: 26, power: 1.3, tone: 'sound' }],
 };
 
 // Recovery (frames 5-8): the arm follows through and he rolls back into the high guard.
@@ -211,6 +242,8 @@ const HOLD: Pose = {
     { kind: 'speed', center: at(17, 44), length: 6, spread: 3, direction: 0, tone: 'sound' },
     { kind: 'dust', x: 11.5, size: 2.6, progress: 0.55 },
   ],
+  // The record on its way: its light slides off the hand.
+  glows: [{ center: at(38, 42), reach: 26, power: 0.8, tone: 'sound' }],
 };
 
 // Frame 6: the hands come back up toward the chin, the hips rock back, the lead foot steps

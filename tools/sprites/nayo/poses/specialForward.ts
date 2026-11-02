@@ -161,6 +161,8 @@ const CHAMBER_BODY: Pose = {
 // The feet hang off the knees as ankles allow: the lead one pulled up (the heel cocked toward
 // the target), the tucked rear one pointed down and back off its shin.
 const CHAMBER: Pose = flexed(flexed(withRear(CHAMBER_BODY, [46, 112]), 'near', 76), 'far', 118);
+/** The chambered heel, where the kick loads: its sole, a little ahead of the ankle. */
+export const CHAMBER_HEEL = at(13, 40.5);
 
 // 4 - The kick (active): lead leg locked out heel first, sole to the target, the body laid
 // back against it, both gloves up guarding the face (laid back this far, a rear arm flung back
@@ -275,7 +277,15 @@ export const POSES: readonly Pose[] = [
   DIP,
   // The takeoff dust, left behind at the push-off toe (world-fixed, see above).
   { ...TAKEOFF, effects: [dust(REAR_TOE - TRAVEL[1], 4, 0.15)] },
-  { ...CHAMBER, effects: [dust(REAR_TOE - TRAVEL[2], 4, 0.45)] },
+  {
+    ...CHAMBER,
+    effects: [
+      dust(REAR_TOE - TRAVEL[2], 4, 0.45),
+      // The sound loaded in the cocked heel: it lights the shin, the knee and the gloves from
+      // below and in front, the coiled spring before it goes (docs/art/nayo-essence.md).
+      { kind: 'energy', center: CHAMBER_HEEL, radius: 2.4 },
+    ],
+  },
   {
     ...EXTEND,
     effects: [
