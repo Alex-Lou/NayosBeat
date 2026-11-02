@@ -5,7 +5,9 @@ import {
   parseMessage,
   PROTOCOL_VERSION,
   SEQ_LIMIT,
+  INPUT_LIMIT,
   isPseudo,
+  MAX_BATCH,
   type NetMessage,
 } from '../../src/net/protocol';
 
@@ -20,6 +22,14 @@ describe('the online protocol (docs/multijoueur.md §4)', () => {
     { type: 'refuse' },
     { type: 'stage', map: 'gym', atmosphere: 'midnight-rain' },
     { type: 'fighter', fighter: 'riff' },
+    {
+      type: 'inputs',
+      first: SEQ_LIMIT - 1,
+      bits: Array.from({ length: MAX_BATCH }, () => INPUT_LIMIT - 1),
+      ack: SEQ_LIMIT - 2,
+    },
+    { type: 'inputs', first: 3, bits: [0], ack: -1 },
+    { type: 'hash', tick: 60, hash: '0a1b2c3d' },
   ];
 
   it('reads back every message it writes, short enough to be accepted', () => {
@@ -70,6 +80,16 @@ describe('the online protocol (docs/multijoueur.md §4)', () => {
       `{"v":${v},"t":"fighter","f":"${'a'.repeat(25)}"}`,
       `{"v":${v},"t":"fighter","f":7}`,
       `{"v":${v},"t":"accept","f":"nayo"}`,
+      `{"v":${v},"t":"inputs","k":1,"b":[],"a":0}`,
+      `{"v":${v},"t":"inputs","k":1,"b":[${INPUT_LIMIT}],"a":0}`,
+      `{"v":${v},"t":"inputs","k":1,"b":[-1],"a":0}`,
+      `{"v":${v},"t":"inputs","k":1,"b":[1.5],"a":0}`,
+      `{"v":${v},"t":"inputs","k":1,"b":${JSON.stringify(Array.from({ length: MAX_BATCH + 1 }, () => 0))},"a":0}`,
+      `{"v":${v},"t":"inputs","k":1,"b":[0],"a":-2}`,
+      `{"v":${v},"t":"inputs","k":-1,"b":[0],"a":0}`,
+      `{"v":${v},"t":"inputs","k":1,"b":"0","a":0}`,
+      `{"v":${v},"t":"hash","k":60,"h":"0A1B2C3D"}`,
+      `{"v":${v},"t":"hash","k":60,"h":"0a1b2c3"}`,
     ];
     for (const raw of refused) expect(parseMessage(raw), String(raw)).toBeNull();
   });

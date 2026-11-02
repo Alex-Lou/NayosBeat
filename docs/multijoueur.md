@@ -21,7 +21,7 @@ On ne passe pas une porte sans le « oui » du propriétaire.
 |---|---|---|
 | 0, la preuve | Recherche automatique, ping affiché, rapport, CSP, dépendance, questions | **validée le 2 novembre 2026** |
 | 1, le salon | Pseudo, « Adversaire trouvé : … » à accepter ou refuser, l'hôte choisit la map, chacun son combattant ; une déconnexion ramène au menu | **livrée, en attente du « oui »** |
-| 2, le combat en lockstep | Un match complet et la revanche, synchrones (pause, fin de round, Finisher, KO), hash anti-désynchronisation, indicateur du ping et du délai | à faire |
+| 2, le combat en lockstep | Un match complet et la revanche, synchrones (pause, fin de round, Finisher, KO), hash anti-désynchronisation, indicateur du ping et du délai | en cours, en trois tranches (§9.5) : **2a livrée** |
 | 3, le rollback | Délai ressenti de 0 ou 1 tic sur Wi-Fi, effets jamais doublés, tests de resimulation | à faire |
 | 4, la finition | À distance, en 4G, reprise après une coupure courte, aide du mode, mesures sur un téléphone modeste | à faire |
 
@@ -77,13 +77,13 @@ Le serveur public de PeerJS (`0.peerjs.com`) **ne liste pas les pairs**. `listAl
 
 ---
 
-## 4. Le protocole, version 2
+## 4. Le protocole, version 3
 
-La version 2 (porte 1) ajoute le salon. Les salles deviennent `nayosbeat-2-lobby-<n>` : un appareil resté en version 1 ne rencontre jamais un appareil en version 2.
+La version 2 (porte 1) a ajouté le salon ; la version 3 (porte 2) ajoute les entrées du combat et le hash de l'état. Les salles deviennent `nayosbeat-3-lobby-<n>` : deux versions différentes ne se rencontrent jamais.
 
 ### 4.1 Le format
 
-- Des textes JSON courts, chacun avec sa version : `{"v":2,"t":"ping","n":12}`.
+- Des textes JSON courts, chacun avec sa version : `{"v":3,"t":"ping","n":12}`.
 - Ils passent par un canal WebRTC fiable et ordonné, en sérialisation `raw` de PeerJS : le texte arrive tel qu'envoyé.
 
 | Message | Champs | Sens |
@@ -96,6 +96,8 @@ La version 2 (porte 1) ajoute le salon. Les salles deviennent `nayosbeat-2-lobby
 | `accept`, `refuse` | `v`, `t` | La réponse de l'envoyeur : il veut jouer contre l'autre, ou non |
 | `stage` | `v`, `t`, `m`, `a` | Le lieu de l'hôte (`m`, la map) et son ambiance (`a`), déjà tirés au sort s'il a choisi « Aléatoire » |
 | `fighter` | `v`, `t`, `f` | Le combattant de l'envoyeur |
+| `inputs` | `v`, `t`, `k`, `b`, `a` | Les entrées de l'envoyeur à partir du tic `k`, une par tic (12 au plus, 11 bits chacune), et le dernier tic de l'autre qu'il a reçu avec tous les précédents (`a`, −1 pour aucun) |
+| `hash` | `v`, `t`, `k`, `h` | Le hash de l'état de l'envoyeur après le tic `k` (8 chiffres hexadécimaux) |
 
 ### 4.2 La validation (« parse, don't validate »)
 
@@ -257,6 +259,12 @@ Une course trouvée en écrivant la porte 1, et corrigée : l'hôte envoie son p
 - N part de 2 à 3 tics sur Wi-Fi. Il est fixé au début du match à partir du ping mesuré (environ la moitié de la médiane, arrondie au tic supérieur, plus 1), puis gardé tout le match.
 - Le combat attend l'entrée de l'autre si elle manque.
 - Les entrées voyagent avec une petite fenêtre de redondance (les dernières non confirmées), pour qu'une perte se rattrape sans attendre.
+- **Fait (tranche 2a, `src/net/lockstep.ts`)**, sans toucher à la scène du combat :
+  - les `delay` premiers tics sont neutres des deux côtés ;
+  - chaque message porte les entrées que l'autre n'a pas confirmées, les plus anciennes d'abord, 12 au plus ;
+  - un message en retard ou en désordre n'ajoute que ce qu'il apporte ;
+  - est refusé (et le lien coupé) : une entrée déjà reçue qui change, un tic neutre envoyé, un tic à plus de 240 tics devant (`MAX_AHEAD`), la confirmation d'une entrée jamais envoyée ;
+  - **le test** (`tests/net/lockstep.test.ts`) relie deux moteurs par un faux réseau à graine fixe (latence de 1 à 9 images, 0 à 30 % de pertes, ordre mélangé). Il rejoue les 31 replays dorés comme suites d'entrées, avec 1, 3 et 5 tics de délai : les deux appareils ont le même hash à chaque tic, celui du même match joué sur un seul appareil avec le même délai.
 
 ### 9.2 Ensuite le rollback (porte 3)
 
@@ -266,7 +274,7 @@ Une course trouvée en écrivant la porte 1, et corrigée : l'hôte envoie son p
 
 ### 9.3 Les désynchronisations
 
-- Un hash de l'état est échangé tous les N tics : `stateHash`, FNV-1a, celui des replays dorés (`tools/replays/replay.ts`, à rendre accessible depuis `src`).
+- Un hash de l'état est échangé tous les 60 tics (`HASH_EVERY`, une fois par seconde) : `stateHash`, FNV-1a, celui des replays dorés. Il a été déplacé tel quel dans `src/net/state-hash.ts` (les replays gardent leur hash, la preuve que rien n'a changé). `src/net/desync.ts` garde le premier tic où les deux hashes diffèrent.
 - Une différence s'affiche en clair (« Désynchronisé au tic X »). Elle s'enregistre avec les deux suites d'entrées, au format des replays dorés, pour pouvoir la rejouer.
 
 ### 9.4 Ce que la lecture du code a déjà trouvé (à régler à la porte 2)
@@ -276,6 +284,16 @@ Une course trouvée en écrivant la porte 1, et corrigée : l'hôte envoie son p
 - **« Lutte en prise : tenir »** (`HeldStruggle`) transforme les entrées avant `step`. En ligne, elle s'applique **chez celui qui joue**, avant l'envoi : les deux côtés reçoivent alors les mêmes bits.
 - **Le ralenti du KO** (`feedback.ticksFor`) ne change que la cadence. Les tics restent les mêmes : pas de désynchronisation, seulement une attente.
 - **L'ambiance du décor est tirée au hasard dans le rendu** (`stageVariantFor`, #96). L'hôte la tire et l'envoie avec la map ; la config du match (combattants, tenues, map, ambiance) part une seule fois, de l'hôte.
+
+### 9.5 La porte 2 en trois tranches
+
+| Tranche | Ce qu'elle livre | État |
+|---|---|---|
+| 2a | Le lockstep et le contrôle de désynchronisation, purs, et leurs tests sur les replays dorés ; le hash d'état passé dans `src` | livrée |
+| 2b | La scène du combat lit ses entrées d'une « source » (refactor sans changement de comportement, vérifié par les replays), puis le combat en ligne depuis le salon : pause partagée, coupure ramenée au menu sans vainqueur, délai mesuré au ping et affiché, revanche quand les deux la veulent | à faire |
+| 2c | La scène du Finisher passée seulement quand les deux tiennent un bouton, et le replay d'une désynchronisation. D'ici là, en ligne, la scène se joue en entier : sans son « passer », elle ne fait que cadencer les tics, et rien ne se désynchronise | à faire |
+
+**Les réponses du propriétaire pour la porte 2 (2 novembre 2026)**, chacune la recommandation : une coupure en plein match ramène au menu sans vainqueur ; le délai est mesuré au ping au début du match, puis gardé et affiché ; la revanche part quand les deux la veulent ; la scène lit ses entrées d'une « source », un seul combat pour le local et le Multi.
 
 ---
 
