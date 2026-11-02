@@ -158,7 +158,7 @@ En rendu Canvas (`?rendu=canvas`, `render-mode.ts`), Phaser ne teinte rien. Le d
 
 ## 10. La propriété intellectuelle
 
-Rien n'est copié : aucun jeu, aucun lieu réel, aucune marque, aucun logo. Les enseignes sont des mots génériques. Leur langue dépend du lieu : en pleine ville, jamais seulement du français, mais de l'anglais, du chinois ou du japonais (« DELI GROCERY », « LAUNDRY », « 洗衣 »). Ailleurs, la langue de l'endroit. La vieille réclame dit « WAREHOUSE ». Les caractères chinois sont dessinés à la main sur une grille de 9 × 9 (`tools/stage/rue/font.ts`). Le néon du club est un dessin à nous. Les tags sont tracés au hasard par le code. Les affiches sont des aplats sans texte. La rue s'inspire des vieux quartiers de New York (escaliers de secours, réservoirs d'eau, échafaudages, ligne aérienne), mais ce n'est aucune rue réelle.
+Rien n'est copié : aucun jeu, aucun lieu réel, aucune marque, aucun logo. Les enseignes sont des mots génériques. Leur langue dépend du lieu : en pleine ville, jamais seulement du français, mais de l'anglais, du chinois ou du japonais (« DELI GROCERY », « LAUNDRY », « 洗衣 »). Ailleurs, la langue de l'endroit. La vieille réclame dit « WAREHOUSE ». Les caractères chinois sont dessinés à la main sur une grille de 9 × 9 (`tools/stage/kit/font.ts`). Le néon du club est un dessin à nous. Les tags sont tracés au hasard par le code. Les affiches sont des aplats sans texte. La rue s'inspire des vieux quartiers de New York (escaliers de secours, réservoirs d'eau, échafaudages, ligne aérienne), mais ce n'est aucune rue réelle.
 
 ## 11. Les itérations
 

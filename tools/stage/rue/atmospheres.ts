@@ -5,8 +5,8 @@
  * layers in its folder (tools/sprites/stage-drawn.ts).
  */
 
-import type { Atmosphere } from '../../../src/art/stage-layers.ts';
 import type { Rgba } from '../../sprites/png.ts';
+import type { StageAtmosphere } from '../kit/stage.ts';
 import {
   CLOUD,
   COOL,
@@ -115,14 +115,8 @@ function dusk(): Rgba[] {
   return palette;
 }
 
-/** An atmosphere of the street and its palette, slot for slot with the night's. */
-export interface StreetAtmosphere {
-  readonly atmosphere: Atmosphere;
-  readonly palette: readonly Rgba[];
-}
-
 /** The atmospheres the street offers, the base one first (BASE_ATMOSPHERE: palette.ts as it is). */
-export const STREET_ATMOSPHERES: readonly StreetAtmosphere[] = [
+export const STREET_ATMOSPHERES: readonly StageAtmosphere[] = [
   { atmosphere: { moment: 'midnight', weather: 'clear' }, palette: PALETTE },
   { atmosphere: { moment: 'dusk', weather: 'clear' }, palette: dusk() },
 ];

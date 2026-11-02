@@ -1,5 +1,5 @@
 /**
- * A 5 × 7 capital font for the street's signs, our own: each letter on a grid of 5 columns, with
+ * A 5 × 7 capital font for the stages' signs, our own: each letter on a grid of 5 columns, with
  * two rows above for an accent. Only the letters the signs spell. And a few Chinese characters,
  * 9 × 9, drawn by hand (HAN).
  */
@@ -53,7 +53,7 @@ export function spell(
   Array.from(text).forEach((char, letter) => {
     const accent = ACCENTS[char];
     const rows = GLYPHS[accent?.letter ?? char];
-    if (!rows) throw new Error(`The street's font has no « ${char} »`);
+    if (!rows) throw new Error(`The stages' font has no « ${char} »`);
     const grid = [...(accent?.rows ?? ['.....', '.....']), ...rows];
     grid.forEach((row, y) => {
       for (let x = 0; x < row.length; x++) {
@@ -71,7 +71,7 @@ export function spell(
 }
 
 /**
- * Chinese characters for the signs of a city street (docs/art/decor-rue.md §10), each on a grid of
+ * Chinese characters for the signs of a city's stages (docs/art/decor-rue.md §10), each on a grid of
  * 9 × 9, drawn by hand: only those the signs write.
  */
 const HAN: Readonly<Record<string, readonly string[]>> = {
@@ -113,7 +113,7 @@ export function spellHan(
   let left = 0;
   Array.from(text).forEach((char, letter) => {
     const rows = HAN[char];
-    if (!rows) throw new Error(`The street's font has no « ${char} »`);
+    if (!rows) throw new Error(`The stages' font has no « ${char} »`);
     rows.forEach((row, y) => {
       for (let x = 0; x < row.length; x++) {
         if (row.charAt(x) !== '#') continue;

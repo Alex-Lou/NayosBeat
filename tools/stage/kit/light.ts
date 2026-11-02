@@ -1,5 +1,5 @@
 /**
- * The street's lights (docs/art/decor-rue.md §5): each adds to the tone of what it reaches, the
+ * A stage's lights (docs/art/decor-rue.md §5): each adds to the tone of what it reaches, the
  * more the closer, and the ramps turn that into steps (canvas.ts `tone`). No light blends a
  * color: it only moves a pixel up its own ramp.
  */

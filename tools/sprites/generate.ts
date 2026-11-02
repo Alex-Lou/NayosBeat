@@ -11,9 +11,9 @@
  * A strip drawn by hand (art-src/<fighter>/, see drawn.ts) takes the place of the code's, and is
  * cut and packed into its atlas just the same. The title's vinyl and the icons' master may be
  * drawn too (art-src/ui/, see ui-drawn.ts). A fighter's portrait (drawn.ts) is drawn by hand
- * only and saved whole: no atlas. Nayo's run also writes the stage, src/art/rue/: the code's
- * street (tools/stage/rue/), each of its layers replaced by one drawn by hand when there is one
- * (art-src/rue/, see stage-drawn.ts), and its props. Every drawing is checked first, and nothing
+ * only and saved whole: no atlas. Nayo's run also writes the stages (`npm run stages` alone):
+ * each in src/art/<stage>/, the code's (tools/stage/<stage>/), the street's layers replaced by
+ * those drawn by hand when there are some (art-src/rue/, see stage-drawn.ts), and their props. Every drawing is checked first, and nothing
  * is written when one is wrong.
  */
 
@@ -38,7 +38,8 @@ import { drawIcons } from './icons.ts';
 import { NAYO } from './nayo/index.ts';
 import type { Colorway } from './palette.ts';
 import { encodeIndexedPng } from './png.ts';
-import { loadStageDrawn, writeStage } from './stage-drawn.ts';
+import { CODE_MAPS } from '../stage/maps.ts';
+import { loadStageDrawn, writeStages } from './stage-drawn.ts';
 import { loadUiDrawn } from './ui-drawn.ts';
 import { drawVinyl } from './vinyl.ts';
 
@@ -294,13 +295,7 @@ async function main(): Promise<void> {
     await drawVinyl(ui.vinyl);
     console.log(`title vinyl: ${ui.vinyl ? 'drawn (art-src/ui/vinyl.png)' : "the code's"}`);
   }
-  if (stage) {
-    const { drawn, props, dropped } = await writeStage(stage);
-    console.log(
-      `stage: ${drawn.length > 0 ? `drawn by hand (${drawn.join(', ')}), the code's elsewhere` : "the code's"}, ${props} props`,
-    );
-    for (const line of dropped) console.warn(`stage prop left out: ${line}`);
-  }
+  if (stage) await writeStages(CODE_MAPS, stage);
 }
 
 await reportingDrawingProblems(main);

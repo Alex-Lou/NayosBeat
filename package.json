@@ -16,6 +16,7 @@
     "bench": "vitest bench --run --reporter=verbose",
     "replays:update": "node --import ./tools/sprites/ts-imports.js tools/replays/update.ts",
     "sprites": "node --import ./tools/sprites/ts-imports.js tools/sprites/generate.ts",
+    "stages": "node --import ./tools/sprites/ts-imports.js tools/sprites/stages.ts",
     "sprites:preview": "node --import ./tools/sprites/ts-imports.js tools/sprites/preview.ts",
     "measure-boxes": "node --import ./tools/sprites/ts-imports.js tools/sprites/measure-boxes.ts",
     "sprites:anatomy": "node --import ./tools/sprites/ts-imports.js tools/sprites/anatomy-report.ts",

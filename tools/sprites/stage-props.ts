@@ -8,7 +8,7 @@
 
 import { format, resolveConfig } from 'prettier';
 import type { StageLayer, StageProp, StagePropFrame } from '../../src/art/stage-layers.ts';
-import type { CodeProp } from '../stage/rue/index.ts';
+import type { CodeProp } from '../stage/kit/stage.ts';
 import { rgbaAt } from './colors.ts';
 import type { IndexedImage } from './png.ts';
 
