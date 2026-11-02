@@ -21,7 +21,7 @@ On ne passe pas une porte sans le « oui » du propriétaire.
 |---|---|---|
 | 0, la preuve | Recherche automatique, ping affiché, rapport, CSP, dépendance, questions | **validée le 2 novembre 2026** |
 | 1, le salon | Pseudo, « Adversaire trouvé : … » à accepter ou refuser, l'hôte choisit la map, chacun son combattant ; une déconnexion ramène au menu | **livrée, en attente du « oui »** |
-| 2, le combat en lockstep | Un match complet et la revanche, synchrones (pause, fin de round, Finisher, KO), hash anti-désynchronisation, indicateur du ping et du délai | en cours, en trois tranches (§9.5) : **2a livrée** |
+| 2, le combat en lockstep | Un match complet et la revanche, synchrones (pause, fin de round, Finisher, KO), hash anti-désynchronisation, indicateur du ping et du délai | en cours, en trois tranches (§9.5) : **2a et 2b livrées** |
 | 3, le rollback | Délai ressenti de 0 ou 1 tic sur Wi-Fi, effets jamais doublés, tests de resimulation | à faire |
 | 4, la finition | À distance, en 4G, reprise après une coupure courte, aide du mode, mesures sur un téléphone modeste | à faire |
 
@@ -98,6 +98,11 @@ La version 2 (porte 1) a ajouté le salon ; la version 3 (porte 2) ajoute les en
 | `fighter` | `v`, `t`, `f` | Le combattant de l'envoyeur |
 | `inputs` | `v`, `t`, `k`, `b`, `a` | Les entrées de l'envoyeur à partir du tic `k`, une par tic (12 au plus, 11 bits chacune), et le dernier tic de l'autre qu'il a reçu avec tous les précédents (`a`, −1 pour aucun) |
 | `hash` | `v`, `t`, `k`, `h` | Le hash de l'état de l'envoyeur après le tic `k` (8 chiffres hexadécimaux) |
+| `start` | `v`, `t`, `d` | L'hôte lance le combat, avec ce délai d'entrées en tics (1 à 10) |
+| `resume` | `v`, `t` | L'envoyeur quitte la pause partagée : les deux reprennent |
+| `rematch` | `v`, `t` | L'envoyeur veut la revanche ; elle part quand les deux la veulent |
+
+Une entrée de `inputs` porte les 11 boutons du cœur, plus le drapeau `FLAG_PAUSE` (bit 11) : son joueur a demandé la pause. Le drapeau n'atteint jamais le cœur.
 
 ### 4.2 La validation (« parse, don't validate »)
 
@@ -121,7 +126,7 @@ Rien n'est interprété (aucun `eval`), et l'heure d'envoi ne traverse jamais le
 
 - Un ping par seconde, auquel l'autre répond tout de suite. Le résumé porte sur les 30 derniers allers-retours : dernier, minimum, médiane, maximum, nombre de mesures, pings perdus.
 - **5 s sans rien recevoir** : le lien est perdu (« Connexion perdue »).
-- **Plus de 10 messages en une seconde**, même valides : le lien est coupé comme pour un message invalide. Le protocole n'en envoie que 2 (un ping, un pong), et chaque ping reçu appelle une réponse : sans plafond, un pair pourrait faire travailler l'autre appareil sans fin.
+- **Plus de 120 messages en une seconde**, même valides : le lien est coupé comme pour un message invalide. En combat, le protocole en envoie environ 63 (les entrées à chaque tic, un hash, un ping, un pong), et chaque ping reçu appelle une réponse : sans plafond, un pair pourrait faire travailler l'autre appareil sans fin.
 - **Un message invalide** : le lien est coupé (« L'autre appareil a envoyé un message invalide »). Un pair qui envoie n'importe quoi est donc déconnecté proprement.
 - L'autre ferme le lien : « L'autre appareil a quitté ».
 
@@ -203,7 +208,7 @@ Ils apparaissent au menu principal, après « Entraînement », avec `?multi` se
    - Le lien qui se ferme pendant la présentation vaut un refus : PeerJS ferme toute la connexion d'un coup, et un `refuse` envoyé juste avant peut se perdre.
 5. **Le lieu** : l'hôte a l'écran « Lieu » (« Aléatoire » compris : il tire la map et l'ambiance, et envoie le résultat exact) ; l'invité lit « <pseudo> choisit le lieu… ».
 6. **Le combattant** : chacun a l'écran de choix, « Contre <pseudo>, à <lieu> ». Aucun ne voit le choix de l'autre avant d'avoir fait le sien. La tenue suit la règle locale : en miroir, l'invité (joueur 2) porte la deuxième.
-7. **Le match convenu**, le même des deux côtés : « Alex (Riff) contre Lou (Nayo). Lieu : Viaduct Gym. Le combat arrive à la porte 2. » L'hôte est le joueur 1.
+7. **Le combat** : dès que les deux ont choisi, l'hôte le lance avec le délai mesuré à son ping (§9.6), et chacun joue son combattant avec ses commandes de joueur 1. L'hôte est le joueur 1.
 
 Chaque écran du salon porte la ligne « Ping : 2 ms · chemin : direct, même réseau », et « Quitter ». Une déconnexion, à n'importe quel moment, ramène au menu avec sa phrase (§4.3).
 
@@ -213,7 +218,15 @@ Quitter les écrans, à tout moment, ferme tout. Un test le vérifie (`tests/app
 
 ## 8. Les mesures
 
-### 8.1 La porte 1
+### 8.1 La porte 2, tranche 2b
+
+| Essai | Résultat |
+|---|---|
+| Deux onglets Chromium, build de production, vrai PeerJS, PeerServer local : du salon au combat, Nayo contre Riff à Viaduct Gym | Les deux écrans montrent le même combat (même chrono, mêmes positions) ; « délai 2 » affiché ; la pause demandée par Alex s'ouvre chez les deux (« Demandée par Alex ») et la reprise de Lou relance les deux ; 20 s de combat sans désynchronisation (un hash comparé chaque seconde) ; « Quitter » d'un côté ramène l'autre au menu « Multi » (« L'autre joueur a quitté le match ») ; aucune erreur dans les pages |
+
+Le ping affiché en combat (environ 110 ms) est bien plus haut qu'au salon (1 à 5 ms) : les deux onglets font tourner chacun un rendu WebGL sur le seul processeur du conteneur, et les messages attendent la fin de chaque image. Le délai, lui, se fixe au salon, et à 2 tics le combat n'a pas attendu. La mesure qui compte se fera sur de vrais appareils.
+
+### 8.2 La porte 1
 
 | Essai | Résultat |
 |---|---|
@@ -221,7 +234,7 @@ Quitter les écrans, à tout moment, ferme tout. Un test le vérifie (`tests/app
 
 Une course trouvée en écrivant la porte 1, et corrigée : l'hôte envoie son pseudo dès l'appairage, avant que l'invité ait ouvert son salon. Le message était perdu ; le canal appairé le garde désormais (§3).
 
-### 8.2 La porte 0
+### 8.3 La porte 0
 
 | Essai | Résultat |
 |---|---|
@@ -290,10 +303,21 @@ Une course trouvée en écrivant la porte 1, et corrigée : l'hôte envoie son p
 | Tranche | Ce qu'elle livre | État |
 |---|---|---|
 | 2a | Le lockstep et le contrôle de désynchronisation, purs, et leurs tests sur les replays dorés ; le hash d'état passé dans `src` | livrée |
-| 2b | La scène du combat lit ses entrées d'une « source » (refactor sans changement de comportement, vérifié par les replays), puis le combat en ligne depuis le salon : pause partagée, coupure ramenée au menu sans vainqueur, délai mesuré au ping et affiché, revanche quand les deux la veulent | à faire |
+| 2b | La scène du combat lit ses entrées d'une « source » (refactor sans changement de comportement, vérifié par les replays), puis le combat en ligne depuis le salon : pause partagée, coupure ramenée au menu sans vainqueur, délai mesuré au ping et affiché, revanche quand les deux la veulent | livrée (§9.6) |
 | 2c | La scène du Finisher passée seulement quand les deux tiennent un bouton, et le replay d'une désynchronisation. D'ici là, en ligne, la scène se joue en entier : sans son « passer », elle ne fait que cadencer les tics, et rien ne se désynchronise | à faire |
 
 **Les réponses du propriétaire pour la porte 2 (2 novembre 2026)**, chacune la recommandation : une coupure en plein match ramène au menu sans vainqueur ; le délai est mesuré au ping au début du match, puis gardé et affiché ; la revanche part quand les deux la veulent ; la scène lit ses entrées d'une « source », un seul combat pour le local et le Multi.
+
+### 9.6 Le combat en ligne (tranche 2b)
+
+- **La source des entrées.** La scène du combat demande ses entrées à une source (`src/render/tick-source.ts`) : en local, les joueurs de l'appareil et le CPU (`LocalTickSource`, ce que faisait la scène, à l'identique) ; en ligne, le match (`src/app/online-match.ts`). Une source dit combien de tics peuvent se jouer, peut s'arrêter en plein lot (la pause, la fin du match), et envoie une fois par image.
+- **Le match en ligne** (`OnlineMatch`) reçoit la session du salon et le plan convenu. Il garde le lockstep et le contrôle de désynchronisation d'un combat, anew à chaque revanche.
+  - **Chacun joue son combattant** avec ses commandes de joueur 1 (clavier, manette 1, tactile). La lutte en prise s'applique à son combattant avant l'envoi : les deux appareils reçoivent les mêmes entrées. La jauge BOOST et le Finisher de l'écran tactile, la vibration du téléphone et celle de la manette suivent ce combattant.
+  - **Le délai** : l'hôte le choisit à son ping au moment de lancer (`delayFor` : la moitié de la médiane en tics, arrondie au supérieur, plus 1, de 2 à 10 ; 3 sans mesure), et l'envoie (`start`). Il est affiché sous le combat, avec le ping (« 12 ms · délai 2 »).
+  - **La pause partagée** : la touche de pause demande la pause, qui part avec la prochaine entrée (`FLAG_PAUSE`). Les deux appareils la prennent après le même tic, et le menu dit qui l'a demandée. « Reprendre », d'un côté ou de l'autre, relance les deux ; « Quitter » arrête le match pour les deux.
+  - **La fin du match** : le combat s'arrête sur le tic où le match est décidé (`resultsDue`, l'état seul), le même des deux côtés. Les résultats proposent « Revanche », qui part quand les deux l'ont choisie, chaque combat depuis son premier tic, et « Quitter ».
+  - **Une coupure, un message invalide ou une désynchronisation** arrêtent le match sans vainqueur et ramènent au menu « Multi », avec leur phrase (« Désynchronisé au tic X » pour la dernière).
+- **Ce qui est différé à la tranche 2c** : la scène du Finisher n'est passée par personne en ligne (« passer » ferait avancer le match de ce que l'appareil seul tient) ; le replay d'une désynchronisation.
 
 ---
 

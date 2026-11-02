@@ -12,13 +12,14 @@ import {
   type Route,
   type SearchResult,
 } from '../net/lobby';
-import { isPseudo } from '../net/protocol';
+import { isPseudo, MAX_DELAY } from '../net/protocol';
 import { Session, SILENCE_MS, type PingSummary, type SessionEnd } from '../net/session';
 import { FighterSelect } from '../ui/fighter-select';
 import { element, Menu, type MenuFeedback, type MenuItem } from '../ui/menu';
 import { NameEntry } from '../ui/name-entry';
 import { StageSelect } from '../ui/stage-select';
 import type { MultiCatalog } from './multi-catalog';
+import { delayFor, OnlineMatch } from './online-match';
 import type { NameStore } from './name-store';
 import { openSalon, salonStep, type Salon, type SalonEvent, type SalonRules } from './salon';
 import { SELECT_COLUMNS, SELECT_SLOTS } from './select-fighters';
@@ -34,7 +35,14 @@ export interface MultiScreenOptions {
   readonly feedback?: (action: MenuFeedback) => void;
   /** The screens kept still (the player's « Tremblement »): no idle plays on the fighters. */
   readonly still?: boolean;
+  /** What the menu says as it opens (back from an online match: how it ended). */
+  readonly notice?: string;
   readonly onBack: () => void;
+  /**
+   * Both agreed and the host started the fight: the match, its link handed over (this screen
+   * closes nothing of it any more).
+   */
+  readonly onFight: (match: OnlineMatch) => void;
 }
 
 /** The `?multi` address shows the screen; it stays hidden otherwise until gate 2. */
@@ -111,7 +119,7 @@ export class MultiScreen {
     private readonly options: MultiScreenOptions,
   ) {
     this.name = options.names.load();
-    this.showIdle(IDLE_TEXT);
+    this.showIdle(options.notice ?? IDLE_TEXT);
   }
 
   dispose(): void {
@@ -281,15 +289,31 @@ export class MultiScreen {
         this.renderFighters(salon);
         return;
       case 'ready': {
+        // The host starts at once, with the delay its pings measured; the guest waits for it.
+        if (link.rules.role === 'host') {
+          this.dispatch({ type: 'start', delay: delayFor(link.ping?.median ?? null, MAX_DELAY) });
+          return;
+        }
         const { catalog } = this.options;
         const [first, second] = salon.plan.fighters;
-        const [host, guest] =
-          link.rules.role === 'host' ? [this.name, salon.them] : [salon.them, this.name];
         this.showSalon('ready', [
-          `${host} (${catalog.name(first)}) contre ${guest} (${catalog.name(second)}).`,
+          `${salon.them} (${catalog.name(first)}) contre ${this.name} (${catalog.name(second)}).`,
           `Lieu : ${catalog.title(salon.plan.stage)}.`,
-          'Le combat arrive à la porte 2.',
+          'Le combat va commencer…',
         ]);
+        return;
+      }
+      case 'fight': {
+        const { session, rules } = link;
+        // Handed over: the match owns the link from now on.
+        this.link = undefined;
+        const names =
+          rules.role === 'host'
+            ? ([this.name, salon.them] as const)
+            : ([salon.them, this.name] as const);
+        this.options.onFight(
+          new OnlineMatch(session, salon.plan, names, rules.role, salon.delay, this.options.now),
+        );
         return;
       }
       case 'over':

@@ -118,6 +118,15 @@ export interface FightSceneData {
   readonly onPause: () => void;
   /** Called once, a moment after the final KO, with the winner's index. */
   readonly onMatchEnd: (winner: 0 | 1 | null) => void;
+  /**
+   * Online (docs/multijoueur.md §9.6): the fighter this device plays, its controls being player
+   * 1's, and the match's source of inputs (the lockstep). Nobody skips the Finisher's scene there
+   * yet (gate 2c): a skip plays the match on unseen, from what this device alone holds.
+   */
+  readonly online?: {
+    readonly player: 0 | 1;
+    readonly source: (struggle: HeldStruggle) => TickSource;
+  };
   /** Called once, as the fight's first frame is drawn: what covered the loading may go. */
   readonly onShown?: () => void;
   /**
@@ -365,13 +374,20 @@ export class FightScene extends Phaser.Scene {
     );
     this.governor.restart();
     const heldStruggle = new HeldStruggle(this.sceneData.heldStruggle === true);
+    const { online } = this.sceneData;
+    // This device's controls (player 1's) play its own fighter: its pad rumbles for that one.
+    const me = online?.player ?? 0;
     const runtime: Omit<Runtime, 'finisherScene'> = {
       inputs: new PlayerInputs(window, touch, connectedGamepads()),
       padHaptics: new PadHaptics((player) =>
-        this.runtime?.inputs.padOf(player, connectedGamepads()),
+        online && player !== me
+          ? undefined
+          : this.runtime?.inputs.padOf(online ? 0 : player, connectedGamepads()),
       ),
       heldStruggle,
-      source: new LocalTickSource(heldStruggle, () => (this.cpu ? this.cpuInput(this.cpu) : null)),
+      source: online
+        ? online.source(heldStruggle)
+        : new LocalTickSource(heldStruggle, () => (this.cpu ? this.cpuInput(this.cpu) : null)),
       touch,
       touchCover: touch
         ? new TouchCover(this.game.canvas, touch, this.config, GROUND_Y)
@@ -406,6 +422,7 @@ export class FightScene extends Phaser.Scene {
           mode,
           // Training writes the moves' names on a line under the HUD: the words stay under it.
           wordsTop: this.config.training ? UNDER_CAPTIONS : HUD_BAND,
+          touchPlayer: me,
           knockOut: (player, finish, still, hits) => {
             hud.knockOut(player, finish, still, hits);
           },
@@ -471,7 +488,7 @@ export class FightScene extends Phaser.Scene {
       budget,
       comfort,
       mode,
-      humans: this.cpu ? [0] : [0, 1],
+      humans: this.sceneData.online ? [] : this.cpu ? [0] : [0, 1],
       seen: this.sceneData.finishersSeen,
     });
     this.runtime = { ...runtime, finisherScene };
@@ -680,6 +697,8 @@ export class FightScene extends Phaser.Scene {
       // Locked on one of them: its scene takes the pace over from the next frame.
       if (scene.isActive()) this.stage(runtime, pads);
     }
+    // Online, the frame's inputs leave for the other device (tick-source.ts).
+    runtime.source.flush();
     runtime.feedback.update(visualFrames, gameFrames);
     // The Finisher's scene lights its own stage: no move lights then.
     runtime.lights.update(this.state, visualFrames, scene.isActive());
@@ -784,7 +803,7 @@ export class FightScene extends Phaser.Scene {
       top: this.cameraTop,
       viewLeft: toPx(this.state.cameraX) - VIEW_SIZE.width / 2,
     };
-    scene.update(this.state, runtime.inputs.held(pads), camera);
+    scene.update(this.state, this.sceneData.online ? NEUTRAL : runtime.inputs.held(pads), camera);
     this.playUnseen(scene.takeSkipped());
     if (scene.wantsFastForward()) {
       this.state = playToResults(this.state, this.config);
@@ -830,8 +849,11 @@ export class FightScene extends Phaser.Scene {
     runtime.hud.update(this.state, finisher);
     runtime.hud.showAdvantage(this.advantage.last);
     runtime.hud.showCombo(this.combo.line);
-    runtime.touch?.showBoost(a.boost);
-    runtime.touch?.showFinisher(finisher[0], a.facing, a.action);
+    // The touch screen plays player 1, but online the fighter this device plays.
+    const me = this.sceneData.online?.player ?? 0;
+    const mine = this.state.fighters[me];
+    runtime.touch?.showBoost(mine.boost);
+    runtime.touch?.showFinisher(finisher[me], mine.facing, mine.action);
     runtime.holdRing.update(this.state);
     runtime.holdPrompt?.update(this.state);
     runtime.boxOverlay?.update(this.state);
