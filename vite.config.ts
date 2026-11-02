@@ -6,6 +6,9 @@ import { serviceWorker } from './build/service-worker';
  * Content-Security-Policy of the published game. Everything is served from the game's own
  * origin; Phaser needs `data:`/`blob:` images for its built-in textures. GitHub Pages cannot
  * send headers, hence a meta tag. Production only: the dev server injects scripts and styles.
+ * The online mode's matchmaking server, PeerJS's, is reached over its WebSocket alone (the game
+ * names its peers, so PeerJS never asks it an id over HTTPS); WebRTC itself, STUN included, is
+ * outside `connect-src` (docs/multijoueur.md §6).
  */
 const CONTENT_SECURITY_POLICY = [
   "default-src 'self'",
@@ -13,7 +16,7 @@ const CONTENT_SECURITY_POLICY = [
   "style-src 'self'",
   "img-src 'self' data: blob:",
   "font-src 'self'",
-  "connect-src 'self'",
+  "connect-src 'self' wss://0.peerjs.com",
   "media-src 'self'",
   "object-src 'none'",
   "base-uri 'none'",

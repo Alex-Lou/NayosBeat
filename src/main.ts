@@ -3,6 +3,7 @@ import '@fontsource/bangers/latin-400.css';
 import './styles.css';
 import Phaser from 'phaser';
 import { App } from './app/app';
+import { multiFromUrl } from './app/multi-screen';
 import { viewingFromUrl } from './app/viewing';
 import { watchInstallPrompt } from './app/install';
 import { registerServiceWorker } from './app/service-worker';
@@ -143,6 +144,8 @@ async function start(): Promise<void> {
         viewingFromUrl(window.location.search),
         // `?silhouette=a|b|aucune`: the contour, the backlight or neither (render/silhouette.ts).
         silhouetteFromUrl(window.location.search),
+        // `?multi`: the online mode's screen, hidden until gate 2 (app/multi-screen.ts).
+        multiFromUrl(window.location.search),
       );
       started.start();
       app = started;
