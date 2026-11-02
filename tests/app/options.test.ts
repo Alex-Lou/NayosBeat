@@ -8,6 +8,7 @@ import { CARD_FADE_MS } from '../../src/ui/fight-card';
 import { viewingFromUrl, type Viewing } from '../../src/app/viewing';
 import type { Sfx } from '../../src/audio/sfx';
 import { STAGE_VARIANTS } from '../../src/art/rue';
+import { STAGE_MAPS } from '../../src/art/stages';
 import type { FightSceneData } from '../../src/render/fight-scene';
 import type { RenderMode } from '../../src/render/render-mode';
 import { SIMPLE_MODE_NOTICE } from '../../src/ui/title-screen';
@@ -99,12 +100,16 @@ function launch(
       notice: byClass(root, 'menu-notice')[0]?.textContent,
     };
   };
-  /** Clicks the item whose label starts with `label`. */
+  /** Clicks the item whose label starts with `label`: a menu's, or a tile's (« Lieu »). */
   const choose = (label: string) => {
     const [root] = page.body.children;
-    const item = byClass(root as FakeElement, 'menu-item').find((button) =>
-      button.textContent.startsWith(label),
-    );
+    const item =
+      byClass(root as FakeElement, 'menu-item').find((button) =>
+        button.textContent.startsWith(label),
+      ) ??
+      byClass(root as FakeElement, 'select-tile').find((tile) =>
+        byClass(tile, 'select-tile-name')[0]?.textContent.startsWith(label),
+      );
     if (!item) throw new Error(`No item ${label}`);
     item.dispatchEvent(new Event('click'));
   };
@@ -396,6 +401,7 @@ describe('how a fight is watched (docs/art/animation-plan.md §2, V0)', () => {
     choose('Animation');
     expect(screen().items[screen().selected]).toBe("Animation : d'avant");
     choose('Immobile');
+    choose('Aléatoire');
     expect(start).toHaveBeenLastCalledWith(
       'fight',
       expect.objectContaining({ viewing: { slowdown: 4, anim: { legacy: true } } }),
@@ -421,6 +427,7 @@ describe('how a fight is watched (docs/art/animation-plan.md §2, V0)', () => {
       expect(screen().items[screen().selected]).toBe(`Vie du mannequin : ${health} %`);
     }
     choose('Immobile');
+    choose('Aléatoire');
     const setup = expect.objectContaining({ finisher: 'always', dummyHealth: 30 }) as unknown;
     expect(start).toHaveBeenLastCalledWith('fight', expect.objectContaining({ setup }));
   });
@@ -444,6 +451,7 @@ describe('how a fight is watched (docs/art/animation-plan.md §2, V0)', () => {
   it("sets the dummy and the boxes from training's pause, at once (docs/polish, P19)", () => {
     const { app, screen, choose, fight, start } = training();
     choose('Immobile');
+    choose('Aléatoire');
     app.showPause();
     expect(screen().items).toContain('Mannequin : Immobile');
     expect(screen().items).toContain('Boîtes : non');
@@ -468,6 +476,7 @@ describe('how a fight is watched (docs/art/animation-plan.md §2, V0)', () => {
   it("shows training's data by default, and hides it from the pause, at once (lot 13)", () => {
     const { app, screen, choose, fight, start } = training();
     choose('Immobile');
+    choose('Aléatoire');
     expect(start).toHaveBeenLastCalledWith(
       'fight',
       expect.objectContaining({ trainingData: true }),
@@ -493,6 +502,7 @@ describe('how a fight is watched (docs/art/animation-plan.md §2, V0)', () => {
       );
     };
     choose('Immobile');
+    choose('Aléatoire');
     startedAt('center');
     app.showPause();
     expect(screen().items).toContain('Position : centre');
@@ -531,6 +541,7 @@ describe('how a fight is watched (docs/art/animation-plan.md §2, V0)', () => {
     const { app, screen, choose, start, root } = training();
     const cards = () => root.children.filter((child) => child.className.includes('fight-card'));
     choose('Immobile');
+    choose('Aléatoire');
     // The menu gone, the card up while the fight loads and builds.
     expect(root.children.map((child) => child.className)).toEqual(['menu fight-card']);
     expect(root.children[0]?.children[0]?.children[0]?.textContent).toBe('Nayo contre Riff');
@@ -571,6 +582,7 @@ describe('how a fight is watched (docs/art/animation-plan.md §2, V0)', () => {
     choose('Vitesse');
     choose('Animation');
     choose('Immobile');
+    choose('Aléatoire');
     expect(start).toHaveBeenLastCalledWith(
       'fight',
       expect.objectContaining({ viewing: { slowdown: 4, anim: { legacy: true } } }),
@@ -614,6 +626,7 @@ describe('the simplified mode, without WebGL (docs/qualite-adaptative.md §2.3)'
     flow.setup = { ...flow.setup, mode: 'training' };
     flow.chooseDummy();
     choose('Immobile');
+    choose('Aléatoire');
     expect(start).toHaveBeenLastCalledWith('fight', expect.objectContaining({ mode: 'simple' }));
   });
 
@@ -624,11 +637,12 @@ describe('the simplified mode, without WebGL (docs/qualite-adaptative.md §2.3)'
     flow.setup = { ...flow.setup, mode: 'training' };
     flow.chooseDummy();
     choose('Immobile');
+    choose('Aléatoire');
     expect(start).toHaveBeenLastCalledWith('fight', expect.objectContaining({ mode: 'full' }));
   });
 });
 
-describe('the street drawn for each match (docs/art/decor-rue.md §13)', () => {
+describe('the place and atmosphere drawn for each match (docs/art/decor-rue.md §13, §14)', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
@@ -648,21 +662,37 @@ describe('the street drawn for each match (docs/art/decor-rue.md §13)', () => {
     return { ...launched, app };
   }
 
-  it('draws one atmosphere at random, kept by « Recommencer », the one « Ambiance » asks once resumed', () => {
+  const shownOf = (start: ReturnType<typeof vi.fn>) =>
+    (start.mock.lastCall?.[1] as FightSceneData | undefined)?.stage;
+  const tiles = (root: FakeElement) =>
+    byClass(root, 'select-tile-name').map((name) => name.textContent);
+
+  it('asks where after the dummy: « Aléatoire » first, then each place', () => {
+    const { root, screen, choose, start } = training();
+    choose('Immobile');
+    expect(screen().title).toBe('Lieu');
+    expect(tiles(root)).toEqual(['Aléatoire', ...STAGE_MAPS.map(({ title }) => title)]);
+    expect(start).not.toHaveBeenCalled();
+    choose('Viaduct Gym');
+    expect(shownOf(start)?.stage).toBe('gym');
+  });
+
+  it('draws an atmosphere at random, kept by « Recommencer », the one « Ambiance » asks once resumed', () => {
     const [night, dusk] = STAGE_VARIANTS;
     if (!night || !dusk) throw new Error('The street in two atmospheres at least');
     const random = vi.spyOn(Math, 'random').mockReturnValue(0.999);
     const { app, screen, choose, start, fight } = training();
-    const shown = () => (start.mock.lastCall?.[1] as FightSceneData | undefined)?.stage;
     choose('Immobile');
-    expect(shown()).toBe(STAGE_VARIANTS[STAGE_VARIANTS.length - 1]);
+    choose('Warehouse Street');
+    expect(shownOf(start)).toBe(STAGE_VARIANTS[STAGE_VARIANTS.length - 1]);
     random.mockReturnValue(0);
     // The same match once more: the same street.
     app.showPause();
     choose('Recommencer');
-    expect(shown()).toBe(STAGE_VARIANTS[STAGE_VARIANTS.length - 1]);
+    expect(shownOf(start)).toBe(STAGE_VARIANTS[STAGE_VARIANTS.length - 1]);
     // « Ambiance » cycles at random, then each atmosphere; resumed, the street is drawn anew so.
     app.showPause();
+    expect(screen().items).toContain('Lieu : Warehouse Street');
     expect(screen().items).toContain('Ambiance : aléatoire');
     choose('Ambiance');
     expect(screen().items[screen().selected]).toBe('Ambiance : minuit, ciel clair');
@@ -670,30 +700,72 @@ describe('the street drawn for each match (docs/art/decor-rue.md §13)', () => {
     choose('Reprendre');
     expect(fight.resumeMatch).not.toHaveBeenCalled();
     expect(start).toHaveBeenCalledTimes(starts + 1);
-    expect(shown()).toBe(night);
+    expect(shownOf(start)).toBe(night);
     app.showPause();
     choose('Ambiance');
     expect(screen().items[screen().selected]).toBe('Ambiance : crépuscule, ciel clair');
     choose('Recommencer');
-    expect(shown()).toBe(dusk);
+    expect(shownOf(start)).toBe(dusk);
     // Unchanged, the pause resumes the fight as it was.
     app.showPause();
     choose('Reprendre');
     expect(fight.resumeMatch).toHaveBeenCalledTimes(1);
   });
 
-  it('keeps the street for « Revanche », draws it anew for a new match', () => {
+  it('changes the place from the pause, keeping the atmosphere where the new one offers it', () => {
+    const { app, screen, choose, start } = training();
+    choose('Immobile');
+    choose('Warehouse Street');
+    app.showPause();
+    choose('Ambiance');
+    choose('Ambiance');
+    expect(screen().items).toContain('Ambiance : crépuscule, ciel clair');
+    choose('Lieu');
+    expect(screen().items[screen().selected]).toBe('Lieu : Viaduct Gym');
+    expect(screen().items).toContain('Ambiance : crépuscule, ciel clair');
+    choose('Reprendre');
+    expect(shownOf(start)?.stage).toBe('gym');
+    expect(shownOf(start)?.atmosphere).toEqual({ moment: 'dusk', weather: 'clear' });
+    app.showPause();
+    choose('Lieu');
+    expect(screen().items[screen().selected]).toBe('Lieu : aléatoire');
+  });
+
+  it('keeps the place for « Revanche », draws it anew for a new match', () => {
     const random = vi.spyOn(Math, 'random').mockReturnValue(0);
     const { app, choose, start } = training();
-    const shown = () => (start.mock.lastCall?.[1] as FightSceneData | undefined)?.stage;
     choose('Immobile');
-    expect(shown()).toBe(STAGE_VARIANTS[0]);
+    choose('Aléatoire');
+    const first = shownOf(start);
+    expect(first?.stage).toBe(STAGE_MAPS[0]?.name);
     random.mockReturnValue(0.999);
     app.showResults(0);
     choose('Revanche');
-    expect(shown()).toBe(STAGE_VARIANTS[0]);
+    expect(shownOf(start)).toBe(first);
     app.chooseDummy();
     choose('Immobile');
-    expect(shown()).toBe(STAGE_VARIANTS[STAGE_VARIANTS.length - 1]);
+    choose('Aléatoire');
+    expect(shownOf(start)?.stage).toBe(STAGE_MAPS[STAGE_MAPS.length - 1]?.name);
+  });
+
+  it('draws anywhere against the computer, without asking; asks in versus, back to player 2', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.999);
+    const { app, root, screen, choose, start } = launch({ 'nayosbeat.notice': 'seen' }, false);
+    const flow = app as unknown as {
+      setup: object;
+      afterFighterChosen(player: 0 | 1): void;
+    };
+    flow.setup = { ...flow.setup, mode: 'cpu' };
+    flow.afterFighterChosen(1);
+    choose('Normal');
+    expect(shownOf(start)?.stage).toBe(STAGE_MAPS[STAGE_MAPS.length - 1]?.name);
+    flow.setup = { ...flow.setup, mode: 'versus' };
+    flow.afterFighterChosen(1);
+    expect(screen().title).toBe('Lieu');
+    choose('Warehouse Street');
+    expect(shownOf(start)?.stage).toBe('rue');
+    flow.afterFighterChosen(1);
+    byClass(root, 'menu-back')[0]?.dispatchEvent(new Event('click'));
+    expect(screen().title).toBe('Joueur 2');
   });
 });

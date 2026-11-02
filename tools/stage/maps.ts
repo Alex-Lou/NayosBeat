@@ -4,6 +4,7 @@
  */
 
 import type { CodeMap } from './kit/stage.ts';
+import { GYM } from './gym/index.ts';
 import { RUE } from './rue/index.ts';
 
-export const CODE_MAPS: readonly CodeMap[] = [RUE];
+export const CODE_MAPS: readonly CodeMap[] = [RUE, GYM];

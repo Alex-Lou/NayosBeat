@@ -1,4 +1,5 @@
 import type { StageVariant } from './stage-layers';
+import { STAGE_VARIANTS as GYM } from './gym';
 import { STAGE_VARIANTS as RUE } from './rue';
 
 /** A place the fights may be held in (docs/art/decor-rue.md §14): its name, its atmospheres. */
@@ -22,5 +23,11 @@ export const STAGE_MAPS: readonly StageMap[] = [
     title: 'Warehouse Street',
     description: 'Devant le club, sous la ligne aérienne',
     variants: RUE,
+  },
+  {
+    name: 'gym',
+    title: 'Viaduct Gym',
+    description: 'La salle de boxe sous les arches, où Nayo a appris',
+    variants: GYM,
   },
 ].filter(({ variants }) => variants.length > 0);
