@@ -7,6 +7,12 @@ import { AURA_DELTA, AURA_REACH, BREATH, PARTICLES, Presence } from '../../src/r
 import { signatureOf } from '../../src/render/signatures';
 import { FIGHT_STAGE_COLORS } from '../../src/render/stage-view';
 import { DETAIL, paletteOf } from '../../tools/sprites/nayo/palette';
+import { SAPHIR } from '../../tools/sprites/saphir/index';
+import {
+  DETAIL as SAPHIR_DETAIL,
+  paletteOf as saphirPaletteOf,
+} from '../../tools/sprites/saphir/palette';
+import { drawStrip } from '../../tools/sprites/sheet';
 import { fake, type Fake } from './live-fakes';
 
 vi.mock('phaser', () => ({ default: { BlendModes: { NORMAL: 0, ADD: 1 } } }));
@@ -191,5 +197,25 @@ describe("Nayo's presence (docs/art/nayo-vivante.md §3)", () => {
     shown.dispose();
     expect(sprites.every((sprite) => sprite.destroyed)).toBe(true);
     expect(shapes.every((shape) => shape.destroyed)).toBe(true);
+  });
+});
+
+describe("Saphir's presence (docs/saphir.md §9)", () => {
+  const toHex = ({ r, g, b }: { r: number; g: number; b: number }) => (r << 16) | (g << 8) | b;
+  const glints = (sheet: string) =>
+    drawStrip(SAPHIR, sheet).pixels.filter((slot) => slot === SAPHIR_DETAIL.maskGlow).length;
+
+  it('shines the glint of her mask in its own color, in each colorway', () => {
+    const leds = signatureOf('saphir')?.presence?.leds;
+    for (const colorway of ['main', 'alt'] as const) {
+      const glint = saphirPaletteOf(colorway)[SAPHIR_DETAIL.maskGlow];
+      expect(glint).toBeDefined();
+      expect(leds?.[colorway]).toBe(toHex(glint as { r: number; g: number; b: number }));
+    }
+  });
+
+  it('draws the glint in both slits of her guard, and none when she is hit', () => {
+    expect(glints('idle')).toBeGreaterThan(0);
+    expect(glints('hitHigh')).toBe(0);
   });
 });
