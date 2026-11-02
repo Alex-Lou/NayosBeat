@@ -242,6 +242,8 @@ export const FIGHTER_LIGHT_AREAS: Readonly<Record<string, number>> = {
   'nayo/alt': 1130,
   'riff/main': 525,
   'riff/alt': 715,
+  'watt/main': 160,
+  'watt/alt': 720,
 };
 
 /** What a fighter of `name` in `colorway` lights at ΔL ≥ 0.1 under a live light, world px². */

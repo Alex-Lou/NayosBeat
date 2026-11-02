@@ -5,7 +5,7 @@ import { ART_SCALE, type Atlas, type Cell } from '../../src/art/types';
 import { cellReader } from '../../tools/sprites/atlas';
 import { decodeIndexedPng, type IndexedImage } from '../../tools/sprites/png';
 
-export type FighterName = 'nayo' | 'riff';
+export type FighterName = 'nayo' | 'riff' | 'watt';
 export type ColorwayName = 'main' | 'alt';
 
 /** A strip as `npm run sprites` saves it: its image, its atlas and its cropped cell. */
