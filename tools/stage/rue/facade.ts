@@ -5,17 +5,13 @@
  * edge and cast a shadow under.
  */
 
-import { Canvas, at, tone } from './canvas.ts';
-import { lightAt, type Light } from './light.ts';
+import { Canvas, at, tone } from '../kit/canvas.ts';
+import { lightAt, type Light } from '../kit/light.ts';
 import { CURTAIN, FRUIT, GLASS, PLYWOOD, SHUTTER, STONE, WARM } from './palette.ts';
-import { noise, type Random } from './random.ts';
+import { noise, type Random } from '../kit/random.ts';
+import type { Rect } from '../kit/stage.ts';
 
-export interface Rect {
-  readonly x: number;
-  readonly y: number;
-  readonly width: number;
-  readonly height: number;
-}
+export type { Rect };
 
 export interface Wall {
   readonly ramp: readonly number[];

@@ -1056,6 +1056,49 @@ body {
   height: 36px;
   font-size: 10px;
 }
+/* The « Lieu » screen (src/ui/stage-select.ts): tiles as wide as the screen, each the stage as
+   the fight opens on it; the one under the frame larger beside them. */
+.stage-select {
+  --stage-tile: clamp(64px, 17vh, 132px);
+}
+.stage-select .select-tile {
+  width: var(--stage-tile);
+  height: calc(var(--stage-tile) * 9 / 16);
+}
+.stage-preview {
+  width: clamp(160px, 34vw, 340px);
+}
+.stage-thumb {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: #191928;
+}
+.stage-tile .stage-thumb {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+}
+.stage-view {
+  border: 3px solid #3a3a5c;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+.stage-unknown {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: #3d3d5c;
+}
+.stage-layer {
+  position: absolute;
+  max-width: none;
+  image-rendering: pixelated;
+  pointer-events: none;
+}
 @keyframes select-frame {
   from {
     box-shadow: 0 0 4px 1px rgba(240, 201, 74, 0.5);

@@ -1,6 +1,6 @@
 import type Phaser from 'phaser';
 import { describe, expect, it } from 'vitest';
-import { STAGE_VARIANTS } from '../../src/art/rue';
+import { STAGE_MAPS, type StageMap } from '../../src/art/stages';
 import {
   BASE_ATMOSPHERE,
   STAGE_SCALE,
@@ -18,6 +18,7 @@ import {
   drawStage,
   FIGHT_STAGE_COLORS,
   loadStage,
+  RANDOM_STAGE,
   stageVariantFor,
 } from '../../src/render/stage-view';
 
@@ -104,7 +105,7 @@ function variantOf(
   atmosphere: Atmosphere = BASE_ATMOSPHERE,
 ): StageVariant {
   if (!art) throw new Error('a stage');
-  return { atmosphere, art };
+  return { stage: 'test', atmosphere, art };
 }
 
 const ART = variantOf(stageArtOf(FILES, [0x2a2030, 0x101018]));
@@ -133,9 +134,9 @@ describe('the stage view', () => {
     const { scene, images, camera } = fakeScene();
     drawStage(scene, ART);
     expect(images.map(({ key, y, scroll }) => [key, y, scroll])).toEqual([
-      ['stage/midnight-clear/far', 0, [0.25, 1]],
-      ['stage/midnight-clear/mid', 0, [0.5, 1]],
-      ['stage/midnight-clear/floor', 230, [1, 1]],
+      ['stage/test/midnight-clear/far', 0, [0.25, 1]],
+      ['stage/test/midnight-clear/mid', 0, [0.5, 1]],
+      ['stage/test/midnight-clear/floor', 230, [1, 1]],
     ]);
     for (const image of images) {
       expect(image.origin).toEqual([0, 0]);
@@ -148,33 +149,36 @@ describe('the stage view', () => {
   });
 
   it("loads only the layers not already loaded, and the props' sheet", () => {
-    const { scene, loaded } = fakeScene(['stage/midnight-clear/far']);
+    const { scene, loaded } = fakeScene(['stage/test/midnight-clear/far']);
     loadStage(scene, ART);
     expect(loaded).toEqual([
-      ['stage/midnight-clear/mid', 'mid.png'],
-      ['stage/midnight-clear/floor', 'floor.png'],
+      ['stage/test/midnight-clear/mid', 'mid.png'],
+      ['stage/test/midnight-clear/floor', 'floor.png'],
     ]);
     const again = fakeScene([
-      'stage/midnight-clear/far',
-      'stage/midnight-clear/mid',
-      'stage/midnight-clear/floor',
+      'stage/test/midnight-clear/far',
+      'stage/test/midnight-clear/mid',
+      'stage/test/midnight-clear/floor',
     ]);
     loadStage(again.scene, WITH_PROPS);
-    expect(again.loaded).toEqual([['stage/midnight-clear/props', 'props.png']]);
+    expect(again.loaded).toEqual([['stage/test/midnight-clear/props', 'props.png']]);
   });
 
   // docs/art/decor-rue.md §13: a fight holds one atmosphere in video memory, never two.
   it("drops the other atmospheres' images from the cache, keeps its own and the fighters'", () => {
     const cached = [
-      'stage/midnight-clear/far',
-      'stage/midnight-clear/props',
-      'stage/dusk-clear/far',
+      'stage/test/midnight-clear/far',
+      'stage/test/midnight-clear/props',
+      'stage/test/dusk-clear/far',
       'nayo/idle',
     ];
     const { scene, loaded, removed } = fakeScene(cached);
     loadStage(scene, variantOf(stageArtOf(FILES, [0x2a2030]), DUSK));
-    expect(removed).toEqual(['stage/midnight-clear/far', 'stage/midnight-clear/props']);
-    expect(loaded.map(([key]) => key)).toEqual(['stage/dusk-clear/mid', 'stage/dusk-clear/floor']);
+    expect(removed).toEqual(['stage/test/midnight-clear/far', 'stage/test/midnight-clear/props']);
+    expect(loaded.map(([key]) => key)).toEqual([
+      'stage/test/dusk-clear/mid',
+      'stage/test/dusk-clear/floor',
+    ]);
   });
 
   it('lays each prop right over its layer, at its scroll, and plays its timeline whole frames', () => {
@@ -182,10 +186,10 @@ describe('the stage view', () => {
     const props = drawStage(scene, WITH_PROPS);
     // Far, mid, the prop over the mid, then the floor.
     expect(images.map(({ key }) => key)).toEqual([
-      'stage/midnight-clear/far',
-      'stage/midnight-clear/mid',
-      'stage/midnight-clear/props',
-      'stage/midnight-clear/floor',
+      'stage/test/midnight-clear/far',
+      'stage/test/midnight-clear/mid',
+      'stage/test/midnight-clear/props',
+      'stage/test/midnight-clear/floor',
     ]);
     const prop = images[2];
     if (!prop) throw new Error('a prop');
@@ -207,33 +211,67 @@ describe('the stage view', () => {
     expect(prop.destroyed).toBe(true);
   });
 
-  it("gives the flashes the stage's large colors in every atmosphere, each once: else the grey box's", () => {
-    if (STAGE_VARIANTS.length === 0) {
+  it("gives the flashes the stages' large colors in every atmosphere, each once: else the grey box's", () => {
+    const variants = STAGE_MAPS.flatMap(({ variants }) => variants);
+    if (variants.length === 0) {
       expect(FIGHT_STAGE_COLORS).toEqual(GREYBOX_COLORS);
       return;
     }
     expect(new Set(FIGHT_STAGE_COLORS).size).toBe(FIGHT_STAGE_COLORS.length);
-    for (const { art } of STAGE_VARIANTS)
+    for (const { art } of variants)
       expect(FIGHT_STAGE_COLORS).toEqual(expect.arrayContaining([...art.colors]));
-    // The base's first, the most covering first.
-    expect(FIGHT_STAGE_COLORS.slice(0, STAGE_VARIANTS[0]?.art.colors.length)).toEqual(
-      STAGE_VARIANTS[0]?.art.colors,
+    // The first stage's base first, the most covering first.
+    expect(FIGHT_STAGE_COLORS.slice(0, variants[0]?.art.colors.length)).toEqual(
+      variants[0]?.art.colors,
     );
   });
 
   it('draws the atmosphere asked for if the stage has it, else one at random among its own', () => {
     const night = ART;
     const dusk = variantOf(stageArtOf(FILES, [0x2a2030]), DUSK);
-    const both = [night, dusk];
-    expect(stageVariantFor(DUSK, both, () => 0)).toBe(dusk);
-    expect(stageVariantFor(BASE_ATMOSPHERE, both, () => 0.99)).toBe(night);
-    expect(stageVariantFor('random', both, () => 0)).toBe(night);
-    expect(stageVariantFor('random', both, () => 0.5)).toBe(dusk);
-    expect(stageVariantFor('random', both, () => 0.999)).toBe(dusk);
+    const street: StageMap = {
+      name: 'test',
+      title: 'Test',
+      description: '',
+      variants: [night, dusk],
+    };
+    const maps = [street];
+    const at = (atmosphere: Atmosphere | 'random') => ({ map: 'test', atmosphere });
+    expect(stageVariantFor(at(DUSK), maps, () => 0)).toBe(dusk);
+    expect(stageVariantFor(at(BASE_ATMOSPHERE), maps, () => 0.99)).toBe(night);
+    expect(stageVariantFor(at('random'), maps, () => 0)).toBe(night);
+    expect(stageVariantFor(at('random'), maps, () => 0.5)).toBe(dusk);
+    expect(stageVariantFor(at('random'), maps, () => 0.999)).toBe(dusk);
     // Not on this stage: at random among its own.
-    expect(stageVariantFor({ moment: 'midnight', weather: 'rain' }, both, () => 0.6)).toBe(dusk);
+    expect(stageVariantFor(at({ moment: 'midnight', weather: 'rain' }), maps, () => 0.6)).toBe(
+      dusk,
+    );
     // No stage drawn: the grey box.
-    expect(stageVariantFor('random', [], () => 0)).toBeUndefined();
+    expect(stageVariantFor(RANDOM_STAGE, [], () => 0)).toBeUndefined();
+  });
+
+  it('draws the place asked for, else one at random, among those offering the atmosphere asked', () => {
+    const night = (stage: string) => ({ ...ART, stage });
+    const dusk = (stage: string) => ({ ...variantOf(stageArtOf(FILES, [0x2a2030]), DUSK), stage });
+    const map = (name: string, variants: StageVariant[]): StageMap => ({
+      name,
+      title: name,
+      description: '',
+      variants,
+    });
+    const street = map('street', [night('street'), dusk('street')]);
+    const gym = map('gym', [night('gym')]);
+    const maps = [street, gym];
+    expect(stageVariantFor({ map: 'gym', atmosphere: 'random' }, maps, () => 0)?.stage).toBe('gym');
+    expect(stageVariantFor(RANDOM_STAGE, maps, () => 0)?.stage).toBe('street');
+    expect(stageVariantFor(RANDOM_STAGE, maps, () => 0.99)?.stage).toBe('gym');
+    // Dusk at random: the street, the only place that offers it.
+    const anywhereAtDusk = stageVariantFor({ map: 'random', atmosphere: DUSK }, maps, () => 0.99);
+    expect([anywhereAtDusk?.stage, anywhereAtDusk?.atmosphere]).toEqual(['street', DUSK]);
+    // An unknown place: at random.
+    expect(stageVariantFor({ map: 'moon', atmosphere: 'random' }, maps, () => 0.99)?.stage).toBe(
+      'gym',
+    );
   });
 
   it('finds the darkest color, which a flash lights the most', () => {

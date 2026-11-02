@@ -4,9 +4,9 @@
  * dark and lit on its upper edges; the railings' bars are sparse and one step off what is behind.
  */
 
-import { Canvas, Mask, at, tone } from './canvas.ts';
+import { Canvas, Mask, at, tone } from '../kit/canvas.ts';
 import { castShadow, drawLedge, type Rect, type Wall } from './facade.ts';
-import { lightAt, type Light } from './light.ts';
+import { lightAt, type Light } from '../kit/light.ts';
 import {
   AWNING,
   BAG,
@@ -21,7 +21,7 @@ import {
   SHUTTER,
   STEEL,
 } from './palette.ts';
-import type { Random } from './random.ts';
+import type { Random } from '../kit/random.ts';
 
 /** A railing: top rail lit on top, a middle rail, bars every `spacing` pixels down to `floor`. */
 function drawRailing(

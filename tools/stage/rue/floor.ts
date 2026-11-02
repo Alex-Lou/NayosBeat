@@ -4,9 +4,9 @@
  * the gutter. Both ends darken under the corners. Image pixels (STAGE_SCALE).
  */
 
-import { Canvas, at, tone } from './canvas.ts';
+import { Canvas, at, tone } from '../kit/canvas.ts';
 import { ASPHALT, CONCRETE, STONE } from './palette.ts';
-import { noise, streamOf, type Random } from './random.ts';
+import { noise, streamOf, type Random } from '../kit/random.ts';
 
 /** Image pixels per world pixel: the floor's measures are counted in world pixels. */
 const SCALE = 2;
