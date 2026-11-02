@@ -12,12 +12,12 @@ import { spell } from '../kit/font.ts';
 import { lightAt, type Light } from '../kit/light.ts';
 import { noise } from '../kit/random.ts';
 import type { Rect } from '../kit/stage.ts';
-import { FIGURE_RAMPS, PAPER, POSTER_RED, RIM_COOL, SIGN_INK } from '../rue/palette.ts';
 import { drawFigure, STANDING, type Figure, type Pose } from '../rue/people.ts';
 import { drawHalo, drawTubes } from '../rue/signs.ts';
 import {
   APRON,
   DUST,
+  FIGURE_RAMPS,
   FLUO,
   IRON,
   LAMP_GREEN,
@@ -25,9 +25,13 @@ import {
   LEATHER,
   LEATHER_BLACK,
   LOCKER,
+  PAPER,
+  POSTER_RED,
+  RIM_COOL,
   RING_STONE,
   ROPE,
   ROPE_PALE,
+  SIGN_INK,
   TAPE,
   VAULT,
   WOOD,
