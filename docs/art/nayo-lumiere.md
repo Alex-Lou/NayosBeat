@@ -10,7 +10,7 @@ Le principe : **chaque lumière sur Nayo vient d'une source de la rue** ([decor-
   - Sa direction est celle de `tools/sprites/raster.ts` (`LIGHT`), commune aux deux combattants.
   - Chaque forme porte une normale (bras et jambes en cylindres, torse en tonneau). Chaque pixel prend un cran de sa rampe selon l'angle qu'il fait avec cette lumière, dans toutes les poses.
   - Les tons clairs et les éclats se réchauffent vers l'orange des lampes.
-- **L'enseigne violette du club**, derrière lui et en hauteur, donne le contre-jour. Il est le même sur les deux tenues, car il éclaire la rue et non la tenue. Il est décrit par `NAYO_LIGHTING` (`tools/sprites/nayo/index.ts`) et appliqué par `PixelCanvas.finish(lighting)`.
+- **L'enseigne violette du club**, derrière lui et en hauteur, donne le contre-jour. Il est le même sur les deux tenues, car il éclaire la rue et non la tenue. Sa couleur et sa direction sont celles de la rue (`tools/sprites/street-light.ts`, communes avec Riff). Il est décrit par `NAYO_LIGHTING` (`tools/sprites/nayo/index.ts`) et appliqué par `PixelCanvas.finish(lighting)`.
   - Il ne touche que les bords vraiment tournés vers lui, en haut et en arrière : haut du dos, épaules, arrière de la tête et des bras. Un pixel de bord regarde vers l'enseigne quand les pixels vides autour de lui (sur 2 px) sont de ce côté. C'est la forme de la pose qui décide, jamais un côté fixe d'une pièce.
   - Un bord bien en face prend le ton de l'enseigne ; un bord un peu moins en face prend le ton clair de sa matière. Les autres bords ne prennent rien. Le contre-jour se pose donc en touches, et non en ligne qui ferait tout le tour.
   - Il s'estompe vers le bas. Au-dessus de 110 px au-dessus des pieds (la poitrine et plus haut), il est entier ; entre 84 et 110 px, il ne garde que le ton clair ; sous 84 px (les hanches), il n'y en a plus. Il n'y a donc rien sur les jambes, les bottes ou les semelles.
@@ -37,7 +37,7 @@ Le contour clair de l'option A (`src/render/silhouette.ts`, `?silhouette=a`, par
 
 - `FighterArt.ownLight` dit qu'un combattant a sa propre lumière ;
 - `contourFor` ne dessine aucun contour pour lui ;
-- Nayo (ses deux tenues) n'a plus de liseré ; Riff le garde tant qu'elle n'a pas sa propre lumière.
+- Nayo (ses deux tenues) n'a plus de liseré. Riff l'a perdu à son tour avec sa propre lumière ([riff-lumiere.md](riff-lumiere.md)).
 
 ## 4. L'ombre au sol
 
@@ -55,6 +55,6 @@ Avant : une ellipse noire pleine, à 35 % d'opacité, qui rétrécit pendant un 
 
 - **Première version (refusée par le propriétaire) :** un contre-jour cyan sur tous les bords tournés vers l'arrière, des pieds à la tête, avec des halos fluo. Le liseré du rendu par-dessus faisait « autocollant ».
 - **Huit cases par matière** (deux tons de contre-jour) : cela change la palette partagée, et donc les images de Riff. Le ton clair de la matière joue le second ton.
-- **Un contre-jour peint à la main par membre**, comme `rimRun` chez Riff : c'est plus fin, mais il faut le régler pose par pose. Ce sera à revoir avec la tranche 3, si les poses le demandent.
+- **Un contre-jour peint à la main par membre**, comme le `rimRun` qu'avait Riff : c'est plus fin, mais il faut le régler pose par pose. Ce sera à revoir avec la tranche 3, si les poses le demandent.
 - **Un liseré du rendu seulement atténué** pour Nayo : il ferait toujours le tour, pieds compris. Il est donc retiré pour lui.
 - **Une occlusion par paliers de hauteur**, qui baisse le ton d'un cran sous une hauteur fixe : elle trace une ligne droite à travers les jambes. Elle a été remplacée par une baisse progressive de la lumière.

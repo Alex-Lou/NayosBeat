@@ -7,6 +7,7 @@
 import { definePalette, type DetailColor, type MaterialTones } from '../palette.ts';
 import type { Tint } from '../raster.ts';
 import type { Tone } from '../skeleton.ts';
+import { STREET_SIGN } from '../street-light.ts';
 import type { EffectStyle } from '../vfx.ts';
 
 export { farOf, matteOf, noGloss, type Colorway } from '../palette.ts';
@@ -19,9 +20,9 @@ export { farOf, matteOf, noGloss, type Colorway } from '../palette.ts';
  * lamps. The back light is the sign's, the same on both colorways: it lights the street, not
  * the outfit.
  */
-const RIM = '#8e74c0';
+const RIM = STREET_SIGN.color;
 /** The sign's violet on a light material (the second colorway's jacket and boots). */
-const RIM_ON_LIGHT = '#cbb8ee';
+const RIM_ON_LIGHT = STREET_SIGN.onLight;
 
 /** A ramp without its rim: outline, deep, shadow, base, light, gloss. */
 type Ramp = readonly [string, string, string, string, string, string];

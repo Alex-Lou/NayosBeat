@@ -7,6 +7,7 @@ import { namedEffects, timingOf } from '../clips.ts';
 import type { Fighter } from '../fighter.ts';
 import type { Lighting } from '../raster.ts';
 import { BODY, type Pose } from '../skeleton.ts';
+import { FLOOR_OCCLUSION, STREET_SIGN } from '../street-light.ts';
 import { drawNayo } from './look.ts';
 import { DETAIL, EFFECT_TINTS, EFFECTS, MATERIAL, paletteOf } from './palette.ts';
 import { NAYO_POSES, NAYO_PROJECTILE, NAYO_PROJECTILE_BOOST } from './poses/index.ts';
@@ -31,14 +32,14 @@ const HAIR_TONES = [
 export const NAYO_LIGHTING: Lighting = {
   ground: ANCHOR.y,
   rim: {
-    direction: { x: -0.6, y: -0.8 },
-    facing: { rim: 0.75, light: 0.55 },
+    direction: STREET_SIGN.direction,
+    facing: STREET_SIGN.facing,
     fade: { full: 110, none: 84 },
     exact: Object.fromEntries(
       HAIR_TONES.map((slot) => [slot, { rim: HAIR.rim ?? HAIR.light, light: HAIR.light }]),
     ),
   },
-  occlusion: { height: 64, depth: 0.55 },
+  occlusion: { height: 64, depth: FLOOR_OCCLUSION },
   glow: { [DETAIL.neonCore]: DETAIL.neonHalo },
   // His effects light him (docs/art/nayo-essence.md): the record, the sparks, the column, the
   // Boost's white.

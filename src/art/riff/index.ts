@@ -50,6 +50,8 @@ const SHARED = {
   sheets: RIFF_SHEETS,
   clips: RIFF_CLIPS,
   cells: RIFF_CELLS,
+  // Her strips are lit by the street (tools/sprites/riff/index.ts, RIFF_LIGHTING).
+  ownLight: true,
 };
 
 /** The punk: black leather, magenta fringe and energy, silver studs. */
