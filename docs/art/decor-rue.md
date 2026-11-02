@@ -175,3 +175,29 @@ Chaque version a été regardée en planche, puis en jeu, avant d'être corrigé
 - Un métro qui passe sur le viaduc toutes les quatre minutes, comme à la salle du Viaduc.
 - Des props dessinés à la main dans Aseprite, avec leur gabarit.
 - Le chat qui traverse la rue entre deux rounds, les rideaux de fer qui tremblent sur le DROP : seulement si le jeu le demande.
+
+## 13. Les ambiances : moments et météos
+
+La demande du propriétaire : « Un combat doit pouvoir afficher une météo aléatoire parmi une liste. Et ce sera le cas pour chaque map. » Avec la vie du décor (ciel, lumières, couleurs) et les dégâts visibles du trottoir et des murs, c'est un chantier en tranches. Chaque tranche est jouable et montrée en captures.
+
+Ses décisions :
+
+- **Une ambiance = un moment et une météo.** Les moments sont minuit et crépuscule ; les météos, ciel clair, pluie et brume (`MOMENTS` et `WEATHERS`, `src/art/stage-layers.ts`). Chaque map dit dans ses données les ambiances qu'elle offre. Pour la rue, c'est `tools/stage/rue/atmospheres.ts`.
+- **Tirée au hasard à chaque nouveau match, dans le rendu seul.** Le cœur n'en sait rien (D17), et les replays ne bougent pas. « Revanche » et « Recommencer » gardent la rue du match. En entraînement, l'option « Décor » de la pause choisit : au hasard, ou une ambiance pour la regarder. Elle prend effet à la reprise, comme « Position ».
+- **Une palette dessinée par ambiance, à la génération.** La rue est dessinée une seule fois, puis `npm run sprites` l'écrit dans chaque palette : la base (minuit, ciel clair) dans `src/art/rue/`, chaque autre ambiance dans un dossier à son nom (`src/art/rue/dusk-clear/`). Les palettes sont dessinées case pour case, jamais posées en filtre : chaque rampe garde ses crans. *Écarté :* recolorier au chargement, qui coûte une passe de calcul aux téléphones faibles. Un calque dessiné à la main ne vaut que pour la base, puisque sa palette n'a pas les cases de celle du code.
+- **Une seule ambiance en mémoire vidéo.** Le chargement d'un combat retire du cache les images des autres ambiances. Le budget du §7 reste celui d'une rue : 6,72 Mo.
+- **Les règles de flash valent pour toutes.** Les grandes couleurs de chaque ambiance rejoignent celles des flashs (`FIGHT_STAGE_COLORS`). Les voiles, le halo du Finisher et les mesures se règlent donc sur la plus contraignante. Aucune grande couleur n'est assez claire pour qu'un effet noir la change de plus de `VEIL_DELTA` (0,08).
+
+### 13.1 Le crépuscule
+
+La dernière lumière du jour, basse derrière la ville. Le ciel passe d'un bleu profond au zénith à un ambre éteint sur l'horizon. Les nuages sont éclairés de rose par-dessous, et les tours en contre-jour sont plus sombres que leur ciel.
+
+**En combat, le ciel ne se voit presque pas** : au gros plan, le HUD et le cadre n'en laissent qu'une bande. Le soir se lit donc dans la rue elle-même : les murs et les pierres virent au rose sans s'éclaircir, les ombres profondes au bleu, et les lampes et les enseignes sont plus discrètes.
+
+**Une contrainte de flash règle tout.** Chaque couleur que la nuit gardait sous la luminance de 0,078 y reste après le virage (`capped`), sinon un effet noir la changerait de plus que `VEIL_DELTA`. Le premier essai, à l'horizon ambre et plus clair, échouait à ce test. Avec le plafond, le halo du Finisher garde son alpha de 0,27 en cyan.
+
+### 13.2 La suite
+
+1. La nuit vivante (nuages qui dérivent, fenêtres qui s'allument et s'éteignent) et la pluie (rideau de gouttes, trottoir mouillé, reflets).
+2. Les dégâts : fissures du trottoir aux chutes lourdes et aux KO, mur du coin fissuré quand un combattant y est envoyé fort. Ils s'accumulent sur le match, avec un plafond, et la rue repart à neuf au match suivant.
+3. La brume : elle avale la ville et le viaduc, et pose des halos autour des réverbères, jamais devant les combattants.

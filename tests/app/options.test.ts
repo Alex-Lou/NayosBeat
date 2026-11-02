@@ -7,6 +7,8 @@ import { CONTROLS_KEY, DEFAULT_CONTROLS, serializeControls } from '../../src/inp
 import { CARD_FADE_MS } from '../../src/ui/fight-card';
 import { viewingFromUrl, type Viewing } from '../../src/app/viewing';
 import type { Sfx } from '../../src/audio/sfx';
+import { STAGE_VARIANTS } from '../../src/art/rue';
+import type { FightSceneData } from '../../src/render/fight-scene';
 import type { RenderMode } from '../../src/render/render-mode';
 import { SIMPLE_MODE_NOTICE } from '../../src/ui/title-screen';
 import { installFakePage, type FakeElement } from '../render/fake-dom';
@@ -623,5 +625,75 @@ describe('the simplified mode, without WebGL (docs/qualite-adaptative.md §2.3)'
     flow.chooseDummy();
     choose('Immobile');
     expect(start).toHaveBeenLastCalledWith('fight', expect.objectContaining({ mode: 'full' }));
+  });
+});
+
+describe('the street drawn for each match (docs/art/decor-rue.md §13)', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  /** The app on the training's menu of the dummy, as after both fighters were picked. */
+  function training() {
+    const launched = launch({ 'nayosbeat.notice': 'seen' }, false);
+    const app = launched.app as unknown as {
+      setup: object;
+      chooseDummy(): void;
+      showPause(): void;
+      showResults(winner: 0 | 1 | null): void;
+    };
+    app.setup = { ...app.setup, mode: 'training' };
+    app.chooseDummy();
+    return { ...launched, app };
+  }
+
+  it('draws one atmosphere at random, kept by « Recommencer », the one « Décor » asks once resumed', () => {
+    const [night, dusk] = STAGE_VARIANTS;
+    if (!night || !dusk) throw new Error('The street in two atmospheres at least');
+    const random = vi.spyOn(Math, 'random').mockReturnValue(0.999);
+    const { app, screen, choose, start, fight } = training();
+    const shown = () => (start.mock.lastCall?.[1] as FightSceneData | undefined)?.stage;
+    choose('Immobile');
+    expect(shown()).toBe(STAGE_VARIANTS[STAGE_VARIANTS.length - 1]);
+    random.mockReturnValue(0);
+    // The same match once more: the same street.
+    app.showPause();
+    choose('Recommencer');
+    expect(shown()).toBe(STAGE_VARIANTS[STAGE_VARIANTS.length - 1]);
+    // « Décor » cycles at random, then each atmosphere; resumed, the street is drawn anew so.
+    app.showPause();
+    expect(screen().items).toContain('Décor : aléatoire');
+    choose('Décor');
+    expect(screen().items[screen().selected]).toBe('Décor : minuit, ciel clair');
+    const starts = start.mock.calls.length;
+    choose('Reprendre');
+    expect(fight.resumeMatch).not.toHaveBeenCalled();
+    expect(start).toHaveBeenCalledTimes(starts + 1);
+    expect(shown()).toBe(night);
+    app.showPause();
+    choose('Décor');
+    expect(screen().items[screen().selected]).toBe('Décor : crépuscule, ciel clair');
+    choose('Recommencer');
+    expect(shown()).toBe(dusk);
+    // Unchanged, the pause resumes the fight as it was.
+    app.showPause();
+    choose('Reprendre');
+    expect(fight.resumeMatch).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps the street for « Revanche », draws it anew for a new match', () => {
+    const random = vi.spyOn(Math, 'random').mockReturnValue(0);
+    const { app, choose, start } = training();
+    const shown = () => (start.mock.lastCall?.[1] as FightSceneData | undefined)?.stage;
+    choose('Immobile');
+    expect(shown()).toBe(STAGE_VARIANTS[0]);
+    random.mockReturnValue(0.999);
+    app.showResults(0);
+    choose('Revanche');
+    expect(shown()).toBe(STAGE_VARIANTS[0]);
+    app.chooseDummy();
+    choose('Immobile');
+    expect(shown()).toBe(STAGE_VARIANTS[STAGE_VARIANTS.length - 1]);
   });
 });

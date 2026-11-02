@@ -241,7 +241,7 @@ describe('disposal of the stage props', () => {
 
   it('lets go of every image it laid at the end of the fight, and makes no texture', () => {
     const { scene, images, made, frames } = propScene();
-    const props = new StagePropsView();
+    const props = new StagePropsView('stage/midnight-clear/props');
     const layer = { ...STAGE_LAYERS.mid, name: 'mid' as const, url: 'mid.png' };
     const prop: StageProp = {
       name: 'queue',

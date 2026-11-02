@@ -1,11 +1,25 @@
 import type Phaser from 'phaser';
 import { describe, expect, it } from 'vitest';
-import { STAGE_ART } from '../../src/art/rue';
-import { STAGE_SCALE, stageArtOf, type StageProp } from '../../src/art/stage-layers';
+import { STAGE_VARIANTS } from '../../src/art/rue';
+import {
+  BASE_ATMOSPHERE,
+  STAGE_SCALE,
+  stageArtOf,
+  type Atmosphere,
+  type StageArt,
+  type StageProp,
+  type StageVariant,
+} from '../../src/art/stage-layers';
 import { DEPTH } from '../../src/render/depth';
 import { GREYBOX_COLORS } from '../../src/render/greybox-stage';
 import { relativeLuminance } from '../../src/render/luminance';
-import { darkestOf, drawStage, FIGHT_STAGE_COLORS, loadStage } from '../../src/render/stage-view';
+import {
+  darkestOf,
+  drawStage,
+  FIGHT_STAGE_COLORS,
+  loadStage,
+  stageVariantFor,
+} from '../../src/render/stage-view';
 
 /** What the stage view does with a scene: the images it adds, the textures it loads. */
 function fakeScene(cached: readonly string[] = []) {
@@ -22,6 +36,7 @@ function fakeScene(cached: readonly string[] = []) {
     destroyed: boolean;
   }[] = [];
   const loaded: [string, string][] = [];
+  const removed: string[] = [];
   const frames = new Map<string, number[]>();
   const camera = { background: undefined as number | undefined };
   const scene = {
@@ -62,6 +77,8 @@ function fakeScene(cached: readonly string[] = []) {
     },
     textures: {
       exists: (key: string) => cached.includes(key),
+      getTextureKeys: () => [...cached],
+      remove: (key: string) => removed.push(key),
       get: () => ({
         has: (name: string) => frames.has(name),
         add: (name: string, _source: number, ...box: number[]) => frames.set(name, box),
@@ -75,11 +92,22 @@ function fakeScene(cached: readonly string[] = []) {
       },
     },
   } as unknown as Phaser.Scene;
-  return { scene, images, loaded, camera, frames };
+  return { scene, images, loaded, removed, camera, frames };
 }
 
 const FILES = { './far.png': 'far.png', './mid.png': 'mid.png', './floor.png': 'floor.png' };
-const ART = stageArtOf(FILES, [0x2a2030, 0x101018]);
+const DUSK: Atmosphere = { moment: 'dusk', weather: 'clear' };
+
+/** The stage `art` in `atmosphere` (the base one by default). */
+function variantOf(
+  art: StageArt | undefined,
+  atmosphere: Atmosphere = BASE_ATMOSPHERE,
+): StageVariant {
+  if (!art) throw new Error('a stage');
+  return { atmosphere, art };
+}
+
+const ART = variantOf(stageArtOf(FILES, [0x2a2030, 0x101018]));
 
 /** A prop on the middle layer: nothing, then a frame for 30 steps, then another for 10. */
 const WAVE: StageProp = {
@@ -96,17 +124,18 @@ const WAVE: StageProp = {
     [2, 10],
   ],
 };
-const WITH_PROPS = stageArtOf({ ...FILES, './props.png': 'props.png' }, [0x2a2030], [WAVE]);
+const WITH_PROPS = variantOf(
+  stageArtOf({ ...FILES, './props.png': 'props.png' }, [0x2a2030], [WAVE]),
+);
 
 describe('the stage view', () => {
   it('lays the layers back to front, each at its scroll, as fine as the fighters, behind everything', () => {
-    if (!ART) throw new Error('a stage');
     const { scene, images, camera } = fakeScene();
     drawStage(scene, ART);
     expect(images.map(({ key, y, scroll }) => [key, y, scroll])).toEqual([
-      ['stage/far', 0, [0.25, 1]],
-      ['stage/mid', 0, [0.5, 1]],
-      ['stage/floor', 230, [1, 1]],
+      ['stage/midnight-clear/far', 0, [0.25, 1]],
+      ['stage/midnight-clear/mid', 0, [0.5, 1]],
+      ['stage/midnight-clear/floor', 230, [1, 1]],
     ]);
     for (const image of images) {
       expect(image.origin).toEqual([0, 0]);
@@ -119,28 +148,44 @@ describe('the stage view', () => {
   });
 
   it("loads only the layers not already loaded, and the props' sheet", () => {
-    if (!ART || !WITH_PROPS) throw new Error('a stage');
-    const { scene, loaded } = fakeScene(['stage/far']);
+    const { scene, loaded } = fakeScene(['stage/midnight-clear/far']);
     loadStage(scene, ART);
     expect(loaded).toEqual([
-      ['stage/mid', 'mid.png'],
-      ['stage/floor', 'floor.png'],
+      ['stage/midnight-clear/mid', 'mid.png'],
+      ['stage/midnight-clear/floor', 'floor.png'],
     ]);
-    const again = fakeScene(['stage/far', 'stage/mid', 'stage/floor']);
+    const again = fakeScene([
+      'stage/midnight-clear/far',
+      'stage/midnight-clear/mid',
+      'stage/midnight-clear/floor',
+    ]);
     loadStage(again.scene, WITH_PROPS);
-    expect(again.loaded).toEqual([['stage/props', 'props.png']]);
+    expect(again.loaded).toEqual([['stage/midnight-clear/props', 'props.png']]);
+  });
+
+  // docs/art/decor-rue.md §13: a fight holds one atmosphere in video memory, never two.
+  it("drops the other atmospheres' images from the cache, keeps its own and the fighters'", () => {
+    const cached = [
+      'stage/midnight-clear/far',
+      'stage/midnight-clear/props',
+      'stage/dusk-clear/far',
+      'nayo/idle',
+    ];
+    const { scene, loaded, removed } = fakeScene(cached);
+    loadStage(scene, variantOf(stageArtOf(FILES, [0x2a2030]), DUSK));
+    expect(removed).toEqual(['stage/midnight-clear/far', 'stage/midnight-clear/props']);
+    expect(loaded.map(([key]) => key)).toEqual(['stage/dusk-clear/mid', 'stage/dusk-clear/floor']);
   });
 
   it('lays each prop right over its layer, at its scroll, and plays its timeline whole frames', () => {
-    if (!WITH_PROPS) throw new Error('a stage');
     const { scene, images, frames } = fakeScene();
     const props = drawStage(scene, WITH_PROPS);
     // Far, mid, the prop over the mid, then the floor.
     expect(images.map(({ key }) => key)).toEqual([
-      'stage/far',
-      'stage/mid',
-      'stage/props',
-      'stage/floor',
+      'stage/midnight-clear/far',
+      'stage/midnight-clear/mid',
+      'stage/midnight-clear/props',
+      'stage/midnight-clear/floor',
     ]);
     const prop = images[2];
     if (!prop) throw new Error('a prop');
@@ -162,8 +207,33 @@ describe('the stage view', () => {
     expect(prop.destroyed).toBe(true);
   });
 
-  it("gives the flashes the stage's large colors: the drawn one's, else the grey box's", () => {
-    expect(FIGHT_STAGE_COLORS).toEqual(STAGE_ART?.colors ?? GREYBOX_COLORS);
+  it("gives the flashes the stage's large colors in every atmosphere, each once: else the grey box's", () => {
+    if (STAGE_VARIANTS.length === 0) {
+      expect(FIGHT_STAGE_COLORS).toEqual(GREYBOX_COLORS);
+      return;
+    }
+    expect(new Set(FIGHT_STAGE_COLORS).size).toBe(FIGHT_STAGE_COLORS.length);
+    for (const { art } of STAGE_VARIANTS)
+      expect(FIGHT_STAGE_COLORS).toEqual(expect.arrayContaining([...art.colors]));
+    // The base's first, the most covering first.
+    expect(FIGHT_STAGE_COLORS.slice(0, STAGE_VARIANTS[0]?.art.colors.length)).toEqual(
+      STAGE_VARIANTS[0]?.art.colors,
+    );
+  });
+
+  it('draws the atmosphere asked for if the stage has it, else one at random among its own', () => {
+    const night = ART;
+    const dusk = variantOf(stageArtOf(FILES, [0x2a2030]), DUSK);
+    const both = [night, dusk];
+    expect(stageVariantFor(DUSK, both, () => 0)).toBe(dusk);
+    expect(stageVariantFor(BASE_ATMOSPHERE, both, () => 0.99)).toBe(night);
+    expect(stageVariantFor('random', both, () => 0)).toBe(night);
+    expect(stageVariantFor('random', both, () => 0.5)).toBe(dusk);
+    expect(stageVariantFor('random', both, () => 0.999)).toBe(dusk);
+    // Not on this stage: at random among its own.
+    expect(stageVariantFor({ moment: 'midnight', weather: 'rain' }, both, () => 0.6)).toBe(dusk);
+    // No stage drawn: the grey box.
+    expect(stageVariantFor('random', [], () => 0)).toBeUndefined();
   });
 
   it('finds the darkest color, which a flash lights the most', () => {
