@@ -53,6 +53,7 @@ import {
 import { controlsContent, currentDevices, helpPages } from './controls-content';
 import { installMethod, onInstallChange, promptInstall } from './install';
 import { multiCatalog } from './multi-catalog';
+import { iceServers, TURN_ENDPOINT } from '../net/ice-servers';
 import { keepDesync } from './desync-store';
 import { MultiScreen } from './multi-screen';
 import type { OnlineMatch, OnlineEnd } from './online-match';
@@ -401,7 +402,10 @@ export class App {
     this.show(
       new MultiScreen(this.root, {
         connect: () =>
-          import('../net/peer-matchmaker').then(({ peerMatchmaker }) => peerMatchmaker()),
+          // The relays' credentials asked as the search starts (ice-servers.ts), never before.
+          import('../net/peer-matchmaker').then(async ({ peerMatchmaker }) =>
+            peerMatchmaker(await iceServers(TURN_ENDPOINT, (...args) => fetch(...args))),
+          ),
         now: () => performance.now(),
         catalog: this.catalog,
         names: nameStore,

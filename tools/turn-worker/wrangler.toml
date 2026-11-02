@@ -1,0 +1,12 @@
+# The relays' credentials service (docs/multijoueur.md §5.2), deployed by the owner:
+#   npx wrangler deploy
+#   npx wrangler secret put TURN_KEY_API_TOKEN
+name = "nayosbeat-turn"
+main = "worker.ts"
+compatibility_date = "2026-10-01"
+
+[vars]
+# The TURN key's id, from the Cloudflare dashboard (Realtime, TURN): not a secret.
+TURN_KEY_ID = ""
+# The game's pages, and only them.
+ALLOWED_ORIGINS = "https://alex-lou.github.io"

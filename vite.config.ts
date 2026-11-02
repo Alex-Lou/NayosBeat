@@ -1,6 +1,7 @@
 import type { Plugin } from 'vite';
 import { defineConfig } from 'vitest/config';
 import { serviceWorker } from './build/service-worker';
+import { TURN_ENDPOINT } from './src/net/ice-servers';
 
 /**
  * Content-Security-Policy of the published game. Everything is served from the game's own
@@ -16,7 +17,8 @@ const CONTENT_SECURITY_POLICY = [
   "style-src 'self'",
   "img-src 'self' data: blob:",
   "font-src 'self'",
-  "connect-src 'self' wss://0.peerjs.com",
+  // The relays' credentials service, once deployed (src/net/ice-servers.ts): its origin alone.
+  `connect-src 'self' wss://0.peerjs.com${TURN_ENDPOINT ? ` ${new URL(TURN_ENDPOINT).origin}` : ''}`,
   "media-src 'self'",
   "object-src 'none'",
   "base-uri 'none'",
