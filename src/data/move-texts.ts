@@ -11,6 +11,7 @@ import type { FighterId } from './roster';
 import { NAYO_TEXTS } from './texts/nayo';
 import { RIFF_TEXTS } from './texts/riff';
 import { SAPHIR_TEXTS } from './texts/saphir';
+import { WATT_TEXTS } from './texts/watt';
 import type { FighterTexts } from './texts/shared';
 
 export type { FighterTexts, MoveText } from './texts/shared';
@@ -56,6 +57,7 @@ export const MOVE_TEXTS: Readonly<Record<FighterId, FighterTexts>> = {
   nayo: NAYO_TEXTS,
   riff: RIFF_TEXTS,
   saphir: SAPHIR_TEXTS,
+  watt: WATT_TEXTS,
 };
 
 /** The « Les bases » page: what every fighter can do, whatever the device (§17.3). */

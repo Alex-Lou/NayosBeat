@@ -728,12 +728,14 @@ const SHARD_AREA = 8 * 12.5;
 /**
  * World px² each winner's 1 px outline lights at most around its held pose, measured on the
  * planches (Nayo's s4: 236, Riff's s5: 291; Saphir's tornado, a leg out and the arms open:
- * 660.5; tests/render/finisher-flashes.test.ts).
+ * 660.5; tests/render/finisher-flashes.test.ts). Watt's held pose is not drawn yet (porte 3,
+ * docs/watt.md): Saphir's bound until it is measured, an ask too large only ever calms it.
  */
 export const OUTLINE_AREAS: Readonly<Record<FighterId, number>> = {
   nayo: 300,
   riff: 300,
   saphir: 700,
+  watt: 700,
 };
 
 /**

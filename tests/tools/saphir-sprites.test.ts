@@ -16,10 +16,13 @@ import { reachCheck } from './fighters';
 
 const SHEETS = Object.keys(SAPHIR_SHEETS) as SaphirSheet[];
 
-/** docs/combat-v2.md §11.3: the 43 strips, and the 3 of combos v3, as Riff has them. */
+/**
+ * docs/combat-v2.md §11.3: the 43 strips, the 3 of combos v3, as Riff has them, and her 3 Remixes'
+ * own strips, as Nayo has them (porte 4, lot 2).
+ */
 describe('Saphir strips: the set', () => {
-  it('has the 43 strips, and the 3 of combos v3', () => {
-    expect(SHEETS).toHaveLength(46);
+  it('has the 43 strips, the 3 of combos v3 and the 3 of her Remixes', () => {
+    expect(SHEETS).toHaveLength(49);
   });
 
   it.each(SHEETS)('%s: poses and ticks for every frame', (sheet) => {
@@ -176,8 +179,16 @@ describe('Saphir strips: reach', () => {
     'jumpLight',
     'jumpHeavy',
     'grab',
+    'specialRemix',
+    'specialForwardRemix',
+    'specialAntiAirRemix',
   ] as const;
-  const ANTI_AIRS: ReadonlySet<string> = new Set(['specialAntiAir', 'backHeavy', 'chainLaunch']);
+  const ANTI_AIRS: ReadonlySet<string> = new Set([
+    'specialAntiAir',
+    'specialAntiAirRemix',
+    'backHeavy',
+    'chainLaunch',
+  ]);
   /** Her strikes on the strips drawn so far: the moves and their Remixes playing them. */
   const STRIKES = strikesOf(SAPHIR_CLIPS, SAPHIR_TEMPLATE).filter(({ sheet }) =>
     (DRAWN as readonly string[]).includes(sheet),

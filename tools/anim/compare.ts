@@ -14,6 +14,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { NAYO_CELLS } from '../../src/art/nayo/cells.ts';
 import { RIFF_CELLS } from '../../src/art/riff/cells.ts';
 import { SAPHIR_CELLS } from '../../src/art/saphir/cells.ts';
+import { WATT_CELLS } from '../../src/art/watt/cells.ts';
 import type { Atlas, Cell } from '../../src/art/types.ts';
 import { templateOf, type FighterId } from '../../src/data/roster.ts';
 import { TRAINING_STAGE } from '../../src/data/stages.ts';
@@ -25,6 +26,7 @@ const CELLS: Readonly<Record<FighterId, Readonly<Record<string, Cell>>>> = {
   nayo: NAYO_CELLS,
   riff: RIFF_CELLS,
   saphir: SAPHIR_CELLS,
+  watt: WATT_CELLS,
 };
 
 /** Everything the page plays from. */

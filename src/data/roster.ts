@@ -2,8 +2,9 @@ import type { FighterTemplate } from '../core/config';
 import { NAYO } from './fighters/nayo';
 import { RIFF } from './fighters/riff';
 import { SAPHIR } from './fighters/saphir';
+import { WATT } from './fighters/watt';
 
-export type FighterId = 'nayo' | 'riff' | 'saphir';
+export type FighterId = 'nayo' | 'riff' | 'saphir' | 'watt';
 
 export interface RosterEntry {
   readonly id: FighterId;
@@ -37,6 +38,13 @@ export const ROSTER: readonly RosterEntry[] = [
     // The masked stage legend who fights with her legs (docs/saphir.md §1, §9).
     description: 'Masquée en savate · mi-distance · Syncope · Rubato · sans reversal',
     finisher: 'Face B',
+  },
+  {
+    id: 'watt',
+    template: WATT,
+    // In grey boxes until his art (docs/watt.md): the owner's call, to play him online now.
+    description: "Roadie à tête d'ampoule · prise longue · Surcharge · Plein feu",
+    finisher: 'Couvre-feu',
   },
 ];
 

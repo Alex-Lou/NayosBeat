@@ -120,8 +120,11 @@ export interface Film {
   readonly ticks: readonly FilmTick[];
 }
 
-/** The art of a fighter as the game plays it, without its images (the bundler's alone). */
-const ARTS: Readonly<Record<FighterId, FighterArt>> = {
+/**
+ * The art of a fighter as the game plays it, without its images (the bundler's alone). A fighter
+ * in grey boxes (Watt, until his art: docs/watt.md) has none, and cannot be filmed.
+ */
+const ARTS: Readonly<Partial<Record<FighterId, FighterArt>>> = {
   nayo: {
     key: 'nayo',
     sheets: NAYO_SHEETS,
@@ -139,6 +142,13 @@ const ARTS: Readonly<Record<FighterId, FighterArt>> = {
     urls: {},
   },
 };
+
+/** The art `fighter` is filmed with; one in grey boxes has none to film. */
+function artToFilm(fighter: FighterId): FighterArt {
+  const art = ARTS[fighter];
+  if (!art) throw new Error(`${fighter} has no art yet (grey boxes): nothing to film`);
+  return art;
+}
 
 /** A golden replay played whole, then `then` ticks with nothing pressed. */
 export function replayTake(name: string, replay: Replay, then = 0): Take {
@@ -197,7 +207,7 @@ export function cpuTake(
  */
 export function shoot(take: Take, legacy: boolean, from = 0, to = take.states.length): Film {
   const { config, fighters } = take;
-  const arts = [ARTS[fighters[0]], ARTS[fighters[1]]] as const;
+  const arts = [artToFilm(fighters[0]), artToFilm(fighters[1])] as const;
   const mirror = fighters[0] === fighters[1];
   const colorways = ['main', mirror ? 'alt' : 'main'] as const;
   const memory = new FightMemory();

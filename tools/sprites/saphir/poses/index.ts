@@ -25,6 +25,7 @@ import { HIT_CROUCH, HIT_HIGH, HIT_LOW, HIT_MID } from './hits.ts';
 import { POSES as idlePoses } from './idle.ts';
 import { JUMP_HEAVY, JUMP_LIGHT } from './jumpAttacks.ts';
 import { POSES as lightFinisherPoses } from './lightFinisher.ts';
+import { REMIXES } from './remixes.ts';
 import { INTRO, TIME_OVER, VICTORY } from './rounds.ts';
 import { POSES as specialPoses } from './special.ts';
 import { POSES as specialAntiAirPoses } from './specialAntiAir.ts';
@@ -83,4 +84,5 @@ export const SAPHIR_POSES: Readonly<Record<SaphirSheet, readonly Pose[]>> = {
   victory: VICTORY,
   timeOver: TIME_OVER,
   specialAntiAir: specialAntiAirPoses,
+  ...REMIXES,
 };

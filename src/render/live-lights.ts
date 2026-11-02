@@ -244,6 +244,8 @@ export const FIGHTER_LIGHT_AREAS: Readonly<Record<string, number>> = {
   'riff/alt': 715,
   'saphir/main': 480,
   'saphir/alt': 850,
+  'watt/main': 145,
+  'watt/alt': 720,
 };
 
 /** What a fighter of `name` in `colorway` lights at ΔL ≥ 0.1 under a live light, world px². */

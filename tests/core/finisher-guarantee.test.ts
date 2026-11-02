@@ -6,6 +6,7 @@ import type { GameState } from '../../src/core/state';
 import { NAYO } from '../../src/data/fighters/nayo';
 import { RIFF } from '../../src/data/fighters/riff';
 import { SAPHIR } from '../../src/data/fighters/saphir';
+import { WATT } from '../../src/data/fighters/watt';
 import { damageOf, playCombo } from './combo-helpers';
 import {
   armedStart,
@@ -80,6 +81,22 @@ const ROUTES: readonly (readonly [FighterTemplate, FighterTemplate, readonly Rou
       // The Chandelle sends the body up: the Coda's last blows would pass under it.
       ['← + H', [B | H, B | X], [], [24, 36]],
       ['L, L, ← + H', [L, L, B | H, B | X], [], [24, 36, 48]],
+      ['alone', [B | X], [24, 36, 48]],
+    ],
+  ],
+  [
+    WATT,
+    RIFF,
+    [
+      // Plein feu, a short reversal (58 px): past 31 px, his string pushes Riff out of it.
+      ['L, L, H, H', [L, L, H, H, B | X], [24]],
+      ['L, L, H', [L, L, H, B | X], [24, 36]],
+      ['H', [H, B | X], [24, 36, 48]],
+      ['H, H', [H, H, B | X], [24, 36]],
+      ['↓ + L', [D | L, B | X], [24, 36, 48]],
+      // The Arraché and the Soulevé lift the body: Plein feu's three blows still land on it.
+      ['← + H', [B | H, B | X], [24, 36, 48]],
+      ['L, L, ← + H', [L, L, B | H, B | X], [24, 36, 48]],
       ['alone', [B | X], [24, 36, 48]],
     ],
   ],
@@ -185,6 +202,7 @@ describe('the guarantee on a victim caught jumping (§1.6, test 3)', () => {
     [NAYO, NAYO],
     [RIFF, NAYO],
     [SAPHIR, RIFF],
+    [WATT, RIFF],
   ] as const) {
     it(`${attacker.name}'s super as an anti-air on ${victim.name}`, () => {
       const blows = blowsOf(attacker);
@@ -211,8 +229,8 @@ describe('the guarantee on a victim caught jumping (§1.6, test 3)', () => {
           }
         }
       }
-      // The Mégabasse and the Coda lock on bodies in the air; the Slam never does (the fourth
-      // light, rule b).
+      // The Mégabasse, the Coda and Plein feu lock on bodies in the air; the Slam never does (the
+      // fourth light, rule b).
       if (attacker === RIFF) expect(caughtInTheAir).toBe(0);
       else expect(caughtInTheAir).toBeGreaterThan(0);
     });

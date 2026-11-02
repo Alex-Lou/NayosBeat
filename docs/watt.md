@@ -143,7 +143,7 @@ Les noms des normaux sont des gestes, ceux de l'haltérophilie : il **porte** (S
 | en l'air, H | **Plaquage** | Le corps entier vers le bas, bras ouverts | overhead | le saut lourd | l'Uppercut, le Genou montant |
 | S | **Coup de jus** | Les deux pinces en avant sur un pas de 16 px ; au contact, l'exosquelette décharge, et une petite gerbe d'arcs verts part | milieu, met au sol | finir un combo ; sa punition proche (73,5 px) | −12 en garde |
 | → + S | **Surcharge** | La charge du dessin source : épaule en avant, 56 px | milieu, met au sol | **punir de loin** (107,5 px) | −11 en garde ; un projectile le prend en course |
-| ↓ + S | **Plafonnier** | Il cueille le sauteur au-dessus de son ampoule et le rabat au sol | milieu, met au sol | l'anti-air, **invincible aux coups aériens** de f0 à f9 | sauter tard, ou feinter le saut ; −19 en garde |
+| ↓ + S | **Plafonnier** | Il cueille le sauteur au-dessus de lui, devant, et le rabat au sol | milieu, met au sol | l'anti-air, **invincible aux coups aériens** de f0 à f9 | sauter tard, ou feinter le saut ; −19 en garde |
 | PRISE | **Prise** | Les pinces s'ouvrent, puis se referment sur les épaules ; le visage adverse passe au vert | — | **l'outil signature** : la prise la plus longue (53 px) | sauter, ou rester à plus de 54 px ; démarre en 6 tics |
 | en tenant, L | **Serrage** | Les pinces serrent, les LED montent | — | le tabassage, 18 par coup | se débattre |
 | en tenant, H | **Déchargement** | Il soulève l'adversaire et le pose plus loin, comme une caisse qu'on décharge | — | le gros lancer devant (120) | — |
@@ -175,7 +175,7 @@ Portée : de centre à centre, contre Nayo debout, mesurée sur les boîtes (com
 | jumpHeavy | en l'air, H | Plaquage | 8/6/12 | 78 | 12 | overhead | 0..34 / −4..20 | — | — | 47,5 | — |
 | special | S, ↓↘→ | **Coup de jus** | 10/3/22 (35) | 90 | 14 | mid | 10..44 / 30..60 | +16 px f2–9 | KD / −12 | 73,5 | — |
 | specialForward | → + S | **Surcharge** | 14/4/20 (38) | 85 | 13 | mid | 8..38 / 20..70 | +56 px f3–17 | KD / −11 | **107,5** | — |
-| specialAntiAir | ↓ + S, →↓↘ | **Plafonnier** | 6/6/26 (38) | 95 | 14 | mid | −4..34 / 50..110 | — | KD / −19 | 47,5 | — ; **invincible aux coups aériens f0–9** |
+| specialAntiAir | ↓ + S, →↓↘ | **Plafonnier** | 6/6/26 (38) | 95 | 14 | mid | −4..24 / 50..90 | — | KD / −19 | 37,5 | — ; **invincible aux coups aériens f0–9** |
 
 **Prise et déplacements** (au format de combat-v2 §10.3)
 
@@ -246,7 +246,7 @@ Le contraste : ses combos sans jauge (108 à 195) sont sous ceux de Nayo (163 et
 1. L, L, L : Paume, Crochet court, puis le Jeté met au sol.
 2. L, H, puis S : le Coup de jus met au sol.
 3. L, L, H, puis avant + S : la Surcharge emporte l'adversaire.
-4. L, L, arrière + H, puis bas + S : l'Soulevé soulève, le Plafonnier rabat.
+4. L, L, arrière + H, puis bas + S : le Soulevé soulève, le Plafonnier rabat.
 5. L, L, arrière + H, puis L, L, L sur le corps en l'air.
 6. L, L, H, H, puis arrière + BOOST (3 barres) : Plein feu.
 7. La même, puis arrière + BOOST (FINISH allumé) : son Finisher, Couvre-feu.
@@ -397,7 +397,7 @@ Mesurées avec la teinte HSL, la luminance relative et le rapport de rouge sur l
 - **Les 3 coups signatures**, animés à la porte 2 et retouchés à la porte 4. Chacun a un membre actif clair : les deux pinces.
   - **la Prise** : les pinces s'ouvrent et se referment ;
   - **la Surcharge** : l'épaule de la pose source ;
-  - **le Plafonnier** : les deux bras au-dessus de l'ampoule.
+  - **le Plafonnier** : les deux pinces en haut et devant, au-dessus de l'ampoule.
 - **Les retours passés du propriétaire** (D25 à D27) : l'anatomie à 0 limite dure ; des bras lourds mais pas trop longs (environ 1,2 fois leur longueur en garde à la frappe) ; aucun coude à l'envers ; un contre-jour en touches, rien sous les hanches, pas de liseré tout autour.
 
 ---
@@ -452,7 +452,7 @@ Passation §4.2, perso-3 §7.2 :
 
 ## 14. Décision proposée pour le journal
 
-D37 (à confirmer : D36 est proposé par la session Saphir pour ses choix ; le numéro se vérifie juste avant la fusion) : le 4e combattant de Sound Clash est **Watt**, un lutteur sans armure, tiré du colosse de Zen-Tazzer, avec une tête d'ampoule voulue par le propriétaire.
+D37, inscrit au journal (`docs/combat-v2.md` §0.2) : le 4e combattant de Sound Clash est **Watt**, un lutteur sans armure, tiré du colosse de Zen-Tazzer, avec une tête d'ampoule voulue par le propriétaire.
 - **Ce qu'il est** : en données seules ; la prise la plus longue (53 px), le plus de vie (1 150) et les lancers les plus lourds du casting ; un seul reversal (sa super, Plein feu).
 - **Son ampoule** : elle montre sa jauge, sans jamais trahir un coup.
 - **Origine** : porte 0 de la passation (`docs/art/passation-personnages.md`), concept A, choix du propriétaire.
@@ -470,3 +470,42 @@ D37 (à confirmer : D36 est proposé par la session Saphir pour ses choix ; le n
 | L'exception de dissolution : `rise` sur une forme `claw` (§12) | le propriétaire, avec l'agent | porte 3 |
 | Kaï, promis « le plus lent », face à la marche de Watt (1,2) (§12) | remarque gardée ici ; rien ne change ailleurs tant que Kaï n'existe pas | — |
 | Le numéro de la décision (§14) | session principale | juste avant la fusion |
+
+---
+
+## 16. Porte 2 : le dessin
+
+*Casquette : art et pipeline. Watt est construit dans le générateur de sprites comme le casting (`tools/sprites/watt/`), à partir du dessin de Riff (même lumière de rue, mêmes rangers, mêmes coutures), mis à sa carrure.*
+
+- **Ce qui est dessiné** : le corps (`body.ts`), la palette des deux tenues (`palette.ts`), la tête d'ampoule pixel par pixel (`head.ts`), les 8 états du filament (`face.ts`), la tenue (`look.ts`), la garde et son attente (`poses/common.ts`, `poses/idle.ts`), et ses 3 coups signatures : la **Prise**, la **Surcharge** et le **Plafonnier**.
+- **Ce qui attend la porte 3** : toutes les autres planches existent au bon nombre d'images, mais tiennent la garde. Le Coup de jus et les Remix tiennent la garde avec un éclat d'énergie sur l'image active.
+- **La garde** : 78 × 54 px du monde, l'ampoule comprise. Elle est basse, épaules en avant, poings lourds devant la poitrine, le poids sur les deux jambes. Son attente respire sur le « un » de chaque mesure, 60 tics.
+- **L'ampoule** : un globe de verre fumé, le contre-jour violet de l'enseigne en haut à l'arrière, le reflet chaud des lampadaires à l'avant, le filament et son halo dans son énergie, le culot de laiton qui sort du col. Elle brille par la lumière du pipeline (`Lighting.glow`), comme les diodes de l'exosquelette.
+- **L'anatomie** : `npm run sprites:anatomy -- watt` donne **0 limite dure et 0 avertissement**, sur toutes ses planches.
+- **Ce qu'on voit, c'est ce qui touche** (`tests/tools/watt-sprites.test.ts`) : sur leurs images actives, la Prise atteint sa boîte de 40 px, la Surcharge celle de 38 px, et le Plafonnier la sienne vers l'avant et vers le haut.
+- **Une donnée recalée sur le dessin** : la boîte du **Plafonnier** passait de −4..34 / 50..110 à −4..24 / 50..90. Ses bras ne pouvaient pas monter à 110 px : les épaules sont vers 60, les bras font 25 px, et les pinces portent jusque vers 92. Sa portée sur Nayo debout passe de 47,5 à 37,5 px (instantané des portées réenregistré, seules ces deux lignes changent). Ses routes et ses tests ne bougent pas. C'est la règle de combat-v2 §9.2 : la boîte suit le dessin.
+
+---
+
+## 17. Le CPU : ses plans, mesurés (PR #112)
+
+*Casquette : game design et QA. Les données ne changent pas : c'est au propriétaire de trancher.*
+
+- **Ses plans** (`src/ai/plans.ts`, `WATT_PLANS`) : les routes du §6, de la Paume, du Pas lourd, du Marteau et de l'Arraché. Chacune est jouée sur le moteur contre les 4 combattants, miroir compris (`tests/ai/plan-routes.test.ts`). Elle est bornée à la distance où elle se joue en entier contre tous : 43 px pour L, L, H, H ; 42 et 40 pour les jongles du Soulevé ; 54 et 49 après le Marteau ; 38 après l'Arraché. Ses routes vers **Plein feu** verrouillent et mettent KO jusqu'à 31 px (L, L, H, H), 41 px (L, L, H) et 37 px (H, H) : c'est un reversal court.
+- **La garantie du Finisher** (`finisher-guarantee.test.ts`) : sur Riff, Plein feu verrouille aussi sur un corps en l'air (après l'Arraché ou le Soulevé), et ses trois frappes touchent alors toujours.
+- **Anti-infini** (`beam-search.ts`) : 12 coups au plus sur Riff, la limite, sous 45 % de sa vie sans jauge et sous 49 % avec. Ses CONTRE se mesurent plus tard que ceux du casting : son Marteau sort à f12 et son Coup de pilon à f22.
+- **Couvre-feu** (`finisher-scene.test.ts`, `finisher-flashes.test.ts`), sur Nayo :
+  - le KO tombe à 56, la retombée à t0 + 60, la carte de 146 à 217 ;
+  - le son baisse à t0 + 9, en 6 images ; la basse de la coupure tombe sur la dernière image de la carte ;
+  - deux flashs à lui, à 116 et 146 (un seul, 146, en flashs réduits) : sous les règles.
+  - En boîte grise, aucun liseré n'est dessiné autour de lui.
+- **Un écart de cadrage, signalé** : au gros plan ×2, la tête de Nayo projeté par la dernière frappe (6 ; 2) monte de 3 px dans la bande du HUD. Le Quatre de Nayo fait de même en miroir. C'est le cadrage commun ; ce n'est pas corrigé ici.
+- **Équilibrage entre CPU difficiles**, 200 matchs par paire, les côtés en alternance, graines 1000 et suivantes :
+  - Watt contre Nayo : **1 %** des matchs gagnés ;
+  - Watt contre Riff : **40,5 %** ;
+  - Watt contre Saphir : **16,5 %**.
+- **Ce qui l'explique en partie**, sur 20 matchs contre Nayo :
+  - son jeu à distance est celui du CPU commun : 106 Surcharges, 83 coups lourds sautés et 83 Coups de jus lancés ;
+  - 61 Paumes seulement ouvrent ses phrases ;
+  - il prend bien, environ 3 Prises par match.
+- **Ses Finishers** : en miroir, 1 en 40 matchs, 2 en 120 (1,7 %). Le seuil d'un sur 40 du §1.11 de `finisher.md` est tout juste tenu.
