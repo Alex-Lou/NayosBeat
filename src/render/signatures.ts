@@ -27,6 +27,8 @@ export interface MoveLight {
   readonly reach: number;
   /** Where it ends up by `to`, if it moves with the blow (the Uppercut's fist rising). */
   readonly toHeight?: number;
+  /** How far its live light reaches, world px (live-lights.ts LIGHT_SHAPE: a move's, else). */
+  readonly radius?: number;
 }
 
 /**
@@ -65,10 +67,24 @@ export interface Cue {
   readonly size: number;
 }
 
+/**
+ * A bold shape a move draws on one of its action frames (bold-fx.ts): `shock`, a thick ring
+ * standing up where a disc leaves the hand; `quake`, a ring flat on the floor and impact lines.
+ */
+export interface BoldCue {
+  readonly frame: number;
+  readonly kind: 'shock' | 'quake';
+  readonly tone: Tone;
+  readonly height: number;
+  readonly reach: number;
+  readonly size: number;
+}
+
 export interface MoveSignature {
   readonly light?: MoveLight;
   readonly echo?: MoveEchoSpec;
   readonly cues?: readonly Cue[];
+  readonly bold?: readonly BoldCue[];
 }
 
 export interface Signature {
@@ -79,7 +95,22 @@ export interface Signature {
   readonly heavySwing: boolean;
   /** A heavy blow it lands flares at the impact (light-rig.ts). */
   readonly flares: boolean;
+  /** Its discs in flight trail speed lines (bold-fx.ts). */
+  readonly discLines?: boolean;
+  /**
+   * Its presence between its blows (presence.ts): the color of its outfit's LEDs in each
+   * colorway, which shine. None: no presence.
+   */
+  readonly presence?: { readonly leds: Readonly<Record<'main' | 'alt', number>> };
 }
+
+const bold = (
+  frame: number,
+  kind: BoldCue['kind'],
+  tone: Tone,
+  where: { height: number; reach: number },
+  size = 1,
+): BoldCue => ({ frame, kind, tone, height: where.height, reach: where.reach, size });
 
 const cue = (
   frame: number,
@@ -109,6 +140,7 @@ const NAYO_SIGNATURE: Signature = {
       light: { from: 6, to: 18, tone: 'energy', strength: 0.7, ...HAND },
       echo: { from: 9, to: 13, every: 2, life: 8, tone: 'energy' },
       cues: [cue(12, 'throwRing', 'energy', HAND)],
+      bold: [bold(12, 'shock', 'energy', HAND)],
     },
     specialBoost: {
       light: { from: 4, to: 20, tone: 'platine', strength: 1, ...HAND },
@@ -117,6 +149,7 @@ const NAYO_SIGNATURE: Signature = {
         cue(12, 'throwRing', 'platine', HAND, 1.3),
         cue(12, 'throwRing', 'energy', HAND, 0.8),
       ],
+      bold: [bold(12, 'shock', 'platine', HAND, 1.3)],
     },
     // Pied fendu: the slide (frames 3 to 15), the kick out on frame 11.
     specialForward: {
@@ -157,12 +190,17 @@ const NAYO_SIGNATURE: Signature = {
     },
     // Mégabasse: the cue and the freeze on frame 0, then his fist on the floor on 2, 8 and 14.
     super: {
-      light: { from: 0, to: 22, tone: 'platine', strength: 1, height: 6, reach: 26 },
+      light: { from: 0, to: 22, tone: 'platine', strength: 1, height: 6, reach: 26, radius: 200 },
       cues: [
         cue(0, 'charge', 'platine', BODY, 1.2),
         cue(2, 'drop', 'energy', FIST),
         cue(8, 'drop', 'energy', FIST, 1.15),
         cue(14, 'drop', 'platine', FIST, 1.3),
+      ],
+      bold: [
+        bold(2, 'quake', 'energy', FIST),
+        bold(8, 'quake', 'energy', FIST, 1.1),
+        bold(14, 'quake', 'platine', FIST, 1.3),
       ],
     },
     // The dashes: speed lines on the floor as they set off (their afterimages: dash-trail.ts).
@@ -177,6 +215,9 @@ const NAYO_SIGNATURE: Signature = {
   discs: { special: 'energy', specialBoost: 'platine' },
   heavySwing: true,
   flares: true,
+  discLines: true,
+  // His LEDs' soft core (tools/sprites/nayo/palette.ts, `neonCore`).
+  presence: { leds: { main: 0x62c4d0, alt: 0xd878b8 } },
 };
 
 const SIGNATURES: Partial<Readonly<Record<FighterId, Signature>>> = { nayo: NAYO_SIGNATURE };

@@ -20,6 +20,7 @@ import {
 import type { RenderMode } from './render-mode';
 import { PLATINE, type Signature } from './signatures';
 import { CALM_DELTA, VEIL_DELTA } from './veils';
+import { LIGHT_SHAPE } from './live-lights';
 
 /**
  * The lights of the moves, drawn (docs/art/nayo-vfx.md §2): a pool of colored light on the floor
@@ -62,12 +63,18 @@ export interface LightRigLook {
 export class LightRig {
   /** The flashes calm (reduced or off): fainter pools and glows. Read every frame. */
   calm = false;
+  /**
+   * The live lights show the sources (light-show.ts): no pool on the floor, no glow on a body,
+   * which would add up with them. The shadows still lean. Read every frame.
+   */
+  live = false;
   /** How the lights fall on each player, this frame. */
   readonly casts: readonly [Cast, Cast] = [
     { lean: 0, glowColor: 0, glow: 0 },
     { lean: 0, glowColor: 0, glow: 0 },
   ];
   private readonly lights: Light[] = lightPool();
+  private shining = 0;
   private readonly pools: Pool[];
   private readonly images: readonly Phaser.GameObjects.Image[];
   private readonly flares: Flare[];
@@ -147,18 +154,30 @@ export class LightRig {
         light.color = flare.color;
         light.by = flare.by;
         light.strength = (1 - flare.age / FLARE_LIFE) ** 1.5;
+        light.source = 'flare';
+        light.radius = LIGHT_SHAPE.flare.radius;
         count++;
       }
       flare.age += frames;
     }
-    this.drawPools(count);
+    this.shining = count;
+    this.drawPools(this.live ? 0 : count);
     for (const player of [0, 1] as const) {
       const fighter = state.fighters[player];
       const cast = this.casts[player];
       castOn(player, toPx(fighter.x), toPx(fighter.y), lights, count, cast);
       const alphas = this.alphas.get(cast.glowColor);
-      cast.glow *= alphas?.[this.calm ? 3 : 2] ?? 0;
+      cast.glow *= this.live ? 0 : (alphas?.[this.calm ? 3 : 2] ?? 0);
     }
+  }
+
+  /** This frame's sources (`update`'s), the first `count` of them: for the live lights. */
+  get sources(): readonly Light[] {
+    return this.lights;
+  }
+
+  get count(): number {
+    return this.shining;
   }
 
   private drawPools(count: number): void {

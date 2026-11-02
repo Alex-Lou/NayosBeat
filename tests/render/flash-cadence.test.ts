@@ -37,13 +37,18 @@ import { hitStyleOf, hudColorOf, type HitStyle } from '../../src/render/hit-styl
 import { Hud } from '../../src/render/hud';
 import { freshPixels } from '../../src/render/luminance';
 import type { TickTally } from '../../src/render/onomatopoeia';
+import { BoldFx } from '../../src/render/bold-fx';
+import { LightRig } from '../../src/render/light-rig';
+import { LightShow } from '../../src/render/light-show';
+import { fighterLightArea } from '../../src/render/live-lights';
 import { SignatureFx } from '../../src/render/signature-fx';
-import { signatureOf } from '../../src/render/signatures';
+import { PLATINE, signatureOf } from '../../src/render/signatures';
 import { FIGHT_STAGE_COLORS } from '../../src/render/stage-view';
 import { playCombo } from '../core/combo-helpers';
 import { facingOff } from '../core/helpers';
 import { fxStrips } from './fx-strips';
 import { fakeScene } from './hud-fakes';
+import { liveScene } from './live-fakes';
 import { recordingScene } from './spark-area';
 
 /**
@@ -87,7 +92,9 @@ vi.mock('../../src/render/blood', () => ({
     update = vi.fn();
   },
 }));
-vi.mock('../../src/render/effects', () => ({
+vi.mock('../../src/render/effects', async (original) => ({
+  // The veils' textures, painted for real: the moves' lights draw from them (light-rig.ts).
+  ...(await original<typeof import('../../src/render/effects')>()),
   Effects: class {
     kick = vi.fn();
     jolt = vi.fn();
@@ -331,6 +338,9 @@ interface Played {
   /** Nayo's signature cues played, and those the budget let light (signature-fx.ts). */
   readonly cues: number;
   readonly litCues: number;
+  /** What the live lights and the bold shapes asked, and were granted (light-show.ts, bold-fx.ts). */
+  readonly liveAsks: number;
+  readonly liveLit: number;
 }
 
 /**
@@ -378,6 +388,42 @@ function play(route: Route, mode: FlashMode): Played {
     stage: FIGHT_STAGE_COLORS,
   });
   signature.calm = mode !== 'normal';
+  // The moves' live lights and bold shapes, asking last, as FightScene has them: the lights
+  // gathered from the state (light-rig.ts), shown live (light-show.ts), and the bold shapes.
+  const energies = [styles[0].energy, styles[1].energy] as const;
+  const lightRig = new LightRig(recordingScene().scene, config, {
+    groundY: GROUND_Y,
+    signatures,
+    energies,
+    stage: FIGHT_STAGE_COLORS,
+    mode: 'full',
+  });
+  lightRig.live = true;
+  const colorway = (player: 0 | 1) =>
+    player === 1 && config.fighters[0] === config.fighters[1] ? 'alt' : 'main';
+  const nameOf = (player: 0 | 1) => (config.fighters[player] === NAYO ? 'nayo' : 'riff');
+  const lightShow = new LightShow(liveScene(), {
+    stage: FIGHT_STAGE_COLORS,
+    colors: [...energies, PLATINE],
+    budget,
+    fighterAreas: [
+      fighterLightArea(nameOf(0), colorway(0)),
+      fighterLightArea(nameOf(1), colorway(1)),
+    ],
+    groundY: GROUND_Y,
+  });
+  lightShow.setTier('full');
+  lightShow.calm = mode !== 'normal';
+  const bold = new BoldFx(liveScene(), config, {
+    groundY: GROUND_Y,
+    signatures,
+    energies,
+    budget,
+    stage: FIGHT_STAGE_COLORS,
+  });
+  bold.calm = mode !== 'normal';
+  let liveAsks = 0;
+  let liveLit = 0;
   let cues = 0;
   let litCues = 0;
   const cue = signature.cue.bind(signature);
@@ -416,7 +462,13 @@ function play(route: Route, mode: FlashMode): Played {
     for (const event of events) feedback.react(event, 0);
     feedback.endTick();
     signature.tick(state);
+    bold.tick(state);
+    for (const event of events) {
+      lightRig.react(event);
+      lightShow.react(event);
+    }
     feedback.update(1);
+    lightRig.update(state, 1, false);
     // As SpriteFighterView: what a new frame lights anew, all of it if the body moved.
     for (const player of [0, 1] as const) {
       const art = arts[player];
@@ -443,6 +495,15 @@ function play(route: Route, mode: FlashMode): Played {
       return granted;
     };
     signature.flush();
+    // Then the live lights and the bold shapes, last.
+    budget.admit = (area: number) => {
+      const granted = admit(area);
+      liveAsks++;
+      if (granted) liveLit++;
+      return granted;
+    };
+    lightShow.update(lightRig.sources, lightRig.count, 1, false);
+    bold.update(1);
     budget.admit = admit;
     signature.update(1);
     hud.update(state);
@@ -469,6 +530,8 @@ function play(route: Route, mode: FlashMode): Played {
     dark,
     cues,
     litCues,
+    liveAsks,
+    liveLit,
   };
 }
 
@@ -544,6 +607,14 @@ describe('the flashes of the combo routes, as shown (docs/flashs.md §4)', () =>
     const calm = play(route('Nayo E6 ↓S, ←BOOST'), 'reduced');
     expect(calm.cues).toBe(normal.cues);
     expect(calm.litCues).toBe(0);
+  });
+
+  it('lets the live lights and the bold shapes ask last, lit where they fit, never calm', () => {
+    const normal = play(route('Nayo Mégabasse, KO'), 'normal');
+    expect(normal.liveAsks).toBeGreaterThan(0);
+    expect(normal.liveLit).toBeGreaterThan(0);
+    const calm = play(route('Nayo Mégabasse, KO'), 'reduced');
+    expect(calm.liveAsks).toBe(0);
   });
 
   it("keeps the Uppercut lit as it lands: its frames held over a hit light little that's new", () => {

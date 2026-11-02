@@ -18,7 +18,9 @@ import { FxDissolve } from './fx-dissolve';
 import { FxPixels } from './fx-pixels';
 import { hitShakeOf } from './hit-shake';
 import { MoveEcho } from './move-echo';
+import type { LightTier } from './live-lights';
 import type { Cast } from './move-lights';
+import { Presence } from './presence';
 import type { RenderMode } from './render-mode';
 import type { ShakeMode } from './shake';
 import type { Signature } from './signatures';
@@ -82,6 +84,11 @@ export interface SpriteFighterLook {
    * fighter's glow on it (`light`). Off, neither.
    */
   readonly lit?: boolean;
+  /**
+   * Its colorway, for its presence's LEDs (presence.ts), with a signature that has one. None:
+   * no presence.
+   */
+  readonly colorway?: 'main' | 'alt';
 }
 
 /**
@@ -119,6 +126,8 @@ export class SpriteFighterView {
   private glowColor = -1;
   private cast: Cast = UNLIT;
   private readonly dissolve: FxDissolve | undefined;
+  /** Its aura, its LEDs, its sound particles (presence.ts); none without a signature's. */
+  private readonly presence: Presence | undefined;
   private readonly pixels: FxPixels;
   private readonly gate = new FxGate();
   private readonly budget: FlashBudget;
@@ -182,6 +191,17 @@ export class SpriteFighterView {
     this.dissolve = art.fx
       ? new FxDissolve(scene, art, look.dissolve, trailColor, false, mode, this.pixels)
       : undefined;
+    const presence = look.signature?.presence;
+    this.presence =
+      presence && look.colorway
+        ? new Presence(scene, art, {
+            energy: trailColor,
+            leds: presence.leds[look.colorway],
+            stage: look.stage,
+            mode,
+          })
+        : undefined;
+    this.presence?.setDepth(DEPTH.fighterBack);
   }
 
   /**
@@ -198,6 +218,20 @@ export class SpriteFighterView {
     this.shake = shake;
     this.halo.calm = calm || still;
     if (this.dissolve) this.dissolve.still = still;
+    if (this.presence) {
+      this.presence.calm = calm;
+      this.presence.still = still;
+    }
+  }
+
+  /** The adaptive quality's tier (light-quality.ts): its presence's filters and particles. */
+  setTier(tier: LightTier): void {
+    this.presence?.setTier(tier);
+  }
+
+  /** Frees what its presence made (its filtered sprites, its particles). */
+  dispose(): void {
+    this.presence?.dispose();
   }
 
   /** Draws this fighter over the other one, or under it. */
@@ -205,6 +239,7 @@ export class SpriteFighterView {
     const depth = front ? DEPTH.fighterFront : DEPTH.fighterBack;
     this.body.setDepth(depth);
     this.glow?.setDepth(depth + GLOW_DEPTH);
+    this.presence?.setDepth(depth);
     for (const sprite of this.outline) sprite.setDepth(depth - OUTLINE_DEPTH);
     for (const sprite of this.contour) sprite.setDepth(depth - CONTOUR_DEPTH);
   }
@@ -212,6 +247,11 @@ export class SpriteFighterView {
   /** How the moves' lights fall on it from now on (light-rig.ts): read on each update. */
   light(cast: Cast): void {
     this.cast = cast;
+  }
+
+  /** Its body lit by the live lights (light-show.ts), or not. */
+  setLighting(on: boolean): void {
+    this.body.setLighting(on);
   }
 
   /**
@@ -248,6 +288,9 @@ export class SpriteFighterView {
     const y = this.groundY - height;
     this.body.show(clip.sheet, frame, x + trembling, y, flip);
     this.body.shade(staged.silhouette);
+    // Its presence follows the body, gone as the Finisher's silhouette comes.
+    this.presence?.follow(clip.sheet, frame, x + trembling, y, flip, staged.silhouette <= 0);
+    this.presence?.update(frames);
     this.showOutline(staged, clip.sheet, frame, x + trembling, y, flip);
     this.showContour(staged.silhouette, clip.sheet, frame, x + trembling, y, flip);
     const gliding = isGliding(fighter, template);
