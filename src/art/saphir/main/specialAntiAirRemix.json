@@ -1,0 +1,53 @@
+{
+  "frames": {
+    "0": {
+      "frame": { "x": 142, "y": 164, "w": 76, "h": 141 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 1, "y": 80, "w": 76, "h": 141 },
+      "sourceSize": { "w": 96, "h": 221 }
+    },
+    "1": {
+      "frame": { "x": 156, "y": 0, "w": 78, "h": 162 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 14, "y": 51, "w": 78, "h": 162 },
+      "sourceSize": { "w": 96, "h": 221 }
+    },
+    "2": {
+      "frame": { "x": 0, "y": 0, "w": 79, "h": 164 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 16, "y": 1, "w": 79, "h": 164 },
+      "sourceSize": { "w": 96, "h": 221 }
+    },
+    "3": {
+      "frame": { "x": 79, "y": 0, "w": 77, "h": 163 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 15, "y": 0, "w": 77, "h": 163 },
+      "sourceSize": { "w": 96, "h": 221 }
+    },
+    "4": {
+      "frame": { "x": 234, "y": 0, "w": 85, "h": 156 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 11, "y": 34, "w": 85, "h": 156 },
+      "sourceSize": { "w": 96, "h": 221 }
+    },
+    "5": {
+      "frame": { "x": 218, "y": 164, "w": 77, "h": 139 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 82, "w": 77, "h": 139 },
+      "sourceSize": { "w": 96, "h": 221 }
+    },
+    "6": {
+      "frame": { "x": 70, "y": 164, "w": 72, "h": 145 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 76, "w": 72, "h": 145 },
+      "sourceSize": { "w": 96, "h": 221 }
+    },
+    "7": {
+      "frame": { "x": 0, "y": 164, "w": 70, "h": 146 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 1, "y": 75, "w": 70, "h": 146 },
+      "sourceSize": { "w": 96, "h": 221 }
+    }
+  },
+  "meta": { "image": "specialAntiAirRemix.png", "size": { "w": 319, "h": 310 } }
+}

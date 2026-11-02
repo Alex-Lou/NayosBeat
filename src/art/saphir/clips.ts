@@ -14,8 +14,9 @@ function play(sheet: SaphirSheet, ticks: readonly number[], loopFrom?: number): 
   return loopFrom === undefined ? { sheet, frames, ticks } : { sheet, frames, ticks, loopFrom };
 }
 
-// The specials, which their Remixes « forte » play too (D18): the same strip at the same timing,
-// their effects redrawn in platine under the Remix's name.
+// The specials, whose timing their Remixes « forte » keep (D18). A Remix plays its own strip, the
+// special's poses in the Boost's light (porte 4, lot 2), its effects redrawn in platine under the
+// Remix's name.
 // Syncope: the swing step in on frames 1-3, the fouetté on frame 4, the step back out after.
 const SYNCOPE = play('special', [3, 3, 3, 3, 3, 6, 8, 8]); // active: frame 4
 // Rubato: the weight held back, the lunge, the late whip on frame 4.
@@ -86,9 +87,9 @@ export const SAPHIR_CLIPS: FighterClips<SaphirClip> = {
   special: SYNCOPE,
   specialForward: RUBATO,
   specialAntiAir: CONTRE_UT,
-  specialBoost: { ...SYNCOPE, fx: 'specialBoost' },
-  specialForwardBoost: { ...RUBATO, fx: 'specialForwardBoost' },
-  specialAntiAirBoost: { ...CONTRE_UT, fx: 'specialAntiAirBoost' },
+  specialBoost: { ...SYNCOPE, sheet: 'specialRemix', fx: 'specialBoost' },
+  specialForwardBoost: { ...RUBATO, sheet: 'specialForwardRemix', fx: 'specialForwardBoost' },
+  specialAntiAirBoost: { ...CONTRE_UT, sheet: 'specialAntiAirRemix', fx: 'specialAntiAirBoost' },
   // Coda: the step in (frames 0-3, the flash on tick 8), then a blow a frame: the low kick on
   // frame 4 (tick 10), the fouetté on 5 (tick 16), the Revers tournant on 6 (tick 22), which
   // floors; then back into her guard.

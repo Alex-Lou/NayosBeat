@@ -44,6 +44,10 @@ export const SAPHIR_SHEETS = {
   special: { frames: 8 },
   specialForward: { frames: 9 },
   specialAntiAir: { frames: 8 },
+  // The Remixes' own strips: their special's frames, in the Boost's light (porte 4, lot 2).
+  specialRemix: { frames: 8 },
+  specialForwardRemix: { frames: 9 },
+  specialAntiAirRemix: { frames: 8 },
   // The Hold.
   grab: { frames: 6 },
   hold: { frames: 2 },
