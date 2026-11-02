@@ -126,7 +126,9 @@ export function jointsOf(
 }
 
 /** What is wrong with a pose, hard limits first. */
-export function anatomyIssues(pose: Pose, body: Body): Issue[] {
+export function anatomyIssues(turnedPose: Pose, body: Body): Issue[] {
+  // A turned pose is the same body seen from the other side: measured before the mirror.
+  const pose = turnedPose.turned ? { ...turnedPose, turned: false } : turnedPose;
   const skeleton = solve(pose, body);
   // A spun pose is solved first, then turned: its fists and feet are reached before the turn.
   const flat = pose.spin ? solve({ ...pose, spin: 0 }, body) : skeleton;

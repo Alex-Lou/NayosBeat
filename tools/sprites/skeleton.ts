@@ -148,6 +148,13 @@ export interface Pose {
    * (negative), from -1 to 1: the open front of the jacket slides across the torso.
    */
   readonly twist?: number;
+  /**
+   * Turned round, her back to the opponent: the pose is authored as usual (x toward the
+   * opponent, knees and elbows bending as a body does), then solved and drawn mirrored around
+   * the hip. Spinning kicks and back kicks pass through it; anatomy is measured before the
+   * mirror (anatomy.ts), effects stay where they are placed.
+   */
+  readonly turned?: boolean;
   /** Defaults: elbows down, knees toward the opponent. */
   readonly bends?: Bends;
   /** Defaults to fists. */
@@ -244,6 +251,11 @@ export interface Skeleton {
   readonly head: Point;
   /** Head orientation in degrees (torso lean + head tilt + spin), for face details. */
   readonly headAngle: number;
+  /**
+   * Mirrored around the hip (Pose.turned): the body faces away from the opponent. A head drawn
+   * from a grid mirrors its grid too.
+   */
+  readonly turned: boolean;
   /** Lead shoulder roll (see Pose.shrug): the jacket's shoulder line rises with it. */
   readonly shrug: number;
   /** Chest turn (see Pose.twist). */
@@ -349,8 +361,10 @@ export function solve(pose: Pose, body: Body = BODY): Skeleton {
     twist: pose.twist ?? 0,
     face: pose.face ?? 'focus',
     effects: pose.effects ?? [],
+    turned: false,
   };
-  return pose.spin ? spin(skeleton, pose.spin) : skeleton;
+  const spun = pose.spin ? spin(skeleton, pose.spin) : skeleton;
+  return pose.turned ? mirror(spun) : spun;
 }
 
 /**
@@ -443,6 +457,36 @@ function spin(skeleton: Skeleton, degrees: number): Skeleton {
     head: rotate(skeleton.head),
     near: side(skeleton.near),
     far: side(skeleton.far),
+  };
+}
+
+/** Mirrors every joint around the hip's vertical: the body turned round (Pose.turned). */
+function mirror(skeleton: Skeleton): Skeleton {
+  const x0 = skeleton.hip.x;
+  const flip = (p: Point): Point => ({ x: 2 * x0 - p.x, y: p.y });
+  const direction = (v: Point): Point => ({ x: -v.x, y: v.y });
+  const side = (s: Side): Side => ({
+    shoulder: flip(s.shoulder),
+    elbow: flip(s.elbow),
+    wrist: flip(s.wrist),
+    hip: flip(s.hip),
+    knee: flip(s.knee),
+    ankle: flip(s.ankle),
+    heel: flip(s.heel),
+    toe: flip(s.toe),
+    forearm: direction(s.forearm),
+    hand: s.hand,
+  });
+  return {
+    ...skeleton,
+    up: direction(skeleton.up),
+    front: direction(skeleton.front),
+    neck: flip(skeleton.neck),
+    head: flip(skeleton.head),
+    headAngle: -skeleton.headAngle,
+    near: side(skeleton.near),
+    far: side(skeleton.far),
+    turned: true,
   };
 }
 
