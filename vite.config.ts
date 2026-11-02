@@ -39,6 +39,9 @@ export default defineConfig({
   base: './',
   // Shown on the title screen: tells which version a player (or an installed game) runs.
   define: { __BUILD_DATE__: JSON.stringify(new Date().toISOString()) },
+  // The dev server opened from the phone by the PC's Tailscale name (docs/reprise.md): Vite
+  // refuses unknown host names, and only the tailnet's are added. Dev only: no effect on the build.
+  server: { allowedHosts: ['.ts.net'] },
   // The installed game (PWA) plays offline: see build/service-worker.ts.
   plugins: [contentSecurityPolicy(), serviceWorker()],
   build: {
