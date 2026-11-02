@@ -61,7 +61,7 @@ export function dusk(): Rgba[] {
  * the lamps, the windows and the signs as bright as on a dry night, the street around them
  * glistening; the sky a low lid, the towers half gone in the rain.
  */
-function rain(): Rgba[] {
+export function rain(): Rgba[] {
   const palette = [...PALETTE];
   const lit = new Set([...WARM, ...LAMP, ...LIGHTBOX, ...NEON_ORANGE, ...NEON_VIOLET, ...COOL]);
   grade(palette, { glow: rgba('#2e3450'), shadow: rgba('#1c1d31'), lit });

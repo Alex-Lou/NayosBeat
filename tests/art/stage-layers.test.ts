@@ -5,6 +5,8 @@ import {
   STAGE_SCALE,
   stageArtOf,
   type StageProp,
+  driftAt,
+  stageVariantsOf,
 } from '../../src/art/stage-layers';
 import { ART_SCALE } from '../../src/art/types';
 import { toPx } from '../../src/core/constants';
@@ -101,5 +103,49 @@ describe('the stage props', () => {
       'lasts 0 steps',
     );
     expect(() => stageArtOf(sheet, colors, [{ ...prop, timeline: [] }])).toThrow('empty timeline');
+  });
+
+  it('of one weather are laid only on its atmospheres (the rain at a window)', () => {
+    const rain: StageProp = { ...prop, name: 'downpour', weather: 'rain' };
+    const sheet = { ...files, './props.png': 'props.png' };
+    const wet = Object.fromEntries(
+      Object.entries(sheet).map(([path, url]) => [path.replace('./', './midnight-rain/'), url]),
+    );
+    const variants = stageVariantsOf(
+      'test',
+      { ...sheet, ...wet },
+      { 'midnight-clear': colors, 'midnight-rain': colors },
+      [prop, rain],
+    );
+    const names = variants.map(({ atmosphere, art }) => [
+      atmosphere.weather,
+      (art.props?.props ?? []).map(({ name }) => name),
+    ]);
+    expect(names).toEqual([
+      ['clear', ['queue']],
+      ['rain', ['queue', 'downpour']],
+    ]);
+  });
+
+  it('glide by whole pixels within their loop, standing still before and after (StageDrift)', () => {
+    const drift = { from: 20, to: -80, start: 10, steps: 40 };
+    expect([0, 10, 30, 50, 59].map((step) => driftAt(drift, step, 60))).toEqual([
+      20, 20, -30, -80, -80,
+    ]);
+    for (let step = 0; step < 60; step++) {
+      expect(Number.isInteger(driftAt(drift, step, 60))).toBe(true);
+    }
+    // It loops with its timeline.
+    expect(driftAt(drift, 90, 60)).toBe(driftAt(drift, 30, 60));
+    const sheet = { ...files, './props.png': 'props.png' };
+    const total = prop.timeline.reduce((sum, [, steps]) => sum + steps, 0);
+    expect(() =>
+      stageArtOf(sheet, colors, [
+        { ...prop, drift: { from: 0, to: 5, start: total - 1, steps: 2 } },
+      ]),
+    ).toThrow('within its loop');
+    expect(() =>
+      stageArtOf(sheet, colors, [{ ...prop, drift: { from: 0, to: 0.5, start: 0, steps: 1 } }]),
+    ).toThrow('must be whole');
   });
 });

@@ -77,7 +77,7 @@ vi.mock('../../src/render/anchored-sprite', () => ({
 const CYAN = hitStyleOf('nayo').energy;
 const NAYO_LEDS = signatureOf('nayo')?.presence?.leds;
 
-function presence() {
+function presence(specks?: 'square' | 'diamond') {
   sprites.length = 0;
   const shapes: Fake[] = [];
   const scene = {
@@ -96,6 +96,7 @@ function presence() {
     leds: NAYO_LEDS?.main ?? 0,
     stage: FIGHT_STAGE_COLORS,
     mode: 'full',
+    ...(specks && { specks }),
   });
   const [aura, leds] = sprites;
   const glow = aura?.filters.find((filter) => filter.kind === 'glow')?.glow ?? {};
@@ -212,6 +213,16 @@ describe("Saphir's presence (docs/saphir.md §9)", () => {
       expect(glint).toBeDefined();
       expect(leds?.[colorway]).toBe(toHex(glint as { r: number; g: number; b: number }));
     }
+  });
+
+  it('cuts her specks like the gem: diamonds, a square turned 45°; anyone else squares', () => {
+    expect(signatureOf('saphir')?.presence?.specks).toBe('diamond');
+    const angles = (specks?: 'square' | 'diamond') =>
+      presence(specks).shapes.map(
+        ({ calls }) => calls.find(([name]) => name === 'setAngle')?.[1][0],
+      );
+    expect(angles('diamond').every((angle) => angle === 45)).toBe(true);
+    expect(angles().every((angle) => angle === 0)).toBe(true);
   });
 
   it('draws the glint in both slits of her guard, and none when she is hit', () => {

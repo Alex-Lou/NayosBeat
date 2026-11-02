@@ -635,6 +635,61 @@ export class SignatureFx {
         }
         break;
       }
+      case 'facets': {
+        // Her cut sapphire where the heel lands: a slim crescent, facets of the gem thrown on
+        // ahead in a fan, slowed and falling a little, a few sparkles left behind.
+        this.piece('arc', color, x, y, 9, 0.85)
+          ?.sized(6 * s, 26 * s, 9 * s, 40 * s)
+          .turned(0, mirror);
+        for (let i = 0; i < 5; i++) {
+          const spread = -0.35 + (i - 2) * 0.28;
+          const along = mirror ? Math.PI - spread : spread;
+          // Each from its own point along its way: overlapping at birth, they would add up.
+          const from = (4 + 2 * i) * s;
+          const piece = this.piece(
+            'shard',
+            i % 2 ? accent : color,
+            x + Math.cos(along) * from,
+            y + Math.sin(along) * from,
+            14,
+            0.95,
+          );
+          if (!piece) continue;
+          piece
+            .sized(4.5 * s, 4.5 * s, 1.5 * s, 1.5 * s)
+            .thrown((3 + (i % 3)) * s, along, 0.84)
+            .turned(along)
+            .later(i % 2);
+          piece.gravity = 0.12;
+        }
+        for (let i = 0; i < 3; i++) {
+          const piece = this.piece(
+            'twinkle',
+            color,
+            x - toward * (4 + 5 * i) * s,
+            y + (i - 1) * 6 * s,
+            12,
+            0.85,
+          );
+          if (!piece) continue;
+          piece.sized(2, 2, 9 * s, 9 * s).later(1 + 2 * i);
+          piece.pulse = true;
+        }
+        break;
+      }
+      case 'grooves': {
+        // The grooves of a record round her turn: three thin crescents, one inside the other,
+        // each a little later, bulging the way she faces.
+        for (let i = 0; i < 3; i++) {
+          const from = (14 + 8 * i) * s;
+          const to = (20 + 10 * i) * s;
+          this.piece('arc', i === 1 ? accent : color, x + toward * 3 * i * s, y, 12, 0.8 - 0.15 * i)
+            ?.sized(from * 0.25, from, to * 0.25, to)
+            .later(2 * i)
+            .turned(0, mirror);
+        }
+        break;
+      }
       case 'dash': {
         // Speed lines on the floor, left behind as the dash sets off.
         for (let i = 0; i < 3; i++) {

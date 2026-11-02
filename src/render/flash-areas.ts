@@ -73,6 +73,8 @@ export const SIGNATURE_AREAS: Readonly<Record<SignatureCue, number>> = {
   swing: 95,
   wave: 31,
   waveBoost: 66,
+  facets: 62,
+  grooves: 59,
 };
 
 /**

@@ -55,6 +55,8 @@ const SPECK_ALPHA = 0.85;
 export interface PresenceLook {
   readonly energy: number;
   readonly leds: number;
+  /** Its specks' shape: squares, or diamonds (a square turned 45°, Saphir's cut gem). */
+  readonly specks?: 'square' | 'diamond';
   /** The stage's large colors: the aura's and the particles' tones are set on them. */
   readonly stage: readonly number[];
   readonly mode: RenderMode;
@@ -129,7 +131,16 @@ export class Presence {
     this.aura.hide();
     this.leds.hide();
     this.particles = Array.from({ length: PARTICLES }, (_, i) => ({
-      shape: scene.add.rectangle(0, 0, i % 3 === 0 ? 3 : 2, 2, look.energy).setVisible(false),
+      shape: scene.add
+        .rectangle(
+          0,
+          0,
+          i % 3 === 0 ? 3 : 2,
+          look.specks === 'diamond' ? (i % 3 === 0 ? 3 : 2) : 2,
+          look.energy,
+        )
+        .setAngle(look.specks === 'diamond' ? 45 : 0)
+        .setVisible(false),
       age: -Math.round((i * PARTICLE_LIFE) / PARTICLES),
       // Spread out from the start, by its index: the golden angle around the chest.
       dx: Math.sin(i * 2.399) * CHEST.spread,

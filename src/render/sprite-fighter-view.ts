@@ -197,6 +197,7 @@ export class SpriteFighterView {
         ? new Presence(scene, art, {
             energy: trailColor,
             leds: presence.leds[look.colorway],
+            ...(presence.specks && { specks: presence.specks }),
             stage: look.stage,
             mode,
           })

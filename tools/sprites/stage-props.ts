@@ -209,7 +209,14 @@ export function packProps(
         ...where,
       };
     });
-    return { name: prop.name, layer: prop.layer, frames, timeline: prop.timeline };
+    return {
+      name: prop.name,
+      layer: prop.layer,
+      frames,
+      timeline: prop.timeline,
+      ...(prop.drift && { drift: prop.drift }),
+      ...(prop.weather && { weather: prop.weather }),
+    };
   });
   return {
     props: stageProps,

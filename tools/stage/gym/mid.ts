@@ -12,12 +12,13 @@ import { spell } from '../kit/font.ts';
 import { lightAt, type Light } from '../kit/light.ts';
 import { noise } from '../kit/random.ts';
 import type { Rect } from '../kit/stage.ts';
-import { FIGURE_RAMPS, PAPER, POSTER_RED, RIM_COOL, SIGN_INK } from '../rue/palette.ts';
+import type { Weather } from '../../../src/art/stage-layers.ts';
 import { drawFigure, STANDING, type Figure, type Pose } from '../rue/people.ts';
 import { drawHalo, drawTubes } from '../rue/signs.ts';
 import {
   APRON,
   DUST,
+  FIGURE_RAMPS,
   FLUO,
   IRON,
   LAMP_GREEN,
@@ -25,12 +26,18 @@ import {
   LEATHER,
   LEATHER_BLACK,
   LOCKER,
+  PAPER,
+  POSTER_RED,
+  RIM_COOL,
   RING_STONE,
   ROPE,
   ROPE_PALE,
+  SIGN_INK,
   TAPE,
   VAULT,
+  WATER,
   WOOD,
+  ZINC,
 } from './palette.ts';
 
 /** Row the gym's floor runs back to. */
@@ -75,6 +82,8 @@ export interface Animation {
   /** Frame and the steps (1/60 s) it lasts, in order, looping. */
   readonly timeline: readonly (readonly [number, number])[];
   readonly draw: (canvas: Canvas, frame: number) => void;
+  /** It is there only in this weather (the leak, under the rain). */
+  readonly weather?: Weather;
 }
 
 function inNearRing(x: number, y: number): number {
@@ -562,6 +571,82 @@ function drawDust(canvas: Canvas, x: number, frame: number): void {
   }
 }
 
+// --- The leak, under the rain (docs/art/decor-gym.md §5). -------------------------------------
+
+/** The rain seeps through the vault and drips off the beam into a zinc bucket on the floor. */
+const LEAK = { x: 452, foot: BASE + 10 } as const;
+const BUCKET = { width: 26, height: 22 } as const;
+/** Rows the drop falls through, from the beam's underside to over the bucket's water. */
+const DRIP = { top: BEAM.y + BEAM.height, bottom: LEAK.foot - BUCKET.height - 2 } as const;
+/** A drop every so many steps; while the train shakes the vault, one four times as often. */
+const DRIP_EVERY = 96;
+const SHAKEN_EVERY = 24;
+const DROP_FRAMES = 7;
+const DROP_STEP = 3;
+/** The train shakes the vault this long from PASSING on: the leak drips faster. */
+export const RUNNING = 288;
+
+/**
+ * The leak at `step` of the train's cycle: the drip's frame (0 none, 1 to 7 a drop falling) and the
+ * bucket's (1 still, 2 and 3 the ripples of a drop falling in).
+ */
+export function leakAt(step: number): { drip: number; bucket: number } {
+  const into = step - PASSING;
+  const shaken = into >= 0 && into < RUNNING;
+  const every = shaken ? SHAKEN_EVERY : DRIP_EVERY;
+  const phase = (shaken ? into : step) % every;
+  const falling = DROP_FRAMES * DROP_STEP;
+  const drip = phase < falling ? 1 + Math.floor(phase / DROP_STEP) : 0;
+  // The drop hits the water as its fall ends; its ring spreads a few steps more.
+  const landed = (phase - falling + every) % every;
+  return { drip, bucket: landed < 2 ? 2 : landed < 6 ? 3 : 1 };
+}
+
+/** The drip at `frame` (1 to 7): a drop falling faster and faster, longer as it does. */
+function drawDrip(canvas: Canvas, frame: number): void {
+  const span = DRIP.bottom - DRIP.top;
+  if (frame === 0) return;
+  const t = frame / DROP_FRAMES;
+  const y = Math.round(DRIP.top + span * t * t);
+  // Longer as it falls faster.
+  const length = 2 + Math.round(t * 4);
+  canvas.vline(LEAK.x, y - length, length, at(WATER, 1));
+  canvas.set(LEAK.x, y, at(WATER, 2));
+}
+
+/**
+ * The bucket (frame 1 to 3; none at 0): zinc, its rim lit by the tubes, its handle, its water
+ * catching the light, ringed by what falls in (2, 3); a dark wet patch on the boards around it.
+ */
+function drawBucket(canvas: Canvas, frame: number): void {
+  if (frame === 0) return;
+  const { x, foot } = LEAK;
+  const left = x - BUCKET.width / 2;
+  const top = foot - BUCKET.height;
+  canvas.paint(x - 30, foot - 3, 60, 6, (px, py) => {
+    const u = (px + 0.5 - x) / 30;
+    const v = (py + 0.5 - foot) / 3;
+    return u * u + v * v <= 1 && noise(71, px, py, 3) > 0.3 ? at(WATER, 0) : undefined;
+  });
+  canvas.paint(left, top, BUCKET.width, BUCKET.height, (px, py) => {
+    // Tapering to its foot, its hoops, lit on the tubes' side.
+    const inset = Math.floor(((py - top) / BUCKET.height) * 3);
+    if (px < left + inset || px >= left + BUCKET.width - inset) return undefined;
+    const hoop = py === top + 7 || py === foot - 4 ? 1 : 0;
+    const side = px - left < BUCKET.width / 2 ? 1.4 : 0.6;
+    return tone(ZINC, side + hoop, px, py);
+  });
+  canvas.hline(left - 1, top, BUCKET.width + 2, at(ZINC, 3));
+  canvas.hline(left, top + 1, BUCKET.width, at(WATER, 1));
+  // The handle, down on its side.
+  canvas.line(left - 1, top + 1, left - 4, top + 9, at(ZINC, 2));
+  if (frame === 1) return;
+  // What falls in: a ring spreading on the water, a fleck over it.
+  const spread = frame === 2 ? 3 : 7;
+  canvas.hline(x - spread, top + 1, spread * 2 + 1, at(WATER, 2));
+  canvas.set(x, top - (frame === 2 ? 3 : 1), at(WATER, 2));
+}
+
 /** The animations of the layer, each over its own rectangle. */
 export const MID_ANIMATIONS: readonly Animation[] = [
   {
@@ -684,7 +769,40 @@ export const MID_ANIMATIONS: readonly Animation[] = [
       drawDust(canvas, x, frame);
     },
   })),
+  {
+    name: 'drip',
+    weather: 'rain',
+    rect: { x: LEAK.x - 1, y: DRIP.top, width: 3, height: DRIP.bottom - DRIP.top + 1 },
+    frames: 8,
+    timeline: trainTimeline((step) => leakAt(step).drip),
+    draw: drawDrip,
+  },
+  {
+    name: 'bucket',
+    weather: 'rain',
+    rect: {
+      x: LEAK.x - 31,
+      y: DRIP.bottom - 6,
+      width: 62,
+      height: LEAK.foot + 4 - DRIP.bottom + 6,
+    },
+    frames: 4,
+    timeline: trainTimeline((step) => leakAt(step).bucket),
+    draw: drawBucket,
+  },
 ];
+
+/** A timeline over TRAIN_CYCLE: the frame at each step, runs of the same frame merged. */
+function trainTimeline(frameAt: (step: number) => number): [number, number][] {
+  const timeline: [number, number][] = [];
+  for (let step = 0; step < TRAIN_CYCLE; step++) {
+    const frame = frameAt(step);
+    const last = timeline[timeline.length - 1];
+    if (last && last[0] === frame) last[1] += 1;
+    else timeline.push([frame, 1]);
+  }
+  return timeline;
+}
 
 /**
  * The middle layer, `width` × `height` image pixels; `frameOf` gives each animation's frame
@@ -728,6 +846,8 @@ export function drawMid(
   TUBES.forEach(({ x }, index) => {
     drawDust(canvas, x, frameOf(`dust${index}`));
   });
+  drawDrip(canvas, frameOf('drip'));
+  drawBucket(canvas, frameOf('bucket'));
   canvas.paint(0, FLOOR_END, width, height - FLOOR_END, () => 0);
   return canvas;
 }

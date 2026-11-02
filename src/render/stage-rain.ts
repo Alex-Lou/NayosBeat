@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { STAGE_LAYERS, STAGE_SCALE, type StageVariant } from '../art/stage-layers';
+import { STAGE_MAPS, type StageMap } from '../art/stages';
 import { DEPTH } from './depth';
 import type { LightTier } from './live-lights';
 import { VIEW_SIZE } from './view';
@@ -42,9 +43,10 @@ export const RAIN_SCROLL = 0.75;
 const CURTAIN_KEY = 'rain/curtain';
 const SPLASH_KEY = 'rain/splash';
 
-/** Whether `variant` rains. */
-export function rains(variant: StageVariant): boolean {
-  return variant.atmosphere.weather === 'rain';
+/** Whether the curtain falls over `variant`: it rains, and not under a roof (`sheltered`). */
+export function rains(variant: StageVariant, maps: readonly StageMap[] = STAGE_MAPS): boolean {
+  const sheltered = maps.find(({ name }) => name === variant.stage)?.sheltered ?? false;
+  return variant.atmosphere.weather === 'rain' && !sheltered;
 }
 
 /** A seeded randomness (mulberry32): the same rain on every run and every machine. */

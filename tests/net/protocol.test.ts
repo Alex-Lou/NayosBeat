@@ -8,6 +8,7 @@ import {
   INPUT_LIMIT,
   isPseudo,
   MAX_BATCH,
+  MAX_DELAY,
   type NetMessage,
 } from '../../src/net/protocol';
 
@@ -30,6 +31,10 @@ describe('the online protocol (docs/multijoueur.md §4)', () => {
     },
     { type: 'inputs', first: 3, bits: [0], ack: -1 },
     { type: 'hash', tick: 60, hash: '0a1b2c3d' },
+    { type: 'start', delay: 1 },
+    { type: 'start', delay: MAX_DELAY },
+    { type: 'resume' },
+    { type: 'rematch' },
   ];
 
   it('reads back every message it writes, short enough to be accepted', () => {
@@ -90,6 +95,10 @@ describe('the online protocol (docs/multijoueur.md §4)', () => {
       `{"v":${v},"t":"inputs","k":1,"b":"0","a":0}`,
       `{"v":${v},"t":"hash","k":60,"h":"0A1B2C3D"}`,
       `{"v":${v},"t":"hash","k":60,"h":"0a1b2c3"}`,
+      `{"v":${v},"t":"start","d":0}`,
+      `{"v":${v},"t":"start","d":${MAX_DELAY + 1}}`,
+      `{"v":${v},"t":"start","d":2.5}`,
+      `{"v":${v},"t":"resume","d":1}`,
     ];
     for (const raw of refused) expect(parseMessage(raw), String(raw)).toBeNull();
   });

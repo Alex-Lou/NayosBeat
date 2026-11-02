@@ -95,6 +95,31 @@ export interface StageProp {
   readonly layer: StageLayer;
   readonly frames: readonly (StagePropFrame | null)[];
   readonly timeline: readonly (readonly [frame: number, steps: number])[];
+  /** It glides along its layer (a blimp, a flying car): one image, not hundreds. */
+  readonly drift?: StageDrift;
+  /** It is there only in this weather (the rain at a window): left out of the stage's others. */
+  readonly weather?: Weather;
+}
+
+/**
+ * A prop's glide: during `steps` steps from step `start` of its loop, its frames move from `from`
+ * image pixels off where they are drawn to `to` (negative: leftward), by whole pixels, nothing in
+ * between (D23); before, they stand at `from`, after, at `to`. A glider may thus come in and go out
+ * past the layer's ends, drawn inside it.
+ */
+export interface StageDrift {
+  readonly from: number;
+  readonly to: number;
+  readonly start: number;
+  readonly steps: number;
+}
+
+/** Where `drift` has moved its prop `step` steps into its loop of `total`: whole image pixels. */
+export function driftAt(drift: StageDrift, step: number, total: number): number {
+  const left = ((Math.floor(step) % total) + total) % total;
+  const done = Math.min(Math.max((left - drift.start) / drift.steps, 0), 1);
+  // + 0: never -0, standing still.
+  return Math.round(drift.from + (drift.to - drift.from) * done) + 0;
 }
 
 /** The props of a stage and the sheet their frames are packed in. */
@@ -132,8 +157,9 @@ export function atmosphereOf(name: string): Atmosphere {
 /**
  * The stage `stage` in each atmosphere `colors` names (`npm run stages` writes them all): the base one's
  * images in its folder (`./<layer>.png`), each other's in a folder of its name
- * (`./<moment>-<weather>/<layer>.png`), the same props laid on each. The base first; none while a
- * layer it needs is missing (the grey box), an atmosphere left out while one of its own is.
+ * (`./<moment>-<weather>/<layer>.png`), the same props laid on each (those of one weather only on
+ * its atmospheres). The base first; none while a layer it needs is missing (the grey box), an
+ * atmosphere left out while one of its own is.
  */
 export function stageVariantsOf(
   stage: string,
@@ -151,7 +177,10 @@ export function stageVariantsOf(
         .filter(([path]) => path.startsWith(prefix) && !path.slice(prefix.length).includes('/'))
         .map(([path, url]) => [`./${path.slice(prefix.length)}`, url]),
     );
-    const art = stageArtOf(own, colors[name] ?? [], props);
+    const shown = props.filter(
+      ({ weather }) => weather === undefined || weather === atmosphere.weather,
+    );
+    const art = stageArtOf(own, colors[name] ?? [], shown);
     return art ? [{ stage, atmosphere, art }] : [];
   });
 }
@@ -166,6 +195,15 @@ function checkProp(prop: StageProp): void {
     if (!Number.isInteger(steps) || steps < 1) {
       throw new Error(`Stage prop ${prop.name}: frame ${frame} lasts ${steps} steps (1 at least)`);
     }
+  }
+  const { drift } = prop;
+  if (!drift) return;
+  const total = prop.timeline.reduce((sum, [, steps]) => sum + steps, 0);
+  const whole = [drift.from, drift.to, drift.start, drift.steps].every(Number.isInteger);
+  if (!whole || drift.steps < 1 || drift.start < 0 || drift.start + drift.steps > total) {
+    throw new Error(
+      `Stage prop ${prop.name}: its drift (from step ${drift.start}, ${drift.steps} steps) must be whole and within its loop of ${total} steps`,
+    );
   }
 }
 

@@ -211,6 +211,25 @@ describe('the stage view', () => {
     expect(prop.destroyed).toBe(true);
   });
 
+  it('glides a drifting prop along its layer, whole image pixels a step', () => {
+    const glider: StageProp = { ...WAVE, drift: { from: 0, to: -40, start: 20, steps: 20 } };
+    const { scene, images } = fakeScene();
+    const props = drawStage(
+      scene,
+      variantOf(stageArtOf({ ...FILES, './props.png': 'props.png' }, [0x2a2030], [glider])),
+    );
+    const prop = images[2];
+    if (!prop) throw new Error('a prop');
+    props.update(20);
+    expect([prop.visible, prop.x]).toEqual([true, 50]);
+    props.update(10);
+    // Halfway: 20 image pixels left, 10 world pixels.
+    expect(prop.x).toBe(40);
+    props.update(9);
+    expect(prop.x).toBe(31);
+    props.dispose();
+  });
+
   it("gives the flashes the stages' large colors in every atmosphere, each once: else the grey box's", () => {
     const variants = STAGE_MAPS.flatMap(({ variants }) => variants);
     if (variants.length === 0) {
@@ -233,6 +252,7 @@ describe('the stage view', () => {
       name: 'test',
       title: 'Test',
       description: '',
+      sheltered: false,
       variants: [night, dusk],
     };
     const maps = [street];
@@ -257,6 +277,7 @@ describe('the stage view', () => {
       name,
       title: name,
       description: '',
+      sheltered: false,
       variants,
     });
     const street = map('street', [night('street'), dusk('street')]);

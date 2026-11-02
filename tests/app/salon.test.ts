@@ -143,6 +143,36 @@ describe('the online salon (docs/multijoueur.md §7)', () => {
     });
   });
 
+  it('lets the host start the fight with its delay, and the guest take it', () => {
+    const pick = STAGES[0] ?? { map: '', atmosphere: '' };
+    const plan = { stage: pick, fighters: ['nayo', 'riff'] };
+    const host = play('host', [
+      ...AGREED,
+      { type: 'stage', stage: pick },
+      { type: 'fighter', fighter: 'nayo' },
+      received({ type: 'fighter', fighter: 'riff' }),
+      { type: 'start', delay: 3 },
+    ]);
+    expect(host.salon).toEqual({ phase: 'fight', them: 'Toi', plan, delay: 3 });
+    expect(host.sent.at(-1)).toEqual({ type: 'start', delay: 3 });
+    const atReady = [
+      ...AGREED,
+      received({ type: 'stage', ...pick }),
+      received({ type: 'fighter', fighter: 'nayo' }),
+      { type: 'fighter', fighter: 'riff' } as const,
+    ];
+    const guest = play('guest', [...atReady, received({ type: 'start', delay: 2 })]);
+    expect(guest.salon).toEqual({ phase: 'fight', them: 'Toi', plan, delay: 2 });
+    // The guest starts nothing, and is never told twice.
+    expect(play('guest', [...atReady, { type: 'start', delay: 2 }]).salon.phase).toBe('ready');
+    const twice = play('guest', [
+      ...atReady,
+      received({ type: 'start', delay: 2 }),
+      received({ type: 'start', delay: 2 }),
+    ]);
+    expect(twice.salon.phase).toBe('fight');
+  });
+
   it('stays over once over', () => {
     const over = play('host', [MET[0] as SalonEvent, { type: 'refuse' }, { type: 'accept' }]);
     expect(over.salon).toMatchObject({ phase: 'over', end: 'refused' });

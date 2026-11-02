@@ -4,7 +4,7 @@
  * be to be shown.
  */
 
-import { atmosphereName } from '../art/stage-layers';
+import { atmosphereName, type StageVariant } from '../art/stage-layers';
 import { STAGE_MAPS, type StageMap } from '../art/stages';
 import { ROSTER, type FighterId } from '../data/roster';
 import { stageVariantFor } from '../render/stage-view';
@@ -26,6 +26,8 @@ export interface MultiCatalog {
   readonly title: (pick: StagePick) => string;
   /** A fighter's name. */
   readonly name: (id: FighterId) => string;
+  /** The stage both devices show for `pick`: none, the grey box. */
+  readonly variant: (pick: StagePick) => StageVariant | undefined;
 }
 
 /** No place drawn: the fight in the grey box. */
@@ -51,5 +53,9 @@ export function multiCatalog(maps: readonly StageMap[] = STAGE_MAPS): MultiCatal
     isFighter: (id): id is FighterId => ROSTER.some((entry) => entry.id === id),
     title: ({ map }) => maps.find(({ name }) => name === map)?.title ?? 'la boîte grise',
     name: (id) => ROSTER.find((entry) => entry.id === id)?.template.name ?? id,
+    variant: ({ map, atmosphere }) =>
+      maps
+        .find(({ name }) => name === map)
+        ?.variants.find((variant) => atmosphereName(variant.atmosphere) === atmosphere),
   };
 }
