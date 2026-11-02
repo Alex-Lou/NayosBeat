@@ -648,7 +648,7 @@ describe('the street drawn for each match (docs/art/decor-rue.md §13)', () => {
     return { ...launched, app };
   }
 
-  it('draws one atmosphere at random, kept by « Recommencer », the one « Décor » asks once resumed', () => {
+  it('draws one atmosphere at random, kept by « Recommencer », the one « Ambiance » asks once resumed', () => {
     const [night, dusk] = STAGE_VARIANTS;
     if (!night || !dusk) throw new Error('The street in two atmospheres at least');
     const random = vi.spyOn(Math, 'random').mockReturnValue(0.999);
@@ -661,19 +661,19 @@ describe('the street drawn for each match (docs/art/decor-rue.md §13)', () => {
     app.showPause();
     choose('Recommencer');
     expect(shown()).toBe(STAGE_VARIANTS[STAGE_VARIANTS.length - 1]);
-    // « Décor » cycles at random, then each atmosphere; resumed, the street is drawn anew so.
+    // « Ambiance » cycles at random, then each atmosphere; resumed, the street is drawn anew so.
     app.showPause();
-    expect(screen().items).toContain('Décor : aléatoire');
-    choose('Décor');
-    expect(screen().items[screen().selected]).toBe('Décor : minuit, ciel clair');
+    expect(screen().items).toContain('Ambiance : aléatoire');
+    choose('Ambiance');
+    expect(screen().items[screen().selected]).toBe('Ambiance : minuit, ciel clair');
     const starts = start.mock.calls.length;
     choose('Reprendre');
     expect(fight.resumeMatch).not.toHaveBeenCalled();
     expect(start).toHaveBeenCalledTimes(starts + 1);
     expect(shown()).toBe(night);
     app.showPause();
-    choose('Décor');
-    expect(screen().items[screen().selected]).toBe('Décor : crépuscule, ciel clair');
+    choose('Ambiance');
+    expect(screen().items[screen().selected]).toBe('Ambiance : crépuscule, ciel clair');
     choose('Recommencer');
     expect(shown()).toBe(dusk);
     // Unchanged, the pause resumes the fight as it was.

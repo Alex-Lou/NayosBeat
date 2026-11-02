@@ -1,4 +1,4 @@
-import { stageVariantsOf, type StageArt, type StageVariant } from '../stage-layers';
+import { stageVariantsOf, type StageVariant } from '../stage-layers';
 import { STAGE_COLORS } from './colors';
 import { STAGE_PROPS } from './props';
 
@@ -10,14 +10,12 @@ const IMAGES = import.meta.glob<string>('./**/*.png', {
 });
 
 /**
- * The street in front of L'Entrepôt (docs/art/decor-rue.md), the stage of every fight, in each
- * of its atmospheres (§13), the base one first; none while its layers are missing: the grey box.
+ * The street in front of the Warehouse (docs/art/decor-rue.md), in each of its atmospheres (§13),
+ * the base one first; none while its layers are missing.
  */
 export const STAGE_VARIANTS: readonly StageVariant[] = stageVariantsOf(
+  'rue',
   IMAGES,
   STAGE_COLORS,
   STAGE_PROPS,
 );
-
-/** The street in its base atmosphere (midnight, a clear night); undefined: the grey box. */
-export const STAGE_ART: StageArt | undefined = STAGE_VARIANTS[0]?.art;
