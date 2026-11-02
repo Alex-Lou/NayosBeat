@@ -45,14 +45,16 @@ const ALT_ATLASES = import.meta.glob<string>('./alt/**/*.json', {
 const IDLE_ATLASES = import.meta.glob<Atlas>('./*/idle.json', { eager: true, import: 'default' });
 
 const SHARED = {
-  // Her hat, her face and her raised fists, on the character select screen.
+  // Her mask and her shoulders, on the character select screen.
   portrait: { x: 12, y: 0, size: 58 },
   sheets: SAPHIR_SHEETS,
   clips: SAPHIR_CLIPS,
   cells: SAPHIR_CELLS,
+  // Her strips are lit by the street (tools/sprites/saphir/index.ts, SAPHIR_LIGHTING).
+  ownLight: true,
 };
 
-/** The record dealer: a cream pantsuit and felt hat, a green band and energy (docs/saphir.md §8). */
+/** The masked stage legend: the ivory jacket, the black trousers, her sapphire energy (§8). */
 export const SAPHIR: FighterArt = {
   key: 'saphir',
   urls: urlsOf(MAIN, 'main', SAPHIR_SHEETS),
@@ -62,7 +64,7 @@ export const SAPHIR: FighterArt = {
   ...portraitOf(MAIN, 'main'),
   ...SHARED,
 };
-/** The black dinner suit, the lilac band and energy: player 2 in a mirror match. */
+/** The outfit inverted, a black jacket, her lilac energy: player 2 in a mirror match. */
 export const SAPHIR_ALT: FighterArt = {
   key: 'saphir-alt',
   urls: urlsOf(ALT, 'alt', SAPHIR_SHEETS),

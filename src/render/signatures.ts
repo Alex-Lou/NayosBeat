@@ -50,10 +50,21 @@ export interface MoveEchoSpec {
  * flat on the floor. `rise`: speed streaks climbing the body. `charge`: a ring closing in and
  * sparks drawn up to the body (the run-up). `drop`: the bass hitting the floor, a shock ring and
  * the equalizer's bars rising around it. `burst`: the Boost spent, a platine ring and shards.
- * `dash`: speed lines on the floor behind a dash.
+ * `dash`: speed lines on the floor behind a dash. Saphir's: `facets`, her cut sapphire where the
+ * heel lands (a slim crescent, facets thrown on in a fan, sparkles); `grooves`, the grooves of a
+ * record round her turn (three thin crescents, one inside the other).
  */
 export type CueKind =
-  'throwRing' | 'kick' | 'groundRing' | 'rise' | 'charge' | 'drop' | 'burst' | 'dash';
+  | 'throwRing'
+  | 'kick'
+  | 'groundRing'
+  | 'rise'
+  | 'charge'
+  | 'drop'
+  | 'burst'
+  | 'dash'
+  | 'facets'
+  | 'grooves';
 
 /** An effect a move plays on one of its action frames. */
 export interface Cue {
@@ -99,9 +110,13 @@ export interface Signature {
   readonly discLines?: boolean;
   /**
    * Its presence between its blows (presence.ts): the color of its outfit's LEDs in each
-   * colorway, which shine. None: no presence.
+   * colorway, which shine, and the shape of its specks (square, or Saphir's cut-gem diamonds).
+   * None: no presence.
    */
-  readonly presence?: { readonly leds: Readonly<Record<'main' | 'alt', number>> };
+  readonly presence?: {
+    readonly leds: Readonly<Record<'main' | 'alt', number>>;
+    readonly specks?: 'square' | 'diamond';
+  };
 }
 
 const bold = (
@@ -224,30 +239,54 @@ const NAYO_SIGNATURE: Signature = {
 const HEEL = { height: 41, reach: 40 } as const;
 /** The Rubato's lunge, its foot out low. */
 const LUNGE = { height: 44, reach: 36 } as const;
+/** Her hips as she turns: where the grooves of her turns spin. */
+const TURN = { height: 40, reach: 8 } as const;
+/** The Contre-ut's foot at the top, over her head. */
+const SKY = { height: 96, reach: 18 } as const;
+/** A turning heel at rib height (the Revers tournant's, the Chassé arrière's). */
+const RIBS = { height: 46, reach: 40 } as const;
 
 /**
  * Saphir (docs/saphir.md §9, porte 4): her light lives on her three signature blows, the
  * Syncope, the Chassé and the Contre-ut, in her sapphire; their Remixes, the Coda and the Reprise
- * in platine. Her specials leave afterimages. Between her blows, a glint deep in both slits of
- * her mask: her presence (tools/sprites/saphir/face.ts). No effects of Nayo's (rings, the
- * equalizer, speed arcs): hers come with her own signature. Frames from her data
+ * in platine. Her specials leave afterimages. Her own effects: the facets of her cut sapphire
+ * where a heel lands, the grooves of a record round her turns (porte 4, lot 3); none of Nayo's
+ * (rings, the equalizer, speed arcs) but the Boost's burst. Between her blows, a glint deep in
+ * both slits of her mask, and cut-gem specks: her presence. Frames from her data
  * (src/data/fighters/saphir.ts, saphir-strings.ts, saphir-boost.ts).
  */
 const SAPHIR_SIGNATURE: Signature = {
   moves: {
-    // Syncope: the crescent, the heel down through the hitbox on frames 12 to 14.
+    // Syncope: the crescent turning over her head, the heel down through the hitbox on frames 12
+    // to 14, its facets thrown on.
     special: {
       light: { from: 7, to: 18, tone: 'energy', strength: 0.8, ...HEEL },
       echo: { from: 8, to: 15, every: 2, life: 8, tone: 'energy' },
+      cues: [cue(9, 'grooves', 'energy', TURN), cue(12, 'facets', 'energy', HEEL)],
     },
-    specialBoost: { light: { from: 4, to: 20, tone: 'platine', strength: 1, ...HEEL } },
+    specialBoost: {
+      light: { from: 4, to: 20, tone: 'platine', strength: 1, ...HEEL },
+      cues: [
+        cue(2, 'burst', 'platine', BODY, 0.8),
+        cue(9, 'grooves', 'platine', TURN, 1.2),
+        cue(12, 'facets', 'platine', HEEL, 1.3),
+        cue(12, 'facets', 'energy', HEEL, 0.8),
+      ],
+    },
     // Rubato: the lunge (frames 4 to 16), the kick out on frame 16.
-    specialForward: { echo: { from: 4, to: 16, every: 3, life: 9, tone: 'energy' } },
-    specialForwardBoost: { light: { from: 4, to: 22, tone: 'platine', strength: 1, ...LUNGE } },
+    specialForward: {
+      echo: { from: 4, to: 16, every: 3, life: 9, tone: 'energy' },
+      cues: [cue(16, 'facets', 'energy', LUNGE)],
+    },
+    specialForwardBoost: {
+      light: { from: 4, to: 22, tone: 'platine', strength: 1, ...LUNGE },
+      cues: [cue(1, 'burst', 'platine', BODY, 0.8), cue(16, 'facets', 'platine', LUNGE, 1.25)],
+    },
     // Contre-ut: out on frame 5, the leg to the sky up to frame 10; the light rises with the foot.
     specialAntiAir: {
       light: { from: 2, to: 14, tone: 'energy', strength: 1, height: 30, reach: 14, toHeight: 100 },
       echo: { from: 2, to: 10, every: 2, life: 8, tone: 'energy' },
+      cues: [cue(6, 'facets', 'energy', SKY)],
     },
     specialAntiAirBoost: {
       light: {
@@ -259,12 +298,29 @@ const SAPHIR_SIGNATURE: Signature = {
         reach: 14,
         toHeight: 110,
       },
+      cues: [cue(0, 'burst', 'platine', BODY, 0.8), cue(6, 'facets', 'platine', SKY, 1.3)],
     },
-    // Chassé: the heel out at hip height on frames 10 to 12, her signature normal.
-    standHeavy: { light: { from: 7, to: 15, tone: 'energy', strength: 0.6, ...HEEL } },
+    // Chassé: turned, the heel out at hip height on frames 10 to 12, her signature normal.
+    standHeavy: {
+      light: { from: 7, to: 15, tone: 'energy', strength: 0.6, ...HEEL },
+      cues: [cue(8, 'grooves', 'energy', TURN, 0.8), cue(10, 'facets', 'energy', HEEL, 0.8)],
+    },
+    // Her turning kicks: the Revers tournant (the heel on frame 8), the Chassé arrière (on 9).
+    lightFinisher: {
+      cues: [cue(6, 'grooves', 'energy', TURN, 0.8), cue(8, 'facets', 'energy', RIBS, 0.8)],
+    },
+    chainHeavy: {
+      cues: [cue(7, 'grooves', 'energy', TURN, 0.8), cue(9, 'facets', 'energy', RIBS, 0.8)],
+    },
     // Coda: three blows from frame 10, the last on 22; she turns through them.
     super: {
       light: { from: 0, to: 34, tone: 'platine', strength: 1, height: 30, reach: 30, radius: 180 },
+      cues: [
+        cue(8, 'grooves', 'platine', TURN, 1.2),
+        cue(10, 'facets', 'energy', FOOT),
+        cue(16, 'facets', 'energy', RIBS),
+        cue(22, 'facets', 'platine', RIBS, 1.3),
+      ],
     },
     // Reprise: the swing step.
     boostCancel: { light: { from: 0, to: 8, tone: 'platine', strength: 0.8, ...BODY } },
@@ -272,8 +328,9 @@ const SAPHIR_SIGNATURE: Signature = {
   discs: {},
   heavySwing: false,
   flares: true,
-  // The glint in her mask's slits (tools/sprites/saphir/palette.ts, `maskGlow`).
-  presence: { leds: { main: 0x5c8cff, alt: 0xcbb2ff } },
+  // The glint in her mask's slits (tools/sprites/saphir/palette.ts, `maskGlow`), her specks
+  // cut like the gem.
+  presence: { leds: { main: 0x5c8cff, alt: 0xcbb2ff }, specks: 'diamond' },
 };
 
 const SIGNATURES: Partial<Readonly<Record<FighterId, Signature>>> = {

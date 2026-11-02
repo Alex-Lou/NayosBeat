@@ -485,34 +485,47 @@ describe('what the front effects light (docs/flashs.md §4)', () => {
   });
 });
 
-describe("what Nayo's signature effects light (docs/flashs.md §4, docs/art/nayo-vfx.md)", () => {
+describe('what the signature effects light (docs/flashs.md §4, docs/art/nayo-vfx.md)', () => {
   /** Every cue the signatures play, and the heavy swing and the waves they play themselves. */
   const CUES = Object.keys(SIGNATURE_AREAS) as SignatureCue[];
+  /** The fighters with a signature: Nayo's, and Saphir's (porte 4). */
+  const SIGNED = ['nayo', 'saphir'] as const;
   /** The sizes each cue plays at in the signatures (the swing's are read in the hitboxes). */
   function sizesOf(kind: SignatureCue): number[] {
     const sizes = new Set<number>([1]);
-    for (const signature of [signatureOf('nayo')]) {
-      for (const move of Object.values(signature?.moves ?? {})) {
+    for (const fighter of SIGNED) {
+      for (const move of Object.values(signatureOf(fighter)?.moves ?? {})) {
         for (const cue of move.cues ?? []) if (cue.kind === kind) sizes.add(cue.size);
       }
     }
     if (kind === 'swing') for (const size of [0.7, 1.4]) sizes.add(size);
     return [...sizes];
   }
+  /** Whose energies a cue is measured in: the fighters who play it (Nayo's swing and waves). */
+  function playersOf(kind: SignatureCue): readonly (typeof SIGNED)[number][] {
+    const players = SIGNED.filter((fighter) =>
+      Object.values(signatureOf(fighter)?.moves ?? {}).some((move) =>
+        (move.cues ?? []).some((cue) => cue.kind === kind),
+      ),
+    );
+    return players.length > 0 ? players : ['nayo'];
+  }
 
   it('never lights more than its table says, in either tone of either colorway, at every size', () => {
     const meter = new SignatureMeter();
     for (const kind of CUES) {
       let brightest = 0;
-      for (const colorway of ['main', 'alt'] as const) {
-        const energy = hitStyleOf('nayo', colorway).energy;
+      for (const [fighter, colorway] of playersOf(kind).flatMap((fighter) =>
+        (['main', 'alt'] as const).map((colorway) => [fighter, colorway] as const),
+      )) {
+        const energy = hitStyleOf(fighter, colorway).energy;
         for (const color of [energy, PLATINE]) {
           for (const size of sizesOf(kind)) {
             const measured = meter.peak(kind, color, energy, size, true);
             const allowed = SIGNATURE_AREAS[kind] * size ** 2;
             expect(
               measured,
-              `${kind} ${colorway} ${color.toString(16)} ×${size}`,
+              `${kind} ${fighter} ${colorway} ${color.toString(16)} ×${size} (${(measured / size ** 2).toFixed(1)} at ×1)`,
             ).toBeLessThanOrEqual(allowed);
             brightest = Math.max(brightest, measured / size ** 2);
           }
@@ -526,8 +539,10 @@ describe("what Nayo's signature effects light (docs/flashs.md §4, docs/art/nayo
   it('lights nothing muted, nor calm: what the budget refuses still shows, quiet', () => {
     const meter = new SignatureMeter();
     for (const kind of CUES) {
-      for (const colorway of ['main', 'alt'] as const) {
-        const energy = hitStyleOf('nayo', colorway).energy;
+      for (const [fighter, colorway] of playersOf(kind).flatMap((fighter) =>
+        (['main', 'alt'] as const).map((colorway) => [fighter, colorway] as const),
+      )) {
+        const energy = hitStyleOf(fighter, colorway).energy;
         for (const color of [energy, PLATINE]) {
           const size = Math.max(...sizesOf(kind));
           expect(meter.peak(kind, color, energy, size, false), `${kind} ${colorway}`).toBe(0);
