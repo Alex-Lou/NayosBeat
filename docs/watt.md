@@ -452,7 +452,7 @@ Passation §4.2, perso-3 §7.2 :
 
 ## 14. Décision proposée pour le journal
 
-D37 (à confirmer : D36 est proposé par la session Saphir pour ses choix ; le numéro se vérifie juste avant la fusion) : le 4e combattant de Sound Clash est **Watt**, un lutteur sans armure, tiré du colosse de Zen-Tazzer, avec une tête d'ampoule voulue par le propriétaire.
+D37, inscrit au journal (`docs/combat-v2.md` §0.2) : le 4e combattant de Sound Clash est **Watt**, un lutteur sans armure, tiré du colosse de Zen-Tazzer, avec une tête d'ampoule voulue par le propriétaire.
 - **Ce qu'il est** : en données seules ; la prise la plus longue (53 px), le plus de vie (1 150) et les lancers les plus lourds du casting ; un seul reversal (sa super, Plein feu).
 - **Son ampoule** : elle montre sa jauge, sans jamais trahir un coup.
 - **Origine** : porte 0 de la passation (`docs/art/passation-personnages.md`), concept A, choix du propriétaire.

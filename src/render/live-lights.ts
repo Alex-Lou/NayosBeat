@@ -242,6 +242,8 @@ export const FIGHTER_LIGHT_AREAS: Readonly<Record<string, number>> = {
   'nayo/alt': 1130,
   'riff/main': 525,
   'riff/alt': 715,
+  'saphir/main': 480,
+  'saphir/alt': 850,
   'watt/main': 145,
   'watt/alt': 720,
 };

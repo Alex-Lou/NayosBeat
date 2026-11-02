@@ -13,6 +13,8 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { NAYO_CELLS } from '../../src/art/nayo/cells.ts';
 import { RIFF_CELLS } from '../../src/art/riff/cells.ts';
+import { SAPHIR_CELLS } from '../../src/art/saphir/cells.ts';
+import { WATT_CELLS } from '../../src/art/watt/cells.ts';
 import type { Atlas, Cell } from '../../src/art/types.ts';
 import { templateOf, type FighterId } from '../../src/data/roster.ts';
 import { TRAINING_STAGE } from '../../src/data/stages.ts';
@@ -20,12 +22,12 @@ import { GREYBOX_COLORS, GROUND_Y } from '../../src/render/greybox-stage.ts';
 import { toPx } from '../../src/core/constants.ts';
 import { fileUrl, option, type Film, type FilmTick } from './film.ts';
 
-/** The cells of the fighters that have art: one in grey boxes (Watt, docs/watt.md) has none. */
-const CELLS: Readonly<Record<Extract<FighterId, 'nayo' | 'riff'>, Readonly<Record<string, Cell>>>> =
-  {
-    nayo: NAYO_CELLS,
-    riff: RIFF_CELLS,
-  };
+const CELLS: Readonly<Record<FighterId, Readonly<Record<string, Cell>>>> = {
+  nayo: NAYO_CELLS,
+  riff: RIFF_CELLS,
+  saphir: SAPHIR_CELLS,
+  watt: WATT_CELLS,
+};
 
 /** Everything the page plays from. */
 interface PageData {
@@ -131,7 +133,7 @@ export async function comparePage(before: Film, after: Film, note = ''): Promise
     films,
     names: [templateOf(first).name, templateOf(second).name],
     ...(await imagesOf(films)),
-    cells: { nayo: CELLS.nayo, riff: CELLS.riff },
+    cells: CELLS,
     groundY: GROUND_Y,
     stageWidth: toPx(TRAINING_STAGE.width),
     colors: [css(GREYBOX_COLORS[0] ?? 0), css(GREYBOX_COLORS[1] ?? 0)],

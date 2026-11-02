@@ -1,11 +1,20 @@
 import { readdir, readFile } from 'node:fs/promises';
 import { NAYO_CELLS } from '../../src/art/nayo/cells';
 import { RIFF_CELLS } from '../../src/art/riff/cells';
+import { SAPHIR_CELLS } from '../../src/art/saphir/cells';
+import { WATT_CELLS } from '../../src/art/watt/cells';
 import { ART_SCALE, type Atlas, type Cell } from '../../src/art/types';
 import { cellReader } from '../../tools/sprites/atlas';
 import { decodeIndexedPng, type IndexedImage } from '../../tools/sprites/png';
 
-export type FighterName = 'nayo' | 'riff' | 'watt';
+export type FighterName = 'nayo' | 'riff' | 'saphir' | 'watt';
+
+const CELLS: Readonly<Record<FighterName, Readonly<Record<string, Cell>>>> = {
+  nayo: NAYO_CELLS,
+  riff: RIFF_CELLS,
+  saphir: SAPHIR_CELLS,
+  watt: WATT_CELLS,
+};
 export type ColorwayName = 'main' | 'alt';
 
 /** A strip as `npm run sprites` saves it: its image, its atlas and its cropped cell. */
@@ -21,8 +30,7 @@ export async function savedStrip(
   colorway: ColorwayName,
   strip: string,
 ): Promise<SavedStrip> {
-  const cells: Readonly<Record<string, Cell>> = fighter === 'nayo' ? NAYO_CELLS : RIFF_CELLS;
-  const cell = cells[strip];
+  const cell = CELLS[fighter][strip];
   if (!cell) throw new Error(`${fighter} has no cell ${strip}`);
   const file = new URL(`../../src/art/${fighter}/${colorway}/${strip}`, import.meta.url).href;
   const image = await decodeIndexedPng(await readFile(new URL(`${file}.png`)));

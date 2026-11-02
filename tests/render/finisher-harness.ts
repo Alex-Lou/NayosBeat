@@ -1,6 +1,5 @@
 import type { Comfort } from '../../src/app/comfort';
-import { NAYO as NAYO_ART } from '../../src/art/nayo';
-import { RIFF as RIFF_ART } from '../../src/art/riff';
+import { artOf } from '../../src/art';
 import type { FighterTemplate, MatchConfig } from '../../src/core/config';
 import { px, toPx } from '../../src/core/constants';
 import { FINISHER_DANGER_PERCENT } from '../../src/core/finisher';
@@ -9,6 +8,7 @@ import { createInitialState, type FighterState, type GameState } from '../../src
 import { step } from '../../src/core/step';
 import { NAYO } from '../../src/data/fighters/nayo';
 import { RIFF } from '../../src/data/fighters/riff';
+import { SAPHIR } from '../../src/data/fighters/saphir';
 import type { FighterId } from '../../src/data/roster';
 import { TRAINING_STAGE } from '../../src/data/stages';
 import {
@@ -61,7 +61,10 @@ export interface Route {
   readonly steps: readonly InputBits[];
 }
 
-/** Nayo's « Le Quatre » after L, L, H, H; Riff's « Larsen » after H (§4.3). */
+/**
+ * Nayo's « Le Quatre » after L, L, H, H; Riff's « Larsen » after H (§4.3); Saphir's « Face B »
+ * after L, L, H, H (docs/saphir.md §7).
+ */
 export const LE_QUATRE: Route = {
   name: 'Le Quatre',
   fighters: ['nayo', 'riff'],
@@ -75,6 +78,13 @@ export const LARSEN: Route = {
   templates: [RIFF, NAYO],
   distance: 40,
   steps: [H, B | X],
+};
+export const FACE_B: Route = {
+  name: 'Face B',
+  fighters: ['saphir', 'nayo'],
+  templates: [SAPHIR, NAYO],
+  distance: 40,
+  steps: [L, L, H, H, B | X],
 };
 
 /** One frame on the screen. */
@@ -188,7 +198,11 @@ export function film(route: Route, take: Take = {}): Film {
   const feedback = take.feedback ?? (stand as ReturnType<typeof fakeFeedback>).asFeedback;
   const { scene, made, textures } = fakeStage();
   const styles = [hitStyleOf(route.fighters[0]), hitStyleOf(route.fighters[1])] as const;
-  const arts = route.fighters.map((id) => (id === 'nayo' ? NAYO_ART : RIFF_ART));
+  const arts = route.fighters.map((id) => {
+    const art = artOf(id);
+    if (!art) throw new Error(`${id} has no art`);
+    return art;
+  });
   const director = new FinisherScene(scene, {
     config,
     fighters: route.fighters,

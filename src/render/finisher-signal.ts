@@ -24,7 +24,12 @@ export const NO_SIGNAL: FinisherSignals = ['off', 'off'];
  * The root of each fighter's siren, in Hz (§1.2): Nayo's do, Riff's mi; it slides up to its
  * fifth (sol, si). The sound is written on Nayo's (src/audio/sfx.ts): `sirenPitchOf` moves it.
  */
-const SIREN_ROOTS: Readonly<Record<FighterId, number>> = { nayo: 262, riff: 330, watt: 349 };
+const SIREN_ROOTS: Readonly<Record<FighterId, number>> = {
+  nayo: 262,
+  riff: 330,
+  saphir: 294,
+  watt: 349,
+};
 
 /** What `play` multiplies the siren's tones by for `fighter`: 1 for Nayo's own. */
 export function sirenPitchOf(fighter: FighterId): number {

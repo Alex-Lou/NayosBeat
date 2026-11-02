@@ -20,6 +20,7 @@ import {
 import { step } from '../../src/core/step';
 import { NAYO } from '../../src/data/fighters/nayo';
 import { RIFF } from '../../src/data/fighters/riff';
+import { SAPHIR } from '../../src/data/fighters/saphir';
 import { TRAINING_STAGE } from '../../src/data/stages';
 import { armedStart } from '../core/finisher-helpers';
 
@@ -95,15 +96,16 @@ describe('how the CPU weighs its super (§1.11)', () => {
       { ...riff, action: 'hitstun', comboCount: 1, flags: FLAG_DANGER, stunTotal: 14 },
     ];
   };
-  /** The steps hard draws over 400 seeds, by how often. */
+  /** The steps hard draws over 400 seeds, by how often, for Nayo or `template`. */
   const draws = (
     outlookOf: 'finisher' | 'hold' | 'free',
     move: FighterState['move'] = 'standLight',
+    template: FighterTemplate = NAYO,
   ) => {
     const [me, them] = landed(move);
     const counts = new Map<string, number>();
     for (let seed = 0; seed < 400; seed++) {
-      const { steps } = planFor(me, them, NAYO, 'hard', seed * 7919 + 1, outlookOf);
+      const { steps } = planFor(me, them, template, 'hard', seed * 7919 + 1, outlookOf);
       const key = steps.join(' ');
       counts.set(key, (counts.get(key) ?? 0) + 1);
     }
@@ -121,6 +123,17 @@ describe('how the CPU weighs its super (§1.11)', () => {
     const hold = draws('hold');
     expect([...hold.keys()].filter((steps) => steps.endsWith(String(B | X)))).toEqual([]);
     // No Remix either, three bars kept: they are the Finisher's.
+    expect([...hold.keys()].filter((steps) => steps.includes(String(X)))).toEqual([]);
+  });
+
+  it("weighs Saphir's Coda after her heavy string ×4 too, none on hold", () => {
+    const free = draws('free', 'standLight', SAPHIR).get(SUPER_ROUTE) ?? 0;
+    const finisher = draws('finisher', 'standLight', SAPHIR).get(SUPER_ROUTE) ?? 0;
+    expect(free).toBeGreaterThan(10);
+    // 12 instead of 3, the Remixes and the Reprise kept out: about 3.7 times.
+    expect(finisher / free).toBeGreaterThan(2.5);
+    expect(finisher / free).toBeLessThan(6);
+    const hold = draws('hold', 'standLight', SAPHIR);
     expect([...hold.keys()].filter((steps) => steps.includes(String(X)))).toEqual([]);
   });
 
@@ -346,21 +359,25 @@ describe('hard CPUs in real matches, at fixed seeds (§1.11, test 17)', () => {
     expect(finished / won).toBeLessThanOrEqual(0.35);
   }, 60_000);
 
-  it('land a Finisher with each fighter in 40 mirror matches, and Nayo in 40 against Riff', () => {
-    // Measured: Nayo 6 in his first 40 mirror matches, Riff 7 in hers (2 and 4 before D33).
-    // Against Riff, Nayo lands 3 in the first 40 since D33, none before: the one-in-40 of §1.11
-    // was not met there.
+  it('land a Finisher with each fighter in mirror matches, and Nayo in 40 against Riff', () => {
+    // Measured: Nayo 7 in his first 40 mirror matches, Riff 9 in hers, since the plans hold on
+    // every opponent (2 and 4 before D33). Against Riff, Nayo lands 2 in the
+    // first 40 (3 before, none before D33): the one-in-40 of §1.11 is barely met there. Saphir
+    // lands none in her first 40 mirror matches, 8 in 120, 15 in 200 (7.5 %; Nayo 10 %).
     const nayo = playMatches(40, NAYO);
     expect(count(nayo, (match) => match.finisher === 'Nayo')).toBeGreaterThanOrEqual(1);
     const versus = versusMatches().slice(0, 40);
     expect(count(versus, (match) => match.finisher === 'Nayo')).toBeGreaterThanOrEqual(1);
     const riff = playMatches(40, RIFF);
     expect(count(riff, (match) => match.finisher === 'Riff')).toBeGreaterThanOrEqual(2);
+    const saphir = playMatches(120, SAPHIR);
+    expect(count(saphir, (match) => match.finisher === 'Saphir')).toBeGreaterThanOrEqual(4);
   }, 60_000);
 
   it("leave the matchup Nayo's: Riff wins 6 to 20 % of it (the 40 to 60 % of §1.11 is not met)", () => {
-    // Measured: Riff 20 of 200 (10 %) since D33; 5 (2.5 %) before, 4.5 % before the Finisher's
-    // CPU (§5.11). The rest of the gap is the data, her reach above all (D33): the owner's call.
+    // Measured: Riff 18 of 200 (9 %) since the plans hold on every opponent, 20 (10 %) since D33;
+    // 5 (2.5 %) before, 4.5 % before the Finisher's CPU (§5.11). The rest of the gap is the data,
+    // her reach above all (D33): the owner's call.
     const played = versusMatches();
     const riff = count(played, (match) => match.winner === 'Riff') / played.length;
     expect(riff).toBeGreaterThanOrEqual(0.06);

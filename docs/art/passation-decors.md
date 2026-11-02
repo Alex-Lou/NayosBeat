@@ -11,7 +11,9 @@ Ce fichier est pour l'agent qui reprend les décors (les lieux de combat). Il di
 | Plusieurs lieux, l'écran « Lieu », « Lieu » et « Ambiance » dans la pause | en ligne (#99) |
 | Le Viaduct Gym (`gym`), minuit et crépuscule | en ligne (#99) |
 | Les animations détachées, la boîte commune `tools/stage/kit/`, `npm run stages` | en ligne (#99) |
-| `npm run stages:preview` et ce fichier | PR de passation |
+| `npm run stages:preview` et ce fichier | en ligne (#103) |
+| `people.ts` et `signs.ts` prennent leurs rampes en paramètre (§4, étape 2) | #107 |
+| The Loading Dock (`dock`), minuit et aube, la basse du club ; le moment `dawn` | #107 |
 
 ## 2. Ce que veut le développeur
 
@@ -52,7 +54,7 @@ Il a donné un **accord permanent de mise en ligne** : une PR est fusionnée dè
   - `mid` : 720 × 270, défile à 50 %, transparent là où le fond se voit ;
   - `floor` : 960 × 40, posé à y = 230, défile à 100 %.
 
-  Les images sont deux fois plus fines que le monde (`STAGE_SCALE` = 2). Le même fichier définit aussi les moments (`MOMENTS` : midnight, dusk), les météos (`WEATHERS` : clear, rain, fog), une ambiance = un moment + une météo, et `StageVariant` (un lieu dans une ambiance).
+  Les images sont deux fois plus fines que le monde (`STAGE_SCALE` = 2). Le même fichier définit aussi les moments (`MOMENTS` : midnight, dusk, dawn), les météos (`WEATHERS` : clear, rain, fog), une ambiance = un moment + une météo, et `StageVariant` (un lieu dans une ambiance).
 - `src/art/<lieu>/index.ts` lit ses images (`import.meta.glob`) : la base dans le dossier, chaque autre ambiance dans `src/art/<lieu>/<moment>-<météo>/`.
 - `src/art/stages.ts` est le **registre du jeu** : nom du dossier, titre, description, variantes. Un lieu sans images n'est pas proposé.
 
@@ -87,7 +89,7 @@ Elle gère l'écran « Lieu », `stageChoice`, et les options « Lieu » et « A
 ## 4. Ajouter un lieu, pas à pas
 
 1. **Le design d'abord.** Écris `docs/art/decor-<lieu>.md` sur le modèle de `decor-gym.md` : intention, composition calque par calque, palette, ambiances, ce qui bouge, budgets, suite. Présente-le au développeur (choix multiples) avant de coder si quelque chose est ambigu.
-2. **La palette** (`tools/stage/<lieu>/palette.ts`). Des rampes du plus sombre au plus clair, la case 0 transparente, 256 couleurs au plus. Attention : `gym` empile la palette de la rue pour réutiliser ses silhouettes (`rue/people.ts`) et ses néons (`rue/signs.ts`). Elle est presque pleine (254 couleurs). Pour un nouveau lieu, fais d'abord accepter ses rampes en paramètre à `people.ts` et `signs.ts`, en un commit de refactor sans changement de rendu (les PNG de la rue doivent rester identiques). Ensuite seulement, donne au lieu sa propre palette.
+2. **La palette** (`tools/stage/<lieu>/palette.ts`). Des rampes du plus sombre au plus clair, la case 0 transparente, 256 couleurs au plus. Chaque lieu a sa propre palette : `rue/people.ts` (les silhouettes) et `rue/signs.ts` (les enseignes, les tags) prennent leurs rampes en paramètre (`FigureRamps`, `SignRamps`, `SprayRamps`). Déclare-les dans ta palette, comme `FIGURE_RAMPS`, `SIGN_RAMPS` et `SPRAY_RAMPS` dans `dock/palette.ts`. Seul le gym empile encore la palette de la rue (254 couleurs, presque pleine).
 3. **Les calques** : `far.ts` (opaque partout), `mid.ts` (le fond de la scène à la ligne `BASE`, rien sous la ligne 470), `floor.ts` (un repère toutes les 64 unités du monde, pour lire les distances). Pense en pixels d'image (×2) : `mid` fait 1 440 × 540, le sol des personnages est à la ligne 460, et les silhouettes font 80 à 90 px.
 4. **Les animations** (`MID_ANIMATIONS` et des `CodeProp` sur `far` si besoin). Chaque image est redessinée dans son rectangle. Si une figure bouge devant le vide du calque, l'animation est « détachée » automatiquement. Garde les rectangles serrés et sans chevauchement inutile : la planche coûte de la mémoire vidéo. Ce qui doit bouger ensemble boucle sur le même cycle (comme le train du gym, `TRAIN_CYCLE`).
 5. **Les ambiances** (`atmospheres.ts`). La base est `midnight-clear`, puis les autres sont virées par `grade` et des rampes repeintes (`repaint`).
@@ -112,6 +114,7 @@ Elle gère l'écran « Lieu », `stageChoice`, et les options « Lieu » et « A
 | Le décor ne touche jamais au cœur (D17), rien n'est interpolé (D23) ; les replays dorés ne bougent pas | les replays, `npm run replays:update` |
 | Chaque grande couleur (≥ 1 % de l'écran) a une luminance de 0,078 au plus, dans chaque ambiance | `tests/tools/stage-drawn.test.ts` |
 | Aucune grande couleur n'est plus sombre que le ciel de la boîte grise (`#1b1b2f`) : les flashs sont mesurés dessus | idem, et `tests/render/flash-areas.test.ts` |
+| Aucun canal d'une grande couleur ne dépasse le fond le plus clair des tables de flashs (`#6d4457`, le maximum canal par canal des grandes couleurs de la rue et du gym) | `flash-areas.test.ts`, et le test de contrat du Dock |
 | 3 flashs par seconde au plus : rien ne clignote vite sur une grande surface (le néon du gym tient chaque état 20 tics au moins) | `stage-gym.test.ts`, `docs/flashs.md` |
 | Le cyan et le magenta sont aux combattants : aucune couleur vive du décor à moins de 25° de leur teinte | tests de contrat des lieux |
 | Mémoire vidéo : le lieu le plus lourd sous 9 Mo (calques et planche), textures de 2 048 px au plus | `tests/build/vram-budget.test.ts` |
@@ -124,6 +127,8 @@ Elle gère l'écran « Lieu », `stageChoice`, et les options « Lieu » et « A
 - **Ne lance jamais `npm run sprites` en entier** : il redessine Nayo, dont le design est mené ailleurs. Utilise `npm run stages`.
 - **Ne touche pas aux sprites de Nayo** (`tools/sprites/nayo`, `src/art/nayo`).
 - **Une couleur plus sombre que `#1b1b2f`** décale toutes les tables de flashs (`flash-areas.test.ts` échoue sur « within 10 % »). Remonte la couleur, ne touche pas aux tables.
+- **Une grande couleur qui pousse un canal plus haut que `#6d4457`** fait grossir toutes les mesures des effets : ils sont mesurés sur le fond le plus clair, canal par canal (`brightestBackdrop`). `flash-areas.test.ts` échoue alors sur une table (« expected 557 to be less than or equal to 549 »). Le Dock l'a vécu avec la masse de son verre violet (`#503a76`, trop de bleu) et les gris de son aube (trop de vert). Garde la masse dans l'enveloppe et la lumière en touches de moins de 1 % de l'écran, ou ramène une ambiance sous un plafond (`DAWN_CEILING`, `dock/atmospheres.ts`).
+- **Le halo du Finisher** (`finisher-halo.test.ts`, 0,27 en cyan) est réglé lui aussi sur toutes les grandes couleurs. Un gris au vert de l'enveloppe, avec peu de rouge, le fait baisser (« expected 0.26 to be close to 0.27 »). Le plafond de l'aube du Dock a un vert un peu plus bas pour cette raison. Un lieu de jour (Temple Courtyard) butera là : il faudra peut-être re-mesurer les tables, ce qui est une décision du développeur.
 - **Un premier essai de planche d'animations du gym faisait 1 007 × 1 211.** Les chaînes qui bougeaient, la poussière sur toute la largeur et le train en 30 images ont été allégés. Mesure la planche après chaque animation ajoutée.
 - **Deux animations détachées qui se chevauchent** : le test de contrat compose les autres animations à leur première image ; garde ce modèle.
 - **Dessiner un lieu prend environ 10 s** : les tests qui le dessinent ont un délai de 60 s.
@@ -142,13 +147,13 @@ Elle gère l'écran « Lieu », `stageChoice`, et les options « Lieu » et « A
 2. **La pluie** : un rideau de gouttes (une animation détachée ou une couche d'effet du rendu), le sol mouillé et ses reflets (des rampes repeintes), la verrière du gym qui ruisselle. À chiffrer en mémoire vidéo d'abord.
 3. **Les dégâts cumulés sur le match** : fissures du sol aux chutes lourdes et aux KO, mur fissuré quand un combattant y est envoyé fort ; cordes du ring et sac crevé au gym. Ils sont déclenchés par des événements du rendu (jamais par le cœur), avec un plafond, et le décor repart à neuf au match suivant. À concevoir : une architecture d'« états de dégâts » par lieu (des images par cran). Présente-la au développeur avant de coder.
 4. **La brume** : elle avale le fond, pose des halos autour des lampes, jamais devant les combattants.
-5. **L'aube**, nouveau moment (`MOMENTS`), demandée pour le gym (« le matin froid »).
+5. **L'aube** : le moment `dawn` existe depuis le Loading Dock. Il reste à la peindre pour le gym (« le matin froid »).
 
 ### 7.2 Les huit lieux restants
 
 Déjà proposés au développeur et acceptés (« prends les 10 ») :
 
-1. **The Loading Dock** (le lieu de Riff) : la cour arrière industrielle, la porte de fer cadenassée, des tags, des palettes ; rouille et magenta, en restant loin de son magenta à elle. Vigiles qui fument, chat sur les poubelles, grille du monte-charge. Pluie battante, aube grise. C'est le prochain recommandé.
+1. **The Loading Dock** (le lieu de Riff) : fait (`docs/art/decor-dock.md`), en minuit et en aube grise, avec la basse du club pour moment fort. Il lui reste la pluie battante, qui viendra avec la tranche pluie.
 2. **Rooftop Rain** (Néon Underground) : des toits, des enseignes géantes vues de dos (en chinois et en japonais, donc à l'envers), des réservoirs et des antennes ; un dirigeable, des drones. Il teste la pluie à fond.
 3. **Temple Courtyard** (Archipel des Légendes) : lanternes de pierre, grand arbre, torii, mousse. Le premier décor de jour : il prouve que les palettes tiennent hors de la nuit. Pétales, carillons, renards ; aube, crépuscule doré, neige, pluie.
 4. **L'Entrepôt, intérieur** (le club) : mur d'enceintes, cabine du DJ, fumée basse, foule en contre-jour sur le tempo. Le stroboscope est interdit par la règle des 3 flashs.
@@ -162,7 +167,7 @@ L'ordre recommandé : Loading Dock, Rooftop Rain (avec la tranche pluie), Temple
 
 ### 7.3 Les dettes connues
 
-- **La palette du gym est presque pleine**, et `people.ts` et `signs.ts` sont liés à la palette de la rue (§4, étape 2).
+- **La palette du gym est presque pleine** : elle empile encore celle de la rue. `people.ts` et `signs.ts` n'y sont plus liés (§4, étape 2).
 - **L'écran « Lieu » est en grille de 4 colonnes** : à vérifier à 11 lieux sur téléphone en paysage.
 - **Le métro du gym passe toutes les 40 s** au lieu de 4 minutes (choix assumé, documenté).
 - **La rue s'appelle « Warehouse Street »** dans l'écran « Lieu » : le nom reste à valider par le développeur.

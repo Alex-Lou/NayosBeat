@@ -10,16 +10,18 @@ import type { GameState } from '../../src/core/state';
 import { step } from '../../src/core/step';
 import { NAYO } from '../../src/data/fighters/nayo';
 import { RIFF } from '../../src/data/fighters/riff';
+import { ROSTER } from '../../src/data/roster';
 import { TRAINING_STAGE } from '../../src/data/stages';
 import { startsMove } from '../core/combo-helpers';
 import { armedStart } from '../core/finisher-helpers';
 import { facingOff } from '../core/helpers';
 
 /**
- * Every CPU plan (docs/combos-v3.md §6.4) played on the engine, at every distance its opening
- * lands from and its `when` allows: player 0 lands the plan's `after` move, then plays the plan
- * the way the CPU does (`cpuStep`, the plan forced), and each step's move must come out and
- * connect. A plan that would drop at some distance needs a `maxDistancePx`. A plan of the
+ * Every CPU plan (docs/combos-v3.md §6.4) played on the engine, against every fighter of the
+ * roster, mirror included, at every distance its opening lands from and its `when` allows: player
+ * 0 lands the plan's `after` move, then plays the plan the way the CPU does (`cpuStep`, the plan
+ * forced), and each step's move must come out and connect. A plan that would drop at some
+ * distance, on some opponent, needs a `maxDistancePx`. A plan of the
  * Finisher (docs/finisher.md §1.11) is played armed: player 0 at match point, its gauge full,
  * player 1 at 30 % of its health. And a plan that drops all the same is given up after the one
  * blow that missed.
@@ -40,10 +42,16 @@ const OPENINGS: Readonly<Partial<Record<MoveId, InputBits>>> = {
 /** Ticks given to the opening to connect, and to the plan to play out. */
 const OPENING_TICKS = 60;
 const PLAN_TICKS = 400;
-/** Ticks left to the last step's move to connect, once the plan is over. */
-const SETTLE_TICKS = 60;
-/** Farther than any blow reaches. */
-const MAX_DISTANCE = 90;
+/**
+ * Ticks left to the last step's move to connect, once the plan is over: Saphir's Coda lands its
+ * last blow 62 ticks after it comes out (its flash of 20, two freezes of 10, then f22).
+ */
+const SETTLE_TICKS = 90;
+/**
+ * Farther than any opening lands from, its press repeated (Saphir's Pas glissé lands from 88 px):
+ * checked below. 90 was too close for a fighter whose blows reach far (docs/saphir.md §4.2).
+ */
+const MAX_DISTANCE = 120;
 
 /**
  * What the opponent (player 1, on the right, facing left) does for the plan's `when`: it starts
@@ -137,16 +145,31 @@ function playPlan(
   return { came, connected, finished };
 }
 
-const MATCHES: readonly MatchConfig[] = [
-  { stage: TRAINING_STAGE, fighters: [NAYO, RIFF] },
-  { stage: TRAINING_STAGE, fighters: [RIFF, NAYO] },
-];
+/** Every fighter against every fighter, mirror included: a plan holds on every opponent. */
+const MATCHES: readonly MatchConfig[] = ROSTER.flatMap(({ template: attacker }) =>
+  ROSTER.map(({ template: defender }) => ({
+    stage: TRAINING_STAGE,
+    fighters: [attacker, defender] as const,
+  })),
+);
 
 describe('every plan, at every distance it is drawn from', () => {
+  it('covers every fighter, and no opening lands from MAX_DISTANCE', () => {
+    for (const { template } of ROSTER) {
+      expect(PLANS[template.name]?.length ?? 0, template.name).toBeGreaterThan(0);
+    }
+    for (const config of MATCHES) {
+      for (const plan of PLANS[config.fighters[0].name] ?? []) {
+        const where = `${config.fighters[0].name} on ${config.fighters[1].name}, ${plan.after}`;
+        expect(playPlan(plan, config, MAX_DISTANCE, true), where).toBeNull();
+      }
+    }
+  });
+
   for (const config of MATCHES) {
-    const { name } = config.fighters[0];
+    const [{ name }, { name: opponent }] = config.fighters;
     (PLANS[name] ?? []).forEach((plan, index) => {
-      it(`${name}'s plan ${index} after the ${plan.after}: every step comes out and connects`, () => {
+      it(`${name}'s plan ${index} after the ${plan.after}, on ${opponent}: every step comes out and connects`, () => {
         // A plan of the Finisher locks too, and its last blow knocks out (§1.6).
         const finished = plan.when.finisher === true;
         const distances: number[] = [];
@@ -166,8 +189,9 @@ describe('every plan, at every distance it is drawn from', () => {
 describe('the routes that end on the super, played armed (docs/finisher.md §1.11)', () => {
   for (const config of MATCHES) {
     const { name } = config.fighters[0];
+    const opponent = config.fighters[1].name;
     const supers = (PLANS[name] ?? []).filter((plan) => plan.when.minBoost === BOOST_MAX);
-    it(`${name}'s lock and knock out wherever they are drawn from`, () => {
+    it(`${name}'s lock and knock out ${opponent} wherever they are drawn from`, () => {
       expect(supers.length).toBeGreaterThanOrEqual(2);
       for (const plan of supers) {
         let drawn = 0;
@@ -187,9 +211,9 @@ describe('the routes that end on the super, played armed (docs/finisher.md §1.1
 
 describe('a plan that drops', () => {
   it('is given up after the blow that missed: the Quatre temps from 50 px', () => {
-    const [config] = MATCHES;
+    const config: MatchConfig = { stage: TRAINING_STAGE, fighters: [NAYO, RIFF] };
     const quatreTemps = PLANS['Nayo']?.find((plan) => plan.steps.length === 8);
-    if (!config || !quatreTemps) throw new Error('No Quatre temps');
+    if (!quatreTemps) throw new Error('No Quatre temps');
     // The Cross comes out and lands; the Remontant chassé comes out and misses: nothing more.
     expect(playPlan(quatreTemps, config, 50, true)).toEqual({
       came: 2,

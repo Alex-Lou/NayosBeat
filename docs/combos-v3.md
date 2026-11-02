@@ -554,6 +554,7 @@ Avec la couche 5, `ProjectileState` reçoit `returning: boolean`. Tous ces champ
 | Sans la limite | 12 | **13** |
 
   La limite coupe donc exactement le 13e coup de Riff.
+- **Saphir** (PR F, `tests/core/beam-search.ts`, sur Riff, la plus légère du casting) : 11 coups au plus sans jauge, 12 avec 1 barre, 3 barres ou la jauge remplie. Dégâts maximaux trouvés : 277 sans jauge (30,8 % de la vie de Riff, `L, ↓L, →L, L, ←H, L, L, →H, L, ←H, ↓S`, le Rebond du Plongé), 336 avec 1 barre (37,3 %), 348 avec 3 barres (38,7 %), 372 avec la jauge remplie (41,3 %) : sous les 45 et 49 % des tests. Le fuzz (4 configurations, 2 graines, milieu et coin) ne dépasse ni la limite ni les 120 tics de garde d'affilée.
 - **Dégâts maximaux trouvés** : Nayo 313 sans jauge et 374 avec 3 barres (route E4) ; Riff 249 sans jauge et 351 avec 3 barres.
 - **Fuzz** à graine (4 graines × 200 000 tics × touché ou garde × milieu ou coin, jauge remise à 3 barres à chaque tic) : 7 coups au plus, 61 tics de garde d'affilée au plus.
 
@@ -1024,6 +1025,12 @@ Chaque couche ajoute des champs d'état hachés : `phrase`, `phraseTwice` et `fl
   - avec 1 barre : le Rewind (difficile) ou le Pied fendu platine ;
   - avec 3 barres : finir à ←BOOST si la vie adverse ≤ les dégâts de la route, et la Montée platine au réveil (difficile, 1 fois sur 4).
 - **Plans de Riff** : symétriques, avec ses cordes, le Pogo et le Slam.
+- **Plans de Saphir** (PR F) : ses routes de `docs/saphir.md` §5, courtes, qui finissent souvent debout et loin.
+  - après la Pointe : L, L, L et L, H → S (facile) ; ses cordes vers le Chassé ou le Plongé, puis la Syncope ; la corde lourde vers la Syncope ou le Rubato ; le Plongé ou la Fauche en garde (mélange 50/50) ; la Chandelle glissée et L, L, L en l'air (difficile) ;
+  - après le Chassé : la Syncope de sa pointe, le Chassé arrière d'abord de plus près, la Syncope qui ressort en garde ;
+  - après la Chandelle : le Contre-ut, ou L, L, L en l'air ;
+  - avec la jauge : la Syncope forte ou le Rubato forte au bout de la corde lourde, la Reprise, la Coda (après la corde lourde ou directement après le Chassé, jusqu'à 64 px).
+- **Chaque plan est joué sur le moteur contre chaque combattant, miroir compris** (`tests/ai/plan-routes.test.ts`), à chaque distance où il est tiré : sa borne `maxDistancePx` est la plus courte des trois. Il en a coûté 1 à 3 px à dix plans de Nayo et deux de Riff, qui lâchaient contre Saphir ou en miroir.
 - **Niveaux.**
   - Facile : D1 et D2 seulement, aucune dépense.
   - Normal : cordes et Remix.

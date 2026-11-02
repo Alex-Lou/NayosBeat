@@ -40,13 +40,15 @@ import { cellPixels, savedStrip, type ColorwayName, type FighterName } from './f
  */
 
 const STAGE = FIGHT_STAGE_COLORS;
-/** Every color a light may take: both colorways' energies of both fighters, and the platine. */
+/** Every color a light may take: both colorways' energies of every fighter, and the platine. */
 const COLORS = [
   ...new Set([
     hitStyleOf('nayo').energy,
     hitStyleOf('nayo', 'alt').energy,
     hitStyleOf('riff').energy,
     hitStyleOf('riff', 'alt').energy,
+    hitStyleOf('saphir').energy,
+    hitStyleOf('saphir', 'alt').energy,
     PLATINE,
   ]),
 ];
@@ -225,6 +227,8 @@ describe('the live lights on the fighters (docs/flashs.md §5)', () => {
       ['nayo', 'alt'],
       ['riff', 'main'],
       ['riff', 'alt'],
+      ['saphir', 'main'],
+      ['saphir', 'alt'],
       ['watt', 'main'],
       ['watt', 'alt'],
     ] as const satisfies readonly (readonly [FighterName, ColorwayName])[]) {
