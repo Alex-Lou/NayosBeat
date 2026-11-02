@@ -2,6 +2,7 @@ import type { MatchConfig } from '../core/config';
 import { toPx } from '../core/constants';
 import { moveOf } from '../core/moves';
 import type { GameState } from '../core/state';
+import { LIGHT_SHAPE, type LightSource } from './live-lights';
 import { addedDelta, brightestBackdrop } from './luminance';
 import { toneColor, type MoveLight, type Signature, type Tone } from './signatures';
 
@@ -12,7 +13,10 @@ import { toneColor, type MoveLight, type Signature, type Tone } from './signatur
  * them, the glow on the opponent near them.
  */
 
-/** A source of light, in world px: `height` over the floor; `by`, whose move lights it. */
+/**
+ * A source of light, in world px: `height` over the floor; `by`, whose move lights it; `source`,
+ * what lights; `radius`, how far its live light reaches (live-lights.ts).
+ */
 export interface Light {
   x: number;
   height: number;
@@ -20,6 +24,8 @@ export interface Light {
   /** 0 to 1. */
   strength: number;
   by: 0 | 1;
+  source: LightSource;
+  radius: number;
 }
 
 /** At most this many lights at once: a move's and a disc's per fighter, and the flares. */
@@ -39,6 +45,8 @@ export function lightPool(): Light[] {
     color: 0,
     strength: 0,
     by: 0 as const,
+    source: 'move',
+    radius: 0,
   }));
 }
 
@@ -73,7 +81,15 @@ export function collectLights(
   out: Light[],
 ): number {
   let count = 0;
-  const push = (by: 0 | 1, x: number, height: number, color: number, strength: number): void => {
+  const push = (
+    by: 0 | 1,
+    x: number,
+    height: number,
+    color: number,
+    strength: number,
+    source: LightSource,
+    radius: number,
+  ): void => {
     const light = out[count];
     if (!light || strength <= 0) return;
     light.by = by;
@@ -81,6 +97,8 @@ export function collectLights(
     light.height = height;
     light.color = color;
     light.strength = strength;
+    light.source = source;
+    light.radius = radius;
     count++;
   };
   for (const by of [0, 1] as const) {
@@ -92,7 +110,9 @@ export function collectLights(
       const frame = fighter.actionFrame;
       const x = toPx(fighter.x) + fighter.facing * spec.reach;
       const height = toPx(fighter.y) + moveLightHeight(spec, frame);
-      push(by, x, height, toneColor(spec.tone, energies[by]), moveLightStrength(spec, frame));
+      const color = toneColor(spec.tone, energies[by]);
+      const radius = spec.radius ?? LIGHT_SHAPE.move.radius;
+      push(by, x, height, color, moveLightStrength(spec, frame), 'move', radius);
     }
   }
   for (const projectile of state.projectiles) {
@@ -101,7 +121,16 @@ export function collectLights(
     const box = moveOf(config.fighters[projectile.owner], projectile.move).projectile?.hitbox;
     const height = box ? toPx(box.y + box.height / 2) : 0;
     const color = toneColor(tone, energies[projectile.owner]);
-    push(projectile.owner, toPx(projectile.x), height, color, DISC_STRENGTH[tone]);
+    const strength = DISC_STRENGTH[tone];
+    push(
+      projectile.owner,
+      toPx(projectile.x),
+      height,
+      color,
+      strength,
+      'disc',
+      LIGHT_SHAPE.disc.radius,
+    );
   }
   return count;
 }

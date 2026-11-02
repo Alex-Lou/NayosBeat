@@ -77,6 +77,22 @@ function stageKey(variant: StageVariant, layer: StageLayer): string {
   return `${prefixOf(variant)}${layer}`;
 }
 
+/**
+ * The stage's images among a scene's `objects` (what drawStage added): its layers and its props,
+ * which the moves' live lights glow over and a super dims (light-show.ts).
+ */
+export function stageImagesOf(objects: readonly Phaser.GameObjects.GameObject[]): {
+  readonly layers: Phaser.GameObjects.Image[];
+  readonly props: Phaser.GameObjects.Image[];
+} {
+  const all = objects.filter(
+    (object): object is Phaser.GameObjects.Image =>
+      'texture' in object && (object as Phaser.GameObjects.Image).texture.key.startsWith('stage/'),
+  );
+  const isProps = ({ texture }: Phaser.GameObjects.Image) => texture.key.endsWith('/props');
+  return { layers: all.filter((image) => !isProps(image)), props: all.filter(isProps) };
+}
+
 /** Its props' sheet in the texture cache: their frames are added to it by name, once. */
 export function propsKeyOf(variant: StageVariant): string {
   return `${prefixOf(variant)}props`;

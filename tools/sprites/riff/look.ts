@@ -20,7 +20,7 @@ import { add, scale, sub, type Side, type Skeleton } from '../skeleton.ts';
 import { drawSmear, type Ink } from '../vfx.ts';
 import { RIFF_BODY } from './body.ts';
 import { stampHead } from './head.ts';
-import { EFFECTS, farOf, MATERIAL, matteOf } from './palette.ts';
+import { EFFECTS, farOf, MATERIAL, matteOf, noGloss } from './palette.ts';
 
 export { paletteOf, type Colorway } from './palette.ts';
 
@@ -28,48 +28,49 @@ const S = ART_SCALE;
 const M = MATERIAL;
 
 /**
- * Bare skin: no back light of its own (a 1 px rim along a thin forearm comes out as a dotted
- * jaggy); the planes turned to the back light get it by hand (rimRun).
+ * Her materials keep their back light (the rim tone): the street's Lighting (index.ts) puts it
+ * on the silhouette's edges that face the club's sign, up high and behind her, and only there
+ * (docs/art/riff-lumiere.md). Nothing is drawn by hand for it.
  */
-const SKIN = matteOf(M.skin);
-const SKIN_FAR = farOf(SKIN);
+const SKIN = noGloss(M.skin);
+const SKIN_FAR = farLit(SKIN);
 /**
  * The neck, slim: the skin's base on its front, turning into shadow on its back third (drawn by
- * hand in drawNeck), no light tone, no back light.
+ * hand in drawNeck), no light tone, no back light (the collar frames it).
  */
-const NECK: Material = { ...SKIN, light: SKIN.base };
+const NECK: Material = { ...matteOf(SKIN), light: SKIN.base };
 /** The jaw's cast shadow on the neck, and the shadow down its back. */
 const NECK_SHADOW: Material = { ...NECK, base: SKIN.shadow, light: SKIN.shadow };
-/**
- * The leather jacket, its satin sheen in the gloss tone. No automatic back light: a 1 px line
- * along every top and back edge outlines her like a sticker and flattens the forms. The back
- * light is drawn by hand on the planes turned to it only (the top of the shoulders, the outside
- * of the upper arm), in short broken runs of the gloss tone (RIM_RUN), the rim tone itself kept
- * for a pixel or two of accent (RIM_ACCENT).
- */
-const JACKET: Material = {
-  ...matteOf(M.jacket),
-  gloss: M.jacket.gloss ?? M.jacket.light,
-  glossCut: 0.92,
-};
-const JACKET_FAR: Material = { ...farOf(JACKET), base: JACKET.shadow, light: JACKET.base };
+/** The leather jacket: its warm shine in the gloss tone, small and sharp. */
+const JACKET: Material = { ...M.jacket, glossCut: 0.92 };
+const JACKET_FAR: Material = { ...farLit(JACKET), base: JACKET.shadow, light: JACKET.base };
 /** The sleeves: no specular spot (on a sleeve it reads as a stray pixel). */
-const SLEEVE = matteOf(JACKET);
-const RIM_RUN = M.jacket.gloss ?? M.jacket.light;
-const RIM_ACCENT = M.jacket.rim ?? RIM_RUN;
-const TOP: Material = matteOf(M.top);
-/** Denim: no back light either. */
-const JEANS = matteOf(M.jeans);
-const JEANS_FAR = farOf(JEANS);
+const SLEEVE = noGloss(JACKET);
+/** The leather's shine drawn by hand where the lamps catch it (a lapel, the top of a sleeve). */
+const SHEEN = M.jacket.gloss ?? M.jacket.light;
+const TOP: Material = noGloss(M.top);
+const JEANS = noGloss(M.jeans);
+const JEANS_FAR = farLit(JEANS);
 const LEATHER: Material = { ...M.leather, glossCut: 0.9 };
-const LEATHER_FAR = farOf(LEATHER);
+const LEATHER_FAR = farLit(LEATHER);
 const BOOT: Material = { ...M.boot, glossCut: 0.82 };
-const BOOT_FAR = farOf(BOOT);
+const BOOT_FAR = farLit(BOOT);
 const SOLE = matteOf(M.sole);
 const ACCENT = M.magenta;
 /** The pale threads across a rip, and the worn shine of the jeans. */
-const THREAD = M.jeans.rim ?? M.jeans.light;
+const THREAD = M.jeans.gloss ?? M.jeans.light;
 const DENIM_SHINE = M.jeans.gloss ?? M.jeans.light;
+/** The worn fade of the jeans down by the floor, where nothing shines. */
+const DENIM_WORN = M.jeans.light;
+
+/**
+ * A far limb: a step darker (farOf), but it keeps the back light: raised up high (a jump, an
+ * anti-air), its edges face the sign as much as the near ones.
+ */
+function farLit(material: Material): Material {
+  const far = farOf(material);
+  return material.rim === undefined ? far : { ...far, rim: material.rim };
+}
 
 interface Ctx extends Ink {
   readonly s: Skeleton;
@@ -151,24 +152,7 @@ function drawArm(ctx: Ctx, side: Side, which: 'near' | 'far'): void {
   stripeAcross(ctx, cuffStart, cuffEnd, [0.5], shade(cuff), 2.5, `${group}Cuff`);
   sleeveFolds(ctx, side, cuffStart, near ? JACKET.deep : JACKET.outline);
   if (near) {
-    // The back light on the outside of the upper arm and the top of the shoulder only, broken
-    // at the folds; the leather's sheen down the middle of the upper arm.
-    const back = backSide(side.shoulder, side.elbow);
-    rimRun(ctx, side.shoulder, side.elbow, 2.6, 2.3, back, [0.02, 0.3], RIM_RUN, group);
-    rimRun(ctx, side.shoulder, side.elbow, 2.6, 2.3, back, [0.42, 0.66], RIM_RUN, group);
-    rimRun(
-      ctx,
-      cuffStart,
-      cuffEnd,
-      2.6,
-      2.5,
-      backSide(cuffStart, cuffEnd),
-      [0.1, 0.5],
-      RIM_RUN,
-      `${group}Cuff`,
-    );
-    const accent = at(add(side.shoulder, scale(back, 2.2)));
-    canvas.dot(accent.x, accent.y, RIM_ACCENT);
+    // The leather's sheen down the top of the upper arm, turned to the lamps.
     const along = sub(side.elbow, side.shoulder);
     const lit = upSide(side.shoulder, side.elbow);
     const on = (t: number, w: number): Point =>
@@ -470,8 +454,7 @@ function drawLeg(ctx: Ctx, side: Side, which: 'near' | 'far'): void {
 /**
  * The denim's wear: whiskers fanning from the hip and a stack of wrinkles over the boot, the
  * outer seam down the leg (one continuous line a tone down, a single worn pixel of shine where
- * it bends at the knee), and on the near leg a short run of back light on the top of the thigh,
- * under the belt.
+ * it bends at the knee). The back light never reaches the legs (the sign is up high).
  */
 function drawDenim(ctx: Ctx, side: Side, near: boolean, group: string, top: Point): void {
   const jeans = near ? JEANS : JEANS_FAR;
@@ -486,8 +469,10 @@ function drawDenim(ctx: Ctx, side: Side, near: boolean, group: string, top: Poin
   const litShin = litSide(side.knee, side.ankle);
   const low = (t: number, across: number): Point =>
     add(add(side.knee, scale(shin, t)), scale(litShin, across));
-  streak(ctx, low(0.3, 2.6), low(0.38, 0.4), shine, group, 0.4);
-  streak(ctx, low(0.46, 2.6), low(0.52, 0.9), shine, group, 0.4);
+  // Down by the floor the denim no longer shines: a worn fade, a tone lower.
+  const worn: Material = { ...jeans, base: near ? DENIM_WORN : jeans.base };
+  streak(ctx, low(0.3, 2.6), low(0.38, 0.4), worn, group, 0.4);
+  streak(ctx, low(0.46, 2.6), low(0.52, 0.9), worn, group, 0.4);
   // The outer seam: on the near leg down the back third, on the far leg along its front.
   const seamTone = near ? M.jeans.shadow : M.jeans.deep;
   const thighSide = near ? backSide(side.hip, side.knee) : scale(backSide(side.hip, side.knee), -1);
@@ -504,20 +489,7 @@ function drawDenim(ctx: Ctx, side: Side, near: boolean, group: string, top: Poin
   );
   if (near) {
     const bend = ctx.at(kneeSeam);
-    ctx.canvas.dot(bend.x, bend.y, DENIM_SHINE);
-  }
-  if (near) {
-    rimRun(
-      ctx,
-      side.hip,
-      side.knee,
-      4.1,
-      3.0,
-      backSide(side.hip, side.knee),
-      [0.12, 0.3],
-      DENIM_SHINE,
-      group,
-    );
+    ctx.canvas.dot(bend.x, bend.y, DENIM_WORN);
   }
 }
 
@@ -631,9 +603,8 @@ function drawBoot(ctx: Ctx, side: Side, near: boolean, top: Point): void {
   // The shaft follows the shin from the ankle to the top of the boot; the foot (heel counter,
   // a round toe cap) follows the foot. One group: no contour where they meet.
   const shin = sub(side.ankle, side.knee);
-  // The shaft in the leather's base and its cool back light; the warm shine stays on the toe cap.
-  const matte: Material = { ...matteOf(leather), light: leather.base };
-  const shaft: Material = near ? { ...matte, rim: M.boot.rim ?? M.boot.light } : matte;
+  // The shaft in the leather's base; the warm shine stays on the toe cap.
+  const shaft: Material = { ...matteOf(leather), light: leather.base };
   canvas.capsule(at(top), at(side.ankle), 3.3 * S, 3.1 * S, shaft, { group });
   canvas.polygon(
     [
@@ -681,13 +652,15 @@ function drawBoot(ctx: Ctx, side: Side, near: boolean, top: Point): void {
     mark.x - (near ? 3 : 2),
     mark.y - 2,
     {
+      // Down by the floor, in its shade: a paint, it never shines there.
       o: ACCENT.outline,
-      v: near ? (ACCENT.gloss ?? ACCENT.light) : ACCENT.light,
-      u: near ? ACCENT.light : ACCENT.base,
-      t: ACCENT.base,
+      v: near ? ACCENT.light : ACCENT.base,
+      u: near ? ACCENT.base : ACCENT.shadow,
+      t: ACCENT.shadow,
     },
   );
-  // Thick lugged sole, its light welt running the whole length.
+  // Thick lugged sole, its welt a groove running the whole length: in the floor's shade, it
+  // never catches a line of light.
   canvas.polygon([p(-3.7, -0.1), p(8.1, -0.1), p(8.3, 1.7), p(-3.8, 1.7)], SOLE, {
     group: `${group}Sole`,
     flat: true,
@@ -700,7 +673,7 @@ function drawBoot(ctx: Ctx, side: Side, near: boolean, top: Point): void {
   const to = p(8.1, 1.45);
   const n = Math.max(1, Math.ceil(Math.abs(to.x - from.x)));
   for (let k = 0; k <= n; k++) {
-    canvas.dot(from.x + ((to.x - from.x) * k) / n, from.y + ((to.y - from.y) * k) / n, SOLE.light);
+    canvas.dot(from.x + ((to.x - from.x) * k) / n, from.y + ((to.y - from.y) * k) / n, SOLE.shadow);
   }
 }
 
@@ -976,24 +949,7 @@ function drawJacket(ctx: Ctx): void {
     t(12.2, -0.4 + open * 0.3),
   ];
   canvas.polygon(outline, JACKET, { group: 'jacket', axis, tilt: { x: 0.1, y: 0.15 } });
-  // The back light on the top of the shoulder only, in two runs broken at the seam; the hem band
-  // and the zipper along the opening.
-  edgeRun(
-    ctx,
-    torso(21.8 + lift * 0.4, -6.6 + back),
-    torso(23.3 + lift, -5.0),
-    s.front,
-    RIM_RUN,
-    'jacket',
-  );
-  edgeRun(
-    ctx,
-    torso(23.4 + lift, -4.4),
-    torso(23.6 + lift, -3.3),
-    scale(s.up, -1),
-    RIM_RUN,
-    'jacket',
-  );
+  // The hem band and the zipper along the opening.
   canvas.decal(
     [
       t(11.6, -6.3 + back + flare),
@@ -1006,7 +962,7 @@ function drawJacket(ctx: Ctx): void {
   );
   zipper(ctx, [torso(23.3, -2.5), torso(17.5, 0.0 + open * 0.3), torso(12.2, -0.6 + open * 0.3)]);
   // The leather's sheen down the lapel, under the collar: one short sharp run.
-  streak(ctx, torso(21.4, -2.9), torso(19.0, -2.1), { ...JACKET, base: RIM_RUN }, 'jacket', 0.9);
+  streak(ctx, torso(21.4, -2.9), torso(19.0, -2.1), { ...JACKET, base: SHEEN }, 'jacket', 0.9);
   // The slanted zip pocket on the near panel.
   canvas.decal(
     [t(17.0, -4.4 + back), t(15.0, -2.2), t(14.7, -2.5), t(16.7, -4.7 + back)],
@@ -1046,7 +1002,7 @@ function zipper(ctx: Ctx, points: readonly Point[], far = false): void {
 
 /**
  * The popped collar: a tall standing collar behind the neck on the near side, up to the ear
- * lobe, its lining toward the viewer and its top edge catching the back light; the far side
+ * lobe, its lining toward the viewer, its top edge open to the sign's back light; the far side
  * turned out at the front of the neck, up to the corner of the jaw. The slim neck shows between
  * them, framed, with the choker and the chain.
  */
@@ -1074,15 +1030,12 @@ function drawCollar(ctx: Ctx): void {
     'collarBack',
     { flat: true },
   );
-  edgeRun(ctx, torso(27.2, -7.2), torso(28.0, -6.2), s.front, RIM_ACCENT, 'collarBack');
-  edgeRun(ctx, torso(25.2, -7.0), torso(27.2, -7.2), s.front, RIM_RUN, 'collarBack');
   // The far side, turned out at the front of the neck, up to the corner of the jaw.
   canvas.polygon(
     [t(21.4, 3.0), t(23.4, 2.6), t(25.6, 3.0), t(26.2, 4.0), t(24.6, 5.6), t(22.4, 5.8)],
     JACKET_FAR,
     { group: 'collarFar', axis },
   );
-  edgeRun(ctx, torso(25.6, 3.0), torso(26.2, 4.0), scale(s.up, -1), RIM_RUN, 'collarFar');
 }
 
 /**
@@ -1178,47 +1131,6 @@ function streak(
     material,
     group,
     { flat: true },
-  );
-}
-
-/**
- * The back light by hand on a limb: a run along the edge of the segment from `a` to `b` (radii
- * `ra` and `rb`, world), on its `side` (unit, world), between the fractions `span` of its
- * length. It straddles the edge, so only the edge's last pixel inside the shape takes it.
- */
-function rimRun(
-  ctx: Ctx,
-  a: Point,
-  b: Point,
-  ra: number,
-  rb: number,
-  side: Point,
-  span: readonly [number, number],
-  tone: number,
-  group: string,
-): void {
-  const along = sub(b, a);
-  const edge = (t: number, out: number): Point =>
-    ctx.at(add(add(a, scale(along, t)), scale(side, ra + (rb - ra) * t + out)));
-  const [t0, t1] = span;
-  ctx.canvas.decal(
-    [edge(t0, -0.5), edge(t1, -0.5), edge(t1, 0.5), edge(t0, 0.5)],
-    { ...SLEEVE, base: tone },
-    group,
-    { flat: true },
-  );
-}
-
-/** The same along a straight edge of a shape from `a` to `b` (world), `inward` into it. */
-function edgeRun(ctx: Ctx, a: Point, b: Point, inward: Point, tone: number, group: string): void {
-  const p = (q: Point, k: number): Point => ctx.at(add(q, scale(inward, k)));
-  ctx.canvas.decal(
-    [p(a, -0.4), p(b, -0.4), p(b, 0.5), p(a, 0.5)],
-    { ...SLEEVE, base: tone },
-    group,
-    {
-      flat: true,
-    },
   );
 }
 

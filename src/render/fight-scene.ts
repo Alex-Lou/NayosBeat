@@ -60,7 +60,11 @@ import { hitStyleOf, hudColorOf, type HitStyle } from './hit-styles';
 import { requestLandscapeFullscreen } from './fullscreen';
 import { HoldPrompt } from './hold-prompt';
 import { HoldRing } from './hold-ring';
+import { BoldFx } from './bold-fx';
 import { LightRig } from './light-rig';
+import { deviceHints, LightGovernor, tierCeiling } from './light-quality';
+import { LightShow } from './light-show';
+import { fighterLightArea } from './live-lights';
 import type { Cast } from './move-lights';
 import { Hud } from './hud';
 import { MoveCaption, UNDER_CAPTIONS } from './move-caption';
@@ -71,9 +75,9 @@ import { isContextLost, type RenderMode } from './render-mode';
 import { loadArt } from './art-textures';
 import { contourFor, type SilhouetteLook } from './silhouette';
 import { SignatureFx } from './signature-fx';
-import { signatureOf, type Signature } from './signatures';
+import { PLATINE, signatureOf, type Signature } from './signatures';
 import { SpriteFighterView } from './sprite-fighter-view';
-import { drawStage, FIGHT_STAGE_COLORS, loadStage } from './stage-view';
+import { drawStage, FIGHT_STAGE_COLORS, loadStage, stageImagesOf } from './stage-view';
 import type { StagePropsView } from './stage-props';
 import { VIEW_SIZE } from './view';
 
@@ -165,8 +169,12 @@ interface Runtime {
   readonly feedback: FightFeedback;
   /** The moves' lights: their pools on the floor, the shadows and glows they cast (light-rig.ts). */
   readonly lights: LightRig;
+  /** The same lights shown live, on the street and the fighters, and the super's dim. */
+  readonly lightShow: LightShow;
   /** The fighters' signature effects over the pixel art (signature-fx.ts). */
   readonly signatureFx: SignatureFx;
+  /** Their bold shapes: shockwaves, quakes, speed lines (bold-fx.ts). */
+  readonly boldFx: BoldFx;
   /** The Finisher's director: once it locks, it paces the game and frames it (finisher-scene.ts). */
   readonly finisherScene: FinisherScene;
   readonly hud: Hud;
@@ -238,6 +246,11 @@ export class FightScene extends Phaser.Scene {
   /** The last contact's camera push (see pushOf), played while the game is frozen. */
   private push: CameraPush = NO_PUSH;
   private runtime: Runtime | undefined;
+  /**
+   * The live lights' and filters' tier (light-quality.ts), made with the first fight: it outlives
+   * the fights, its ceiling the session's.
+   */
+  private governor: LightGovernor | undefined;
 
   /** Reused every tick to avoid allocating. */
   private readonly tickInputs: [InputBits, InputBits] = [0, 0];
@@ -334,6 +347,14 @@ export class FightScene extends Phaser.Scene {
     );
 
     const energies = [this.styles[0].energy, this.styles[1].energy] as const;
+    this.governor ??= new LightGovernor(
+      tierCeiling(
+        mode,
+        window.location.search,
+        deviceHints('gl' in this.renderer ? this.renderer.gl : undefined),
+      ),
+    );
+    this.governor.restart();
     const runtime: Omit<Runtime, 'finisherScene'> = {
       inputs: new PlayerInputs(window, touch, connectedGamepads()),
       padHaptics: new PadHaptics((player) =>
@@ -391,12 +412,26 @@ export class FightScene extends Phaser.Scene {
         stage: FIGHT_STAGE_COLORS,
         mode,
       }),
+      lightShow: new LightShow(this, {
+        stage: FIGHT_STAGE_COLORS,
+        colors: [...energies, PLATINE],
+        budget,
+        fighterAreas: [this.fighterArea(0), this.fighterArea(1)],
+        groundY: GROUND_Y,
+      }),
       signatureFx: new SignatureFx(this, this.config, {
         groundY: GROUND_Y,
         signatures: this.signatures,
         energies,
         budget,
         mode,
+        stage: FIGHT_STAGE_COLORS,
+      }),
+      boldFx: new BoldFx(this, this.config, {
+        groundY: GROUND_Y,
+        signatures: this.signatures,
+        energies,
+        budget,
         stage: FIGHT_STAGE_COLORS,
       }),
       holdRing: new HoldRing(this, GROUND_Y, [this.styles[0].energy, this.styles[1].energy], mode),
@@ -431,6 +466,12 @@ export class FightScene extends Phaser.Scene {
     this.runtime.boxOverlay?.show(debug || this.sceneData.boxes === true);
     this.runtime.trainingView?.show(this.sceneData.trainingData !== false);
 
+    const { layers, props } = stageImagesOf(this.children.list);
+    this.runtime.lightShow.lightStage(layers, props);
+    this.runtime.lightShow.lightFighters(
+      this.runtime.fighterViews.filter((view) => view instanceof SpriteFighterView),
+    );
+    this.applyTier();
     this.applyComfort(comfort);
     this.runtime.feedback.setAnimOptions(this.viewing.anim);
     this.runtime.fighterViews.forEach((view, player) => {
@@ -461,10 +502,38 @@ export class FightScene extends Phaser.Scene {
     runtime.holdRing.calm = isCalm(comfort);
     runtime.finisherScene.setComfort(comfort);
     runtime.lights.calm = isCalm(comfort);
+    runtime.lightShow.calm = isCalm(comfort);
     runtime.signatureFx.calm = isCalm(comfort);
+    runtime.boldFx.calm = isCalm(comfort);
     runtime.signatureFx.still = comfort.shake === 'off';
     this.framingInput.comfort = comfort;
     for (const view of runtime.fighterViews) view.setComfort(isCalm(comfort), comfort.shake);
+  }
+
+  /** The live lights' tier, as the governor has it now: on, they take the pools' and the dim's place. */
+  private applyTier(): void {
+    const runtime = this.runtime;
+    if (!runtime || !this.governor) return;
+    const tier = this.governor.tier;
+    runtime.lightShow.setTier(tier);
+    for (const view of runtime.fighterViews) {
+      if (view instanceof SpriteFighterView) view.setTier(tier);
+    }
+    const live = runtime.lightShow.on;
+    runtime.lights.live = live;
+    runtime.feedback.liveDim = live;
+  }
+
+  /** Player `player`'s colorway: player 2 wears the second one in a mirror match. */
+  private colorwayOf(player: 0 | 1): 'main' | 'alt' {
+    const [first, second] = this.sceneData.setup.fighters;
+    return player === 1 && first === second ? 'alt' : 'main';
+  }
+
+  /** What fighter `player` lights at ΔL ≥ 0.1 under a live light, in its colorway. */
+  private fighterArea(player: 0 | 1): number {
+    const name = this.sceneData.setup.fighters[player];
+    return this.arts[player] ? fighterLightArea(name, this.colorwayOf(player)) : 0;
   }
 
   /**
@@ -532,6 +601,7 @@ export class FightScene extends Phaser.Scene {
           contour: contourFor(this.sceneData.silhouette, art, style.energy),
           signature: this.signatures[player],
           lit: this.signatures.some((signature) => signature !== null),
+          colorway: this.colorwayOf(player),
         })
       : new FighterView(
           this,
@@ -599,6 +669,8 @@ export class FightScene extends Phaser.Scene {
     runtime.feedback.update(visualFrames, gameFrames);
     // The Finisher's scene lights its own stage: no move lights then.
     runtime.lights.update(this.state, visualFrames, scene.isActive());
+    // A machine that cannot keep up loses the lights and the filters, never the gameplay.
+    if (this.governor?.frame(deltaMs)) this.applyTier();
 
     runtime.debugOverlay?.record(
       {
@@ -614,6 +686,14 @@ export class FightScene extends Phaser.Scene {
     // After the fighters' front effects have asked the budget theirs; none in the Finisher's scene.
     runtime.signatureFx.flush(!scene.isActive());
     runtime.signatureFx.update(visualFrames);
+    // The live lights and the bold shapes ask theirs last: they never take a slot from a blow.
+    runtime.lightShow.update(
+      runtime.lights.sources,
+      runtime.lights.count,
+      visualFrames,
+      scene.isActive(),
+    );
+    runtime.boldFx.update(visualFrames, scene.isActive());
     this.reportMatchEnd();
   }
 
@@ -660,8 +740,12 @@ export class FightScene extends Phaser.Scene {
       }
       runtime.feedback.endTick();
       runtime.feedback.trail(this.state);
-      for (const event of this.tickEvents) runtime.lights.react(event);
+      for (const event of this.tickEvents) {
+        runtime.lights.react(event);
+        runtime.lightShow.react(event);
+      }
       runtime.signatureFx.tick(this.state);
+      runtime.boldFx.tick(this.state);
       // After the blows' own effects: they ask the flash budget first.
       for (const event of this.tickEvents) scene.react(event, this.state, viewLeft);
       if (!staged && scene.isActive()) return i + 1;
@@ -787,6 +871,10 @@ export class FightScene extends Phaser.Scene {
     // The fight's bus whole and open again, for the menus and the next fight.
     this.runtime.finisherScene.dispose();
     this.runtime.holdRing.dispose();
+    this.runtime.lightShow.dispose();
+    for (const view of this.runtime.fighterViews) {
+      if (view instanceof SpriteFighterView) view.dispose();
+    }
     this.runtime.inputs.dispose();
     this.runtime.touchCover?.dispose();
     this.runtime.pauseInput.dispose();

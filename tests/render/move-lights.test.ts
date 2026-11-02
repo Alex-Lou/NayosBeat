@@ -144,6 +144,8 @@ describe('the shadows and the glows the lights cast', () => {
     color: CYAN,
     strength,
     by,
+    source: 'move',
+    radius: 150,
   });
   const cast = (): Cast => ({ lean: 0, glowColor: 0, glow: 0 });
 

@@ -16,6 +16,8 @@ Tout est piloté par l'état du combat et ses événements, sans rien écrire da
 
 ## 2. Les lumières dynamiques
 
+> **Depuis le prototype « Nayo vivant »** ([nayo-vivante.md](nayo-vivante.md)) : quand la qualité adaptative allume les lumières vivantes (paliers `full` et `lean`), les sources ci-dessous éclairent la rue et les combattants avec les lumières de Phaser. Les flaques (§2.2) et la lueur (§2.4) s'effacent alors ; l'ombre (§2.3) s'étire toujours. Au palier `off`, et en Canvas, tout est comme décrit ici.
+
 **Code :** `move-lights.ts` (pur), `light-rig.ts` (le dessin), `sprite-fighter-view.ts` (l'ombre et la lueur).
 
 ### 2.1 Les sources

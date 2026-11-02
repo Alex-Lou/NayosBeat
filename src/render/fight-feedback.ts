@@ -119,6 +119,11 @@ interface PendingBlow {
  * plays the rest through its own hands here (its stamps, its shakes, its landing).
  */
 export class FightFeedback {
+  /**
+   * The live lights dim the stage under a super themselves (light-show.ts): no dark veil then.
+   * Read on each freeze.
+   */
+  liveDim = false;
   private readonly effects: Effects;
   /** The effects' randomness, seeded by the tick (fx-random.ts), shared by every effect. */
   private readonly random = new FxRandom();
@@ -364,7 +369,7 @@ export class FightFeedback {
         // The whole game freezes on the cue (the core's flash): the stage goes dark under both
         // fighters, who stay lit, a platine halo behind the one who lets it go (docs/flashs.md §2),
         // a flash on its own: only with the flashes normal, if the budget lets it.
-        effects.veil(this.superDim);
+        if (!this.liveDim) effects.veil(this.superDim);
         const normal = this.budget.mode === 'normal';
         if (normal && this.budget.request(this.haloArea) === 'lit') {
           const at = this.inWorld(event.x, event.y);
