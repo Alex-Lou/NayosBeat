@@ -20,10 +20,19 @@ import { PROTOCOL_VERSION } from './protocol';
 import { routeOf } from './route';
 
 /**
- * How both devices find a way to each other: Google's free public STUN server, which tells each
- * one its public address. No relay (TURN) yet: an open question (docs/multijoueur.md §5).
+ * How both devices find a way to each other (docs/multijoueur.md §5): Google's free public STUN
+ * server, which tells each one its public address; and, when no direct way works (4G, strict
+ * NAT), PeerJS's own public relays (TURN), as its defaults list them. Their credentials are
+ * PeerJS's public ones, no secret. Same Wi-Fi, the link stays direct: a relay is the last resort.
  */
-const ICE_SERVERS: RTCIceServer[] = [{ urls: 'stun:stun.l.google.com:19302' }];
+const ICE_SERVERS: RTCIceServer[] = [
+  { urls: 'stun:stun.l.google.com:19302' },
+  {
+    urls: ['turn:eu-0.turn.peerjs.com:3478', 'turn:us-0.turn.peerjs.com:3478'],
+    username: 'peerjs',
+    credential: 'peerjsp',
+  },
+];
 
 /** How long a claim or a join may take: the server's answer, then the other device's. */
 const ANSWER_MS = 15_000;

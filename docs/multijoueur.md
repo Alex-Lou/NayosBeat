@@ -2,7 +2,7 @@
 
 Le mode « Multi » : deux appareils, un téléphone ou un PC chacun, jouent l'un contre l'autre en ligne. Ils peuvent être sur le même Wi-Fi ou sur des réseaux différents. Le but premier : que le propriétaire joue avec sa femme, en test d'abord.
 
-- **Statut : porte 0, la preuve de connexion.** Deux appareils se trouvent par la recherche automatique et s'échangent un ping affiché à l'écran. Il n'y a encore aucun combat.
+- **Statut : porte 0, la preuve de connexion, validée par le propriétaire le 2 novembre 2026** (avec ses trois réponses du §10). Deux appareils se trouvent par la recherche automatique et s'échangent un ping affiché à l'écran. Il n'y a encore aucun combat.
 - **Caché** derrière l'adresse `?multi` (par exemple `…/NayosBeat/?multi`) jusqu'à la porte 2. Sans `?multi`, le jeu en ligne ne change pas, hormis la CSP élargie au serveur de mise en relation (§6).
 - **Choix du propriétaire (2 novembre 2026)**
   - Recherche automatique, sans code à taper.
@@ -19,7 +19,7 @@ On ne passe pas une porte sans le « oui » du propriétaire.
 
 | Porte | Ce qu'elle livre | État |
 |---|---|---|
-| 0, la preuve | Recherche automatique, ping affiché, rapport, CSP, dépendance, questions | **livrée, en attente du « oui »** |
+| 0, la preuve | Recherche automatique, ping affiché, rapport, CSP, dépendance, questions | **validée le 2 novembre 2026** |
 | 1, le salon | Pseudo, « Adversaire trouvé : … » à accepter ou refuser, l'hôte choisit la map, chacun son combattant ; une déconnexion ramène au menu | à faire |
 | 2, le combat en lockstep | Un match complet et la revanche, synchrones (pause, fin de round, Finisher, KO), hash anti-désynchronisation, indicateur du ping et du délai | à faire |
 | 3, le rollback | Délai ressenti de 0 ou 1 tic sur Wi-Fi, effets jamais doublés, tests de resimulation | à faire |
@@ -113,8 +113,9 @@ Rien n'est interprété (aucun `eval`), et l'heure d'envoi ne traverse jamais le
 ## 5. Le réseau : STUN, TURN, chemin
 
 - **STUN** : le serveur public et gratuit de Google, `stun:stun.l.google.com:19302`. Il dit à chaque appareil son adresse publique. Il est sans compte, mais aussi sans garantie écrite.
-- **TURN** (un relais) : il faut un relais quand deux réseaux ne se laissent pas joindre en direct, par exemple en 4G ou derrière un NAT strict. **Aucun relais pour l'instant : c'est la question au propriétaire (§10).**
-  - **Trouvé dans la source de PeerJS 1.5.5** : sa configuration par défaut comprend, en plus du STUN de Google, **ses propres relais TURN publics**, sans compte (`turn:eu-0.turn.peerjs.com:3478` et `turn:us-0.turn.peerjs.com:3478`, identifiants publics). Le jeu les écarte pour l'instant : il donne sa propre liste de serveurs, le STUN seul.
+- **TURN** (un relais) : il faut un relais quand deux réseaux ne se laissent pas joindre en direct, par exemple en 4G ou derrière un NAT strict. **Le jeu utilise les relais publics de PeerJS** (décision du propriétaire, §10) : `turn:eu-0.turn.peerjs.com:3478` et `turn:us-0.turn.peerjs.com:3478`, sans compte, avec les identifiants publics que PeerJS 1.5.5 met dans sa propre configuration par défaut. Ils sont sans garantie de service ; un service à compte ne viendra que si la porte 4 les montre insuffisants.
+  - Ces relais ne servent qu'en dernier recours : le navigateur essaie d'abord le direct. Un relais voit passer les entrées du match, rien de sensible.
+  - Ils n'ont pas pu être exercés depuis le conteneur de test (le port 3478 y est injoignable) : la 4G de la porte 4 le dira.
 - **Sur le même Wi-Fi, le lien est direct**, sans STUN ni TURN.
 - **Le chemin est affiché** à l'écran, lu dans les statistiques WebRTC (`route.ts`) :
   - « direct, même réseau » (les deux candidats sont locaux) ;
@@ -215,7 +216,7 @@ Quitter l'écran, à tout moment, ferme tout. Un test le vérifie (`tests/app/mu
 1. Ouvrir `…/NayosBeat/?multi` dans le navigateur, sur les deux (pas l'app installée, qui ouvre l'adresse sans `?multi`).
 2. Toucher l'écran titre, puis « Multi (test) », puis « Rechercher » sur les deux.
 3. Laisser tourner une minute, puis noter la ligne « Ping » et la ligne « Chemin » des deux appareils (une photo suffit).
-4. Refaire en coupant le Wi-Fi du téléphone (4G) : si la connexion échoue avec « il faudrait un relais », c'est la réponse à la question du TURN.
+4. Refaire en coupant le Wi-Fi du téléphone (4G). La ligne « Chemin » dit alors si le lien passe en direct ou « par un relais » ; un échec avec « il faudrait un relais » voudrait dire que les relais de PeerJS ne suffisent pas.
 
 ---
 
@@ -251,16 +252,16 @@ Quitter l'écran, à tout moment, ferme tout. Un test le vérifie (`tests/app/mu
 
 ## 10. Les questions au propriétaire
 
-Chacune a son hypothèse de départ.
+Chacune avait son hypothèse de départ. **Le 2 novembre 2026, le propriétaire a dit oui aux trois.**
 
 1. **TURN pour la 4G et les réseaux stricts.**
-   - **Hypothèse** : commencer par les relais publics de PeerJS (déjà dans PeerJS, sans compte, identifiants publics, sans garantie de service), et ne prendre un service à compte que si la mesure de la porte 4 les montre insuffisants. Exemples de services à compte : Cloudflare, Metered (un compte et une clé, qu'il faudrait garder hors du dépôt).
-   - Ce que ça change : un relais voit passer les entrées du match (rien de sensible), et la CSP n'a pas à bouger (§6.1).
+   - **Retenu** : commencer par les relais publics de PeerJS (déjà dans PeerJS, sans compte, identifiants publics, sans garantie de service), et ne prendre un service à compte que si la mesure de la porte 4 les montre insuffisants. Exemples de services à compte : Cloudflare, Metered (un compte et une clé, qu'il faudrait garder hors du dépôt).
+   - Ce que ça change : un relais voit passer les entrées du match (rien de sensible), et la CSP n'a pas à bouger (§6.1). Activé dès la porte 0 (`peer-matchmaker.ts`).
 2. **Le pseudo (porte 1).**
-   - **Hypothèse** : 2 à 12 caractères (lettres, chiffres, espace, tiret), demandé à la première recherche et retenu sur l'appareil.
+   - **Retenu** : 2 à 12 caractères (lettres, chiffres, espace, tiret), demandé à la première recherche et retenu sur l'appareil.
    - Il est affiché tel quel, jamais interprété. Il passe par le protocole v2, validé comme le reste.
 3. **L'acceptation avant le combat (porte 1).**
-   - **Hypothèse** : les deux doivent accepter dans les 30 s. Refuser, ou laisser passer le délai, relance la recherche chez les deux.
+   - **Retenu** : les deux doivent accepter dans les 30 s. Refuser, ou laisser passer le délai, relance la recherche chez les deux.
    - Rien ne se joue tant que les deux n'ont pas dit oui.
 
 ---
