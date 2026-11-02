@@ -1,0 +1,145 @@
+import { describe, expect, it, vi } from 'vitest';
+
+vi.mock('phaser', () => ({ default: { Textures: { FilterMode: { NEAREST: 1 } } } }));
+
+import { STAGE_MAPS } from '../../src/art/stages';
+import { DEPTH } from '../../src/render/depth';
+import { FLASH_DELTA, luminanceDelta } from '../../src/render/luminance';
+import {
+  curtainPixels,
+  RAIN_DRIFT,
+  RAIN_FALL,
+  RAIN_LOOK,
+  RAIN_TILE,
+  rainOffsetsAt,
+  rains,
+  SPLASH_ROWS,
+  SPLASH_VARIANTS,
+  SPLASH_WIDTH,
+  splashPixels,
+  StageRainView,
+} from '../../src/render/stage-rain';
+import { FIGHT_STAGE_COLORS } from '../../src/render/stage-view';
+
+/** What the rain does with a scene: the tile sprites it adds, the textures it paints. */
+function fakeScene() {
+  const sprites: {
+    key: string;
+    depth: number;
+    visible: boolean;
+    tile: number[];
+    destroyed: boolean;
+  }[] = [];
+  const painted = new Set<string>();
+  const scene = {
+    textures: {
+      exists: (key: string) => painted.has(key),
+      createCanvas: (key: string, width: number, height: number) => {
+        painted.add(key);
+        return {
+          setFilter: () => undefined,
+          context: {
+            createImageData: () => ({ data: new Uint8ClampedArray(width * height * 4) }),
+            putImageData: () => undefined,
+          },
+          refresh: () => undefined,
+        };
+      },
+    },
+    add: {
+      tileSprite: (_x: number, _y: number, _w: number, _h: number, key: string) => {
+        const sprite = { key, depth: -1, visible: true, tile: [] as number[], destroyed: false };
+        sprites.push(sprite);
+        const chain = {
+          setOrigin: () => chain,
+          setTileScale: () => chain,
+          setScrollFactor: () => chain,
+          setDepth: (depth: number) => ((sprite.depth = depth), chain),
+          setVisible: (visible: boolean) => ((sprite.visible = visible), chain),
+          setTilePosition: (x: number, y: number) => ((sprite.tile = [x, y]), chain),
+          destroy: () => {
+            sprite.destroyed = true;
+          },
+        };
+        return chain;
+      },
+    },
+  };
+  return { scene: scene as unknown as Phaser.Scene, sprites, painted };
+}
+
+describe('the rain (docs/art/pluie.md)', () => {
+  it('falls on the rain atmospheres only, which the stages now offer', () => {
+    const variants = STAGE_MAPS.flatMap(({ variants }) => variants);
+    const rainy = variants.filter(rains);
+    expect(rainy.length).toBeGreaterThan(0);
+    expect(rainy.every(({ atmosphere }) => atmosphere.weather === 'rain')).toBe(true);
+    expect(variants.filter((variant) => !rains(variant)).length).toBeGreaterThan(0);
+  });
+
+  it('never flashes: none of its pixels changes a large color of any stage by FLASH_DELTA', () => {
+    for (const [look, { color, alpha }] of Object.entries(RAIN_LOOK)) {
+      for (const backdrop of FIGHT_STAGE_COLORS) {
+        expect(
+          luminanceDelta(color, backdrop, alpha),
+          `${look} ${backdrop.toString(16)}`,
+        ).toBeLessThan(FLASH_DELTA);
+      }
+    }
+  });
+
+  it('moves by whole pixels a step, along its streaks, and loops over its tile', () => {
+    for (let steps = 0; steps < 400; steps++) {
+      const now = rainOffsetsAt(steps);
+      const next = rainOffsetsAt(steps + 1);
+      for (const value of [now.x, now.y, now.splash]) expect(Number.isInteger(value)).toBe(true);
+      expect(now.x).toBeGreaterThanOrEqual(0);
+      expect(now.x).toBeLessThan(RAIN_TILE);
+      expect(now.y).toBeGreaterThanOrEqual(0);
+      expect(now.y).toBeLessThan(RAIN_TILE);
+      expect((next.x - now.x + RAIN_TILE) % RAIN_TILE).toBe(RAIN_DRIFT);
+      expect((now.y - next.y + RAIN_TILE) % RAIN_TILE).toBe(RAIN_FALL);
+    }
+  });
+
+  it('draws its tiles from a fixed seed, inside them, seamless', () => {
+    expect(curtainPixels()).toEqual(curtainPixels());
+    for (const { x, y } of curtainPixels()) {
+      expect(x >= 0 && x < RAIN_TILE && y >= 0 && y < RAIN_TILE).toBe(true);
+    }
+    for (const { x, y } of splashPixels()) {
+      expect(x >= 0 && x < SPLASH_WIDTH && y >= 0 && y < SPLASH_ROWS * SPLASH_VARIANTS).toBe(true);
+    }
+    // A streak slants as the rain drifts: it moves along itself, never sideways.
+    const streak = curtainPixels().slice(0, 10);
+    const [first, last] = [streak[0], streak[9]];
+    if (!first || !last) throw new Error('a streak');
+    const across = (first.x - last.x + RAIN_TILE) % RAIN_TILE;
+    expect(across).toBe(Math.round((9 * RAIN_DRIFT) / RAIN_FALL));
+  });
+
+  it('falls behind the fighters, under the super, and goes with the fight', () => {
+    const { scene, sprites, painted } = fakeScene();
+    const rain = new StageRainView(scene);
+    expect(sprites).toHaveLength(2);
+    for (const sprite of sprites) {
+      expect(sprite.depth).toBeGreaterThan(DEPTH.stage);
+      expect(sprite.depth).toBeLessThan(DEPTH.dim);
+      expect(sprite.depth).toBeLessThan(DEPTH.fighterBack);
+    }
+    rain.update(5);
+    const { x, y } = rainOffsetsAt(5);
+    expect(sprites[0]?.tile).toEqual([x, y]);
+    // The lowest light tier drops the curtain, a whole pass of the screen; the splashes stay.
+    rain.setTier('off');
+    expect(sprites.map(({ visible }) => visible)).toEqual([false, true]);
+    rain.setTier('lean');
+    expect(sprites[0]?.visible).toBe(true);
+    rain.dispose();
+    expect(sprites.every(({ destroyed }) => destroyed)).toBe(true);
+    // Its tiles stay in the cache, painted once for every rainy fight.
+    expect(painted.size).toBe(2);
+    new StageRainView(scene).dispose();
+    expect(painted.size).toBe(2);
+  });
+});

@@ -12,7 +12,8 @@ import { stageRulesOf } from '../../tools/sprites/stage-drawn';
 import { liftedLayers, packProps } from '../../tools/sprites/stage-props';
 import { drawDock } from '../../tools/stage/dock';
 import { BASS_AT, BASS_CYCLE } from '../../tools/stage/dock/mid';
-import { PALETTE } from '../../tools/stage/dock/palette';
+import { DOCK_ATMOSPHERES } from '../../tools/stage/dock/atmospheres';
+import { ASPHALT, CONCRETE, PALETTE, WET, WET_ASPHALT } from '../../tools/stage/dock/palette';
 
 /** The colors of an image, pixel by pixel, as 0xRRGGBBAA (0: transparent). */
 function colorsOf(image: IndexedImage): number[] {
@@ -110,6 +111,19 @@ describe("the code's Loading Dock (docs/art/decor-dock.md)", { timeout: 60_000 }
           ).toBeLessThanOrEqual((before >> shift) & 0xff);
         }
       }
+    }
+  });
+
+  it('hides its puddles but under the rain: dry, they are the ground itself, tone for tone', () => {
+    for (const { atmosphere, palette } of DOCK_ATMOSPHERES) {
+      const same = (wet: readonly number[], dry: readonly number[]) =>
+        wet.every((slot, step) => {
+          const [a, b] = [palette[slot], palette[dry[step] ?? 0]];
+          return a?.r === b?.r && a?.g === b?.g && a?.b === b?.b;
+        });
+      const rain = atmosphere.weather === 'rain';
+      expect(same(WET, CONCRETE), `${atmosphere.moment}-${atmosphere.weather}`).toBe(!rain);
+      expect(same(WET_ASPHALT, ASPHALT), `${atmosphere.moment}-${atmosphere.weather}`).toBe(!rain);
     }
   });
 

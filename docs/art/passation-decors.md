@@ -12,8 +12,9 @@ Ce fichier est pour l'agent qui reprend les décors (les lieux de combat). Il di
 | Le Viaduct Gym (`gym`), minuit et crépuscule | en ligne (#99) |
 | Les animations détachées, la boîte commune `tools/stage/kit/`, `npm run stages` | en ligne (#99) |
 | `npm run stages:preview` et ce fichier | en ligne (#103) |
-| `people.ts` et `signs.ts` prennent leurs rampes en paramètre (§4, étape 2) | #107 |
-| The Loading Dock (`dock`), minuit et aube, la basse du club ; le moment `dawn` | #107 |
+| `people.ts` et `signs.ts` prennent leurs rampes en paramètre (§4, étape 2) | en ligne (#107) |
+| The Loading Dock (`dock`), minuit et aube, la basse du club ; le moment `dawn` | en ligne (#107) |
+| La pluie : la couche du rendu, la rue et le Dock sous la pluie à minuit (`pluie.md`) | PR de la pluie |
 
 ## 2. Ce que veut le développeur
 
@@ -144,7 +145,7 @@ Elle gère l'écran « Lieu », `stageChoice`, et les options « Lieu » et « A
 ### 7.1 Les tranches du système de décor vivant
 
 1. **La nuit vivante** : des nuages qui dérivent, des fenêtres qui s'allument et s'éteignent (des animations lentes sur `far`).
-2. **La pluie** : un rideau de gouttes (une animation détachée ou une couche d'effet du rendu), le sol mouillé et ses reflets (des rampes repeintes), la verrière du gym qui ruisselle. À chiffrer en mémoire vidéo d'abord.
+2. **La pluie** : la couche du rendu est faite (`pluie.md`), et la rue et le Dock l'offrent à minuit. Il reste Rooftop Rain, et la verrière du gym qui ruisselle. Pour un lieu de plus sous la pluie : une palette `midnight-rain` (ou `dusk-rain`) dans ses `atmospheres.ts` suffit, le rendu fait tomber la pluie de lui-même ; des flaques cachées demandent une rampe `WET` (voir le Dock).
 3. **Les dégâts cumulés sur le match** : fissures du sol aux chutes lourdes et aux KO, mur fissuré quand un combattant y est envoyé fort ; cordes du ring et sac crevé au gym. Ils sont déclenchés par des événements du rendu (jamais par le cœur), avec un plafond, et le décor repart à neuf au match suivant. À concevoir : une architecture d'« états de dégâts » par lieu (des images par cran). Présente-la au développeur avant de coder.
 4. **La brume** : elle avale le fond, pose des halos autour des lampes, jamais devant les combattants.
 5. **L'aube** : le moment `dawn` existe depuis le Loading Dock. Il reste à la peindre pour le gym (« le matin froid »).
