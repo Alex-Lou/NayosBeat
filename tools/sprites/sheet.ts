@@ -29,7 +29,7 @@ export function drawStrip(fighter: Fighter, sheet: string): PixelCanvas {
       fighter.draw(canvas, solve(pose, fighter.body), frame * CELL_SIZE, motions[frame] ?? STILL);
     });
   }
-  canvas.finish();
+  canvas.finish(fighter.lighting);
   return canvas;
 }
 

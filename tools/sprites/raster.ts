@@ -45,6 +45,38 @@ export interface ShapeOptions {
   readonly tilt?: Point;
 }
 
+/**
+ * How a fighter's strips are lit beyond the key light, when it asks for it (`Fighter.lighting`);
+ * without it, the default 1 px back light on every back and top edge.
+ */
+export interface Lighting {
+  /**
+   * The back light (a neon behind the fighter): the silhouette's edge pixels that face it
+   * squarely take their material's rim tone, those that half face it its light tone (the light
+   * fading as the edge turns away), the others none. Which way an edge faces comes from the
+   * shape itself (the empty pixels around it), so it follows every pose.
+   */
+  readonly rim: {
+    /** Where the back light comes from, in image axes (x right, y down), toward the light. */
+    readonly direction: Point;
+    /** How squarely an edge faces it (cosine) to take the rim tone, and the light tone. */
+    readonly facing: { readonly rim: number; readonly light: number };
+    /** The rim and light tones of exact pixels (a stamped head's hair), by their slot. */
+    readonly exact: Readonly<Record<number, RimTones>>;
+  };
+  /**
+   * Exact pixels that glow (neon), by slot: the shaded pixels touching one (4 neighbors) take
+   * the halo slot given, a 1 px halo inside the silhouette.
+   */
+  readonly glow: Readonly<Record<number, number>>;
+}
+
+/** What a pixel turns into under a back light: squarely faced, half faced. */
+export interface RimTones {
+  readonly rim: number;
+  readonly light: number;
+}
+
 export interface Bounds {
   readonly left: number;
   readonly top: number;
@@ -68,8 +100,12 @@ const BANDS = { lit: 0.6, base: 0.22, shadow: -0.1 } as const;
 const DEFAULT_GLOSS_CUT = 0.9;
 /** Lit-side direction in the image, for the selective outline and the cast shadows. */
 const LIGHT_2D = unit2(LIGHT.x, LIGHT.y);
+/** Toward the key light, in the image (x right, y down): the side of a fold that catches it. */
+export const KEY_LIGHT_2D: Point = LIGHT_2D;
 /** How far (px) a part in front casts its shadow on what is behind it, away from the light. */
 const CAST_SHADOW = 2;
+/** How far (px) a `Lighting`'s back light looks around an edge pixel to tell which way it faces. */
+const RIM_REACH = 2;
 
 const NEIGHBORS: readonly Point[] = [
   { x: 1, y: 0 },
@@ -287,8 +323,11 @@ export class PixelCanvas {
     });
   }
 
-  /** Shades, contours, casts shadows, cleans, back-lights and outlines into `pixels`. */
-  finish(): void {
+  /**
+   * Shades, contours, casts shadows, cleans, back-lights and outlines into `pixels`; with a
+   * `lighting`, the back light falls on the edges that face it, and the neons glow.
+   */
+  finish(lighting?: Lighting): void {
     const bands = new Int8Array(this.pixels.length);
     for (let index = 0; index < this.pixels.length; index++) bands[index] = this.band(index);
     this.castShadows(bands);
@@ -296,7 +335,12 @@ export class PixelCanvas {
     for (let index = 0; index < this.pixels.length; index++) {
       this.pixels[index] = this.tone(index, bands[index] ?? -1);
     }
-    this.backLight();
+    if (lighting) {
+      this.rimLight(lighting.rim);
+      this.glow(lighting.glow);
+    } else {
+      this.backLight();
+    }
     this.outline();
   }
 
@@ -468,6 +512,84 @@ export class PixelCanvas {
         const behind = this.group[index - 1] === EMPTY;
         const above = this.group[index - this.width] === EMPTY && (this.nx[index] ?? 0) <= 0.15;
         if (behind || above) next[index] = material.rim;
+      }
+    }
+    this.pixels.set(next);
+  }
+
+  /**
+   * The back light of a `Lighting`: 1 px on the silhouette's edges that face it. A shape's edge
+   * is its last pixel (the outline goes around it); a stamped grid draws its own outline, so its
+   * rim goes on the pixel just inside it. Which way an edge faces is read from the empty pixels
+   * around it (RIM_REACH), so the light follows the pose, never a fixed side of a part.
+   */
+  private rimLight(rim: Lighting['rim']): void {
+    const toward = unit2(rim.direction.x, rim.direction.y);
+    const empty = (index: number): boolean => this.group[index] === EMPTY;
+    const edge = (index: number): boolean =>
+      NEIGHBORS.some(({ x, y }) => empty(index + y * this.width + x));
+    const next = this.pixels.slice();
+    for (let y = RIM_REACH; y < this.height - RIM_REACH; y++) {
+      for (let x = RIM_REACH; x < this.width - RIM_REACH; x++) {
+        const index = y * this.width + x;
+        if (empty(index)) continue;
+        const tone = this.rimToneAt(index, rim.exact);
+        if (tone === undefined) continue;
+        const exact = (i: number): boolean => ((this.flags[i] ?? 0) & FLAG_EXACT) !== 0;
+        const onEdge = exact(index)
+          ? !edge(index) &&
+            NEIGHBORS.some(({ x: dx, y: dy }) => {
+              const other = index + dy * this.width + dx;
+              return exact(other) && edge(other);
+            })
+          : edge(index);
+        if (!onEdge) continue;
+        // Away from the shape: the sum of the directions to the empty pixels nearby.
+        let ox = 0;
+        let oy = 0;
+        for (let dy = -RIM_REACH; dy <= RIM_REACH; dy++) {
+          for (let dx = -RIM_REACH; dx <= RIM_REACH; dx++) {
+            if ((dx === 0 && dy === 0) || !empty(index + dy * this.width + dx)) continue;
+            const distance = Math.hypot(dx, dy);
+            ox += dx / (distance * distance);
+            oy += dy / (distance * distance);
+          }
+        }
+        const length = Math.hypot(ox, oy);
+        if (length === 0) continue;
+        const facing = (ox * toward.x + oy * toward.y) / length;
+        if (facing >= rim.facing.rim) next[index] = tone.rim;
+        else if (facing >= rim.facing.light) next[index] = tone.light;
+      }
+    }
+    this.pixels.set(next);
+  }
+
+  /** The tones a pixel takes under a `Lighting`'s back light, if any. */
+  private rimToneAt(index: number, exact: Lighting['rim']['exact']): RimTones | undefined {
+    const flags = this.flags[index] ?? 0;
+    if (flags & FLAG_EXACT) return flags & FLAG_GHOST ? undefined : exact[this.exact[index] ?? 0];
+    if (flags & (FLAG_CONTOUR | FLAG_FLAT)) return undefined;
+    const material = this.materials[this.material[index] ?? EMPTY];
+    return material?.rim === undefined ? undefined : { rim: material.rim, light: material.light };
+  }
+
+  /** A `Lighting`'s neons: their shaded neighbors take the halo slot, inside the silhouette. */
+  private glow(halo: Readonly<Record<number, number>>): void {
+    const next = this.pixels.slice();
+    for (let y = 1; y < this.height - 1; y++) {
+      for (let x = 1; x < this.width - 1; x++) {
+        const index = y * this.width + x;
+        if (!((this.flags[index] ?? 0) & FLAG_EXACT)) continue;
+        const tone = halo[this.exact[index] ?? 0];
+        if (tone === undefined) continue;
+        for (const { x: dx, y: dy } of NEIGHBORS) {
+          const other = index + dy * this.width + dx;
+          const group = this.group[other] ?? EMPTY;
+          if (group === EMPTY || group === LOOSE) continue;
+          if ((this.flags[other] ?? 0) & FLAG_EXACT) continue;
+          next[other] = tone;
+        }
       }
     }
     this.pixels.set(next);
