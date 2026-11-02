@@ -64,31 +64,31 @@ const CROUCH = CROUCH_POSES[3] ?? GUARD;
 /** The cover on the crouch's legs: the clamps before the collar. */
 const LOW_SHELL: Pose = springAnkle({
   ...CROUCH,
-  torso: 10,
-  head: HEAD - 10,
+  torso: 20,
+  head: HEAD - 20,
   shrug: 4,
-  nearFist: at(-1.5, 53),
-  farFist: at(4, 51),
+  nearFist: at(1, 46),
+  farFist: at(7, 44),
 });
 
 const LOW_IMPACT: Pose = springAnkle({
   ...LOW_SHELL,
   hip: at(CROUCH.hip.x - 1.8, CROUCH.hip.y + 0.4),
-  torso: 5,
-  head: HEAD - 5,
+  torso: 15,
+  head: HEAD - 15,
   shrug: 4.4,
-  nearFist: at(-3.5, 52.5),
-  farFist: at(2, 50.5),
+  nearFist: at(-1, 45.5),
+  farFist: at(5, 43.5),
   face: 'effort',
 });
 
 const LOW_RECOIL: Pose = springAnkle({
   ...LOW_SHELL,
   hip: at(CROUCH.hip.x + 0.3, CROUCH.hip.y - 0.2),
-  torso: 11,
-  head: HEAD - 11,
-  nearFist: at(-1.1, 53.1),
-  farFist: at(4.4, 51.1),
+  torso: 19,
+  head: HEAD - 19,
+  nearFist: at(1.3, 46.1),
+  farFist: at(7.3, 44.1),
 });
 
 export const POSES: readonly Pose[] = [

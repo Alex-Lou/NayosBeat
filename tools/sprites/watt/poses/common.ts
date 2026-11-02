@@ -126,6 +126,17 @@ export const GUARD: Pose = {
 };
 
 /**
+ * His crouch, the hips and the boots every crouching pose starts from (crouch.ts, the low
+ * blows, the crouching reactions): the hips low enough that the bulb tops out under 65 px, so
+ * that his crouch ducks what the cast's crouches duck (tools/sprites/measure-boxes.ts).
+ */
+export const CROUCHED = {
+  hip: [-12.5, 24.5],
+  nearFoot: onBall(-20, -24),
+  farFoot: planted(8.5),
+} as const;
+
+/**
  * The least angle his rear ankle keeps between the shin and the foot (90: the shin square to
  * the sole): a combat boot does not let it close much more.
  */

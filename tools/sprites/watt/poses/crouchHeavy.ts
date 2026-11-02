@@ -1,4 +1,4 @@
-import { onBall, planted, smear, type Pose } from './common.ts';
+import { CROUCHED, onBall, planted, type Pose, smear } from './common.ts';
 import { keyPose } from './strike.ts';
 
 export const ANIMATED: boolean = true;
@@ -9,8 +9,6 @@ export const ANIMATED: boolean = true;
  * the floor like a rake: it reaches far out, low, the torso folded over the lead knee, then
  * drags back in toward him through the boots of whoever stands there.
  */
-
-const CROUCHED = { hip: [-11.5, 26], nearFoot: onBall(-20, -24), farFoot: planted(8.5) } as const;
 
 export const POSES: readonly Pose[] = [
   // 0: the arm drawn back along the hip, the weight sinking.
@@ -77,5 +75,5 @@ export const POSES: readonly Pose[] = [
   }),
   // 6-7: back into the crouch.
   keyPose({ ...CROUCHED, hip: [-9, 25], torso: 24, farFoot: planted(11), far: [8, 26] }),
-  keyPose({ ...CROUCHED, torso: 11, far: [6, 39] }),
+  keyPose({ ...CROUCHED, torso: 11, far: [6, 35] }),
 ];

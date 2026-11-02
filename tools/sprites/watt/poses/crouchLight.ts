@@ -1,4 +1,4 @@
-import { onBall, planted, smear, type Pose } from './common.ts';
+import { CROUCHED, onBall, planted, type Pose, smear } from './common.ts';
 import { keyPose } from './strike.ts';
 
 export const ANIMATED: boolean = true;
@@ -8,8 +8,6 @@ export const ANIMATED: boolean = true;
  * 5-6), hitbox x 8..36 / y 2..14, a low blow. From the crouch, the lead clamp slaps flat along
  * the floor in front of him, the torso folding over the lead knee, the rear clamp kept up.
  */
-
-const CROUCHED = { hip: [-11.5, 26], nearFoot: onBall(-20, -24), farFoot: planted(8.5) } as const;
 
 export const POSES: readonly Pose[] = [
   // 0: the clamp drawn in under the chest, opening.
@@ -50,5 +48,5 @@ export const POSES: readonly Pose[] = [
     far: [19, 14],
     farHand: 'open',
   }),
-  keyPose({ ...CROUCHED, torso: 11, far: [6, 39] }),
+  keyPose({ ...CROUCHED, torso: 11, far: [6, 35] }),
 ];

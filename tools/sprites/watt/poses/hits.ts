@@ -1,4 +1,4 @@
-import { GUARD, lifted, onBall, onHeel, planted, type Pose } from './common.ts';
+import { CROUCHED, GUARD, lifted, onBall, onHeel, planted, type Pose } from './common.ts';
 import { keyPose, type Key } from './strike.ts';
 
 /**
@@ -100,14 +100,12 @@ export const HIT_LOW = reaction(
   },
 );
 
-const CROUCHED = { hip: [-11.5, 26], nearFoot: onBall(-20, -24), farFoot: planted(8.5) } as const;
-
 /** hitCrouch: 3 frames, crouched: the chest knocked back over the rear leg, then down again. */
 export const HIT_CROUCH: readonly Pose[] = [
   keyPose({
     ...CROUCHED,
     hip: [-13, 26.5],
-    torso: 2,
+    torso: 22,
     tilt: -10,
     nearOff: [-1, 1],
     farOff: [1, 2],
@@ -116,11 +114,11 @@ export const HIT_CROUCH: readonly Pose[] = [
   keyPose({
     ...CROUCHED,
     hip: [-13.5, 26.5],
-    torso: 0,
+    torso: 18,
     tilt: -12,
     nearOff: [-1.5, 1.5],
     farOff: [1.5, 2.5],
     face: 'hurt',
   }),
-  keyPose({ ...CROUCHED, torso: 9, nearOff: [-0.5, 0.5], farOff: [1, 1] }),
+  keyPose({ ...CROUCHED, torso: 22, nearOff: [-0.5, 0.5], farOff: [1, 1] }),
 ];
