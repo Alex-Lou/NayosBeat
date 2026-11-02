@@ -45,8 +45,8 @@ const ALT_ATLASES = import.meta.glob<string>('./alt/**/*.json', {
 const IDLE_ATLASES = import.meta.glob<Atlas>('./*/idle.json', { eager: true, import: 'default' });
 
 const SHARED = {
-  // His bulb and his shoulders, on the character select screen (measured at porte 2).
-  portrait: { x: 12, y: 0, size: 58 },
+  // His bulb above his shoulders, on the character select screen (framed on idle frame 0).
+  portrait: { x: 40, y: 0, size: 50 },
   sheets: WATT_SHEETS,
   clips: WATT_CLIPS,
   cells: WATT_CELLS,
