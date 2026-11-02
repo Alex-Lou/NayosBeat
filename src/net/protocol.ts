@@ -1,17 +1,31 @@
 /**
  * The online mode's wire format (docs/multijoueur.md §4): small JSON texts, each carrying the
  * protocol's version. Everything received is parsed here, once, at the boundary: a text that is
- * not exactly one of these messages is refused (`null`), and its sender is let go.
+ * not exactly one of these messages is refused (`null`), and its sender is let go. What a field
+ * means (a place, a fighter) is checked by whoever reads it, against the game's own data.
  */
 
 /** The wire format's version. It is also part of the rooms' ids: two versions never meet. */
-export const PROTOCOL_VERSION = 1;
+export const PROTOCOL_VERSION = 2;
 
 /** The longest text accepted, checked before parsing it. */
 export const MAX_MESSAGE_LENGTH = 128;
 
 /** Sequence numbers stay below this (2^31): integers JSON carries exactly, on any engine. */
 export const SEQ_LIMIT = 0x80000000;
+
+/**
+ * A player's name (docs/multijoueur.md §10): 2 to 12 letters without accents, digits, spaces and
+ * dashes, a letter or digit at each end. Always legible in the pixel font, never interpreted.
+ */
+const PSEUDO = /^[A-Za-z0-9][A-Za-z0-9 -]{0,10}[A-Za-z0-9]$/;
+
+/** The id of a place, an atmosphere or a fighter: short, lowercase, dashes. */
+const TOKEN = /^[a-z0-9-]{1,24}$/;
+
+export function isPseudo(value: unknown): value is string {
+  return typeof value === 'string' && PSEUDO.test(value);
+}
 
 export type NetMessage =
   /** Sent by both sides once the channel is open: « I speak this protocol, I am free ». */
@@ -20,16 +34,49 @@ export type NetMessage =
   | { readonly type: 'busy' }
   /** Measures the round trip: answered at once by a `pong` with the same `seq`. */
   | { readonly type: 'ping'; readonly seq: number }
-  | { readonly type: 'pong'; readonly seq: number };
+  | { readonly type: 'pong'; readonly seq: number }
+  /** The sender's name, sent once by each side as the salon opens. */
+  | { readonly type: 'name'; readonly name: string }
+  /** The sender wants to fight the other one, or does not (the search starts over). */
+  | { readonly type: 'accept' }
+  | { readonly type: 'refuse' }
+  /** The host's place, already drawn when it chose « Aléatoire »: `map` and `atmosphere`. */
+  | { readonly type: 'stage'; readonly map: string; readonly atmosphere: string }
+  /** The sender's fighter. */
+  | { readonly type: 'fighter'; readonly fighter: string };
+
+type Type = NetMessage['type'];
+
+/** Each message's fields on the wire (short keys), with what each must be. */
+const FIELDS: Readonly<Record<Type, Readonly<Record<string, (value: unknown) => boolean>>>> = {
+  hello: {},
+  busy: {},
+  accept: {},
+  refuse: {},
+  ping: { n: isSeq },
+  pong: { n: isSeq },
+  name: { s: isPseudo },
+  stage: { m: isToken, a: isToken },
+  fighter: { f: isToken },
+};
 
 export function encodeMessage(message: NetMessage): string {
+  const head = { v: PROTOCOL_VERSION, t: message.type };
   switch (message.type) {
     case 'hello':
     case 'busy':
-      return JSON.stringify({ v: PROTOCOL_VERSION, t: message.type });
+    case 'accept':
+    case 'refuse':
+      return JSON.stringify(head);
     case 'ping':
     case 'pong':
-      return JSON.stringify({ v: PROTOCOL_VERSION, t: message.type, n: message.seq });
+      return JSON.stringify({ ...head, n: message.seq });
+    case 'name':
+      return JSON.stringify({ ...head, s: message.name });
+    case 'stage':
+      return JSON.stringify({ ...head, m: message.map, a: message.atmosphere });
+    case 'fighter':
+      return JSON.stringify({ ...head, f: message.fighter });
   }
 }
 
@@ -44,23 +91,42 @@ export function parseMessage(raw: unknown): NetMessage | null {
   }
   if (typeof data !== 'object' || data === null || Array.isArray(data)) return null;
   const fields = data as Record<string, unknown>;
-  if (fields.v !== PROTOCOL_VERSION) return null;
-  const keys = Object.keys(fields).length;
-  switch (fields.t) {
+  if (fields.v !== PROTOCOL_VERSION || !isType(fields.t)) return null;
+  const expected = FIELDS[fields.t];
+  const keys = Object.keys(fields);
+  if (keys.length !== Object.keys(expected).length + 2) return null;
+  for (const [key, valid] of Object.entries(expected)) if (!valid(fields[key])) return null;
+  return messageOf(fields.t, fields);
+}
+
+/** The message of type `type`, its fields already checked. */
+function messageOf(type: Type, fields: Record<string, unknown>): NetMessage {
+  switch (type) {
     case 'hello':
     case 'busy':
-      return keys === 2 ? { type: fields.t } : null;
+    case 'accept':
+    case 'refuse':
+      return { type };
     case 'ping':
-    case 'pong': {
-      const seq = fields.n;
-      if (keys !== 3 || !isSeq(seq)) return null;
-      return { type: fields.t, seq };
-    }
-    default:
-      return null;
+    case 'pong':
+      return { type, seq: fields.n as number };
+    case 'name':
+      return { type, name: fields.s as string };
+    case 'stage':
+      return { type, map: fields.m as string, atmosphere: fields.a as string };
+    case 'fighter':
+      return { type, fighter: fields.f as string };
   }
 }
 
-function isSeq(value: unknown): value is number {
+function isType(value: unknown): value is Type {
+  return typeof value === 'string' && Object.hasOwn(FIELDS, value);
+}
+
+function isSeq(value: unknown): boolean {
   return Number.isInteger(value) && (value as number) >= 0 && (value as number) < SEQ_LIMIT;
+}
+
+function isToken(value: unknown): boolean {
+  return typeof value === 'string' && TOKEN.test(value);
 }

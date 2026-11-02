@@ -1,6 +1,6 @@
 /**
  * Draw order of the fight, back to front (Phaser depth). The stage's layers (in the order they are
- * added: far, middle, floor), the super's dark over the stage, the Finisher's flat over it (and
+ * added: far, middle, floor), the rain of a rainy stage over them (stage-rain.ts), the super's dark over the stage, the Finisher's flat over it (and
  * what its scene draws on it: the crowd, the needle, the cone), a glow (the super's halo, a KO's
  * éclat) over them, behind everything else. The pools of light the moves cast on the floor over
  * the dark (they shine through it), the signature effects drawn behind the bodies (a shock ring on
@@ -10,6 +10,7 @@
  */
 export const DEPTH = {
   stage: 0,
+  rain: 0.1,
   dim: 0.25,
   flat: 0.26,
   pools: 0.28,

@@ -73,6 +73,11 @@ const DETAILS = {
   eyeWhite: { main: '#eef0f6' },
   /** The painted eye's pupil. */
   irisDeep: { main: '#05060e' },
+  /**
+   * The glint deep in both eye slits at rest, her presence (src/render/presence.ts): a color of
+   * its own, which the game picks out and lets shine; lilac on the second colorway.
+   */
+  maskGlow: { main: '#5c8cff', alt: '#cbb2ff' },
   /** Energy (steps, trails, specials): sapphire, brighter than the mask; lilac on the second. */
   soundDeep: { main: '#142a6e', alt: '#4a3080' },
   sound: { main: '#3a6cf0', alt: '#c0a0ff' },

@@ -119,6 +119,23 @@ export const BLANKET = ramp('#3a2626', '#4c302c', '#5e3c32');
 export const CARDBOARD = ramp('#3e3028', '#52402e', '#665036');
 /** Bottles in their crates. */
 export const BOTTLE = ramp('#24382a', '#33503a');
+/**
+ * The puddles the rain leaves on the yard: drawn with this ramp where the concrete would be, tone
+ * for tone. Dry, it is the concrete's own colors and nothing shows; under the rain
+ * (atmospheres.ts), it turns to wet, mirroring the lamps.
+ */
+export const WET = ramp(
+  '#222029',
+  '#29262f',
+  '#312d36',
+  '#3a353e',
+  '#443e47',
+  '#504851',
+  '#5d545c',
+  '#6c6169',
+);
+/** The same for the asphalt's puddles: the asphalt's colors, dry. */
+export const WET_ASPHALT = ramp('#1d1c26', '#23212b', '#2a2732', '#33303a');
 export const POSTER_RED = ramp('#5e2a30', '#7a383a');
 
 /** The dock's ramps for the shared drawing code (people.ts, signs.ts). */

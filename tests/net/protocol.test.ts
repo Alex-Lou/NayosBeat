@@ -5,6 +5,7 @@ import {
   parseMessage,
   PROTOCOL_VERSION,
   SEQ_LIMIT,
+  isPseudo,
   type NetMessage,
 } from '../../src/net/protocol';
 
@@ -14,6 +15,11 @@ describe('the online protocol (docs/multijoueur.md §4)', () => {
     { type: 'busy' },
     { type: 'ping', seq: 0 },
     { type: 'pong', seq: SEQ_LIMIT - 1 },
+    { type: 'name', name: 'Alex-Lou 26' },
+    { type: 'accept' },
+    { type: 'refuse' },
+    { type: 'stage', map: 'gym', atmosphere: 'midnight-rain' },
+    { type: 'fighter', fighter: 'riff' },
   ];
 
   it('reads back every message it writes, short enough to be accepted', () => {
@@ -56,7 +62,35 @@ describe('the online protocol (docs/multijoueur.md §4)', () => {
       `{"v":${v},"t":"ping","n":${SEQ_LIMIT}}`,
       `{"v":${v},"t":"pong","n":1,"x":0}`,
       `{"v":${v},"t":"ping","n":1${' '.repeat(MAX_MESSAGE_LENGTH)}}`,
+      `{"v":${v},"t":"toString"}`,
+      `{"v":${v},"t":"name","s":"<b>x</b>"}`,
+      `{"v":${v},"t":"stage","m":"gym"}`,
+      `{"v":${v},"t":"stage","m":"Gym","a":"dusk-fog"}`,
+      `{"v":${v},"t":"stage","m":"gym","a":"../x"}`,
+      `{"v":${v},"t":"fighter","f":"${'a'.repeat(25)}"}`,
+      `{"v":${v},"t":"fighter","f":7}`,
+      `{"v":${v},"t":"accept","f":"nayo"}`,
     ];
     for (const raw of refused) expect(parseMessage(raw), String(raw)).toBeNull();
+  });
+
+  it('takes as a name 2 to 12 letters without accents, digits, spaces and dashes', () => {
+    for (const name of ['Al', 'Alex-Lou 26', 'a1', 'Riff fan'])
+      expect(isPseudo(name), name).toBe(true);
+    for (const name of [
+      '',
+      'A',
+      ' Al',
+      'Al ',
+      '-Al',
+      'Al-',
+      'Élodie',
+      'abcdefghijklm',
+      'a_b',
+      'a<b',
+      7,
+    ]) {
+      expect(isPseudo(name), String(name)).toBe(false);
+    }
   });
 });

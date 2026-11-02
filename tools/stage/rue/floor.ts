@@ -14,8 +14,8 @@ const SCALE = 2;
 export const SLAB = 64 * SCALE;
 /** The score halfway across each slab. */
 const SCORE = 32 * SCALE;
-/** Rows of the slabs, then the curb's top and face, then the gutter. */
-const ROWS = { slabs: 56, curbTop: 62, curbFace: 70 } as const;
+/** Rows of the slabs (two courses of them, `course` the joint between), the curb's top and face, the gutter. */
+const ROWS = { course: 27, slabs: 56, curbTop: 62, curbFace: 70, gutter: 72 } as const;
 /** How far from each end the ground darkens, under the corner's shade (24 world pixels). */
 const CORNER = 24 * SCALE;
 
@@ -28,7 +28,18 @@ function slabLevel(width: number, x: number, y: number, seed: number): number {
   const stains = (noise(seed, x, y * 2, 40) - 0.5) * 0.5 + (noise(seed + 1, x, y, 9) - 0.5) * 0.25;
   const end = Math.min(x, width - 1 - x);
   const corner = end < CORNER ? -2 * (1 - end / CORNER) ** 1.5 : 0;
-  return 2.9 + stains + corner;
+  return 2.9 + slabShade(x, y) + stains + corner;
+}
+
+/**
+ * Each slab its own tone, some a step darker than their neighbors (laid in different years, worn
+ * differently): the sidewalk reads as slabs, not as a grey sheet. Never lighter: the flash
+ * measures allow no lighter large color (docs/flashs.md §3).
+ */
+function slabShade(x: number, y: number): number {
+  const slab = Math.floor(x / SLAB) * 2 + (y < ROWS.course ? 0 : 1);
+  // A whole step darker, so the slab stays a flat tone, not a dither (it would shimmer).
+  return (slab * 37) % 9 < 3 ? -1 : 0;
 }
 
 function drawSlabs(canvas: Canvas, seed: number): void {
@@ -39,6 +50,8 @@ function drawSlabs(canvas: Canvas, seed: number): void {
     // The joint: a dark groove, its far lip catching the light.
     if (along === 0 || along === 1) level -= 2.2;
     else if (along === 2) level += 0.9;
+    else if (y === ROWS.course || y === ROWS.course + 1) level -= 2;
+    else if (y === ROWS.course + 2) level += 0.7;
     else if (x % SCORE === 0 && y > 3 && y < ROWS.slabs - 3) level -= 0.8;
     return tone(CONCRETE, level, x, y);
   });
@@ -76,8 +89,10 @@ function drawCurb(canvas: Canvas, seed: number): void {
       return tone(STONE, (y === ROWS.slabs + 1 ? 3 : 2.1) + block + corner, x, y);
     }
     if (y < ROWS.curbFace) return tone(STONE, 1.4 - (y - ROWS.curbTop) * 0.12 + corner, x, y);
-    const grit = noise(seed, x, y, 5) > 0.72 ? 0.8 : 0;
-    return tone(ASPHALT, 1.2 - (y - ROWS.curbFace) * 0.08 + grit + corner, x, y);
+    // The gutter in the curb's shadow, then the roadway: darker than the sidewalk, its grit.
+    if (y < ROWS.gutter) return at(ASPHALT, 0);
+    if (noise(seed + 3, x, y, 2) > 0.8) return at(CONCRETE, 1);
+    return tone(ASPHALT, 0.9 + (noise(seed, x, y, 7) - 0.5) * 0.6 + corner, x, y);
   });
 }
 

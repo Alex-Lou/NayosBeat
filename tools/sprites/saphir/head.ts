@@ -74,9 +74,10 @@ const LEGEND: Legend = {
   K: DETAIL.ink,
   W: DETAIL.eyeWhite,
   I: DETAIL.irisDeep,
-  // The slit lit by her energy (face.ts).
+  // The slit lit by her energy (face.ts), and its glint at rest.
   G: DETAIL.sound,
   g: DETAIL.soundLight,
+  L: DETAIL.maskGlow,
 };
 
 /**

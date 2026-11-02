@@ -58,8 +58,8 @@ En bas du calque, la partie du trottoir qui va des combattants aux façades : du
 
 ### 3.3 `floor`, le sol (100 %)
 
-- **Le trottoir** où se tiennent les combattants : des dalles de béton. Un joint franc tous les 64 px du monde, à peu près la limite du corps à corps, et un trait de dalle discret tous les 32 px. Les repères de 16 px que l'audit P9 propose pour la boîte grise feraient ici des rayures serrées : ils restent à la boîte grise. Quelques taches, une fissure rare : le sol vit, mais ses repères restent les plus contrastés du calque. Son ton est le même d'un bout à l'autre, sans dégradé : une bande de tramage sur toute la largeur vibrerait à la secousse.
-- **La bordure** de granit au premier plan, éclairée sur son arête, puis le caniveau et l'asphalte sombre. En gros plan, la caméra coupe la bordure.
+- **Le trottoir** où se tiennent les combattants : des dalles de béton. Un joint franc tous les 64 px du monde, à peu près la limite du corps à corps, et un trait de dalle discret tous les 32 px. Les repères de 16 px que l'audit P9 propose pour la boîte grise feraient ici des rayures serrées : ils restent à la boîte grise. Quelques taches, une fissure rare : le sol vit, mais ses repères restent les plus contrastés du calque. Son ton est le même d'un bout à l'autre, sans dégradé : une bande de tramage sur toute la largeur vibrerait à la secousse. Les dalles sont posées sur deux rangs, et une sur trois environ est un cran plus sombre, d'un ton plein : le trottoir se lit comme des dalles, pas comme une feuille grise (remarque du développeur). Jamais plus clair : une grande couleur plus claire ferait bouger les mesures de flashs.
+- **La bordure** de granit au premier plan, éclairée sur son arête, puis le caniveau dans son ombre et la chaussée, nettement plus sombre que le trottoir, avec son grain. En gros plan, la caméra coupe la bordure.
 - **Les deux bouts** : le sol s'assombrit sur les 24 derniers pixels du monde, sous l'échafaudage à gauche et sous le pilier à droite.
 
 Les joints restent verticaux. Une vraie perspective demanderait un défilement par rangée (la technique des jeux d'arcade), que le pipeline n'a pas : c'est noté pour plus tard (§10).
@@ -198,7 +198,7 @@ La dernière lumière du jour, basse derrière la ville. Le ciel passe d'un bleu
 
 ### 13.2 La suite
 
-1. La nuit vivante (nuages qui dérivent, fenêtres qui s'allument et s'éteignent) et la pluie (rideau de gouttes, trottoir mouillé, reflets).
+1. La nuit vivante (nuages qui dérivent, fenêtres qui s'allument et s'éteignent). La pluie est faite : la rue l'offre à minuit (`pluie.md`).
 2. Les dégâts : fissures du trottoir aux chutes lourdes et aux KO, mur du coin fissuré quand un combattant y est envoyé fort. Ils s'accumulent sur le match, avec un plafond, et la rue repart à neuf au match suivant.
 3. La brume : elle avale la ville et le viaduc, et pose des halos autour des réverbères, jamais devant les combattants.
 

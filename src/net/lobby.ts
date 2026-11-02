@@ -14,6 +14,12 @@ export const ROOM_COUNT = 4;
 /** How long a guest waits for the host's answer once the channel is open. */
 export const HANDSHAKE_MS = 10_000;
 
+/**
+ * The messages a paired channel keeps until someone listens to it (the other side may speak
+ * first): more is a flood, and the link is cut.
+ */
+export const HELD_MESSAGES = 16;
+
 /** The id of room `room` on the server: the protocol's version in it, so versions never meet. */
 export function roomId(room: number): string {
   return `nayosbeat-${PROTOCOL_VERSION}-lobby-${room}`;
@@ -108,7 +114,8 @@ export async function findOpponent(
     result = await searchRooms(matchmaker, signal);
     return result;
   } finally {
-    matchmaker.dispose(result.kind === 'paired' ? result.channel : undefined);
+    const kept = result.kind === 'paired' ? result.channel : undefined;
+    matchmaker.dispose(kept instanceof HeldChannel ? kept.raw : kept);
   }
 }
 
@@ -126,8 +133,8 @@ async function searchRooms(matchmaker: Matchmaker, signal: AbortSignal): Promise
         if (joined.kind === 'unreachable') continue;
         if (joined.kind !== 'joined') return joined;
         const answer = await unlessAborted(greet(joined.channel), signal);
-        if (answer === 'accepted')
-          return { kind: 'paired', channel: joined.channel, role: 'guest', room };
+        if (answer instanceof HeldChannel)
+          return { kind: 'paired', channel: answer, role: 'guest', room };
         joined.channel.close();
         if (answer !== 'refused') return CANCELLED;
       }
@@ -168,7 +175,7 @@ function host(hosted: HostedRoom, room: number, signal: AbortSignal): Promise<Se
               return;
             }
             channel.send(encodeMessage({ type: 'hello' }));
-            finish({ kind: 'paired', channel, role: 'host', room });
+            finish({ kind: 'paired', channel: new HeldChannel(channel), role: 'host', room });
           },
           closed: () => undefined,
         });
@@ -181,16 +188,16 @@ function host(hosted: HostedRoom, room: number, signal: AbortSignal): Promise<Se
 }
 
 /**
- * Says hello to the host just joined: `accepted` if it says hello back, `refused` if it is busy,
- * gone, answers anything else, or nothing in HANDSHAKE_MS (the next room is tried then).
+ * Says hello to the host just joined: its channel, held, if it says hello back; `refused` if it is
+ * busy, gone, answers anything else, or nothing in HANDSHAKE_MS (the next room is tried then).
  */
-function greet(channel: Channel): Promise<'accepted' | 'refused'> {
+function greet(channel: Channel): Promise<HeldChannel | 'refused'> {
   return new Promise((resolve) => {
     const timer = setTimeout(() => {
       finish('refused');
     }, HANDSHAKE_MS);
     let done = false;
-    const finish = (answer: 'accepted' | 'refused') => {
+    const finish = (answer: HeldChannel | 'refused') => {
       if (done) return;
       done = true;
       clearTimeout(timer);
@@ -198,7 +205,8 @@ function greet(channel: Channel): Promise<'accepted' | 'refused'> {
     };
     channel.listen({
       message: (data) => {
-        finish(parseMessage(data)?.type === 'hello' ? 'accepted' : 'refused');
+        // Held at once: what the host says next must not go to this listener, gone.
+        finish(parseMessage(data)?.type === 'hello' ? new HeldChannel(channel) : 'refused');
       },
       closed: () => {
         finish('refused');
@@ -227,4 +235,51 @@ function unlessAborted<T>(promise: Promise<T>, signal: AbortSignal): Promise<T |
       },
     );
   });
+}
+
+/**
+ * A paired channel that keeps what arrives until someone listens (the opponent may speak before
+ * the salon is open), at most HELD_MESSAGES: more, and it is closed. `raw` is the matchmaker's.
+ */
+class HeldChannel implements Channel {
+  private listener: ChannelListener | null = null;
+  private readonly held: unknown[] = [];
+  private heldClose = false;
+
+  constructor(readonly raw: Channel) {
+    raw.listen({
+      message: (data) => {
+        if (this.listener) this.listener.message(data);
+        else if (this.held.push(data) > HELD_MESSAGES) {
+          this.held.length = 0;
+          raw.close();
+        }
+      },
+      closed: () => {
+        if (this.listener) this.listener.closed();
+        else this.heldClose = true;
+      },
+    });
+  }
+
+  send(text: string): void {
+    this.raw.send(text);
+  }
+
+  /** Hands what it kept to `listener` a microtask later, in order: never inside its own setup. */
+  listen(listener: ChannelListener): void {
+    queueMicrotask(() => {
+      this.listener = listener;
+      for (const data of this.held.splice(0)) listener.message(data);
+      if (this.heldClose) listener.closed();
+    });
+  }
+
+  route(): Promise<Route> {
+    return this.raw.route();
+  }
+
+  close(): void {
+    this.raw.close();
+  }
 }

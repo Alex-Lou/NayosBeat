@@ -330,6 +330,25 @@ body {
   background: #f0c94a;
   border-color: #fff;
 }
+/* The online name's field (src/ui/name-entry.ts): 16 px, below which iOS zooms in on focus. */
+.menu-input {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 14px;
+  font:
+    16px / 1.4 'Press Start 2P',
+    monospace;
+  color: #fff;
+  background: #22223a;
+  border: 2px solid #f0c94a;
+  border-radius: 4px;
+}
+.menu-input-error {
+  min-height: 1em;
+  color: #ffb4a8;
+}
 .menu-hint {
   display: block;
   margin-top: 6px;

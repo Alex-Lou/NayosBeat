@@ -35,8 +35,10 @@ import {
   LOOSE,
 } from './fixtures.ts';
 import { CLUB_FRAMES, drawClub } from './club.ts';
+import { wetAt } from './floor.ts';
 import { drawBin, drawCrates, drawLitter, drawSedan, drawSleeper, drawVan } from './yard.ts';
 import {
+  ASPHALT,
   BRICK,
   CONCRETE,
   EMBER,
@@ -53,6 +55,8 @@ import {
   STEAM,
   STEEL,
   TAG,
+  WET,
+  WET_ASPHALT,
 } from './palette.ts';
 
 /** Row of the dock's foot: the back of the yard. */
@@ -109,6 +113,8 @@ const CAT_X = 176;
 /** The lid the cat sits on. */
 const LID = DUMPSTER.foot - 51;
 const PUDDLE = { x: 818, y: 436, width: 96, height: 16 } as const;
+/** The yard behind the fighters: the concrete apron at the dock's foot, the drain, the asphalt. */
+const APRON = { drain: BASE + 16, asphalt: BASE + 20 } as const;
 const VENT = { x: 1396, top: 168 } as const;
 
 /** The sodium wall packs, one over each bay; the caged lamp by the door. */
@@ -440,9 +446,23 @@ function drawYard(canvas: Canvas): void {
       if (d < 0.75 && checker && (x >> 1) % 2 === y % 2) return at(GLASS, 1);
       if (checker && x % 4 === 0 && y % 2 === 0) return at(GLASS, 0);
     }
-    const joint = x % 128 === 0 && y > BASE + 2;
-    const shade = y < BASE + 4 ? -1 : 0;
-    return tone(CONCRETE, concreteAt(x, y, 2.3, LIGHTS) + shade - (joint ? 1.2 : 0), x, y);
+    const wet = wetAt(83, x, y * 2);
+    // The concrete apron at the dock's foot, its joints every slab.
+    if (y < APRON.drain) {
+      const joint = x % 128 === 0 && y > BASE + 2;
+      const shade = y < BASE + 4 ? -1 : 0;
+      const ramp = y > BASE + 4 && wet ? WET : CONCRETE;
+      return tone(ramp, concreteAt(x, y, 2.3, LIGHTS) + shade - (joint ? 1.2 : 0), x, y);
+    }
+    // The steel drain channel along it, its slots.
+    if (y < APRON.asphalt) {
+      if (y === APRON.drain) return at(STEEL, 3);
+      return at(STEEL, x % 4 < 2 ? 0 : 1);
+    }
+    // The asphalt the trucks come in on, into the lamps' pools, its grit.
+    if (noise(87, x, y, 2) > 0.87) return at(ASPHALT, 3);
+    const grain = (noise(88, x, y * 2, 30) - 0.5) * 0.6;
+    return tone(wet ? WET_ASPHALT : ASPHALT, 1.4 + grain + lightAt(LIGHTS, x, y) * 0.9, x, y);
   });
   // The pale lip of the yard against the dock.
   canvas.hline(DOCK_LEFT, BASE, canvas.width - DOCK_LEFT, at(CONCRETE, 0));
