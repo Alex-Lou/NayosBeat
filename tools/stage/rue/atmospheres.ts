@@ -5,7 +5,7 @@
  */
 
 import type { Rgba } from '../../sprites/png.ts';
-import { grade, repaint, rgba } from '../kit/grade.ts';
+import { ceiled, grade, repaint, rgba } from '../kit/grade.ts';
 import type { StageAtmosphere } from '../kit/stage.ts';
 import {
   CLOUD,
@@ -56,8 +56,37 @@ export function dusk(): Rgba[] {
   return palette;
 }
 
+/**
+ * The rain at midnight (docs/art/pluie.md): the walls and the sidewalk darker and colder, soaked;
+ * the lamps, the windows and the signs as bright as on a dry night, the street around them
+ * glistening; the sky a low lid, the towers half gone in the rain.
+ */
+function rain(): Rgba[] {
+  const palette = [...PALETTE];
+  const lit = new Set([...WARM, ...LAMP, ...LIGHTBOX, ...NEON_ORANGE, ...NEON_VIOLET, ...COOL]);
+  grade(palette, { glow: rgba('#2e3450'), shadow: rgba('#1c1d31'), lit });
+  for (const slot of lit) palette[slot] = PALETTE[slot] ?? palette[slot] ?? rgba('#000000');
+  ceiled(palette, PALETTE, lit);
+  repaint(palette, SKY, [
+    '#1b1b2f',
+    '#1f1e33',
+    '#232136',
+    '#272439',
+    '#2b273c',
+    '#2f2a3f',
+    '#332c41',
+    '#372f43',
+    '#3b3145',
+  ]);
+  repaint(palette, CLOUD, ['#262439', '#2c2940', '#332e46', '#3a334a']);
+  repaint(palette, DISTANT, ['#1f1c34', '#221f37', '#26223a', '#2a253d']);
+  repaint(palette, DISTANT_LIT, ['#3a3048', '#4a3a4e', '#5a4652']);
+  return palette;
+}
+
 /** The atmospheres the street offers, the base one first (BASE_ATMOSPHERE: palette.ts as it is). */
 export const STREET_ATMOSPHERES: readonly StageAtmosphere[] = [
   { atmosphere: { moment: 'midnight', weather: 'clear' }, palette: PALETTE },
   { atmosphere: { moment: 'dusk', weather: 'clear' }, palette: dusk() },
+  { atmosphere: { moment: 'midnight', weather: 'rain' }, palette: rain() },
 ];

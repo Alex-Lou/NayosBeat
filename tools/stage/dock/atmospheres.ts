@@ -4,7 +4,7 @@
  */
 
 import type { Rgba } from '../../sprites/png.ts';
-import { grade, luminanceOf, MOST_LUMINANCE, repaint, rgba } from '../kit/grade.ts';
+import { ceiled, grade, repaint, rgba } from '../kit/grade.ts';
 import type { StageAtmosphere } from '../kit/stage.ts';
 import {
   CLOUD,
@@ -17,49 +17,22 @@ import {
   PALETTE,
   SKY,
   SODIUM,
+  WET,
+  WET_ASPHALT,
 } from './palette.ts';
-
-/**
- * The ceiling of the dawn's masses, channel by channel. Two measures are set over every large
- * color of every stage, and the dock must move neither:
- * - the flash tables are measured over the brightest backdrop, each channel at its highest among
- *   the street's and the gym's large colors (#6d4457, src/render/luminance.ts `brightestBackdrop`,
- *   tests/render/flash-areas.test.ts);
- * - the Finisher's cyan halo takes the highest alpha that lights none of them (0.27,
- *   tests/render/finisher-halo.test.ts). Cyan adds green, and the less red a backdrop has, the
- *   less the halo's own red takes back: a grey dawn at that backdrop's green would lower it.
- * So the green sits a few steps lower.
- */
-const DAWN_CEILING = rgba('#6d3c57');
-
-/** `color`, darkened (its hue kept) until none of its channels is past `ceiling`'s. */
-function under(color: Rgba, ceiling: Rgba): Rgba {
-  const k = Math.min(
-    1,
-    ceiling.r / Math.max(color.r, 1),
-    ceiling.g / Math.max(color.g, 1),
-    ceiling.b / Math.max(color.b, 1),
-  );
-  const channel = (value: number) => Math.floor(value * k);
-  return { r: channel(color.r), g: channel(color.g), b: channel(color.b), a: color.a };
-}
 
 /**
  * A grey dawn, the party's end: a cold slate light comes down into the yard, the brick and the
  * concrete turn grey-blue, the shadows go blue; the wall packs are still on, paler than the day
  * coming, and the club's violet fades in its windows. The sky is a low lid of grey, a little
  * lighter over the roofs. Every large color stays under the flashes' band (docs/flashs.md §3)
- * and under DAWN_CEILING: the masses the night kept under the band are darkened back under it.
+ * and under the flash measures' ceiling (kit/grade.ts `ceiled`).
  */
 function dawn(): Rgba[] {
   const palette = [...PALETTE];
   const lit = new Set([...SODIUM, ...GLASS.slice(3), ...GLASS_WARM, ...EXIT, ...EMBER]);
   grade(palette, { glow: rgba('#7c8698'), shadow: rgba('#1e2436'), lit });
-  palette.forEach((color, slot) => {
-    const night = PALETTE[slot];
-    if (slot === 0 || lit.has(slot) || !night || luminanceOf(night) > MOST_LUMINANCE) return;
-    palette[slot] = under(color, DAWN_CEILING);
-  });
+  ceiled(palette, PALETTE, lit);
   // The sky a lid of grey, lighter than the night's from the top down: over the roof, the only
   // band of it the fight shows (docs/art/decor-rue.md §13).
   repaint(palette, SKY, [
@@ -79,8 +52,48 @@ function dawn(): Rgba[] {
   return palette;
 }
 
+/**
+ * The rain at midnight, a downpour (docs/art/pluie.md): the brick and the concrete darker and
+ * colder, soaked; the lamps and the club's violet as bright as on a dry night, their light
+ * running in the puddles (WET, floor.ts); the sky a low lid, the towers half gone in the rain.
+ */
+function rain(): Rgba[] {
+  const palette = [...PALETTE];
+  const lit = new Set([...SODIUM, ...GLASS.slice(3), ...GLASS_WARM, ...EXIT, ...EMBER]);
+  grade(palette, { glow: rgba('#2e3450'), shadow: rgba('#1c1d31'), lit });
+  for (const slot of lit) palette[slot] = PALETTE[slot] ?? palette[slot] ?? rgba('#000000');
+  ceiled(palette, PALETTE, lit);
+  repaint(palette, WET, [
+    '#1c1c28',
+    '#20202e',
+    '#252433',
+    '#2b293a',
+    '#322e42',
+    '#3a334a',
+    '#423850',
+    '#4a3c54',
+  ]);
+  repaint(palette, WET_ASPHALT, ['#1c1c2a', '#22212f', '#2a2737', '#332e40']);
+  repaint(palette, SKY, [
+    '#1c1c30',
+    '#201f34',
+    '#242238',
+    '#28253b',
+    '#2c283e',
+    '#302b40',
+    '#342d42',
+    '#383044',
+    '#3c3246',
+  ]);
+  repaint(palette, CLOUD, ['#262439', '#2c2940', '#332e46', '#3a334a']);
+  repaint(palette, DISTANT, ['#1f1c34', '#221f37', '#26223a', '#2a253d']);
+  repaint(palette, DISTANT_LIT, ['#3a3048', '#4a3a4e', '#5a4652']);
+  return palette;
+}
+
 /** The atmospheres the dock offers, the base one first (BASE_ATMOSPHERE: palette.ts as it is). */
 export const DOCK_ATMOSPHERES: readonly StageAtmosphere[] = [
   { atmosphere: { moment: 'midnight', weather: 'clear' }, palette: PALETTE },
   { atmosphere: { moment: 'dawn', weather: 'clear' }, palette: dawn() },
+  { atmosphere: { moment: 'midnight', weather: 'rain' }, palette: rain() },
 ];
