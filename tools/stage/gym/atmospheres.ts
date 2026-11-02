@@ -8,7 +8,7 @@
 import type { Rgba } from '../../sprites/png.ts';
 import { ceiled, grade, rgba } from '../kit/grade.ts';
 import type { StageAtmosphere } from '../kit/stage.ts';
-import { dusk as streetDusk, rain as streetRain } from '../rue/atmospheres.ts';
+import { dusk as streetDusk, fog as streetFog, rain as streetRain } from '../rue/atmospheres.ts';
 import { BORROWED, FLUO, LAMP_GREEN, LAMP_RED, OWN_FROM, PALETTE, TRAIN_LIT } from './palette.ts';
 
 /** `palette` with the slots the gym takes from the street as `street` (its palette of an hour). */
@@ -50,9 +50,18 @@ function rain(): Rgba[] {
   return palette;
 }
 
+/**
+ * A fog at midnight (docs/art/brume.md): outside, the street's night of fog, the towers and the
+ * next span half gone behind the window; under the vault, the gym as it is, sheltered from it.
+ */
+function fog(): Rgba[] {
+  return borrowedFrom([...PALETTE], streetFog());
+}
+
 /** The atmospheres the gym offers, the base one first (BASE_ATMOSPHERE: palette.ts as it is). */
 export const GYM_ATMOSPHERES: readonly StageAtmosphere[] = [
   { atmosphere: { moment: 'midnight', weather: 'clear' }, palette: PALETTE },
   { atmosphere: { moment: 'dusk', weather: 'clear' }, palette: dusk() },
   { atmosphere: { moment: 'midnight', weather: 'rain' }, palette: rain() },
+  { atmosphere: { moment: 'midnight', weather: 'fog' }, palette: fog() },
 ];

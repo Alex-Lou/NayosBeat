@@ -5,6 +5,7 @@
  */
 
 import type { Rgba } from '../../sprites/png.ts';
+import { fogged } from '../kit/fog.ts';
 import { ceiled, grade, repaint, rgba, type Grade } from '../kit/grade.ts';
 import type { StageAtmosphere } from '../kit/stage.ts';
 import {
@@ -24,6 +25,7 @@ import {
   REFLECT_YELLOW,
   SKY,
   SODIUM,
+  TOWER,
   WET,
   WET_PAVER,
   WINDOW,
@@ -132,9 +134,25 @@ function duskRain(): Rgba[] {
   return palette;
 }
 
+/**
+ * A fog at midnight (docs/art/brume.md): the megacity sunk in it, its towers ghosts, the signs'
+ * violet and yellow glowing out of the murk; the roof a little greyer. Banks of mist drift over the
+ * distance (index.ts); the blimp's beam cuts through them.
+ */
+function fog(): Rgba[] {
+  return fogged(PALETTE, {
+    color: rgba('#2a2a44'),
+    far: [SKY, CLOUD, HAZE, TOWER, WINDOW],
+    lit: LIT,
+    depth: 0.72,
+    near: 0.24,
+  });
+}
+
 /** The atmospheres the rooftop offers, the base one first (BASE_ATMOSPHERE: palette.ts as it is). */
 export const ROOFTOP_ATMOSPHERES: readonly StageAtmosphere[] = [
   { atmosphere: { moment: 'midnight', weather: 'clear' }, palette: PALETTE },
   { atmosphere: { moment: 'midnight', weather: 'rain' }, palette: midnightRain() },
   { atmosphere: { moment: 'dusk', weather: 'rain' }, palette: duskRain() },
+  { atmosphere: { moment: 'midnight', weather: 'fog' }, palette: fog() },
 ];

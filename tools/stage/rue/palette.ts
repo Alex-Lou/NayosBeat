@@ -5,6 +5,7 @@
  * The fighters own cyan and magenta; nothing here comes near them.
  */
 
+import { MIST_HEXES } from '../kit/fog.ts';
 import type { Rgba } from '../../sprites/png.ts';
 
 const colors: Rgba[] = [{ r: 0, g: 0, b: 0, a: 0 }];
@@ -134,6 +135,9 @@ export const SPRAY_RAMPS = {
   pale: TAG.cream,
   colors: [TAG.rose, TAG.teal, TAG.cream, TAG.violet, TAG.ochre],
 } as const;
+
+/** The mist's wisps, drawn only in the fog (kit/fog.ts). */
+export const MIST = ramp(...MIST_HEXES);
 
 /** Every color, slot by slot (256 at most: one PNG palette). */
 export const PALETTE: readonly Rgba[] = colors;

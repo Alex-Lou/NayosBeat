@@ -17,8 +17,9 @@ Ce fichier est pour l'agent qui reprend les décors (les lieux de combat). Il di
 | La pluie : la couche du rendu, la rue et le Dock sous la pluie à minuit (`pluie.md`) | en ligne (#117) |
 | Une animation peut glisser sur son calque (`StageDrift`) | en ligne (#122) |
 | Rooftop Rain (`rooftop`), minuit et deux pluies, le dirigeable (`decor-rooftop.md`) | en ligne (#122) |
-| Le gym a sa propre palette ; un lieu couvert (`sheltered`) ; des animations d'une seule météo (`weather`) | PR du gym sous la pluie |
-| Le gym sous la pluie : la verrière, la fuite dans le seau (`decor-gym.md`) | PR du gym sous la pluie |
+| Le gym a sa propre palette ; un lieu couvert (`sheltered`) ; des animations d'une seule météo (`weather`) | en ligne (#126) |
+| Le gym sous la pluie : la verrière, la fuite dans le seau (`decor-gym.md`) | en ligne (#126) |
+| La brume, dans les quatre lieux ; les météos des dix lieux (`brume.md` §4) | PR de la brume |
 
 ## 2. Ce que veut le développeur
 
@@ -33,6 +34,7 @@ Ses mots, à garder en tête :
 Ses choix, déjà faits (ne pas les redemander) :
 
 - **Météos** : nuit claire, pluie, brume.
+- **Dix lieux**, chacun avec le ciel clair et deux météos qui lui vont (`brume.md` §4) ; une quatrième météo, la **neige** ; pas de plein jour (le temple à l'aube, au crépuscule et la nuit) ; une PR par lieu.
 - **Couleurs** : les trois leviers à la fois (une palette par météo, des moments comme minuit et crépuscule, une liberté par lieu).
 - **Dégâts** : ils s'accumulent sur le match.
 - **Variantes** : des palettes calculées à la génération.
@@ -152,7 +154,7 @@ Elle gère l'écran « Lieu », `stageChoice`, et les options « Lieu » et « A
 1. **La nuit vivante** : des nuages qui dérivent, des fenêtres qui s'allument et s'éteignent (des animations lentes sur `far`).
 2. **La pluie** : la couche du rendu est faite (`pluie.md`) ; la rue et le Dock l'offrent à minuit, Rooftop Rain à minuit et au crépuscule. Le gym aussi, couvert : il pleut à sa verrière. Pour un lieu de plus sous la pluie : une palette `midnight-rain` (ou `dusk-rain`) dans ses `atmospheres.ts` suffit, le rendu fait tomber la pluie de lui-même ; des flaques cachées demandent une rampe `WET` (voir le Dock). Un lieu couvert se marque `sheltered` dans `src/art/stages.ts` : le rideau n'y tombe pas, sa pluie se dessine dans des animations de la seule météo `rain` (`weather`, voir le gym).
 3. **Les dégâts cumulés sur le match** : fissures du sol aux chutes lourdes et aux KO, mur fissuré quand un combattant y est envoyé fort ; cordes du ring et sac crevé au gym. Ils sont déclenchés par des événements du rendu (jamais par le cœur), avec un plafond, et le décor repart à neuf au match suivant. À concevoir : une architecture d'« états de dégâts » par lieu (des images par cran). Présente-la au développeur avant de coder.
-4. **La brume** : elle avale le fond, pose des halos autour des lampes, jamais devant les combattants.
+4. **La brume** : faite (`brume.md`) dans les quatre lieux, avec des bancs qui dérivent. Les halos autour des lampes restent à faire. Le tableau des météos des dix lieux est au §4 de `brume.md`.
 5. **L'aube** : le moment `dawn` existe depuis le Loading Dock. Il reste à la peindre pour le gym (« le matin froid »).
 
 ### 7.2 Les huit lieux restants

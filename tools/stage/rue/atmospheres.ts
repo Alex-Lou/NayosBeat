@@ -5,6 +5,7 @@
  */
 
 import type { Rgba } from '../../sprites/png.ts';
+import { fogged } from '../kit/fog.ts';
 import { ceiled, grade, repaint, rgba } from '../kit/grade.ts';
 import type { StageAtmosphere } from '../kit/stage.ts';
 import {
@@ -84,9 +85,25 @@ export function rain(): Rgba[] {
   return palette;
 }
 
+/**
+ * A fog at midnight (docs/art/brume.md): the towers and the sky swallowed, the elevated line half
+ * gone; the street a little greyer, nearer; its lamps and its signs as bright as ever, glowing out
+ * of it. Banks of mist drift over the distance (index.ts).
+ */
+export function fog(): Rgba[] {
+  return fogged(PALETTE, {
+    color: rgba('#2a2740'),
+    far: [SKY, CLOUD, DISTANT, DISTANT_LIT],
+    lit: new Set([...WARM, ...LAMP, ...LIGHTBOX, ...NEON_ORANGE, ...NEON_VIOLET, ...COOL]),
+    depth: 0.72,
+    near: 0.24,
+  });
+}
+
 /** The atmospheres the street offers, the base one first (BASE_ATMOSPHERE: palette.ts as it is). */
 export const STREET_ATMOSPHERES: readonly StageAtmosphere[] = [
   { atmosphere: { moment: 'midnight', weather: 'clear' }, palette: PALETTE },
   { atmosphere: { moment: 'dusk', weather: 'clear' }, palette: dusk() },
   { atmosphere: { moment: 'midnight', weather: 'rain' }, palette: rain() },
+  { atmosphere: { moment: 'midnight', weather: 'fog' }, palette: fog() },
 ];
