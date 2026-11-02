@@ -1,5 +1,6 @@
 import type Phaser from 'phaser';
 import {
+  driftAt,
   STAGE_SCALE,
   type StageArtLayer,
   type StageProp,
@@ -24,6 +25,15 @@ interface Playing {
   readonly image: Phaser.GameObjects.Image;
   /** The frame shown, -1 before the first update. */
   shown: number;
+  /** Where its glide has taken it, image pixels (StageDrift). */
+  moved: number;
+}
+
+/** How far `prop` has glided `step` steps after it started (0 if it does not glide). */
+export function propDriftAt(prop: StageProp, step: number): number {
+  if (!prop.drift) return 0;
+  const total = prop.timeline.reduce((sum, [, steps]) => sum + steps, 0);
+  return driftAt(prop.drift, step, total);
 }
 
 function frameName(prop: StageProp, index: number): string {
@@ -66,7 +76,7 @@ export class StagePropsView {
         .setScrollFactor(layer.scroll, 1)
         .setDepth(DEPTH.stage)
         .setVisible(false);
-      this.playing.push({ prop, layer, image, shown: -1 });
+      this.playing.push({ prop, layer, image, shown: -1, moved: 0 });
     }
     this.show();
   }
@@ -85,8 +95,10 @@ export class StagePropsView {
   private show(): void {
     for (const playing of this.playing) {
       const index = propFrameAt(playing.prop, this.steps);
-      if (index === playing.shown) continue;
+      const moved = propDriftAt(playing.prop, this.steps);
+      if (index === playing.shown && moved === playing.moved) continue;
       playing.shown = index;
+      playing.moved = moved;
       const frame: StagePropFrame | null = playing.prop.frames[index] ?? null;
       if (!frame) {
         playing.image.setVisible(false);
@@ -94,7 +106,7 @@ export class StagePropsView {
       }
       playing.image
         .setFrame(frameName(playing.prop, index))
-        .setPosition(frame.x / STAGE_SCALE, playing.layer.y + frame.y / STAGE_SCALE)
+        .setPosition((frame.x + moved) / STAGE_SCALE, playing.layer.y + frame.y / STAGE_SCALE)
         .setVisible(true);
     }
   }

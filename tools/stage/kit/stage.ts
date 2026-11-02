@@ -8,6 +8,7 @@ import {
   STAGE_LAYERS,
   STAGE_SCALE,
   type Atmosphere,
+  type StageDrift,
   type StageLayer,
 } from '../../../src/art/stage-layers.ts';
 import type { IndexedImage, Rgba } from '../../sprites/png.ts';
@@ -30,6 +31,8 @@ export interface CodeProp {
   readonly timeline: readonly (readonly [frame: number, steps: number])[];
   /** Each frame, `rect` wide and high, frame 0 the still layer's own pixels there. */
   readonly frames: readonly IndexedImage[];
+  /** It glides along its layer (src/art/stage-layers.ts `StageDrift`). */
+  readonly drift?: StageDrift;
 }
 
 export interface CodeStage {
