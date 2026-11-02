@@ -1,0 +1,203 @@
+# Reprendre le développement sans Claude Code
+
+Ce guide sert quand les sessions Claude Code ne sont plus disponibles. Tu continues alors seul, ou avec **OpenCode** branché sur **OpenRouter**, depuis ton PC à la maison (via Tailscale et Termius) ou directement sur ton téléphone (Termux).
+
+Rédigé par la session principale le 2 novembre 2026, sur `main` à `c0221be`.
+
+- **Pour un agent (OpenCode ou autre)** : `opencode.json` charge ce fichier, et `CLAUDE.md` est lu comme règles du projet. Lis les deux en entier avant d'agir.
+- **Pour toi** : les §1 à §4 disent où on en est et comment travailler ; les §5 à §8 expliquent l'installation.
+
+---
+
+## 1. Où en est le projet
+
+**En ligne** (https://alex-lou.github.io/NayosBeat/) : chaque push sur `main` est publié par GitHub Pages en une ou deux minutes.
+
+Ce qui est fait et publié :
+- **Nayo et Riff** jouables, avec la lumière de rue et leurs lumières vivantes (#97, #102). Pour Nayo seulement : les effets signature et le Boost avec ses propres images.
+- **Le plan polish**, hors son : lots 1, 3, 6, 8, 9, 11, 14 et 16 (#81 à #95).
+- **Les décors** : la rue, ses ambiances tirées à chaque match, le Viaduct Gym et l'écran « Lieu » (#96, #98, #99, #103).
+- **Le son est abandonné** (décision du propriétaire).
+
+**En cours, hors du jeu en ligne :**
+
+| Chantier | Où | Prochaine étape | Ce qu'il faut |
+|---|---|---|---|
+| **Saphir** (3e combattante) | `docs/saphir.md`, `src/art/saphir/`, `tools/sprites/saphir/` | ses hurtbox mesurées, puis la porte 4, puis la PR de branchement (E), puis la PR F (plans du CPU, aide, équilibrage, D36 au journal) | « Branche quand c'est parfait » : le go est donné, sous condition de la porte 4 |
+| **Watt** (colosse à tête d'ampoule, tiré de Zen-Tazzer) | PR #106 (porte 1a, docs seules) | ton « oui » sur la spec, puis la porte 1b (données) | ta validation |
+| **Les prochains combattants** | [art/passation-personnages.md](art/passation-personnages.md) | suivre ses portes | — |
+| **Le multijoueur à deux** | [prompts/multijoueur.md](prompts/multijoueur.md) | la porte 0 : se trouver et afficher le ping | à lancer |
+| **Les poses de Nayo** (tranche 3 : hanches et jambes qui bougent, images-clés dessinées à la main) | [art/nayo-essence.md](art/nayo-essence.md) | à démarrer | — |
+| **L'identité de Riff** (ses lumières de coup, ses effets, ses griffes) | [art/riff-lumiere.md](art/riff-lumiere.md), [art/nayo-vivante.md](art/nayo-vivante.md) | à démarrer, sur le modèle de Nayo | — |
+
+**Décisions qui attendent le propriétaire :**
+- la fluidité F2, sur la branche `feat/anim-f2` ;
+- les données de Riff (équilibrage, D33) ;
+- la silhouette A ou B ;
+- la PWA (#36) ;
+- les poses du Finisher (PR 4) ;
+- le test réel sur téléphone des lumières vivantes et du Viaduct Gym.
+
+---
+
+## 2. Les règles
+
+- **[CLAUDE.md](../CLAUDE.md) fait foi** : c'est la charte du studio, valable pour tout agent.
+- **Les invariants :**
+  - `src/core` est pur, déterministe, en entiers, à 60 tics par seconde ;
+  - les 31 replays dorés ne bougent pas sans raison écrite ;
+  - D17 : le rendu ne touche jamais au cœur ;
+  - D23 : rien n'est interpolé entre deux tics ;
+  - au plus 3 flashs par seconde ;
+  - mémoire vidéo d'un match sous 90 Mo, textures de 4 096 px au plus.
+- **Le journal des décisions** : `docs/combat-v2.md` §0.2. Le dernier numéro est D35 ; D36 est réservé à Saphir et D37 à Watt.
+- **Les retours du propriétaire sur l'art**, à relire avant de montrer quoi que ce soit : [art/passation-personnages.md](art/passation-personnages.md) §2.1.
+
+---
+
+## 3. Comment travailler, sans session principale
+
+C'était le rôle de la session Claude « principale » ; c'est maintenant le tien, ou celui de ton agent :
+
+1. **Une branche par chantier**, partie de `main` à jour :
+   ```sh
+   git fetch origin main
+   git switch -c feat/mon-chantier origin/main
+   ```
+2. **Les contrôles de la CI, en local, avant chaque push** (c'est ce que fait `.github/workflows/ci.yml`) :
+   ```sh
+   npm run format:check && npm run lint && npm run typecheck && npm test \
+     && npm run aseprite:check && npm run build
+   npm run replays:update   # ne doit RIEN changer : git status propre
+   ```
+   Après `npm run sprites`, vérifie `git status` : `public/icons` peut avoir été réécrit.
+3. **Ajouter les fichiers un par un**, jamais `git add -A`. Les docs et les commits sont en français, les commentaires du code en anglais.
+4. **Pousser et ouvrir une PR** :
+   ```sh
+   git push -u origin feat/mon-chantier
+   gh pr create --draft
+   ```
+5. **Fusionner** quand la CI GitHub est verte. **Fusionner publie** : `main` part en ligne.
+   - Avant de fusionner la PR d'un autre (agent ou session), vérifie-la **combinée avec `main`** :
+     ```sh
+     git merge origin/main
+     ```
+     puis toute la CI.
+   - Fusionne en « squash » :
+     ```sh
+     gh pr merge --squash
+     ```
+6. **Montrer avant de publier l'art** : des planches avant/après en ×3 et des GIF à vitesse réelle. L'outil de capture image par image est décrit dans [art/nayo-vivante.md](art/nayo-vivante.md).
+
+---
+
+## 4. Lancer un agent OpenCode sur ce dépôt
+
+Dans le dossier du dépôt :
+```sh
+opencode
+```
+Puis, au premier lancement, donne-lui ce message :
+
+```text
+Tu reprends NayosBeat. Lis d'abord CLAUDE.md et docs/reprise.md en entier : ils font foi. Puis dis-moi en 5 lignes où en est le projet et ce que tu proposes de faire en premier, avec ton hypothèse. N'écris rien avant mon « oui ». Tu travailles sur une branche, tu lances toute la CI avant chaque push, et tu ne fusionnes jamais sans mon accord. Termine chaque tâche par : Fichiers modifiés / Ce qui a été modifié / Fichiers intentionnellement non touchés / Suivi nécessaire.
+```
+
+Pour un chantier précis, colle plutôt le prompt qui lui correspond : [prompts/multijoueur.md](prompts/multijoueur.md), ou l'annexe de [art/passation-personnages.md](art/passation-personnages.md).
+
+---
+
+## 5. Installation A : ton PC à la maison, piloté depuis le téléphone
+
+C'est le plus confortable : le PC fait le travail lourd (tests, build, captures), et le téléphone sert d'écran et de clavier.
+
+### 5.1 Sur le PC (Linux, macOS, ou Windows avec WSL)
+
+1. **Tailscale** : installe-le et connecte-le au même compte que ton téléphone. Note son adresse Tailscale (`100.x.y.z`) ou son nom MagicDNS.
+2. **SSH** :
+   - Linux : `sudo apt install openssh-server`.
+   - macOS : Réglages, Partage, Session à distance.
+   - Windows : utilise **WSL** (Ubuntu) et installe-y `openssh-server`, ou bien active le serveur OpenSSH de Windows.
+   - Autre solution : `tailscale up --ssh` active Tailscale SSH, sans clé à gérer.
+3. **Les outils** :
+   - **Node 22**, la version de la CI (par exemple avec `nvm install 22`) ;
+   - **git** ;
+   - **gh**, la CLI GitHub (`gh auth login`) ;
+   - **lua5.4**, pour `npm run aseprite:check` ;
+   - **tmux**, pour que le travail survive à une déconnexion du téléphone.
+4. **Le dépôt** :
+   ```sh
+   git clone https://github.com/Alex-Lou/NayosBeat.git
+   cd NayosBeat
+   npm ci
+   ```
+   Les outils de capture (Playwright) demandent un Chromium : `npx playwright install chromium`, seulement si tu veux faire des films.
+5. **OpenCode** :
+   ```sh
+   curl -fsSL https://opencode.ai/install | bash
+   ```
+   Ou `npm install -g opencode-ai`. Ensuite, dans `opencode`, tape `/connect`, choisis **OpenRouter** et colle ta clé (créée sur le tableau de bord d'OpenRouter, « Create API Key »). Tape `/models` pour choisir le modèle. La clé est rangée dans `~/.local/share/opencode/auth.json`, **hors du dépôt** : ne la colle jamais dans un fichier du projet.
+
+### 5.2 Depuis le téléphone
+
+1. Tailscale est allumé sur le téléphone.
+2. Dans **Termius**, crée un hôte avec l'adresse Tailscale du PC, ton utilisateur, et une clé SSH (Termius sait en générer une ; ajoute sa partie publique dans `~/.ssh/authorized_keys` sur le PC).
+3. Connecte-toi, puis :
+   ```sh
+   tmux new -A -s nayos
+   cd NayosBeat
+   opencode
+   ```
+   Si la connexion coupe, reconnecte-toi et retape `tmux new -A -s nayos` : tu retrouves tout.
+4. **Tester le jeu sur le téléphone** : sur le PC, lance `npm run dev` (il écoute déjà sur le réseau grâce à `--host`). Sur le téléphone, ouvre `http://100.x.y.z:5173`, avec l'**adresse IP** Tailscale : Vite refuse par défaut un nom d'hôte qu'il ne connaît pas (un nom en `.ts.net`), mais il accepte une adresse IP.
+
+---
+
+## 6. Installation B : tout sur le téléphone (Termux)
+
+En secours, quand le PC est éteint. C'est plus lent ; le build et les tests passent, mais les films (Chromium) ne marchent pas.
+
+1. **Termux** : installe-le depuis F-Droid (la version du Play Store est ancienne), puis :
+   ```sh
+   pkg update && pkg install git nodejs-lts lua54 tmux openssh gh
+   ```
+2. **Le dépôt** :
+   ```sh
+   git clone https://github.com/Alex-Lou/NayosBeat.git
+   cd NayosBeat
+   npm ci
+   ```
+3. **OpenCode dans Termux** : le binaire officiel ne tourne pas directement dans Termux. Deux voies :
+   - **Debian dans Termux** (la plus sûre), puis l'installation normale de §5.1, étape 5, et l'éditeur à l'intérieur :
+     ```sh
+     pkg install proot-distro
+     proot-distro install debian
+     proot-distro login debian
+     ```
+   - **un portage communautaire pour Termux**, plus rapide mais non officiel : à vérifier avant de lui confier ta clé.
+4. **Tester le jeu** : `npm run dev`, puis ouvre `http://localhost:5173` dans le navigateur du téléphone.
+
+**Incertitudes** :
+- je n'ai pas pu essayer OpenCode dans Termux ;
+- `npm ci` peut échouer dans Termux si une dépendance a besoin d'un binaire natif. Le dépôt n'en a pas d'obligatoire, mais c'est à vérifier.
+
+---
+
+## 7. Sécurité
+
+- **Les clés** (OpenRouter, GitHub) restent dans les fichiers de configuration de chaque outil, jamais dans le dépôt, jamais dans un message de commit. Si une clé fuit, révoque-la tout de suite sur le site concerné.
+- **GitHub** : pour `gh auth login`, garde les droits minimaux, c'est-à-dire le dépôt NayosBeat.
+- **Tailscale** : n'expose pas le serveur de développement sur Internet. Le réseau Tailscale suffit.
+- **Un agent** propose et fait sur une branche. **Toi seul** décides ce qui est fusionné, donc publié.
+
+---
+
+## 8. Les sessions Claude encore ouvertes
+
+Tant qu'elles existent, elles se répondent avec `send_message` :
+- **la session principale** : `session_01KAcVVTMwJQUKKCQ1pvSMFk` (revue, fusion, publication) ;
+- **Saphir** : `session_01JBLzLLWNQ2uwtPEZf6UUhQ` ;
+- **Watt / agent design Zen-Tazzer** : `session_01JBLzLMFWxsfSiqQ41agPVG` ;
+- **polish** (son plan est fini) : `session_01JBLzLKLsdBNRQhN4wH6Nka`.
+
+Quand elles ne sont plus là, ce guide et les docs du dépôt suffisent : tout l'état du projet est dans `main`, les PR et ces fichiers.
