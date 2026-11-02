@@ -12,7 +12,7 @@ import { spell } from '../kit/font.ts';
 import { lightAt, type Light } from '../kit/light.ts';
 import { noise } from '../kit/random.ts';
 import type { Rect } from '../kit/stage.ts';
-import { PAPER, POSTER_RED, RIM_COOL, SIGN_INK } from '../rue/palette.ts';
+import { FIGURE_RAMPS, PAPER, POSTER_RED, RIM_COOL, SIGN_INK } from '../rue/palette.ts';
 import { drawFigure, STANDING, type Figure, type Pose } from '../rue/people.ts';
 import { drawHalo, drawTubes } from '../rue/signs.ts';
 import {
@@ -361,17 +361,21 @@ function drawBagWork(canvas: Canvas, frame: number): void {
   const swing = [0, 0, 3, 1][frame] ?? 0;
   drawBag(canvas, BAGS[1], swing);
   const pose = [GUARD, JAB, CROSS, GUARD][frame] ?? GUARD;
-  drawFigure(canvas, {
-    x: BAGS[1] - 36,
-    y: BASE,
-    height: 82,
-    shoulders: 28,
-    facing: 1,
-    head: 'hood',
-    coat: 'short',
-    pose,
-    rim: { side: 1, above: true, ramp: RIM_COOL },
-  });
+  drawFigure(
+    canvas,
+    {
+      x: BAGS[1] - 36,
+      y: BASE,
+      height: 82,
+      shoulders: 28,
+      facing: 1,
+      head: 'hood',
+      coat: 'short',
+      pose,
+      rim: { side: 1, above: true, ramp: RIM_COOL },
+    },
+    FIGURE_RAMPS,
+  );
 }
 
 // --- The right side: speed bag, rope, timer, lockers. ---------------------------------------------
@@ -388,31 +392,35 @@ function drawSpeedBag(canvas: Canvas, frame: number): void {
   const lean = frame === 0 ? -3 : 3;
   canvas.ellipse(x + 8 + lean, platform + 2, 10, 14, at(LEATHER, 3));
   canvas.ellipse(x + 10 + lean, platform + 4, 4, 6, at(LEATHER, 4));
-  drawFigure(canvas, {
-    x: x - 14,
-    y: BASE,
-    height: 80,
-    shoulders: 26,
-    facing: 1,
-    head: 'bun',
-    coat: 'short',
-    pose: {
-      ...GUARD,
-      arms:
-        frame === 0
-          ? [
-              { joint: [6, 2], end: [13, -9] },
-              { joint: [4, 6], end: [9, -4] },
-            ]
-          : [
-              { joint: [4, 6], end: [9, -4] },
-              { joint: [6, 2], end: [13, -9] },
-            ],
-      lean: 0,
-      dip: 0,
+  drawFigure(
+    canvas,
+    {
+      x: x - 14,
+      y: BASE,
+      height: 80,
+      shoulders: 26,
+      facing: 1,
+      head: 'bun',
+      coat: 'short',
+      pose: {
+        ...GUARD,
+        arms:
+          frame === 0
+            ? [
+                { joint: [6, 2], end: [13, -9] },
+                { joint: [4, 6], end: [9, -4] },
+              ]
+            : [
+                { joint: [4, 6], end: [9, -4] },
+                { joint: [6, 2], end: [13, -9] },
+              ],
+        lean: 0,
+        dip: 0,
+      },
+      rim: { side: -1, above: true, ramp: RIM_COOL },
     },
-    rim: { side: -1, above: true, ramp: RIM_COOL },
-  });
+    FIGURE_RAMPS,
+  );
 }
 
 const SKIPPER = { x: 1092 } as const;
@@ -438,7 +446,7 @@ function drawSkipper(canvas: Canvas, frame: number): void {
     },
     rim: { side: 1, above: true, ramp: RIM_COOL },
   };
-  drawFigure(canvas, figure);
+  drawFigure(canvas, figure, FIGURE_RAMPS);
   // The rope, an arc from hand to hand: over the head, in front of the shins, under the feet.
   const handY = BASE - 80 + 11 + 18 + 14 + jump;
   const hands = [SKIPPER.x - 8, SKIPPER.x + 8] as const;
@@ -567,7 +575,7 @@ export const MID_ANIMATIONS: readonly Animation[] = [
       [3, BEAT],
     ],
     draw: (canvas, frame) => {
-      for (const figure of sparringAt(frame)) drawFigure(canvas, figure);
+      for (const figure of sparringAt(frame)) drawFigure(canvas, figure, FIGURE_RAMPS);
     },
   },
   {
@@ -703,9 +711,9 @@ export function drawMid(
   drawCones(canvas);
   drawBeam(canvas);
   drawRingBack(canvas);
-  for (const figure of sparringAt(frameOf('sparring'))) drawFigure(canvas, figure);
+  for (const figure of sparringAt(frameOf('sparring'))) drawFigure(canvas, figure, FIGURE_RAMPS);
   drawRingFront(canvas);
-  drawFigure(canvas, COACH);
+  drawFigure(canvas, COACH, FIGURE_RAMPS);
   drawBag(canvas, BAGS[0], [0, 3, -3][frameOf('swing0')] ?? 0);
   drawBag(canvas, BAGS[2], -([0, 3, -3][frameOf('swing1')] ?? 0));
   drawBagWork(canvas, frameOf('bagwork'));

@@ -2,10 +2,18 @@
  * The street's people (docs/art/decor-rue.md §3.2, §6): night silhouettes, half the fighters'
  * size (the middle layer is twice as far), dark, with a rim of the light they stand in on the
  * side it comes from. Built as a mask of simple volumes (head, torso, limbs), then shaded.
+ * Palette-free: each stage passes its own ramps (FigureRamps), so any stage can draw people.
  */
 
 import { Canvas, Mask, at } from '../kit/canvas.ts';
-import { PERSON, SKIN } from './palette.ts';
+
+/** The ramps a figure is shaded in, as slots of the stage's own palette. */
+export interface FigureRamps {
+  /** The body, darkest first: 0 the contour, 1 the legs, 2 the torso. */
+  readonly body: readonly number[];
+  /** The face where it catches the light: 0 and 1. */
+  readonly skin: readonly number[];
+}
 
 /** Where a figure's light comes from, and the ramp of its rim. */
 export interface Rim {
@@ -215,7 +223,8 @@ function boxOf(figure: Figure): { width: number; height: number; ox: number; oy:
  * (two pixels deep), the top of the head and shoulders lit from above under a lamp, a darker
  * contour on the shadow side to part it from what is behind.
  */
-export function drawFigure(canvas: Canvas, figure: Figure): void {
+export function drawFigure(canvas: Canvas, figure: Figure, ramps: FigureRamps): void {
+  const { body, skin } = ramps;
   const box = boxOf(figure);
   const mask = maskOf(figure, box.width, box.height, box.ox, box.oy);
   const { side, above, ramp } = figure.rim;
@@ -235,18 +244,18 @@ export function drawFigure(canvas: Canvas, figure: Figure): void {
       // The light fades down the body: a full rim on the head and torso, a faint one to the
       // knees, none below.
       const reach = y < waist ? 2 : y < knees ? 1 : 0;
-      let slot = at(PERSON, y < waist ? 2 : 1);
+      let slot = at(body, y < waist ? 2 : 1);
       if (side !== 0 && reach > 0 && open(side, 0)) slot = at(ramp, reach - 1);
       else if (side !== 0 && reach > 1 && open(side * 2, 0) && open(side, -1)) slot = at(ramp, 0);
       else if (above && y < waist - 6 && open(0, -1)) slot = at(ramp, y < headTop + 4 ? 1 : 0);
-      else if (open(side === 0 ? 1 : -side, 0) || open(0, 1)) slot = at(PERSON, 0);
+      else if (open(side === 0 ? 1 : -side, 0) || open(0, 1)) slot = at(body, 0);
       else if (
         figure.face &&
         y >= headTop + 4 &&
         y < headTop + figure.height * 0.13 &&
         open(figure.facing * 2, 0)
       ) {
-        slot = at(SKIN, y < headTop + 7 ? 1 : 0);
+        slot = at(skin, y < headTop + 7 ? 1 : 0);
       }
       canvas.set(left + x, top + y, slot);
     }

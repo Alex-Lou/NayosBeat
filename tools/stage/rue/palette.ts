@@ -120,6 +120,21 @@ export const BAG = ramp('#19171f', '#221f29', '#2e2a36', '#423c4c');
 export const STEAM = ramp('#4a4252', '#5e5464', '#746876', '#8a7c86');
 export const CAT = ramp('#1a161e', '#2a2430');
 
+/** The street's ramps for the shared drawing code (people.ts, signs.ts): no new color. */
+export const FIGURE_RAMPS = { body: PERSON, skin: SKIN } as const;
+export const SIGN_RAMPS = {
+  steel: STEEL,
+  deadTube: NEON_DEAD,
+  lightbox: LIGHTBOX,
+  ink: SIGN_INK,
+} as const;
+/** The tag paints in this order: a tag's paint is picked from the list (the street's draws). */
+export const SPRAY_RAMPS = {
+  outline: TAG.outline,
+  pale: TAG.cream,
+  colors: [TAG.rose, TAG.teal, TAG.cream, TAG.violet, TAG.ochre],
+} as const;
+
 /** Every color, slot by slot (256 at most: one PNG palette). */
 export const PALETTE: readonly Rgba[] = colors;
 
