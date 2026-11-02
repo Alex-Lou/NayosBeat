@@ -14,6 +14,12 @@ import { POSES as dashBackPoses } from './dashBack.ts';
 import { POSES as dashForwardPoses } from './dashForward.ts';
 import { POSES as grabPoses } from './grab.ts';
 import { POSES as idlePoses } from './idle.ts';
+import { POSES as holdPoses } from './hold.ts';
+import { POSES as heldPoses } from './held.ts';
+import { POSES as pummelPoses } from './pummel.ts';
+import { POSES as throwForwardPoses } from './throwForward.ts';
+import { POSES as throwBackPoses } from './throwBack.ts';
+import { POSES as thrownBackPoses } from './thrownBack.ts';
 import { POSES as introPoses } from './intro.ts';
 import { POSES as victoryPoses } from './victory.ts';
 import { POSES as timeOverPoses } from './timeOver.ts';
@@ -86,6 +92,12 @@ const DRAWN: Partial<Record<WattSheet, readonly Pose[]>> = {
   tech: techPoses,
   special: specialPoses,
   super: superPoses,
+  hold: holdPoses,
+  held: heldPoses,
+  pummel: pummelPoses,
+  throwForward: throwForwardPoses,
+  throwBack: throwBackPoses,
+  thrownBack: thrownBackPoses,
   intro: introPoses,
   victory: victoryPoses,
   timeOver: timeOverPoses,
