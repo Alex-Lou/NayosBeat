@@ -15,8 +15,10 @@ Ce fichier est pour l'agent qui reprend les décors (les lieux de combat). Il di
 | `people.ts` et `signs.ts` prennent leurs rampes en paramètre (§4, étape 2) | en ligne (#107) |
 | The Loading Dock (`dock`), minuit et aube, la basse du club ; le moment `dawn` | en ligne (#107) |
 | La pluie : la couche du rendu, la rue et le Dock sous la pluie à minuit (`pluie.md`) | en ligne (#117) |
-| Une animation peut glisser sur son calque (`StageDrift`) | PR de Rooftop Rain |
-| Rooftop Rain (`rooftop`), minuit et deux pluies, le dirigeable (`decor-rooftop.md`) | PR de Rooftop Rain |
+| Une animation peut glisser sur son calque (`StageDrift`) | en ligne (#122) |
+| Rooftop Rain (`rooftop`), minuit et deux pluies, le dirigeable (`decor-rooftop.md`) | en ligne (#122) |
+| Le gym a sa propre palette ; un lieu couvert (`sheltered`) ; des animations d'une seule météo (`weather`) | PR du gym sous la pluie |
+| Le gym sous la pluie : la verrière, la fuite dans le seau (`decor-gym.md`) | PR du gym sous la pluie |
 
 ## 2. Ce que veut le développeur
 
@@ -92,7 +94,7 @@ Elle gère l'écran « Lieu », `stageChoice`, et les options « Lieu » et « A
 ## 4. Ajouter un lieu, pas à pas
 
 1. **Le design d'abord.** Écris `docs/art/decor-<lieu>.md` sur le modèle de `decor-gym.md` : intention, composition calque par calque, palette, ambiances, ce qui bouge, budgets, suite. Présente-le au développeur (choix multiples) avant de coder si quelque chose est ambigu.
-2. **La palette** (`tools/stage/<lieu>/palette.ts`). Des rampes du plus sombre au plus clair, la case 0 transparente, 256 couleurs au plus. Chaque lieu a sa propre palette : `rue/people.ts` (les silhouettes) et `rue/signs.ts` (les enseignes, les tags) prennent leurs rampes en paramètre (`FigureRamps`, `SignRamps`, `SprayRamps`). Déclare-les dans ta palette, comme `FIGURE_RAMPS`, `SIGN_RAMPS` et `SPRAY_RAMPS` dans `dock/palette.ts`. Seul le gym empile encore la palette de la rue (254 couleurs, presque pleine).
+2. **La palette** (`tools/stage/<lieu>/palette.ts`). Des rampes du plus sombre au plus clair, la case 0 transparente, 256 couleurs au plus. Chaque lieu a sa propre palette : `rue/people.ts` (les silhouettes) et `rue/signs.ts` (les enseignes, les tags) prennent leurs rampes en paramètre (`FigureRamps`, `SignRamps`, `SprayRamps`). Déclare-les dans ta palette, comme `FIGURE_RAMPS`, `SIGN_RAMPS` et `SPRAY_RAMPS` dans `dock/palette.ts`.
 3. **Les calques** : `far.ts` (opaque partout), `mid.ts` (le fond de la scène à la ligne `BASE`, rien sous la ligne 470), `floor.ts` (un repère toutes les 64 unités du monde, pour lire les distances). Pense en pixels d'image (×2) : `mid` fait 1 440 × 540, le sol des personnages est à la ligne 460, et les silhouettes font 80 à 90 px.
 4. **Les animations** (`MID_ANIMATIONS` et des `CodeProp` sur `far` si besoin). Chaque image est redessinée dans son rectangle. Si une figure bouge devant le vide du calque, l'animation est « détachée » automatiquement. Garde les rectangles serrés et sans chevauchement inutile : la planche coûte de la mémoire vidéo. Ce qui doit bouger ensemble boucle sur le même cycle (comme le train du gym, `TRAIN_CYCLE`).
    Ce qui traverse tout le calque (un dirigeable, une voiture volante) ne se dessine pas en centaines d'images : une animation peut **glisser** (`drift`, `StageDrift` dans `src/art/stage-layers.ts`). Ses images sont dessinées une fois à leur place, et la vue les déplace d'un départ à une arrivée en pixels d'image. Mets départ et arrivée au-delà des deux bouts du calque, pour que rien n'apparaisse dans le champ (voir `rooftop/index.ts` et son test).
@@ -148,7 +150,7 @@ Elle gère l'écran « Lieu », `stageChoice`, et les options « Lieu » et « A
 ### 7.1 Les tranches du système de décor vivant
 
 1. **La nuit vivante** : des nuages qui dérivent, des fenêtres qui s'allument et s'éteignent (des animations lentes sur `far`).
-2. **La pluie** : la couche du rendu est faite (`pluie.md`) ; la rue et le Dock l'offrent à minuit, Rooftop Rain à minuit et au crépuscule. Il reste la verrière du gym qui ruisselle. Pour un lieu de plus sous la pluie : une palette `midnight-rain` (ou `dusk-rain`) dans ses `atmospheres.ts` suffit, le rendu fait tomber la pluie de lui-même ; des flaques cachées demandent une rampe `WET` (voir le Dock).
+2. **La pluie** : la couche du rendu est faite (`pluie.md`) ; la rue et le Dock l'offrent à minuit, Rooftop Rain à minuit et au crépuscule. Le gym aussi, couvert : il pleut à sa verrière. Pour un lieu de plus sous la pluie : une palette `midnight-rain` (ou `dusk-rain`) dans ses `atmospheres.ts` suffit, le rendu fait tomber la pluie de lui-même ; des flaques cachées demandent une rampe `WET` (voir le Dock). Un lieu couvert se marque `sheltered` dans `src/art/stages.ts` : le rideau n'y tombe pas, sa pluie se dessine dans des animations de la seule météo `rain` (`weather`, voir le gym).
 3. **Les dégâts cumulés sur le match** : fissures du sol aux chutes lourdes et aux KO, mur fissuré quand un combattant y est envoyé fort ; cordes du ring et sac crevé au gym. Ils sont déclenchés par des événements du rendu (jamais par le cœur), avec un plafond, et le décor repart à neuf au match suivant. À concevoir : une architecture d'« états de dégâts » par lieu (des images par cran). Présente-la au développeur avant de coder.
 4. **La brume** : elle avale le fond, pose des halos autour des lampes, jamais devant les combattants.
 5. **L'aube** : le moment `dawn` existe depuis le Loading Dock. Il reste à la peindre pour le gym (« le matin froid »).
@@ -171,7 +173,6 @@ L'ordre recommandé : Loading Dock, Rooftop Rain (avec la tranche pluie), Temple
 
 ### 7.3 Les dettes connues
 
-- **La palette du gym est presque pleine** : elle empile encore celle de la rue. `people.ts` et `signs.ts` n'y sont plus liés (§4, étape 2).
 - **L'écran « Lieu » est en grille de 4 colonnes** : à vérifier à 11 lieux sur téléphone en paysage.
 - **Le métro du gym passe toutes les 40 s** au lieu de 4 minutes (choix assumé, documenté).
 - **La rue s'appelle « Warehouse Street »** dans l'écran « Lieu » : le nom reste à valider par le développeur.

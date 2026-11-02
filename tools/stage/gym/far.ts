@@ -14,6 +14,7 @@ import {
   DISTANT_LIT,
   IRON,
   PLYWOOD,
+  RAIN,
   RING_STONE,
   SKY,
   TRAIN,
@@ -257,4 +258,68 @@ export function drawFar(width: number, height: number, seed: number, train?: num
   drawWindowIron(canvas);
   drawRing(canvas, END.radius, END.ring, seed + 31);
   return canvas;
+}
+
+// --- The rain outside, at the window (index.ts, the rain's atmosphere only). -------------------
+
+/**
+ * Where the rain shows at the window: its glass under the city's glow, from over the towers to the
+ * next span's deck (the fan's top stays dark: nothing lights the rain there), and its frames. The
+ * glass is 514 pixels wide there: 510 of them, for two frames to sit side by side in the props'
+ * sheet (1 024 wide: tools/sprites/stage-props.ts), which keeps the gym within its video memory.
+ */
+export const DOWNPOUR = {
+  x: END.x - 255,
+  y: 118,
+  width: 510,
+  height: DECK.top - 118,
+  frames: 4,
+} as const;
+/** A streak leans with the wind as the render's curtain does (src/render/stage-rain.ts): 4 in 14. */
+const SLANT = 4 / 14;
+/** The streaks' pattern repeats down this many rows: each frame moves it a quarter of it. */
+const PERIOD = 48;
+
+function hash(value: number): number {
+  const x = Math.sin(value * 127.1 + 311.7) * 43758.5453;
+  return x - Math.floor(x);
+}
+
+/**
+ * The rain beyond the glass at `frame` (1 to DOWNPOUR.frames): streaks leaning with the wind, the
+ * nearer ones longer and paler, and the runs of water down the panes; only on the glass, never on
+ * its iron or its plywood (drawn over the layer as it is, `canvas`).
+ */
+export function drawDownpour(canvas: Canvas, frame: number): void {
+  const fall = ((frame - 1) * PERIOD) / DOWNPOUR.frames;
+  const glass = (x: number, y: number) => {
+    const slot = canvas.get(x, y);
+    return distance(x, y) < WINDOW.radius - 6 && !IRON.includes(slot) && !PLYWOOD.includes(slot);
+  };
+  const drops: [number, number, number][] = [];
+  for (let y = DOWNPOUR.y; y < DOWNPOUR.y + DOWNPOUR.height; y++) {
+    // Fewer, fainter streaks up high, where less light catches them.
+    const lit = (y - DOWNPOUR.y) / DOWNPOUR.height;
+    for (let x = DOWNPOUR.x; x < DOWNPOUR.x + DOWNPOUR.width; x++) {
+      const line = x + Math.round(y * SLANT);
+      const density = hash(line);
+      if (density > 0.22 + lit * 0.18) continue;
+      const near = density < 0.08;
+      const along = (y - fall + hash(line + 0.5) * PERIOD + PERIOD * 8) % PERIOD;
+      if (along >= (near ? 9 : 5)) continue;
+      drops.push([x, y, near ? 1 : 0]);
+    }
+  }
+  // The runs down the panes: thin wavering lines, their drops sliding down.
+  for (let x = DOWNPOUR.x; x < DOWNPOUR.x + DOWNPOUR.width; x += 1) {
+    if (hash(x * 3.7) > 0.035) continue;
+    for (let y = DOWNPOUR.y; y < DOWNPOUR.y + DOWNPOUR.height; y++) {
+      const along = (y - frame * 4 + Math.floor(hash(x) * 16) + 160) % 16;
+      if (along > 9) continue;
+      const wx = x + Math.round(Math.sin(y / 9 + x) * 1.2);
+      drops.push([wx, y, along === 9 ? 2 : 1]);
+    }
+  }
+  const shown = drops.filter(([x, y]) => glass(x, y));
+  for (const [x, y, step] of shown) canvas.set(x, y, at(RAIN, step));
 }

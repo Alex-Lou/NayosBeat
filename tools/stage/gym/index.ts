@@ -8,7 +8,7 @@
 import type { CodeMap, CodeProp, CodeStage } from '../kit/stage.ts';
 import { imageOf, sizeOf } from '../kit/stage.ts';
 import { GYM_ATMOSPHERES } from './atmospheres.ts';
-import { DECK, drawFar, END, TRAIN_FRAMES, trainNose } from './far.ts';
+import { DECK, DOWNPOUR, drawDownpour, drawFar, END, TRAIN_FRAMES, trainNose } from './far.ts';
 import { drawFloor } from './floor.ts';
 import { drawMid, MID_ANIMATIONS, PASSING, TRAIN_CYCLE } from './mid.ts';
 import { PALETTE } from './palette.ts';
@@ -16,6 +16,30 @@ import { PALETTE } from './palette.ts';
 const SEED = 7;
 /** Steps each frame of the train lasts. */
 const TRAIN_STEP = 4;
+
+/** Steps each frame of the rain at the window lasts: its streaks fall 12 rows a frame. */
+const DOWNPOUR_STEP = 3;
+
+/** The rain beyond the window's glass, under the rain only (frame 0: the window as it is). */
+function downpourProp(width: number, height: number): CodeProp {
+  const still = drawFar(width, height, SEED);
+  const rect = { x: DOWNPOUR.x, y: DOWNPOUR.y, width: DOWNPOUR.width, height: DOWNPOUR.height };
+  return {
+    name: 'downpour',
+    layer: 'far',
+    weather: 'rain',
+    rect,
+    timeline: Array.from({ length: DOWNPOUR.frames }, (_, index): [number, number] => [
+      index + 1,
+      DOWNPOUR_STEP,
+    ]),
+    frames: Array.from({ length: DOWNPOUR.frames + 1 }, (_, frame) => {
+      const canvas = still.crop(0, 0, width, height);
+      if (frame > 0) drawDownpour(canvas, frame);
+      return imageOf(canvas.crop(rect.x, rect.y, rect.width, rect.height), PALETTE);
+    }),
+  };
+}
 
 let drawn: CodeStage | undefined;
 
@@ -47,11 +71,12 @@ export function drawGym(): CodeStage {
   const far = sizeOf('far');
   const mid = sizeOf('mid');
   const floor = sizeOf('floor');
-  const props = MID_ANIMATIONS.map(({ name, rect, frames, timeline }): CodeProp => ({
+  const props = MID_ANIMATIONS.map(({ name, rect, frames, timeline, weather }): CodeProp => ({
     name,
     layer: 'mid',
     rect,
     timeline,
+    ...(weather && { weather }),
     frames: Array.from({ length: frames }, (_, frame) => {
       const canvas = drawMid(mid.width, mid.height, (other) => (other === name ? frame : 0), rect);
       return imageOf(canvas.crop(rect.x, rect.y, rect.width, rect.height), PALETTE);
@@ -63,7 +88,7 @@ export function drawGym(): CodeStage {
       mid: imageOf(drawMid(mid.width, mid.height), PALETTE),
       floor: imageOf(drawFloor(floor.width, floor.height, SEED), PALETTE),
     },
-    props: [trainProp(far.width, far.height), ...props],
+    props: [trainProp(far.width, far.height), downpourProp(far.width, far.height), ...props],
   };
   return drawn;
 }
