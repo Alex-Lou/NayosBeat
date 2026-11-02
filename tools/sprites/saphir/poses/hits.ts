@@ -1,5 +1,5 @@
 import { armOut, at, behindBack, GUARD, onBall, planted, type Pose } from './common.ts';
-import { CROUCH } from './crouch.ts';
+import { CROUCH_HELD } from './crouch.ts';
 
 /**
  * Her reactions to a blow (hitHigh, hitMid, hitLow: 5 frames, 3, 3, 4, 4, 2 ticks; their quick
@@ -56,7 +56,7 @@ export const HIT_HIGH: readonly Pose[] = reaction(
     hip: at(-8, 33),
     torso: -16,
     head: -22,
-    nearFoot: onBall(7, -40),
+    nearFoot: onBall(9.5, -40),
     farFoot: planted(-15, -8),
     face: 'hurt',
   },
@@ -69,7 +69,7 @@ export const HIT_MID: readonly Pose[] = reaction(
     hip: at(-9, 31.5),
     torso: 24,
     head: 16,
-    nearFoot: onBall(8, -26),
+    nearFoot: onBall(9.5, -40),
     farFoot: planted(-16, -12),
     face: 'hurt',
   },
@@ -89,12 +89,11 @@ export const HIT_LOW: readonly Pose[] = reaction(
   (pose) => armOut(pose, 'near', -140, 19.5),
 );
 
+/** Hit while crouching: her held crouch, the lead heel lifted off the floor by the blow. */
+const CROUCHED: Pose = { ...CROUCH_HELD, nearFoot: onBall(9.5, -40), face: 'hurt' };
+
 export const HIT_CROUCH: readonly Pose[] = [
-  arms(-30, -20, 11)(behindBack({ ...CROUCH, hip: at(-8, 19), torso: 10, head: -8, face: 'hurt' })),
-  arms(
-    -30,
-    -20,
-    11,
-  )(behindBack({ ...CROUCH, hip: at(-7, 19.5), torso: 14, head: -10, face: 'hurt' })),
-  behindBack({ ...CROUCH, hip: at(-5, 19.5), torso: 22, face: 'hurt' }),
+  arms(-30, -20, 11)(behindBack({ ...CROUCHED, hip: at(-9.5, 19), torso: 10, head: -8 })),
+  arms(-30, -20, 11)(behindBack({ ...CROUCHED, hip: at(-8.5, 19.5), torso: 14, head: -10 })),
+  behindBack({ ...CROUCHED, hip: at(-7.5, 19.5), torso: 22 }),
 ];

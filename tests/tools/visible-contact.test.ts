@@ -87,6 +87,7 @@ describe('low blows', () => {
     expect(DRAWN_FIGHTERS.map(lowHits)).toEqual([
       ['crouchLight', 'crouchHeavy'],
       ['crouchLight', 'crouchHeavy', 'special', 'specialBoost'],
+      ['crouchLight', 'crouchHeavy'],
     ]);
   });
 });

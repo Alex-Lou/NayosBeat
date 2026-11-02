@@ -1,4 +1,4 @@
-import { at, behindBack, GUARD, onBall, planted, raised, type Pose } from './common.ts';
+import { at, behindBack, GUARD, onBall, planted, type Pose } from './common.ts';
 import { CROUCH } from './crouch.ts';
 
 /**
@@ -21,40 +21,40 @@ import { CROUCH } from './crouch.ts';
  */
 const HOLD: Pose = behindBack({
   ...GUARD,
-  hip: at(-4, 33.5),
-  torso: 6,
+  hip: at(-7, 32.5),
+  torso: 8,
   head: 4,
-  nearFoot: raised(9, 20, -60),
+  nearFoot: onBall(8, -70),
   farFoot: planted(-14),
   bends: { ...GUARD.bends, nearKnee: 'up' },
 });
 
 const CROUCH_HOLD: Pose = behindBack({
   ...CROUCH,
-  hip: at(-5, 19),
+  hip: at(-8, 19),
   torso: 22,
-  nearFoot: raised(7, 13, -50),
+  nearFoot: onBall(6.5, -62),
   bends: { ...GUARD.bends, nearKnee: 'up' },
 });
 
 export const POSES: readonly Pose[] = [
   behindBack({
     ...HOLD,
-    hip: at(-7, 33),
+    hip: at(-8.5, 32),
     torso: -2,
     head: 0,
-    nearFoot: raised(5, 18, -55),
+    nearFoot: onBall(8.5, -64),
     farFoot: planted(-15, -10),
   }),
-  behindBack({ ...HOLD, hip: at(-3.5, 33.5), torso: 8 }),
+  behindBack({ ...HOLD, hip: at(-6.5, 32.5), torso: 10 }),
   HOLD,
   behindBack({
     ...CROUCH_HOLD,
-    hip: at(-8, 18.5),
+    hip: at(-10, 18.5),
     torso: 14,
-    nearFoot: raised(3.5, 12, -45),
+    nearFoot: onBall(7.5, -58),
     farFoot: onBall(-11, -58),
   }),
-  behindBack({ ...CROUCH_HOLD, hip: at(-4.5, 19), torso: 24 }),
+  behindBack({ ...CROUCH_HOLD, hip: at(-7.5, 19), torso: 24 }),
   CROUCH_HOLD,
 ];
