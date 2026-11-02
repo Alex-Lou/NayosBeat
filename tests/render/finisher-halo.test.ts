@@ -39,30 +39,37 @@ describe('the halo under a fighter whose Finisher is ready (docs/finisher.md §1
     }
   });
 
-  it('breathes once a measure, its luminance moving by 0.05 at most, smoothly', () => {
-    expect(BREATH_TICKS).toBe(120);
-    for (const energy of ENERGIES) {
-      const look = haloLook(energy, FIGHT_STAGE_COLORS);
-      expect(look.faint).toBeLessThan(look.bright);
-      const alphas = Array.from({ length: 2 * BREATH_TICKS }, (_, tick) =>
-        haloAlpha(look, tick, true),
-      );
-      expect(Math.max(...alphas)).toBeCloseTo(look.bright, 6);
-      expect(Math.min(...alphas)).toBeCloseTo(look.faint, 6);
-      // One breath a measure: the same opacity a measure later.
-      for (let tick = 0; tick < BREATH_TICKS; tick++) {
-        expect(alphas[tick + BREATH_TICKS]).toBeCloseTo(alphas[tick] ?? 0, 9);
+  // It checks every tick of two breaths, for every fighter's energy over every large color of
+  // every stage: its time grows with them (about 3 s alone, over the 5 s default on a loaded CI
+  // runner).
+  it(
+    'breathes once a measure, its luminance moving by 0.05 at most, smoothly',
+    { timeout: 30_000 },
+    () => {
+      expect(BREATH_TICKS).toBe(120);
+      for (const energy of ENERGIES) {
+        const look = haloLook(energy, FIGHT_STAGE_COLORS);
+        expect(look.faint).toBeLessThan(look.bright);
+        const alphas = Array.from({ length: 2 * BREATH_TICKS }, (_, tick) =>
+          haloAlpha(look, tick, true),
+        );
+        expect(Math.max(...alphas)).toBeCloseTo(look.bright, 6);
+        expect(Math.min(...alphas)).toBeCloseTo(look.faint, 6);
+        // One breath a measure: the same opacity a measure later.
+        for (let tick = 0; tick < BREATH_TICKS; tick++) {
+          expect(alphas[tick + BREATH_TICKS]).toBeCloseTo(alphas[tick] ?? 0, 9);
+        }
+        for (const backdrop of FIGHT_STAGE_COLORS) {
+          const shown = alphas.map((alpha) => lit(energy, backdrop, alpha));
+          expect(Math.max(...shown) - Math.min(...shown)).toBeLessThanOrEqual(BREATH_DELTA + 1e-6);
+          // Never a jump from one tick to the next.
+          shown.forEach((value, tick) => {
+            if (tick > 0) expect(Math.abs(value - (shown[tick - 1] ?? 0))).toBeLessThan(0.005);
+          });
+        }
       }
-      for (const backdrop of FIGHT_STAGE_COLORS) {
-        const shown = alphas.map((alpha) => lit(energy, backdrop, alpha));
-        expect(Math.max(...shown) - Math.min(...shown)).toBeLessThanOrEqual(BREATH_DELTA + 1e-6);
-        // Never a jump from one tick to the next.
-        shown.forEach((value, tick) => {
-          if (tick > 0) expect(Math.abs(value - (shown[tick - 1] ?? 0))).toBeLessThan(0.005);
-        });
-      }
-    }
-  });
+    },
+  );
 
   it('holds still for those who keep the screen calm or still: its brightest, steady', () => {
     const look = haloLook(CYAN, FIGHT_STAGE_COLORS);
