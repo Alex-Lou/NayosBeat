@@ -158,7 +158,7 @@ describe('select screen fighters', () => {
     expect(look?.cuts[3]).toEqual({ x: 0, y: 0, width: 88, height: 162, left: 264, top: 0 });
   });
 
-  it.each(['nayo', 'riff'] as const)(
+  it.each(ROSTER.map(({ id }) => id))(
     "shows %s's bust and each idle frame pixel for pixel as its cells do",
     async (id) => {
       for (const colorway of ['main', 'alt'] as const) {

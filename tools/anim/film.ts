@@ -21,6 +21,9 @@ import { NAYO_SHEETS } from '../../src/art/nayo/sheets.ts';
 import { RIFF_CELLS } from '../../src/art/riff/cells.ts';
 import { RIFF_CLIPS } from '../../src/art/riff/clips.ts';
 import { RIFF_SHEETS } from '../../src/art/riff/sheets.ts';
+import { SAPHIR_CELLS } from '../../src/art/saphir/cells.ts';
+import { SAPHIR_CLIPS } from '../../src/art/saphir/clips.ts';
+import { SAPHIR_SHEETS } from '../../src/art/saphir/sheets.ts';
 import { clipOf, effectsOf, type ClipId, type FighterArt } from '../../src/art/types.ts';
 import type { MatchConfig } from '../../src/core/config.ts';
 import { toPx } from '../../src/core/constants.ts';
@@ -128,6 +131,13 @@ const ARTS: Readonly<Record<FighterId, FighterArt>> = {
     urls: {},
   },
   riff: { key: 'riff', sheets: RIFF_SHEETS, clips: RIFF_CLIPS, cells: RIFF_CELLS, urls: {} },
+  saphir: {
+    key: 'saphir',
+    sheets: SAPHIR_SHEETS,
+    clips: SAPHIR_CLIPS,
+    cells: SAPHIR_CELLS,
+    urls: {},
+  },
 };
 
 /** A golden replay played whole, then `then` ticks with nothing pressed. */

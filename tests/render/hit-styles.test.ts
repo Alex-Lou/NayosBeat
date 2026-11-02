@@ -67,8 +67,15 @@ describe('hit styles', () => {
   });
 
   it('the two players hit in different energy colors in every pairing', () => {
-    // Nayo against Riff, both in their first outfit; a mirror match puts player 2 in the second.
-    expect(hitStyleOf('nayo').energy).not.toBe(hitStyleOf('riff').energy);
+    // Two fighters, both in their first outfit; a mirror match puts player 2 in the second.
+    for (const a of ROSTER) {
+      for (const b of ROSTER) {
+        if (a.id === b.id) continue;
+        expect(hitStyleOf(a.id).energy, `${a.id} against ${b.id}`).not.toBe(
+          hitStyleOf(b.id).energy,
+        );
+      }
+    }
   });
 
   it('in a mirror match, the two players hit in different energy colors', () => {
