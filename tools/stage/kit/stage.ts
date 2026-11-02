@@ -10,6 +10,7 @@ import {
   type Atmosphere,
   type StageDrift,
   type StageLayer,
+  type Weather,
 } from '../../../src/art/stage-layers.ts';
 import type { IndexedImage, Rgba } from '../../sprites/png.ts';
 import type { Canvas } from './canvas.ts';
@@ -33,6 +34,8 @@ export interface CodeProp {
   readonly frames: readonly IndexedImage[];
   /** It glides along its layer (src/art/stage-layers.ts `StageDrift`). */
   readonly drift?: StageDrift;
+  /** It is there only in this weather (src/art/stage-layers.ts `StageProp`). */
+  readonly weather?: Weather;
 }
 
 export interface CodeStage {

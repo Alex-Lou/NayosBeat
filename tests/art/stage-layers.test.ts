@@ -6,6 +6,7 @@ import {
   stageArtOf,
   type StageProp,
   driftAt,
+  stageVariantsOf,
 } from '../../src/art/stage-layers';
 import { ART_SCALE } from '../../src/art/types';
 import { toPx } from '../../src/core/constants';
@@ -102,6 +103,28 @@ describe('the stage props', () => {
       'lasts 0 steps',
     );
     expect(() => stageArtOf(sheet, colors, [{ ...prop, timeline: [] }])).toThrow('empty timeline');
+  });
+
+  it('of one weather are laid only on its atmospheres (the rain at a window)', () => {
+    const rain: StageProp = { ...prop, name: 'downpour', weather: 'rain' };
+    const sheet = { ...files, './props.png': 'props.png' };
+    const wet = Object.fromEntries(
+      Object.entries(sheet).map(([path, url]) => [path.replace('./', './midnight-rain/'), url]),
+    );
+    const variants = stageVariantsOf(
+      'test',
+      { ...sheet, ...wet },
+      { 'midnight-clear': colors, 'midnight-rain': colors },
+      [prop, rain],
+    );
+    const names = variants.map(({ atmosphere, art }) => [
+      atmosphere.weather,
+      (art.props?.props ?? []).map(({ name }) => name),
+    ]);
+    expect(names).toEqual([
+      ['clear', ['queue']],
+      ['rain', ['queue', 'downpour']],
+    ]);
   });
 
   it('glide by whole pixels within their loop, standing still before and after (StageDrift)', () => {

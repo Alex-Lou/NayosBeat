@@ -252,6 +252,7 @@ describe('the stage view', () => {
       name: 'test',
       title: 'Test',
       description: '',
+      sheltered: false,
       variants: [night, dusk],
     };
     const maps = [street];
@@ -276,6 +277,7 @@ describe('the stage view', () => {
       name,
       title: name,
       description: '',
+      sheltered: false,
       variants,
     });
     const street = map('street', [night('street'), dusk('street')]);
