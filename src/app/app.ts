@@ -52,7 +52,9 @@ import {
 } from './comfort';
 import { controlsContent, currentDevices, helpPages } from './controls-content';
 import { installMethod, onInstallChange, promptInstall } from './install';
+import { multiCatalog } from './multi-catalog';
 import { MultiScreen } from './multi-screen';
+import { nameStore } from './name-store';
 import {
   DEFAULT_SETUP,
   DUMMY_HEALTHS,
@@ -386,7 +388,10 @@ export class App {
         connect: () =>
           import('../net/peer-matchmaker').then(({ peerMatchmaker }) => peerMatchmaker()),
         now: () => performance.now(),
+        catalog: multiCatalog(),
+        names: nameStore,
         feedback: this.menuFeedback,
+        still: isStill(this.comfort),
         onBack: () => {
           this.showMainMenu();
         },

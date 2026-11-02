@@ -2,7 +2,7 @@
 
 Le mode « Multi » : deux appareils, un téléphone ou un PC chacun, jouent l'un contre l'autre en ligne. Ils peuvent être sur le même Wi-Fi ou sur des réseaux différents. Le but premier : que le propriétaire joue avec sa femme, en test d'abord.
 
-- **Statut : porte 0, la preuve de connexion, validée par le propriétaire le 2 novembre 2026** (avec ses trois réponses du §10). Deux appareils se trouvent par la recherche automatique et s'échangent un ping affiché à l'écran. Il n'y a encore aucun combat.
+- **Statut : porte 1, le salon, livrée, en attente du « oui » du propriétaire.** La porte 0 (la preuve de connexion) a été validée le 2 novembre 2026, avec ses réponses du §10. Deux appareils se trouvent, se présentent par leur pseudo, s'acceptent ; l'hôte choisit le lieu, chacun son combattant, et les deux voient le même match. Il n'y a encore aucun combat.
 - **Caché** derrière l'adresse `?multi` (par exemple `…/NayosBeat/?multi`) jusqu'à la porte 2. Sans `?multi`, le jeu en ligne ne change pas, hormis la CSP élargie au serveur de mise en relation (§6).
 - **Choix du propriétaire (2 novembre 2026)**
   - Recherche automatique, sans code à taper.
@@ -20,7 +20,7 @@ On ne passe pas une porte sans le « oui » du propriétaire.
 | Porte | Ce qu'elle livre | État |
 |---|---|---|
 | 0, la preuve | Recherche automatique, ping affiché, rapport, CSP, dépendance, questions | **validée le 2 novembre 2026** |
-| 1, le salon | Pseudo, « Adversaire trouvé : … » à accepter ou refuser, l'hôte choisit la map, chacun son combattant ; une déconnexion ramène au menu | à faire |
+| 1, le salon | Pseudo, « Adversaire trouvé : … » à accepter ou refuser, l'hôte choisit la map, chacun son combattant ; une déconnexion ramène au menu | **livrée, en attente du « oui »** |
 | 2, le combat en lockstep | Un match complet et la revanche, synchrones (pause, fin de round, Finisher, KO), hash anti-désynchronisation, indicateur du ping et du délai | à faire |
 | 3, le rollback | Délai ressenti de 0 ou 1 tic sur Wi-Fi, effets jamais doublés, tests de resimulation | à faire |
 | 4, la finition | À distance, en 4G, reprise après une coupure courte, aide du mode, mesures sur un téléphone modeste | à faire |
@@ -38,7 +38,11 @@ Le cœur est pur, déterministe, en entiers, à 60 tics par seconde : deux appar
 | `src/net/session.ts` | Le lien une fois appairé : ping, silence, message invalide | `protocol`, `lobby` (types) |
 | `src/net/route.ts` | Le chemin du lien (direct, STUN, relais), lu dans les statistiques WebRTC | `lobby` (types) |
 | `src/net/peer-matchmaker.ts` | `Matchmaker` avec PeerJS : **le seul fichier qui importe `peerjs`** | `peerjs`, `lobby`, `route`, `protocol` |
-| `src/app/multi-screen.ts` | L'écran « Multi (test) » | `net`, `ui/menu` |
+| `src/app/salon.ts` | Le salon (porte 1) : un réducteur pur, un événement en entrée, le salon et les messages à envoyer en sortie | `net/protocol` (types), `data/roster` (types) |
+| `src/app/multi-catalog.ts` | Ce que le salon offre et vérifie : les lieux et les combattants du jeu, le tirage de l'hôte | `art`, `data`, `render/stage-view` |
+| `src/app/name-store.ts` | Le pseudo, gardé sur l'appareil | `net/protocol` |
+| `src/ui/name-entry.ts` | L'écran du pseudo : un champ de texte, jamais interprété | `ui/menu` |
+| `src/app/multi-screen.ts` | Les écrans « Multi (test) » : il branche le réseau sur le salon et l'affiche | `net`, `salon`, `ui` |
 
 - **Le sens des dépendances est vérifié par le lint.** `net` rejoint les couches extérieures (`eslint.config.js`, `OUTER_LAYERS`) : `core`, `data` et `ai` ne peuvent pas l'importer.
 - **PeerJS n'est chargé qu'à la première recherche** (`import()` dans `app.ts`). Il ne passe ni dans le code du jeu, ni dans ce que la page précharge. Le service worker le met en cache, comme tout fichier du build, pour le jeu installé.
@@ -68,15 +72,18 @@ Le serveur public de PeerJS (`0.peerjs.com`) **ne liste pas les pairs**. `listAl
 | Les 4 salles ont leur paire | « Toutes les salles sont occupées » |
 | Annuler, ou quitter l'écran, à tout moment | Tout ce qui a été ouvert est fermé : identifiants, liens, minuteries (testé) |
 
-- **Ne pas tomber sur un inconnu.** La recherche est automatique : quelqu'un qui cherche en même temps peut tomber sur nous. La porte 1 ajoute le pseudo de l'autre, à accepter ; refuser relance la recherche. À la porte 0, l'écran est caché et ne fait que pinguer.
+- **Ne pas tomber sur un inconnu.** La recherche est automatique : quelqu'un qui cherche en même temps peut tomber sur nous. Chacun voit donc le pseudo de l'autre et doit l'accepter (§7) ; refuser relance la recherche, et un pseudo refusé l'est d'office jusqu'à la fermeture de l'onglet.
+- **Un canal appairé garde ce qui arrive** tant que personne ne l'écoute : l'autre peut parler avant que le salon soit ouvert. Il en garde au plus 16 (`HELD_MESSAGES`) ; au-delà, c'est un flot, et le lien est coupé.
 
 ---
 
-## 4. Le protocole, version 1
+## 4. Le protocole, version 2
+
+La version 2 (porte 1) ajoute le salon. Les salles deviennent `nayosbeat-2-lobby-<n>` : un appareil resté en version 1 ne rencontre jamais un appareil en version 2.
 
 ### 4.1 Le format
 
-- Des textes JSON courts, chacun avec sa version : `{"v":1,"t":"ping","n":12}`.
+- Des textes JSON courts, chacun avec sa version : `{"v":2,"t":"ping","n":12}`.
 - Ils passent par un canal WebRTC fiable et ordonné, en sérialisation `raw` de PeerJS : le texte arrive tel qu'envoyé.
 
 | Message | Champs | Sens |
@@ -85,6 +92,10 @@ Le serveur public de PeerJS (`0.peerjs.com`) **ne liste pas les pairs**. `listAl
 | `busy` | `v`, `t` | L'hôte a déjà son adversaire |
 | `ping` | `v`, `t`, `n` | Mesure l'aller-retour ; `n` va de 0 à 2³¹ − 1 |
 | `pong` | `v`, `t`, `n` | La réponse immédiate au ping `n` |
+| `name` | `v`, `t`, `s` | Le pseudo de l'envoyeur, une fois, à l'ouverture du salon |
+| `accept`, `refuse` | `v`, `t` | La réponse de l'envoyeur : il veut jouer contre l'autre, ou non |
+| `stage` | `v`, `t`, `m`, `a` | Le lieu de l'hôte (`m`, la map) et son ambiance (`a`), déjà tirés au sort s'il a choisi « Aléatoire » |
+| `fighter` | `v`, `t`, `f` | Le combattant de l'envoyeur |
 
 ### 4.2 La validation (« parse, don't validate »)
 
@@ -96,7 +107,11 @@ Le serveur public de PeerJS (`0.peerjs.com`) **ne liste pas les pairs**. `listAl
 - une autre version ;
 - un type inconnu ;
 - une clé en trop ou en moins ;
-- un `n` qui n'est pas un entier entre 0 et 2³¹ − 1.
+- un `n` qui n'est pas un entier entre 0 et 2³¹ − 1 ;
+- un pseudo qui n'a pas 2 à 12 lettres sans accent, chiffres, espaces ou tirets, une lettre ou un chiffre à chaque bout ;
+- un lieu, une ambiance ou un combattant qui n'est pas un mot court en minuscules (`a-z`, `0-9`, tiret, 24 au plus).
+
+Le salon vérifie ensuite le sens : un lieu, une ambiance et un combattant que **ce jeu** a, et chaque message à son tour (un `stage` reçu par l'hôte, un deuxième `name`, un `fighter` avant le lieu… coupent le lien).
 
 Rien n'est interprété (aucun `eval`), et l'heure d'envoi ne traverse jamais le réseau : l'aller-retour se mesure sur l'horloge locale, au numéro du ping.
 
@@ -173,24 +188,38 @@ Toutes ces licences sont permissives et compatibles avec un jeu publié. `npm au
 
 ---
 
-## 7. L'écran « Multi (test) »
+## 7. Les écrans « Multi (test) » (porte 1)
 
-Il apparaît au menu principal, après « Entraînement », avec `?multi` seulement.
+Ils apparaissent au menu principal, après « Entraînement », avec `?multi` seulement.
 
-1. « Rechercher » (sur les deux appareils), ou « Retour ».
-2. « Recherche d'un adversaire… », avec « Annuler ».
-3. « Connecté : tu accueilles (ou tu as rejoint) la salle 1. », puis :
-   - « Ping : 12 ms (min 8, médiane 11, max 30) · 40 mesures, 0 perdues » ;
-   - « Chemin : direct, même réseau ».
+1. **Le menu** : « Rechercher » (sur les deux appareils), « Pseudo : … » et « Retour ».
+2. **Le pseudo**, demandé à la première recherche et gardé sur l'appareil : 2 à 12 lettres sans accent, chiffres, espaces ou tirets. Le champ est en 16 px : en dessous, Safari sur iPhone zoome au toucher.
+3. « Recherche d'un adversaire… », avec « Annuler ».
+4. **« Adversaire trouvé : <pseudo> »**, avec « Accepter », « Refuser » et 30 s pour répondre.
+   - Refuser : la recherche reprend chez les deux après 5 s (`RETRY_MS`), et ce pseudo est refusé d'office jusqu'à la fermeture de l'onglet. Sans cette pause, deux appareils qui se retrouvent et se refusent boucleraient sans fin.
+   - Les 30 s passées : celui qui n'a pas répondu revient au menu (« Temps écoulé »), sans retenir le pseudo ; l'autre voit un refus, et sa recherche reprend.
+   - Le lien qui se ferme pendant la présentation vaut un refus : PeerJS ferme toute la connexion d'un coup, et un `refuse` envoyé juste avant peut se perdre.
+5. **Le lieu** : l'hôte a l'écran « Lieu » (« Aléatoire » compris : il tire la map et l'ambiance, et envoie le résultat exact) ; l'invité lit « <pseudo> choisit le lieu… ».
+6. **Le combattant** : chacun a l'écran de choix, « Contre <pseudo>, à <lieu> ». Aucun ne voit le choix de l'autre avant d'avoir fait le sien. La tenue suit la règle locale : en miroir, l'invité (joueur 2) porte la deuxième.
+7. **Le match convenu**, le même des deux côtés : « Alex (Riff) contre Lou (Nayo). Lieu : Viaduct Gym. Le combat arrive à la porte 2. » L'hôte est le joueur 1.
 
-   Avec « Quitter ».
-4. Chaque fin a sa phrase (§3, §4.3), puis « Rechercher » à nouveau.
+Chaque écran du salon porte la ligne « Ping : 2 ms · chemin : direct, même réseau », et « Quitter ». Une déconnexion, à n'importe quel moment, ramène au menu avec sa phrase (§4.3).
 
-Quitter l'écran, à tout moment, ferme tout. Un test le vérifie (`tests/app/multi-screen.test.ts`) : plus d'écouteur, d'image demandée, de minuterie, de salle ni de lien ouvert.
+Quitter les écrans, à tout moment, ferme tout. Un test le vérifie (`tests/app/multi-screen.test.ts`) : plus d'écouteur, d'image demandée, de minuterie, de salle ni de lien ouvert.
 
 ---
 
-## 8. Les mesures de la porte 0
+## 8. Les mesures
+
+### 8.1 La porte 1
+
+| Essai | Résultat |
+|---|---|
+| Deux onglets Chromium, build de production, vrai PeerJS, PeerServer local : pseudo, recherche, acceptation, « Viaduct Gym » choisi par l'hôte, Riff et Nayo | Les deux écrans montrent « Alex (Riff) contre Lou (Nayo). Lieu : Viaduct Gym. » ; ping de 1 à 2 ms ; « Quitter » d'un côté donne « L'autre appareil a quitté » de l'autre ; aucune erreur dans la page |
+
+Une course trouvée en écrivant la porte 1, et corrigée : l'hôte envoie son pseudo dès l'appairage, avant que l'invité ait ouvert son salon. Le message était perdu ; le canal appairé le garde désormais (§3).
+
+### 8.2 La porte 0
 
 | Essai | Résultat |
 |---|---|
@@ -242,8 +271,8 @@ Quitter l'écran, à tout moment, ferme tout. Un test le vérifie (`tests/app/mu
 
 ### 9.4 Ce que la lecture du code a déjà trouvé (à régler à la porte 2)
 
-- **La scène du Finisher se règle en local.** Elle se passe en tenant un bouton (`inputs.held`), avance le match sans le montrer (`playUnseen`, `playToResults`) et cadence elle-même les tics. Ce sont des entrées locales qui changent la simulation : en ligne, il faut soit passer la scène d'un commun accord (une entrée transmise), soit ne pas la passer.
-- **La pause arrête la simulation en local.** En ligne, il faudra une pause partagée (une demande transmise, que l'autre voit), ou pas de pause en match. C'est une question pour la porte 2.
+- **La scène du Finisher se règle en local.** Elle se passe en tenant un bouton (`inputs.held`), avance le match sans le montrer (`playUnseen`, `playToResults`) et cadence elle-même les tics. Ce sont des entrées locales qui changent la simulation. **Décidé par le propriétaire (2 novembre 2026)** : en ligne, la scène se passe seulement quand **les deux** tiennent un bouton ; le « passer » devient une entrée transmise, la même des deux côtés.
+- **La pause arrête la simulation en local.** **Décidé par le propriétaire (2 novembre 2026)** : une **pause partagée**. Une pause demandée arrête le combat chez les deux, au même tic, avec « Pause demandée par <pseudo> » ; chacun peut reprendre.
 - **« Lutte en prise : tenir »** (`HeldStruggle`) transforme les entrées avant `step`. En ligne, elle s'applique **chez celui qui joue**, avant l'envoi : les deux côtés reçoivent alors les mêmes bits.
 - **Le ralenti du KO** (`feedback.ticksFor`) ne change que la cadence. Les tics restent les mêmes : pas de désynchronisation, seulement une attente.
 - **L'ambiance du décor est tirée au hasard dans le rendu** (`stageVariantFor`, #96). L'hôte la tire et l'envoie avec la map ; la config du match (combattants, tenues, map, ambiance) part une seule fois, de l'hôte.
@@ -263,6 +292,13 @@ Chacune avait son hypothèse de départ. **Le 2 novembre 2026, le propriétaire 
 3. **L'acceptation avant le combat (porte 1).**
    - **Retenu** : les deux doivent accepter dans les 30 s. Refuser, ou laisser passer le délai, relance la recherche chez les deux.
    - Rien ne se joue tant que les deux n'ont pas dit oui.
+   - **Écart à signaler** : les 30 s passées, celui qui n'a pas répondu revient au menu au lieu de relancer sa recherche (§7). Sinon, un appareil laissé sans personne devant continuerait de trouver l'autre et de le faire attendre 30 s, sans fin.
+4. **Les réponses de la porte 1 (2 novembre 2026)**, chacune la recommandation :
+   - la tenue suit la règle locale (en miroir, le joueur 2 porte la deuxième) ;
+   - le pseudo n'a pas d'accents (la police pixel n'a pas les capitales accentuées) ;
+   - un pseudo refusé l'est d'office jusqu'à la fermeture de l'onglet ;
+   - l'hôte peut choisir « Aléatoire » : il tire, puis envoie le résultat.
+5. **Les réponses pour la porte 2 (2 novembre 2026)** : la pause partagée, et la scène du Finisher passée seulement quand les deux tiennent un bouton (§9.4).
 
 ---
 
