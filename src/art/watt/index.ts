@@ -50,6 +50,9 @@ const SHARED = {
   sheets: WATT_SHEETS,
   clips: WATT_CLIPS,
   cells: WATT_CELLS,
+  // His sprites carry the street's light, its back light included (tools/sprites/watt/index.ts):
+  // no light contour around him (render/silhouette.ts).
+  ownLight: true,
 };
 
 /** The roadie: the black quilted jacket, the exoskeleton, the bulb in VU green (docs/watt.md §9). */
