@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { encodeMessage, parseMessage } from '../../src/net/protocol';
+import { encodeMessage, parseMessage, type NetMessage } from '../../src/net/protocol';
 import {
   MAX_MESSAGES_PER_SECOND,
   PING_INTERVAL_MS,
@@ -19,13 +19,15 @@ function setup() {
   const [mine, theirs] = channelPair(server);
   const updates: PingSummary[] = [];
   const ends: SessionEnd[] = [];
+  const others: NetMessage[] = [];
   const session = new Session(mine, () => Date.now(), {
     update: (summary) => updates.push(summary),
+    received: (message) => others.push(message),
     ended: (reason) => ends.push(reason),
   });
   const received: unknown[] = [];
   theirs.listen({ message: (data) => received.push(parseMessage(data)), closed: () => undefined });
-  return { server, mine, theirs, session, updates, ends, received };
+  return { server, mine, theirs, session, updates, ends, received, others };
 }
 
 describe('the link once paired (docs/multijoueur.md §4.3)', () => {
@@ -108,6 +110,20 @@ describe('the link once paired (docs/multijoueur.md §4.3)', () => {
     // Answered up to the limit, never past it.
     const pongs = flood.mine.sent.filter((text) => parseMessage(text)?.type === 'pong');
     expect(pongs).toHaveLength(MAX_MESSAGES_PER_SECOND);
+  });
+
+  it('hands every other message to its listener, sends, and cuts the link on reject', async () => {
+    const { theirs, session, others, received, ends, mine } = setup();
+    theirs.send(encodeMessage({ type: 'name', name: 'Nayo 2' }));
+    theirs.send(encodeMessage({ type: 'accept' }));
+    session.send({ type: 'refuse' });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(others).toEqual([{ type: 'name', name: 'Nayo 2' }, { type: 'accept' }]);
+    expect(received).toContainEqual({ type: 'refuse' });
+    session.reject();
+    expect(ends).toEqual(['protocol']);
+    expect(mine.isClosed).toBe(true);
+    expect(vi.getTimerCount()).toBe(0);
   });
 
   it('closes the link and its timer on dispose, telling no one', async () => {

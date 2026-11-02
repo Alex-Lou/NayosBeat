@@ -1,11 +1,11 @@
 /**
  * The link to the opponent once paired (docs/multijoueur.md §4.3): a ping every second, answered
  * at once, measures the round trip; a link silent for SILENCE_MS is taken for lost; a message
- * that is not the protocol's ends it. Gate 0 exchanges nothing else.
+ * that is not the protocol's ends it. Every other message goes to whoever listens (the salon).
  */
 
 import type { Channel } from './lobby';
-import { encodeMessage, parseMessage, SEQ_LIMIT } from './protocol';
+import { encodeMessage, parseMessage, SEQ_LIMIT, type NetMessage } from './protocol';
 
 export const PING_INTERVAL_MS = 1000;
 /** Nothing heard for this long: the link is lost (a pong comes back every second otherwise). */
@@ -37,6 +37,8 @@ export type SessionEnd = 'left' | 'silent' | 'protocol';
 export interface SessionListener {
   /** A round trip was measured. */
   update(summary: PingSummary): void;
+  /** A message of the protocol other than a ping or a pong, already parsed. */
+  received(message: NetMessage): void;
   /** The link ended (the channel is closed already). Told once, never after `dispose`. */
   ended(reason: SessionEnd): void;
 }
@@ -77,6 +79,15 @@ export class Session {
     this.ping();
   }
 
+  send(message: NetMessage): void {
+    if (!this.over) this.channel.send(encodeMessage(message));
+  }
+
+  /** The other side said something out of turn (`received`): the link is cut as for nonsense. */
+  reject(): void {
+    this.end('protocol');
+  }
+
   /** Closes the link, telling no one. */
   dispose(): void {
     if (this.over) return;
@@ -115,9 +126,12 @@ export class Session {
     this.lastHeard = now;
     if (message.type === 'ping') {
       this.channel.send(encodeMessage({ type: 'pong', seq: message.seq }));
-    } else if (message.type === 'pong' && message.seq === this.pending?.seq) {
+    } else if (message.type === 'pong') {
+      if (message.seq !== this.pending?.seq) return;
       this.record(this.lastHeard - this.pending.sentAt);
       this.pending = null;
+    } else {
+      this.listener.received(message);
     }
   }
 

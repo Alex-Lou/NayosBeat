@@ -140,6 +140,15 @@ export class FakeElement extends CountingTarget {
   }
 
   /** Times the element was scrolled into view (`scrollIntoView`). */
+  /** Times `focus` was called (a text field takes the focus as its screen opens). */
+  focused = 0;
+  focus(): void {
+    this.focused++;
+  }
+  value = '';
+  maxLength = 0;
+  autocomplete = '';
+  spellcheck = true;
   scrolledIntoView = 0;
   scrollIntoView(): void {
     this.scrolledIntoView++;
