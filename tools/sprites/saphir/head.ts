@@ -81,10 +81,27 @@ const LEGEND: Legend = {
 
 /**
  * Draws the head with the expression of `face`, its center pixel at `center` (cell pixels),
- * turned `angle` degrees clockwise on screen.
+ * turned `angle` degrees clockwise on screen; mirrored when her body is turned round
+ * (Skeleton.turned): the Janus mask still shows a face to the opponent, the ponytail swings to
+ * the other side.
  */
-export function stampHead(canvas: PixelCanvas, face: Face, center: Point, angle: number): void {
-  stamp(canvas, headSlots(expressionOf(HEAD, face)), HEAD_CENTER, center, angle);
+export function stampHead(
+  canvas: PixelCanvas,
+  face: Face,
+  center: Point,
+  angle: number,
+  turned = false,
+): void {
+  const slots = headSlots(expressionOf(HEAD, face));
+  if (!turned) {
+    stamp(canvas, slots, HEAD_CENTER, center, angle);
+    return;
+  }
+  const width = Math.max(...slots.map((row) => row.length));
+  const mirrored = slots.map((row) =>
+    [...row, ...Array<number>(width - row.length).fill(0)].reverse(),
+  );
+  stamp(canvas, mirrored, { x: width - 1 - HEAD_CENTER.x, y: HEAD_CENTER.y }, center, angle);
 }
 
 /** Palette slots of a head's pixels (0: empty). */

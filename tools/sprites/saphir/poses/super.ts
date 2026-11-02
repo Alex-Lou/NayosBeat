@@ -3,18 +3,19 @@ import { at, behindBack, GUARD, onBall, planted, raised, smear, type Pose } from
 /**
  * super (Coda, docs/saphir.md §6): 9 frames, 2, 3, 3, 2, 6, 6, 6, 10, 10 ticks (48), a blow a
  * frame on frames 4, 5 and 6 (ticks 10, 16 and 22), hitbox 10..54 / 4..64; the game carries her
- * 24 px in over ticks 2-12. DOU, BI, DOUM: the orchestra comes back to her. Two swing steps in,
- * then three blows in one breath, each leg in turn, the hands still at her back: a low kick to
- * the shin, a fouetté to the ribs, the heel's revers that floors. Her energy bursts off each
- * blow.
+ * 24 px in over ticks 2-12. DOU, BI, DOUM: a tornado. Two swing steps in, a spin, and she leaves
+ * the floor turning: a fouetté in the air, then, turned round in mid-air, a back kick through the
+ * spin (the mask's other face toward the opponent), then she lands on the heel's revers that
+ * floors. Drawn in the cell like the Contre-ut (the move gives her no lift). Turned frames: see
+ * lightFinisher.ts.
  *
  * - 0: the long beat, the weight dips.
- * - 1-2: the swing steps in, the lead foot reaching out.
- * - 3: the rear foot steps up, the lead knee lifting low.
- * - 4: DOU: the lead foot sweeps the shin, low and long, the hips dropped.
- * - 5: BI: the rear leg whips round at the ribs, the toes pointed.
- * - 6: DOUM: the lead heel at the chest, the leg straight, the torso far back; the trail a whole
- *   circle round her.
+ * - 1-2: the swing steps in, the second one already turning (her back to the opponent).
+ * - 3: the take-off, the knees driving up.
+ * - 4: DOU: in the air, the rear leg whips round at the ribs.
+ * - 5: BI: still in the air, turned round, the heel driven back through the body.
+ * - 6: DOUM: landing round on the lead foot, the heel's revers at the chest; the trail a whole
+ *   circle.
  * - 7: the knee folds back.
  * - 8: back in her guard.
  */
@@ -34,42 +35,47 @@ const FRAMES: readonly Pose[] = [
   },
   {
     ...GUARD,
-    hip: at(6, 33.5),
-    torso: 4,
-    nearFoot: onBall(20, -28),
-    farFoot: planted(-6, -10),
+    turned: true,
+    hip: at(6, 33),
+    torso: 10,
+    nearFoot: onBall(6, -30),
+    farFoot: planted(-8, -10),
+    effects: [smear(2.5, [-6, 30], [6, 24], [16, 30])],
   },
   {
     ...GUARD,
-    hip: at(10, 32),
-    torso: 8,
-    nearFoot: raised(18, 10, -20),
-    farFoot: planted(4, -10),
+    hip: at(8, 44),
+    torso: -4,
+    nearFoot: raised(14, 22, -40),
+    farFoot: raised(-2, 18, -50),
+    bends: { ...GUARD.bends, nearKnee: 'up' },
     face: 'effort',
   },
   {
     ...GUARD,
-    hip: at(20, 24),
-    torso: -14,
-    nearFoot: raised(47, 8, 0),
-    farFoot: onBall(8, -50),
+    hip: at(18, 52),
+    torso: -24,
+    nearFoot: raised(16, 30, -50),
+    farFoot: raised(48, 46, 30),
+    bends: { ...GUARD.bends, farKnee: 'up', nearKnee: 'down' },
     face: 'kiai',
     effects: [
-      smear(3, [26, 6], [38, 6], [47, 7]),
-      { kind: 'energy', center: at(53, 8), radius: 3.5 },
+      smear(3, [4, 38], [26, 50], [44, 48]),
+      { kind: 'energy', center: at(53, 48), radius: 3.5 },
     ],
   },
   {
     ...GUARD,
-    hip: at(20, 36),
-    torso: -24,
-    nearFoot: onBall(22, -28),
-    farFoot: raised(50, 46, 55),
-    bends: { ...GUARD.bends, farKnee: 'up' },
+    turned: true,
+    hip: at(20, 50),
+    torso: 55,
+    nearFoot: raised(28, 28, -40),
+    farFoot: raised(-11, 46, -110),
+    bends: { ...GUARD.bends, farKnee: 'down' },
     face: 'kiai',
     effects: [
-      smear(3, [8, 24], [30, 44], [50, 48]),
-      { kind: 'energy', center: at(54, 50), radius: 3.5 },
+      smear(3, [14, 30], [32, 40], [46, 46]),
+      { kind: 'energy', center: at(53, 47), radius: 3.5 },
     ],
   },
   {
@@ -77,7 +83,7 @@ const FRAMES: readonly Pose[] = [
     hip: at(20, 37),
     torso: -28,
     nearFoot: raised(48.5, 52, 90),
-    farFoot: planted(16, -20),
+    farFoot: onBall(16, -40),
     bends: { ...GUARD.bends, nearKnee: 'up' },
     face: 'kiai',
     effects: [

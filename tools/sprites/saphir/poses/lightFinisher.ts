@@ -3,17 +3,19 @@ import { at, behindBack, GUARD, onBall, planted, raised, smear, type Pose } from
 /**
  * lightFinisher (Revers tournant, docs/saphir.md §4): 7 frames, 2, 3, 3, 3, 5, 6, 7 ticks (29),
  * the heel lands on frame 3 (ticks 8-10), hitbox 8..44 / 36..60; the game carries her 12 px in
- * over ticks 0-8; it floors. The end of the phrase: she turns on her lead foot, the rear leg
- * swings up behind her and round over the top, and the heel sweeps the ribs. Seen side on, the
- * turn is in the trail: a whole circle, behind, over and in front of her.
+ * over ticks 0-8; it floors. The end of the phrase, a true spinning hook: she pivots on her lead
+ * foot until her back is to the opponent (the Janus mask still watches), the rear leg swings
+ * round and the heel sweeps the ribs, then she comes round to face again.
  *
- * - 0: the pivot: the weight on the lead ball, the torso folding forward, the mask down.
- * - 1: the turn: the rear leg rising behind her, the chest bowed.
- * - 2: the leg sweeping over the top, the torso coming back up.
- * - 3: the heel through the hitbox at rib height, the leg straight, the torso far back; the
- *   circle of the trail closing on the foot.
- * - 4: the knee folds back.
- * - 5: the foot comes down behind.
+ * The turned frames (Pose.turned) are written the way a body does them seen from its other side:
+ * the kick goes out behind her, the tool mirrors the body round the hip toward the opponent.
+ *
+ * - 0: the pivot: the weight on the lead ball, the torso folding forward.
+ * - 1: turned: her back to the opponent, the rear leg leaving the floor.
+ * - 2: turned: the leg swinging round, high.
+ * - 3: turned: the heel through the hitbox at rib height, the leg straight; the trail a circle.
+ * - 4: turned: the knee folds back.
+ * - 5: round again, the foot coming down.
  * - 6: back in her guard.
  */
 const FRAMES: readonly Pose[] = [
@@ -27,41 +29,45 @@ const FRAMES: readonly Pose[] = [
   },
   {
     ...GUARD,
-    hip: at(3, 35),
-    torso: 18,
-    head: 10,
-    nearFoot: onBall(11, -36),
-    farFoot: raised(-18, 24, -100),
+    turned: true,
+    hip: at(4, 34.5),
+    torso: 12,
+    nearFoot: onBall(4, -34),
+    farFoot: raised(-12, 18, -95),
+    bends: { ...GUARD.bends, farKnee: 'down' },
     face: 'effort',
-    effects: [smear(2.5, [-10, 8], [-16, 16], [-18, 26])],
+    effects: [smear(2.5, [-8, 10], [-2, 18], [14, 22])],
   },
   {
     ...GUARD,
-    hip: at(6, 36),
-    torso: -20,
-    nearFoot: onBall(12, -32),
-    farFoot: raised(20, 56, 100),
-    bends: { ...GUARD.bends, farKnee: 'up' },
+    turned: true,
+    hip: at(7, 35.5),
+    torso: 42,
+    nearFoot: onBall(6, -30),
+    farFoot: raised(-18, 44, -112),
+    bends: { ...GUARD.bends, farKnee: 'down' },
     face: 'effort',
-    effects: [smear(3, [-18, 26], [-12, 50], [4, 60], [18, 58])],
+    effects: [smear(3, [14, 22], [26, 34], [32, 44])],
   },
   {
     ...GUARD,
-    hip: at(8, 36),
-    torso: -26,
-    nearFoot: onBall(13, -30),
-    farFoot: raised(36, 47, 90),
-    bends: { ...GUARD.bends, farKnee: 'up' },
+    turned: true,
+    hip: at(9, 36),
+    torso: 55,
+    nearFoot: onBall(7, -30),
+    farFoot: raised(-18.5, 47, -110),
+    bends: { ...GUARD.bends, farKnee: 'down' },
     face: 'kiai',
-    effects: [smear(3.5, [-18, 30], [-8, 56], [12, 66], [28, 60], [36, 49])],
+    effects: [smear(3.5, [-10, 24], [6, 14], [22, 22], [30, 34], [32, 44])],
   },
   {
     ...GUARD,
-    hip: at(5, 35),
-    torso: -10,
-    nearFoot: onBall(11, -30),
-    farFoot: raised(14, 26, -20),
-    bends: { ...GUARD.bends, farKnee: 'up' },
+    turned: true,
+    hip: at(7, 35),
+    torso: 14,
+    nearFoot: onBall(6, -30),
+    farFoot: raised(-4, 22, -100),
+    bends: { ...GUARD.bends, farKnee: 'down' },
   },
   {
     ...GUARD,

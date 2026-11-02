@@ -75,7 +75,7 @@ export function drawSaphir(
   drawLeg(ctx, skeleton.near, 'near');
   drawNeck(ctx);
   drawTorso(ctx);
-  stampHead(canvas, skeleton.face, at(skeleton.head), skeleton.headAngle);
+  stampHead(canvas, skeleton.face, at(skeleton.head), skeleton.headAngle, skeleton.turned);
   drawArm(ctx, skeleton.near, 'near');
 }
 

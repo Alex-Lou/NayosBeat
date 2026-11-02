@@ -268,6 +268,7 @@ Mesurées avec `hue` (`tests/render/hit-styles.test.ts`), `relativeLuminance` et
 - **Le son et le temps** : la syncope, le swing ; thème « chaud, qui swingue ». Aucun son à elle en v1 : une proposition pour plus tard (contrebasse, cuivres, craquement de 78 tours).
 - **Les 3 coups signatures**, animés à la porte 2 et retouchés à la porte 4 : **Syncope** (S), **Chassé** (H), **Contre-ut** (↓ + S). Chacun a un membre actif clair : une jambe tendue. La Syncope est un croissant (la jambe par-dessus la tête, puis en bas), le Chassé une poussée droite de la semelle, le Contre-ut une jambe droite vers le ciel.
 - **Ses enchaînements** (porte 3) : dessinés comme une seule phrase dansée, chaque coup sortant du précédent, les mains toujours dans le dos.
+- **Ses acrobaties** (porte 3, demande du propriétaire) : elle se retourne. Le Revers tournant et le Chassé arrière sont de vrais coups retournés, dos à l'adversaire (le masque montre alors son autre visage ; outil `Pose.turned`) ; la Coda est une tornade en l'air (un fouetté, un coup retourné en vrille, le revers en retombant) ; la Chandelle est un salto arrière ; le Fouetté plongeant est sauté. Les sauts sont dessinés dans la cellule, comme le Contre-ut.
 - **Les retours passés du propriétaire** (D25 à D27) : les coups de pied hauts restent dans les limites d'anatomie, sans exception ; aucun bras tiré en arrière et plié.
 
 ## 10. La liste de coupes
