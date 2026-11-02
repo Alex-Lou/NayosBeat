@@ -125,9 +125,10 @@ describe('Aseprite templates', () => {
     expect(cell[top * CELL_SIZE + left + 2]).toBe(GUIDE('hurtbox'));
   });
 
-  it('draw a Remix effects over the body of its special, which is not exported', () => {
+  it('draw a Remix effects over the body of its strip, which is not exported', () => {
+    // Nayo's Remix plays its own strip (docs/art/nayo-essence.md §5), Riff's her special's.
     const remix = templateOf(NAYO, FRAME_DATA, 'specialBoost', NOTHING_DRAWN);
-    expect(remix.strip).toBe('special');
+    expect(remix.strip).toBe('specialRemix');
     expect(remix.frames).toBe(NAYO.sheets.special?.frames);
     expect(remix.layers.map(({ name }) => name)).toEqual(['référence', 'effets', 'guides']);
     expect(layer(remix, 'référence')).toMatchObject({ locked: true });

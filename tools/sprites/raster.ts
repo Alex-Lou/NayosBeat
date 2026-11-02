@@ -45,6 +45,99 @@ export interface ShapeOptions {
   readonly tilt?: Point;
 }
 
+/**
+ * How a fighter's strips are lit beyond the key light, when it asks for it (`Fighter.lighting`);
+ * without it, the default 1 px back light on every back and top edge.
+ */
+export interface Lighting {
+  /** The ground's row in every cell (the feet): the heights below count from it, in pixels. */
+  readonly ground: number;
+  /**
+   * The back light (a sign behind the fighter, up high): the silhouette's edge pixels that face
+   * it squarely take their material's rim tone, those that face it a little less its light
+   * tone, the others none. Which way an edge faces comes from the shape itself (the empty pixels
+   * around it), so it follows every pose. It fades toward the ground: its light tone only under
+   * `fade.full`, nothing under `fade.none`.
+   */
+  readonly rim: {
+    /** Where the back light comes from, in image axes (x right, y down), toward the light. */
+    readonly direction: Point;
+    /** How squarely an edge faces it (cosine) to take the rim tone, and the light tone. */
+    readonly facing: { readonly rim: number; readonly light: number };
+    readonly fade: { readonly full: number; readonly none: number };
+    /** The rim and light tones of exact pixels (a stamped head's hair), by their slot. */
+    readonly exact: Readonly<Record<number, RimTones>>;
+  };
+  /**
+   * The lower body darkens toward the floor (ambient occlusion): under `height`, the key light
+   * a shape receives falls off, by `depth` (in n·L) at the ground. The tones follow the volume as
+   * they darken, never a straight line; no shine there.
+   */
+  readonly occlusion: { readonly height: number; readonly depth: number };
+  /**
+   * Exact pixels that glow (neon), by slot: the shaded pixels touching one (4 neighbors) take
+   * the halo slot given, a 1 px halo inside the silhouette.
+   */
+  readonly glow: Readonly<Record<number, number>>;
+  /**
+   * How the light of the fighter's own effects falls on the body (`PixelCanvas.lightBy`): the
+   * surfaces turned to a source take its color, the ones turned away sink a band, and the whole
+   * frame loses some key light while a strong source burns (docs/art/nayo-essence.md). Without
+   * it, the effects light nothing.
+   */
+  readonly fx?: EffectLighting;
+}
+
+/**
+ * The colors a body takes under its effects' light. A pixel's material is known by its outline
+ * slot (every variant of a material, far limb or seam, keeps it).
+ */
+export interface EffectLighting {
+  /** By light color, then by a material's outline slot: its tone grazed, and squarely lit. */
+  readonly tints: Readonly<Record<string, Readonly<Record<number, Tint>>>>;
+  /**
+   * Exact pixels that take the light (a stamped head, `PixelCanvas.volume`), by slot: their
+   * material's outline slot, and the slot a band darker.
+   */
+  readonly exact: Readonly<Record<number, { readonly material: number; readonly darker: number }>>;
+  /** The intensity (0 to 1) from which a surface is grazed (`kiss`), and squarely lit (`lit`). */
+  readonly levels: { readonly kiss: number; readonly lit: number };
+  /** Key light (n·L) the rest of the frame loses under a source of power 1: the contrast. */
+  readonly drama: number;
+  /** Key light (n·L) a surface turned right away from a source of power 1 loses: its shadow. */
+  readonly shadow: number;
+  /** Rows above the ground (`Lighting.ground`) no effect lights: nothing under the feet. */
+  readonly floor: number;
+}
+
+/** A material's tones under one light color. */
+export interface Tint {
+  readonly kiss: number;
+  readonly lit: number;
+}
+
+/**
+ * A light given off by an effect, in canvas pixels, for the cell between `left` and `right` (it
+ * never spills into the next frame). It reaches `reach` pixels, fading out; `power` 1 is a
+ * charged record or a flash in the hand.
+ */
+export interface EffectLight {
+  readonly x: number;
+  readonly y: number;
+  readonly reach: number;
+  readonly power: number;
+  /** Its color: a key of `EffectLighting.tints`. */
+  readonly color: string;
+  readonly left: number;
+  readonly right: number;
+}
+
+/** What a pixel turns into under a back light: squarely faced, half faced. */
+export interface RimTones {
+  readonly rim: number;
+  readonly light: number;
+}
+
 export interface Bounds {
   readonly left: number;
   readonly top: number;
@@ -68,8 +161,12 @@ const BANDS = { lit: 0.6, base: 0.22, shadow: -0.1 } as const;
 const DEFAULT_GLOSS_CUT = 0.9;
 /** Lit-side direction in the image, for the selective outline and the cast shadows. */
 const LIGHT_2D = unit2(LIGHT.x, LIGHT.y);
+/** Toward the key light, in the image (x right, y down): the side of a fold that catches it. */
+export const KEY_LIGHT_2D: Point = LIGHT_2D;
 /** How far (px) a part in front casts its shadow on what is behind it, away from the light. */
 const CAST_SHADOW = 2;
+/** How far (px) a `Lighting`'s back light looks around an edge pixel to tell which way it faces. */
+const RIM_REACH = 2;
 
 const NEIGHBORS: readonly Point[] = [
   { x: 1, y: 0 },
@@ -88,6 +185,20 @@ const FLAG_CONTOUR = 4;
 const FLAG_GHOST = 8;
 /** A contour on the lit side of its shape: drawn in the shadow tone, not the darkest one. */
 const FLAG_LIT_CONTOUR = 16;
+/** An exact pixel given a volume (`volume`): its normal is real, effects light it. */
+const FLAG_VOLUME = 32;
+/** How far in front of the body an effect's light sits, per pixel of distance, and at least. */
+const LIGHT_DEPTH = { perPixel: 0.25, least: 2 } as const;
+/** The key light (n·L) a stamped pixel must lose to take its slot a band darker. */
+const EXACT_SHADE = 0.12;
+
+/** What an `EffectLighting` does to a strip's pixels (see PixelCanvas.effectLight). */
+interface EffectLit {
+  readonly level: Uint8Array;
+  readonly color: Int16Array;
+  readonly colors: readonly string[];
+  readonly shade: Float32Array;
+}
 
 /** Tones of a material by band, darkest first. */
 const BAND = { deep: 0, shadow: 1, base: 2, light: 3, gloss: 4 } as const;
@@ -109,6 +220,7 @@ export class PixelCanvas {
   private readonly nz: Float32Array;
   private readonly materials: Material[] = [];
   private readonly groups: string[] = [];
+  private readonly lights: EffectLight[] = [];
   private anonymous = 0;
 
   constructor(width: number, height: number) {
@@ -287,17 +399,201 @@ export class PixelCanvas {
     });
   }
 
-  /** Shades, contours, casts shadows, cleans, back-lights and outlines into `pixels`. */
-  finish(): void {
+  /**
+   * Gives the exact pixels around `center` (a stamped head) the normals of a ball of `radius`
+   * pixels, so an effect's light (`lightBy`) shades them like the drawn shapes; those past the
+   * radius (hair spikes) face outward.
+   */
+  volume(center: Point, radius: number): void {
+    const reach = radius * 1.6;
+    const normal: Normal = { x: 0, y: 0, z: 1 };
+    this.scan(
+      {
+        left: center.x - reach,
+        right: center.x + reach,
+        top: center.y - reach,
+        bottom: center.y + reach,
+      },
+      (x, y, index) => {
+        const flags = this.flags[index] ?? 0;
+        if (!(flags & FLAG_EXACT) || flags & FLAG_GHOST) return;
+        const u = (x + 0.5 - center.x) / radius;
+        const v = (y + 0.5 - center.y) / radius;
+        if (u * u + v * v > 2.56) return;
+        const length = Math.hypot(u, v);
+        sphereNormal(normal, length > 1 ? u / length : u, length > 1 ? v / length : v);
+        this.nx[index] = normal.x;
+        this.ny[index] = normal.y;
+        this.nz[index] = normal.z;
+        this.flags[index] = flags | FLAG_VOLUME;
+      },
+    );
+  }
+
+  /** A light given off by an effect, shed on the body by `finish` when its lighting asks. */
+  lightBy(light: EffectLight): void {
+    this.lights.push(light);
+  }
+
+  /**
+   * Shades, contours, casts shadows, cleans, back-lights and outlines into `pixels`; with a
+   * `lighting`, the back light falls on the edges that face it, and the neons glow; with its
+   * `fx`, the effects' lights (`lightBy`) color what faces them and darken what turns away.
+   */
+  finish(lighting?: Lighting): void {
+    const lit =
+      lighting?.fx && this.lights.length > 0
+        ? this.effectLight(lighting.fx, lighting.ground)
+        : undefined;
     const bands = new Int8Array(this.pixels.length);
-    for (let index = 0; index < this.pixels.length; index++) bands[index] = this.band(index);
+    for (let index = 0; index < this.pixels.length; index++) {
+      const occlusion = lighting ? occlusionAt(lighting, Math.floor(index / this.width)) : 0;
+      bands[index] = this.band(index, occlusion + (lit?.shade[index] ?? 0));
+    }
     this.castShadows(bands);
     this.cleanOrphans(bands);
     for (let index = 0; index < this.pixels.length; index++) {
       this.pixels[index] = this.tone(index, bands[index] ?? -1);
     }
-    this.backLight();
+    if (lighting) {
+      this.rimLight(lighting);
+      this.glow(lighting.glow);
+      if (lighting.fx && lit) this.tint(lighting.fx, lit, bands);
+    } else {
+      this.backLight();
+    }
     this.outline();
+  }
+
+  /**
+   * What the effects' lights do to each pixel: how lit it is (0 none, 1 grazed, 2 squarely), by
+   * which color, and how much key light it loses (turned away from a source, or left in the dark
+   * of a frame a strong source burns in).
+   */
+  private effectLight(fx: EffectLighting, ground: number): EffectLit {
+    const size = this.pixels.length;
+    const level = new Uint8Array(size);
+    const color = new Int16Array(size).fill(-1);
+    const shade = new Float32Array(size);
+    const colors = [...new Set(this.lights.map((light) => light.color))];
+    const best = new Float32Array(size);
+    // The strongest source of each column's frame: the dark it leaves around it.
+    const strongest = new Float32Array(this.width);
+    for (const light of this.lights) {
+      for (let x = Math.max(0, light.left); x < Math.min(this.width, light.right); x++) {
+        strongest[x] = Math.max(strongest[x] ?? 0, light.power);
+      }
+      const colorId = colors.indexOf(light.color);
+      this.scan(
+        {
+          left: Math.max(light.left, light.x - light.reach),
+          right: Math.min(light.right - 1, light.x + light.reach),
+          top: light.y - light.reach,
+          bottom: Math.min(light.y + light.reach, ground - fx.floor),
+        },
+        (x, y, index) => {
+          if (!this.takesLight(index, fx)) return;
+          const dx = light.x - (x + 0.5);
+          const dy = light.y - (y + 0.5);
+          const distance = Math.hypot(dx, dy);
+          if (distance >= light.reach) return;
+          const t = distance / light.reach;
+          const falloff = (1 - t * t) * (1 - t * t) * light.power;
+          const dz = distance * LIGHT_DEPTH.perPixel + LIGHT_DEPTH.least;
+          const length = Math.hypot(dx, dy, dz);
+          const facing =
+            ((this.nx[index] ?? 0) * dx + (this.ny[index] ?? 0) * dy + (this.nz[index] ?? 1) * dz) /
+            length;
+          if (facing < 0) {
+            shade[index] = Math.max(shade[index] ?? 0, -facing * falloff * fx.shadow);
+            return;
+          }
+          const strength = facing * falloff;
+          if (strength > (best[index] ?? 0)) {
+            best[index] = strength;
+            color[index] = colorId;
+          }
+        },
+      );
+    }
+    for (let index = 0; index < size; index++) {
+      const strength = best[index] ?? 0;
+      level[index] = strength >= fx.levels.lit ? 2 : strength >= fx.levels.kiss ? 1 : 0;
+      if (level[index] === 0 && this.takesLight(index, fx)) {
+        const power = strongest[index % this.width] ?? 0;
+        shade[index] = (shade[index] ?? 0) + power * fx.drama;
+      }
+    }
+    this.cleanLevels(level);
+    return { level, color, colors, shade };
+  }
+
+  /** Whether a pixel takes an effect's light: a shaded surface, or an exact one with a volume. */
+  private takesLight(index: number, fx: EffectLighting): boolean {
+    const flags = this.flags[index] ?? 0;
+    if (flags & (FLAG_GHOST | FLAG_CONTOUR | FLAG_FLAT)) return false;
+    if (flags & FLAG_EXACT) {
+      return (flags & FLAG_VOLUME) !== 0 && fx.exact[this.exact[index] ?? 0] !== undefined;
+    }
+    return this.materials[this.material[index] ?? EMPTY] !== undefined;
+  }
+
+  /** A lit pixel whose level differs from 3 of its 4 neighbors, which agree, is noise. */
+  private cleanLevels(level: Uint8Array): void {
+    const next = level.slice();
+    for (let y = 1; y < this.height - 1; y++) {
+      for (let x = 1; x < this.width - 1; x++) {
+        const index = y * this.width + x;
+        const own = level[index] ?? 0;
+        const votes = [0, 0, 0];
+        for (const { x: dx, y: dy } of NEIGHBORS) {
+          const other = (y + dy) * this.width + x + dx;
+          if (this.group[other] === EMPTY) continue;
+          const vote = level[other] ?? 0;
+          votes[vote] = (votes[vote] ?? 0) + 1;
+        }
+        votes.forEach((count, vote) => {
+          if (vote !== own && count >= 3) next[index] = vote;
+        });
+      }
+    }
+    level.set(next);
+  }
+
+  /** The effects' colors on the surfaces that face them (`effectLight`). */
+  private tint(
+    fx: EffectLighting,
+    { level, color, colors, shade }: EffectLit,
+    bands: Int8Array,
+  ): void {
+    for (let index = 0; index < this.pixels.length; index++) {
+      const lit = level[index] ?? 0;
+      const flags = this.flags[index] ?? 0;
+      const volume = flags & FLAG_EXACT ? fx.exact[this.exact[index] ?? 0] : undefined;
+      if (volume && flags & FLAG_VOLUME && lit === 0 && (shade[index] ?? 0) >= EXACT_SHADE) {
+        // A stamped pixel has no band to lose: it takes the slot a band darker.
+        this.pixels[index] = volume.darker;
+        continue;
+      }
+      const name = colors[color[index] ?? -1];
+      if (name === undefined) continue;
+      let material: number | undefined;
+      if (flags & FLAG_EXACT) {
+        if (!(flags & FLAG_VOLUME)) continue;
+        material = volume?.material;
+      } else if (!(flags & (FLAG_CONTOUR | FLAG_FLAT | FLAG_GHOST))) {
+        material = this.materials[this.material[index] ?? EMPTY]?.outline;
+      }
+      const tones = material === undefined ? undefined : fx.tints[name]?.[material];
+      if (!tones || lit === 0) continue;
+      // Grazed, a surface keeps its shadows: only its lit tones take the color, so the form
+      // still reads under it.
+      const shadowed = volume
+        ? (this.exact[index] ?? 0) <= volume.material + 2
+        : (bands[index] ?? -1) < BAND.base;
+      if (lit === 1 && shadowed) continue;
+      this.pixels[index] = lit === 2 ? tones.lit : tones.kiss;
+    }
   }
 
   private draw(shape: Shape, bounds: Bounds, material: Material, options: ShapeOptions): void {
@@ -360,7 +656,7 @@ export class PixelCanvas {
   }
 
   /** Lighting band of a shaded pixel (BAND), or -1 for empty, exact and contour pixels. */
-  private band(index: number): number {
+  private band(index: number, shade: number): number {
     const flags = this.flags[index] ?? 0;
     if (flags & (FLAG_EXACT | FLAG_CONTOUR)) return -1;
     const material = this.materials[this.material[index] ?? EMPTY];
@@ -369,8 +665,8 @@ export class PixelCanvas {
     const nx = this.nx[index] ?? 0;
     const ny = this.ny[index] ?? 0;
     const nz = this.nz[index] ?? 1;
-    const lit = nx * LIGHT.x + ny * LIGHT.y + nz * LIGHT.z;
-    if (material.gloss !== undefined) {
+    const lit = nx * LIGHT.x + ny * LIGHT.y + nz * LIGHT.z - shade;
+    if (material.gloss !== undefined && shade === 0) {
       // Mirror of the light around the normal, compared with the view direction (z).
       const reflected = 2 * lit * nz - LIGHT.z;
       if (reflected > (material.glossCut ?? DEFAULT_GLOSS_CUT)) return BAND.gloss;
@@ -473,6 +769,86 @@ export class PixelCanvas {
     this.pixels.set(next);
   }
 
+  /**
+   * The back light of a `Lighting`: 1 px on the silhouette's edges that face it. A shape's edge
+   * is its last pixel (the outline goes around it); a stamped grid draws its own outline, so its
+   * rim goes on the pixel just inside it. Which way an edge faces is read from the empty pixels
+   * around it (RIM_REACH), so the light follows the pose, never a fixed side of a part.
+   */
+  private rimLight({ rim, ground }: Lighting): void {
+    const toward = unit2(rim.direction.x, rim.direction.y);
+    const empty = (index: number): boolean => this.group[index] === EMPTY;
+    const edge = (index: number): boolean =>
+      NEIGHBORS.some(({ x, y }) => empty(index + y * this.width + x));
+    const next = this.pixels.slice();
+    for (let y = RIM_REACH; y < this.height - RIM_REACH; y++) {
+      for (let x = RIM_REACH; x < this.width - RIM_REACH; x++) {
+        const index = y * this.width + x;
+        const height = ground - y;
+        if (empty(index) || height < rim.fade.none) continue;
+        const tone = this.rimToneAt(index, rim.exact);
+        if (tone === undefined) continue;
+        const exact = (i: number): boolean => ((this.flags[i] ?? 0) & FLAG_EXACT) !== 0;
+        const onEdge = exact(index)
+          ? !edge(index) &&
+            NEIGHBORS.some(({ x: dx, y: dy }) => {
+              const other = index + dy * this.width + dx;
+              return exact(other) && edge(other);
+            })
+          : edge(index);
+        if (!onEdge) continue;
+        // Away from the shape: the sum of the directions to the empty pixels nearby.
+        let ox = 0;
+        let oy = 0;
+        for (let dy = -RIM_REACH; dy <= RIM_REACH; dy++) {
+          for (let dx = -RIM_REACH; dx <= RIM_REACH; dx++) {
+            if ((dx === 0 && dy === 0) || !empty(index + dy * this.width + dx)) continue;
+            const distance = Math.hypot(dx, dy);
+            ox += dx / (distance * distance);
+            oy += dy / (distance * distance);
+          }
+        }
+        const length = Math.hypot(ox, oy);
+        if (length === 0) continue;
+        const facing = (ox * toward.x + oy * toward.y) / length;
+        const full = height >= rim.fade.full;
+        if (facing >= rim.facing.rim) next[index] = full ? tone.rim : tone.light;
+        else if (full && facing >= rim.facing.light) next[index] = tone.light;
+      }
+    }
+    this.pixels.set(next);
+  }
+
+  /** The tones a pixel takes under a `Lighting`'s back light, if any. */
+  private rimToneAt(index: number, exact: Lighting['rim']['exact']): RimTones | undefined {
+    const flags = this.flags[index] ?? 0;
+    if (flags & FLAG_EXACT) return flags & FLAG_GHOST ? undefined : exact[this.exact[index] ?? 0];
+    if (flags & (FLAG_CONTOUR | FLAG_FLAT)) return undefined;
+    const material = this.materials[this.material[index] ?? EMPTY];
+    return material?.rim === undefined ? undefined : { rim: material.rim, light: material.light };
+  }
+
+  /** A `Lighting`'s neons: their shaded neighbors take the halo slot, inside the silhouette. */
+  private glow(halo: Readonly<Record<number, number>>): void {
+    const next = this.pixels.slice();
+    for (let y = 1; y < this.height - 1; y++) {
+      for (let x = 1; x < this.width - 1; x++) {
+        const index = y * this.width + x;
+        if (!((this.flags[index] ?? 0) & FLAG_EXACT)) continue;
+        const tone = halo[this.exact[index] ?? 0];
+        if (tone === undefined) continue;
+        for (const { x: dx, y: dy } of NEIGHBORS) {
+          const other = index + dy * this.width + dx;
+          const group = this.group[other] ?? EMPTY;
+          if (group === EMPTY || group === LOOSE) continue;
+          if ((this.flags[other] ?? 0) & FLAG_EXACT) continue;
+          next[other] = tone;
+        }
+      }
+    }
+    this.pixels.set(next);
+  }
+
   /** Surrounds the silhouette: darkest tone on the shadow side, a softer one on the lit side. */
   private outline(): void {
     const next = this.pixels.slice();
@@ -511,6 +887,14 @@ export class PixelCanvas {
     this.groups.push(key);
     return this.groups.length - 1;
   }
+}
+
+/** How much key light a `Lighting`'s ambient occlusion takes from the pixels of row `y`. */
+function occlusionAt({ ground, occlusion }: Lighting, y: number): number {
+  const height = ground - y;
+  return height >= occlusion.height
+    ? 0
+    : (occlusion.depth * (occlusion.height - height)) / occlusion.height;
 }
 
 /** Normal of a sphere (or a cylinder's cross-section) at offset (u, v) of its unit disc. */

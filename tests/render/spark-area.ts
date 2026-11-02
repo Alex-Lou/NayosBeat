@@ -23,14 +23,14 @@ const SKY = darkestOf(FIGHT_STAGE_COLORS);
 /** World pixels composited around the impact, at (CENTER_X, CENTER_Y), SAMPLES² samples each. */
 const WIDTH = 320;
 const HEIGHT = 260;
-const CENTER_X = 160;
-const CENTER_Y = 130;
+export const CENTER_X = 160;
+export const CENTER_Y = 130;
 const SAMPLES = 2;
 const ADD = 1;
 /** The ground line of the measuring HitFx: the impact this high over it, so a KO is not lifted. */
-const GROUND_Y = 200;
+export const GROUND_Y = 200;
 
-interface FakeImage {
+export interface FakeImage {
   frame: string;
   blend: number;
   visible: boolean;
@@ -44,16 +44,42 @@ interface FakeImage {
   alpha: number;
 }
 
-interface Atlas {
+export interface Atlas {
   width: number;
   data: Uint8ClampedArray;
   readonly frames: Map<string, { x: number; y: number; width: number; height: number }>;
 }
 
-/** A scene that paints the atlas into memory and keeps every image HitFx makes. */
-function recordingScene(): { scene: Phaser.Scene; atlas: Atlas; images: FakeImage[] } {
+/** A rectangle a Graphics filled (the equalizer's segments: signature-fx.ts), in world px. */
+export interface FakeSpan {
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+  readonly color: number;
+  readonly alpha: number;
+}
+
+/** A Graphics that keeps what it filled since it was last cleared, and how it blends. */
+export interface FakeGraphics {
+  blend: number;
+  visible: boolean;
+  spans: FakeSpan[];
+}
+
+/** What a recording scene keeps: the atlas painted into memory, every image and Graphics made. */
+export interface Recorded {
+  readonly scene: Phaser.Scene;
+  readonly atlas: Atlas;
+  readonly images: FakeImage[];
+  readonly graphics: FakeGraphics[];
+}
+
+/** A scene that paints the atlas into memory and keeps every image and Graphics made on it. */
+export function recordingScene(): Recorded {
   const atlas: Atlas = { width: 0, data: new Uint8ClampedArray(0), frames: new Map() };
   const images: FakeImage[] = [];
+  const graphics: FakeGraphics[] = [];
   let painted = false;
   const scene = {
     // A canvas twice as fine as the sprites: the atlas at full detail.
@@ -120,9 +146,27 @@ function recordingScene(): { scene: Phaser.Scene; atlas: Atlas; images: FakeImag
         };
         return chain;
       },
+      graphics: () => {
+        const drawn: FakeGraphics = { blend: 0, visible: true, spans: [] };
+        graphics.push(drawn);
+        let color = 0;
+        let alpha = 1;
+        const chain = {
+          setBlendMode: (blend: number) => ((drawn.blend = blend), chain),
+          setDepth: () => chain,
+          setVisible: (visible: boolean) => ((drawn.visible = visible), chain),
+          clear: () => ((drawn.spans = []), chain),
+          fillStyle: (fill: number, opacity = 1) => ((color = fill), (alpha = opacity), chain),
+          fillRect: (x: number, y: number, width: number, height: number) => {
+            drawn.spans.push({ x, y, width, height, color, alpha });
+            return chain;
+          },
+        };
+        return chain;
+      },
     },
   } as unknown as Phaser.Scene;
-  return { scene, atlas, images };
+  return { scene, atlas, images, graphics };
 }
 
 /** WCAG's linearized channel of each 0 to 255 value. */
@@ -136,13 +180,22 @@ function luminance(red: number, green: number, blue: number): number {
   return 0.2126 * at(red) + 0.7152 * at(green) + 0.0722 * at(blue);
 }
 
-/** World px² lit at ΔL ≥ 0.1 over the sky, the images as they are now. */
-function litArea(atlas: Atlas, images: readonly FakeImage[], drawnBy: Compositor): number {
+/**
+ * World px² lit at ΔL ≥ 0.1 over `backdrop` (the sky by default), the images and the Graphics'
+ * rectangles as they are now.
+ */
+export function litArea(
+  atlas: Atlas,
+  images: readonly FakeImage[],
+  drawnBy: Compositor,
+  backdrop = SKY,
+  graphics: readonly FakeGraphics[] = [],
+): number {
   const columns = WIDTH * SAMPLES;
   const count = columns * HEIGHT * SAMPLES;
-  const red = new Float32Array(count).fill((SKY >> 16) & 0xff);
-  const green = new Float32Array(count).fill((SKY >> 8) & 0xff);
-  const blue = new Float32Array(count).fill(SKY & 0xff);
+  const red = new Float32Array(count).fill((backdrop >> 16) & 0xff);
+  const green = new Float32Array(count).fill((backdrop >> 8) & 0xff);
+  const blue = new Float32Array(count).fill(backdrop & 0xff);
   for (const image of images) {
     const frame = atlas.frames.get(image.frame);
     if (!image.visible || image.alpha <= 0 || !frame) continue;
@@ -185,7 +238,33 @@ function litArea(atlas: Atlas, images: readonly FakeImage[], drawnBy: Compositor
       }
     }
   }
-  const sky = luminance((SKY >> 16) & 0xff, (SKY >> 8) & 0xff, SKY & 0xff);
+  for (const drawn of graphics) {
+    if (!drawn.visible) continue;
+    for (const span of drawn.spans) {
+      const left = Math.max(0, Math.round(span.x * SAMPLES));
+      const right = Math.min(columns, Math.round((span.x + span.width) * SAMPLES));
+      const top = Math.max(0, Math.round(span.y * SAMPLES));
+      const bottom = Math.min(HEIGHT * SAMPLES, Math.round((span.y + span.height) * SAMPLES));
+      const r = (span.color >> 16) & 0xff;
+      const g = (span.color >> 8) & 0xff;
+      const b = span.color & 0xff;
+      for (let row = top; row < bottom; row++) {
+        for (let column = left; column < right; column++) {
+          const i = row * columns + column;
+          if (drawn.blend === ADD) {
+            red[i] = Math.min(255, (red[i] ?? 0) + r * span.alpha);
+            green[i] = Math.min(255, (green[i] ?? 0) + g * span.alpha);
+            blue[i] = Math.min(255, (blue[i] ?? 0) + b * span.alpha);
+          } else {
+            red[i] = (red[i] ?? 0) + (r - (red[i] ?? 0)) * span.alpha;
+            green[i] = (green[i] ?? 0) + (g - (green[i] ?? 0)) * span.alpha;
+            blue[i] = (blue[i] ?? 0) + (b - (blue[i] ?? 0)) * span.alpha;
+          }
+        }
+      }
+    }
+  }
+  const sky = luminance((backdrop >> 16) & 0xff, (backdrop >> 8) & 0xff, backdrop & 0xff);
   let lit = 0;
   for (let i = 0; i < count; i++) {
     if (luminance(red[i] ?? 0, green[i] ?? 0, blue[i] ?? 0) - sky >= 0.1) lit++;

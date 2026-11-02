@@ -160,7 +160,7 @@ async function main(): Promise<void> {
   );
   expect(
     'fx/specialBoost',
-    differences(drawn.get('specialBoost')?.fx, drawStripEffects(NAYO, 'special', toPlatine)),
+    differences(drawn.get('specialBoost')?.fx, drawStripEffects(NAYO, 'specialRemix', toPlatine)),
     [],
   );
   expect('block', differences(drawn.get('block')?.body, drawStrip(NAYO, 'block')), []);

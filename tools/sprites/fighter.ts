@@ -7,7 +7,7 @@
 import type { SheetSpec } from '../../src/art/types.ts';
 import type { Colorway } from './palette.ts';
 import type { Rgba } from './png.ts';
-import type { PixelCanvas, Point } from './raster.ts';
+import type { Lighting, PixelCanvas, Point } from './raster.ts';
 import type { Body, Effect, Pose, Skeleton } from './skeleton.ts';
 import type { EffectStyle } from './vfx.ts';
 
@@ -60,6 +60,8 @@ export interface Fighter {
   };
   /** Hanging parts simulated over a strip (see Motion.hang). */
   readonly springs?: readonly Spring[];
+  /** How its strips are lit beyond the key light (raster.ts); without it, the default back light. */
+  readonly lighting?: Lighting;
   /** Draws the fighter in the cell whose left edge is `cellX`. */
   readonly draw: (canvas: PixelCanvas, skeleton: Skeleton, cellX: number, motion: Motion) => void;
   readonly fx: EffectStyle;

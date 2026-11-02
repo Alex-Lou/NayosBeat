@@ -225,7 +225,8 @@ describe('the victim trembles through the impact freeze (docs/art/animation-plan
       view.update(state, 1, 'off', { options: ANIM_OPTIONS, memory });
       showFighter(state, 1, MIRROR_MATCH, NAYO, shown);
       const at = toPx(shown.x);
-      expect(placed.shadow).toEqual([at]);
+      // Both layers of the shadow (the penumbra and the core), right under the fighter.
+      expect(placed.shadow).toEqual([at, at]);
       trembles.push((placed.body[0] ?? Number.NaN) - at);
     }
     expect(trembles.some((tremble) => tremble !== 0)).toBe(true);

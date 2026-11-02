@@ -15,8 +15,9 @@ function play(sheet: NayoSheet, ticks: readonly number[], loopFrom?: number): Na
   return loopFrom === undefined ? { sheet, frames, ticks } : { sheet, frames, ticks, loopFrom };
 }
 
-// The specials, which their Remixes play too (D18): the same strip at the same timing, its
-// effects redrawn in platine under the Remix's name (docs/combos-v3.md §1.8.7, §5 row 8).
+// The specials, whose timing their Remixes keep (D18). A Remix plays its own strip, the special's
+// poses in the Boost's light (docs/art/nayo-essence.md §5), its effects redrawn in platine under
+// the Remix's name (docs/combos-v3.md §1.8.7, §5 row 8).
 const VINYLE = play('special', [3, 3, 3, 3, 8, 6, 5, 5, 5]); // the Vinyle leaves on frame 4
 const PIED_FENDU = play('specialForward', [3, 3, 3, 2, 4, 4, 5, 5, 4]); // active: frame 4
 const UPPERCUT = play('specialAntiAir', [3, 3, 5, 4, 4, 4, 4, 4, 4, 4]); // active: frames 1-2
@@ -84,9 +85,10 @@ export const NAYO_CLIPS: FighterClips<NayoClip> = {
   tech: play('tech', [3, 3, 4, 4]),
 
   standLight: play('standLight', [2, 2, 3, 2, 2, 3]), // active: frame 2
-  // Double direct: the Direct from halfway back (frame 1), out again at once, active on frame
-  // 2. An honest reuse: it is one jab more (docs/combos-v3.md §5, row 4).
-  jabRepeat: { sheet: 'standLight', frames: [1, 2, 3, 4, 5], ticks: [3, 2, 2, 2, 3] },
+  // Double direct: the Direct from halfway back, out again at once, active on frame 1, in its own
+  // strip: the Direct's poses with the first jab's streak still in the air (docs/combos-v3.md §5,
+  // row 4; docs/art/nayo-essence.md §6).
+  jabRepeat: play('jabRepeat', [3, 2, 2, 2, 3]),
   // L, L, L: the Cross (a step in on frames 0-2), then the Mise au tapis, a wide hook.
   chainLight: play('chainLight', [2, 2, 2, 3, 6, 6]), // active: frame 3
   lightFinisher: play('lightFinisher', [2, 3, 3, 3, 5, 6, 7]), // active: frame 3
@@ -98,9 +100,10 @@ export const NAYO_CLIPS: FighterClips<NayoClip> = {
   chainHeavy: play('chainHeavy', [3, 3, 2, 3, 6, 6, 5]), // active: frame 3
   // Overhand: up on his toes on frames 3-4, the cyan arc from frame 2.
   forwardHeavy: play('forwardHeavy', [4, 4, 4, 4, 3, 3, 5, 5, 5]), // active: frame 5
-  // Marteau: the Overhand from its fist already loaded behind the ear (frames 2-8), the star of
-  // its effects falling on frame 5, the active one (§5, row 5).
-  chainHigh: { sheet: 'forwardHeavy', frames: [2, 3, 4, 5, 6, 7, 8], ticks: [5, 5, 4, 3, 5, 5, 5] },
+  // Marteau: the Overhand from its fist already loaded behind the ear, in its own strip (the
+  // Overhand's frames 2-8, the fist heating up gold), active on frame 3 (§5, row 5;
+  // docs/art/nayo-essence.md §6).
+  chainHigh: play('chainHigh', [5, 5, 4, 3, 5, 5, 5]),
   // Remontant: the fist nearly vertical, the head tucked.
   backHeavy: play('backHeavy', [2, 2, 3, 4, 5, 6, 6]), // active: frame 3
   // Remontant chassé: the call step on frames 0-1, then the Remontant's frames 2-6 (§5, row 2).
@@ -112,9 +115,9 @@ export const NAYO_CLIPS: FighterClips<NayoClip> = {
   special: VINYLE,
   specialForward: PIED_FENDU,
   specialAntiAir: UPPERCUT,
-  specialBoost: { ...VINYLE, fx: 'specialBoost' },
-  specialForwardBoost: { ...PIED_FENDU, fx: 'specialForwardBoost' },
-  specialAntiAirBoost: { ...UPPERCUT, fx: 'specialAntiAirBoost' },
+  specialBoost: { ...VINYLE, sheet: 'specialRemix', fx: 'specialBoost' },
+  specialForwardBoost: { ...PIED_FENDU, sheet: 'specialForwardRemix', fx: 'specialForwardBoost' },
+  specialAntiAirBoost: { ...UPPERCUT, sheet: 'specialAntiAirRemix', fx: 'specialAntiAirBoost' },
   // Mégabasse: the cue (s0) held through the 20-tick freeze of its flash, the coil (s1), then
   // the three blows on the floor on action frames 2, 8 and 14 (s2, s2 again, s4, the speaker
   // rings of its effects on s2 to s4), the rise, the fist to the sky, the guard (§5, row 3).

@@ -1,3 +1,4 @@
+import type { FighterArt } from '../art/types';
 import { over } from './luminance';
 
 /**
@@ -42,4 +43,17 @@ export const CONTOUR_TINT = 0.3;
  */
 export function contourOf(energy: number): number {
   return over(energy, CONTOUR_BASE, CONTOUR_TINT);
+}
+
+/**
+ * The contour drawn around a fighter (option A): its color under `look`, or null. None outside
+ * option A, nor around a fighter whose sprites carry their own back light (`FighterArt.ownLight`):
+ * the contour would double it all around the body, sticker-like.
+ */
+export function contourFor(
+  look: SilhouetteLook,
+  art: Pick<FighterArt, 'ownLight'>,
+  energy: number,
+): number | null {
+  return look === 'outline' && art.ownLight !== true ? contourOf(energy) : null;
 }

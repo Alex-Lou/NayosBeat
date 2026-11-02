@@ -1,5 +1,6 @@
 import type { NayoSheet } from '../../src/art/nayo/sheets.ts';
 import { CELL_SIZE } from '../../src/art/types.ts';
+import { effectLightsOf } from './effect-light.ts';
 import { STILL, type Fighter, type Motion, type Spring } from './fighter.ts';
 import { NAYO } from './nayo/index.ts';
 import type { PosedSheet } from './nayo/poses/index.ts';
@@ -27,9 +28,15 @@ export function drawStrip(fighter: Fighter, sheet: string): PixelCanvas {
     const motions = motionsOf(fighter, sheet, poses);
     poses.forEach((pose, frame) => {
       fighter.draw(canvas, solve(pose, fighter.body), frame * CELL_SIZE, motions[frame] ?? STILL);
+      // Its effects light the body, when its lighting says how (docs/art/nayo-essence.md).
+      if (fighter.lighting?.fx) {
+        for (const light of effectLightsOf(pose, frame * CELL_SIZE, CELL_SIZE)) {
+          canvas.lightBy(light);
+        }
+      }
     });
   }
-  canvas.finish();
+  canvas.finish(fighter.lighting);
   return canvas;
 }
 

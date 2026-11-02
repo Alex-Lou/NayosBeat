@@ -60,6 +60,11 @@ export class FighterView {
     this.foot.setDepth(depth);
   }
 
+  /** The moves' lights (light-rig.ts): a grey box has no shadow to lean nor body to glow. */
+  light(): void {
+    // Nothing to light.
+  }
+
   /** The comfort options: calm or still (no shake), the halo holds its breath. */
   setComfort(calm: boolean, shake: ShakeMode): void {
     this.halo.calm = calm || shake === 'off';

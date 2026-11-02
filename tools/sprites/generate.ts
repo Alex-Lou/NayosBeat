@@ -18,7 +18,7 @@
  */
 
 import { mkdir, rm, writeFile } from 'node:fs/promises';
-import { ANCHOR, CELL_SIZE, type Atlas, type Cell } from '../../src/art/types.ts';
+import { ANCHOR, CELL_SIZE, effectsOf, type Atlas, type Cell } from '../../src/art/types.ts';
 import { atlasJson, packStrip } from './atlas.ts';
 import { strikeOf } from './clips.ts';
 import {
@@ -225,10 +225,14 @@ async function generate(fighter: Fighter, drawn: ReadonlyMap<string, Drawn>): Pr
     cells.set(file, strip.cell);
     return strip;
   };
+  // The effects some clip plays: a strip whose clips all play other effects (a Remix's strip,
+  // whose platine effects go by the Remix's name) has none of its own written.
+  const played = new Set(Object.values(clips).map(effectsOf));
   for (const [sheet, { frames }] of Object.entries(fighter.sheets)) {
     const strip = stripPixels(fighter, sheet, drawn);
     const body = await keep(strip.body, sheet);
-    if (strip.fx) await keep(strip.fx, `fx/${sheet}`);
+    const shown = played.has(sheet) || !Object.values(clips).some((clip) => clip.sheet === sheet);
+    if (strip.fx && shown) await keep(strip.fx, `fx/${sheet}`);
     const { width, height } = body.cell;
     const { w, h } = body.atlas.meta.size;
     const notes = `${strip.fx ? ' + fx' : ''}${strip.drawn ? ' (drawn)' : ''}`;

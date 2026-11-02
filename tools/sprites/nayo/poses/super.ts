@@ -1,5 +1,5 @@
 import type { Point } from '../../raster.ts';
-import { add, BODY, scale, solve, sub, type Bend } from '../../skeleton.ts';
+import { add, BODY, scale, solve, sub, type Bend, type Glow } from '../../skeleton.ts';
 import { POSES as REMONTANT } from './backHeavy.ts';
 import { at, GUARD, planted, type Effect, type Foot, type Pose } from './common.ts';
 import { POSES as UPPERCUT } from './specialAntiAir.ts';
@@ -266,6 +266,17 @@ const COIL: Pose = {
   ),
   effects: [dust(5, 3.2, 0.15), dust(-18, 3, 0.2)],
 };
+/**
+ * Each blow lights him from the floor: the white of the impact up the arm, under the chest and
+ * the chin, gold where it grazes; the floor itself stays dark under the knee (nothing under the
+ * feet).
+ */
+const blowLight = (power: number): Glow => ({
+  center: at(IMPACT.x + 3, 4),
+  reach: 44,
+  power,
+  tone: 'platine',
+});
 
 // s2 · The blow: the lead fist driven down into the floor ahead of the lead foot, the arm
 // slanting forward clear of the knee, the shoulder rolled into it; down on the rear knee (the
@@ -368,6 +379,8 @@ const FOLD: Pose = armed(borrowed(REMONTANT, 5), [24, 146], [134, 40]);
 
 export const POSES: readonly Pose[] = [
   CUE,
+  // No charge drawn in the raised fist: in the Finisher's scene, its white would spend the flash
+  // budget TROIS's rings need (docs/finisher.md §4.3; docs/art/nayo-essence.md §4).
   COIL,
   // BOUM: a ring born just ahead of the fist, thick and white-hot, and one already at the
   // hitbox's edge; the shock under the fist, the speed of the fist just in front of the forearm.
@@ -381,12 +394,14 @@ export const POSES: readonly Pose[] = [
       spark(5, 6),
       dust(23, 3.5, 0.3),
     ],
+    glows: [blowLight(1.3)],
   },
   // The rings roll out: the outer one passes the edge, thinning, the newborn one has run out to
   // 28.6 (it is the outer one when s2 comes back, a new ring born behind it).
   {
     ...REBOUND,
     effects: [speaker(39.6, 0.75), speaker(28.6, 0.45), floorRing(14, 0.6), dust(23, 3.5, 0.65)],
+    glows: [blowLight(0.7)],
   },
   // BOUUUM: the three rings at once (the outer one white-hot, a new one born ahead of the fist),
   // a bigger spark ahead of the knuckles and the crack in the floor.
@@ -402,6 +417,7 @@ export const POSES: readonly Pose[] = [
       dust(23, 4.5, 0.3),
       ...CRACK,
     ],
+    glows: [blowLight(1.6)],
   },
   // The rings fade out over the opponent, the dust settles on the crack.
   {
@@ -413,8 +429,22 @@ export const POSES: readonly Pose[] = [
       ...CRACK,
       dust(23, 4.5, 0.75),
     ],
+    // The crack still glowing under him as he rises out of it.
+    glows: [{ ...blowLight(0.8), center: at(30, 2) }],
   },
-  { ...SALUTE, effects: [dust(23, 4.5, 0.95)] },
+  // The fist to the sky catches the last of the white: lit from above, the face from the front.
+  {
+    ...SALUTE,
+    effects: [dust(23, 4.5, 0.95)],
+    glows: [
+      {
+        center: at(SALUTE.farFist.x + 1, SALUTE.farFist.y + 2),
+        reach: 22,
+        power: 0.9,
+        tone: 'platine',
+      },
+    ],
+  },
   FOLD,
   // The idle's last frame, then the guard.
   borrowed(REMONTANT, 6),

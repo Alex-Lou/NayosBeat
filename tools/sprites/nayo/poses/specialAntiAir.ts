@@ -2,6 +2,9 @@ import type { Point } from '../../raster.ts';
 import { add, BODY, scale, solve, sub, type Bend } from '../../skeleton.ts';
 import { at, GUARD, planted, smear, type Effect, type Foot, type Pose } from './common.ts';
 
+/** The lead fist at the bottom of the dip, where the drop gathers (the Remix's charge too). */
+export const DIP_FIST = at(-3, 30);
+
 /**
  * specialAntiAir, the uppercut "le drop". Ticks 3,[3],[5],4,4,4,4,4,4,4 (active: frames 1-2).
  *
@@ -116,7 +119,7 @@ const DIP: Pose = {
   twist: 0.5,
   nearFoot: planted(6.35),
   farFoot: onToes(REAR_TOE, -40),
-  nearFist: at(-3, 30),
+  nearFist: DIP_FIST,
   farFist: at(16, 49),
   bends: { nearElbow: 'back', farElbow: 'down' },
 };
@@ -259,7 +262,17 @@ const IDLE_HANG: Pose = {
 };
 
 export const POSES: readonly Pose[] = [
-  { ...DIP, effects: [floorRing(0.1), dust(5, 3.6, 0.15), dust(-18, 3.2, 0.2)] },
+  {
+    ...DIP,
+    effects: [
+      floorRing(0.1),
+      dust(5, 3.6, 0.15),
+      dust(-18, 3.2, 0.2),
+      // The bass gathered in the sunk fist, at the hip: it lights the thigh and the glove from
+      // below before the release (docs/art/nayo-essence.md).
+      { kind: 'energy', center: at(-2, 29), radius: 2.8 },
+    ],
+  },
   {
     ...LAUNCH,
     effects: [

@@ -51,6 +51,8 @@ const SHARED = {
   clips: NAYO_CLIPS,
   projectiles: NAYO_PROJECTILES,
   cells: NAYO_CELLS,
+  // His strips are lit by the street (tools/sprites/nayo/index.ts, NAYO_LIGHTING).
+  ownLight: true,
 };
 
 /** Black techwear, cyan neon. */
