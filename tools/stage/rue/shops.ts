@@ -65,7 +65,7 @@ export function drawGrocery(
   random: Random,
 ): { window: Rect } {
   const { x, width } = rect;
-  drawLightbox(canvas, { x: x + 22, y: 284, width: width - 44, height: 24 }, 'ÉPICERIE', 2);
+  drawLightbox(canvas, { x: x + 22, y: 284, width: width - 44, height: 24 }, 'DELI GROCERY', 2);
   const window: Rect = { x: x + 8, y: 338, width: width - 52, height: 54 };
   const door: Rect = { x: x + width - 38, y: 330, width: 28, height: 70 };
   drawShelves(canvas, window, random);
@@ -79,7 +79,7 @@ export function drawGrocery(
   canvas.fill(door.x + door.width, door.y, 3, door.height, at(STEEL, 0));
   drawStorefrontFrame(canvas, window, [window.x + Math.round(window.width / 2)]);
   drawAwning(canvas, { x: x + 2, y: 312, width: width - 4, height: 26 }, lights, random);
-  drawPainted(canvas, x + 30, 330, 'FRUITS LÉGUMES', at(STONE, 4));
+  drawPainted(canvas, x + 30, 330, 'FRESH FRUIT', at(STONE, 4));
   for (let index = 0; index < 4; index++) {
     drawCrate(
       canvas,
@@ -163,11 +163,13 @@ function drawWashers(canvas: Canvas, rect: Rect): void {
   }
 }
 
-/** The laundromat: its neon word (two letters dead), its cold window full of machines. */
+/** The laundromat: its neon word (two letters dead), its Chinese sign, its cold window of machines. */
 export function drawLaundromat(canvas: Canvas, rect: Rect): { window: Rect } {
   const { x, width } = rect;
   drawLedge(canvas, x - 4, 280, width + 8, 6, []);
-  drawNeonWord(canvas, x + 60, 296, 'LAVERIE', 2, NEON_VIOLET, new Set([1, 5]));
+  drawNeonWord(canvas, x + 60, 296, 'LAUNDRY', 2, NEON_VIOLET, new Set([1, 5]));
+  // Its owners' sign in Chinese, 洗衣 (laundry), a lit box beside the neon.
+  drawLightbox(canvas, { x: x + 166, y: 288, width: 50, height: 30 }, '洗衣', 2, 'han');
   const door: Rect = { x: x + 6, y: 326, width: 26, height: 74 };
   const window: Rect = { x: x + 40, y: 324, width: width - 44, height: 68 };
   drawWashers(canvas, window);
@@ -183,7 +185,7 @@ export function drawLaundromat(canvas: Canvas, rect: Rect): { window: Rect } {
     canvas,
     window.x + window.width - 42,
     window.y + 10,
-    '24/24',
+    '24H',
     1,
     NEON_ORANGE,
     new Set(),

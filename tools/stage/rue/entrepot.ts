@@ -44,13 +44,13 @@ export function drawPeeling(canvas: Canvas, rect: Rect, wall: Wall): void {
 }
 
 /**
- * The ghost sign: an old painted ad, ENTREPÔTS, dark letters on a pale band, both faded to a step
+ * The ghost sign: an old painted ad, WAREHOUSE, dark letters on a pale band, both faded to a step
  * or so off the wall and worn through in broad patches. Barely there, as it should be.
  */
 export function drawGhostSign(canvas: Canvas, x: number, y: number, wall: Wall): void {
   const scale = 4;
   const letters = new Mask(canvas.width, canvas.height);
-  const width = spell('ENTREPÔTS', scale, 1, (px, py) => {
+  const width = spell('WAREHOUSE', scale, 1, (px, py) => {
     letters.add(x + px, y + py);
   });
   const band: Rect = { x: x - 10, y: y - 14, width: width + 20, height: 7 * scale + 24 };
