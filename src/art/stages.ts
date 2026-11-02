@@ -1,6 +1,7 @@
 import type { StageVariant } from './stage-layers';
 import { STAGE_VARIANTS as DOCK } from './dock';
 import { STAGE_VARIANTS as GYM } from './gym';
+import { STAGE_VARIANTS as ROOFTOP } from './rooftop';
 import { STAGE_VARIANTS as RUE } from './rue';
 
 /** A place the fights may be held in (docs/art/decor-rue.md §14): its name, its atmospheres. */
@@ -36,5 +37,11 @@ export const STAGE_MAPS: readonly StageMap[] = [
     title: 'The Loading Dock',
     description: 'La cour derrière le club, où les vigiles chassaient Riff',
     variants: DOCK,
+  },
+  {
+    name: 'rooftop',
+    title: 'Rooftop Rain',
+    description: 'Un toit de la mégapole, sous les enseignes géantes',
+    variants: ROOFTOP,
   },
 ].filter(({ variants }) => variants.length > 0);

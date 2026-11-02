@@ -14,7 +14,9 @@ Ce fichier est pour l'agent qui reprend les décors (les lieux de combat). Il di
 | `npm run stages:preview` et ce fichier | en ligne (#103) |
 | `people.ts` et `signs.ts` prennent leurs rampes en paramètre (§4, étape 2) | en ligne (#107) |
 | The Loading Dock (`dock`), minuit et aube, la basse du club ; le moment `dawn` | en ligne (#107) |
-| La pluie : la couche du rendu, la rue et le Dock sous la pluie à minuit (`pluie.md`) | PR de la pluie |
+| La pluie : la couche du rendu, la rue et le Dock sous la pluie à minuit (`pluie.md`) | en ligne (#117) |
+| Une animation peut glisser sur son calque (`StageDrift`) | PR de Rooftop Rain |
+| Rooftop Rain (`rooftop`), minuit et deux pluies, le dirigeable (`decor-rooftop.md`) | PR de Rooftop Rain |
 
 ## 2. Ce que veut le développeur
 
@@ -79,7 +81,7 @@ Elle gère l'écran « Lieu », `stageChoice`, et les options « Lieu » et « A
   - `font.ts` : une police 5 × 7 complète, et des caractères chinois 9 × 9 (`spellHan`), à compléter ;
   - `grade.ts` : vire une palette vers une autre heure en restant sous la bande des flashs ;
   - `stage.ts` : les types `CodeStage`, `CodeProp`, `CodeMap`, `StageAtmosphere`.
-- `maps.ts` est le **registre des outils** : `[RUE, GYM]`.
+- `maps.ts` est le **registre des outils** : `[RUE, GYM, DOCK, ROOFTOP]`.
 - `rue/` et `gym/` contiennent chacun `palette.ts`, `far.ts`, `mid.ts`, `floor.ts`, `atmospheres.ts` et `index.ts`, qui exporte le `CodeMap`.
 
 ### 3.5 L'installation (`tools/sprites/`)
@@ -93,6 +95,7 @@ Elle gère l'écran « Lieu », `stageChoice`, et les options « Lieu » et « A
 2. **La palette** (`tools/stage/<lieu>/palette.ts`). Des rampes du plus sombre au plus clair, la case 0 transparente, 256 couleurs au plus. Chaque lieu a sa propre palette : `rue/people.ts` (les silhouettes) et `rue/signs.ts` (les enseignes, les tags) prennent leurs rampes en paramètre (`FigureRamps`, `SignRamps`, `SprayRamps`). Déclare-les dans ta palette, comme `FIGURE_RAMPS`, `SIGN_RAMPS` et `SPRAY_RAMPS` dans `dock/palette.ts`. Seul le gym empile encore la palette de la rue (254 couleurs, presque pleine).
 3. **Les calques** : `far.ts` (opaque partout), `mid.ts` (le fond de la scène à la ligne `BASE`, rien sous la ligne 470), `floor.ts` (un repère toutes les 64 unités du monde, pour lire les distances). Pense en pixels d'image (×2) : `mid` fait 1 440 × 540, le sol des personnages est à la ligne 460, et les silhouettes font 80 à 90 px.
 4. **Les animations** (`MID_ANIMATIONS` et des `CodeProp` sur `far` si besoin). Chaque image est redessinée dans son rectangle. Si une figure bouge devant le vide du calque, l'animation est « détachée » automatiquement. Garde les rectangles serrés et sans chevauchement inutile : la planche coûte de la mémoire vidéo. Ce qui doit bouger ensemble boucle sur le même cycle (comme le train du gym, `TRAIN_CYCLE`).
+   Ce qui traverse tout le calque (un dirigeable, une voiture volante) ne se dessine pas en centaines d'images : une animation peut **glisser** (`drift`, `StageDrift` dans `src/art/stage-layers.ts`). Ses images sont dessinées une fois à leur place, et la vue les déplace d'un départ à une arrivée en pixels d'image. Mets départ et arrivée au-delà des deux bouts du calque, pour que rien n'apparaisse dans le champ (voir `rooftop/index.ts` et son test).
 5. **Les ambiances** (`atmospheres.ts`). La base est `midnight-clear`, puis les autres sont virées par `grade` et des rampes repeintes (`repaint`).
 6. **Le brancher** :
    - `tools/stage/maps.ts` ;
@@ -145,7 +148,7 @@ Elle gère l'écran « Lieu », `stageChoice`, et les options « Lieu » et « A
 ### 7.1 Les tranches du système de décor vivant
 
 1. **La nuit vivante** : des nuages qui dérivent, des fenêtres qui s'allument et s'éteignent (des animations lentes sur `far`).
-2. **La pluie** : la couche du rendu est faite (`pluie.md`), et la rue et le Dock l'offrent à minuit. Il reste Rooftop Rain, et la verrière du gym qui ruisselle. Pour un lieu de plus sous la pluie : une palette `midnight-rain` (ou `dusk-rain`) dans ses `atmospheres.ts` suffit, le rendu fait tomber la pluie de lui-même ; des flaques cachées demandent une rampe `WET` (voir le Dock).
+2. **La pluie** : la couche du rendu est faite (`pluie.md`) ; la rue et le Dock l'offrent à minuit, Rooftop Rain à minuit et au crépuscule. Il reste la verrière du gym qui ruisselle. Pour un lieu de plus sous la pluie : une palette `midnight-rain` (ou `dusk-rain`) dans ses `atmospheres.ts` suffit, le rendu fait tomber la pluie de lui-même ; des flaques cachées demandent une rampe `WET` (voir le Dock).
 3. **Les dégâts cumulés sur le match** : fissures du sol aux chutes lourdes et aux KO, mur fissuré quand un combattant y est envoyé fort ; cordes du ring et sac crevé au gym. Ils sont déclenchés par des événements du rendu (jamais par le cœur), avec un plafond, et le décor repart à neuf au match suivant. À concevoir : une architecture d'« états de dégâts » par lieu (des images par cran). Présente-la au développeur avant de coder.
 4. **La brume** : elle avale le fond, pose des halos autour des lampes, jamais devant les combattants.
 5. **L'aube** : le moment `dawn` existe depuis le Loading Dock. Il reste à la peindre pour le gym (« le matin froid »).
@@ -155,7 +158,7 @@ Elle gère l'écran « Lieu », `stageChoice`, et les options « Lieu » et « A
 Déjà proposés au développeur et acceptés (« prends les 10 ») :
 
 1. **The Loading Dock** (le lieu de Riff) : fait (`docs/art/decor-dock.md`), en minuit et en aube grise, avec la basse du club pour moment fort. Il lui reste la pluie battante, qui viendra avec la tranche pluie.
-2. **Rooftop Rain** (Néon Underground) : des toits, des enseignes géantes vues de dos (en chinois et en japonais, donc à l'envers), des réservoirs et des antennes ; un dirigeable, des drones. Il teste la pluie à fond.
+2. **Rooftop Rain** (Néon Underground) : fait (`docs/art/decor-rooftop.md`), en minuit clair et sous deux pluies (minuit, crépuscule), avec le dirigeable pour moment fort.
 3. **Temple Courtyard** (Archipel des Légendes) : lanternes de pierre, grand arbre, torii, mousse. Le premier décor de jour : il prouve que les palettes tiennent hors de la nuit. Pétales, carillons, renards ; aube, crépuscule doré, neige, pluie.
 4. **L'Entrepôt, intérieur** (le club) : mur d'enceintes, cabine du DJ, fumée basse, foule en contre-jour sur le tempo. Le stroboscope est interdit par la règle des 3 flashs.
 5. **Le Bal du Samedi** (le lieu de Saphir) : salle de bal des années 50, parquet, lustres, velours, orchestre swing en silhouettes ; vert profond et or. Le seul lieu où les enseignes en français sont justifiées (avec « SWING NIGHT »).

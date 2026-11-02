@@ -8,7 +8,7 @@ La deuxième tranche du décor vivant (`passation-decors.md` §7.1), après les 
 - **Derrière les combattants seulement** : ils restent parfaitement lisibles.
 - **Les lieux sous la pluie** :
   - la rue et le Dock à minuit (cette tranche) ;
-  - Rooftop Rain, sous la pluie à minuit et au crépuscule (tranche suivante) ;
+  - Rooftop Rain, sous la pluie à minuit et au crépuscule (`decor-rooftop.md`) ;
   - le gym, avec sa verrière qui ruisselle (la suivante).
 
 ## 2. La couche de pluie (`src/render/stage-rain.ts`)
@@ -41,6 +41,6 @@ La rue n'a pas de flaques cachées : le gym empile sa palette sur celle de la ru
 
 ## 4. La suite
 
-1. Rooftop Rain, qui teste la pluie à fond (minuit et crépuscule).
+1. Rooftop Rain, qui teste la pluie à fond (minuit et crépuscule) : fait (`decor-rooftop.md`). Il ajoute des rampes cachées pour les reflets des enseignes dans les flaques et la pluie prise dans le faisceau du dirigeable.
 2. Le gym : sa propre palette, puis la verrière qui ruisselle et la gouttière qui fuit dans un seau.
 3. Plus tard, si le jeu le demande : quelques gouttes devant les combattants, coupées par « Réduire les effets ».
