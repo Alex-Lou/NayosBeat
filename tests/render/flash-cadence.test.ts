@@ -525,6 +525,7 @@ describe('what waits to show, played tick by tick (docs/flashs.md §4)', () => {
       tier: 0,
       pulse: false,
       freeze: 10,
+      aim: 0,
     }) as const;
   const light = (by: 0 | 1): FightEvent => ({
     type: 'hit',

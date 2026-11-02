@@ -17,8 +17,8 @@ export type SparkLook = Exclude<HitKind, 'block'>;
 
 export const SPARK_AREAS: Readonly<Record<HitStyle['shape'], Readonly<Record<FxKind, number>>>> = {
   slash: {
-    light: 400,
-    heavy: 1330,
+    light: 405,
+    heavy: 1340,
     ko: 3300,
     pulse: 430,
     koMuted: 440,
@@ -29,7 +29,7 @@ export const SPARK_AREAS: Readonly<Record<HitStyle['shape'], Readonly<Record<FxK
     whiff: 10,
   },
   claw: {
-    light: 120,
+    light: 115,
     heavy: 490,
     ko: 920,
     pulse: 490,
