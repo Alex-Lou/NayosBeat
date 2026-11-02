@@ -303,3 +303,25 @@ describe("the Boost's own images (docs/art/nayo-essence.md §5)", () => {
     },
   );
 });
+
+describe('the Mégabasse lights him from the floor', () => {
+  const strip = drawStrip(NAYO, 'super');
+  const platine = TINT_SLOTS.platine ?? new Set<number>();
+  /** The pixels of a frame lit by the Boost's light. */
+  const litIn = (frame: number): number => {
+    let lit = 0;
+    for (let y = 0; y < CELL_SIZE; y++) {
+      for (let x = frame * CELL_SIZE; x < (frame + 1) * CELL_SIZE; x++) {
+        if (platine.has(strip.pixels[y * strip.width + x] ?? 0)) lit++;
+      }
+    }
+    return lit;
+  };
+
+  it('the charged hammer, every blow, the rebound in between dimmer, the third blow brightest', () => {
+    const [coil, first, rebound, third] = [1, 2, 3, 4].map(litIn);
+    expect(coil).toBeGreaterThan(40);
+    expect(first).toBeGreaterThan(rebound ?? Infinity);
+    expect(third).toBeGreaterThan(first ?? Infinity);
+  });
+});

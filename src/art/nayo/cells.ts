@@ -1142,7 +1142,7 @@ export const NAYO_CELLS: Readonly<Record<string, Cell>> = {
     anchor: { x: 56, y: 189 },
     frames: [
       { x: 2, y: 49, width: 85, height: 147 },
-      { x: 13, y: 184, width: 63, height: 6 },
+      { x: 13, y: 38, width: 98, height: 152 },
       { x: 22, y: 10, width: 155, height: 187 },
       { x: 21, y: 4, width: 159, height: 193 },
       { x: 29, y: 8, width: 150, height: 189 },
