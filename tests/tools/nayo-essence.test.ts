@@ -318,9 +318,9 @@ describe('the Mégabasse lights him from the floor', () => {
     return lit;
   };
 
-  it('the charged hammer, every blow, the rebound in between dimmer, the third blow brightest', () => {
-    const [coil, first, rebound, third] = [1, 2, 3, 4].map(litIn);
-    expect(coil).toBeGreaterThan(40);
+  it('every blow, the rebound in between dimmer, the third blow brightest', () => {
+    const [first, rebound, third] = [2, 3, 4].map(litIn);
+    expect(first).toBeGreaterThan(40);
     expect(first).toBeGreaterThan(rebound ?? Infinity);
     expect(third).toBeGreaterThan(first ?? Infinity);
   });

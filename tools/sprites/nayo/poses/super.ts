@@ -267,23 +267,6 @@ const COIL: Pose = {
   effects: [dust(5, 3.2, 0.15), dust(-18, 3, 0.2)],
 };
 /**
- * The hammer charged: the Boost gathered white in the raised fist lights the forearm, the brow
- * and the shoulder from above, the rest of him sunk in its shadow (docs/art/nayo-essence.md).
- */
-const COIL_CHARGED: Pose = {
-  ...COIL,
-  effects: [
-    ...(COIL.effects ?? []),
-    {
-      kind: 'energy',
-      center: at(COIL.nearFist.x + 1, COIL.nearFist.y + 1.5),
-      radius: 3.2,
-      tone: 'platine',
-    },
-  ],
-};
-
-/**
  * Each blow lights him from the floor: the white of the impact up the arm, under the chest and
  * the chin, gold where it grazes; the floor itself stays dark under the knee (nothing under the
  * feet).
@@ -396,7 +379,9 @@ const FOLD: Pose = armed(borrowed(REMONTANT, 5), [24, 146], [134, 40]);
 
 export const POSES: readonly Pose[] = [
   CUE,
-  COIL_CHARGED,
+  // No charge drawn in the raised fist: in the Finisher's scene, its white would spend the flash
+  // budget TROIS's rings need (docs/finisher.md §4.3; docs/art/nayo-essence.md §4).
+  COIL,
   // BOUM: a ring born just ahead of the fist, thick and white-hot, and one already at the
   // hitbox's edge; the shock under the fist, the speed of the fist just in front of the forearm.
   {
