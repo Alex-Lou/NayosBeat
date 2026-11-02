@@ -97,6 +97,8 @@ export interface StageProp {
   readonly timeline: readonly (readonly [frame: number, steps: number])[];
   /** It glides along its layer (a blimp, a flying car): one image, not hundreds. */
   readonly drift?: StageDrift;
+  /** It is there only in this weather (the rain at a window): left out of the stage's others. */
+  readonly weather?: Weather;
 }
 
 /**
@@ -155,8 +157,9 @@ export function atmosphereOf(name: string): Atmosphere {
 /**
  * The stage `stage` in each atmosphere `colors` names (`npm run stages` writes them all): the base one's
  * images in its folder (`./<layer>.png`), each other's in a folder of its name
- * (`./<moment>-<weather>/<layer>.png`), the same props laid on each. The base first; none while a
- * layer it needs is missing (the grey box), an atmosphere left out while one of its own is.
+ * (`./<moment>-<weather>/<layer>.png`), the same props laid on each (those of one weather only on
+ * its atmospheres). The base first; none while a layer it needs is missing (the grey box), an
+ * atmosphere left out while one of its own is.
  */
 export function stageVariantsOf(
   stage: string,
@@ -174,7 +177,10 @@ export function stageVariantsOf(
         .filter(([path]) => path.startsWith(prefix) && !path.slice(prefix.length).includes('/'))
         .map(([path, url]) => [`./${path.slice(prefix.length)}`, url]),
     );
-    const art = stageArtOf(own, colors[name] ?? [], props);
+    const shown = props.filter(
+      ({ weather }) => weather === undefined || weather === atmosphere.weather,
+    );
+    const art = stageArtOf(own, colors[name] ?? [], shown);
     return art ? [{ stage, atmosphere, art }] : [];
   });
 }

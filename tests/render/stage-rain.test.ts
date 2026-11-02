@@ -71,10 +71,20 @@ function fakeScene() {
 describe('the rain (docs/art/pluie.md)', () => {
   it('falls on the rain atmospheres only, which the stages now offer', () => {
     const variants = STAGE_MAPS.flatMap(({ variants }) => variants);
-    const rainy = variants.filter(rains);
+    const rainy = variants.filter((variant) => rains(variant));
     expect(rainy.length).toBeGreaterThan(0);
     expect(rainy.every(({ atmosphere }) => atmosphere.weather === 'rain')).toBe(true);
     expect(variants.filter((variant) => !rains(variant)).length).toBeGreaterThan(0);
+  });
+
+  it('never falls under a roof: a sheltered stage draws its rain outside, in its own images', () => {
+    const [open] = STAGE_MAPS.flatMap(({ variants }) => variants).filter((each) => rains(each));
+    if (!open) throw new Error('a rain');
+    const map = STAGE_MAPS.find(({ name }) => name === open.stage);
+    if (!map) throw new Error(open.stage);
+    expect(rains(open, [{ ...map, sheltered: true }])).toBe(false);
+    expect(rains(open, [{ ...map, sheltered: false }])).toBe(true);
+    expect(STAGE_MAPS.find(({ name }) => name === 'gym')?.sheltered).toBe(true);
   });
 
   it('never flashes: none of its pixels changes a large color of any stage by FLASH_DELTA', () => {

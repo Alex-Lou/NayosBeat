@@ -215,6 +215,7 @@ export function packProps(
       frames,
       timeline: prop.timeline,
       ...(prop.drift && { drift: prop.drift }),
+      ...(prop.weather && { weather: prop.weather }),
     };
   });
   return {
