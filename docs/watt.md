@@ -422,8 +422,8 @@ Si le temps manque, dans cet ordre :
   - **Bulb Boy** (aventure en point-and-click, 2015) : un héros à tête d'ampoule fragile. Watt est un colosse dans un jeu de combat, et son ampoule ne se dévisse pas ;
   - **Watt** de *Paper Mario* : un petit esprit électrique, lumineux, hors du genre. Le nom reste, le rapprochement est à savoir ;
   - Zangief, Hugo, Alex, Potemkin, King : pas de slip, de barbe, de mohawk, de masque ni de piledriver, et pas d'armure.
-- **Kaï** (promis : « le plus lent, armure ») : Watt n'a pas d'armure. Mais sa marche (1,2) est la plus lente du casting actuel : **Kaï devra être plus lent encore**, ou ne plus être « le plus lent ». À écrire dans combat-v2 §6.5 (session principale).
-- **La dissolution** : `claw` donne `scatter` (`dissolution.md`). Pour Watt, `rise` est demandé (une ampoule éparpillée est une tête qui éclate). **Décision du propriétaire et de la session principale**, au moment de la PR E ; sinon il passe en `slash`.
+- **Kaï** (promis : « le plus lent, armure ») : Watt n'a pas d'armure. Mais sa marche (1,2) est la plus lente du casting actuel : **Kaï devra être plus lent encore**, ou ne plus être « le plus lent ». Remarque gardée ici : Kaï n'existe pas encore, rien ne change ailleurs.
+- **La dissolution** : `claw` donne `scatter` (`dissolution.md`). Pour Watt, `rise` est demandé (une ampoule éparpillée est une tête qui éclate). **Décision du propriétaire, à la porte 3** ; sinon il passe en `slash`.
 - **La tête d'ampoule dans un monde « réel d'allure »** : on ne l'explique jamais, comme le masque de Saphir. Si le propriétaire la veut un casque, l'histoire change d'une phrase.
 - **2 poses sources seulement** (l'attente, la charge) : le reste est inventé au squelette, avec plus de risque d'anatomie qu'avec le batteur.
 
@@ -451,8 +451,21 @@ Passation §4.2, perso-3 §7.2 :
 
 ## 14. Décision proposée pour le journal
 
-D36 (à confirmer, au prochain numéro libre au moment de la PR) : le 4e combattant de Sound Clash est **Watt**, un lutteur sans armure, tiré du colosse de Zen-Tazzer, avec une tête d'ampoule voulue par le propriétaire.
+D37 (à confirmer : D36 est proposé par la session Saphir pour ses choix ; le numéro se vérifie juste avant la fusion) : le 4e combattant de Sound Clash est **Watt**, un lutteur sans armure, tiré du colosse de Zen-Tazzer, avec une tête d'ampoule voulue par le propriétaire.
 - **Ce qu'il est** : en données seules ; la prise la plus longue (53 px), le plus de vie (1 150) et les lancers les plus lourds du casting ; un seul reversal (sa super, Plein feu).
 - **Son ampoule** : elle montre sa jauge, sans jamais trahir un coup.
 - **Origine** : porte 0 de la passation (`docs/art/passation-personnages.md`), concept A, choix du propriétaire.
 - **Pourquoi** : contre lui, garder ne suffit plus ; c'est la décision qui manquait au casting. Écartés : B (Grave, zoner au sol) et C (Fla, pression au mur), gardés pour plus tard.
+
+---
+
+## 15. Suivi
+
+| Quoi | Qui | Quand |
+|---|---|---|
+| Les données, le texte de l'aide et les tests de données | l'agent | porte 1b, dans la même PR, après le « oui » du propriétaire |
+| **L'ampoule qui suit la jauge** (§2, idée 1), par `live-lights.ts` | session principale (code de rendu) | porte 4 |
+| **L'ampoule qui reste allumée pendant `powerCut`**, puis s'éteint en dernier (§8.4) | session principale (code de rendu), à couper sans regret | porte 4 |
+| L'exception de dissolution : `rise` sur une forme `claw` (§12) | le propriétaire, avec l'agent | porte 3 |
+| Kaï, promis « le plus lent », face à la marche de Watt (1,2) (§12) | remarque gardée ici ; rien ne change ailleurs tant que Kaï n'existe pas | — |
+| Le numéro de la décision (§14) | session principale | juste avant la fusion |
