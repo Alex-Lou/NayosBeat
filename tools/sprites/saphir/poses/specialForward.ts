@@ -1,4 +1,15 @@
-import { at, behindBack, GUARD, onBall, planted, raised, smear, type Pose } from './common.ts';
+import {
+  armOut,
+  at,
+  GUARD,
+  onBall,
+  planted,
+  raised,
+  smear,
+  withArms,
+  type Arms,
+  type Pose,
+} from './common.ts';
 
 /**
  * specialForward (Rubato, docs/saphir.md §4): 9 frames, 4, 4, 4, 4, 4, 4, 4, 5, 5 ticks (38),
@@ -93,5 +104,12 @@ const FRAMES: readonly Pose[] = [
   },
 ];
 
-/** Her hands stay at her back through the whole move: the legs do everything. */
-export const POSES: readonly Pose[] = FRAMES.map(behindBack);
+/** Her hands at her back, one let out to balance the leg on the frames of `ARMS`. */
+const ARMS: Arms = {
+  2: (p) => armOut(p, 'near', -110, 19.5),
+  3: (p) => armOut(p, 'near', -60, 12),
+  4: (p) => armOut(p, 'near', -40, 18),
+  5: (p) => armOut(p, 'near', -70, 14),
+};
+
+export const POSES: readonly Pose[] = withArms(FRAMES, ARMS);

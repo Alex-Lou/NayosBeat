@@ -1,11 +1,11 @@
-import { at, behindBack, GUARD, onBall, planted, type Pose } from './common.ts';
+import { armOut, at, behindBack, GUARD, onBall, planted, type Pose } from './common.ts';
 import { CROUCH } from './crouch.ts';
 
 /**
  * Her reactions to a blow (hitHigh, hitMid, hitLow: 5 frames, 3, 3, 4, 4, 2 ticks; their quick
- * versions play frames 0, 1 and 4; hitCrouch: 3 frames, 3, 4, 1). Composed even when hit: the
- * hands stay at her back, nothing flails; the blow shows in the spine and the legs. The mask
- * does not wince, it only tips.
+ * versions play frames 0, 1 and 4; hitCrouch: 3 frames, 3, 4, 1). The blow knocks her hands out
+ * of her back for a beat (they flinch round the hurt), and they go back behind her as she
+ * recovers; the blow shows in the spine and the legs. The mask does not wince, it only tips.
  *
  * - hitHigh: the mask snaps back, the torso arches, the hips give back, the lead foot lifts.
  * - hitMid: she folds over the blow, the hips pushed back, the mask down.
@@ -34,43 +34,67 @@ function toward(peak: Pose, t: number): Pose {
   });
 }
 
-/** The five frames of a standing reaction: impact, peak, recovery, recovery, nearly home. */
-function reaction(peak: Pose): readonly Pose[] {
-  return [0.8, 1, 0.6, 0.3, 0.08].map((t) => toward(peak, t));
+/**
+ * The five frames of a standing reaction: impact, peak, recovery, recovery, nearly home. The
+ * arms of `flinch` on the first three, the hands back behind her on the last two.
+ */
+function reaction(peak: Pose, flinch: (pose: Pose) => Pose): readonly Pose[] {
+  return [0.8, 1, 0.6, 0.3, 0.08].map((t, frame) => {
+    const pose = toward(peak, t);
+    return frame < 3 ? flinch(pose) : pose;
+  });
 }
 
-export const HIT_HIGH: readonly Pose[] = reaction({
-  ...GUARD,
-  hip: at(-8, 33),
-  torso: -16,
-  head: -22,
-  nearFoot: onBall(7, -40),
-  farFoot: planted(-15, -8),
-  face: 'hurt',
-});
+/** The arms of a reaction: the near fist and the far one toward `near`, `far` degrees. */
+function arms(near: number, far: number, reach = 14): (pose: Pose) => Pose {
+  return (pose) => armOut(armOut(pose, 'near', near, reach), 'far', far, reach);
+}
 
-export const HIT_MID: readonly Pose[] = reaction({
-  ...GUARD,
-  hip: at(-9, 31.5),
-  torso: 24,
-  head: 16,
-  nearFoot: onBall(8, -26),
-  farFoot: planted(-16, -12),
-  face: 'hurt',
-});
+export const HIT_HIGH: readonly Pose[] = reaction(
+  {
+    ...GUARD,
+    hip: at(-8, 33),
+    torso: -16,
+    head: -22,
+    nearFoot: onBall(7, -40),
+    farFoot: planted(-15, -8),
+    face: 'hurt',
+  },
+  arms(-20, 10),
+);
 
-export const HIT_LOW: readonly Pose[] = reaction({
-  ...GUARD,
-  hip: at(-4, 28),
-  torso: 14,
-  head: 6,
-  nearFoot: onBall(9, -48),
-  farFoot: planted(-14, -32),
-  face: 'hurt',
-});
+export const HIT_MID: readonly Pose[] = reaction(
+  {
+    ...GUARD,
+    hip: at(-9, 31.5),
+    torso: 24,
+    head: 16,
+    nearFoot: onBall(8, -26),
+    farFoot: planted(-16, -12),
+    face: 'hurt',
+  },
+  arms(-55, -40, 11),
+);
+
+export const HIT_LOW: readonly Pose[] = reaction(
+  {
+    ...GUARD,
+    hip: at(-4, 28),
+    torso: 14,
+    head: 6,
+    nearFoot: onBall(9, -48),
+    farFoot: planted(-14, -32),
+    face: 'hurt',
+  },
+  (pose) => armOut(pose, 'near', -140, 19.5),
+);
 
 export const HIT_CROUCH: readonly Pose[] = [
-  behindBack({ ...CROUCH, hip: at(-8, 19), torso: 10, head: -8, face: 'hurt' }),
-  behindBack({ ...CROUCH, hip: at(-7, 19.5), torso: 14, head: -10, face: 'hurt' }),
+  arms(-30, -20, 11)(behindBack({ ...CROUCH, hip: at(-8, 19), torso: 10, head: -8, face: 'hurt' })),
+  arms(
+    -30,
+    -20,
+    11,
+  )(behindBack({ ...CROUCH, hip: at(-7, 19.5), torso: 14, head: -10, face: 'hurt' })),
   behindBack({ ...CROUCH, hip: at(-5, 19.5), torso: 22, face: 'hurt' }),
 ];

@@ -1,25 +1,25 @@
 {
   "frames": {
     "0": {
-      "frame": { "x": 554, "y": 0, "w": 72, "h": 141 },
+      "frame": { "x": 555, "y": 0, "w": 72, "h": 141 },
       "trimmed": true,
       "spriteSourceSize": { "x": 0, "y": 45, "w": 72, "h": 141 },
       "sourceSize": { "w": 131, "h": 186 }
     },
     "1": {
-      "frame": { "x": 103, "y": 0, "w": 78, "h": 158 },
+      "frame": { "x": 103, "y": 0, "w": 79, "h": 160 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 8, "y": 24, "w": 78, "h": 158 },
+      "spriteSourceSize": { "x": 7, "y": 22, "w": 79, "h": 160 },
       "sourceSize": { "w": 131, "h": 186 }
     },
     "2": {
-      "frame": { "x": 257, "y": 0, "w": 81, "h": 156 },
+      "frame": { "x": 258, "y": 0, "w": 81, "h": 156 },
       "trimmed": true,
       "spriteSourceSize": { "x": 9, "y": 2, "w": 81, "h": 156 },
       "sourceSize": { "w": 131, "h": 186 }
     },
     "3": {
-      "frame": { "x": 181, "y": 0, "w": 76, "h": 158 },
+      "frame": { "x": 182, "y": 0, "w": 76, "h": 158 },
       "trimmed": true,
       "spriteSourceSize": { "x": 13, "y": 0, "w": 76, "h": 158 },
       "sourceSize": { "w": 131, "h": 186 }
@@ -31,23 +31,23 @@
       "sourceSize": { "w": 131, "h": 186 }
     },
     "5": {
-      "frame": { "x": 474, "y": 0, "w": 80, "h": 144 },
+      "frame": { "x": 475, "y": 0, "w": 80, "h": 144 },
       "trimmed": true,
       "spriteSourceSize": { "x": 14, "y": 42, "w": 80, "h": 144 },
       "sourceSize": { "w": 131, "h": 186 }
     },
     "6": {
-      "frame": { "x": 338, "y": 0, "w": 68, "h": 146 },
+      "frame": { "x": 339, "y": 0, "w": 68, "h": 146 },
       "trimmed": true,
       "spriteSourceSize": { "x": 12, "y": 40, "w": 68, "h": 146 },
       "sourceSize": { "w": 131, "h": 186 }
     },
     "7": {
-      "frame": { "x": 406, "y": 0, "w": 68, "h": 146 },
+      "frame": { "x": 407, "y": 0, "w": 68, "h": 146 },
       "trimmed": true,
       "spriteSourceSize": { "x": 4, "y": 40, "w": 68, "h": 146 },
       "sourceSize": { "w": 131, "h": 186 }
     }
   },
-  "meta": { "image": "forwardHeavy.png", "size": { "w": 626, "h": 162 } }
+  "meta": { "image": "forwardHeavy.png", "size": { "w": 627, "h": 162 } }
 }

@@ -1,4 +1,15 @@
-import { at, behindBack, GUARD, onBall, planted, raised, smear, type Pose } from './common.ts';
+import {
+  armOut,
+  at,
+  GUARD,
+  onBall,
+  planted,
+  raised,
+  smear,
+  withArms,
+  type Arms,
+  type Pose,
+} from './common.ts';
 
 /**
  * chainHeavy (Chassé arrière, docs/saphir.md §4): 7 frames, 2, 2, 2, 3, 3, 8, 9 ticks (29), the
@@ -80,5 +91,12 @@ const FRAMES: readonly Pose[] = [
   },
 ];
 
-/** Her hands stay at her back through the whole move: the legs do everything. */
-export const POSES: readonly Pose[] = FRAMES.map(behindBack);
+/** Her hands at her back, one let out to balance the leg on the frames of `ARMS`. */
+const ARMS: Arms = {
+  2: (p) => armOut(p, 'near', 40, 13),
+  3: (p) => armOut(p, 'near', 15),
+  4: (p) => armOut(p, 'near', 8, 18),
+  5: (p) => armOut(p, 'near', 30, 14),
+};
+
+export const POSES: readonly Pose[] = withArms(FRAMES, ARMS);

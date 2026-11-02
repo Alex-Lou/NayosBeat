@@ -1,4 +1,4 @@
-import { at, behindBack, onBall, raised, smear, type Pose } from './common.ts';
+import { armOut, at, onBall, raised, smear, withArms, type Arms, type Pose } from './common.ts';
 import { CROUCH } from './crouch.ts';
 
 /**
@@ -54,5 +54,12 @@ const FRAMES: readonly Pose[] = [
   CROUCH,
 ];
 
-/** Her hands stay at her back through the whole move: the legs do everything. */
-export const POSES: readonly Pose[] = FRAMES.map(behindBack);
+/** Her hands at her back, one let out to balance the leg on the frames of `ARMS`. */
+const ARMS: Arms = {
+  1: (p) => armOut(p, 'near', -160, 19.5),
+  2: (p) => armOut(p, 'near', -170, 19.5),
+  3: (p) => armOut(p, 'near', -160, 19.5),
+  4: (p) => armOut(p, 'near', -160, 19.5),
+};
+
+export const POSES: readonly Pose[] = withArms(FRAMES, ARMS);

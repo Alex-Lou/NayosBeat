@@ -1,41 +1,41 @@
 {
   "frames": {
     "0": {
-      "frame": { "x": 0, "y": 0, "w": 68, "h": 128 },
+      "frame": { "x": 0, "y": 0, "w": 68, "h": 133 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 8, "y": 0, "w": 68, "h": 128 },
-      "sourceSize": { "w": 121, "h": 140 }
+      "spriteSourceSize": { "x": 8, "y": 0, "w": 68, "h": 133 },
+      "sourceSize": { "w": 121, "h": 145 }
     },
     "1": {
-      "frame": { "x": 209, "y": 0, "w": 78, "h": 127 },
+      "frame": { "x": 68, "y": 0, "w": 78, "h": 133 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 1, "w": 78, "h": 127 },
-      "sourceSize": { "w": 121, "h": 140 }
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 78, "h": 133 },
+      "sourceSize": { "w": 121, "h": 145 }
     },
     "2": {
-      "frame": { "x": 385, "y": 0, "w": 118, "h": 121 },
+      "frame": { "x": 287, "y": 0, "w": 118, "h": 132 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 3, "y": 19, "w": 118, "h": 121 },
-      "sourceSize": { "w": 121, "h": 140 }
+      "spriteSourceSize": { "x": 3, "y": 13, "w": 118, "h": 132 },
+      "sourceSize": { "w": 121, "h": 145 }
     },
     "3": {
-      "frame": { "x": 287, "y": 0, "w": 98, "h": 122 },
+      "frame": { "x": 405, "y": 0, "w": 98, "h": 130 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 5, "y": 11, "w": 98, "h": 122 },
-      "sourceSize": { "w": 121, "h": 140 }
+      "spriteSourceSize": { "x": 5, "y": 8, "w": 98, "h": 130 },
+      "sourceSize": { "w": 121, "h": 145 }
     },
     "4": {
-      "frame": { "x": 68, "y": 0, "w": 73, "h": 128 },
+      "frame": { "x": 146, "y": 0, "w": 73, "h": 133 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 3, "y": 0, "w": 73, "h": 128 },
-      "sourceSize": { "w": 121, "h": 140 }
+      "spriteSourceSize": { "x": 3, "y": 0, "w": 73, "h": 133 },
+      "sourceSize": { "w": 121, "h": 145 }
     },
     "5": {
-      "frame": { "x": 141, "y": 0, "w": 68, "h": 128 },
+      "frame": { "x": 219, "y": 0, "w": 68, "h": 133 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 8, "y": 0, "w": 68, "h": 128 },
-      "sourceSize": { "w": 121, "h": 140 }
+      "spriteSourceSize": { "x": 8, "y": 0, "w": 68, "h": 133 },
+      "sourceSize": { "w": 121, "h": 145 }
     }
   },
-  "meta": { "image": "jumpHeavy.png", "size": { "w": 503, "h": 128 } }
+  "meta": { "image": "jumpHeavy.png", "size": { "w": 503, "h": 133 } }
 }

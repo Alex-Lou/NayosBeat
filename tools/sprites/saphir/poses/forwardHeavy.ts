@@ -1,4 +1,15 @@
-import { at, behindBack, GUARD, onBall, planted, raised, smear, type Pose } from './common.ts';
+import {
+  armOut,
+  at,
+  GUARD,
+  onBall,
+  planted,
+  raised,
+  smear,
+  withArms,
+  type Arms,
+  type Pose,
+} from './common.ts';
 
 /**
  * forwardHeavy (Fouetté plongeant, docs/saphir.md §4): 8 frames, 4, 4, 4, 6, 3, 5, 5, 5 ticks
@@ -83,5 +94,12 @@ const FRAMES: readonly Pose[] = [
   },
 ];
 
-/** Her hands stay at her back through the whole move: the legs do everything. */
-export const POSES: readonly Pose[] = FRAMES.map(behindBack);
+/** Her hands at her back, one let out to balance the leg on the frames of `ARMS`. */
+const ARMS: Arms = {
+  1: (p) => armOut(armOut(p, 'near', 60, 15), 'far', -115, 19.5),
+  2: (p) => armOut(armOut(p, 'near', 100, 17), 'far', -95, 19.5),
+  3: (p) => armOut(armOut(p, 'near', 100, 17), 'far', -95, 19.5),
+  4: (p) => armOut(armOut(p, 'near', -30, 17), 'far', 50, 17),
+};
+
+export const POSES: readonly Pose[] = withArms(FRAMES, ARMS);

@@ -1,41 +1,41 @@
 {
   "frames": {
     "0": {
-      "frame": { "x": 0, "y": 217, "w": 156, "h": 49 },
+      "frame": { "x": 0, "y": 217, "w": 166, "h": 53 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 75, "w": 156, "h": 49 },
-      "sourceSize": { "w": 156, "h": 125 }
+      "spriteSourceSize": { "x": 1, "y": 71, "w": 166, "h": 53 },
+      "sourceSize": { "w": 167, "h": 125 }
     },
     "1": {
-      "frame": { "x": 0, "y": 266, "w": 155, "h": 49 },
+      "frame": { "x": 0, "y": 270, "w": 166, "h": 49 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 76, "w": 155, "h": 49 },
-      "sourceSize": { "w": 156, "h": 125 }
+      "spriteSourceSize": { "x": 0, "y": 76, "w": 166, "h": 49 },
+      "sourceSize": { "w": 167, "h": 125 }
     },
     "2": {
-      "frame": { "x": 0, "y": 315, "w": 155, "h": 49 },
+      "frame": { "x": 0, "y": 319, "w": 166, "h": 49 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 76, "w": 155, "h": 49 },
-      "sourceSize": { "w": 156, "h": 125 }
+      "spriteSourceSize": { "x": 0, "y": 76, "w": 166, "h": 49 },
+      "sourceSize": { "w": 167, "h": 125 }
     },
     "3": {
       "frame": { "x": 0, "y": 0, "w": 64, "h": 125 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 31, "y": 0, "w": 64, "h": 125 },
-      "sourceSize": { "w": 156, "h": 125 }
+      "spriteSourceSize": { "x": 42, "y": 0, "w": 64, "h": 125 },
+      "sourceSize": { "w": 167, "h": 125 }
     },
     "4": {
       "frame": { "x": 0, "y": 125, "w": 108, "h": 92 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 23, "y": 20, "w": 108, "h": 92 },
-      "sourceSize": { "w": 156, "h": 125 }
+      "spriteSourceSize": { "x": 34, "y": 20, "w": 108, "h": 92 },
+      "sourceSize": { "w": 167, "h": 125 }
     },
     "5": {
       "frame": { "x": 64, "y": 0, "w": 68, "h": 113 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 64, "y": 12, "w": 68, "h": 113 },
-      "sourceSize": { "w": 156, "h": 125 }
+      "spriteSourceSize": { "x": 75, "y": 12, "w": 68, "h": 113 },
+      "sourceSize": { "w": 167, "h": 125 }
     }
   },
-  "meta": { "image": "knockdown.png", "size": { "w": 156, "h": 364 } }
+  "meta": { "image": "knockdown.png", "size": { "w": 166, "h": 368 } }
 }

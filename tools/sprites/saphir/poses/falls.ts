@@ -1,9 +1,10 @@
-import { at, behindBack, GUARD, onBall, planted, raised, type Pose } from './common.ts';
+import { armOut, at, behindBack, GUARD, onBall, planted, raised, type Pose } from './common.ts';
 import { CROUCH } from './crouch.ts';
 
 /**
- * Her falls, knock-downs and get-ups. She goes down backward, the hands still at her back, and
- * comes back up like a dancer: a kip-up from her shoulders, a somersault in the air.
+ * Her falls, knock-downs and get-ups. She goes down backward, the arms flung out of her back,
+ * and comes back up like a dancer: a kip-up from her shoulders, a somersault in the air; the
+ * hands go back behind her once she is up.
  *
  * - trip (4 frames, 2, 2, 2, 7): the feet swept out from under her, she tips back and lands
  *   on her back.
@@ -20,8 +21,14 @@ import { CROUCH } from './crouch.ts';
  */
 
 /** Flat on her back, the head behind her, the legs out toward the opponent. */
+/** The arms flung out over her head, as she goes down (before the body's spin). */
+const flung = (pose: Pose): Pose => armOut(armOut(behindBack(pose), 'near', 85, 18), 'far', 70, 17);
+
+/** The hands round the shins, in a tuck. */
+const hug = (pose: Pose): Pose => armOut(armOut(behindBack(pose), 'near', -40, 14), 'far', -60, 14);
+
 function lying(x: number, y = 8.5, spin = -90): Pose {
-  return behindBack({
+  return flung({
     ...GUARD,
     hip: at(x, y),
     torso: 0,
@@ -36,7 +43,7 @@ function lying(x: number, y = 8.5, spin = -90): Pose {
 
 /** Tucked, the knees to the chest, turned `spin` degrees. */
 function tucked(x: number, y: number, spin: number): Pose {
-  return behindBack({
+  return hug({
     ...GUARD,
     hip: at(x, y),
     torso: 0,
@@ -49,7 +56,7 @@ function tucked(x: number, y: number, spin: number): Pose {
 }
 
 export const TRIP: readonly Pose[] = [
-  behindBack({
+  flung({
     ...GUARD,
     hip: at(-2, 30),
     torso: -20,
@@ -79,9 +86,12 @@ export const KNOCKDOWN: readonly Pose[] = [
   behindBack({ ...CROUCH, hip: at(-4, 20), face: 'effort' }),
 ];
 
+/** A hand on the lead knee, pushing up. */
+const pushing = (pose: Pose): Pose => armOut(behindBack(pose), 'near', -50, 13);
+
 export const GETUP: readonly Pose[] = [
-  behindBack({ ...CROUCH, hip: at(-4, 21) }),
-  behindBack({ ...CROUCH, hip: at(-4, 25), torso: 18 }),
+  pushing({ ...CROUCH, hip: at(-4, 21) }),
+  pushing({ ...CROUCH, hip: at(-4, 25), torso: 18 }),
   behindBack({
     ...GUARD,
     hip: at(-3, 29),

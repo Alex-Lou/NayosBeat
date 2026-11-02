@@ -1,4 +1,14 @@
-import { at, behindBack, GUARD, planted, raised, smear, type Pose } from './common.ts';
+import {
+  armOut,
+  at,
+  GUARD,
+  planted,
+  raised,
+  smear,
+  withArms,
+  type Arms,
+  type Pose,
+} from './common.ts';
 
 /**
  * specialAntiAir (Contre-ut, docs/saphir.md §4): 8 frames, 2, 3, 3, 3, 6, 6, 6, 6 ticks (38),
@@ -86,5 +96,12 @@ const FRAMES: readonly Pose[] = [
   GUARD,
 ];
 
-/** Her hands stay at her back through the whole move: the legs do everything. */
-export const POSES: readonly Pose[] = FRAMES.map(behindBack);
+/** Her hands at her back, one let out to balance the leg on the frames of `ARMS`. */
+const ARMS: Arms = {
+  1: (p) => armOut(armOut(p, 'near', 60, 16), 'far', -110, 19.5),
+  2: (p) => armOut(armOut(p, 'near', 100, 17), 'far', -95, 19.5),
+  3: (p) => armOut(armOut(p, 'near', 100, 17), 'far', -95, 19.5),
+  4: (p) => armOut(armOut(p, 'near', 50, 15), 'far', 80, 15),
+};
+
+export const POSES: readonly Pose[] = withArms(FRAMES, ARMS);

@@ -1,7 +1,7 @@
-import { at, behindBack, GUARD, raised, smear, type Pose } from './common.ts';
+import { armOut, at, behindBack, GUARD, raised, smear, type Pose } from './common.ts';
 
 /**
- * Her two kicks in the air, overheads both, the hands at her back.
+ * Her two kicks in the air, overheads both, the arms out of her back to balance the kick.
  *
  * jumpLight (Pointe sautée): 5 frames, 2, 2, 6, 3, 3 ticks (16), the toe out on frame 2 (ticks
  * 4-9), hitbox 4..32 / 8..24: tucked, the lead leg stabs down and forward, the toes pointed.
@@ -35,7 +35,11 @@ const LIGHT: readonly Pose[] = [
   TUCK,
 ];
 
-export const JUMP_LIGHT: readonly Pose[] = LIGHT.map(behindBack);
+/** The arms open behind and above her, against the kicking leg. */
+const open = (pose: Pose): Pose =>
+  armOut(armOut(behindBack(pose), 'near', 85, 15), 'far', -90, 19.5);
+
+export const JUMP_LIGHT: readonly Pose[] = LIGHT.map(open);
 
 const HEAVY: readonly Pose[] = [
   TUCK,
@@ -61,4 +65,4 @@ const HEAVY: readonly Pose[] = [
   TUCK,
 ];
 
-export const JUMP_HEAVY: readonly Pose[] = HEAVY.map(behindBack);
+export const JUMP_HEAVY: readonly Pose[] = HEAVY.map(open);

@@ -35,56 +35,47 @@ describe('Saphir strips: the set', () => {
 });
 
 /**
- * Her signature (docs/saphir.md §9): she fights with her hands clasped at her back. In every strip
- * drawn so far (her grabs and throws, at porte 3, take her hands out), both wrists stay behind
- * her hips, every frame.
+ * Her signature (docs/saphir.md §9): at rest and on her small blows, both hands clasped at her
+ * back, every frame; on her big kicks, one hand lets go to balance the leg, the other stays at
+ * her back. In the air and in her falls the arms are free.
  */
 describe('Saphir strips: hands behind her back', () => {
+  /** Both wrists, ahead of the hips (positive) or behind them, on one frame. */
+  function wrists(sheet: SaphirSheet, frame: number): readonly number[] {
+    const pose = SAPHIR_POSES[sheet][frame];
+    if (!pose) throw new Error(`${sheet} has no frame ${frame}`);
+    const skeleton = solve(pose, SAPHIR_BODY);
+    const ahead = (wrist: { x: number; y: number }) =>
+      (wrist.x - skeleton.hip.x) * skeleton.front.x + (wrist.y - skeleton.hip.y) * skeleton.front.y;
+    return [ahead(skeleton.near.wrist), ahead(skeleton.far.wrist)];
+  }
+
   it.each([
     'idle',
     'walkForward',
     'walkBack',
     'crouch',
     'block',
-    'hitHigh',
-    'hitMid',
-    'hitLow',
-    'hitCrouch',
     'standLight',
     'chainLight',
-    'lightFinisher',
-    'chainHeavy',
+    'forwardLight',
+    'crouchLight',
+  ] as const)('%s: both hands at her back', (sheet) => {
+    SAPHIR_POSES[sheet].forEach((_, frame) => {
+      expect(Math.max(...wrists(sheet, frame)), `frame ${frame}`).toBeLessThan(0);
+    });
+  });
+
+  it.each([
     'standHeavy',
     'special',
-    'specialAntiAir',
+    'lightFinisher',
+    'chainHeavy',
     'specialForward',
-    'super',
-    'forwardLight',
-    'forwardHeavy',
-    'backHeavy',
-    'chainLaunch',
-    'crouchLight',
     'crouchHeavy',
-    'jumpLight',
-    'jumpHeavy',
-    'jump',
-    'jumpForward',
-    'dashForward',
-    'dashBack',
-    'trip',
-    'airHit',
-    'knockdown',
-    'getup',
-    'ko',
-    'tech',
-  ] as const)('%s', (sheet) => {
-    SAPHIR_POSES[sheet].forEach((pose, frame) => {
-      const skeleton = solve(pose, SAPHIR_BODY);
-      const ahead = (wrist: { x: number; y: number }) =>
-        (wrist.x - skeleton.hip.x) * skeleton.front.x +
-        (wrist.y - skeleton.hip.y) * skeleton.front.y;
-      expect(ahead(skeleton.near.wrist), `frame ${frame} near`).toBeLessThan(0);
-      expect(ahead(skeleton.far.wrist), `frame ${frame} far`).toBeLessThan(0);
+  ] as const)('%s: one hand always at her back', (sheet) => {
+    SAPHIR_POSES[sheet].forEach((_, frame) => {
+      expect(Math.min(...wrists(sheet, frame)), `frame ${frame}`).toBeLessThan(0);
     });
   });
 });

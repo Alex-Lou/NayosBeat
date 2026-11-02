@@ -1,4 +1,15 @@
-import { at, behindBack, GUARD, onBall, planted, raised, smear, type Pose } from './common.ts';
+import {
+  armOut,
+  at,
+  GUARD,
+  onBall,
+  planted,
+  raised,
+  smear,
+  withArms,
+  type Arms,
+  type Pose,
+} from './common.ts';
 
 /**
  * super (Coda, docs/saphir.md §6): 9 frames, 2, 3, 3, 2, 6, 6, 6, 10, 10 ticks (48), a blow a
@@ -106,5 +117,13 @@ const FRAMES: readonly Pose[] = [
   },
 ];
 
-/** Her hands stay at her back through the whole move: the legs do everything. */
-export const POSES: readonly Pose[] = FRAMES.map(behindBack);
+/** Her hands at her back, one let out to balance the leg on the frames of `ARMS`. */
+const ARMS: Arms = {
+  3: (p) => armOut(armOut(p, 'near', 50, 15), 'far', 80, 15),
+  4: (p) => armOut(armOut(p, 'near', -40, 17), 'far', 60, 17),
+  5: (p) => armOut(p, 'near', 15, 18),
+  6: (p) => armOut(armOut(p, 'near', -50, 17), 'far', 70, 17),
+  7: (p) => armOut(p, 'near', -100, 19.5),
+};
+
+export const POSES: readonly Pose[] = withArms(FRAMES, ARMS);
