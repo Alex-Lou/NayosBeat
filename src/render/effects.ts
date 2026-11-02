@@ -15,7 +15,7 @@ import { VIEW_SIZE } from './view';
 
 /** A colored veil of another color this soon after the last one is dropped: never cyan then magenta. */
 export const COLOR_GAP = 60;
-const GLOW_TEXTURE = 'fx:glow';
+export const GLOW_TEXTURE = 'fx:glow';
 const GLOW_RESOLUTION = 256;
 const VIGNETTE_TEXTURE = 'fx:vignette';
 const VIGNETTE_RESOLUTION = { width: 128, height: 72 } as const;
@@ -60,7 +60,7 @@ export class Effects {
   constructor(scene: Phaser.Scene, options: EffectsOptions) {
     this.shake = new Shake(options.shake);
     this.mode = options.mode;
-    paintTextures(scene);
+    paintVeilTextures(scene);
     const { width, height } = VIEW_SIZE;
     const dim = scene.add
       .rectangle(-width, -height, options.stageWidth + 2 * width, 3 * height, 0)
@@ -166,8 +166,11 @@ export class Effects {
   }
 }
 
-/** The glow and the vignette, white, their profiles in alpha: painted once, tinted per veil. */
-function paintTextures(scene: Phaser.Scene): void {
+/**
+ * The glow and the vignette, white, their profiles in alpha: painted once for the game, tinted per
+ * veil (and per pool of light: light-rig.ts).
+ */
+export function paintVeilTextures(scene: Phaser.Scene): void {
   const glowCenter = (GLOW_RESOLUTION - 1) / 2;
   paintAlpha(scene, GLOW_TEXTURE, GLOW_RESOLUTION, GLOW_RESOLUTION, (x, y) =>
     glowProfile(Math.hypot(x - glowCenter, y - glowCenter) / (GLOW_RESOLUTION / 2)),

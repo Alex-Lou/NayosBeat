@@ -17,6 +17,7 @@ import { FxGate, type FlashBudget } from './flash-budget';
 import { FxDissolve } from './fx-dissolve';
 import { FxPixels } from './fx-pixels';
 import { hitShakeOf } from './hit-shake';
+import type { Cast } from './move-lights';
 import type { RenderMode } from './render-mode';
 import type { ShakeMode } from './shake';
 
@@ -44,6 +45,16 @@ const SHADOW_LAYERS = [
 const SHADOW_COLOR = 0x0c0818;
 /** Jump height (px) at which the shadow has shrunk to half its size. */
 const SHADOW_HALF_HEIGHT = 120;
+/**
+ * A light at its strongest on one side (Cast.lean ±1) stretches the shadow this much wider, its
+ * middle this many px away from the light (docs/art/nayo-vfx.md §2).
+ */
+export const SHADOW_STRETCH = 0.9;
+export const SHADOW_SHIFT = 16;
+/** The glow on a body: over it, under its outline. */
+const GLOW_DEPTH = 0.005;
+/** No light falls on a fighter: its shadow under it, no glow. */
+const UNLIT: Cast = { lean: 0, glowColor: 0, glow: 0 };
 
 export interface SpriteFighterLook {
   /** How its effects dissolve. */
@@ -59,6 +70,11 @@ export interface SpriteFighterLook {
    * the sky (silhouette.ts, option A); null, none.
    */
   readonly contour: number | null;
+  /**
+   * The moves' lights are drawn (light-rig.ts): its shadow leans away from them, the other
+   * fighter's glow on it (`light`). Off, neither.
+   */
+  readonly lit?: boolean;
 }
 
 /**
@@ -74,7 +90,8 @@ export interface SpriteFighterLook {
  * into a black silhouette, outlined in its energy (`StagedLook`, finisher-scene.ts); its effects
  * and their dissolve follow the pose shown. With a contour (`look.contour`), the body is outlined
  * at all times, on the pixels it is drawn on, until the Finisher's silhouette takes its place.
- * Its boxes show in the debug view (BoxOverlay).
+ * With the moves' lights (`look.lit`), its shadow leans away from them and the other fighter's
+ * lights glow on its body (`light`). Its boxes show in the debug view (BoxOverlay).
  */
 export class SpriteFighterView {
   private readonly halo: FinisherHalo;
@@ -88,6 +105,10 @@ export class SpriteFighterView {
   private readonly effects: AnchoredSprite | undefined;
   private readonly trail: DashTrail;
   private readonly echo: BoostEcho;
+  /** The other fighter's lights on its body: the body filled with their color, added. */
+  private readonly glow: AnchoredSprite | undefined;
+  private glowColor = -1;
+  private cast: Cast = UNLIT;
   private readonly dissolve: FxDissolve | undefined;
   private readonly pixels: FxPixels;
   private readonly gate = new FxGate();
@@ -139,6 +160,12 @@ export class SpriteFighterView {
       ? new AnchoredSprite(scene, art, 'fx', mode).setDepth(DEPTH.effects)
       : undefined;
     this.effects?.hide();
+    this.glow = look.lit
+      ? new AnchoredSprite(scene, art, 'body', mode)
+          .setDepth(DEPTH.fighterBack + GLOW_DEPTH)
+          .added()
+      : undefined;
+    this.glow?.hide();
     this.dissolve = art.fx
       ? new FxDissolve(scene, art, look.dissolve, trailColor, false, mode, this.pixels)
       : undefined;
@@ -163,8 +190,14 @@ export class SpriteFighterView {
   setFront(front: boolean): void {
     const depth = front ? DEPTH.fighterFront : DEPTH.fighterBack;
     this.body.setDepth(depth);
+    this.glow?.setDepth(depth + GLOW_DEPTH);
     for (const sprite of this.outline) sprite.setDepth(depth - OUTLINE_DEPTH);
     for (const sprite of this.contour) sprite.setDepth(depth - CONTOUR_DEPTH);
+  }
+
+  /** How the moves' lights fall on it from now on (light-rig.ts): read on each update. */
+  light(cast: Cast): void {
+    this.cast = cast;
   }
 
   /**
@@ -215,6 +248,7 @@ export class SpriteFighterView {
       y,
       flip,
     );
+    this.showGlow(staged.silhouette, clip.sheet, frame, x + trembling, y, flip);
     if (this.effects) {
       const effects = effectsOf(clip);
       const shows = this.art.fx?.[effects] !== undefined;
@@ -239,8 +273,40 @@ export class SpriteFighterView {
     this.before.y = y;
     this.before.flip = flip;
     const shrink = SHADOW_HALF_HEIGHT / (SHADOW_HALF_HEIGHT + height);
-    for (const layer of this.shadow) layer.setPosition(x, this.groundY).setScale(shrink);
+    // Away from the lights: wider, its middle pushed off the feet, as a low light casts it.
+    const { lean } = this.cast;
+    const stretch = shrink * (1 + Math.abs(lean) * SHADOW_STRETCH);
+    const shift = lean * SHADOW_SHIFT * shrink;
+    for (const layer of this.shadow) {
+      layer.setPosition(x + shift, this.groundY).setScale(stretch, shrink);
+    }
     this.halo.update(x, finisher, state.frame);
+  }
+
+  /**
+   * The other fighter's lights on the body, in their color, as strong as the cast says; none as
+   * the Finisher's silhouette comes.
+   */
+  private showGlow(
+    silhouette: number,
+    sheet: string,
+    frame: number,
+    x: number,
+    y: number,
+    flip: boolean,
+  ): void {
+    const glow = this.glow;
+    if (!glow) return;
+    const { glow: alpha, glowColor } = this.cast;
+    if (alpha <= 0 || silhouette > 0) {
+      glow.hide();
+      return;
+    }
+    if (glowColor !== this.glowColor) {
+      glow.fill(glowColor);
+      this.glowColor = glowColor;
+    }
+    glow.setAlpha(alpha).show(sheet, frame, x, y, flip);
   }
 
   /** The silhouette's outline, as dark as the body is: around its pose, in `staged.outline`. */

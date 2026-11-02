@@ -60,6 +60,8 @@ import { hitStyleOf, hudColorOf, type HitStyle } from './hit-styles';
 import { requestLandscapeFullscreen } from './fullscreen';
 import { HoldPrompt } from './hold-prompt';
 import { HoldRing } from './hold-ring';
+import { LightRig } from './light-rig';
+import type { Cast } from './move-lights';
 import { Hud } from './hud';
 import { MoveCaption, UNDER_CAPTIONS } from './move-caption';
 import { HUD_BAND } from './onomatopoeia';
@@ -68,6 +70,7 @@ import { ProjectileView } from './projectile-view';
 import { isContextLost, type RenderMode } from './render-mode';
 import { loadArt } from './art-textures';
 import { contourFor, type SilhouetteLook } from './silhouette';
+import { signatureOf, type Signature } from './signatures';
 import { SpriteFighterView } from './sprite-fighter-view';
 import { drawStage, FIGHT_STAGE_COLORS, loadStage } from './stage-view';
 import type { StagePropsView } from './stage-props';
@@ -75,6 +78,9 @@ import { VIEW_SIZE } from './view';
 
 /** Caps the catch-up after a long stall (~83 ms of simulation at 60 Hz). */
 const MAX_TICKS_PER_FRAME = 5;
+
+/** No light on a fighter (before the lights are made). */
+const NO_CAST: Cast = { lean: 0, glowColor: 0, glow: 0 };
 
 /** Grey boxes of the fighters without art. */
 const COLORS = { player1: 0xd9574a, player2: 0x4a8fd9 } as const;
@@ -128,6 +134,8 @@ interface FighterDisplay {
   setFront(front: boolean): void;
   /** The comfort options: `calm`, the flashes not normal; how far things shake (off: no motion). */
   setComfort(calm: boolean, shake: ShakeMode): void;
+  /** How the moves' lights fall on it (light-rig.ts), read on each update. */
+  light(cast: Cast): void;
 }
 
 /** Everything that exists only while the scene runs, created in `create`, freed on shutdown. */
@@ -152,6 +160,8 @@ interface Runtime {
    */
   readonly finisher: FinisherSignal;
   readonly feedback: FightFeedback;
+  /** The moves' lights: their pools on the floor, the shadows and glows they cast (light-rig.ts). */
+  readonly lights: LightRig;
   /** The Finisher's director: once it locks, it paces the game and frames it (finisher-scene.ts). */
   readonly finisherScene: FinisherScene;
   readonly hud: Hud;
@@ -210,6 +220,8 @@ export class FightScene extends Phaser.Scene {
   private combo: ComboMeter = NO_COMBO;
   private arts: readonly [FighterArt | undefined, FighterArt | undefined] = [undefined, undefined];
   private styles!: readonly [HitStyle, HitStyle];
+  /** Each fighter's signature (signatures.ts), null for one without. */
+  private signatures: readonly [Signature | null, Signature | null] = [null, null];
   private paused = false;
   private matchEndReported = false;
   /** The fighter drawn over the other one. */
@@ -260,6 +272,7 @@ export class FightScene extends Phaser.Scene {
     const colorway = first === second ? 'alt' : 'main';
     this.arts = [artOf(first), artOf(second, colorway)];
     this.styles = [hitStyleOf(first), hitStyleOf(second, colorway)];
+    this.signatures = [signatureOf(first), signatureOf(second)];
     for (const player of [0, 1] as const) {
       const art = this.arts[player];
       if (art) assertValidArt(art, this.config.fighters[player]);
@@ -312,6 +325,7 @@ export class FightScene extends Phaser.Scene {
       budget,
     );
 
+    const energies = [this.styles[0].energy, this.styles[1].energy] as const;
     const runtime: Omit<Runtime, 'finisherScene'> = {
       inputs: new PlayerInputs(window, touch, connectedGamepads()),
       padHaptics: new PadHaptics((player) =>
@@ -362,6 +376,13 @@ export class FightScene extends Phaser.Scene {
         },
       ),
       hud,
+      lights: new LightRig(this, this.config, {
+        groundY: GROUND_Y,
+        signatures: this.signatures,
+        energies,
+        stage: FIGHT_STAGE_COLORS,
+        mode,
+      }),
       holdRing: new HoldRing(this, GROUND_Y, [this.styles[0].energy, this.styles[1].energy], mode),
       caption: this.config.training ? new MoveCaption(this, this.config) : undefined,
       holdPrompt: this.config.training ? new HoldPrompt(this, this.config, GROUND_Y) : undefined,
@@ -396,6 +417,10 @@ export class FightScene extends Phaser.Scene {
 
     this.applyComfort(comfort);
     this.runtime.feedback.setAnimOptions(this.viewing.anim);
+    this.runtime.fighterViews.forEach((view, player) => {
+      view.light(this.runtime?.lights.casts[player] ?? NO_CAST);
+    });
+    this.runtime.lights.update(this.state, 0, false);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.dispose();
     });
@@ -419,6 +444,7 @@ export class FightScene extends Phaser.Scene {
     runtime.hud.setComfort(hudComfortOf(comfort));
     runtime.holdRing.calm = isCalm(comfort);
     runtime.finisherScene.setComfort(comfort);
+    runtime.lights.calm = isCalm(comfort);
     this.framingInput.comfort = comfort;
     for (const view of runtime.fighterViews) view.setComfort(isCalm(comfort), comfort.shake);
   }
@@ -486,6 +512,7 @@ export class FightScene extends Phaser.Scene {
           budget,
           mode: this.sceneData.mode,
           contour: contourFor(this.sceneData.silhouette, art, style.energy),
+          lit: this.signatures.some((signature) => signature !== null),
         })
       : new FighterView(
           this,
@@ -551,6 +578,8 @@ export class FightScene extends Phaser.Scene {
       if (scene.isActive()) this.stage(runtime, pads);
     }
     runtime.feedback.update(visualFrames, gameFrames);
+    // The Finisher's scene lights its own stage: no move lights then.
+    runtime.lights.update(this.state, visualFrames, scene.isActive());
 
     runtime.debugOverlay?.record(
       {
@@ -609,6 +638,7 @@ export class FightScene extends Phaser.Scene {
       }
       runtime.feedback.endTick();
       runtime.feedback.trail(this.state);
+      for (const event of this.tickEvents) runtime.lights.react(event);
       // After the blows' own effects: they ask the flash budget first.
       for (const event of this.tickEvents) scene.react(event, this.state, viewLeft);
       if (!staged && scene.isActive()) return i + 1;

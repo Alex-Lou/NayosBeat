@@ -47,6 +47,57 @@ export function alphaForDelta(color: number, background: number, delta: number):
 }
 
 /**
+ * `color` at `alpha` added onto `background` (Phaser's ADD blend: each sRGB channel summed,
+ * clipped at white), as a light on the floor or on a body is drawn.
+ */
+export function added(color: number, background: number, alpha: number): number {
+  const channel = (shift: number): number => {
+    const sum = ((background >> shift) & 0xff) + ((color >> shift) & 0xff) * alpha;
+    return Math.min(255, Math.round(sum)) << shift;
+  };
+  return channel(16) | channel(8) | channel(0);
+}
+
+/** How much `color` added at `alpha` onto `background` raises its luminance. */
+export function addedDelta(color: number, background: number, alpha: number): number {
+  return relativeLuminance(added(color, background, alpha)) - relativeLuminance(background);
+}
+
+/**
+ * The backdrop an added light raises the most among `stage`: each channel at its highest. The
+ * linearized channel is convex, so the same light added onto a lighter channel raises it more:
+ * what stays under a bound over this one stays under it over every color of the stage.
+ */
+export function brightestBackdrop(stage: readonly number[]): number {
+  let red = 0;
+  let green = 0;
+  let blue = 0;
+  for (const color of stage) {
+    red = Math.max(red, (color >> 16) & 0xff);
+    green = Math.max(green, (color >> 8) & 0xff);
+    blue = Math.max(blue, color & 0xff);
+  }
+  return (red << 16) | (green << 8) | blue;
+}
+
+/**
+ * The highest alpha at which `color`, added onto every one of `stage`, raises none of them by
+ * more than `delta`.
+ */
+export function addAlphaFor(color: number, stage: readonly number[], delta: number): number {
+  const backdrop = brightestBackdrop(stage);
+  let low = 0;
+  let high = 1;
+  if (addedDelta(color, backdrop, high) <= delta) return high;
+  for (let i = 0; i < 20; i++) {
+    const mid = (low + high) / 2;
+    if (addedDelta(color, backdrop, mid) <= delta) low = mid;
+    else high = mid;
+  }
+  return low;
+}
+
+/**
  * `color` brought toward `toward` (`toward` drawn over it, as little as needed) until, drawn over
  * any of `stage`, it changes its luminance by less than `delta`: a color that shows its hue and
  * lights nothing.
