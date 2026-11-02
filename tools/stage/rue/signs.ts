@@ -5,7 +5,7 @@
 
 import { Canvas, Mask, at, tone } from './canvas.ts';
 import type { Rect } from './facade.ts';
-import { spell } from './font.ts';
+import { GLYPH_HEIGHT, HAN_SIZE, spell, spellHan } from './font.ts';
 import { LIGHTBOX, NEON_DEAD, SIGN_INK, STEEL, TAG } from './palette.ts';
 import type { Random } from './random.ts';
 
@@ -103,7 +103,13 @@ export function drawNeonWord(
  * A backlit sign box: steel frame, a pale face brighter in its middle (its tubes behind), dark
  * letters, one end gone dim where a tube died.
  */
-export function drawLightbox(canvas: Canvas, rect: Rect, text: string, scale: number): void {
+export function drawLightbox(
+  canvas: Canvas,
+  rect: Rect,
+  text: string,
+  scale: number,
+  script: 'latin' | 'han' = 'latin',
+): void {
   const { x, y, width, height } = rect;
   canvas.fill(x, y, width, height, at(STEEL, 1));
   canvas.hline(x, y, width, at(STEEL, 4));
@@ -114,10 +120,13 @@ export function drawLightbox(canvas: Canvas, rect: Rect, text: string, scale: nu
     const dim = px > dimFrom ? -1.4 : 0;
     return tone(LIGHTBOX, 0.9 + middle * 1.3 + dim, px, py);
   });
-  const textWidth = spell(text, scale, 1, () => undefined);
+  // Latin capitals sit a font pixel low, under their accents' rows; Chinese fills its square.
+  const [write, size, low] =
+    script === 'han' ? [spellHan, HAN_SIZE, 0] : [spell, GLYPH_HEIGHT, scale];
+  const textWidth = write(text, scale, 1, () => undefined);
   const left = face.x + Math.round((face.width - textWidth) / 2);
-  const top = face.y + Math.round((face.height - 7 * scale) / 2) + scale;
-  spell(text, scale, 1, (px, py) => {
+  const top = face.y + Math.round((face.height - size * scale) / 2) + low;
+  write(text, scale, 1, (px, py) => {
     canvas.set(left + px, top + py, at(SIGN_INK, left + px > dimFrom ? 0 : 1));
   });
 }
