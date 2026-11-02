@@ -5,12 +5,34 @@
 #
 #   npm run nayos            the menu, in the tmux session "nayos"
 #   npm run nayos -- check   one action straight away: agent, claude, check, dev, sync, status, prs
+#
+# On the phone, `claude` is what the home screen's one tap runs (tools/remote/termux-shortcut.sh):
+# it starts the Free Claude Code server if it is not up, then Claude Code, in tmux.
 
 set -euo pipefail
 
 root=$(cd "$(dirname "$0")/../.." && pwd)
 cd "$root"
+# uv puts its tools (fcc-server, fcc-claude) here; a login shell from a shortcut may not have it.
+export PATH="$HOME/.local/bin:$PATH"
 has() { command -v "$1" >/dev/null 2>&1; }
+
+# Free Claude Code's local server, on this machine only (its Admin UI: http://localhost:8082/admin).
+FCC_URL=http://127.0.0.1:8082/
+
+# Starts the Free Claude Code server if its port does not answer yet (any HTTP status counts),
+# and waits for it (20 s at most).
+fcc_up() {
+  if curl -sS -o /dev/null "$FCC_URL" 2>/dev/null; then return 0; fi
+  echo "Démarrage du serveur Free Claude Code…"
+  nohup fcc-server >"$HOME/fcc.log" 2>&1 &
+  for _ in $(seq 20); do
+    sleep 1
+    if curl -sS -o /dev/null "$FCC_URL" 2>/dev/null; then return 0; fi
+  done
+  echo "Le serveur ne répond pas : voir $HOME/fcc.log" >&2
+  return 1
+}
 
 agent() {
   if has opencode; then exec opencode; fi
@@ -19,7 +41,10 @@ agent() {
 }
 
 claude() {
-  if has fcc-claude; then exec fcc-claude; fi
+  if has fcc-claude; then
+    fcc_up || return 1
+    exec fcc-claude
+  fi
   echo "Free Claude Code n'est pas installé : tools/remote/setup.sh --fcc" >&2
   return 1
 }
@@ -101,7 +126,12 @@ case "${1:-}" in
     menu
     ;;
   menu) menu ;;
-  agent | claude | check | dev | sync | status | prs) "$1" ;;
+  # An agent runs in tmux too: closing the terminal does not stop it, the next tap finds it again.
+  agent | claude)
+    if [ -z "${TMUX:-}" ] && has tmux; then exec tmux new -A -s "nayos-$1" "$0" "$1"; fi
+    "$1"
+    ;;
+  check | dev | sync | status | prs) "$1" ;;
   *)
     echo "Action inconnue : $1 (agent, claude, check, dev, sync, status, prs)" >&2
     exit 2
