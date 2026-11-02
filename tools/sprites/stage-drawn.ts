@@ -4,11 +4,15 @@
  * far.png, mid.png and floor.png, one image each, in free palettes. `npm run sprites` installs
  * the layers in src/art/rue/ with the props laid on them (stage-props.ts), and writes their large
  * colors there (colors.ts): the flash veils are set on them, and the flash measures taken over the
- * darkest (docs/flashs.md §3).
+ * darkest (docs/flashs.md §3). The street's other atmospheres (tools/stage/rue/atmospheres.ts: the
+ * same street, another palette) go in a folder each, src/art/rue/<moment>-<weather>/, the code's
+ * layers recolored: a layer drawn by hand is the base atmosphere's only.
  */
 
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import {
+  atmosphereName,
+  BASE_ATMOSPHERE,
   STAGE_LAYER_NAMES,
   STAGE_LAYERS,
   STAGE_NAME,
@@ -16,6 +20,7 @@ import {
   type StageLayer,
 } from '../../src/art/stage-layers.ts';
 import { VIEW_SIZE } from '../../src/render/view.ts';
+import { STREET_ATMOSPHERES } from '../stage/rue/atmospheres.ts';
 import { drawRue } from '../stage/rue/index.ts';
 import { compactImage, paletteBuilder, rgbaAt } from './colors.ts';
 import { checkDrawn, DRAWN_ROOT, DrawingProblems, listFolder, type DrawnRules } from './drawn.ts';
@@ -131,24 +136,60 @@ async function writeImage(file: URL, image: IndexedImage): Promise<void> {
   await writeFile(file, await encodeIndexedPng(image.width, image.height, pixels, palette));
 }
 
+/** `image`, its slots shown in `palette` (an atmosphere's, slot for slot with the street's). */
+export function recolored(image: IndexedImage, palette: readonly Rgba[]): IndexedImage {
+  return {
+    ...image,
+    colors: palette.map(({ r, g, b }) => (r << 16) | (g << 8) | b),
+    alpha: palette.map(({ a }) => a),
+  };
+}
+
+/** Writes `layers` and the props' `sheet` in `folder`, the sheet removed when there is none. */
+async function writeLayers(
+  folder: URL,
+  layers: Readonly<Record<StageLayer, IndexedImage>>,
+  sheet: IndexedImage | undefined,
+): Promise<void> {
+  await mkdir(folder, { recursive: true });
+  for (const layer of STAGE_LAYER_NAMES) {
+    await writeImage(new URL(`${layer}.png`, folder), layers[layer]);
+  }
+  const file = new URL('props.png', folder);
+  if (sheet) await writeImage(file, sheet);
+  else await rm(file, { recursive: true, force: true });
+}
+
 /**
  * Writes the stage as the game shows it: each layer (drawn by hand, else the code's) in the
  * smallest palette that holds it, the props still laid right on them and their sheet, and the
- * layers' large colors.
+ * layers' large colors; then each other atmosphere of the street, the code's layers and the same
+ * sheet in its palette, in its folder, its large colors with the base's.
  */
 export async function writeStage(drawn: DrawnStage): Promise<StageWritten> {
-  await mkdir(ART, { recursive: true });
   const layers = installedLayers(drawn);
-  for (const layer of STAGE_LAYER_NAMES)
-    await writeImage(new URL(`${layer}.png`, ART), layers[layer]);
   const packed = packProps(drawRue().props, layers);
-  const sheet = new URL('props.png', ART);
-  if (packed.sheet) await writeImage(sheet, packed.sheet);
-  else await rm(sheet, { recursive: true, force: true });
+  await writeLayers(ART, layers, packed.sheet);
   const module = new URL('props.ts', ART);
   await writeFile(module, await propsModule(packed.props, module));
+  const large: Record<string, number[]> = {
+    [atmosphereName(BASE_ATMOSPHERE)]: largeColorsOf(Object.values(layers)),
+  };
+  const code = drawRue().layers;
+  for (const { atmosphere, palette } of STREET_ATMOSPHERES) {
+    const name = atmosphereName(atmosphere);
+    if (name === atmosphereName(BASE_ATMOSPHERE)) continue;
+    const shown = {
+      far: recolored(code.far, palette),
+      mid: recolored(code.mid, palette),
+      floor: recolored(code.floor, palette),
+    };
+    const sheet = packed.sheet && recolored(packed.sheet, palette);
+    await writeLayers(new URL(`${name}/`, ART), shown, sheet);
+    large[name] = largeColorsOf(Object.values(shown));
+  }
   const colors = new URL('colors.ts', ART);
-  await writeFile(colors, await colorsModule(largeColorsOf(Object.values(layers)), colors));
+  await writeFile(colors, await colorsModule(large, colors));
   return {
     drawn: STAGE_LAYER_NAMES.filter((layer) => drawn[layer] !== undefined),
     props: packed.props.length,
@@ -156,17 +197,28 @@ export async function writeStage(drawn: DrawnStage): Promise<StageWritten> {
   };
 }
 
-/** The large colors as a TypeScript module, formatted by Prettier with the repository's settings. */
-export async function colorsModule(colors: readonly number[], file: URL): Promise<string> {
-  const items = colors.map((color) => `0x${color.toString(16).padStart(6, '0')}`);
+/**
+ * The large colors of each atmosphere (by name) as a TypeScript module, formatted by Prettier with
+ * the repository's settings.
+ */
+export async function colorsModule(
+  colors: Readonly<Record<string, readonly number[]>>,
+  file: URL,
+): Promise<string> {
+  const entries = Object.entries(colors).map(([name, list]) => {
+    const items = list.map((color) => `0x${color.toString(16).padStart(6, '0')}`);
+    return `  '${name}': [${items.join(', ')}],`;
+  });
   const text = [
     '// Generated by `npm run sprites` (tools/sprites/stage-drawn.ts): do not edit.',
     '',
     '/**',
-    ' * The large colors of the stage (docs/flashs.md §3): those one of its layers covers 1 % of the',
-    ' * screen with, the most covering first.',
+    ' * The large colors of the stage in each of its atmospheres (docs/flashs.md §3): those one of',
+    ' * its layers covers 1 % of the screen with, the most covering first.',
     ' */',
-    `export const STAGE_COLORS: readonly number[] = [${items.join(', ')}];`,
+    'export const STAGE_COLORS: Readonly<Record<string, readonly number[]>> = {',
+    ...entries,
+    '};',
     '',
   ].join('\n');
   const options = (await resolveConfig(file)) ?? {};

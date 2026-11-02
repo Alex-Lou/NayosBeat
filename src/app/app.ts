@@ -4,10 +4,13 @@ import type { Sfx } from '../audio/sfx';
 import type { TrainingGauge, TrainingStart } from '../core/config';
 import { ROSTER, templateOf, type FighterId } from '../data/roster';
 import { ANIM_OPTIONS, LEGACY_ANIM } from '../render/anim-options';
+import type { Atmosphere, Moment, StageVariant, Weather } from '../art/stage-layers';
 import type { FightScene, FightSceneData } from '../render/fight-scene';
 import { requestLandscapeFullscreen } from '../render/fullscreen';
 import type { RenderMode } from '../render/render-mode';
 import { DEFAULT_SILHOUETTE, type SilhouetteLook } from '../render/silhouette';
+import { stageVariantFor } from '../render/stage-view';
+import { STAGE_VARIANTS } from '../art/rue';
 import { controlsStore } from '../input/controls-store';
 import { isTouchDevice } from '../input/touch-controls';
 import { BindingsScreen, type BindingsTab } from '../ui/bindings-screen';
@@ -95,6 +98,25 @@ const POSITIONS: readonly {
   { position: 'rightCorner', label: 'coin droit', hint: 'Mannequin dos au mur de droite' },
 ];
 
+/** What training's « Décor » says of each moment and weather (docs/art/decor-rue.md §13). */
+const MOMENT_LABELS: Readonly<Record<Moment, string>> = { midnight: 'minuit', dusk: 'crépuscule' };
+const WEATHER_LABELS: Readonly<Record<Weather, string>> = {
+  clear: 'ciel clair',
+  rain: 'pluie',
+  fog: 'brume',
+};
+
+/** Training's « Décor » choices, in the order the option cycles: at random, then each one. */
+const STAGE_CHOICES: readonly (Atmosphere | 'random')[] = [
+  'random',
+  ...STAGE_VARIANTS.map(({ atmosphere }) => atmosphere),
+];
+
+function stageLabel(choice: Atmosphere | 'random'): string {
+  if (choice === 'random') return 'aléatoire';
+  return `${MOMENT_LABELS[choice.moment]}, ${WEATHER_LABELS[choice.weather]}`;
+}
+
 /**
  * Screen flow: title → (the notice, the first time) → main menu → fighter selection → fight →
  * results, with pause; the options from the main menu and the pause. Owns the current screen,
@@ -133,6 +155,14 @@ export class App {
   private trainingData = true;
   /** Where the fight on screen started: its pause's « Position » changed, resuming starts over. */
   private startedPosition: TrainingStart = DEFAULT_SETUP.position;
+  /**
+   * The stage the fights show, in the atmosphere drawn for them (docs/art/decor-rue.md §13): drawn
+   * anew for each new match, kept by « Revanche » and « Recommencer ».
+   */
+  private stage: StageVariant | undefined;
+  /** Training's « Décor »: at random, or one atmosphere to look at; changed, resuming starts over. */
+  private trainingStage: Atmosphere | 'random' = 'random';
+  private startedStage: Atmosphere | 'random' = 'random';
 
   constructor(
     private readonly root: HTMLElement,
@@ -678,10 +708,30 @@ export class App {
         again(data);
       },
     };
-    return [dummy, position, boxes, data];
+    const stageAt = STAGE_CHOICES.indexOf(this.trainingStage);
+    const decor: MenuItem = {
+      label: `Décor : ${stageLabel(this.trainingStage)}`,
+      hint: 'Le moment et la météo de la rue, dès la reprise',
+      onSelect: () => {
+        this.trainingStage = STAGE_CHOICES[(stageAt + 1) % STAGE_CHOICES.length] ?? 'random';
+        again(decor);
+      },
+    };
+    return STAGE_CHOICES.length > 2
+      ? [dummy, position, decor, boxes, data]
+      : [dummy, position, boxes, data];
   }
 
-  private startFight(): void {
+  /**
+   * `again`: the same match once more (« Revanche », « Recommencer »), on the same stage; else a
+   * new one, its stage drawn anew (training: as its « Décor » says).
+   */
+  private startFight(again = false): void {
+    if (!again || !this.stage) {
+      const chosen = this.setup.mode === 'training' ? this.trainingStage : 'random';
+      this.stage = stageVariantFor(chosen);
+      this.startedStage = this.trainingStage;
+    }
     this.screen?.dispose();
     this.screen = undefined;
     // No black screen while the fight loads and builds (L16): the card, then the fight.
@@ -704,6 +754,7 @@ export class App {
       heldStruggle: this.struggle === 'hold',
       mode: this.mode,
       silhouette: this.silhouette,
+      stage: this.stage,
       onPause: () => {
         this.showPause();
       },
@@ -731,10 +782,12 @@ export class App {
   /** `initialIndex`: the item selected (the options', coming back from them). */
   private showPause(initialIndex = 0): void {
     const fight = this.game.scene.getScene(FIGHT_SCENE) as FightScene;
+    // Training: its « Décor » changed, the street is drawn anew as it now says.
+    const sameStage = () => this.trainingStage === this.startedStage;
     const resume = () => {
       // Training: both fighters go where « Position » now says, as « Recommencer » puts them.
-      if (this.setup.position !== this.startedPosition) {
-        this.startFight();
+      if (this.setup.position !== this.startedPosition || !sameStage()) {
+        this.startFight(sameStage());
         return;
       }
       this.screen?.dispose();
@@ -755,7 +808,7 @@ export class App {
       {
         label: 'Recommencer',
         onSelect: () => {
-          this.startFight();
+          this.startFight(sameStage());
         },
       },
       {
@@ -811,7 +864,7 @@ export class App {
         {
           label: 'Revanche',
           onSelect: () => {
-            this.startFight();
+            this.startFight(true);
           },
         },
         {

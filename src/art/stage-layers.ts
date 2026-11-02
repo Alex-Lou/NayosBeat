@@ -11,6 +11,26 @@ import { ART_SCALE } from './types';
 /** Its folder: art-src/<name>/ (the drawings), src/art/<name>/ (the game's images). */
 export const STAGE_NAME = 'rue';
 
+/** The moments of the night a stage may show, and its weathers (docs/art/decor-rue.md §13). */
+export const MOMENTS = ['midnight', 'dusk'] as const;
+export const WEATHERS = ['clear', 'rain', 'fog'] as const;
+export type Moment = (typeof MOMENTS)[number];
+export type Weather = (typeof WEATHERS)[number];
+
+/** How a fight's stage looks: drawn at random among those its stage offers, render only. */
+export interface Atmosphere {
+  readonly moment: Moment;
+  readonly weather: Weather;
+}
+
+/** The stage as drawn first: midnight, a clear night. Its images sit in the stage's folder. */
+export const BASE_ATMOSPHERE: Atmosphere = { moment: 'midnight', weather: 'clear' };
+
+/** An atmosphere's name, its images' folder under the stage's (the base's: the folder itself). */
+export function atmosphereName({ moment, weather }: Atmosphere): string {
+  return `${moment}-${weather}`;
+}
+
 /**
  * Image pixels per world pixel: the stage is drawn as finely as the fighters (ART_SCALE), so the
  * screen shows one grain of pixel (docs/art/decor-rue.md §2).
@@ -87,6 +107,48 @@ export interface StageArt {
   readonly colors: readonly number[];
   /** Its animations, if it has any. */
   readonly props: StageProps | undefined;
+}
+
+/** The stage in one of its atmospheres: how it looks, and its images. */
+export interface StageVariant {
+  readonly atmosphere: Atmosphere;
+  readonly art: StageArt;
+}
+
+/** The atmosphere a folder's name says (`atmosphereName`); throws on a name that says none. */
+export function atmosphereOf(name: string): Atmosphere {
+  for (const moment of MOMENTS) {
+    for (const weather of WEATHERS) {
+      if (atmosphereName({ moment, weather }) === name) return { moment, weather };
+    }
+  }
+  throw new Error(`No atmosphere is named ${name}: <${MOMENTS.join('|')}>-<${WEATHERS.join('|')}>`);
+}
+
+/**
+ * The stage in each atmosphere `colors` names (`npm run sprites` writes them all): the base one's
+ * images in its folder (`./<layer>.png`), each other's in a folder of its name
+ * (`./<moment>-<weather>/<layer>.png`), the same props laid on each. The base first; none while a
+ * layer it needs is missing (the grey box), an atmosphere left out while one of its own is.
+ */
+export function stageVariantsOf(
+  files: Readonly<Record<string, string>>,
+  colors: Readonly<Record<string, readonly number[]>>,
+  props: readonly StageProp[] = [],
+): StageVariant[] {
+  const base = atmosphereName(BASE_ATMOSPHERE);
+  const names = [base, ...Object.keys(colors).filter((name) => name !== base)];
+  return names.flatMap((name) => {
+    const atmosphere = atmosphereOf(name);
+    const prefix = name === base ? './' : `./${name}/`;
+    const own = Object.fromEntries(
+      Object.entries(files)
+        .filter(([path]) => path.startsWith(prefix) && !path.slice(prefix.length).includes('/'))
+        .map(([path, url]) => [`./${path.slice(prefix.length)}`, url]),
+    );
+    const art = stageArtOf(own, colors[name] ?? [], props);
+    return art ? [{ atmosphere, art }] : [];
+  });
 }
 
 /** Throws unless every frame a prop's timeline names exists and lasts at least one step. */
