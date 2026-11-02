@@ -484,3 +484,28 @@ D37, inscrit au journal (`docs/combat-v2.md` §0.2) : le 4e combattant de Sound 
 - **L'anatomie** : `npm run sprites:anatomy -- watt` donne **0 limite dure et 0 avertissement**, sur toutes ses planches.
 - **Ce qu'on voit, c'est ce qui touche** (`tests/tools/watt-sprites.test.ts`) : sur leurs images actives, la Prise atteint sa boîte de 40 px, la Surcharge celle de 38 px, et le Plafonnier la sienne vers l'avant et vers le haut.
 - **Une donnée recalée sur le dessin** : la boîte du **Plafonnier** passait de −4..34 / 50..110 à −4..24 / 50..90. Ses bras ne pouvaient pas monter à 110 px : les épaules sont vers 60, les bras font 25 px, et les pinces portent jusque vers 92. Sa portée sur Nayo debout passe de 47,5 à 37,5 px (instantané des portées réenregistré, seules ces deux lignes changent). Ses routes et ses tests ne bougent pas. C'est la règle de combat-v2 §9.2 : la boîte suit le dessin.
+
+---
+
+## 17. Le CPU : ses plans, mesurés (PR #112)
+
+*Casquette : game design et QA. Les données ne changent pas : c'est au propriétaire de trancher.*
+
+- **Ses plans** (`src/ai/plans.ts`, `WATT_PLANS`) : les routes du §6, de la Paume, du Pas lourd, du Marteau et de l'Arraché. Chacune est jouée sur le moteur contre les 4 combattants, miroir compris (`tests/ai/plan-routes.test.ts`). Elle est bornée à la distance où elle se joue en entier contre tous : 43 px pour L, L, H, H ; 42 et 40 pour les jongles du Soulevé ; 54 et 49 après le Marteau ; 38 après l'Arraché. Ses routes vers **Plein feu** verrouillent et mettent KO jusqu'à 31 px (L, L, H, H), 41 px (L, L, H) et 37 px (H, H) : c'est un reversal court.
+- **La garantie du Finisher** (`finisher-guarantee.test.ts`) : sur Riff, Plein feu verrouille aussi sur un corps en l'air (après l'Arraché ou le Soulevé), et ses trois frappes touchent alors toujours.
+- **Anti-infini** (`beam-search.ts`) : 12 coups au plus sur Riff, la limite, sous 45 % de sa vie sans jauge et sous 49 % avec. Ses CONTRE se mesurent plus tard que ceux du casting : son Marteau sort à f12 et son Coup de pilon à f22.
+- **Couvre-feu** (`finisher-scene.test.ts`, `finisher-flashes.test.ts`), sur Nayo :
+  - le KO tombe à 56, la retombée à t0 + 60, la carte de 146 à 217 ;
+  - le son baisse à t0 + 9, en 6 images ; la basse de la coupure tombe sur la dernière image de la carte ;
+  - deux flashs à lui, à 116 et 146 (un seul, 146, en flashs réduits) : sous les règles.
+  - En boîte grise, aucun liseré n'est dessiné autour de lui.
+- **Un écart de cadrage, signalé** : au gros plan ×2, la tête de Nayo projeté par la dernière frappe (6 ; 2) monte de 3 px dans la bande du HUD. Le Quatre de Nayo fait de même en miroir. C'est le cadrage commun ; ce n'est pas corrigé ici.
+- **Équilibrage entre CPU difficiles**, 200 matchs par paire, les côtés en alternance, graines 1000 et suivantes :
+  - Watt contre Nayo : **1 %** des matchs gagnés ;
+  - Watt contre Riff : **40,5 %** ;
+  - Watt contre Saphir : **16,5 %**.
+- **Ce qui l'explique en partie**, sur 20 matchs contre Nayo :
+  - son jeu à distance est celui du CPU commun : 106 Surcharges, 83 coups lourds sautés et 83 Coups de jus lancés ;
+  - 61 Paumes seulement ouvrent ses phrases ;
+  - il prend bien, environ 3 Prises par match.
+- **Ses Finishers** : en miroir, 1 en 40 matchs, 2 en 120 (1,7 %). Le seuil d'un sur 40 du §1.11 de `finisher.md` est tout juste tenu.
