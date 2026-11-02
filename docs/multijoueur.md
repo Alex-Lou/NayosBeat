@@ -317,7 +317,7 @@ Chacune avait son hypothèse de départ. **Le 2 novembre 2026, le propriétaire 
 
 ## 12. La décision du journal
 
-Inscrite au journal de `docs/combat-v2.md` §0.2 sous **D38**. D36 (Saphir) et D37 (Watt) sont déjà réservés par d'autres PR, au 2 novembre 2026 ; à revérifier juste avant la fusion.
+Inscrite au journal de `docs/combat-v2.md` §0.2 sous **D38**. D36 est celle de Saphir (#114), et D37 est attribuée à Watt (#112, en cours).
 
 | # | Décision | Origine | Pourquoi |
 |---|---|---|---|
