@@ -15,10 +15,13 @@ import type {
   TrainingStart,
 } from '../../src/core/config.ts';
 import { Input, type InputBits } from '../../src/core/input.ts';
-import { createInitialState, type FighterState, type GameState } from '../../src/core/state.ts';
+import { createInitialState, type GameState } from '../../src/core/state.ts';
 import { step } from '../../src/core/step.ts';
 import { templateOf, type FighterId } from '../../src/data/roster.ts';
 import { TRAINING_STAGE } from '../../src/data/stages.ts';
+import { canonicalText, FNV_OFFSET, fnv, hex } from '../../src/net/state-hash.ts';
+
+export { FIGHTER_FIELDS, GAME_FIELDS, stateHash } from '../../src/net/state-hash.ts';
 
 /** `ticks` ticks with these inputs held, written as button names: "down+light", "" for none. */
 export type InputRun = readonly [ticks: number, player1: string, player2: string];
@@ -96,69 +99,6 @@ export function playReplay(replay: Replay, visit?: (state: GameState) => void): 
   return state;
 }
 
-/**
- * Every field the hash covers, in a fixed order. Values are hashed without their names, so
- * renaming a field (and its entry here) keeps the hashes; a test checks that no field of the
- * state is left out.
- */
-export const FIGHTER_FIELDS = [
-  'x',
-  'y',
-  'vx',
-  'vy',
-  'facing',
-  'action',
-  'actionFrame',
-  'crouching',
-  'health',
-  'move',
-  'moveConnected',
-  'stunFrames',
-  'input',
-  'bufferedCommand',
-  'bufferFrames',
-  'bufferedInput',
-  'bufferedMotion',
-  'bufferedFacing',
-  'directionHistory',
-  'tapDirection',
-  'tapFrames',
-  'tapReleased',
-  'throwImmuneFrames',
-  'comboCount',
-  'juggle',
-  'phrase',
-  'phraseTwice',
-  'boost',
-  'flags',
-  'reaction',
-  'reactionHeavy',
-  'stunTotal',
-] as const satisfies readonly (keyof FighterState)[];
-
-/**
- * The game's fields, in a fixed order, `contacts` included: health and stun do not tell where a
- * hit landed, and the impact point moves with any hitbox or hurtbox.
- */
-export const GAME_FIELDS = [
-  'frame',
-  'cameraX',
-  'hitstop',
-  'round',
-  'fighters',
-  'projectiles',
-  'contacts',
-  'hold',
-] as const satisfies readonly (keyof GameState)[];
-
-/** FNV-1a, 32 bits: small, stable, and the same in every JavaScript engine. */
-const FNV_OFFSET = 0x811c9dc5;
-
-/** A small stable hash (FNV-1a, 32 bits, hexadecimal) of one state's canonical form. */
-export function stateHash(state: GameState): string {
-  return hex(fnv(FNV_OFFSET, canonicalText(state)));
-}
-
 /** One hash of the state on every tick of the replay, in order: what a golden replay pins. */
 export function replayHash(replay: Replay): string {
   let hash = FNV_OFFSET;
@@ -166,37 +106,4 @@ export function replayHash(replay: Replay): string {
     hash = fnv(hash, canonicalText(state));
   });
   return hex(hash);
-}
-
-/** Carries the FNV-1a `hash` on over `text`, so several texts hash as one stream. */
-function fnv(hash: number, text: string): number {
-  let next = hash;
-  for (let i = 0; i < text.length; i++) {
-    next = Math.imul(next ^ text.charCodeAt(i), 0x01000193);
-  }
-  return next;
-}
-
-function hex(hash: number): string {
-  return (hash >>> 0).toString(16).padStart(8, '0');
-}
-
-function canonicalText(state: GameState): string {
-  return JSON.stringify(canonical(state));
-}
-
-function canonical(state: GameState): unknown {
-  return GAME_FIELDS.map((field) =>
-    field === 'fighters'
-      ? state.fighters.map((fighter) => FIGHTER_FIELDS.map((name) => fighter[name]))
-      : sortedKeys(state[field]),
-  );
-}
-
-/** Plain data with its object keys in alphabetical order: independent of how it was built. */
-function sortedKeys(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(sortedKeys);
-  if (value === null || typeof value !== 'object') return value;
-  const entries = Object.entries(value).sort(([a], [b]) => (a < b ? -1 : 1));
-  return Object.fromEntries(entries.map(([key, inner]) => [key, sortedKeys(inner)]));
 }

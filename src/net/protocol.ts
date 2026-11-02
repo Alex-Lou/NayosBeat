@@ -6,7 +6,7 @@
  */
 
 /** The wire format's version. It is also part of the rooms' ids: two versions never meet. */
-export const PROTOCOL_VERSION = 2;
+export const PROTOCOL_VERSION = 3;
 
 /** The longest text accepted, checked before parsing it. */
 export const MAX_MESSAGE_LENGTH = 128;
@@ -19,6 +19,12 @@ export const SEQ_LIMIT = 0x80000000;
  * dashes, a letter or digit at each end. Always legible in the pixel font, never interpreted.
  */
 const PSEUDO = /^[A-Za-z0-9][A-Za-z0-9 -]{0,10}[A-Za-z0-9]$/;
+
+/** A tick's inputs on the wire: the core's buttons (src/core/input.ts), 11 bits. */
+export const INPUT_LIMIT = 1 << 11;
+
+/** The most ticks one `inputs` message carries (the oldest the other has not confirmed first). */
+export const MAX_BATCH = 12;
 
 /** The id of a place, an atmosphere or a fighter: short, lowercase, dashes. */
 const TOKEN = /^[a-z0-9-]{1,24}$/;
@@ -43,7 +49,19 @@ export type NetMessage =
   /** The host's place, already drawn when it chose « Aléatoire »: `map` and `atmosphere`. */
   | { readonly type: 'stage'; readonly map: string; readonly atmosphere: string }
   /** The sender's fighter. */
-  | { readonly type: 'fighter'; readonly fighter: string };
+  | { readonly type: 'fighter'; readonly fighter: string }
+  /**
+   * The sender's inputs from tick `first` on, one per tick, and the last tick of the other's it
+   * has received with all those before it (`ack`, -1 for none): docs/multijoueur.md §9.1.
+   */
+  | {
+      readonly type: 'inputs';
+      readonly first: number;
+      readonly bits: readonly number[];
+      readonly ack: number;
+    }
+  /** The hash of the sender's state after tick `tick` (state-hash.ts): docs/multijoueur.md §9.3. */
+  | { readonly type: 'hash'; readonly tick: number; readonly hash: string };
 
 type Type = NetMessage['type'];
 
@@ -58,6 +76,8 @@ const FIELDS: Readonly<Record<Type, Readonly<Record<string, (value: unknown) => 
   name: { s: isPseudo },
   stage: { m: isToken, a: isToken },
   fighter: { f: isToken },
+  inputs: { k: isSeq, b: isBatch, a: isAck },
+  hash: { k: isSeq, h: isHash },
 };
 
 export function encodeMessage(message: NetMessage): string {
@@ -77,6 +97,10 @@ export function encodeMessage(message: NetMessage): string {
       return JSON.stringify({ ...head, m: message.map, a: message.atmosphere });
     case 'fighter':
       return JSON.stringify({ ...head, f: message.fighter });
+    case 'inputs':
+      return JSON.stringify({ ...head, k: message.first, b: message.bits, a: message.ack });
+    case 'hash':
+      return JSON.stringify({ ...head, k: message.tick, h: message.hash });
   }
 }
 
@@ -116,6 +140,15 @@ function messageOf(type: Type, fields: Record<string, unknown>): NetMessage {
       return { type, map: fields.m as string, atmosphere: fields.a as string };
     case 'fighter':
       return { type, fighter: fields.f as string };
+    case 'inputs':
+      return {
+        type,
+        first: fields.k as number,
+        bits: fields.b as readonly number[],
+        ack: fields.a as number,
+      };
+    case 'hash':
+      return { type, tick: fields.k as number, hash: fields.h as string };
   }
 }
 
@@ -129,4 +162,23 @@ function isSeq(value: unknown): boolean {
 
 function isToken(value: unknown): boolean {
   return typeof value === 'string' && TOKEN.test(value);
+}
+
+function isBatch(value: unknown): boolean {
+  return (
+    Array.isArray(value) &&
+    value.length >= 1 &&
+    value.length <= MAX_BATCH &&
+    value.every(
+      (bits) => Number.isInteger(bits) && (bits as number) >= 0 && (bits as number) < INPUT_LIMIT,
+    )
+  );
+}
+
+function isAck(value: unknown): boolean {
+  return value === -1 || isSeq(value);
+}
+
+function isHash(value: unknown): boolean {
+  return typeof value === 'string' && /^[0-9a-f]{8}$/.test(value);
 }
