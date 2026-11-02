@@ -35,18 +35,47 @@ describe('Saphir strips: the set', () => {
 });
 
 /**
- * Her signature (docs/saphir.md §9): she fights with her hands clasped at her back. In her guard,
- * her idle and her three signature moves, both wrists stay behind her hips, every frame.
+ * Her signature (docs/saphir.md §9): at rest and on her small blows, both hands clasped at her
+ * back, every frame; on her big kicks, one hand lets go to balance the leg, the other stays at
+ * her back. In the air and in her falls the arms are free.
  */
 describe('Saphir strips: hands behind her back', () => {
-  it.each(['idle', 'standHeavy', 'special', 'specialAntiAir'] as const)('%s', (sheet) => {
-    SAPHIR_POSES[sheet].forEach((pose, frame) => {
-      const skeleton = solve(pose, SAPHIR_BODY);
-      const ahead = (wrist: { x: number; y: number }) =>
-        (wrist.x - skeleton.hip.x) * skeleton.front.x +
-        (wrist.y - skeleton.hip.y) * skeleton.front.y;
-      expect(ahead(skeleton.near.wrist), `frame ${frame} near`).toBeLessThan(0);
-      expect(ahead(skeleton.far.wrist), `frame ${frame} far`).toBeLessThan(0);
+  /** Both wrists, ahead of the hips (positive) or behind them, on one frame. */
+  function wrists(sheet: SaphirSheet, frame: number): readonly number[] {
+    const pose = SAPHIR_POSES[sheet][frame];
+    if (!pose) throw new Error(`${sheet} has no frame ${frame}`);
+    const skeleton = solve(pose, SAPHIR_BODY);
+    const ahead = (wrist: { x: number; y: number }) =>
+      (wrist.x - skeleton.hip.x) * skeleton.front.x + (wrist.y - skeleton.hip.y) * skeleton.front.y;
+    return [ahead(skeleton.near.wrist), ahead(skeleton.far.wrist)];
+  }
+
+  it.each([
+    'idle',
+    'walkForward',
+    'walkBack',
+    'crouch',
+    'block',
+    'standLight',
+    'chainLight',
+    'forwardLight',
+    'crouchLight',
+  ] as const)('%s: both hands at her back', (sheet) => {
+    SAPHIR_POSES[sheet].forEach((_, frame) => {
+      expect(Math.max(...wrists(sheet, frame)), `frame ${frame}`).toBeLessThan(0);
+    });
+  });
+
+  it.each([
+    'standHeavy',
+    'special',
+    'lightFinisher',
+    'chainHeavy',
+    'specialForward',
+    'crouchHeavy',
+  ] as const)('%s: one hand always at her back', (sheet) => {
+    SAPHIR_POSES[sheet].forEach((_, frame) => {
+      expect(Math.min(...wrists(sheet, frame)), `frame ${frame}`).toBeLessThan(0);
     });
   });
 });
@@ -119,8 +148,8 @@ describe('Saphir strips: drawing', () => {
 });
 
 /**
- * What you see is what hits (docs/combat-v2.md §9.5), on her three signature moves (porte 2;
- * the others at porte 3): on every frame her clip shows while a move can hit, inside the band
+ * What you see is what hits (docs/combat-v2.md §9.5), on the strikes drawn so far (porte 2, then
+ * porte 3 lot by lot): on every frame her clip shows while a move can hit, inside the band
  * of the move's hitbox (src/data/fighters/saphir*.ts), the striking leg (or its trail) reaches
  * the far edge of the hitbox, at most REACH.short px short of it and REACH.past px past it. The
  * kicks are measured forward; the Contre-ut forward and upward, its front effects counting
@@ -128,16 +157,58 @@ describe('Saphir strips: drawing', () => {
  */
 describe('Saphir strips: reach', () => {
   const REACH = { short: 3, past: 4 } as const;
-  const DRAWN = ['standHeavy', 'special', 'specialAntiAir'] as const;
-  const ANTI_AIRS: ReadonlySet<string> = new Set(['specialAntiAir']);
+  const DRAWN = [
+    'standHeavy',
+    'special',
+    'specialAntiAir',
+    'standLight',
+    'chainLight',
+    'lightFinisher',
+    'chainHeavy',
+    'specialForward',
+    'super',
+    'forwardLight',
+    'forwardHeavy',
+    'backHeavy',
+    'chainLaunch',
+    'crouchLight',
+    'crouchHeavy',
+    'jumpLight',
+    'jumpHeavy',
+    'grab',
+  ] as const;
+  const ANTI_AIRS: ReadonlySet<string> = new Set(['specialAntiAir', 'backHeavy', 'chainLaunch']);
   /** Her strikes on the strips drawn so far: the moves and their Remixes playing them. */
   const STRIKES = strikesOf(SAPHIR_CLIPS, SAPHIR_TEMPLATE).filter(({ sheet }) =>
     (DRAWN as readonly string[]).includes(sheet),
   );
 
-  it('the three signature moves, and the Remixes that play them', () => {
+  it('the strikes drawn so far, and the Remixes that play them', () => {
     expect(STRIKES.map(({ id }) => id).sort()).toEqual(
-      ['special', 'specialAntiAir', 'specialAntiAirBoost', 'specialBoost', 'standHeavy'].sort(),
+      [
+        'backHeavy',
+        'chainHeavy',
+        'chainHigh',
+        'chainLaunch',
+        'chainLight',
+        'crouchHeavy',
+        'crouchLight',
+        'forwardHeavy',
+        'forwardLight',
+        'grab',
+        'jumpHeavy',
+        'jumpLight',
+        'lightFinisher',
+        'special',
+        'specialAntiAir',
+        'specialAntiAirBoost',
+        'specialBoost',
+        'specialForward',
+        'specialForwardBoost',
+        'standHeavy',
+        'standLight',
+        'super',
+      ].sort(),
     );
   });
 

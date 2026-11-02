@@ -65,6 +65,44 @@ export function behindBack(pose: Pose): Pose {
 }
 
 /**
+ * `pose` with one arm out of her back, its fist `reach` px from the shoulder toward `angle`
+ * degrees on screen (0 toward the opponent, 90 up, -90 down), the elbow folding the natural way.
+ * A shoulder swings an arm back only 60 degrees from hanging: with the torso at `t` degrees
+ * (positive leaning forward), `angle` stays between -150 - t and 90 - t. Placed before the
+ * pose's spin (it turns with the body) and its mirror (Pose.turned). Her big kicks free one hand
+ * to balance the leg, her leaps and falls both (docs/saphir.md §9).
+ */
+export function armOut(pose: Pose, side: 'near' | 'far', angle: number, reach = 17): Pose {
+  const t = (pose.torso * Math.PI) / 180;
+  const a = (angle * Math.PI) / 180;
+  const shoulder = SAPHIR_BODY.shoulder;
+  const fist = at(
+    pose.hip.x + Math.sin(t) * shoulder + Math.cos(a) * reach,
+    pose.hip.y + Math.cos(t) * shoulder + Math.sin(a) * reach,
+  );
+  // The elbow folds the way a body folds it: behind an arm hanging back (the arm nearly
+  // straight, or the upper arm swings past the shoulder's reach), under an arm out in front, in
+  // front of an arm raised overhead. `fromDown` is the arm's angle from hanging along
+  // the torso, toward its front (anatomy.ts measures the same).
+  const fromDown = angle + 90 + pose.torso;
+  const elbow = fromDown < 30 ? 'back' : fromDown < 150 ? 'down' : 'front';
+  return side === 'near'
+    ? { ...pose, nearFist: fist, bends: { ...pose.bends, nearElbow: elbow } }
+    : { ...pose, farFist: fist, bends: { ...pose.bends, farElbow: elbow } };
+}
+
+/** How the arms of some frames of a strip leave her back, by frame. */
+export type Arms = Readonly<Record<number, (pose: Pose) => Pose>>;
+
+/** A strip's frames with the hands at her back, then the arms of `arms` let out. */
+export function withArms(frames: readonly Pose[], arms: Arms = {}): readonly Pose[] {
+  return frames.map((pose, frame) => {
+    const back = behindBack(pose);
+    return arms[frame]?.(back) ?? back;
+  });
+}
+
+/**
  * The guard, her signature: upright and in profile, the hands clasped at the small of her back,
  * the chin up, the weight on the rear leg and the lead foot on its toes, poised like a dancer's:
  * she will fight with her legs alone (docs/saphir.md §9). Nothing like Nayo's crouched boxer or

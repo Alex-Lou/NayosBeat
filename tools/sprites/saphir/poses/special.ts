@@ -1,4 +1,14 @@
-import { at, behindBack, GUARD, planted, raised, smear, type Pose } from './common.ts';
+import {
+  armOut,
+  at,
+  GUARD,
+  planted,
+  raised,
+  smear,
+  withArms,
+  type Arms,
+  type Pose,
+} from './common.ts';
 
 /**
  * special (Syncope, docs/saphir.md §4): 8 frames, 3, 3, 3, 3, 3, 6, 8, 8 ticks (37), the heel
@@ -94,5 +104,12 @@ const FRAMES: readonly Pose[] = [
   },
 ];
 
-/** Her hands stay at her back through the whole move: the legs do everything. */
-export const POSES: readonly Pose[] = FRAMES.map(behindBack);
+/** Her hands at her back, one let out to balance the leg on the frames of `ARMS`. */
+const ARMS: Arms = {
+  2: (p) => armOut(p, 'near', -60, 13),
+  3: (p) => armOut(p, 'near', -40),
+  4: (p) => armOut(p, 'near', -20),
+  5: (p) => armOut(p, 'near', -50, 14),
+};
+
+export const POSES: readonly Pose[] = withArms(FRAMES, ARMS);

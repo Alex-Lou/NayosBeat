@@ -1,4 +1,14 @@
-import { at, behindBack, GUARD, planted, raised, smear, type Pose } from './common.ts';
+import {
+  armOut,
+  at,
+  GUARD,
+  planted,
+  raised,
+  smear,
+  withArms,
+  type Arms,
+  type Pose,
+} from './common.ts';
 
 /**
  * standHeavy (Chassé, docs/saphir.md §4): 7 frames, 2, 3, 3, 2, 3, 7, 9 ticks (29), the sole
@@ -78,5 +88,12 @@ const FRAMES: readonly Pose[] = [
   },
 ];
 
-/** Her hands stay at her back through the whole move: the legs do everything. */
-export const POSES: readonly Pose[] = FRAMES.map(behindBack);
+/** Her hands at her back, one let out to balance the leg on the frames of `ARMS`. */
+const ARMS: Arms = {
+  2: (p) => armOut(p, 'near', 40, 14),
+  3: (p) => armOut(p, 'near', 25),
+  4: (p) => armOut(p, 'near', 18),
+  5: (p) => armOut(p, 'near', 35, 14),
+};
+
+export const POSES: readonly Pose[] = withArms(FRAMES, ARMS);

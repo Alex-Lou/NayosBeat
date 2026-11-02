@@ -1,35 +1,35 @@
 {
   "frames": {
     "0": {
-      "frame": { "x": 0, "y": 0, "w": 70, "h": 146 },
+      "frame": { "x": 0, "y": 433, "w": 69, "h": 140 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 0, "w": 70, "h": 146 },
-      "sourceSize": { "w": 70, "h": 146 }
+      "spriteSourceSize": { "x": 1, "y": 6, "w": 69, "h": 140 },
+      "sourceSize": { "w": 75, "h": 146 }
     },
     "1": {
-      "frame": { "x": 70, "y": 0, "w": 70, "h": 146 },
+      "frame": { "x": 0, "y": 573, "w": 70, "h": 138 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 0, "w": 70, "h": 146 },
-      "sourceSize": { "w": 70, "h": 146 }
+      "spriteSourceSize": { "x": 0, "y": 8, "w": 70, "h": 138 },
+      "sourceSize": { "w": 75, "h": 146 }
     },
     "2": {
-      "frame": { "x": 140, "y": 0, "w": 70, "h": 146 },
+      "frame": { "x": 0, "y": 290, "w": 69, "h": 143 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 0, "w": 70, "h": 146 },
-      "sourceSize": { "w": 70, "h": 146 }
+      "spriteSourceSize": { "x": 2, "y": 3, "w": 69, "h": 143 },
+      "sourceSize": { "w": 75, "h": 146 }
     },
     "3": {
-      "frame": { "x": 210, "y": 0, "w": 70, "h": 146 },
+      "frame": { "x": 0, "y": 146, "w": 69, "h": 144 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 0, "w": 70, "h": 146 },
-      "sourceSize": { "w": 70, "h": 146 }
+      "spriteSourceSize": { "x": 4, "y": 2, "w": 69, "h": 144 },
+      "sourceSize": { "w": 75, "h": 146 }
     },
     "4": {
-      "frame": { "x": 280, "y": 0, "w": 70, "h": 146 },
+      "frame": { "x": 0, "y": 0, "w": 70, "h": 146 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 0, "w": 70, "h": 146 },
-      "sourceSize": { "w": 70, "h": 146 }
+      "spriteSourceSize": { "x": 5, "y": 0, "w": 70, "h": 146 },
+      "sourceSize": { "w": 75, "h": 146 }
     }
   },
-  "meta": { "image": "hitMid.png", "size": { "w": 350, "h": 146 } }
+  "meta": { "image": "hitMid.png", "size": { "w": 70, "h": 711 } }
 }

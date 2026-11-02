@@ -105,7 +105,7 @@ Entrepôt reconverti en club, la nuit. Mur d'enceintes empilées au fond, néons
 
 > Une légende du circuit, masquée, polie et redoutable : personne ne sait qui est dessous, ni si c'est la même d'un soir à l'autre. Elle entre d'un pas, touche, et n'est déjà plus là. Sa spec : [saphir.md](../saphir.md).
 
-- **Silhouette** : une femme d'une trentaine d'années, droite, de profil, **les mains jointes dans le dos**, la pointe du pied avant posée : elle ne frappe qu'avec les jambes, ses mains ne sortent que pour la prise. Détail signature : le **masque de Janus**, plein, en laque saphir : un profil sculpté devant, un autre derrière, l'un vers l'adversaire, l'autre vers la salle. Rigide, il suit la tête ; une queue de cheval noire sort du sommet.
+- **Silhouette** : une femme d'une trentaine d'années, droite, de profil, **les mains jointes dans le dos**, la pointe du pied avant posée : elle ne frappe qu'avec les jambes. Sur ses grands coups une main lâche pour l'équilibre, en l'air et dans ses chutes les bras s'ouvrent. Détail signature : le **masque de Janus**, plein, en laque saphir : un profil sculpté devant, un autre derrière, l'un vers l'adversaire, l'autre vers la salle. Rigide, il suit la tête ; une queue de cheval noire sort du sommet.
 - **Tenue** (de scène, en trois couleurs : saphir, ivoire, noir) : veste courte ivoire à col montant bordé de saphir, ceinture saphir, pantalon large de danse noir à liseré saphir, gants noirs, chaussures bicolores de savate (noir et blanc cassé).
 - **Tenue 2** (miroir) : la même, inversée : veste noire, pantalon ivoire ; énergie **lilas**. Le masque, les cheveux et les chaussures ne changent pas.
 - **Costume pour plus tard** : le tailleur-pantalon crème, en tenue à débloquer (une coupe à part : chaque coup redessiné, hors v1).
@@ -123,7 +123,7 @@ Entrepôt reconverti en club, la nuit. Mur d'enceintes empilées au fond, néons
 | forwardHeavy | Fouetté plongeant | Le pied monte puis plonge par-dessus la garde |
 | backHeavy | Chandelle | Coup de pied droit vers le ciel |
 | crouchLight | Coup de pied bas | Au tibia, presque à plat |
-| crouchHeavy | Fauche | Revers bas aux chevilles, accroupie sur une jambe, les mains dans le dos |
+| crouchHeavy | Fauche | Revers bas aux chevilles, accroupie sur une jambe, une main lâchée pour l'équilibre |
 | special | Syncope | Un pas de swing, la jambe par-dessus la tête qui retombe en croissant, et elle repart en arrière ; sa traînée écrit un S |
 | specialForward | Rubato | Elle retient son poids, puis fond et fouette, en retard exprès |
 | specialAntiAir | Contre-ut | Elle bondit, la jambe tendue droit vers le ciel |

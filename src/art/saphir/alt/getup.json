@@ -1,35 +1,35 @@
 {
   "frames": {
     "0": {
-      "frame": { "x": 0, "y": 0, "w": 70, "h": 146 },
+      "frame": { "x": 0, "y": 548, "w": 68, "h": 115 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 0, "w": 70, "h": 146 },
-      "sourceSize": { "w": 70, "h": 146 }
+      "spriteSourceSize": { "x": 12, "y": 30, "w": 68, "h": 115 },
+      "sourceSize": { "w": 80, "h": 145 }
     },
     "1": {
-      "frame": { "x": 70, "y": 0, "w": 70, "h": 146 },
+      "frame": { "x": 0, "y": 422, "w": 68, "h": 126 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 0, "w": 70, "h": 146 },
-      "sourceSize": { "w": 70, "h": 146 }
+      "spriteSourceSize": { "x": 12, "y": 19, "w": 68, "h": 126 },
+      "sourceSize": { "w": 80, "h": 145 }
     },
     "2": {
-      "frame": { "x": 140, "y": 0, "w": 70, "h": 146 },
+      "frame": { "x": 0, "y": 287, "w": 76, "h": 135 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 0, "w": 70, "h": 146 },
-      "sourceSize": { "w": 70, "h": 146 }
+      "spriteSourceSize": { "x": 3, "y": 10, "w": 76, "h": 135 },
+      "sourceSize": { "w": 80, "h": 145 }
     },
     "3": {
-      "frame": { "x": 210, "y": 0, "w": 70, "h": 146 },
+      "frame": { "x": 0, "y": 145, "w": 75, "h": 142 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 0, "w": 70, "h": 146 },
-      "sourceSize": { "w": 70, "h": 146 }
+      "spriteSourceSize": { "x": 0, "y": 3, "w": 75, "h": 142 },
+      "sourceSize": { "w": 80, "h": 145 }
     },
     "4": {
-      "frame": { "x": 280, "y": 0, "w": 70, "h": 146 },
+      "frame": { "x": 0, "y": 0, "w": 71, "h": 145 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 0, "w": 70, "h": 146 },
-      "sourceSize": { "w": 70, "h": 146 }
+      "spriteSourceSize": { "x": 2, "y": 0, "w": 71, "h": 145 },
+      "sourceSize": { "w": 80, "h": 145 }
     }
   },
-  "meta": { "image": "getup.png", "size": { "w": 350, "h": 146 } }
+  "meta": { "image": "getup.png", "size": { "w": 76, "h": 663 } }
 }
