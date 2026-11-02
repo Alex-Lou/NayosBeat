@@ -86,16 +86,22 @@ describe('the veils (docs/flashs.md §1.2, §2)', () => {
     expect(superDim([0xd0d0e0]).alpha).toBeLessThan(dim.alpha);
   });
 
-  it('glows a platine halo behind the super, its flash on a small area only', () => {
-    const halo = superHalo(FIGHT_STAGE_COLORS);
-    expect(halo.color).toBe(HALO_COLOR);
-    expect(peakDelta(halo)).toBeLessThanOrEqual(HALO_DELTA + 1e-9);
-    expect(peakDelta(halo)).toBeGreaterThan(HALO_DELTA - 0.02);
-    for (const backdrop of FIGHT_STAGE_COLORS) {
-      expect(flashArea(halo, GLOW_SIZE.halo, backdrop)).toBeLessThan(FLASH_AREA);
-      expect(flashArea(halo, GLOW_SIZE.halo, backdrop)).toBeGreaterThan(0);
-    }
-  });
+  // It measures every large color of every stage's every atmosphere: its time grows with them
+  // (about 4 s with the gym's rain, over the 5 s default on a loaded CI runner).
+  it(
+    'glows a platine halo behind the super, its flash on a small area only',
+    { timeout: 30_000 },
+    () => {
+      const halo = superHalo(FIGHT_STAGE_COLORS);
+      expect(halo.color).toBe(HALO_COLOR);
+      expect(peakDelta(halo)).toBeLessThanOrEqual(HALO_DELTA + 1e-9);
+      expect(peakDelta(halo)).toBeGreaterThan(HALO_DELTA - 0.02);
+      for (const backdrop of FIGHT_STAGE_COLORS) {
+        expect(flashArea(halo, GLOW_SIZE.halo, backdrop)).toBeLessThan(FLASH_AREA);
+        expect(flashArea(halo, GLOW_SIZE.halo, backdrop)).toBeGreaterThan(0);
+      }
+    },
+  );
 
   it("softens a KO's veils with the flashes reduced, and inks them off or refused", () => {
     for (const energy of ENERGIES) {
