@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { iceServers, parseIceServers, STUN_ONLY } from '../../src/net/ice-servers';
 
-/** Cloudflare's answer, as its documentation shows it (credentials shortened). */
+/** Cloudflare's answer, as its documentation shows it (made-up credentials). */
 const CLOUDFLARE = {
   iceServers: [
     { urls: ['stun:stun.cloudflare.com:3478'] },
@@ -14,10 +14,8 @@ const CLOUDFLARE = {
         'turn:turn.cloudflare.com:80?transport=tcp',
         'turns:turn.cloudflare.com:443?transport=tcp',
       ],
-      username:
-        'bc91b63e2b5d759f8eb9f3b58062439e0a0e15893d76317d833265ad08d6631099ce7c7087caabb31ad3e1c386424e3e',
-      credential:
-        'ebd71f1d3edbc2b0edae3cd5a6d82284aeb5c3b8fdaa9b8e3bf9cec683e0d45fe9f5b44e5145db3300f06c250a15b4a0',
+      username: 'test-username',
+      credential: 'test-credential',
     },
   ],
 };
