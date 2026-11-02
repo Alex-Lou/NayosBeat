@@ -35,7 +35,7 @@ const FRAMES: readonly Pose[] = [
     hip: at(3, 44),
     torso: -8,
     farFoot: raised(-6, 12, -40),
-    nearFoot: raised(21.1, 74.7, 105),
+    nearFoot: raised(20.1, 73, 105),
     bends: { ...GUARD.bends, nearKnee: 'back' },
     face: 'effort',
     effects: [
@@ -45,7 +45,7 @@ const FRAMES: readonly Pose[] = [
   },
   {
     ...GUARD,
-    hip: at(9, 64),
+    hip: at(9, 66),
     torso: -22,
     farFoot: raised(-4, 36, -50),
     nearFoot: raised(17.7, 98.6, 115),
@@ -55,7 +55,7 @@ const FRAMES: readonly Pose[] = [
   },
   {
     ...GUARD,
-    hip: at(9, 65),
+    hip: at(9, 67),
     torso: -23,
     farFoot: raised(-4, 37, -50),
     nearFoot: raised(19.5, 99.1, 115),

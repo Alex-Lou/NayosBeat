@@ -6,7 +6,7 @@
 
 import type { Point } from '../../raster.ts';
 import { blend, planted as plantedOn, type Effect, type Foot, type Pose } from '../../skeleton.ts';
-import { SAPHIR_BODY } from '../body.ts';
+import { SAPHIR_BALL as BALL, SAPHIR_BODY } from '../body.ts';
 
 export { blend, type Effect, type Foot, type Pose };
 
@@ -20,6 +20,21 @@ export function planted(x: number, angle = 0): Foot {
 /** Motion trail of a fast limb through `points` (tail first), `width` px wide at the limb. */
 export function smear(width: number, ...points: readonly (readonly [number, number])[]): Effect {
   return { kind: 'smear', width, points: points.map(([x, y]) => at(x, y)) };
+}
+
+/**
+ * A foot on its ball, the heel `angle` degrees up (negative), the ball of the foot on the floor
+ * at `x`: the toe box lies flat in front of it (look.ts bends the shoe there), the way a
+ * kickboxer's lead foot rests.
+ */
+export function onBall(x: number, angle: number): Foot {
+  const a = (angle * Math.PI) / 180;
+  const { ankle } = SAPHIR_BODY;
+  return {
+    x: x - ankle * Math.sin(a) - BALL * Math.cos(a),
+    y: ankle * Math.cos(a) - BALL * Math.sin(a),
+    angle,
+  };
 }
 
 /** A foot off the floor, its ankle at (`x`, `y`), turned `angle` degrees (positive: toes up). */
@@ -43,8 +58,8 @@ export function behindBack(pose: Pose): Pose {
     );
   return {
     ...pose,
-    nearFist: hand(3, 3.5),
-    farFist: hand(3.5, 3),
+    nearFist: hand(0.5, 3),
+    farFist: hand(1, 2.5),
     bends: { ...pose.bends, nearElbow: 'back', farElbow: 'back' },
   };
 }
@@ -58,10 +73,10 @@ export function behindBack(pose: Pose): Pose {
  * degrees, the mask is the one drawn, never turned.
  */
 export const GUARD: Pose = behindBack({
-  hip: at(-3, 35.5),
+  hip: at(-3, 34),
   torso: 2,
   head: -3,
-  nearFoot: planted(8, -24),
+  nearFoot: onBall(10, -30),
   farFoot: planted(-14),
   nearFist: at(0, 0),
   farFist: at(0, 0),

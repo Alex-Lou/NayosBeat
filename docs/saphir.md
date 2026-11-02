@@ -226,7 +226,7 @@ Son mot de Remix : **forte** (la nuance musicale). Les Remix gardent le timing e
 Toutes les poses sont réutilisées [R] : aucune pose neuve n'est demandée pour le Finisher (la pose `finale` reste hors v1).
 
 ### 7.4 à 7.10, en bref
-- **Caméra** : celle du contrat commun (`finisher.md` §1.14) ; Saphir reste sous 96 px au gros plan (la super et la victoire sont mesurées à la porte 2 ; sa garde fait 74 px, mesurée au squelette).
+- **Caméra** : celle du contrat commun (`finisher.md` §1.14) ; Saphir reste sous 96 px au gros plan (la super et la victoire sont mesurées à la porte 2 ; sa garde fait 71 px, mesurée au squelette).
 - **Fond** : un aplat saphir sombre par tenue, sous ΔL 0,06 contre le ciel et le sol (proposition : `0x0e1a3e` et `0x2a1e46`, à mesurer par `finisher-flashes.test.ts`).
 - **VFX et palette** : son saphir, le platine du Boost ; aucun rouge saturé ; au plus 3 flashs comptés.
 - **Typographie** : tampons « DOU », « BI », « DOUM » (`count`) ; carte « FACE B. » (`'neon'`), aucune carte propre à un rival (`rival: null`).
@@ -258,8 +258,8 @@ Mesurées avec `hue` (`tests/render/hit-styles.test.ts`), `relativeLuminance` et
 
 ## 9. La fiche de design
 
-- **Silhouette** : 74 × 37 px en garde, mesurée au squelette à la porte 2 (82 × 43 avec le chapeau, sur la planche de la porte 0). Sous 85 px : la prise tombe dans les fourchettes sans rien plier.
-- **Corps** (`Body`) : de profil (écarts d'épaules et de hanches positifs, comme Nayo) ; jambes longues pour sa taille ; buste droit ; épaules étroites.
+- **Silhouette** : 71 × 33 px en garde, mesurée au squelette à la porte 2 (82 × 43 avec le chapeau, sur la planche de la porte 0). Sous 85 px : la prise tombe dans les fourchettes sans rien plier.
+- **Corps** (`Body`) : de profil (écarts d'épaules et de hanches positifs, comme Nayo) ; jambes un peu longues pour sa taille, bras courts (raccourcis à la porte 2, retour du propriétaire) ; buste droit ; épaules étroites. Le pied avant se pose sur l'avant-pied : le talon levé, la chaussure plie à la base des orteils et l'avant repose à plat, comme chez un boxeur pieds-poings.
 - **La garde** (`GUARD`), sa pose signature : droite, de profil, le menton levé, **les mains jointes dans le dos**, les coudes en arrière ; le poids sur la jambe arrière, la pointe du pied avant posée comme une danseuse. Rien d'une garde de boxe : chez elle, on ne lit que les pieds. Le buste droit, la tête au-dessus du dos et non devant (le retour du propriétaire à la porte 2 : pas de dos voûté).
 - **La tête** : dessinée de zéro (aucune source Zen-Tazzer) : le masque plein, un profil sculpté devant (arcade, fente de l'œil, nez, lèvres closes, une larme peinte), un autre derrière, éclairé à contre-jour ; une couture du sommet à la mâchoire ; la queue de cheval haute, qui dégage le profil du dos.
 - **Le visage**, 8 expressions, sur un masque qui ne bouge pas : `effort` allume la fente de l'œil de son énergie, `kiai` l'embrase (au pic d'un spécial seulement) ; `focus`, `smirk`, `cool`, `hurt`, `out` et `tired` montrent le masque tel quel. On ne sait jamais ce qu'elle ressent.

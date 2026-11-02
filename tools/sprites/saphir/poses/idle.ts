@@ -8,7 +8,7 @@ import { at, behindBack, GUARD, type Pose } from './common.ts';
  * outfit and the mask are the same pixels shifted, nothing boils. Frame 0 is exactly GUARD:
  * every move that ends in the guard flows into it.
  */
-const SETTLED = behindBack({ ...GUARD, hip: at(-3, 35) });
+const SETTLED = behindBack({ ...GUARD, hip: at(-3, 33.5) });
 
 export const POSES: readonly Pose[] = [
   GUARD,

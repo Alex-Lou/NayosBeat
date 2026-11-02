@@ -15,7 +15,7 @@ import { clamp, creases, headLocal, unit } from '../parts.ts';
 import type { Material, PixelCanvas, Point } from '../raster.ts';
 import { add, scale, sub, type Side, type Skeleton } from '../skeleton.ts';
 import { drawSmear, type Ink } from '../vfx.ts';
-import { SAPHIR_BODY } from './body.ts';
+import { SAPHIR_BALL as BALL, SAPHIR_BODY } from './body.ts';
 import { stampHead } from './head.ts';
 import { EFFECTS, farOf, MATERIAL, matteOf, noGloss } from './palette.ts';
 
@@ -257,17 +257,40 @@ function drawShoe(ctx: Ctx, side: Side, near: boolean): void {
   const u = scale(toe, 1 / length);
   const v = { x: -u.y, y: u.x };
   const sole = add(side.heel, add(scale(u, 2.4), scale(v, -SAPHIR_BODY.footRadius)));
-  const p = (a: number, b: number): Point => at(add(sole, add(scale(u, a), scale(v, b))));
+  // On the ball of the foot (the heel up, the ball on the floor): the shoe bends at the ball,
+  // the toe box lies flat on the floor in front of it, as a foot does; elsewhere it is rigid.
+  const ball = add(sole, scale(u, BALL));
+  const onBall = u.y < -0.05 && ball.y < 0.6;
+  const flatU = { x: Math.sign(u.x) || 1, y: 0 };
+  const flatV = { x: -flatU.y, y: flatU.x };
+  const p = (a: number, b: number): Point =>
+    onBall && a > BALL
+      ? at(add(ball, add(scale(flatU, a - BALL), scale(flatV, b))))
+      : at(add(sole, add(scale(u, a), scale(v, b))));
 
   // A low polished shoe: the white leather in the middle, the black cap and heel.
   canvas.polygon(
-    [p(-3.0, 0.4), p(-3.2, 3.2), p(-1.6, 4.4), p(2.0, 4.6), p(4.4, 3.2), p(6.6, 2.6), p(7.0, 0.4)],
+    [
+      p(-3.0, 0.4),
+      p(-3.2, 3.2),
+      p(-1.6, 4.4),
+      p(2.0, 4.6),
+      p(BALL, 3.8),
+      p(4.4, 3.2),
+      p(6.6, 2.6),
+      p(7.0, 0.4),
+      p(BALL, 0.4),
+    ],
     white,
     { group, bevel: 1.8 * S },
   );
-  canvas.decal([p(3.6, 0.2), p(7.2, 0.2), p(7.0, 2.8), p(4.6, 3.4)], leather, group);
+  canvas.decal([p(BALL, 0.2), p(7.2, 0.2), p(7.0, 2.8), p(4.6, 3.4), p(BALL, 3.6)], leather, group);
   canvas.decal([p(-3.2, 0.2), p(-0.6, 0.2), p(-0.6, 4.2), p(-3.2, 3.4)], leather, group);
-  canvas.polygon([p(-3.2, -0.1), p(7.2, -0.1), p(7.2, 0.9), p(-3.3, 0.9)], SOLE, {
+  canvas.polygon([p(-3.2, -0.1), p(BALL, -0.1), p(BALL, 0.9), p(-3.3, 0.9)], SOLE, {
+    group: `${group}Sole`,
+    flat: true,
+  });
+  canvas.polygon([p(BALL, -0.1), p(7.2, -0.1), p(7.2, 0.9), p(BALL, 0.9)], SOLE, {
     group: `${group}Sole`,
     flat: true,
   });

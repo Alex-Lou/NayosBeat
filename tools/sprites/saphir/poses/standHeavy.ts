@@ -43,9 +43,9 @@ const FRAMES: readonly Pose[] = [
   },
   {
     ...GUARD,
-    hip: at(15, 38.5),
+    hip: at(16, 37),
     torso: -24,
-    farFoot: planted(9),
+    farFoot: planted(10),
     nearFoot: raised(37, 40, 30),
     bends: { ...GUARD.bends, nearKnee: 'up' },
     face: 'effort',
@@ -53,9 +53,9 @@ const FRAMES: readonly Pose[] = [
   },
   {
     ...GUARD,
-    hip: at(19, 39),
+    hip: at(21, 37),
     torso: -28,
-    farFoot: planted(12),
+    farFoot: planted(14),
     nearFoot: raised(54.5, 41, 90),
     bends: { ...GUARD.bends, nearKnee: 'up' },
     face: 'effort',
