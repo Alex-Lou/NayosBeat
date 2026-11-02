@@ -4,6 +4,7 @@ import { toPx } from '../../src/core/constants';
 import { Input } from '../../src/core/input';
 import type { GameState } from '../../src/core/state';
 import { SAPHIR } from '../../src/data/fighters/saphir';
+import { WATT } from '../../src/data/fighters/watt';
 import { TRAINING_STAGE } from '../../src/data/stages';
 import {
   atHoldTick,
@@ -20,6 +21,8 @@ import {
 const { Left, Light, Heavy, Special, Grab } = Input;
 /** Her help counts her knees (src/data/texts/saphir.ts): three, one against a struggle. */
 const SAPHIR_MIRROR: MatchConfig = { stage: TRAINING_STAGE, fighters: [SAPHIR, SAPHIR] };
+/** Two Serrages of 18, then the Déchargement, 120 (docs/watt.md §6). */
+const WATT_MIRROR: MatchConfig = { stage: TRAINING_STAGE, fighters: [WATT, WATT] };
 
 /**
  * What the holder does (docs/combat-v2.md §4.2 to §4.4, §15 Phase 2): pummels against the
@@ -38,6 +41,7 @@ describe('pummels (§4.2.9)', () => {
     { config: NAYO_MIRROR, most: 2, total: 130 },
     { config: RIFF_MIRROR, most: 3, total: 115 },
     { config: SAPHIR_MIRROR, most: 3, total: 110 },
+    { config: WATT_MIRROR, most: 2, total: 156 },
   ])(
     '$config.fighters.0.name lands $most at most without a struggle, then throws: $total',
     ({ config, most, total }) => {
@@ -56,6 +60,7 @@ describe('pummels (§4.2.9)', () => {
     { config: NAYO_MIRROR, most: 1 },
     { config: RIFF_MIRROR, most: 2 },
     { config: SAPHIR_MIRROR, most: 1 },
+    { config: WATT_MIRROR, most: 1 },
   ])(
     '$config.fighters.0.name lands $most against the fastest struggle (the floor of 36)',
     ({ config, most }) => {

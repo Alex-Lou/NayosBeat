@@ -15,6 +15,7 @@ import {
   RIFF_SCRIPT,
   SAPHIR_SCRIPT,
   scriptOf,
+  WATT_SCRIPT,
 } from '../../src/render/finisher-scripts';
 import {
   FIVE_SECONDS,
@@ -45,7 +46,16 @@ import { SignatureFx } from '../../src/render/signature-fx';
 import { PLATINE, signatureOf } from '../../src/render/signatures';
 import { koVeil, VEIL_DELTA } from '../../src/render/veils';
 import type { FighterId } from '../../src/data/roster';
-import { armed, FACE_B, film, LARSEN, LE_QUATRE, type Route } from './finisher-harness';
+import {
+  armed,
+  COUVRE_FEU,
+  FACE_B,
+  film,
+  GREY_BOXES,
+  LARSEN,
+  LE_QUATRE,
+  type Route,
+} from './finisher-harness';
 import { fxStrips, outlineRings } from './fx-strips';
 import { fakeScene } from './hud-fakes';
 import { liveScene } from './live-fakes';
@@ -251,7 +261,8 @@ function counted(route: Route, mode: FlashMode, shake: Comfort['shake'] = 'norma
   const ringBefore: [Set<number>, Set<number>] = [new Set(), new Set()];
   const flatShown = vi.spyOn(FinisherProps.prototype, 'showFlat');
   const styles = [hitStyleOf(route.fighters[0]), hitStyleOf(route.fighters[1])] as const;
-  const arts = route.fighters.map((id) => drawnArt(id));
+  // A fighter in grey boxes shows only its box's silhouette: no effects, no outline (fighter-view).
+  const arts = route.fighters.map((id) => (GREY_BOXES.has(id) ? undefined : drawnArt(id)));
   const { config } = armed(route);
   const hud = new Hud(
     fakeScene().scene,
@@ -296,9 +307,10 @@ function counted(route: Route, mode: FlashMode, shake: Comfort['shake'] = 'norma
     stage: GREYBOX_COLORS,
     colors: [...energies, PLATINE],
     budget,
+    // A box lights nothing under a live light (FightScene).
     fighterAreas: [
-      fighterLightArea(route.fighters[0], 'main'),
-      fighterLightArea(route.fighters[1], 'main'),
+      arts[0] ? fighterLightArea(route.fighters[0], 'main') : 0,
+      arts[1] ? fighterLightArea(route.fighters[1], 'main') : 0,
     ],
     groundY: GROUND_Y,
   });
@@ -349,7 +361,8 @@ function counted(route: Route, mode: FlashMode, shake: Comfort['shake'] = 'norma
       feedback.update(1);
       lightRig.update(state, 1, director.isActive());
       for (const player of [0, 1] as const) {
-        const art = arts[player] as FighterArt;
+        const art = arts[player];
+        if (!art) continue;
         showFighter(state, player, config, art, shown);
         const pose = director.lookOf(player).pose;
         if (pose) {
@@ -450,6 +463,9 @@ const REGISTRY: readonly {
   // The reprise's éclat, the card. Her outline, wide around the tornado (OUTLINE_AREAS), would
   // be a flash of its own on DOUM: refused, it is drawn in the tone that never flashes.
   { route: FACE_B, scene: [107, 137], outline: null, blood: 2, reduced: [137], rings: 0 },
+  // The landing's éclat, the card. In grey boxes until his art (docs/watt.md): no outline drawn
+  // around his box.
+  { route: COUVRE_FEU, scene: [116, 146], outline: null, blood: 1, reduced: [146], rings: 0 },
 ];
 
 describe("the Finisher's flashes, as shown (§4.3, §5.8 test 15)", () => {
@@ -511,7 +527,7 @@ describe("the Finisher's flashes, as shown (§4.3, §5.8 test 15)", () => {
 });
 
 describe('the colors the scene lays (§4.2)', () => {
-  const scripts = [NAYO_SCRIPT, RIFF_SCRIPT, SAPHIR_SCRIPT];
+  const scripts = [NAYO_SCRIPT, RIFF_SCRIPT, SAPHIR_SCRIPT, WATT_SCRIPT];
 
   it('lays flats that are never a flash over the sky or the ground, nor a saturated red', () => {
     for (const script of scripts) {
@@ -534,6 +550,8 @@ describe('the colors the scene lays (§4.2)', () => {
       hitStyleOf('riff', 'alt').energy,
       hitStyleOf('saphir').energy,
       hitStyleOf('saphir', 'alt').energy,
+      hitStyleOf('watt').energy,
+      hitStyleOf('watt', 'alt').energy,
     ];
     for (const energy of energies) {
       const look = koVeil('finale', energy, GREYBOX_COLORS);

@@ -16,6 +16,7 @@ import {
   SAPHIR_SCRIPT,
   scriptOf,
   timelineOf,
+  WATT_SCRIPT,
 } from '../../src/render/finisher-scripts';
 
 /**
@@ -37,6 +38,10 @@ describe("the Finisher's scripts", () => {
     // Saphir's held silence and reprise are Riff's (docs/saphir.md §7.2): no code of her own.
     expect([SAPHIR_SCRIPT.silence, SAPHIR_SCRIPT.zoomFrom]).toEqual(['hold', 'ko']);
     expect(SAPHIR_SCRIPT.card).toEqual({ text: 'FACE B.', rival: null, style: 'neon' });
+    // « Couvre-feu » counts nothing: the room goes dark on Riff's power cut (docs/watt.md §8).
+    expect(scriptOf('watt')).toBe(WATT_SCRIPT);
+    expect([WATT_SCRIPT.count, WATT_SCRIPT.shake, WATT_SCRIPT.powerCut]).toEqual([[], 'y', true]);
+    expect(WATT_SCRIPT.card).toEqual({ text: 'ON ÉTEINT.', rival: null, style: 'neon' });
   });
 
   it('raises the flat in 8 frames with the lock (12 kept still), and lets it go in 12', () => {

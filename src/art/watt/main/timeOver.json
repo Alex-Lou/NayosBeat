@@ -1,0 +1,29 @@
+{
+  "frames": {
+    "0": {
+      "frame": { "x": 0, "y": 0, "w": 107, "h": 168 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 107, "h": 168 },
+      "sourceSize": { "w": 107, "h": 168 }
+    },
+    "1": {
+      "frame": { "x": 107, "y": 0, "w": 107, "h": 168 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 107, "h": 168 },
+      "sourceSize": { "w": 107, "h": 168 }
+    },
+    "2": {
+      "frame": { "x": 0, "y": 168, "w": 107, "h": 168 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 107, "h": 168 },
+      "sourceSize": { "w": 107, "h": 168 }
+    },
+    "3": {
+      "frame": { "x": 107, "y": 168, "w": 107, "h": 168 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 107, "h": 168 },
+      "sourceSize": { "w": 107, "h": 168 }
+    }
+  },
+  "meta": { "image": "timeOver.png", "size": { "w": 214, "h": 336 } }
+}

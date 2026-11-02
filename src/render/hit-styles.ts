@@ -45,6 +45,11 @@ const STYLES: Readonly<Record<FighterId, Readonly<Record<Colorway, HitStyle>>>> 
     main: { shape: 'slash', energy: 0x3a6cf0, strike: 0xf0e2bc, core: 0xf4f6ff },
     alt: { shape: 'slash', energy: 0xc0a0ff, strike: 0xf0e2bc, core: 0xf8f4ff },
   },
+  // Watt: the clamps that close, in VU green; UV in his second outfit (docs/watt.md §9).
+  watt: {
+    main: { shape: 'claw', energy: 0x1ec85a, strike: 0xd8ffe6, core: 0xffffff },
+    alt: { shape: 'claw', energy: 0xe070ff, strike: 0xd8ffe6, core: 0xffffff },
+  },
 };
 
 export function hitStyleOf(fighter: FighterId, colorway: Colorway = 'main'): HitStyle {

@@ -281,11 +281,53 @@ const SAPHIR_PLANS: readonly Plan[] = [
   { after: 'standHeavy', when: spending(64, BOOST_MAX), steps: [B | X], weight: SPEND },
 ];
 
+/**
+ * Watt's plans: his routes of docs/watt.md §6, short phrases that end on the floor near him
+ * (« lentement, puis dans les bras »), the juggle his Soulevé opens, Plein feu to end them.
+ */
+const WATT_PLANS: readonly Plan[] = [
+  // The beginner's two: L, L, L, and L, H then the Coup de jus.
+  { after: 'standLight', when: HIT, steps: [L, L], weight: EASY },
+  { after: 'standLight', when: HIT, steps: [H, S], weight: EASY },
+  // His strings: the Crochet court into the Marteau, its Double marteau, the Coup de jus or the
+  // Surcharge; or into the Coup de masse, then the Coup de jus.
+  { after: 'standLight', when: within(43), steps: [L, H, H], weight: STRING },
+  { after: 'standLight', when: HIT, steps: [L, H, S], weight: STRING },
+  { after: 'standLight', when: HIT, steps: [L, H, F | S], weight: STRING },
+  { after: 'standLight', when: HIT, steps: [L, F | H, S], weight: STRING },
+  // The Soulevé, then the Plafonnier, or L, L, L on the body in the air: farther, they drop on
+  // some opponent.
+  { after: 'standLight', when: within(42), steps: [L, B | H, D | S], weight: JUGGLE },
+  { after: 'standLight', when: within(40), steps: [L, B | H, L, L, L], weight: JUGGLE },
+  { after: 'forwardLight', when: HIT, steps: [L, L], weight: EASY },
+  // The Marteau: the Coup de jus, or its Double marteau, from closer than its tip.
+  { after: 'standHeavy', when: within(54), steps: [S], weight: STRING },
+  { after: 'standHeavy', when: within(49), steps: [H], weight: STRING },
+  // The Arraché from an anti-air: the Plafonnier slams the body down.
+  { after: 'backHeavy', when: within(38), steps: [D | S], weight: EASY },
+  // With the gauge (docs/watt.md §7): the Coup de jus or the Surcharge survoltés to end the
+  // string, the Rallumage that starts it over, Plein feu. Past 47 px his Paume no longer lands.
+  // Plein feu is a short reversal (58 px): each route to it is drawn only from as far as it
+  // locks and knocks out, armed, on every opponent.
+  { after: 'standLight', when: spending(47, BOOST_BAR), steps: [L, H, X], weight: REMIX },
+  { after: 'standLight', when: spending(47, BOOST_BAR), steps: [L, H, F | X], weight: REMIX },
+  {
+    after: 'standLight',
+    when: spending(47, BOOST_BAR),
+    steps: [L, H, R, L, L, H, S],
+    weight: SPEND,
+  },
+  { after: 'standLight', when: spending(31, BOOST_MAX), steps: [L, H, H, B | X], weight: SPEND },
+  { after: 'standLight', when: spending(41, BOOST_MAX), steps: [L, H, B | X], weight: SPEND },
+  { after: 'standHeavy', when: spending(37, BOOST_MAX), steps: [H, B | X], weight: SPEND },
+];
+
 /** Each fighter's plans, by its name. */
 export const PLANS: Readonly<Record<string, readonly Plan[]>> = {
   Nayo: NAYO_PLANS,
   Riff: RIFF_PLANS,
   Saphir: SAPHIR_PLANS,
+  Watt: WATT_PLANS,
 };
 
 /** What the CPU knows of its move, once it has connected and the game moves again. */

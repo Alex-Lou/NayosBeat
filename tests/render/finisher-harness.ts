@@ -9,6 +9,7 @@ import { step } from '../../src/core/step';
 import { NAYO } from '../../src/data/fighters/nayo';
 import { RIFF } from '../../src/data/fighters/riff';
 import { SAPHIR } from '../../src/data/fighters/saphir';
+import { WATT } from '../../src/data/fighters/watt';
 import type { FighterId } from '../../src/data/roster';
 import { TRAINING_STAGE } from '../../src/data/stages';
 import {
@@ -63,7 +64,7 @@ export interface Route {
 
 /**
  * Nayo's « Le Quatre » after L, L, H, H; Riff's « Larsen » after H (§4.3); Saphir's « Face B »
- * after L, L, H, H (docs/saphir.md §7).
+ * after L, L, H, H (docs/saphir.md §7); Watt's « Couvre-feu » after his Marteau (docs/watt.md §8).
  */
 export const LE_QUATRE: Route = {
   name: 'Le Quatre',
@@ -86,6 +87,16 @@ export const FACE_B: Route = {
   distance: 40,
   steps: [L, L, H, H, B | X],
 };
+export const COUVRE_FEU: Route = {
+  name: 'Couvre-feu',
+  fighters: ['watt', 'nayo'],
+  templates: [WATT, NAYO],
+  distance: 40,
+  steps: [H, B | X],
+};
+
+/** The fighters on the roster without art yet (docs/watt.md): the owner's call. */
+export const GREY_BOXES: ReadonlySet<FighterId> = new Set<FighterId>(['watt']);
 
 /** One frame on the screen. */
 export interface Shot {
@@ -200,7 +211,8 @@ export function film(route: Route, take: Take = {}): Film {
   const styles = [hitStyleOf(route.fighters[0]), hitStyleOf(route.fighters[1])] as const;
   const arts = route.fighters.map((id) => {
     const art = artOf(id);
-    if (!art) throw new Error(`${id} has no art`);
+    // A fighter in grey boxes until his art plays his Finisher without one, as in the game.
+    if (!art && !GREY_BOXES.has(id)) throw new Error(`${id} has no art`);
     return art;
   });
   const director = new FinisherScene(scene, {

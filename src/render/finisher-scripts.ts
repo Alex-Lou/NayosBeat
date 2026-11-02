@@ -234,10 +234,36 @@ export const SAPHIR_SCRIPT: FinisherScript = {
   ],
 };
 
+/** Watt's « Couvre-feu » (docs/watt.md §8): the room goes dark, then his bulb. */
+export const WATT_SCRIPT: FinisherScript = {
+  fighter: 'watt',
+  name: 'COUVRE-FEU',
+  count: [],
+  stretch: 0,
+  silence: 'flight',
+  zoomFrom: 'charge',
+  flats: { main: 0x0b2a18, alt: 0x2a0e3a },
+  flatLeaves: 'cardEnd',
+  card: { text: 'ON ÉTEINT.', rival: null, style: 'neon' },
+  shake: 'y',
+  cone: false,
+  crowd: false,
+  needle: false,
+  shards: false,
+  powerCut: true,
+  hush: { from: 9, fade: 6, muffled: false },
+  cues: [
+    { moment: 'ko', at: 0, sound: 'heavyHit' },
+    { moment: 'release', at: 0, sound: 'fall' },
+    { moment: 'cardEnd', at: -1, sound: 'super' },
+  ],
+};
+
 const SCRIPTS: Readonly<Record<FighterId, FinisherScript>> = {
   nayo: NAYO_SCRIPT,
   riff: RIFF_SCRIPT,
   saphir: SAPHIR_SCRIPT,
+  watt: WATT_SCRIPT,
 };
 
 export function scriptOf(fighter: FighterId): FinisherScript {

@@ -97,7 +97,7 @@ describe('the Finisher signal (docs/finisher.md §1.2)', () => {
     expect(finisherState(state, 1, config)).toBe('ready');
   });
 
-  it("plays each fighter's siren in its own key: Nayo's do, Riff's mi, Saphir's ré", () => {
+  it("plays each fighter's siren in its own key: Nayo's do, Riff's mi, Saphir's ré, Watt's fa", () => {
     expect(sirenPitchOf('nayo')).toBe(1);
     expect(262 * sirenPitchOf('riff')).toBeCloseTo(330, 6);
     // Her fifth, si: within a hertz of 494 Hz.
@@ -105,5 +105,8 @@ describe('the Finisher signal (docs/finisher.md §1.2)', () => {
     // Saphir's ré, and its fifth, la (docs/saphir.md §7.4): within a hertz of 440 Hz.
     expect(262 * sirenPitchOf('saphir')).toBeCloseTo(294, 6);
     expect(Math.abs(392 * sirenPitchOf('saphir') - 440)).toBeLessThan(1);
+    // Watt's fa (docs/watt.md §13), and its fifth, do: within a hertz of 523 Hz.
+    expect(262 * sirenPitchOf('watt')).toBeCloseTo(349, 6);
+    expect(Math.abs(392 * sirenPitchOf('watt') - 523)).toBeLessThan(1);
   });
 });
