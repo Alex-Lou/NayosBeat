@@ -1,16 +1,17 @@
 import type Phaser from 'phaser';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { hudComfortOf } from '../../src/app/comfort';
-import { NAYO as NAYO_ART, NAYO_ALT } from '../../src/art/nayo';
-import { RIFF as RIFF_ART } from '../../src/art/riff';
+import { artOf } from '../../src/art';
 import { ART_SCALE, clipOf, effectsOf, type FighterArt } from '../../src/art/types';
 import type { Sfx } from '../../src/audio/sfx';
-import type { MatchConfig } from '../../src/core/config';
+import type { FighterTemplate, MatchConfig } from '../../src/core/config';
 import { px, toPx } from '../../src/core/constants';
 import { Input, type InputBits } from '../../src/core/input';
 import type { FighterState } from '../../src/core/state';
 import { NAYO } from '../../src/data/fighters/nayo';
 import { RIFF } from '../../src/data/fighters/riff';
+import { SAPHIR } from '../../src/data/fighters/saphir';
+import { ROSTER, type FighterId } from '../../src/data/roster';
 import { TRAINING_STAGE } from '../../src/data/stages';
 import { clipFrameAt, showFighter, type Shown } from '../../src/render/animation';
 import {
@@ -141,6 +142,8 @@ const SILENT = { play: () => undefined } as unknown as Sfx;
 const NR: MatchConfig = { stage: TRAINING_STAGE, fighters: [NAYO, RIFF] };
 const RN: MatchConfig = { stage: TRAINING_STAGE, fighters: [RIFF, NAYO] };
 const NN: MatchConfig = { stage: TRAINING_STAGE, fighters: [NAYO, NAYO] };
+const SN: MatchConfig = { stage: TRAINING_STAGE, fighters: [SAPHIR, NAYO] };
+const SS: MatchConfig = { stage: TRAINING_STAGE, fighters: [SAPHIR, SAPHIR] };
 
 type Overrides = Partial<FighterState>;
 interface Route {
@@ -233,6 +236,38 @@ const ROUTES: readonly Route[] = [
     attacker: { health: 30 },
     victim: { health: 30 },
   },
+  // Saphir: her heavy string out on the Syncope, the Reprise, the Coda that knocks out, and the
+  // mirror, player 2 in her second colorway.
+  { name: 'Saphir L, L, H, H, S', config: SN, distance: 40, steps: [L, L, H, H, S] },
+  {
+    name: 'Saphir Reprise',
+    config: SN,
+    distance: 40,
+    steps: [L, L, H, Dash, L, L, H, H, S],
+    attacker: { boost: 1000 },
+  },
+  {
+    name: 'Saphir L, L, H, H, ←BOOST, KO',
+    config: SN,
+    distance: 40,
+    steps: [L, L, H, H, B | X],
+    attacker: { boost: 3000 },
+    victim: { health: 280 },
+  },
+  {
+    name: 'Saphir Coda, KO',
+    config: SN,
+    distance: 50,
+    steps: [B | X],
+    attacker: { boost: 3000 },
+    victim: { health: 200 },
+  },
+  {
+    name: 'Saphir, Saphir: L, L, H, H, →S',
+    config: SS,
+    distance: 40,
+    steps: [L, L, H, H, F | S],
+  },
 ];
 
 /** The pixels of each frame of each strip of front effects, by fighter. */
@@ -240,13 +275,29 @@ const STRIPS = new Map<FighterArt, Map<string, Uint8ClampedArray[]>>();
 /** What a frame of a strip lights over another (or over nothing), by fighter and `sheet#from>to`. */
 const ANEW = new Map<FighterArt, Map<string, number>>();
 
+/** The id of `fighter` on the roster. */
+function idOf(fighter: FighterTemplate): FighterId {
+  const entry = ROSTER.find(({ template }) => template === fighter);
+  if (!entry) throw new Error(`${fighter.name} is not on the roster`);
+  return entry.id;
+}
+
+/** The art of `fighter` in `colorway`: every fighter of the routes has its own. */
+function drawnArt(fighter: FighterId, colorway: 'main' | 'alt'): FighterArt {
+  const art = artOf(fighter, colorway);
+  if (!art) throw new Error(`${fighter} has no art in ${colorway}`);
+  return art;
+}
+
 beforeAll(async () => {
-  for (const [art, fighter, colorway] of [
-    [NAYO_ART, 'nayo', 'main'],
-    [NAYO_ALT, 'nayo', 'alt'],
-    [RIFF_ART, 'riff', 'main'],
+  for (const [fighter, colorway] of [
+    ['nayo', 'main'],
+    ['nayo', 'alt'],
+    ['riff', 'main'],
+    ['saphir', 'main'],
+    ['saphir', 'alt'],
   ] as const) {
-    STRIPS.set(art, new Map(await fxStrips(fighter, colorway)));
+    STRIPS.set(drawnArt(fighter, colorway), new Map(await fxStrips(fighter, colorway)));
   }
 });
 
@@ -319,12 +370,12 @@ function looksOf(config: MatchConfig): {
   arts: readonly [FighterArt, FighterArt];
 } {
   const [first, second] = config.fighters;
-  const of = (fighter: { readonly name: string }, colorway: 'main' | 'alt') =>
-    fighter.name === 'Riff'
-      ? { style: hitStyleOf('riff', colorway), art: RIFF_ART }
-      : { style: hitStyleOf('nayo', colorway), art: colorway === 'main' ? NAYO_ART : NAYO_ALT };
+  const of = (fighter: FighterTemplate, colorway: 'main' | 'alt') => ({
+    style: hitStyleOf(idOf(fighter), colorway),
+    art: drawnArt(idOf(fighter), colorway),
+  });
   const a = of(first, 'main');
-  const b = of(second, first.name === second.name ? 'alt' : 'main');
+  const b = of(second, first === second ? 'alt' : 'main');
   return { styles: [a.style, b.style], arts: [a.art, b.art] };
 }
 
@@ -401,7 +452,7 @@ function play(route: Route, mode: FlashMode): Played {
   lightRig.live = true;
   const colorway = (player: 0 | 1) =>
     player === 1 && config.fighters[0] === config.fighters[1] ? 'alt' : 'main';
-  const nameOf = (player: 0 | 1) => (config.fighters[player] === NAYO ? 'nayo' : 'riff');
+  const nameOf = (player: 0 | 1) => idOf(config.fighters[player]);
   const lightShow = new LightShow(liveScene(), {
     stage: FIGHT_STAGE_COLORS,
     colors: [...energies, PLATINE],
@@ -589,6 +640,12 @@ describe('the flashes of the combo routes, as shown (docs/flashs.md §4)', () =>
     expect(played.flashes).toHaveLength(3);
     const reduced = play(route('Nayo Mégabasse, KO'), 'reduced');
     expect(reduced.sparks.at(-1)).toBe('ko');
+  });
+
+  it("plays the Coda's blows before its last smaller, then its KO, the flashes normal", () => {
+    const played = play(route('Saphir Coda, KO'), 'normal');
+    expect(played.sparks).toEqual(['pulse', 'pulse', 'ko']);
+    expect(played.flashes.length).toBeLessThanOrEqual(3);
   });
 
   it('flashes once at most on light blows five a second, close up: only their heavy end may', () => {

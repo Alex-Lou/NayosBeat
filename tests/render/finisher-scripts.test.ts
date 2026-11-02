@@ -13,6 +13,7 @@ import {
   POWER_CUT,
   powerCutOf,
   RIFF_SCRIPT,
+  SAPHIR_SCRIPT,
   scriptOf,
   timelineOf,
 } from '../../src/render/finisher-scripts';
@@ -25,12 +26,17 @@ import {
 const MEASURE = { freeze: 22, flight: 23 } as const;
 
 describe("the Finisher's scripts", () => {
-  it('names each fighter’s: « Le Quatre » counts UN, DEUX, TROIS, « Larsen » does not', () => {
+  it('names each fighter’s: « Le Quatre » counts UN, DEUX, TROIS, « Larsen » does not, « Face B » DOU, BI, DOUM', () => {
     expect(scriptOf('nayo')).toBe(NAYO_SCRIPT);
     expect(scriptOf('riff')).toBe(RIFF_SCRIPT);
+    expect(scriptOf('saphir')).toBe(SAPHIR_SCRIPT);
     expect(NAYO_SCRIPT.count).toEqual(['UN', 'DEUX', 'TROIS']);
-    expect([NAYO_SCRIPT.shake, RIFF_SCRIPT.shake]).toEqual(['x', 'y']);
+    expect(SAPHIR_SCRIPT.count).toEqual(['DOU', 'BI', 'DOUM']);
+    expect([NAYO_SCRIPT.shake, RIFF_SCRIPT.shake, SAPHIR_SCRIPT.shake]).toEqual(['x', 'y', 'x']);
     expect(RIFF_SCRIPT.card.rival?.text).toBe("T'AS RATÉ UN TEMPS.");
+    // Saphir's held silence and reprise are Riff's (docs/saphir.md §7.2): no code of her own.
+    expect([SAPHIR_SCRIPT.silence, SAPHIR_SCRIPT.zoomFrom]).toEqual(['hold', 'ko']);
+    expect(SAPHIR_SCRIPT.card).toEqual({ text: 'FACE B.', rival: null, style: 'neon' });
   });
 
   it('raises the flat in 8 frames with the lock (12 kept still), and lets it go in 12', () => {

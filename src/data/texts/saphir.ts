@@ -31,11 +31,11 @@ export const SAPHIR_TEXTS: FighterTexts = {
   moves: {
     special: {
       input: SPECIAL,
-      text: 'Un pas de swing, la jambe passe par-dessus sa tête et retombe de loin, puis elle repart aussitôt en arrière. Paré tout près, il se punit ; au bout de sa portée, elle est déjà loin.',
+      text: 'Un pas de swing, la jambe passe par-dessus sa tête et retombe de loin, puis elle repart aussitôt en arrière. Parée tout près, la Syncope se punit ; au bout de sa portée, Saphir est déjà loin.',
     },
     specialForward: {
       input: 'Avant + S',
-      text: "Elle retient son poids, puis fond sur toi et fouette, en retard exprès. Il punit un coup raté de très loin et met au sol. Un projectile l'arrête en route.",
+      text: "Elle retient son poids, puis fond sur l'adversaire et fouette, en retard exprès. Il punit un coup raté de très loin et met au sol. Un projectile l'arrête en route.",
     },
     specialAntiAir: {
       input: ANTI_AIR,
@@ -75,7 +75,7 @@ export const SAPHIR_TEXTS: FighterTexts = {
     },
     standHeavy: {
       input: 'H',
-      text: 'La semelle en avant, la jambe tendue. La plus longue portée du jeu sans bouger : gagne les échanges de pieds. H encore donne le Chassé arrière, arrière + H la Chandelle, ou enchaîne sur un spécial.',
+      text: 'La semelle en avant, la jambe tendue. La plus longue portée du jeu sans bouger : gagne les échanges de pieds. H encore donne le Chassé arrière, bas + H la Fauche, arrière + H la Chandelle, ou enchaîne sur un spécial.',
     },
     chainHeavy: {
       input: CHAIN_HEAVY,
@@ -119,7 +119,7 @@ export const SAPHIR_TEXTS: FighterTexts = {
     },
     pummel: {
       input: PUMMEL,
-      text: 'Des petits coups de genou au plexus. Deux au plus avant que la prise lâche.',
+      text: "Des petits coups de genou au plexus. Trois au plus avant que la prise lâche ; un seul si l'adversaire se débat.",
     },
     throwForward: {
       input: THROW_FORWARD,

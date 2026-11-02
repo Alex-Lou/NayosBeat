@@ -1,8 +1,7 @@
 import type Phaser from 'phaser';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { hudComfortOf, type Comfort } from '../../src/app/comfort';
-import { NAYO as NAYO_ART, NAYO_ALT } from '../../src/art/nayo';
-import { RIFF as RIFF_ART } from '../../src/art/riff';
+import { artOf } from '../../src/art';
 import { ART_SCALE, clipOf, effectsOf, type FighterArt } from '../../src/art/types';
 import type { Sfx } from '../../src/audio/sfx';
 import { toPx } from '../../src/core/constants';
@@ -10,8 +9,13 @@ import type { GameState } from '../../src/core/state';
 import { clipFrameAt, showFighter, type Shown } from '../../src/render/animation';
 import { FightFeedback } from '../../src/render/fight-feedback';
 import { FinisherProps } from '../../src/render/finisher-props';
-import { OUTLINE_AREA, type FinisherScene } from '../../src/render/finisher-scene';
-import { NAYO_SCRIPT, RIFF_SCRIPT } from '../../src/render/finisher-scripts';
+import { OUTLINE_AREAS, type FinisherScene } from '../../src/render/finisher-scene';
+import {
+  NAYO_SCRIPT,
+  RIFF_SCRIPT,
+  SAPHIR_SCRIPT,
+  scriptOf,
+} from '../../src/render/finisher-scripts';
 import {
   FIVE_SECONDS,
   FLASH_MERGE,
@@ -40,7 +44,8 @@ import { fighterLightArea } from '../../src/render/live-lights';
 import { SignatureFx } from '../../src/render/signature-fx';
 import { PLATINE, signatureOf } from '../../src/render/signatures';
 import { koVeil, VEIL_DELTA } from '../../src/render/veils';
-import { armed, film, LARSEN, LE_QUATRE, type Route } from './finisher-harness';
+import type { FighterId } from '../../src/data/roster';
+import { armed, FACE_B, film, LARSEN, LE_QUATRE, type Route } from './finisher-harness';
 import { fxStrips, outlineRings } from './fx-strips';
 import { fakeScene } from './hud-fakes';
 import { liveScene } from './live-fakes';
@@ -139,18 +144,24 @@ const STRIPS = new Map<FighterArt, Map<string, Uint8ClampedArray[]>>();
 /** The outline of each frame of each body strip, by fighter (the same shape in every colorway). */
 const RINGS = new Map<FighterArt, Map<string, Int16Array[]>>();
 
+/** The art of `fighter` in `colorway`: every fighter of the routes has its own. */
+function drawnArt(fighter: FighterId, colorway: 'main' | 'alt' = 'main'): FighterArt {
+  const art = artOf(fighter, colorway);
+  if (!art) throw new Error(`${fighter} has no art in ${colorway}`);
+  return art;
+}
+
 beforeAll(async () => {
-  for (const [art, fighter, colorway] of [
-    [NAYO_ART, 'nayo', 'main'],
-    [NAYO_ALT, 'nayo', 'alt'],
-    [RIFF_ART, 'riff', 'main'],
+  for (const [fighter, colorway] of [
+    ['nayo', 'main'],
+    ['nayo', 'alt'],
+    ['riff', 'main'],
+    ['saphir', 'main'],
   ] as const) {
-    STRIPS.set(art, new Map(await fxStrips(fighter, colorway)));
+    STRIPS.set(drawnArt(fighter, colorway), new Map(await fxStrips(fighter, colorway)));
   }
-  for (const [art, fighter] of [
-    [NAYO_ART, 'nayo'],
-    [RIFF_ART, 'riff'],
-  ] as const) {
+  for (const fighter of ['nayo', 'riff', 'saphir'] as const) {
+    const art = drawnArt(fighter);
     const rings = new Map<string, Int16Array[]>();
     for (const clip of Object.values(art.clips)) {
       if (!rings.has(clip.sheet))
@@ -211,7 +222,7 @@ function counted(route: Route, mode: FlashMode, shake: Comfort['shake'] = 'norma
   const climaxes: number[] = [];
   let now = 0;
   const show = budget.show.bind(budget);
-  // The outline's ask is a bound (OUTLINE_AREA): what it lights is measured instead, below.
+  // The outline's ask is a bound (OUTLINE_AREAS): what it lights is measured instead, below.
   let outlineAsks = false;
   budget.show = (area: number, delay?: number) => {
     show(area, delay);
@@ -220,7 +231,7 @@ function counted(route: Route, mode: FlashMode, shake: Comfort['shake'] = 'norma
   };
   const admit = budget.admit.bind(budget);
   budget.admit = (area: number) => {
-    outlineAsks = area === OUTLINE_AREA;
+    outlineAsks = area === OUTLINE_AREAS[route.fighters[0]];
     const answer = admit(area);
     outlineAsks = false;
     return answer;
@@ -234,13 +245,13 @@ function counted(route: Route, mode: FlashMode, shake: Comfort['shake'] = 'norma
   };
   let zoom = 1.45;
   const comfort = { flashes: mode, shake, staging: 'full' } as const;
-  const flat = (route.fighters[0] === 'nayo' ? NAYO_SCRIPT : RIFF_SCRIPT).flats.main;
+  const flat = scriptOf(route.fighters[0]).flats.main;
   const outlines = new Map<number, number>();
   // What each outline lit on the frame before (view keys), and the flat under it, as shown.
   const ringBefore: [Set<number>, Set<number>] = [new Set(), new Set()];
   const flatShown = vi.spyOn(FinisherProps.prototype, 'showFlat');
   const styles = [hitStyleOf(route.fighters[0]), hitStyleOf(route.fighters[1])] as const;
-  const arts = route.fighters.map((id) => (id === 'nayo' ? NAYO_ART : RIFF_ART));
+  const arts = route.fighters.map((id) => drawnArt(id));
   const { config } = armed(route);
   const hud = new Hud(
     fakeScene().scene,
@@ -421,11 +432,29 @@ function most(flashes: readonly number[], window: number): number {
   );
 }
 
+/**
+ * What each Finisher shows from its lock (t from the press): its own flashes, the frame its
+ * winner's outline lights on (null: never, the budget refuses it), the blood shed before it
+ * locked; with the flashes reduced, the flashes of its scene, and how many outlines light.
+ */
+const REGISTRY: readonly {
+  readonly route: Route;
+  readonly scene: readonly number[];
+  readonly outline: number | null;
+  readonly blood: number;
+  readonly reduced: readonly number[];
+  readonly rings: number;
+}[] = [
+  { route: LE_QUATRE, scene: [82, 142, 172], outline: 83, blood: 2, reduced: [172], rings: 0 },
+  { route: LARSEN, scene: [93, 123], outline: 51, blood: 1, reduced: [123], rings: 1 },
+  // The reprise's éclat, the card. Her outline, wide around the tornado (OUTLINE_AREAS), would
+  // be a flash of its own on DOUM: refused, it is drawn in the tone that never flashes.
+  { route: FACE_B, scene: [107, 137], outline: null, blood: 2, reduced: [137], rings: 0 },
+];
+
 describe("the Finisher's flashes, as shown (§4.3, §5.8 test 15)", () => {
-  for (const [route, own] of [
-    [LE_QUATRE, 3],
-    [LARSEN, 2],
-  ] as const) {
+  for (const { route, scene: measured, outline, blood: bled } of REGISTRY) {
+    const own = measured.length;
     it(`${route.name}: never more than the rules, ${own} at most of its own, 30 frames apart, no two climaxes in a second`, () => {
       const { flashes, climaxes, lock, outlines } = counted(route, 'normal');
       // From the combo's first blow: the budget's rules, at the zoom shown.
@@ -435,7 +464,7 @@ describe("the Finisher's flashes, as shown (§4.3, §5.8 test 15)", () => {
       expect(scene.length, scene.join(', ')).toBeLessThanOrEqual(own);
       // The registry (§4.3), measured: TROIS's rings, QUATRE's éclat, the card; the reprise's
       // éclat, the card. Its blows before the last stay under the threshold, at × 0.725.
-      expect(scene).toEqual(route === LE_QUATRE ? [82, 142, 172] : [93, 123]);
+      expect(scene).toEqual(measured);
       for (let i = 1; i < scene.length; i++) {
         expect((scene[i] ?? 0) - (scene[i - 1] ?? 0), scene.join(', ')).toBeGreaterThanOrEqual(30);
       }
@@ -446,22 +475,22 @@ describe("the Finisher's flashes, as shown (§4.3, §5.8 test 15)", () => {
       expect(climaxes.some((at) => at >= lock)).toBe(true);
       // The winner's outline lights once, as its silhouette darkens, within what it asked for:
       // never as it leaves, its pose moving (TROIS's flash takes it in; Riff's, alone, makes none).
-      expect([...outlines.keys()]).toEqual([route === LE_QUATRE ? 83 : 51]);
-      expect(Math.max(...outlines.values())).toBeLessThanOrEqual(OUTLINE_AREA);
+      expect([...outlines.keys()]).toEqual(outline === null ? [] : [outline]);
+      expect(Math.max(...outlines.values())).toBeLessThanOrEqual(OUTLINE_AREAS[route.fighters[0]]);
       // No blood once it locks: the close up would make it four times larger.
-      expect(blood).toHaveBeenCalledTimes(route === LE_QUATRE ? 2 : 1);
+      expect(blood).toHaveBeenCalledTimes(bled);
     });
   }
 
   it('shows less with the flashes reduced, nothing that flashes with them off', () => {
-    for (const route of [LE_QUATRE, LARSEN]) {
+    for (const { route, reduced: shown, rings } of REGISTRY) {
       const reduced = counted(route, 'reduced');
       expect(most(reduced.flashes, SECOND)).toBeLessThanOrEqual(FLASH_RULES.reduced.perSecond);
       // No flash counted out of the card (§4.5); Nayo's outline, which would make one with TROIS,
       // is refused and drawn in a tone that never flashes, Riff's lights alone, under the threshold.
       const scene = reduced.flashes.filter((at) => at >= reduced.lock);
-      expect(scene).toEqual(route === LE_QUATRE ? [172] : [123]);
-      expect(reduced.outlines.size).toBe(route === LE_QUATRE ? 0 : 1);
+      expect(scene).toEqual(shown);
+      expect(reduced.outlines.size).toBe(rings);
       expect(counted(route, 'off').flashes).toEqual([]);
     }
   });
@@ -471,17 +500,18 @@ describe("the Finisher's flashes, as shown (§4.3, §5.8 test 15)", () => {
     // Larsen's KO took a slot with the flashes reduced.
     expect(counted(LE_QUATRE, 'normal', 'off').flashes).toEqual([-33, -12, 82, 142, 172]);
     expect(counted(LARSEN, 'normal', 'off').flashes).toEqual([-12, 93, 123]);
-    for (const route of [LE_QUATRE, LARSEN]) {
+    expect(counted(FACE_B, 'normal', 'off').flashes).toEqual([-33, -11, 107, 137]);
+    for (const { route, reduced: shown } of REGISTRY) {
       const reduced = counted(route, 'reduced', 'off');
       const scene = reduced.flashes.filter((at) => at >= reduced.lock);
-      expect(scene).toEqual(route === LE_QUATRE ? [172] : [123]);
+      expect(scene).toEqual(shown);
       expect(reduced.climaxes).toEqual([]);
     }
   });
 });
 
 describe('the colors the scene lays (§4.2)', () => {
-  const scripts = [NAYO_SCRIPT, RIFF_SCRIPT];
+  const scripts = [NAYO_SCRIPT, RIFF_SCRIPT, SAPHIR_SCRIPT];
 
   it('lays flats that are never a flash over the sky or the ground, nor a saturated red', () => {
     for (const script of scripts) {
@@ -502,6 +532,8 @@ describe('the colors the scene lays (§4.2)', () => {
       hitStyleOf('nayo', 'alt').energy,
       hitStyleOf('riff').energy,
       hitStyleOf('riff', 'alt').energy,
+      hitStyleOf('saphir').energy,
+      hitStyleOf('saphir', 'alt').energy,
     ];
     for (const energy of energies) {
       const look = koVeil('finale', energy, GREYBOX_COLORS);

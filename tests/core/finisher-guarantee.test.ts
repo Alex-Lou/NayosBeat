@@ -5,6 +5,7 @@ import { Input, type InputBits } from '../../src/core/input';
 import type { GameState } from '../../src/core/state';
 import { NAYO } from '../../src/data/fighters/nayo';
 import { RIFF } from '../../src/data/fighters/riff';
+import { SAPHIR } from '../../src/data/fighters/saphir';
 import { damageOf, playCombo } from './combo-helpers';
 import {
   armedStart,
@@ -68,9 +69,23 @@ const ROUTES: readonly (readonly [FighterTemplate, FighterTemplate, readonly Rou
       ['alone', [B | X], [24, 36, 48]],
     ],
   ],
+  [
+    SAPHIR,
+    RIFF,
+    [
+      ['L, L, H, H', [L, L, H, H, B | X], [24, 36, 48]],
+      ['H', [H, B | X], [24, 36, 48]],
+      ['H, H', [H, H, B | X], [24, 36, 48]],
+      ['↓ + L', [D | L, B | X], [24, 36, 48]],
+      // The Chandelle sends the body up: the Coda's last blows would pass under it.
+      ['← + H', [B | H, B | X], [], [24, 36]],
+      ['L, L, ← + H', [L, L, B | H, B | X], [], [24, 36, 48]],
+      ['alone', [B | X], [24, 36, 48]],
+    ],
+  ],
 ];
 
-/** Every px from 14 apart to past the reach of both supers (about 75 and 90 px). */
+/** Every px from 14 apart to past the reach of every super (about 75, 86 and 90 px). */
 const DISTANCES = Array.from({ length: 83 }, (_, index) => 14 + index);
 
 /** The distances of the late cancels, and the latest: ticks after the opener's last step. */
@@ -169,6 +184,7 @@ describe('the guarantee on a victim caught jumping (§1.6, test 3)', () => {
     [NAYO, RIFF],
     [NAYO, NAYO],
     [RIFF, NAYO],
+    [SAPHIR, RIFF],
   ] as const) {
     it(`${attacker.name}'s super as an anti-air on ${victim.name}`, () => {
       const blows = blowsOf(attacker);
@@ -195,9 +211,10 @@ describe('the guarantee on a victim caught jumping (§1.6, test 3)', () => {
           }
         }
       }
-      // The Mégabasse locks on bodies in the air; the Slam never does (the fourth light, rule b).
-      if (attacker === NAYO) expect(caughtInTheAir).toBeGreaterThan(0);
-      else expect(caughtInTheAir).toBe(0);
+      // The Mégabasse and the Coda lock on bodies in the air; the Slam never does (the fourth
+      // light, rule b).
+      if (attacker === RIFF) expect(caughtInTheAir).toBe(0);
+      else expect(caughtInTheAir).toBeGreaterThan(0);
     });
   }
 });
