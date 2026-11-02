@@ -4,7 +4,7 @@
  * side it comes from. Built as a mask of simple volumes (head, torso, limbs), then shaded.
  */
 
-import { Canvas, Mask, at } from './canvas.ts';
+import { Canvas, Mask, at } from '../kit/canvas.ts';
 import { PERSON, SKIN } from './palette.ts';
 
 /** Where a figure's light comes from, and the ramp of its rim. */

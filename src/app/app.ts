@@ -4,19 +4,26 @@ import type { Sfx } from '../audio/sfx';
 import type { TrainingGauge, TrainingStart } from '../core/config';
 import { ROSTER, templateOf, type FighterId } from '../data/roster';
 import { ANIM_OPTIONS, LEGACY_ANIM } from '../render/anim-options';
-import type { Atmosphere, Moment, StageVariant, Weather } from '../art/stage-layers';
+import {
+  atmosphereName,
+  type Atmosphere,
+  type Moment,
+  type StageVariant,
+  type Weather,
+} from '../art/stage-layers';
+import { STAGE_MAPS } from '../art/stages';
 import type { FightScene, FightSceneData } from '../render/fight-scene';
 import { requestLandscapeFullscreen } from '../render/fullscreen';
 import type { RenderMode } from '../render/render-mode';
 import { DEFAULT_SILHOUETTE, type SilhouetteLook } from '../render/silhouette';
-import { stageVariantFor } from '../render/stage-view';
-import { STAGE_VARIANTS } from '../art/rue';
+import { RANDOM_STAGE, stageVariantFor, type StageChoice } from '../render/stage-view';
 import { controlsStore } from '../input/controls-store';
 import { isTouchDevice } from '../input/touch-controls';
 import { BindingsScreen, type BindingsTab } from '../ui/bindings-screen';
 import { TouchLayoutEditor } from '../ui/touch-layout-editor';
 import { FightCard } from '../ui/fight-card';
 import { FighterSelect } from '../ui/fighter-select';
+import { StageSelect } from '../ui/stage-select';
 import { element, Menu, type MenuFeedback, type MenuItem, type MenuOptions } from '../ui/menu';
 import { TitleScreen } from '../ui/title-screen';
 import {
@@ -54,6 +61,7 @@ import {
   type MatchSetup,
 } from './match-setup';
 import { SELECT_COLUMNS, SELECT_SLOTS, selectFighters } from './select-fighters';
+import { selectStages, STAGE_COLUMNS } from './select-stages';
 import { animLabel, DEFAULT_VIEWING, nextSlowdown, SLOWDOWN_LABELS, type Viewing } from './viewing';
 
 const FIGHT_SCENE = 'fight';
@@ -98,7 +106,7 @@ const POSITIONS: readonly {
   { position: 'rightCorner', label: 'coin droit', hint: 'Mannequin dos au mur de droite' },
 ];
 
-/** What training's « Décor » says of each moment and weather (docs/art/decor-rue.md §13). */
+/** What training's « Ambiance » says of each moment and weather (docs/art/decor-rue.md §13). */
 const MOMENT_LABELS: Readonly<Record<Moment, string>> = { midnight: 'minuit', dusk: 'crépuscule' };
 const WEATHER_LABELS: Readonly<Record<Weather, string>> = {
   clear: 'ciel clair',
@@ -106,15 +114,46 @@ const WEATHER_LABELS: Readonly<Record<Weather, string>> = {
   fog: 'brume',
 };
 
-/** Training's « Décor » choices, in the order the option cycles: at random, then each one. */
-const STAGE_CHOICES: readonly (Atmosphere | 'random')[] = [
-  'random',
-  ...STAGE_VARIANTS.map(({ atmosphere }) => atmosphere),
-];
+/** Training's « Lieu » choices, in the order the option cycles: at random, then each place. */
+const PLACE_CHOICES: readonly string[] = ['random', ...STAGE_MAPS.map(({ name }) => name)];
 
-function stageLabel(choice: Atmosphere | 'random'): string {
+function placeLabel(map: string): string {
+  if (map === 'random') return 'aléatoire';
+  return STAGE_MAPS.find(({ name }) => name === map)?.title ?? map;
+}
+
+/**
+ * Training's « Ambiance » choices for the place `map`, in the order the option cycles: at random,
+ * then each atmosphere it offers (at random among the places: any one of them offers).
+ */
+function atmosphereChoices(map: string): (Atmosphere | 'random')[] {
+  const offered = new Map<string, Atmosphere>();
+  for (const { name, variants } of STAGE_MAPS) {
+    if (map !== 'random' && name !== map) continue;
+    for (const { atmosphere } of variants) offered.set(atmosphereName(atmosphere), atmosphere);
+  }
+  return ['random', ...offered.values()];
+}
+
+function atmosphereKey(choice: Atmosphere | 'random'): string {
+  return choice === 'random' ? 'random' : atmosphereName(choice);
+}
+
+function atmosphereLabel(choice: Atmosphere | 'random'): string {
   if (choice === 'random') return 'aléatoire';
   return `${MOMENT_LABELS[choice.moment]}, ${WEATHER_LABELS[choice.weather]}`;
+}
+
+function sameChoice(a: StageChoice, b: StageChoice): boolean {
+  return a.map === b.map && atmosphereKey(a.atmosphere) === atmosphereKey(b.atmosphere);
+}
+
+/** `choice` at the place `map`: its atmosphere kept if the place offers it, else at random. */
+function placedAt(choice: StageChoice, map: string): StageChoice {
+  const offered = atmosphereChoices(map).some(
+    (atmosphere) => atmosphereKey(atmosphere) === atmosphereKey(choice.atmosphere),
+  );
+  return { map, atmosphere: offered ? choice.atmosphere : 'random' };
 }
 
 /**
@@ -156,13 +195,17 @@ export class App {
   /** Where the fight on screen started: its pause's « Position » changed, resuming starts over. */
   private startedPosition: TrainingStart = DEFAULT_SETUP.position;
   /**
-   * The stage the fights show, in the atmosphere drawn for them (docs/art/decor-rue.md §13): drawn
-   * anew for each new match, kept by « Revanche » and « Recommencer ».
+   * The stage the fights show, in the atmosphere drawn for them (docs/art/decor-rue.md §13, §14):
+   * drawn anew for each new match, kept by « Revanche » and « Recommencer ».
    */
   private stage: StageVariant | undefined;
-  /** Training's « Décor »: at random, or one atmosphere to look at; changed, resuming starts over. */
-  private trainingStage: Atmosphere | 'random' = 'random';
-  private startedStage: Atmosphere | 'random' = 'random';
+  /**
+   * Where the fights are held, as chosen on the « Lieu » screen (versus, training: its place) and
+   * in training's pause (« Lieu », « Ambiance »); against the computer, always at random. Changed
+   * in the pause, resuming starts over.
+   */
+  private stageChoice: StageChoice = RANDOM_STAGE;
+  private startedChoice: StageChoice = RANDOM_STAGE;
 
   constructor(
     private readonly root: HTMLElement,
@@ -553,7 +596,34 @@ export class App {
       this.chooseDummy();
       return;
     }
-    this.startFight();
+    this.chooseStage(() => {
+      this.chooseFighter(1);
+    });
+  }
+
+  /**
+   * The « Lieu » screen (docs/art/decor-rue.md §14), versus and training: « Aléatoire » or a place,
+   * its atmosphere at random (training's pause chooses it); then the fight. Skipped while the fights
+   * have one place or none. `back`: the screen before it.
+   */
+  private chooseStage(back: () => void): void {
+    if (STAGE_MAPS.length < 2) {
+      this.startFight();
+      return;
+    }
+    this.show(
+      new StageSelect(this.root, {
+        places: selectStages(),
+        columns: STAGE_COLUMNS,
+        initial: this.stageChoice.map,
+        onPick: (map) => {
+          this.stageChoice = placedAt(this.stageChoice, map);
+          this.startFight();
+        },
+        onBack: back,
+        feedback: this.menuFeedback,
+      }),
+    );
   }
 
   private chooseLevel(): void {
@@ -607,12 +677,14 @@ export class App {
       },
     };
     const items: MenuItem[] = [
-      ...DUMMIES.map(({ dummy, label, hint }) => ({
+      ...DUMMIES.map(({ dummy, label, hint }, index) => ({
         label,
         hint,
         onSelect: () => {
           this.setup = { ...this.setup, dummy };
-          this.startFight();
+          this.chooseStage(() => {
+            this.chooseDummy(index);
+          });
         },
       })),
       gaugeItem,
@@ -708,29 +780,56 @@ export class App {
         again(data);
       },
     };
-    const stageAt = STAGE_CHOICES.indexOf(this.trainingStage);
-    const decor: MenuItem = {
-      label: `Décor : ${stageLabel(this.trainingStage)}`,
-      hint: 'Le moment et la météo de la rue, dès la reprise',
+    const { map, atmosphere } = this.stageChoice;
+    const placeAt = PLACE_CHOICES.indexOf(map);
+    const place: MenuItem = {
+      label: `Lieu : ${placeLabel(map)}`,
+      hint: 'Où se battre, dès la reprise',
       onSelect: () => {
-        this.trainingStage = STAGE_CHOICES[(stageAt + 1) % STAGE_CHOICES.length] ?? 'random';
-        again(decor);
+        const next = PLACE_CHOICES[(placeAt + 1) % PLACE_CHOICES.length] ?? 'random';
+        this.stageChoice = placedAt(this.stageChoice, next);
+        again(place);
       },
     };
-    return STAGE_CHOICES.length > 2
-      ? [dummy, position, decor, boxes, data]
-      : [dummy, position, boxes, data];
+    const atmospheres = atmosphereChoices(map);
+    const atmosphereAt = atmospheres.findIndex(
+      (choice) => atmosphereKey(choice) === atmosphereKey(atmosphere),
+    );
+    const ambiance: MenuItem = {
+      label: `Ambiance : ${atmosphereLabel(atmosphere)}`,
+      hint: "L'heure et la météo, dès la reprise",
+      onSelect: () => {
+        const next = atmospheres[(atmosphereAt + 1) % atmospheres.length] ?? 'random';
+        this.stageChoice = { map, atmosphere: next };
+        again(ambiance);
+      },
+    };
+    return [
+      dummy,
+      position,
+      ...(PLACE_CHOICES.length > 2 ? [place] : []),
+      ...(atmospheres.length > 2 ? [ambiance] : []),
+      boxes,
+      data,
+    ];
   }
 
   /**
    * `again`: the same match once more (« Revanche », « Recommencer »), on the same stage; else a
-   * new one, its stage drawn anew (training: as its « Décor » says).
+   * new one, its stage drawn anew: against the computer, anywhere; in versus, at the place chosen;
+   * in training, as its « Lieu » and « Ambiance » say.
    */
   private startFight(again = false): void {
     if (!again || !this.stage) {
-      const chosen = this.setup.mode === 'training' ? this.trainingStage : 'random';
+      const { mode } = this.setup;
+      const chosen: StageChoice =
+        mode === 'cpu'
+          ? RANDOM_STAGE
+          : mode === 'versus'
+            ? { map: this.stageChoice.map, atmosphere: 'random' }
+            : this.stageChoice;
       this.stage = stageVariantFor(chosen);
-      this.startedStage = this.trainingStage;
+      this.startedChoice = this.stageChoice;
     }
     this.screen?.dispose();
     this.screen = undefined;
@@ -782,8 +881,8 @@ export class App {
   /** `initialIndex`: the item selected (the options', coming back from them). */
   private showPause(initialIndex = 0): void {
     const fight = this.game.scene.getScene(FIGHT_SCENE) as FightScene;
-    // Training: its « Décor » changed, the street is drawn anew as it now says.
-    const sameStage = () => this.trainingStage === this.startedStage;
+    // Training: its « Lieu » or « Ambiance » changed, the stage is drawn anew as they now say.
+    const sameStage = () => sameChoice(this.stageChoice, this.startedChoice);
     const resume = () => {
       // Training: both fighters go where « Position » now says, as « Recommencer » puts them.
       if (this.setup.position !== this.startedPosition || !sameStage()) {

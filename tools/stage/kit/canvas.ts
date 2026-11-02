@@ -1,9 +1,10 @@
 /**
- * The street's drawing surface: one palette slot a pixel (palette.ts), slot 0 transparent. Every
- * shape lands on whole pixels; nothing is blended.
+ * A stage's drawing surface: one slot of its palette a pixel (tools/stage/<stage>/palette.ts),
+ * slot 0 transparent in every one. Every shape lands on whole pixels; nothing is blended.
  */
 
-import { CLEAR } from './palette.ts';
+/** Slot 0: transparent, in every stage's palette. */
+const CLEAR = 0;
 
 /** Bounds of a clip: left and top included, right and bottom excluded. */
 export interface Bounds {

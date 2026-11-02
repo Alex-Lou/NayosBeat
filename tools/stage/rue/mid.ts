@@ -5,7 +5,7 @@
  * ground line (row 460) is hidden by the floor.
  */
 
-import { Canvas, at, tone } from './canvas.ts';
+import { Canvas, at, tone } from '../kit/canvas.ts';
 import {
   drawCagedLamp,
   drawClubNeon,
@@ -37,7 +37,7 @@ import {
   drawShutter,
   drawStreetLamp,
 } from './fixtures.ts';
-import { lightAt, type Light } from './light.ts';
+import { lightAt, type Light } from '../kit/light.ts';
 import {
   BRICK_PAINTED,
   BRICK_RED,
@@ -69,7 +69,7 @@ import {
   type Figure,
   type Pose,
 } from './people.ts';
-import { noise, streamOf } from './random.ts';
+import { noise, streamOf } from '../kit/random.ts';
 import { drawCat, drawDeadSign, drawGrocery, drawLaundromat } from './shops.ts';
 import { drawTag, drawThrowUp } from './signs.ts';
 

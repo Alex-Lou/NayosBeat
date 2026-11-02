@@ -1,5 +1,5 @@
 import type Phaser from 'phaser';
-import { STAGE_VARIANTS } from '../art/rue';
+import { STAGE_MAPS, type StageMap } from '../art/stages';
 import {
   atmosphereName,
   STAGE_SCALE,
@@ -13,31 +13,49 @@ import { relativeLuminance } from './luminance';
 import { StagePropsView } from './stage-props';
 
 /**
- * The large colors of the stage the fights show, in every atmosphere it may take (each once, the
- * base's first): the drawn one's, else the grey box's. The flash veils are set on them, and the
- * flash measures taken over the darkest (docs/flashs.md §3), whatever the fight draws.
+ * The large colors of the stages the fights may show, in every atmosphere they may take (each
+ * once, the first stage's base first): the drawn ones', else the grey box's. The flash veils are
+ * set on them, and the flash measures taken over the darkest (docs/flashs.md §3), whatever the
+ * fight draws.
  */
 export const FIGHT_STAGE_COLORS: readonly number[] =
-  STAGE_VARIANTS.length > 0
-    ? [...new Set(STAGE_VARIANTS.flatMap(({ art }) => art.colors))]
+  STAGE_MAPS.length > 0
+    ? [...new Set(STAGE_MAPS.flatMap(({ variants }) => variants.flatMap(({ art }) => art.colors)))]
     : GREYBOX_COLORS;
 
+/** Where a fight is held, as chosen: a place (by name) and an atmosphere, or either at random. */
+export interface StageChoice {
+  /** A place's name (StageMap), or 'random'. */
+  readonly map: string;
+  readonly atmosphere: Atmosphere | 'random';
+}
+
+export const RANDOM_STAGE: StageChoice = { map: 'random', atmosphere: 'random' };
+
+/** One of `items` at random (`random`, from 0 to 1). */
+function pickOf<T>(items: readonly T[], random: () => number): T | undefined {
+  return items[Math.floor(random() * items.length)] ?? items[0];
+}
+
 /**
- * The stage a fight shows (docs/art/decor-rue.md §13): in `chosen`'s atmosphere if the stage has
- * it, else drawn at random (`random`, from 0 to 1) among those it offers; none, the grey box.
- * Render only: the core never knows it (D17).
+ * The stage a fight shows (docs/art/decor-rue.md §13, §14): `chosen`'s place, else one drawn at
+ * random (`random`, from 0 to 1) among those offering `chosen`'s atmosphere, or among all; in
+ * `chosen`'s atmosphere if the place has it, else in one it offers drawn at random. None: the grey
+ * box. Render only: the core never knows it (D17).
  */
 export function stageVariantFor(
-  chosen: Atmosphere | 'random',
-  variants: readonly StageVariant[] = STAGE_VARIANTS,
+  chosen: StageChoice,
+  maps: readonly StageMap[] = STAGE_MAPS,
   random: () => number = Math.random,
 ): StageVariant | undefined {
-  if (chosen !== 'random') {
-    const wanted = atmosphereName(chosen);
-    const found = variants.find(({ atmosphere }) => atmosphereName(atmosphere) === wanted);
-    if (found) return found;
-  }
-  return variants[Math.floor(random() * variants.length)] ?? variants[0];
+  const wanted = chosen.atmosphere === 'random' ? undefined : atmosphereName(chosen.atmosphere);
+  const offers = (map: StageMap) =>
+    map.variants.find(({ atmosphere }) => atmosphereName(atmosphere) === wanted);
+  const named = maps.find(({ name }) => name === chosen.map);
+  const offering = maps.filter((map) => offers(map) !== undefined);
+  const map = named ?? pickOf(offering.length > 0 ? offering : maps, random);
+  if (!map) return undefined;
+  return offers(map) ?? pickOf(map.variants, random);
 }
 
 /** The darkest of `colors` (WCAG relative luminance): what a flash lights the most. */
@@ -52,11 +70,27 @@ export function darkestOf(colors: readonly number[]): number {
 
 /** The texture cache's keys of a stage variant: every one under this prefix. */
 function prefixOf(variant: StageVariant): string {
-  return `stage/${atmosphereName(variant.atmosphere)}/`;
+  return `stage/${variant.stage}/${atmosphereName(variant.atmosphere)}/`;
 }
 
 function stageKey(variant: StageVariant, layer: StageLayer): string {
   return `${prefixOf(variant)}${layer}`;
+}
+
+/**
+ * The stage's images among a scene's `objects` (what drawStage added): its layers and its props,
+ * which the moves' live lights glow over and a super dims (light-show.ts).
+ */
+export function stageImagesOf(objects: readonly Phaser.GameObjects.GameObject[]): {
+  readonly layers: Phaser.GameObjects.Image[];
+  readonly props: Phaser.GameObjects.Image[];
+} {
+  const all = objects.filter(
+    (object): object is Phaser.GameObjects.Image =>
+      'texture' in object && (object as Phaser.GameObjects.Image).texture.key.startsWith('stage/'),
+  );
+  const isProps = ({ texture }: Phaser.GameObjects.Image) => texture.key.endsWith('/props');
+  return { layers: all.filter((image) => !isProps(image)), props: all.filter(isProps) };
 }
 
 /** Its props' sheet in the texture cache: their frames are added to it by name, once. */
@@ -66,7 +100,7 @@ export function propsKeyOf(variant: StageVariant): string {
 
 /**
  * Loads `variant`'s layers and props' sheet that are not already in the texture cache, and drops
- * the other variants' from it: a fight holds one atmosphere in video memory, never two
+ * the other variants' from it: a fight holds one stage in one atmosphere in video memory, never two
  * (docs/art/decor-rue.md §2). Call it before the fight's stage is drawn, the last one's gone.
  */
 export function loadStage(scene: Phaser.Scene, variant: StageVariant): void {

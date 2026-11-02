@@ -1,8 +1,7 @@
 /**
- * Riff's colors: the punk girl of Zen-Tazzer (assets/Mobs/0 - Mobs/4 - Idl Mob), sampled from
- * that sprite. Black outfit, magenta accents (the fringe, the jacket's patch, the boots'
- * triangles, the lips), silver metal, warm peach skin; dark ramps lit by a cool grey-blue back
- * light, like the reference and like Nayo.
+ * Riff's colors: the punk girl of Zen-Tazzer (assets/Mobs/0 - Mobs/4 - Idl Mob). Black outfit,
+ * magenta accents (the fringe, the jacket's patch, the boots' triangles, the lips), silver metal,
+ * warm peach skin.
  *
  * Second colorway (mirror match): an oxblood-red leather jacket and gold accents (the fringe dyed
  * gold, the patch, the boots' triangles; crimson lips). The jacket is her biggest mass: red
@@ -12,78 +11,90 @@
  * colorways (black and cyan, light grey and magenta). The jeans turn a washed charcoal grey, so
  * the lower halves part as well. The hair, the skin, the crop top, the boots and the silver
  * metal stay. Same layout as Nayo's palette: drawn once, saved twice.
+ *
+ * She stands in the same street as Nayo, under the same light (docs/art/riff-lumiere.md,
+ * ../street-light.ts): the sodium lamps from above and in front (the key light), the club's
+ * violet sign behind her, up high (the back light, the rim tone of every material). Every ramp
+ * shifts its hue with its value: the shadows sink toward blue violet, never pure black; the
+ * lights and the shine warm up toward the lamps. Her own character is in her materials: leather
+ * with a sharp warm shine, a denim bluer than Nayo's cargo, the magenta of her fringe.
  */
 
 import { definePalette, type DetailColor, type MaterialTones } from '../palette.ts';
+import { STREET_SIGN } from '../street-light.ts';
 import type { EffectStyle } from '../vfx.ts';
 
 export { farOf, matteOf, noGloss, type Colorway } from '../palette.ts';
 
+const RIM = STREET_SIGN.color;
+const RIM_ON_LIGHT = STREET_SIGN.onLight;
+
 /** Materials in slot order; each one owns 7 consecutive palette slots. */
 const MATERIALS = {
   /**
-   * Warm peach skin, as in the reference: a dark red-brown outline, rust shadows, a pale peach
-   * light, a warm cream back light.
+   * Warm peach skin, as in the reference: a red-brown outline turning violet, rust shadows, a
+   * pale peach light warmed by the lamps; the sign's violet on it is a pale mauve.
    */
   skin: {
-    main: ['#561c22', '#9c4636', '#cc744d', '#f1ad7a', '#f6c290', '#ffdcb0', '#ffd6a8'],
+    main: ['#4c1828', '#923e3c', '#c86c4e', '#f1ad7a', '#fac690', '#ffdcb0', '#deaabc'],
   },
-  /** Blue-black hair, cool grey lights (the spiky top and the nape). */
+  /** Blue-black hair, a bluer black than Nayo's; a mauve sheen where the lamps catch it. */
   hair: {
-    main: ['#030202', '#0a0709', '#111019', '#1b1823', '#26252e', '#36363d', '#5e636c'],
+    main: ['#0a0a14', '#111222', '#1a1a2e', '#24243c', '#33324e', '#6e6070', RIM],
   },
   /** The shaved undercut: dark stubble over the scalp, a two-tone brown check. */
   stubble: {
-    main: ['#2a1617', '#3a2122', '#4e2d2b', '#643d36', '#7c4a3e', '#935441', '#935441'],
+    main: ['#2a1426', '#3c1f2e', '#522c34', '#6a3e3a', '#86543e', '#a06a48', '#a07ca4'],
   },
   /**
-   * Her accent color: the dyed fringe, the jacket's round patch, the boots' triangles. Gold on
-   * the second colorway.
+   * Her accent color: the dyed fringe, the jacket's round patch, the boots' triangles. A deep
+   * magenta, a paint and not a light: its shadows sink toward violet, its light warms toward
+   * pink. Gold on the second colorway, its shadows a violet brown.
    */
   magenta: {
-    main: ['#200626', '#350832', '#4c0b44', '#6a0f55', '#8e1468', '#b81e7c', '#e04a9e'],
-    alt: ['#1e1002', '#3e2406', '#6a420c', '#9a6a16', '#c89628', '#ecc85a', '#ffe08a'],
+    main: ['#1e0828', '#340a3c', '#4e0e4e', '#6c125a', '#921e6a', '#ba3a78', '#b46cc0'],
+    alt: ['#1e0e16', '#3a2014', '#664010', '#9a6a16', '#c89628', '#f0cc62', '#d4b4d4'],
   },
   /** Silver: earrings, choker, zipper, studs, buckle, the belt's chain. */
   metal: {
-    main: ['#1e1e24', '#3e4046', '#5c5e64', '#8e9298', '#c4c8cc', '#f2f4f6', '#a8b4c8'],
+    main: ['#1c1a2a', '#3a3650', '#5c5872', '#8e8ca4', '#c8c4d0', '#fff2dc', RIM_ON_LIGHT],
   },
   /**
    * The cropped jacket: glossy black leather, as dark as the jeans and the boots (its mass reads
-   * black, never charcoal canvas); the leather comes from a few sharp runs of its gloss tone on
-   * the shoulder, the rolled folds and the lapels, and a cool grey-blue back light kept for a
-   * pixel or two of accent (the reference's). Oxblood-red leather on the second colorway: its sheen a
-   * brighter red, not pink (a pink line along the red outlines her like a sticker), the warm pink
-   * left for the accent pixels only.
+   * black, never charcoal canvas); the leather comes from its warm shine, sharp and small, where
+   * the lamps catch it. Oxblood-red leather on the second colorway: its shadows sink toward
+   * wine violet, its shine warms toward orange (a pink line along the red would outline her like
+   * a sticker).
    */
   jacket: {
-    main: ['#040406', '#0c0d11', '#16171d', '#22242c', '#30333c', '#4a4e5a', '#6c7890'],
-    alt: ['#1a0507', '#3c0a10', '#641219', '#8e1c24', '#a8262e', '#c4383e', '#f08a86'],
+    main: ['#09090f', '#12121e', '#1c1b2c', '#28263a', '#3a3650', '#8c7270', RIM],
+    alt: ['#1c0616', '#3a0a1e', '#5e1222', '#8a1c26', '#ac3030', '#d0583e', '#94669e'],
   },
   /** The crop top: matte black jersey, about the jacket's value (it reads black, not grey). */
   top: {
-    main: ['#040405', '#0b0b0e', '#14151a', '#1f2127', '#2e3038', '#2e3038', '#5a6478'],
+    main: ['#08070e', '#100e1a', '#191626', '#231f34', '#342c44', '#342c44', RIM],
   },
   /**
-   * Black jeans, a washed blue-black denim (the reference's), its worn folds catching a
-   * blue-grey light. On the second colorway a washed charcoal-grey denim, two steps lighter:
-   * the lower halves part too when the two Riffs scramble jacket against jacket.
+   * Black jeans, a washed blue-black denim (the reference's), bluer than Nayo's cargo; its
+   * worn folds catch a pale, warmer grey. On the second colorway a washed charcoal-grey denim,
+   * two steps lighter: the lower halves part too when the two Riffs scramble jacket against
+   * jacket.
    */
   jeans: {
-    main: ['#040507', '#0b0d12', '#151920', '#20252e', '#2c323d', '#3e4552', '#56627a'],
-    alt: ['#0b0c0f', '#17191e', '#252830', '#353943', '#454a55', '#5c6270', '#7c8392'],
+    main: ['#090a13', '#11111f', '#181c2c', '#22273a', '#2f354c', '#665e66', RIM],
+    alt: ['#0e0c16', '#1a1826', '#282636', '#383748', '#4a485a', '#6e6878', RIM],
   },
-  /** Fingerless gloves, the belt: black leather. */
+  /** Fingerless gloves, the belt: black leather, a warm shine. */
   leather: {
-    main: ['#030304', '#0b0b0e', '#15151a', '#212127', '#32323a', '#5c5c68', '#5a6478'],
+    main: ['#0a0810', '#15101e', '#20192c', '#2c233a', '#3e3250', '#8a6a64', RIM],
   },
   /** Combat boots: black leather, a warm grey shine on the toe cap (the reference's). */
   boot: {
-    main: ['#030303', '#0b0b0c', '#151517', '#222224', '#343436', '#605a54', '#5a6070'],
+    main: ['#09080e', '#13101c', '#1d1928', '#292336', '#3a3248', '#7a6460', RIM],
   },
-  /** Thick lugged rubber soles. */
+  /** Thick lugged rubber soles: matte, they never shine. */
   sole: {
-    main: ['#020203', '#08080a', '#0f0f12', '#18181c', '#24242a', '#24242a', '#24242a'],
+    main: ['#08070e', '#0e0c16', '#16131f', '#1f1b2a', '#2c2536', '#2c2536', '#2c2536'],
   },
 } as const satisfies Record<string, MaterialTones>;
 

@@ -8,7 +8,10 @@
 
 import { ART_SCALE } from './types';
 
-/** Its folder: art-src/<name>/ (the drawings), src/art/<name>/ (the game's images). */
+/**
+ * The street's folder: art-src/<name>/ (its layers drawn by hand), src/art/<name>/ (its images).
+ * The one stage Aseprite's templates cover; every stage's images are in src/art/<its name>/.
+ */
 export const STAGE_NAME = 'rue';
 
 /** The moments of the night a stage may show, and its weathers (docs/art/decor-rue.md §13). */
@@ -109,8 +112,9 @@ export interface StageArt {
   readonly props: StageProps | undefined;
 }
 
-/** The stage in one of its atmospheres: how it looks, and its images. */
+/** A stage in one of its atmospheres: which stage (its folder's name), how it looks, its images. */
 export interface StageVariant {
+  readonly stage: string;
   readonly atmosphere: Atmosphere;
   readonly art: StageArt;
 }
@@ -126,12 +130,13 @@ export function atmosphereOf(name: string): Atmosphere {
 }
 
 /**
- * The stage in each atmosphere `colors` names (`npm run sprites` writes them all): the base one's
+ * The stage `stage` in each atmosphere `colors` names (`npm run stages` writes them all): the base one's
  * images in its folder (`./<layer>.png`), each other's in a folder of its name
  * (`./<moment>-<weather>/<layer>.png`), the same props laid on each. The base first; none while a
  * layer it needs is missing (the grey box), an atmosphere left out while one of its own is.
  */
 export function stageVariantsOf(
+  stage: string,
   files: Readonly<Record<string, string>>,
   colors: Readonly<Record<string, readonly number[]>>,
   props: readonly StageProp[] = [],
@@ -147,7 +152,7 @@ export function stageVariantsOf(
         .map(([path, url]) => [`./${path.slice(prefix.length)}`, url]),
     );
     const art = stageArtOf(own, colors[name] ?? [], props);
-    return art ? [{ atmosphere, art }] : [];
+    return art ? [{ stage, atmosphere, art }] : [];
   });
 }
 

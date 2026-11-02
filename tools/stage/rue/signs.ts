@@ -3,11 +3,11 @@
  * tubes with a halo of whole pixels, a lit box, tags traced at random. No real name, brand or logo.
  */
 
-import { Canvas, Mask, at, tone } from './canvas.ts';
+import { Canvas, Mask, at, tone } from '../kit/canvas.ts';
 import type { Rect } from './facade.ts';
-import { GLYPH_HEIGHT, HAN_SIZE, spell, spellHan } from './font.ts';
+import { GLYPH_HEIGHT, HAN_SIZE, spell, spellHan } from '../kit/font.ts';
 import { LIGHTBOX, NEON_DEAD, SIGN_INK, STEEL, TAG } from './palette.ts';
-import type { Random } from './random.ts';
+import type { Random } from '../kit/random.ts';
 
 /**
  * A neon's halo on what is behind it: within `reach` pixels of its tubes, the glow's two steps,
