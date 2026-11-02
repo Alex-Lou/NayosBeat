@@ -42,15 +42,17 @@ Mêmes calques, mêmes tailles et même grain que la rue (×2).
 - **Le quai** lui-même : béton, cornière peinte en bandes de danger, butoirs de caoutchouc, coulures de rouille, tags. À gauche, l'escalier de béton et sa rampe jaune.
 - **L'annexe du monte-charge**, à droite, en parpaings : la grille en accordéon tirée, « FREIGHT » au pochoir, et un conduit qui fume sur le toit. Au pied, une pile de palettes.
 - **L'allée**, à gauche : le coin du voisin, un grillage à roulettes coiffé de barbelés, la plaque « NO PARKING ». Devant : la benne et son chat, des sacs-poubelle.
-- **Le fond de la cour**, entre le pied du quai et la ligne du sol : du béton dans les flaques des appliques, et une flaque d'eau devant le quai 2 où se reflète l'applique.
+- **Le fond de la cour**, entre le pied du quai et la ligne du sol, en bandes : le tablier de béton au pied du quai, la rigole d'acier, puis l'asphalte où entrent les camions, dans les flaques de lumière des appliques. Une flaque d'eau devant le quai 2 où se reflète l'applique.
 
 ### 2.3 `floor`, le tablier de la cour (100 %)
 
-Des dalles de béton, avec un joint toutes les 64 unités du monde pour lire les distances, comme les dalles de la rue, et un joint dans la longueur. On y voit aussi :
-- une ligne jaune usée ;
-- des taches d'huile là où les camions stationnent ;
-- des traces de pneus qui entrent par le portail ;
-- la grille d'égout au milieu, et des fissures.
+Une cour qui se lit en bandes, pas comme une feuille grise (remarque du développeur) :
+- **l'asphalte** où se tiennent les combattants, sombre et granuleux ;
+- **les lignes jaunes** usées : celle du bord de voie, et une ligne de stationnement toutes les 64 unités du monde, qui mesurent les distances comme les dalles de la rue ;
+- les joints de goudron sur les fissures, une plaque d'égout, des taches d'huile, des traces de pneus qui entrent par le portail ;
+- **la bordure** de béton au premier plan, son arête éclairée, la grille d'égout à son pied, puis une bande de trottoir en dalles.
+
+Le contraste vient d'un asphalte plus sombre, pas d'un béton plus clair : une grande couleur plus claire ferait bouger les mesures de flashs (§6).
 
 Les deux bouts s'assombrissent sous l'ombre des murs. Rien n'y fait une bande tramée sur toute la largeur.
 
@@ -70,6 +72,7 @@ Les teintes réservées aux combattants sont tenues à l'écart : aucune couleur
 
 - **Minuit, ciel clair** (la base) : le club bat son plein, les appliques au sodium, le violet aux fenêtres.
 - **L'aube, ciel clair** : la fin de la fête. Une lumière froide d'ardoise descend dans la cour, la brique et le béton virent au gris-bleu, les ombres au bleu. Les appliques sont encore allumées, plus pâles que le jour qui vient, et le violet pâlit dans les fenêtres. Le ciel est un couvercle gris, un peu plus clair au-dessus des toits.
+- **Minuit, pluie** : une pluie battante (`pluie.md`). La brique et le béton plus sombres et plus froids, trempés ; les appliques et le violet du club aussi vifs que par nuit claire ; des flaques sur le sol, dessinées dans une rampe cachée (`WET`) qui ne se voit que sous la pluie.
 
 L'aube est un nouveau moment (`dawn`, « aube » dans l'option « Ambiance » de la pause). Les autres lieux ne l'offrent pas encore. En entraînement, choisir « aube » sur un lieu qui ne l'a pas en tire une au hasard, comme pour toute ambiance absente.
 

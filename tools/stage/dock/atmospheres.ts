@@ -17,6 +17,8 @@ import {
   PALETTE,
   SKY,
   SODIUM,
+  WET,
+  WET_ASPHALT,
 } from './palette.ts';
 
 /**
@@ -50,8 +52,48 @@ function dawn(): Rgba[] {
   return palette;
 }
 
+/**
+ * The rain at midnight, a downpour (docs/art/pluie.md): the brick and the concrete darker and
+ * colder, soaked; the lamps and the club's violet as bright as on a dry night, their light
+ * running in the puddles (WET, floor.ts); the sky a low lid, the towers half gone in the rain.
+ */
+function rain(): Rgba[] {
+  const palette = [...PALETTE];
+  const lit = new Set([...SODIUM, ...GLASS.slice(3), ...GLASS_WARM, ...EXIT, ...EMBER]);
+  grade(palette, { glow: rgba('#2e3450'), shadow: rgba('#1c1d31'), lit });
+  for (const slot of lit) palette[slot] = PALETTE[slot] ?? palette[slot] ?? rgba('#000000');
+  ceiled(palette, PALETTE, lit);
+  repaint(palette, WET, [
+    '#1c1c28',
+    '#20202e',
+    '#252433',
+    '#2b293a',
+    '#322e42',
+    '#3a334a',
+    '#423850',
+    '#4a3c54',
+  ]);
+  repaint(palette, WET_ASPHALT, ['#1c1c2a', '#22212f', '#2a2737', '#332e40']);
+  repaint(palette, SKY, [
+    '#1c1c30',
+    '#201f34',
+    '#242238',
+    '#28253b',
+    '#2c283e',
+    '#302b40',
+    '#342d42',
+    '#383044',
+    '#3c3246',
+  ]);
+  repaint(palette, CLOUD, ['#262439', '#2c2940', '#332e46', '#3a334a']);
+  repaint(palette, DISTANT, ['#1f1c34', '#221f37', '#26223a', '#2a253d']);
+  repaint(palette, DISTANT_LIT, ['#3a3048', '#4a3a4e', '#5a4652']);
+  return palette;
+}
+
 /** The atmospheres the dock offers, the base one first (BASE_ATMOSPHERE: palette.ts as it is). */
 export const DOCK_ATMOSPHERES: readonly StageAtmosphere[] = [
   { atmosphere: { moment: 'midnight', weather: 'clear' }, palette: PALETTE },
   { atmosphere: { moment: 'dawn', weather: 'clear' }, palette: dawn() },
+  { atmosphere: { moment: 'midnight', weather: 'rain' }, palette: rain() },
 ];

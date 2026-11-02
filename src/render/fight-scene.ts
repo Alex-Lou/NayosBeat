@@ -78,6 +78,7 @@ import { SignatureFx } from './signature-fx';
 import { PLATINE, signatureOf, type Signature } from './signatures';
 import { SpriteFighterView } from './sprite-fighter-view';
 import { drawStage, FIGHT_STAGE_COLORS, loadStage, stageImagesOf } from './stage-view';
+import { rains, StageRainView } from './stage-rain';
 import type { StagePropsView } from './stage-props';
 import { VIEW_SIZE } from './view';
 
@@ -190,6 +191,8 @@ interface Runtime {
   readonly trainingView: TrainingView | undefined;
   /** The stage's animations, when the stage is drawn (stage-props.ts). */
   readonly stageProps: StagePropsView | undefined;
+  /** The rain, when the stage's atmosphere rains (stage-rain.ts). */
+  readonly stageRain: StageRainView | undefined;
 }
 
 /**
@@ -330,6 +333,7 @@ export class FightScene extends Phaser.Scene {
     // the fight (§13); the grey box without it.
     const { stage } = this.sceneData;
     const stageProps = stage ? drawStage(this, stage) : undefined;
+    const stageRain = stage && rains(stage) ? new StageRainView(this) : undefined;
     if (!stage) {
       drawGreyboxStage(this, stageWidth, { silhouette: this.sceneData.silhouette, debug });
     }
@@ -442,6 +446,7 @@ export class FightScene extends Phaser.Scene {
         debug || this.config.training ? new BoxOverlay(this, this.config, GROUND_Y) : undefined,
       trainingView: this.config.training ? new TrainingView(this, this.config) : undefined,
       stageProps,
+      stageRain,
     };
     // The Finisher's director: what it draws is made now, with the rest (addScreenCamera).
     const [first, second] = this.sceneData.setup.fighters;
@@ -516,6 +521,7 @@ export class FightScene extends Phaser.Scene {
     if (!runtime || !this.governor) return;
     const tier = this.governor.tier;
     runtime.lightShow.setTier(tier);
+    runtime.stageRain?.setTier(tier);
     for (const view of runtime.fighterViews) {
       if (view instanceof SpriteFighterView) view.setTier(tier);
     }
@@ -644,6 +650,7 @@ export class FightScene extends Phaser.Scene {
     runtime.budget.advance(visualFrames);
     runtime.budget.setZoom(this.closeUp);
     runtime.stageProps?.update(visualFrames);
+    runtime.stageRain?.update(visualFrames);
     // Slowed down, the game lives fewer frames than the screen shows.
     const gameFrames = this.pacer ? this.pacer.advance(visualFrames) : visualFrames;
     const startMs = runtime.debugOverlay ? performance.now() : 0;
@@ -880,6 +887,7 @@ export class FightScene extends Phaser.Scene {
     this.runtime.pauseInput.dispose();
     this.runtime.debugOverlay?.destroy();
     this.runtime.stageProps?.dispose();
+    this.runtime.stageRain?.dispose();
     this.runtime = undefined;
   }
 
