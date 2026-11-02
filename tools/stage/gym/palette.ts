@@ -1,15 +1,28 @@
 /**
- * The Viaduct Gym's palette (docs/art/decor-gym.md §3): the street's, slot for slot (its people,
- * signs, posters and night sky are drawn by the street's own code), then the gym's ramps. Under the
+ * The Viaduct Gym's palette (docs/art/decor-gym.md §3): its own. First the few ramps it takes from
+ * the street's, tone for tone (the same night sky and towers through its window, the same people,
+ * posters and paper), then the gym's ramps. Under the
  * arch, soot-black brick and railway-green iron, old wood, a burgundy ring; the light is the cold
  * white-green of fluorescent tubes. Slot 0 is transparent, every other color opaque. The fighters
  * own cyan and magenta; nothing here comes near them.
  */
 
 import type { Rgba } from '../../sprites/png.ts';
-import { PALETTE as STREET } from '../rue/palette.ts';
+import type { FigureRamps } from '../rue/people.ts';
+import * as STREET from '../rue/palette.ts';
 
-const colors: Rgba[] = [...STREET];
+const colors: Rgba[] = [{ r: 0, g: 0, b: 0, a: 0 }];
+/** Each slot taken from the street's palette, and the street's slot it was taken from. */
+const borrowed = new Map<number, number>();
+
+/** Registers the street's `ramp`, tone for tone, and returns its slots here. */
+function borrow(ramp: readonly number[]): readonly number[] {
+  return ramp.map((slot) => {
+    colors.push(STREET.PALETTE[slot] ?? { r: 0, g: 0, b: 0, a: 255 });
+    borrowed.set(colors.length - 1, slot);
+    return colors.length - 1;
+  });
+}
 
 /** Registers the colors, darkest first, and returns their slots. */
 function ramp(...hexes: string[]): readonly number[] {
@@ -19,6 +32,25 @@ function ramp(...hexes: string[]): readonly number[] {
     return colors.length - 1;
   });
 }
+
+/** The street's night through the window: its sky, its clouds, its towers, a hoarding's plywood. */
+export const SKY = borrow(STREET.SKY);
+export const CLOUD = borrow(STREET.CLOUD);
+export const DISTANT = borrow(STREET.DISTANT);
+export const DISTANT_LIT = borrow(STREET.DISTANT_LIT);
+export const PLYWOOD = borrow(STREET.PLYWOOD);
+/** The street's people (its drawing code, rue/people.ts), the posters and their paper. */
+export const PERSON = borrow(STREET.PERSON);
+export const SKIN = borrow(STREET.SKIN);
+export const RIM_COOL = borrow(STREET.RIM_COOL);
+export const PAPER = borrow(STREET.PAPER);
+export const POSTER_RED = borrow(STREET.POSTER_RED);
+export const SIGN_INK = borrow(STREET.SIGN_INK);
+export const FIGURE_RAMPS: FigureRamps = { body: PERSON, skin: SKIN };
+/** The street's slots here, and theirs: what an atmosphere repaints as the street's of its hour. */
+export const BORROWED: ReadonlyMap<number, number> = borrowed;
+/** The first of the gym's own slots, after those it borrows. */
+export const OWN_FROM = colors.length;
 
 /** The vault's brick, blackened by a century of trains overhead. */
 export const VAULT = ramp(

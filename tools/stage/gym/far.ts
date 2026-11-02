@@ -8,8 +8,18 @@
 import { Canvas, at, tone } from '../kit/canvas.ts';
 import { lightAt, type Light } from '../kit/light.ts';
 import { noise, streamOf, type Random } from '../kit/random.ts';
-import { CLOUD, DISTANT, DISTANT_LIT, PLYWOOD, SKY } from '../rue/palette.ts';
-import { IRON, RING_STONE, TRAIN, TRAIN_LIT, VAULT } from './palette.ts';
+import {
+  CLOUD,
+  DISTANT,
+  DISTANT_LIT,
+  IRON,
+  PLYWOOD,
+  RING_STONE,
+  SKY,
+  TRAIN,
+  TRAIN_LIT,
+  VAULT,
+} from './palette.ts';
 
 /** The end arch: its center on the springing line, its inner radius, its ring's width. */
 export const END = { x: 600, y: 330, radius: 300, ring: 22 } as const;
