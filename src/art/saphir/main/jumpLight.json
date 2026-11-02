@@ -1,35 +1,35 @@
 {
   "frames": {
     "0": {
-      "frame": { "x": 0, "y": 0, "w": 70, "h": 146 },
+      "frame": { "x": 166, "y": 0, "w": 68, "h": 128 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 0, "w": 70, "h": 146 },
-      "sourceSize": { "w": 70, "h": 146 }
+      "spriteSourceSize": { "x": 12, "y": 0, "w": 68, "h": 128 },
+      "sourceSize": { "w": 96, "h": 134 }
     },
     "1": {
-      "frame": { "x": 70, "y": 0, "w": 70, "h": 146 },
+      "frame": { "x": 96, "y": 0, "w": 70, "h": 131 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 0, "w": 70, "h": 146 },
-      "sourceSize": { "w": 70, "h": 146 }
+      "spriteSourceSize": { "x": 9, "y": 0, "w": 70, "h": 131 },
+      "sourceSize": { "w": 96, "h": 134 }
     },
     "2": {
-      "frame": { "x": 140, "y": 0, "w": 70, "h": 146 },
+      "frame": { "x": 0, "y": 0, "w": 96, "h": 132 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 0, "w": 70, "h": 146 },
-      "sourceSize": { "w": 70, "h": 146 }
+      "spriteSourceSize": { "x": 0, "y": 2, "w": 96, "h": 132 },
+      "sourceSize": { "w": 96, "h": 134 }
     },
     "3": {
-      "frame": { "x": 210, "y": 0, "w": 70, "h": 146 },
+      "frame": { "x": 234, "y": 0, "w": 71, "h": 128 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 0, "w": 70, "h": 146 },
-      "sourceSize": { "w": 70, "h": 146 }
+      "spriteSourceSize": { "x": 9, "y": 0, "w": 71, "h": 128 },
+      "sourceSize": { "w": 96, "h": 134 }
     },
     "4": {
-      "frame": { "x": 280, "y": 0, "w": 70, "h": 146 },
+      "frame": { "x": 305, "y": 0, "w": 68, "h": 128 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 0, "w": 70, "h": 146 },
-      "sourceSize": { "w": 70, "h": 146 }
+      "spriteSourceSize": { "x": 12, "y": 0, "w": 68, "h": 128 },
+      "sourceSize": { "w": 96, "h": 134 }
     }
   },
-  "meta": { "image": "jumpLight.png", "size": { "w": 350, "h": 146 } }
+  "meta": { "image": "jumpLight.png", "size": { "w": 373, "h": 132 } }
 }

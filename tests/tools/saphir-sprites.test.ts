@@ -59,6 +59,14 @@ describe('Saphir strips: hands behind her back', () => {
     'specialAntiAir',
     'specialForward',
     'super',
+    'forwardLight',
+    'forwardHeavy',
+    'backHeavy',
+    'chainLaunch',
+    'crouchLight',
+    'crouchHeavy',
+    'jumpLight',
+    'jumpHeavy',
   ] as const)('%s', (sheet) => {
     SAPHIR_POSES[sheet].forEach((pose, frame) => {
       const skeleton = solve(pose, SAPHIR_BODY);
@@ -158,8 +166,16 @@ describe('Saphir strips: reach', () => {
     'chainHeavy',
     'specialForward',
     'super',
+    'forwardLight',
+    'forwardHeavy',
+    'backHeavy',
+    'chainLaunch',
+    'crouchLight',
+    'crouchHeavy',
+    'jumpLight',
+    'jumpHeavy',
   ] as const;
-  const ANTI_AIRS: ReadonlySet<string> = new Set(['specialAntiAir']);
+  const ANTI_AIRS: ReadonlySet<string> = new Set(['specialAntiAir', 'backHeavy', 'chainLaunch']);
   /** Her strikes on the strips drawn so far: the moves and their Remixes playing them. */
   const STRIKES = strikesOf(SAPHIR_CLIPS, SAPHIR_TEMPLATE).filter(({ sheet }) =>
     (DRAWN as readonly string[]).includes(sheet),
@@ -168,8 +184,17 @@ describe('Saphir strips: reach', () => {
   it('the strikes drawn so far, and the Remixes that play them', () => {
     expect(STRIKES.map(({ id }) => id).sort()).toEqual(
       [
+        'backHeavy',
         'chainHeavy',
+        'chainHigh',
+        'chainLaunch',
         'chainLight',
+        'crouchHeavy',
+        'crouchLight',
+        'forwardHeavy',
+        'forwardLight',
+        'jumpHeavy',
+        'jumpLight',
         'lightFinisher',
         'special',
         'specialAntiAir',
