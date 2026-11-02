@@ -1,6 +1,7 @@
 /**
  * The stage's props (src/art/stage-layers.ts `StageProp`, docs/art/decor-rue.md §6): the code's
- * animations cut to what each frame changes from the still layer, packed in one sheet
+ * animations cut to what each frame changes from the still layer (a lifted one's: to all it moves
+ * through, cleared from the still layer, `liftedLayers`), packed in one sheet
  * (src/art/<stage>/props.png) and listed in a module (props.ts). A layer drawn by hand keeps a
  * prop only where it still draws what the code drew under it: elsewhere the prop would paint the
  * code's pixels over the drawing, so it is left out, and said so.
@@ -25,6 +26,8 @@ export interface PackedProps {
   readonly props: readonly StageProp[];
   /** The sheet, in the code's palette (`colors`), or undefined when no prop is left. */
   readonly sheet: IndexedImage | undefined;
+  /** The layers installed, the pixels the lifted props move through cleared (`liftedLayers`). */
+  readonly layers: Record<StageLayer, IndexedImage>;
   /** What was left out, and why. */
   readonly dropped: readonly string[];
 }
@@ -37,32 +40,62 @@ function sameColor(a: IndexedImage, aSlot: number, b: IndexedImage, bSlot: numbe
 }
 
 /**
- * The pixels of the prop's rectangle that some frame changes: where it moves. Throws if a frame
- * would have to clear a pixel the still layer draws (an overlay can only add pixels).
+ * Where a prop moves: the pixels of its rectangle some frame changes. A prop is lifted when a frame
+ * clears a pixel the still layer draws (a figure moving in front of nothing, the far layer behind):
+ * those pixels leave the still layer, and every frame, the first too, is laid over it.
  */
-function movingOf(prop: CodeProp): Uint8Array {
+interface Motion {
+  readonly moving: Uint8Array;
+  readonly lifted: boolean;
+}
+
+function motionOf(prop: CodeProp): Motion {
   const [still] = prop.frames;
   if (!still) throw new Error(`Stage prop ${prop.name}: no frame`);
   const moving = new Uint8Array(still.width * still.height);
-  prop.frames.forEach((frame, index) => {
+  let lifted = false;
+  for (const frame of prop.frames) {
     frame.pixels.forEach((slot, at) => {
       const base = still.pixels[at] ?? 0;
       if (sameColor(frame, slot, still, base)) return;
-      if (rgbaAt(frame, slot).a === 0) {
-        const x = at % still.width;
-        const y = Math.floor(at / still.width);
-        throw new Error(
-          `Stage prop ${prop.name}, frame ${index}: pixel ${x},${y} would clear the still layer`,
-        );
-      }
+      if (rgbaAt(frame, slot).a === 0) lifted = true;
       moving[at] = 1;
     });
-  });
-  return moving;
+  }
+  return { moving, lifted };
+}
+
+/**
+ * `layers` with the pixels the lifted props among `props` move through cleared (made
+ * transparent): their frames draw them. Throws on a layer with no transparent slot.
+ */
+export function liftedLayers(
+  props: readonly CodeProp[],
+  layers: Readonly<Record<StageLayer, IndexedImage>>,
+): Record<StageLayer, IndexedImage> {
+  const shown: Record<StageLayer, IndexedImage> = { ...layers };
+  for (const prop of props) {
+    const { moving, lifted } = motionOf(prop);
+    if (!lifted) continue;
+    const layer = shown[prop.layer];
+    const clear = layer.alpha.indexOf(0);
+    if (clear < 0)
+      throw new Error(`Stage prop ${prop.name}: the ${prop.layer} layer has no clear slot`);
+    const pixels = Uint8Array.from(layer.pixels);
+    moving.forEach((moves, at) => {
+      if (!moves) return;
+      const x = prop.rect.x + (at % prop.rect.width);
+      const y = prop.rect.y + Math.floor(at / prop.rect.width);
+      if (x >= 0 && y >= 0 && x < layer.width && y < layer.height)
+        pixels[y * layer.width + x] = clear;
+    });
+    shown[prop.layer] = { ...layer, pixels };
+  }
+  return shown;
 }
 
 /** Whether `layer` (the one installed) draws what the code drew under the prop where it moves. */
-function keeps(layer: IndexedImage, prop: CodeProp, moving: Uint8Array): boolean {
+function keeps(layer: IndexedImage, prop: CodeProp, { moving }: Motion): boolean {
   const [still] = prop.frames;
   if (!still) return false;
   for (let at = 0; at < moving.length; at++) {
@@ -77,8 +110,11 @@ function keeps(layer: IndexedImage, prop: CodeProp, moving: Uint8Array): boolean
   return true;
 }
 
-/** Frame `index` of the prop cut to the pixels it changes, in its tightest box; undefined: none. */
-function cutoutOf(prop: CodeProp, index: number): Cutout | undefined {
+/**
+ * Frame `index` of the prop cut to the pixels it changes (a lifted prop's: all those it moves
+ * through, where the frame draws), in its tightest box; undefined: none.
+ */
+function cutoutOf(prop: CodeProp, index: number, motion: Motion): Cutout | undefined {
   const [still] = prop.frames;
   const frame = prop.frames[index];
   if (!still || !frame) return undefined;
@@ -88,7 +124,9 @@ function cutoutOf(prop: CodeProp, index: number): Cutout | undefined {
   let right = -1;
   let bottom = -1;
   const changed = (at: number): boolean =>
-    !sameColor(frame, frame.pixels[at] ?? 0, still, still.pixels[at] ?? 0);
+    motion.lifted
+      ? motion.moving[at] === 1 && rgbaAt(frame, frame.pixels[at] ?? 0).a !== 0
+      : !sameColor(frame, frame.pixels[at] ?? 0, still, still.pixels[at] ?? 0);
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
       if (!changed(y * width + x)) continue;
@@ -120,13 +158,14 @@ export function packProps(
 ): PackedProps {
   const dropped: string[] = [];
   const kept = props.filter((prop) => {
-    if (keeps(installed[prop.layer], prop, movingOf(prop))) return true;
+    if (keeps(installed[prop.layer], prop, motionOf(prop))) return true;
     dropped.push(`${prop.name}: the ${prop.layer} layer drawn by hand differs under it`);
     return false;
   });
-  const cutouts = kept.flatMap((prop) =>
-    prop.frames.map((_, index) => ({ prop, index, cutout: cutoutOf(prop, index) })),
-  );
+  const cutouts = kept.flatMap((prop) => {
+    const motion = motionOf(prop);
+    return prop.frames.map((_, index) => ({ prop, index, cutout: cutoutOf(prop, index, motion) }));
+  });
   const placed = new Map<string, { sheetX: number; sheetY: number }>();
   let shelfX = 0;
   let shelfY = 0;
@@ -149,7 +188,8 @@ export function packProps(
   }
   const sheetHeight = shelfY + shelfHeight;
   const first = kept[0]?.frames[0];
-  if (!first || placed.size === 0) return { props: [], sheet: undefined, dropped };
+  const layers = liftedLayers(kept, installed);
+  if (!first || placed.size === 0) return { props: [], sheet: undefined, layers, dropped };
   const pixels = new Uint8Array(sheetWidth * sheetHeight);
   const stageProps = kept.map((prop): StageProp => {
     const frames = prop.frames.map((_, index): StagePropFrame | null => {
@@ -180,6 +220,7 @@ export function packProps(
       colors: first.colors,
       alpha: first.alpha,
     },
+    layers,
     dropped,
   };
 }

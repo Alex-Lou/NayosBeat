@@ -26,7 +26,7 @@ import { compactImage, paletteBuilder, rgbaAt } from './colors.ts';
 import { checkDrawn, DRAWN_ROOT, DrawingProblems, listFolder, type DrawnRules } from './drawn.ts';
 import { decodeIndexedPng, encodeIndexedPng, type IndexedImage, type Rgba } from './png.ts';
 import { format, resolveConfig } from 'prettier';
-import { packProps, propsModule } from './stage-props.ts';
+import { liftedLayers, packProps, propsModule } from './stage-props.ts';
 
 /** Where the game finds a stage's images: src/art/<stage>/. */
 function artOf(name: string): URL {
@@ -176,19 +176,20 @@ export async function writeStage(map: CodeMap, drawn: DrawnStage = {}): Promise<
   const code = map.draw();
   const layers = installedLayers(drawn, code.layers);
   const packed = packProps(code.props, layers);
-  await writeLayers(art, layers, packed.sheet);
+  await writeLayers(art, packed.layers, packed.sheet);
   const module = new URL('props.ts', art);
   await writeFile(module, await propsModule(packed.props, module));
   const large: Record<string, number[]> = {
-    [atmosphereName(BASE_ATMOSPHERE)]: largeColorsOf(Object.values(layers)),
+    [atmosphereName(BASE_ATMOSPHERE)]: largeColorsOf(Object.values(packed.layers)),
   };
+  const lifted = liftedLayers(code.props, code.layers);
   for (const { atmosphere, palette } of map.atmospheres) {
     const name = atmosphereName(atmosphere);
     if (name === atmosphereName(BASE_ATMOSPHERE)) continue;
     const shown = {
-      far: recolored(code.layers.far, palette),
-      mid: recolored(code.layers.mid, palette),
-      floor: recolored(code.layers.floor, palette),
+      far: recolored(lifted.far, palette),
+      mid: recolored(lifted.mid, palette),
+      floor: recolored(lifted.floor, palette),
     };
     const sheet = packed.sheet && recolored(packed.sheet, palette);
     await writeLayers(new URL(`${name}/`, art), shown, sheet);
