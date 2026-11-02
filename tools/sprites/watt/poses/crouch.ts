@@ -9,7 +9,8 @@ export const ANIMATED: boolean = true;
  * The drop overshoots half a pixel and settles; held, he breathes, the hips rising and sinking a hair.
  *
  * Inside his crouching pushbox (32 px: nothing above the shins past x = 17, the feet past 20,
- * tests/tools/watt-sprites.test.ts), under his crouching hurtbox (60 px high).
+ * tests/tools/watt-sprites.test.ts). His crouching hurtbox (60 px high) is still the provisional
+ * one: the drawing tops out at 69 px (npm run measure-boxes -- watt).
  */
 
 /** The crouch held: the hips low between the feet, the torso leaning in over the knees. */
@@ -38,7 +39,7 @@ function sunk(dy: number): Pose {
 export const POSES: readonly Pose[] = [
   // 0: dropping, half way.
   springAnkle(tween(GUARD, CROUCH, 0.55)),
-  // 1: the overshoot, a pixel under the held crouch.
+  // 1: the overshoot, a hair under the held crouch.
   sunk(-0.6),
   // 2: settling.
   sunk(-0.3),
