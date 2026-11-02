@@ -194,6 +194,19 @@ Le propriétaire veut d'abord que tout marche **sur son téléphone, sans PC**. 
 5. **La clé** : `opencode`, puis `/connect`, puis **OpenCode** ; colle ta clé, puis `/models`. Une clé créée en **Restricted**, avec **Models : Request** et tout le reste sur **None**, suffit.
 6. **Au quotidien** : `npm run nayos`, le cockpit dans `tmux`. « Serveur de dev » donne `http://localhost:5173`, à ouvrir dans Chrome sur le téléphone : Debian et Android partagent le même réseau.
 7. **Pousser sur GitHub** : un **jeton à grain fin** limité au dépôt NayosBeat (« Contents » et « Pull requests » en lecture et écriture), donné à git ou à `gh auth login`. Jamais dans un fichier du dépôt.
+8. **Un seul tap** depuis l'écran d'accueil :
+   - installe **Termux:Widget** depuis F-Droid ;
+   - dans **Termux** (pas dans Debian), lance une fois :
+     ```sh
+     bash $PREFIX/var/lib/proot-distro/installed-rootfs/debian/root/NayosBeat/tools/remote/termux-shortcut.sh
+     ```
+   - ajoute le widget **Termux:Widget** à l'écran d'accueil.
+
+   Il propose deux raccourcis :
+   - **NayosBeat** ouvre Debian, démarre le serveur FCC s'il dort, et lance Claude Code dans `tmux` (la session `nayos-claude`). Un deuxième tap reprend la même session ;
+   - **NayosBeat-menu** ouvre le cockpit.
+
+   Les deux prennent un *wake lock* (`termux-wake-lock`), pour qu'Android ne coupe pas Termux en arrière-plan ; tu le relâches depuis la notification de Termux.
 
 **Incertitudes** :
 - je n'ai pas pu essayer OpenCode dans cette Debian sur un vrai téléphone ;
@@ -205,14 +218,23 @@ Le propriétaire veut d'abord que tout marche **sur son téléphone, sans PC**. 
 
 [Free Claude Code](https://github.com/Alishahryar1/free-claude-code) (licence AGPL-3.0) fait tourner **Claude Code** sur d'autres fournisseurs, dont **OpenCode Zen** (les modèles d'OpenCode, avec la même clé). C'est un petit serveur local qui traduit les requêtes. On garde ainsi les habitudes de Claude Code (`CLAUDE.md`, ses outils) avec ta clé OpenCode.
 
-**L'installation sûre, sur le PC seulement** : `tools/remote/setup.sh --fcc`.
+**L'installation sûre**, sur le PC ou dans la Debian du téléphone (pas dans Termux nu) : `tools/remote/setup.sh --fcc`.
 - Elle installe **FCC seul, à une version figée** (`free-claude-code==6.18.5`, depuis PyPI, avec `uv`), et Claude Code depuis npm s'il manque.
 - **Elle n'utilise pas l'installateur officiel de FCC** : lancé sans choix, il installe aussi une dizaine d'autres agents (Aider, Muse et d'autres) à leur toute dernière version, dont un par un script téléchargé depuis un autre site. Je l'ai lu et lancé à blanc avant de l'écarter.
 - FCC demande exactement Python 3.14.10 : avec un `uv` ancien, `uv self update` d'abord.
 
 **Ensuite** :
-1. Lance `fcc-server`, puis ouvre son **Admin UI sur le PC lui-même** choisis le fournisseur **OpenCode Zen**, et colle ta clé OpenCode (son réglage `OPENCODE_API_KEY`). Les modèles s'y écrivent `opencode_zen/<modèle>`. Le serveur ne doit écouter que la machine locale ; ne l'expose ni sur Internet ni sur le réseau.
-2. Depuis le téléphone, dans le cockpit, choisis « Claude Code via Free Claude Code » (ou lance `fcc-claude`).
+1. Lance `fcc-server`, puis ouvre son **Admin UI sur la machine elle-même** (`http://localhost:8082/admin`).
+   - Choisis le fournisseur **OpenCode Zen**, et colle ta clé OpenCode (son réglage `OPENCODE_API_KEY`). Les modèles s'y écrivent `opencode_zen/<modèle>`.
+   - Le serveur ne doit servir que la machine locale ; ne l'expose ni sur Internet ni sur le réseau. Active **Proxy Authentication** dans l'Admin UI : sur un Wi-Fi partagé, personne d'autre ne peut alors s'en servir avec tes clés.
+2. **Gratuit d'abord, DeepSeek en secours** (le réglage le plus tranquille), dans **Model Config** :
+   - `MODEL` : un modèle **gratuit** d'OpenCode Zen, choisi dans la liste ;
+   - les niveaux `MODEL_OPUS`, `MODEL_SONNET` et `MODEL_HAIKU` sur **None**, pour qu'ils suivent `MODEL` ;
+   - **Fallback Models** : `deepseek/deepseek-chat`, avec la clé `DEEPSEEK_API_KEY` dans le fournisseur DeepSeek. DeepSeek ne sert, et ne coûte, que lorsque le modèle gratuit échoue (limite atteinte, panne) ;
+   - **Apply**.
+
+   Pour payer le moins possible, mets une petite somme sur DeepSeek, sans recharge automatique : au pire, il s'arrête quand elle est épuisée.
+3. Depuis le téléphone : le raccourci **NayosBeat** (§6, point 8). Sinon, dans le cockpit, choisis « Claude Code via Free Claude Code ». Le cockpit démarre `fcc-server` s'il ne répond pas, et son journal va dans `~/fcc.log`.
 
 **Ses robots Telegram et Discord** (piloter l'agent par messages, même vocaux) : je les laisse **éteints**. Un message reçu par ce robot devient une commande exécutée sur ton PC, et tout passe par les serveurs de Telegram ou de Discord. Tailscale et Termius font la même chose sans intermédiaire. Si tu veux quand même les essayer :
 - un utilisateur dédié sur le PC, qui ne voit que le clone de NayosBeat ;
@@ -222,7 +244,8 @@ Le propriétaire veut d'abord que tout marche **sur son téléphone, sans PC**. 
 
 **Incertitudes** :
 - je n'ai pas pu installer FCC jusqu'au bout ici, car le `uv` du conteneur ne connaît pas encore Python 3.14.10. Le script s'arrête avec ce message si ça t'arrive ;
-- la façon exacte dont `fcc-claude` aiguille Claude Code vers FCC est décrite dans sa doc, pas vérifiée ici.
+- la façon exacte dont `fcc-claude` aiguille Claude Code vers FCC est décrite dans sa doc, pas vérifiée ici. Sa doc ne dit pas non plus s'il transmet le jeton de **Proxy Authentication** : après l'avoir activée, vérifie que Claude Code répond toujours ;
+- la doc de FCC ne nomme aucun modèle gratuit d'OpenCode Zen, et la gratuité change selon le fournisseur : vérifie-la dans la liste de l'Admin UI ou sur la console OpenCode.
 
 ---
 
