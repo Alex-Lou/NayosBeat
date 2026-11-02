@@ -240,9 +240,9 @@ function counted(route: Route, mode: FlashMode, shake: Comfort['shake'] = 'norma
     if (area > 0 && !outlineAsks) lit.set(at, (lit.get(at) ?? 0) + area * zoom ** 2);
   };
   const admit = budget.admit.bind(budget);
-  budget.admit = (area: number) => {
+  budget.admit = (area: number, join?: boolean) => {
     outlineAsks = area === OUTLINE_AREAS[route.fighters[0]];
-    const answer = admit(area);
+    const answer = admit(area, join);
     outlineAsks = false;
     return answer;
   };

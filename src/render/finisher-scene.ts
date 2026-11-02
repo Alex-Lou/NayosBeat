@@ -536,8 +536,8 @@ export class FinisherScene {
   /**
    * The winner's outline (§2.3, §3.3), a rise over the flat: in its energy while it stays under
    * FLASH_DELTA there; on the frame it would reach it, asked of the budget once (§4.5: in reduced
-   * flashes, none counted out of the card), then in its energy if admitted, in a tone that never
-   * flashes (VEIL_DELTA over the flat) if not. From the release, in that tone as it leaves with the
+   * flashes, none counted out of the card, so it may not join the flash of the last blow), then in
+   * its energy if admitted, in a tone that never flashes (VEIL_DELTA over the flat) if not. From the release, in that tone as it leaves with the
    * silhouette: the pose moves then, and each frame of it would light its outline anew.
    */
   private outlineOf(by: 0 | 1, after: After, shade: number, flat: number): number {
@@ -546,7 +546,8 @@ export class FinisherScene {
     if (after.k >= after.timeline.release) return calm();
     if (after.outline === null && luminanceDelta(energy, flat, shade) >= FLASH_DELTA) {
       const area = OUTLINE_AREAS[this.cast.fighters[by]];
-      after.outline = this.cast.budget.admit(area) ? energy : calm();
+      const { budget } = this.cast;
+      after.outline = budget.admit(area, budget.mode === 'normal') ? energy : calm();
     }
     return after.outline ?? energy;
   }
