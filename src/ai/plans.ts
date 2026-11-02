@@ -96,11 +96,11 @@ const NAYO_PLANS: readonly Plan[] = [
   { after: 'standLight', when: HIT, steps: [L, H, F | S], weight: STRING },
   {
     after: 'standLight',
-    when: within(52),
+    when: within(51),
     steps: [L, H, H, F | S],
     weight: { ...STRING, hard: 3 },
   },
-  { after: 'standLight', when: within(46), steps: [B | L, B | L, B | L], weight: STRING },
+  { after: 'standLight', when: within(44), steps: [B | L, B | L, B | L], weight: STRING },
   // Guarded: the high or the low end of the string, a 50/50 without a motion.
   { after: 'standLight', when: BLOCKED, steps: [L, F | H], weight: MIX },
   { after: 'standLight', when: BLOCKED, steps: [L, D | H], weight: MIX },
@@ -116,19 +116,19 @@ const NAYO_PLANS: readonly Plan[] = [
   // D3: from the Jab chassé.
   { after: 'forwardLight', when: HIT, steps: [L, L], weight: EASY },
   // I7, D5: from the Coup bas, whose reach the next blow does not have.
-  { after: 'crouchLight', when: within(39), steps: [D | L, H, F | S], weight: STRING },
+  { after: 'crouchLight', when: within(37), steps: [D | L, H, F | S], weight: STRING },
   {
     after: 'crouchLight',
-    when: { ...within(42), crouching: true },
+    when: { ...within(41), crouching: true },
     steps: [D | L, D | H],
     weight: MIX,
   },
   // I4, then the Crochet that folds the opponent on a CONTRE (A5): the Crochet reaches farther
   // than the Pied fendu, and than the Direct the fold starts over with.
-  { after: 'standHeavy', when: within(60), steps: [H, F | S], weight: STRING },
+  { after: 'standHeavy', when: within(58), steps: [H, F | S], weight: STRING },
   {
     after: 'standHeavy',
-    when: { ...within(52), counter: true },
+    when: { ...within(50), counter: true },
     steps: [L, L, H, H, F | S],
     weight: { easy: 0, normal: 2, hard: 4 },
   },
@@ -148,8 +148,8 @@ const NAYO_PLANS: readonly Plan[] = [
   // With the gauge (combos-v3 §3.1). I9: the base combo ends on the Vinyle platine; the Pied
   // fendu platine sends up (normal stops there); A8, A9: the Uppercut catches the body coming
   // down; A7: the Rewind starts the phrase over; E3: the Mégabasse to end the base combo.
-  { after: 'standLight', when: spending(52, BOOST_BAR), steps: [L, H, H, X], weight: REMIX },
-  { after: 'standHeavy', when: spending(60, BOOST_BAR), steps: [H, F | X], weight: REMIX },
+  { after: 'standLight', when: spending(51, BOOST_BAR), steps: [L, H, H, X], weight: REMIX },
+  { after: 'standHeavy', when: spending(58, BOOST_BAR), steps: [H, F | X], weight: REMIX },
   {
     after: 'standHeavy',
     when: spending(55, BOOST_BAR),
@@ -168,8 +168,8 @@ const NAYO_PLANS: readonly Plan[] = [
     steps: [L, H, R, L, L, H, H, F | S],
     weight: SPEND,
   },
-  { after: 'standLight', when: spending(52, BOOST_MAX), steps: [L, H, H, B | X], weight: SPEND },
-  { after: 'standHeavy', when: spending(60, BOOST_MAX), steps: [H, B | X], weight: SPEND },
+  { after: 'standLight', when: spending(51, BOOST_MAX), steps: [L, H, H, B | X], weight: SPEND },
+  { after: 'standHeavy', when: spending(58, BOOST_MAX), steps: [H, B | X], weight: SPEND },
   // The Finisher from the Uppercut that hit (docs/finisher.md §1.3, §1.11): the Mégabasse
   // catches the body sent up. Riff's Genou montant has none: the body falls before her Slam.
   { after: 'specialAntiAir', when: finishing(38), steps: [B | X], weight: SPEND },
@@ -193,7 +193,7 @@ const RIFF_PLANS: readonly Plan[] = [
   { after: 'standLight', when: within(42), steps: [L, B | H, L, L, L], weight: JUGGLE },
   {
     after: 'standLight',
-    when: within(39),
+    when: within(36),
     steps: [L, B | H, L, L, L, L, L, D | S],
     weight: JUGGLE,
   },
@@ -204,7 +204,7 @@ const RIFF_PLANS: readonly Plan[] = [
   { after: 'backHeavy', when: HIT, steps: [D | S], weight: EASY },
   { after: 'backHeavy', when: HIT, steps: [L, L, L], weight: STRING },
   // The Vrille at the end must still reach the body the phrase carried away.
-  { after: 'backHeavy', when: within(32), steps: [L, L, L, L, L, D | S], weight: JUGGLE },
+  { after: 'backHeavy', when: within(29), steps: [L, L, L, L, L, D | S], weight: JUGGLE },
   // With the gauge (combos-v3 §4): the Glissade or the Genou à fond to end the base combo, the
   // Pogo that starts the phrase over, the Slam.
   { after: 'standLight', when: spending(44, BOOST_BAR), steps: [L, H, H, X], weight: REMIX },
@@ -219,10 +219,73 @@ const RIFF_PLANS: readonly Plan[] = [
   { after: 'standHeavy', when: spending(47, BOOST_MAX), steps: [H, B | X], weight: SPEND },
 ];
 
+/**
+ * Saphir's plans: her routes of docs/saphir.md §5, short, most of them ending standing and far,
+ * the Syncope stepping her back out (« un pas, une touche, dehors »).
+ */
+const SAPHIR_PLANS: readonly Plan[] = [
+  // The beginner's two: L, L, L, and L, H then the Syncope.
+  { after: 'standLight', when: HIT, steps: [L, L], weight: EASY },
+  { after: 'standLight', when: HIT, steps: [H, S], weight: EASY },
+  // Her strings: the Fouetté into the Chassé, or into the Plongé from above, then the Syncope;
+  // the heavy string ends on the Syncope or on the Rubato that floors. The Chassé arrière falls
+  // short past 51 px.
+  { after: 'standLight', when: HIT, steps: [L, H, S], weight: STRING },
+  { after: 'standLight', when: HIT, steps: [L, F | H, S], weight: STRING },
+  {
+    after: 'standLight',
+    when: within(51),
+    steps: [L, H, H, S],
+    weight: { ...STRING, hard: 3 },
+  },
+  { after: 'standLight', when: within(51), steps: [L, H, H, F | S], weight: STRING },
+  // Guarded: the Plongé over the guard or the Fauche under it, a 50/50 without a motion.
+  { after: 'standLight', when: BLOCKED, steps: [L, F | H], weight: MIX },
+  { after: 'standLight', when: BLOCKED, steps: [L, D | H], weight: MIX },
+  // The Chandelle glissée, then L, L, L on the body in the air: from close enough for the
+  // Pointe to reach it.
+  { after: 'standLight', when: within(49), steps: [L, B | H, L, L, L], weight: JUGGLE },
+  { after: 'forwardLight', when: HIT, steps: [L, L], weight: EASY },
+  // From the low kick, whose reach the Chassé does not keep.
+  { after: 'crouchLight', when: within(42), steps: [D | L, H, S], weight: STRING },
+  {
+    after: 'crouchLight',
+    when: { ...within(40), crouching: true },
+    steps: [D | L, D | H],
+    weight: MIX,
+  },
+  // The Chassé: the Syncope from its tip, the Chassé arrière first from closer; guarded, the
+  // Syncope that steps out. At contact, the Chandelle and the juggle.
+  { after: 'standHeavy', when: HIT, steps: [S], weight: STRING },
+  { after: 'standHeavy', when: within(58), steps: [H, S], weight: STRING },
+  { after: 'standHeavy', when: BLOCKED, steps: [S], weight: MIX },
+  { after: 'standHeavy', when: within(28), steps: [B | H, L, L, L], weight: JUGGLE },
+  // The Chandelle from an anti-air: the Contre-ut, or L, L, L in the air.
+  { after: 'backHeavy', when: within(42), steps: [D | S], weight: EASY },
+  { after: 'backHeavy', when: within(45), steps: [L, L, L], weight: STRING },
+  // With the gauge (docs/saphir.md §6): the Syncope forte or the Rubato forte to end the heavy
+  // string, the Reprise that starts the phrase over, the Coda.
+  { after: 'standLight', when: spending(51, BOOST_BAR), steps: [L, H, H, X], weight: REMIX },
+  { after: 'standLight', when: spending(51, BOOST_BAR), steps: [L, H, H, F | X], weight: REMIX },
+  { after: 'standHeavy', when: spending(58, BOOST_BAR), steps: [H, X], weight: REMIX },
+  {
+    after: 'standLight',
+    when: spending(54, BOOST_BAR),
+    steps: [L, H, R, L, L, H, H, S],
+    weight: SPEND,
+  },
+  { after: 'standLight', when: spending(51, BOOST_MAX), steps: [L, H, H, B | X], weight: SPEND },
+  { after: 'standHeavy', when: spending(58, BOOST_MAX), steps: [H, B | X], weight: SPEND },
+  // The Coda at once from the Chassé, from farther than the Chassé arrière reaches: past 64 px,
+  // its last blows no longer find the body the Chassé pushed away.
+  { after: 'standHeavy', when: spending(64, BOOST_MAX), steps: [B | X], weight: SPEND },
+];
+
 /** Each fighter's plans, by its name. */
 export const PLANS: Readonly<Record<string, readonly Plan[]>> = {
   Nayo: NAYO_PLANS,
   Riff: RIFF_PLANS,
+  Saphir: SAPHIR_PLANS,
 };
 
 /** What the CPU knows of its move, once it has connected and the game moves again. */

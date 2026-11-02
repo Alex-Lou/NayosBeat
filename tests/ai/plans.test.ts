@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { planFor, playString, startString } from '../../src/ai/plans';
 import type { CpuLevel } from '../../src/ai/profiles';
-import type { MatchConfig } from '../../src/core/config';
+import type { FighterTemplate, MatchConfig } from '../../src/core/config';
 import { Input, type InputBits } from '../../src/core/input';
 import type { MoveId } from '../../src/core/move-data';
 import { FLAG_MOVE_HIT, type FighterState } from '../../src/core/state';
 import { NAYO } from '../../src/data/fighters/nayo';
 import { RIFF } from '../../src/data/fighters/riff';
+import { SAPHIR } from '../../src/data/fighters/saphir';
 import { TRAINING_STAGE } from '../../src/data/stages';
 import { playCpuMatches } from '../core/cpu-match';
 import { makeFighter } from '../core/helpers';
@@ -33,11 +34,16 @@ function connected(move: MoveId, hit = true, boost = 0): FighterState {
 
 const RIFF_HIT = makeFighter({ x: makeFighter().x + 4000, action: 'hitstun', stunTotal: 14 });
 
-/** Every plan `level` draws for `me` over many seeds, by its steps. */
-function drawn(me: FighterState, level: CpuLevel, opponent = RIFF_HIT): Set<string> {
+/** Every plan `level` draws for `me` (Nayo, or `template`) over many seeds, by its steps. */
+function drawn(
+  me: FighterState,
+  level: CpuLevel,
+  opponent = RIFF_HIT,
+  template: FighterTemplate = NAYO,
+): Set<string> {
   const plans = new Set<string>();
   for (let seed = 0; seed < 200; seed++) {
-    plans.add(planFor(me, opponent, NAYO, level, seed * 7919).steps.join(' '));
+    plans.add(planFor(me, opponent, template, level, seed * 7919).steps.join(' '));
   }
   return plans;
 }
@@ -69,6 +75,20 @@ describe('the plans (§6.4)', () => {
     const folded = makeFighter({ ...RIFF_HIT, stunTotal: NAYO.moves.standHeavy.hitstun + 16 });
     expect(drawn(connected('standHeavy'), 'hard', folded)).toContain(written([L, L, H, H, F | S]));
     expect(drawn(connected('standHeavy'), 'hard')).not.toContain(written([L, L, H, H, F | S]));
+  });
+
+  it("Saphir's: L, L, L and L, H → S for easy, her strings out on the Syncope or the Rubato", () => {
+    const pointe = (level: CpuLevel) => drawn(connected('standLight'), level, RIFF_HIT, SAPHIR);
+    expect(pointe('easy')).toEqual(new Set([written([L, L]), written([H, S])]));
+    const normal = pointe('normal');
+    expect(normal).toContain(written([L, H, H, S]));
+    expect(normal).toContain(written([L, H, H, F | S]));
+    expect(normal).not.toContain(written([L, B | H, L, L, L]));
+    expect(pointe('hard')).toContain(written([L, B | H, L, L, L]));
+    // The Chassé blocked: the Syncope that steps her back out.
+    expect(drawn(connected('standHeavy', false), 'hard', RIFF_HIT, SAPHIR)).toEqual(
+      new Set([written([S])]),
+    );
   });
 
   it('with no plan: the special if the move cancels into one, as before, else nothing', () => {
@@ -172,20 +192,28 @@ describe('a plan played (§6.4)', () => {
   });
 });
 
+/** The duels of the cast, each fighter on each side: Nayo and Riff, then Saphir and each. */
+const DUELS = [
+  [NAYO, RIFF],
+  [RIFF, NAYO],
+  [SAPHIR, NAYO],
+  [NAYO, SAPHIR],
+  [SAPHIR, RIFF],
+  [RIFF, SAPHIR],
+] as const;
+
 describe('the gauge in a match', () => {
-  it('hard CPUs spend every Boost move of both fighters, never a press they cannot pay for', () => {
-    const spent: [Set<MoveId>, Set<MoveId>] = [new Set(), new Set()];
-    for (const fighters of [
-      [NAYO, RIFF],
-      [RIFF, NAYO],
-    ] as const) {
+  it('hard CPUs spend every Boost move of each fighter, never a press they cannot pay for', () => {
+    const spent = new Map<FighterTemplate, Set<MoveId>>();
+    for (const fighters of DUELS) {
       const config: MatchConfig = { stage: TRAINING_STAGE, fighters };
       let before: readonly FighterState[] | null = null;
       playCpuMatches(200_000, config, ['hard', 'hard'], (state) => {
         state.fighters.forEach((fighter, player) => {
           const template = fighters[player === 0 ? 0 : 1];
           const move = fighter.move ? template.moves[fighter.move] : undefined;
-          if (fighter.move && move?.boostCost) spent[template === NAYO ? 0 : 1].add(fighter.move);
+          const moves = spent.get(template) ?? new Set();
+          if (fighter.move && move?.boostCost) spent.set(template, moves.add(fighter.move));
           // BOOST newly pressed: the gauge pays for a Remix at least.
           const was = before?.[player];
           const pressed = (fighter.input & ~(was?.input ?? 0) & X) !== 0;
@@ -202,69 +230,88 @@ describe('the gauge in a match', () => {
       'boostCancel',
       'super',
     ] as const;
-    expect([...spent[0]].sort()).toEqual([...all].sort());
-    expect([...spent[1]].sort()).toEqual([...all].sort());
-  });
+    expect([...(spent.get(NAYO) ?? [])].sort()).toEqual([...all].sort());
+    expect([...(spent.get(RIFF) ?? [])].sort()).toEqual([...all].sort());
+    // Saphir's Contre-ut forte is no reversal (invincible to the air alone): the CPU, which
+    // presses ↓ + BOOST only as one, leaves it to the players.
+    const saphir = all.filter((move) => move !== 'specialAntiAirBoost');
+    expect([...(spent.get(SAPHIR) ?? [])].sort()).toEqual([...saphir].sort());
+  }, 30_000);
 
   it('hard CPUs build 1.2 to 3 bars a round, each fighter 40 to 60 % of it (combos-v3 §6.2)', () => {
-    // What each fighter's gauge gained, in points, and the rounds played, both sides in turn.
-    const built = new Map([
-      [NAYO, 0],
-      [RIFF, 0],
-    ]);
-    let rounds = 0;
-    for (const fighters of [
+    for (const [a, b] of [
       [NAYO, RIFF],
-      [RIFF, NAYO],
+      [SAPHIR, NAYO],
+      [SAPHIR, RIFF],
     ] as const) {
-      const config: MatchConfig = { stage: TRAINING_STAGE, fighters };
-      let before: readonly FighterState[] | null = null;
-      let phase = '';
-      playCpuMatches(300_000, config, ['hard', 'hard'], (state) => {
-        state.fighters.forEach((fighter, player) => {
-          const gained = fighter.boost - (before?.[player]?.boost ?? fighter.boost);
-          const template = fighters[player === 0 ? 0 : 1];
-          if (gained > 0) built.set(template, (built.get(template) ?? 0) + gained);
+      // What each fighter's gauge gained, in points, and the rounds played, both sides in turn.
+      const built = new Map([
+        [a, 0],
+        [b, 0],
+      ]);
+      let rounds = 0;
+      for (const fighters of [
+        [a, b],
+        [b, a],
+      ] as const) {
+        const config: MatchConfig = { stage: TRAINING_STAGE, fighters };
+        let before: readonly FighterState[] | null = null;
+        let phase = '';
+        playCpuMatches(300_000, config, ['hard', 'hard'], (state) => {
+          state.fighters.forEach((fighter, player) => {
+            const gained = fighter.boost - (before?.[player]?.boost ?? fighter.boost);
+            const template = fighters[player === 0 ? 0 : 1];
+            if (gained > 0) built.set(template, (built.get(template) ?? 0) + gained);
+          });
+          if (state.round.phase === 'roundEnd' && phase !== 'roundEnd') rounds++;
+          phase = state.round.phase;
+          before = state.fighters;
         });
-        if (state.round.phase === 'roundEnd' && phase !== 'roundEnd') rounds++;
-        phase = state.round.phase;
-        before = state.fighters;
-      });
+      }
+      const first = built.get(a) ?? 0;
+      const second = built.get(b) ?? 0;
+      const bars = (first + second) / 2 / 1000 / rounds;
+      const pair = `${a.name} and ${b.name}`;
+      expect(rounds, pair).toBeGreaterThan(100);
+      expect(bars, pair).toBeGreaterThanOrEqual(1.2);
+      expect(bars, pair).toBeLessThanOrEqual(3);
+      const share = first / (first + second);
+      expect(share, pair).toBeGreaterThanOrEqual(0.4);
+      expect(share, pair).toBeLessThanOrEqual(0.6);
     }
-    const nayo = built.get(NAYO) ?? 0;
-    const riff = built.get(RIFF) ?? 0;
-    const bars = (nayo + riff) / 2 / 1000 / rounds;
-    expect(rounds).toBeGreaterThan(100);
-    expect(bars).toBeGreaterThanOrEqual(1.2);
-    expect(bars).toBeLessThanOrEqual(3);
-    const share = nayo / (nayo + riff);
-    expect(share).toBeGreaterThanOrEqual(0.4);
-    expect(share).toBeLessThanOrEqual(0.6);
-    // 600 000 ticks of play: about 2 s here, more on a loaded CI runner.
-  }, 30_000);
+    // 1 800 000 ticks of play: about 6 s here, more on a loaded CI runner.
+  }, 60_000);
 });
 
 describe('the strings in a match', () => {
-  it('hard CPUs play every string and juggle of both fighters', () => {
-    const config: MatchConfig = { stage: TRAINING_STAGE, fighters: [NAYO, RIFF] };
-    const played: [Set<MoveId>, Set<MoveId>] = [new Set(), new Set()];
-    let airborne = 0;
-    // Long enough for the routes drawn only up close (the Double direct's, within 46 px), while
-    // most of a CPU's Directs land from farther.
-    playCpuMatches(100_000, config, ['hard', 'hard'], (state) => {
-      state.fighters.forEach((fighter, player) => {
-        if (fighter.move) played[player === 0 ? 0 : 1].add(fighter.move);
+  it('hard CPUs play every string and juggle of each fighter', () => {
+    const strings = ['chainHeavy', 'chainHigh', 'chainLaunch'] as const;
+    for (const [fighters, firsts, seconds] of [
+      [[NAYO, RIFF], ['jabRepeat', ...strings], strings],
+      // Saphir's L, L is her Fouetté, and L, L, L her Revers tournant: no jabRepeat.
+      [[SAPHIR, NAYO], ['chainLight', 'lightFinisher', ...strings], []],
+    ] as const) {
+      const config: MatchConfig = { stage: TRAINING_STAGE, fighters };
+      const played: [Set<MoveId>, Set<MoveId>] = [new Set(), new Set()];
+      let airborne = 0;
+      // Long enough for the routes drawn only up close (the Double direct's, within 44 px), while
+      // most of a CPU's Directs land from farther.
+      playCpuMatches(100_000, config, ['hard', 'hard'], (state) => {
+        state.fighters.forEach((fighter, player) => {
+          if (fighter.move) played[player === 0 ? 0 : 1].add(fighter.move);
+        });
+        if (state.contacts.some((contact) => contact.kind === 'hit')) {
+          airborne += state.fighters.filter((fighter) => fighter.juggle > 0).length;
+        }
       });
-      if (state.contacts.some((contact) => contact.kind === 'hit')) {
-        airborne += state.fighters.filter((fighter) => fighter.juggle > 0).length;
+      const [first, second] = fighters;
+      for (const move of firsts) {
+        expect(played[0].has(move), `${first.name}'s ${move}`).toBe(true);
       }
-    });
-    for (const move of ['jabRepeat', 'chainHeavy', 'chainHigh', 'chainLaunch'] as const) {
-      expect(played[0].has(move), `Nayo's ${move}`).toBe(true);
+      for (const move of seconds) {
+        expect(played[1].has(move), `${second.name}'s ${move}`).toBe(true);
+      }
+      expect(airborne).toBeGreaterThan(0);
     }
-    for (const move of ['chainHeavy', 'chainHigh', 'chainLaunch'] as const) {
-      expect(played[1].has(move), `Riff's ${move}`).toBe(true);
-    }
-    expect(airborne).toBeGreaterThan(0);
   });
 });
