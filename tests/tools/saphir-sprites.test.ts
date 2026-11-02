@@ -175,6 +175,7 @@ describe('Saphir strips: reach', () => {
     'crouchHeavy',
     'jumpLight',
     'jumpHeavy',
+    'grab',
   ] as const;
   const ANTI_AIRS: ReadonlySet<string> = new Set(['specialAntiAir', 'backHeavy', 'chainLaunch']);
   /** Her strikes on the strips drawn so far: the moves and their Remixes playing them. */
@@ -194,6 +195,7 @@ describe('Saphir strips: reach', () => {
         'crouchLight',
         'forwardHeavy',
         'forwardLight',
+        'grab',
         'jumpHeavy',
         'jumpLight',
         'lightFinisher',
