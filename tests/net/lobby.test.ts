@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   findOpponent,
   HANDSHAKE_MS,
+  HELD_MESSAGES,
   ROOM_COUNT,
   roomId,
   type SearchResult,
@@ -50,10 +51,40 @@ describe('the automatic search (docs/multijoueur.md §3)', () => {
     expect(guest).toMatchObject({ kind: 'paired', role: 'guest', room: 0 });
     if (host.kind !== 'paired' || guest.kind !== 'paired') throw new Error('Not paired');
     // Each holds one end of the same link, which stays open.
-    expect((host.channel as FakeChannel).other).toBe(guest.channel);
+    const raw = (channel: unknown) => (channel as { raw: FakeChannel }).raw;
+    expect(raw(host.channel).other).toBe(raw(guest.channel));
     expect(server.openChannels()).toBe(2);
     // Off the server: the room is free for the next pair.
     expect(server.rooms.size).toBe(0);
+  });
+
+  it('keeps what the other side says before anyone listens, in order, up to a flood', async () => {
+    const server = new FakeServer();
+    const first = search(server);
+    await settle();
+    const second = search(server);
+    const [host, guest] = await Promise.all([first.done, second.done]);
+    if (host.kind !== 'paired' || guest.kind !== 'paired') throw new Error('Not paired');
+    guest.channel.send('one');
+    guest.channel.send('two');
+    await settle();
+    const heard: unknown[] = [];
+    let closed = 0;
+    host.channel.listen({ message: (data) => heard.push(data), closed: () => closed++ });
+    expect(heard).toEqual([]);
+    await settle();
+    expect(heard).toEqual(['one', 'two']);
+
+    // The guest's end: a flood before it listens closes the link, and it is told so.
+    for (let i = 0; i <= HELD_MESSAGES; i++) host.channel.send(`flood ${i}`);
+    await settle();
+    expect(closed).toBe(1);
+    const late: unknown[] = [];
+    let lateClosed = 0;
+    guest.channel.listen({ message: (data) => late.push(data), closed: () => lateClosed++ });
+    await settle();
+    expect(lateClosed).toBe(1);
+    expect(late).toEqual([]);
   });
 
   it('lets a third device host room 0 again once the first pair has left it', async () => {
