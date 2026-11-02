@@ -100,6 +100,14 @@ export const DUST = ramp('#5a5a4c', '#7a7a66');
 /** Tape on the floor and on the gloves: dull white. */
 export const TAPE = ramp('#5e5a53', '#8a8478');
 
+/**
+ * The rain (docs/art/pluie.md), drawn only by the animations of the rain's atmosphere: its streaks
+ * and runs on the window's glass, the leak's water, the zinc bucket under it.
+ */
+export const RAIN = ramp('#3c4262', '#566082', '#7e88aa');
+export const WATER = ramp('#262c40', '#3a4460', '#66729a');
+export const ZINC = ramp('#26282e', '#33363c', '#45484e', '#5c5f64');
+
 /** Every color, slot by slot (256 at most: one PNG palette). */
 export const PALETTE: readonly Rgba[] = colors;
 

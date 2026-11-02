@@ -7,7 +7,11 @@ import { decodeIndexedPng, type IndexedImage } from '../../tools/sprites/png';
 import { stageRulesOf } from '../../tools/sprites/stage-drawn';
 import { liftedLayers, packProps } from '../../tools/sprites/stage-props';
 import { drawGym } from '../../tools/stage/gym';
-import { TRAIN_CYCLE } from '../../tools/stage/gym/mid';
+import { STAGE_VARIANTS } from '../../src/art/gym';
+import { STAGE_COLORS } from '../../src/art/gym/colors';
+import { STAGE_COLORS as RUE_COLORS } from '../../src/art/rue/colors';
+import { STAGE_MAPS } from '../../src/art/stages';
+import { leakAt, PASSING, RUNNING, TRAIN_CYCLE } from '../../tools/stage/gym/mid';
 import { PALETTE } from '../../tools/stage/gym/palette';
 
 /** The colors of an image, pixel by pixel, as 0xRRGGBBAA (0: transparent). */
@@ -124,7 +128,7 @@ describe("the code's Viaduct Gym (docs/art/decor-gym.md)", { timeout: 60_000 }, 
         (sum, [, steps]) => sum + steps,
         0,
       );
-    for (const name of ['train', 'swing0', 'swing1', 'dust0', 'dust1', 'dust2']) {
+    for (const name of ['train', 'swing0', 'swing1', 'dust0', 'dust1', 'dust2', 'drip', 'bucket']) {
       expect(length(name), name).toBe(TRAIN_CYCLE);
     }
   });
@@ -134,5 +138,45 @@ describe("the code's Viaduct Gym (docs/art/decor-gym.md)", { timeout: 60_000 }, 
     expect(
       Math.min(...(flicker?.timeline.map(([, steps]) => steps) ?? [0])),
     ).toBeGreaterThanOrEqual(20);
+  });
+
+  it('rains outside only: its curtain never falls under the vault, its window and leak show it', () => {
+    const rain = STAGE_VARIANTS.find(({ atmosphere }) => atmosphere.weather === 'rain');
+    if (!rain) throw new Error('the gym under the rain');
+    // Sheltered: the render's curtain never falls over it (src/render/stage-rain.ts `rains`).
+    expect(STAGE_MAPS.find(({ name }) => name === 'gym')?.sheltered).toBe(true);
+    const wet = ['downpour', 'drip', 'bucket'];
+    for (const { atmosphere, art } of STAGE_VARIANTS) {
+      const names = (art.props?.props ?? []).map(({ name }) => name);
+      for (const name of wet) {
+        expect(names.includes(name), `${atmosphere.weather} ${name}`).toBe(
+          atmosphere.weather === 'rain',
+        );
+      }
+    }
+  });
+
+  it('drips faster while the train shakes the vault, each drop landing in the bucket', () => {
+    const drops = (from: number, to: number) => {
+      let count = 0;
+      for (let step = from; step < to; step++) {
+        if (leakAt(step).drip === 1 && leakAt(step - 1).drip !== 1) count += 1;
+      }
+      return count / (to - from);
+    };
+    expect(drops(PASSING, PASSING + RUNNING)).toBeGreaterThan(drops(1, PASSING) * 3);
+    // Each drop's fall ends with a ripple in the bucket.
+    for (let step = 1; step < TRAIN_CYCLE; step++) {
+      if (leakAt(step - 1).drip === 7 && leakAt(step).drip !== 7) {
+        expect(leakAt(step).bucket, `step ${step}`).toBe(2);
+      }
+    }
+  });
+
+  it("keeps the street's night of rain at its window, tone for tone", () => {
+    // The outside's large colors are the street's own under the rain (BORROWED).
+    const outside = new Set(RUE_COLORS['midnight-rain']);
+    const shared = (STAGE_COLORS['midnight-rain'] ?? []).filter((color) => outside.has(color));
+    expect(shared.length).toBeGreaterThan(0);
   });
 });
