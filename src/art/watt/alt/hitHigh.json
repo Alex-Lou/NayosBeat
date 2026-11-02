@@ -1,35 +1,35 @@
 {
   "frames": {
     "0": {
-      "frame": { "x": 0, "y": 0, "w": 102, "h": 168 },
+      "frame": { "x": 0, "y": 0, "w": 102, "h": 169 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 0, "w": 102, "h": 168 },
-      "sourceSize": { "w": 102, "h": 168 }
+      "spriteSourceSize": { "x": 2, "y": 0, "w": 102, "h": 169 },
+      "sourceSize": { "w": 104, "h": 169 }
     },
     "1": {
-      "frame": { "x": 102, "y": 0, "w": 102, "h": 168 },
+      "frame": { "x": 102, "y": 0, "w": 103, "h": 169 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 0, "w": 102, "h": 168 },
-      "sourceSize": { "w": 102, "h": 168 }
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 103, "h": 169 },
+      "sourceSize": { "w": 104, "h": 169 }
     },
     "2": {
-      "frame": { "x": 204, "y": 0, "w": 102, "h": 168 },
+      "frame": { "x": 205, "y": 0, "w": 103, "h": 169 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 0, "w": 102, "h": 168 },
-      "sourceSize": { "w": 102, "h": 168 }
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 103, "h": 169 },
+      "sourceSize": { "w": 104, "h": 169 }
     },
     "3": {
-      "frame": { "x": 306, "y": 0, "w": 102, "h": 168 },
+      "frame": { "x": 308, "y": 0, "w": 103, "h": 169 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 0, "w": 102, "h": 168 },
-      "sourceSize": { "w": 102, "h": 168 }
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 103, "h": 169 },
+      "sourceSize": { "w": 104, "h": 169 }
     },
     "4": {
-      "frame": { "x": 408, "y": 0, "w": 102, "h": 168 },
+      "frame": { "x": 411, "y": 0, "w": 103, "h": 168 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 0, "w": 102, "h": 168 },
-      "sourceSize": { "w": 102, "h": 168 }
+      "spriteSourceSize": { "x": 0, "y": 1, "w": 103, "h": 168 },
+      "sourceSize": { "w": 104, "h": 169 }
     }
   },
-  "meta": { "image": "hitHigh.png", "size": { "w": 510, "h": 168 } }
+  "meta": { "image": "hitHigh.png", "size": { "w": 514, "h": 169 } }
 }

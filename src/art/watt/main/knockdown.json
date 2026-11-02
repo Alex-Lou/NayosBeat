@@ -1,41 +1,41 @@
 {
   "frames": {
     "0": {
-      "frame": { "x": 0, "y": 0, "w": 102, "h": 168 },
+      "frame": { "x": 0, "y": 306, "w": 158, "h": 61 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 0, "w": 102, "h": 168 },
-      "sourceSize": { "w": 102, "h": 168 }
+      "spriteSourceSize": { "x": 0, "y": 88, "w": 158, "h": 61 },
+      "sourceSize": { "w": 158, "h": 149 }
     },
     "1": {
-      "frame": { "x": 102, "y": 0, "w": 102, "h": 168 },
+      "frame": { "x": 0, "y": 243, "w": 157, "h": 63 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 0, "w": 102, "h": 168 },
-      "sourceSize": { "w": 102, "h": 168 }
+      "spriteSourceSize": { "x": 1, "y": 84, "w": 157, "h": 63 },
+      "sourceSize": { "w": 158, "h": 149 }
     },
     "2": {
-      "frame": { "x": 204, "y": 0, "w": 102, "h": 168 },
+      "frame": { "x": 0, "y": 367, "w": 158, "h": 61 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 0, "w": 102, "h": 168 },
-      "sourceSize": { "w": 102, "h": 168 }
+      "spriteSourceSize": { "x": 0, "y": 88, "w": 158, "h": 61 },
+      "sourceSize": { "w": 158, "h": 149 }
     },
     "3": {
-      "frame": { "x": 0, "y": 168, "w": 102, "h": 168 },
+      "frame": { "x": 0, "y": 147, "w": 130, "h": 96 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 0, "w": 102, "h": 168 },
-      "sourceSize": { "w": 102, "h": 168 }
+      "spriteSourceSize": { "x": 24, "y": 51, "w": 130, "h": 96 },
+      "sourceSize": { "w": 158, "h": 149 }
     },
     "4": {
-      "frame": { "x": 102, "y": 168, "w": 102, "h": 168 },
+      "frame": { "x": 100, "y": 0, "w": 97, "h": 133 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 0, "w": 102, "h": 168 },
-      "sourceSize": { "w": 102, "h": 168 }
+      "spriteSourceSize": { "x": 28, "y": 14, "w": 97, "h": 133 },
+      "sourceSize": { "w": 158, "h": 149 }
     },
     "5": {
-      "frame": { "x": 204, "y": 168, "w": 102, "h": 168 },
+      "frame": { "x": 0, "y": 0, "w": 100, "h": 147 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 0, "w": 102, "h": 168 },
-      "sourceSize": { "w": 102, "h": 168 }
+      "spriteSourceSize": { "x": 25, "y": 0, "w": 100, "h": 147 },
+      "sourceSize": { "w": 158, "h": 149 }
     }
   },
-  "meta": { "image": "knockdown.png", "size": { "w": 306, "h": 336 } }
+  "meta": { "image": "knockdown.png", "size": { "w": 197, "h": 428 } }
 }

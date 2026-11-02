@@ -7,8 +7,10 @@
  * a planted rear boot rolls onto its ball as far as the knee needs (springAnkle).
  */
 
+import { anatomyIssues } from '../../anatomy.ts';
 import type { Point } from '../../raster.ts';
 import type { Bends, Effect, Face, Foot, Hand } from '../../skeleton.ts';
+import { WATT_BODY } from '../body.ts';
 import { at, fistsOnShoulders, GUARD, springAnkle, type Pose } from './common.ts';
 
 export interface Key {
@@ -17,6 +19,8 @@ export interface Key {
   readonly torso: number;
   /** The bulb's tilt on screen from upright (degrees, chin up: negative). */
   readonly tilt?: number;
+  /** Or the bulb's angle on the neck itself (degrees): a body lying down carries it along. */
+  readonly neck?: number;
   readonly shrug?: number;
   readonly twist?: number;
   readonly reach?: { readonly near?: number; readonly far?: number };
@@ -40,6 +44,7 @@ const point = (p: readonly [number, number] | undefined): Point => (p ? at(p[0],
 /** The bulb kept upright, but never tilted on the neck past NECK (anatomy.ts limits it at 50). */
 const NECK = 40;
 function headOn(k: Key): number {
+  if (k.neck !== undefined) return k.neck;
   const head = HEAD + (k.tilt ?? 0) - k.torso;
   return k.tilt === undefined ? Math.max(-NECK, Math.min(NECK, head)) : head;
 }
@@ -68,4 +73,23 @@ export function keyPose(k: Key): Pose {
     ...(k.near ? { nearFist: at(k.near[0], k.near[1]) } : {}),
     ...(k.far ? { farFist: at(k.far[0], k.far[1]) } : {}),
   });
+}
+
+const FOLDS = ['front', 'back'] as const;
+
+/**
+ * The pose of a key lying down or falling (on his back, the legs in the air), its knees folded
+ * whichever of the four ways breaks the fewest of the anatomy's hard limits (anatomy.ts): on the
+ * back, the knees come up, and which way the solver folds them depends on where the boots are.
+ */
+export function lyingPose(k: Key): Pose {
+  let best: { pose: Pose; strain: number } | null = null;
+  for (const nearKnee of FOLDS) {
+    for (const farKnee of FOLDS) {
+      const pose = keyPose({ ...k, bends: { ...k.bends, nearKnee, farKnee } });
+      const strain = anatomyIssues(pose, WATT_BODY).filter((issue) => issue.hard).length;
+      if (best === null || strain < best.strain) best = { pose, strain };
+    }
+  }
+  return best?.pose ?? keyPose(k);
 }

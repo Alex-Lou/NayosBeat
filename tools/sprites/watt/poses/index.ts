@@ -14,6 +14,16 @@ import { POSES as dashBackPoses } from './dashBack.ts';
 import { POSES as dashForwardPoses } from './dashForward.ts';
 import { POSES as grabPoses } from './grab.ts';
 import { POSES as idlePoses } from './idle.ts';
+import { POSES as hitHighPoses } from './hitHigh.ts';
+import { POSES as hitMidPoses } from './hitMid.ts';
+import { POSES as hitLowPoses } from './hitLow.ts';
+import { POSES as hitCrouchPoses } from './hitCrouch.ts';
+import { POSES as airHitPoses } from './airHit.ts';
+import { POSES as tripPoses } from './trip.ts';
+import { POSES as knockdownPoses } from './knockdown.ts';
+import { POSES as getupPoses } from './getup.ts';
+import { POSES as koPoses } from './ko.ts';
+import { POSES as techPoses } from './tech.ts';
 import { POSES as jumpPoses } from './jump.ts';
 import { POSES as jumpForwardPoses } from './jumpForward.ts';
 import { POSES as specialAntiAirPoses } from './specialAntiAir.ts';
@@ -71,6 +81,16 @@ const DRAWN: Partial<Record<WattSheet, readonly Pose[]>> = {
   crouchHeavy: crouchHeavyPoses,
   jumpLight: jumpLightPoses,
   jumpHeavy: jumpHeavyPoses,
+  hitHigh: hitHighPoses,
+  hitMid: hitMidPoses,
+  hitLow: hitLowPoses,
+  hitCrouch: hitCrouchPoses,
+  airHit: airHitPoses,
+  trip: tripPoses,
+  knockdown: knockdownPoses,
+  getup: getupPoses,
+  ko: koPoses,
+  tech: techPoses,
   special: heldSpecial(WATT_SHEETS.special.frames, 4),
   specialForward: specialForwardPoses,
   specialAntiAir: specialAntiAirPoses,
