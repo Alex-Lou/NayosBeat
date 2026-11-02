@@ -9,14 +9,17 @@ import {
   CALM_STAMP_AREA,
   CALM_WORD_AREAS,
   GRAZE_AREA,
+  SIGNATURE_AREAS,
   SPARK_AREAS,
   STAMP_AREA,
   stampArea,
   WORD_AREAS,
   wordArea,
+  type SignatureCue,
   type SparkLook,
   type WordArea,
 } from '../../src/render/flash-areas';
+import { PLATINE, signatureOf } from '../../src/render/signatures';
 import { FLASH_MARGIN, FLASH_RULES } from '../../src/render/flash-budget';
 import type { HitKind } from '../../src/render/hit-fx';
 import { hitStyleOf, hudColorOf } from '../../src/render/hit-styles';
@@ -45,6 +48,7 @@ import { FX_DARK, glowFlashArea, koVeil, superHalo, VEIL_DELTA } from '../../src
 import { outlinesOf, type Outlines } from './font-outlines';
 import { fxStrips } from './fx-strips';
 import { comic, litArea, plain } from './lettering';
+import { SignatureMeter } from './signature-area';
 import { SparkMeter } from './spark-area';
 
 vi.mock('phaser', () => ({
@@ -478,5 +482,77 @@ describe('what the front effects light (docs/flashs.md §4)', () => {
       expect(luminanceDelta(FX_DARK, backdrop, 1)).toBeLessThanOrEqual(VEIL_DELTA);
       expect(luminanceDelta(0x000000, backdrop, 1)).toBeLessThanOrEqual(VEIL_DELTA);
     }
+  });
+});
+
+describe("what Nayo's signature effects light (docs/flashs.md §4, docs/art/nayo-vfx.md)", () => {
+  /** Every cue the signatures play, and the heavy swing and the waves they play themselves. */
+  const CUES = Object.keys(SIGNATURE_AREAS) as SignatureCue[];
+  /** The sizes each cue plays at in the signatures (the swing's are read in the hitboxes). */
+  function sizesOf(kind: SignatureCue): number[] {
+    const sizes = new Set<number>([1]);
+    for (const signature of [signatureOf('nayo')]) {
+      for (const move of Object.values(signature?.moves ?? {})) {
+        for (const cue of move.cues ?? []) if (cue.kind === kind) sizes.add(cue.size);
+      }
+    }
+    if (kind === 'swing') for (const size of [0.7, 1.4]) sizes.add(size);
+    return [...sizes];
+  }
+
+  it('never lights more than its table says, in either tone of either colorway, at every size', () => {
+    const meter = new SignatureMeter();
+    for (const kind of CUES) {
+      let brightest = 0;
+      for (const colorway of ['main', 'alt'] as const) {
+        const energy = hitStyleOf('nayo', colorway).energy;
+        for (const color of [energy, PLATINE]) {
+          for (const size of sizesOf(kind)) {
+            const measured = meter.peak(kind, color, energy, size, true);
+            const allowed = SIGNATURE_AREAS[kind] * size ** 2;
+            expect(
+              measured,
+              `${kind} ${colorway} ${color.toString(16)} ×${size}`,
+            ).toBeLessThanOrEqual(allowed);
+            brightest = Math.max(brightest, measured / size ** 2);
+          }
+        }
+      }
+      // The table is a measure, not a guess.
+      expect(brightest, kind).toBeGreaterThan(SIGNATURE_AREAS[kind] * 0.9);
+    }
+  }, 120_000);
+
+  it('lights nothing muted, nor calm: what the budget refuses still shows, quiet', () => {
+    const meter = new SignatureMeter();
+    for (const kind of CUES) {
+      for (const colorway of ['main', 'alt'] as const) {
+        const energy = hitStyleOf('nayo', colorway).energy;
+        for (const color of [energy, PLATINE]) {
+          const size = Math.max(...sizesOf(kind));
+          expect(meter.peak(kind, color, energy, size, false), `${kind} ${colorway}`).toBe(0);
+        }
+      }
+    }
+    // Calm, the budget granting it all the same.
+    meter.fx.calm = true;
+    expect(meter.peak('burst', PLATINE, 0x30e8ff, 1, true)).toBe(0);
+  }, 120_000);
+
+  it('fits every cue, alone, under the area of the effects normal at the closest framing', () => {
+    // Otherwise it would never play lit: the budget lets it in only where it makes no flash.
+    const limit = (FLASH_RULES.normal.area * FLASH_MARGIN) / PUSHED;
+    for (const kind of CUES) {
+      for (const size of sizesOf(kind)) {
+        expect(SIGNATURE_AREAS[kind] * size ** 2, `${kind} ×${size}`).toBeLessThan(limit);
+      }
+    }
+  });
+
+  it('draws nothing of the atlas without tints: the equalizer alone, plain fills', () => {
+    const meter = new SignatureMeter('simple');
+    meter.peak('drop', 0x30e8ff, 0x30e8ff, 1, true, 3);
+    expect(meter.shown()).toMatchObject({ images: 0 });
+    expect(meter.shown().spans).toBeGreaterThan(0);
   });
 });

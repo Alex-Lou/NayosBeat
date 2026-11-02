@@ -1,6 +1,7 @@
 import { pinpoints, type FightEvent } from './fight-events';
 import type { FxKind, HitKind } from './hit-fx';
 import type { HitStyle } from './hit-styles';
+import type { CueKind } from './signatures';
 import { POP_PEAK, type BlowKind } from './onomatopoeia';
 import { ARRIVAL_PEAK, SLAM_FROM } from './stamps';
 
@@ -46,6 +47,33 @@ export const SPARK_AREAS: Readonly<Record<HitStyle['shape'], Readonly<Record<FxK
  * their 3 rows, at their longest (12).
  */
 export const GRAZE_AREA = 64;
+
+/**
+ * What the signature effects play (signature-fx.ts): their cues (signatures.ts), a heavy normal's
+ * swing, and the sound waves a disc leaves behind it, in its energy or in platine.
+ */
+export type SignatureCue = CueKind | 'swing' | 'wave' | 'waveBoost';
+
+/**
+ * What each of them lights at its peak, lit, at size 1 (it asks its size² times as much):
+ * measured on the real SignatureFx over the stage's brightest backdrop (what an added light
+ * raises the most), in each tone of each colorway, at the sizes the signatures play them, kept
+ * above every measure by tests/render/flash-areas.test.ts. Muted, each lights nothing. The pools of light, the shadows, the glow on the opponent and the afterimages
+ * never reach ΔL 0.1 (light-rig.ts, move-echo.ts): no area.
+ */
+export const SIGNATURE_AREAS: Readonly<Record<SignatureCue, number>> = {
+  throwRing: 325,
+  kick: 210,
+  groundRing: 450,
+  rise: 140,
+  charge: 70,
+  drop: 430,
+  burst: 820,
+  dash: 44,
+  swing: 95,
+  wave: 31,
+  waveBoost: 66,
+};
 
 /**
  * A sound word at scale 1, the widest of its kind: the word ("TCHAC !"), then the « x » of its

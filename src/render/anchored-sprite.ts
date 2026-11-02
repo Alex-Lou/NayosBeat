@@ -102,6 +102,12 @@ export class AnchoredSprite {
     return this;
   }
 
+  /** Added onto what is behind it, as a light is (Phaser's ADD blend), for good. */
+  added(): this {
+    this.sprite.setBlendMode(Phaser.BlendModes.ADD);
+    return this;
+  }
+
   setDepth(depth: number): this {
     this.sprite.setDepth(depth);
     return this;
