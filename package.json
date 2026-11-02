@@ -12,6 +12,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "vitest run",
+    "check": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run aseprite:check && npm run build",
+    "nayos": "bash tools/remote/nayos.sh",
     "test:watch": "vitest",
     "bench": "vitest bench --run --reporter=verbose",
     "replays:update": "node --import ./tools/sprites/ts-imports.js tools/replays/update.ts",
