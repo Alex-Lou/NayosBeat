@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { WATT_CLIPS } from '../../src/art/watt/clips';
 import { WATT_SHEETS, type WattSheet } from '../../src/art/watt/sheets';
 import { ANCHOR, ART_SCALE, CELL_SIZE } from '../../src/art/types';
+import { toPx } from '../../src/core/constants';
 import { WATT as WATT_TEMPLATE } from '../../src/data/fighters/watt';
 import { CELL_MARGIN, GROUND_ROW, GROUNDED_STRIPS, LOWEST_ROW } from '../../tools/sprites/cell';
 import { strikesOf, type StripStrike } from '../../tools/sprites/clips';
@@ -41,6 +42,17 @@ describe('Watt strips: drawing', () => {
     drawn.set(sheet, canvas);
     return canvas;
   };
+
+  /** Calls `visit` with every opaque pixel of one cell, in world pixels from the feet anchor. */
+  function eachPixel(sheet: WattSheet, frame: number, visit: (x: number, y: number) => void) {
+    const canvas = sheetCanvas(sheet);
+    for (let row = 0; row < CELL_SIZE; row++) {
+      for (let column = 0; column < CELL_SIZE; column++) {
+        if (canvas.pixels[row * canvas.width + frame * CELL_SIZE + column] === 0) continue;
+        visit((column + 1 - ANCHOR.x) / ART_SCALE, (ANCHOR.y - row) / ART_SCALE);
+      }
+    }
+  }
 
   /** Opaque extent of one cell, in cell pixels. */
   function extent(sheet: WattSheet, frame: number) {
@@ -86,6 +98,36 @@ describe('Watt strips: drawing', () => {
       }
     },
   );
+
+  /**
+   * No clinch at point blank: in neutral poses nothing above the shins reaches past the pushbox
+   * (plus 1 px), so two fighters pressed together touch without overlapping. The feet may reach
+   * a little farther, toes touching toes.
+   */
+  const SHIN = 12;
+  const NEUTRAL: readonly { sheet: WattSheet; frames: readonly number[]; crouching: boolean }[] = [
+    { sheet: 'idle', frames: WATT_CLIPS.idle.frames, crouching: false },
+    { sheet: 'walkForward', frames: WATT_CLIPS.walkForward.frames, crouching: false },
+    { sheet: 'walkBack', frames: WATT_CLIPS.walkBack.frames, crouching: false },
+    { sheet: 'crouch', frames: WATT_CLIPS.crouch.frames.slice(3), crouching: true },
+    { sheet: 'block', frames: WATT_CLIPS.blockStand.frames, crouching: false },
+    { sheet: 'block', frames: WATT_CLIPS.blockCrouch.frames, crouching: true },
+  ];
+
+  it.each(NEUTRAL)('$sheet: stays inside the pushbox (crouching: $crouching)', (neutral) => {
+    const box = neutral.crouching ? WATT_TEMPLATE.crouchingPushbox : WATT_TEMPLATE.standingPushbox;
+    const half = toPx(box.width) / 2;
+    for (const frame of neutral.frames) {
+      let body = -Infinity;
+      let feet = -Infinity;
+      eachPixel(neutral.sheet, frame, (x, y) => {
+        if (y > SHIN) body = Math.max(body, x);
+        else feet = Math.max(feet, x);
+      });
+      expect(body, `frame ${frame}: body reaches ${body}`).toBeLessThanOrEqual(half + 1);
+      expect(feet, `frame ${frame}: feet reach ${feet}`).toBeLessThanOrEqual(half + 4);
+    }
+  });
 
   /**
    * His guard, the bulb included, stands 76 to 84 world px tall (docs/watt.md §10): a colosse

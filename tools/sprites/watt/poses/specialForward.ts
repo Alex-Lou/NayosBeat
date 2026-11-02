@@ -14,26 +14,26 @@ export const ANIMATED: boolean = true;
 // Frame 0: the load. He sinks, the near shoulder turning in, the bulb dropping.
 const LOAD: Pose = {
   ...GUARD,
-  hip: at(-6, 34),
+  hip: at(-10.5, 34),
   torso: 16,
   head: -12,
   shrug: 3.4,
   twist: 0.1,
-  nearFist: at(8, 48),
-  farFist: at(15.5, 48),
+  nearFist: at(3.5, 48),
+  farFist: at(9.5, 48),
   face: 'effort',
 };
 
 // Frames 1-2: the shoulder down, the push off the rear foot.
 const DIP: Pose = {
   ...LOAD,
-  hip: at(-4.5, 33),
+  hip: at(-7.5, 33),
   torso: 26,
   shrug: 3.8,
   reach: { near: 1.6 },
   nearFoot: onBall(-17.5, -26),
-  nearFist: at(11, 48),
-  farFist: at(20, 48),
+  nearFist: at(7, 48),
+  farFist: at(15, 48),
   effects: [{ kind: 'dust', x: -16, size: 1, progress: 0.3 }],
 };
 
@@ -89,16 +89,16 @@ const THROUGH: Pose = {
 
 const SETTLE: Pose = {
   ...GUARD,
-  hip: at(-2, 35.5),
+  hip: at(-4.5, 35.5),
   torso: 22,
   shrug: 3,
-  nearFoot: onBall(-15.5, -22),
-  farFoot: planted(12, 0),
-  nearFist: at(10, 50),
-  farFist: at(19, 50),
+  nearFoot: onBall(-16.5, -22),
+  farFoot: planted(9.5, 0),
+  nearFist: at(6, 50),
+  farFist: at(15, 49.5),
 };
 
 // Frames 7-8: back up into the guard.
-const UP: Pose = { ...GUARD, hip: at(-3.5, 36.5), torso: 15 };
+const UP: Pose = { ...GUARD, hip: at(-8, 36.5), torso: 11 };
 
 export const POSES: readonly Pose[] = [LOAD, DIP, PUSH, RUSH, IMPACT, THROUGH, SETTLE, UP, GUARD];

@@ -113,14 +113,14 @@ export function toeOf(foot: Foot): number {
  * upright above the collar. The lead clamp stays inside the no-clinch line (x = 14).
  */
 export const GUARD: Pose = {
-  hip: at(-4.5, 37.5),
-  torso: 11,
+  hip: at(-9, 37.5),
+  torso: 8,
   head: -11,
   shrug: 2.8,
-  nearFoot: onBall(-17, -18),
-  farFoot: planted(10.5, 0),
-  nearFist: at(5, 52.5),
-  farFist: at(13.5, 52.5),
+  nearFoot: onBall(-18, -18),
+  farFoot: planted(7.5, 0),
+  nearFist: at(-0.5, 53),
+  farFist: at(7, 52.5),
   bends: { nearElbow: 'down', farElbow: 'down', nearKnee: 'front' },
   twist: 0.35,
 };

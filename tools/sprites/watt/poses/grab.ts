@@ -18,11 +18,11 @@ export const ANIMATED: boolean = true;
 // Frame 0 (3 ticks): the gather. The weight sinks, both clamps open low in front of the belly.
 const GATHER: Pose = {
   ...GUARD,
-  hip: at(-5.5, 35.5),
+  hip: at(-10, 35.5),
   torso: 13,
   shrug: 3.2,
-  nearFist: at(6, 46),
-  farFist: at(13, 46.5),
+  nearFist: at(1.5, 46),
+  farFist: at(8.5, 46.5),
   nearHand: 'open',
   farHand: 'open',
   face: 'effort',
@@ -76,12 +76,12 @@ const SHUT: Pose = {
 // Frame 4 (8 ticks): heavy recovery, the weight rocking back, the arms coming in.
 const BACK: Pose = {
   ...GUARD,
-  hip: at(-3.5, 36.5),
-  torso: 15,
+  hip: at(-8, 36.5),
+  torso: 11,
   shrug: 2.6,
-  nearFoot: onBall(-16, -19),
-  nearFist: at(10, 50),
-  farFist: at(16, 50),
+  nearFoot: onBall(-17, -19),
+  nearFist: at(5, 50),
+  farFist: at(10, 50),
 };
 
 // Frame 5 (8 ticks): back into the guard.

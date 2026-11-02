@@ -12,6 +12,8 @@ import { POSES as grabPoses } from './grab.ts';
 import { POSES as idlePoses } from './idle.ts';
 import { POSES as specialAntiAirPoses } from './specialAntiAir.ts';
 import { POSES as specialForwardPoses } from './specialForward.ts';
+import { POSES as walkBackPoses } from './walkBack.ts';
+import { POSES as walkForwardPoses } from './walkForward.ts';
 
 /**
  * A special not drawn yet: the guard, with a touch of energy at the lead clamp on its active
@@ -28,6 +30,8 @@ function heldSpecial(frames: number, active: number): readonly Pose[] {
 /** The strips drawn so far, by their own files. */
 const DRAWN: Partial<Record<WattSheet, readonly Pose[]>> = {
   idle: idlePoses,
+  walkForward: walkForwardPoses,
+  walkBack: walkBackPoses,
   grab: grabPoses,
   special: heldSpecial(WATT_SHEETS.special.frames, 4),
   specialForward: specialForwardPoses,
