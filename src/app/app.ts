@@ -108,7 +108,11 @@ const POSITIONS: readonly {
 ];
 
 /** What training's « Ambiance » says of each moment and weather (docs/art/decor-rue.md §13). */
-const MOMENT_LABELS: Readonly<Record<Moment, string>> = { midnight: 'minuit', dusk: 'crépuscule' };
+const MOMENT_LABELS: Readonly<Record<Moment, string>> = {
+  midnight: 'minuit',
+  dusk: 'crépuscule',
+  dawn: 'aube',
+};
 const WEATHER_LABELS: Readonly<Record<Weather, string>> = {
   clear: 'ciel clair',
   rain: 'pluie',
