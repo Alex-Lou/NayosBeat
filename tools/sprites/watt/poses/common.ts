@@ -162,3 +162,36 @@ export function springAnkle(pose: Pose): Pose {
   }
   return best;
 }
+
+/** Where the guard holds each clamp from its shoulder (the shoulders do not depend on the hands). */
+const GUARD_HOLD = (() => {
+  const { near, far } = solve(GUARD, WATT_BODY);
+  return {
+    near: { x: GUARD.nearFist.x - near.shoulder.x, y: GUARD.nearFist.y - near.shoulder.y },
+    far: { x: GUARD.farFist.x - far.shoulder.x, y: GUARD.farFist.y - far.shoulder.y },
+  };
+})();
+
+/** `p` turned `degrees` clockwise on screen (a lean forward). */
+function leaned(p: Point, degrees: number): Point {
+  const a = (-degrees * Math.PI) / 180;
+  return { x: p.x * Math.cos(a) - p.y * Math.sin(a), y: p.x * Math.sin(a) + p.y * Math.cos(a) };
+}
+
+/**
+ * `pose` with its clamps held from its shoulders as the guard holds them, turned with the
+ * torso's lean, then moved by `near` and `far` (world px): the arms keep the guard's fold
+ * whatever the body does, so the far elbow never folds back out of the chest (anatomy.ts,
+ * farArmBack). For the strips the no-clinch rule does not bind (the air, the moves).
+ */
+export function fistsOnShoulders(pose: Pose, near: Point = at(0, 0), far: Point = at(0, 0)): Pose {
+  const s = solve(pose, WATT_BODY);
+  const lean = pose.torso - GUARD.torso;
+  const n = leaned(GUARD_HOLD.near, lean);
+  const f = leaned(GUARD_HOLD.far, lean);
+  return {
+    ...pose,
+    nearFist: at(s.near.shoulder.x + n.x + near.x, s.near.shoulder.y + n.y + near.y),
+    farFist: at(s.far.shoulder.x + f.x + far.x, s.far.shoulder.y + f.y + far.y),
+  };
+}
