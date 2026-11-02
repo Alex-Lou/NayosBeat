@@ -27,6 +27,7 @@ import {
 import { NAYO } from '../../src/data/fighters/nayo';
 import { RIFF } from '../../src/data/fighters/riff';
 import { SAPHIR } from '../../src/data/fighters/saphir';
+import { WATT } from '../../src/data/fighters/watt';
 import { TRAINING_STAGE } from '../../src/data/stages';
 import { playCombo } from './combo-helpers';
 import { expectMirrored, facingOff, makeFighter, run } from './helpers';
@@ -255,7 +256,7 @@ describe('the decay and the limit (§1.7)', () => {
     expect(last.vy).toBeGreaterThanOrEqual(COMBO_LIMIT_LIFT);
     expect(last.flags & FLAG_LIMIT).toBe(FLAG_LIMIT);
     const flying = { ...last, y: px(20), juggle: 5 };
-    for (const template of [NAYO, RIFF, SAPHIR]) {
+    for (const template of [NAYO, RIFF, SAPHIR, WATT]) {
       for (const id of MOVE_IDS) {
         const cost = template.moves[id]?.juggleCost ?? 1;
         expect(canBeHit(flying, NAYO, false, cost), `${template.name} ${id}`).toBe(false);

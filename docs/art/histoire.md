@@ -64,6 +64,24 @@ Ce qu'elle veut : passer la face B. Que, pour une fois, toute une salle danse su
 
 Elle vouvoie tout le monde. Elle parle doucement, et finit ses phrases. Elle dit merci après chaque danse.
 
+## Watt
+
+Il arrive avant le son.
+
+Le mur d'enceintes au fond de L'Entrepôt, c'est lui qui l'a monté. Il le monte chaque saison, ailleurs, par le quai de chargement et le monte-charge. Le monte-charge grince à chaque étage. Il a fini par compter les étages au bruit, sans regarder. Il ne se presse jamais : le son arrive quand le mur tient.
+
+Il y a appris deux choses. Porter avec les jambes. Ne jamais lâcher.
+
+Blouson matelassé noir, pantalon de travail, rangers. Aux deux bras, un exosquelette de manutention, des pinces au bout, des diodes vertes qui montent quand il force. À la place de la tête, une ampoule. Personne ne demande. Une fois, un vigile a demandé. L'ampoule s'est allumée. Le vigile n'a plus demandé.
+
+Il ne s'inscrit pas au tournoi. On ne se bat pas contre le mur. Sauf quand quelqu'un s'appuie dessus.
+
+Il avance sans courir. Tu gardes, les pinces se ferment : la PRISE, et tu pars en DÉCHARGEMENT, posé plus loin comme une caisse. Tu frappes, le MARTEAU te plie sur place. Tu sautes, le PLAFONNIER te rabat. De loin, il charge, l'épaule d'abord : SURCHARGE. Et quand l'ampoule est pleine, tout le monde le voit, et personne ne sait quoi en faire. Deux crochets, le marteau au sol. CLAC. CLAC. BOUM. PLEIN FEU.
+
+Ce qu'il veut : que le son tienne jusqu'à l'aube. Tant qu'il est là, rien ne tombe. Et à la fin, c'est lui qui éteint.
+
+Il dit « on ». Il donne des consignes. Il ne crie jamais.
+
 ## Le clash
 
 L'an dernier, une autre adresse. Nayo jouait son set. Riff a escaladé les enceintes et plongé dans la foule. En retombant, une ranger a trouvé la platine.
@@ -161,6 +179,33 @@ L'homme de la cabine hoche la tête. Il lèvera les bras au DROP. Personne ne sa
    *Son* : musique coupée net ; reste le tic-tac de sa montre.
    Saphir : « Nous reprendrons. »
 
+15. **Watt**
+   Au fond de la salle, le monte-charge s'ouvre. Dedans, une seule lumière, verte. Il pousse un flight-case, le pose, vérifie qu'il ne bouge plus, puis se tourne vers la salle. L'ampoule monte d'un cran.
+   *Son* : le grincement du monte-charge, un loquet qui claque, le grésillement d'un filament.
+   Watt : « Doucement. On porte avec les jambes. »
+
+16. **Watt et Nayo**
+   Nayo compte, adossé au mur d'enceintes. Watt arrive derrière lui sans un bruit, pose une pince sur l'enceinte et la redresse de deux centimètres.
+   *Son* : la basse de Nayo, droite ; un loquet.
+   Watt : « On s'appuie pas sur le mur. »
+   Nayo : « Il tient. »
+
+17. **Watt et Riff**
+   Riff saute sur un flight-case et s'y assoit en tailleur. Watt la regarde. L'ampoule baisse un peu, comme un soupir. Ils se sont déjà croisés, une autre année, sur un quai.
+   *Son* : un accord saturé ; le grésillement.
+   Riff : « Encore toi ? T'as pas changé d'ampoule. »
+   Watt : « Elle tient. Descends du matériel. »
+
+18. **Si Watt gagne : le couvre-feu**
+   Deux crochets, le marteau au sol. La salle s'éteint, toute. Il ne reste que l'ampoule, pleine, au milieu du béton. Puis elle baisse, doucement.
+   *Son* : un interrupteur ; le grésillement qui s'arrête.
+   Watt : « On éteint. »
+
+19. **Temps écoulé**
+   Le chrono tombe à zéro. Watt sort un rouleau de ruban adhésif et scotche un câble au sol, bien droit, avant de remettre ses pinces en garde.
+   *Son* : musique coupée net ; reste le ruban qui se déroule.
+   Watt : « Fin de service. »
+
 ## Répliques
 
 **Nayo**
@@ -189,3 +234,12 @@ L'homme de la cabine hoche la tête. Il lèvera les bras au DROP. Personne ne sa
 - Provocation : « On ne court pas, au bal. »
 - Victoire : « Merci pour la danse. »
 - Victoire : « Face B, maintenant. »
+
+**Watt**
+
+- Entrée : « Doucement. On porte avec les jambes. »
+- Entrée : « On commence quand tu veux. Pas avant. »
+- Provocation : « Je te repose où ? »
+- Provocation : « On respire. On recommence. »
+- Victoire : « On éteint. »
+- Victoire : « Fin de service. Merci d'être venu. »
