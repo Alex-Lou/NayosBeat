@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { relativeLuminance } from '../../src/render/luminance';
 import { hitStyleOf } from '../../src/render/hit-styles';
+import { NAYO, NAYO_ALT } from '../../src/art/nayo';
+import { RIFF } from '../../src/art/riff';
 import {
   CONTOUR_BASE,
+  contourFor,
   contourOf,
   DEFAULT_SILHOUETTE,
   silhouetteFromUrl,
@@ -62,6 +65,25 @@ describe('the contour color (option A)', () => {
           );
         }
       }
+    }
+  });
+});
+
+describe('who gets the contour (option A)', () => {
+  it('Riff, as long as her sprites have no light of their own', () => {
+    expect(RIFF.ownLight).not.toBe(true);
+    expect(contourFor('outline', RIFF, 0xff3399)).toBe(contourOf(0xff3399));
+  });
+
+  it('not Nayo: his sprites carry their back light, the contour would double it', () => {
+    for (const art of [NAYO, NAYO_ALT]) {
+      expect(contourFor('outline', art, 0x30e8ff), art.key).toBeNull();
+    }
+  });
+
+  it('no one outside option A', () => {
+    for (const look of ['backlight', 'none'] as const) {
+      expect(contourFor(look, RIFF, 0xff3399)).toBeNull();
     }
   });
 });

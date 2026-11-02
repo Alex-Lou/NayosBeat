@@ -27,6 +27,8 @@ const SKIN = noGloss(M.skin);
 const SKIN_FAR = farLit(SKIN);
 const JACKET: Material = { ...M.jacket, glossCut: 0.92 };
 const JACKET_FAR = farLit(JACKET);
+/** The sleeves are matte: on a thin quilted tube, a specular spot reads as a stray pixel. */
+const SLEEVE = noGloss(JACKET);
 const SHIRT = matteOf(M.shirt);
 const LEATHER: Material = { ...M.leather, glossCut: 0.9 };
 const LEATHER_FAR = farLit(LEATHER);
@@ -124,7 +126,7 @@ export function drawNayo(
 
 /**
  * A neon line from `a` to `b` (world points), colored ends. A `glowing` one (a LED strip, the
- * emblem) has a near white core, and the cloth around it takes the neon's halo (the fighter's
+ * emblem) is one soft color, and the cloth around it takes its faint glow (the fighter's
  * Lighting.glow); the others (a small ring) stay a plain bright line.
  */
 function neonLine(ctx: Ink, a: Point, b: Point, glowing = false): void {
@@ -135,7 +137,7 @@ function neonLine(ctx: Ink, a: Point, b: Point, glowing = false): void {
     const x = from.x + ((to.x - from.x) * i) / steps;
     const y = from.y + ((to.y - from.y) * i) / steps;
     const end = i === 0 || i === steps;
-    ctx.canvas.dot(x, y, end ? DETAIL.neon : glowing ? DETAIL.neonCore : DETAIL.neonLight);
+    ctx.canvas.dot(x, y, glowing ? DETAIL.neonCore : end ? DETAIL.neon : DETAIL.neonLight);
   }
 }
 
@@ -145,7 +147,7 @@ function neonLine(ctx: Ink, a: Point, b: Point, glowing = false): void {
 function drawArm(ctx: Ctx, side: Side, which: 'near' | 'far'): void {
   const { canvas, at } = ctx;
   const near = which === 'near';
-  const jacket = near ? JACKET : JACKET_FAR;
+  const jacket = near ? SLEEVE : JACKET_FAR;
   const group = `${which}Arm`;
   const cuffStart = sub(side.wrist, scale(side.forearm, 2.0));
 

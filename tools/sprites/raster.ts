@@ -50,20 +50,30 @@ export interface ShapeOptions {
  * without it, the default 1 px back light on every back and top edge.
  */
 export interface Lighting {
+  /** The ground's row in every cell (the feet): the heights below count from it, in pixels. */
+  readonly ground: number;
   /**
-   * The back light (a neon behind the fighter): the silhouette's edge pixels that face it
-   * squarely take their material's rim tone, those that half face it its light tone (the light
-   * fading as the edge turns away), the others none. Which way an edge faces comes from the
-   * shape itself (the empty pixels around it), so it follows every pose.
+   * The back light (a sign behind the fighter, up high): the silhouette's edge pixels that face
+   * it squarely take their material's rim tone, those that face it a little less its light
+   * tone, the others none. Which way an edge faces comes from the shape itself (the empty pixels
+   * around it), so it follows every pose. It fades toward the ground: its light tone only under
+   * `fade.full`, nothing under `fade.none`.
    */
   readonly rim: {
     /** Where the back light comes from, in image axes (x right, y down), toward the light. */
     readonly direction: Point;
     /** How squarely an edge faces it (cosine) to take the rim tone, and the light tone. */
     readonly facing: { readonly rim: number; readonly light: number };
+    readonly fade: { readonly full: number; readonly none: number };
     /** The rim and light tones of exact pixels (a stamped head's hair), by their slot. */
     readonly exact: Readonly<Record<number, RimTones>>;
   };
+  /**
+   * The lower body darkens toward the floor (ambient occlusion): under `height`, the key light
+   * a shape receives falls off, by `depth` (in n·L) at the ground. The tones follow the volume as
+   * they darken, never a straight line; no shine there.
+   */
+  readonly occlusion: { readonly height: number; readonly depth: number };
   /**
    * Exact pixels that glow (neon), by slot: the shaded pixels touching one (4 neighbors) take
    * the halo slot given, a 1 px halo inside the silhouette.
@@ -329,14 +339,17 @@ export class PixelCanvas {
    */
   finish(lighting?: Lighting): void {
     const bands = new Int8Array(this.pixels.length);
-    for (let index = 0; index < this.pixels.length; index++) bands[index] = this.band(index);
+    for (let index = 0; index < this.pixels.length; index++) {
+      const shade = lighting ? occlusionAt(lighting, Math.floor(index / this.width)) : 0;
+      bands[index] = this.band(index, shade);
+    }
     this.castShadows(bands);
     this.cleanOrphans(bands);
     for (let index = 0; index < this.pixels.length; index++) {
       this.pixels[index] = this.tone(index, bands[index] ?? -1);
     }
     if (lighting) {
-      this.rimLight(lighting.rim);
+      this.rimLight(lighting);
       this.glow(lighting.glow);
     } else {
       this.backLight();
@@ -404,7 +417,7 @@ export class PixelCanvas {
   }
 
   /** Lighting band of a shaded pixel (BAND), or -1 for empty, exact and contour pixels. */
-  private band(index: number): number {
+  private band(index: number, shade: number): number {
     const flags = this.flags[index] ?? 0;
     if (flags & (FLAG_EXACT | FLAG_CONTOUR)) return -1;
     const material = this.materials[this.material[index] ?? EMPTY];
@@ -413,8 +426,8 @@ export class PixelCanvas {
     const nx = this.nx[index] ?? 0;
     const ny = this.ny[index] ?? 0;
     const nz = this.nz[index] ?? 1;
-    const lit = nx * LIGHT.x + ny * LIGHT.y + nz * LIGHT.z;
-    if (material.gloss !== undefined) {
+    const lit = nx * LIGHT.x + ny * LIGHT.y + nz * LIGHT.z - shade;
+    if (material.gloss !== undefined && shade === 0) {
       // Mirror of the light around the normal, compared with the view direction (z).
       const reflected = 2 * lit * nz - LIGHT.z;
       if (reflected > (material.glossCut ?? DEFAULT_GLOSS_CUT)) return BAND.gloss;
@@ -523,7 +536,7 @@ export class PixelCanvas {
    * rim goes on the pixel just inside it. Which way an edge faces is read from the empty pixels
    * around it (RIM_REACH), so the light follows the pose, never a fixed side of a part.
    */
-  private rimLight(rim: Lighting['rim']): void {
+  private rimLight({ rim, ground }: Lighting): void {
     const toward = unit2(rim.direction.x, rim.direction.y);
     const empty = (index: number): boolean => this.group[index] === EMPTY;
     const edge = (index: number): boolean =>
@@ -532,7 +545,8 @@ export class PixelCanvas {
     for (let y = RIM_REACH; y < this.height - RIM_REACH; y++) {
       for (let x = RIM_REACH; x < this.width - RIM_REACH; x++) {
         const index = y * this.width + x;
-        if (empty(index)) continue;
+        const height = ground - y;
+        if (empty(index) || height < rim.fade.none) continue;
         const tone = this.rimToneAt(index, rim.exact);
         if (tone === undefined) continue;
         const exact = (i: number): boolean => ((this.flags[i] ?? 0) & FLAG_EXACT) !== 0;
@@ -558,8 +572,9 @@ export class PixelCanvas {
         const length = Math.hypot(ox, oy);
         if (length === 0) continue;
         const facing = (ox * toward.x + oy * toward.y) / length;
-        if (facing >= rim.facing.rim) next[index] = tone.rim;
-        else if (facing >= rim.facing.light) next[index] = tone.light;
+        const full = height >= rim.fade.full;
+        if (facing >= rim.facing.rim) next[index] = full ? tone.rim : tone.light;
+        else if (full && facing >= rim.facing.light) next[index] = tone.light;
       }
     }
     this.pixels.set(next);
@@ -633,6 +648,14 @@ export class PixelCanvas {
     this.groups.push(key);
     return this.groups.length - 1;
   }
+}
+
+/** How much key light a `Lighting`'s ambient occlusion takes from the pixels of row `y`. */
+function occlusionAt({ ground, occlusion }: Lighting, y: number): number {
+  const height = ground - y;
+  return height >= occlusion.height
+    ? 0
+    : (occlusion.depth * (occlusion.height - height)) / occlusion.height;
 }
 
 /** Normal of a sphere (or a cylinder's cross-section) at offset (u, v) of its unit disc. */

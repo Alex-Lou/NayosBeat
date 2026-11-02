@@ -2,25 +2,42 @@
 
 Tranche 1 du plan « Nayo vivant » : la lumière et les couleurs, sur toutes ses images à la fois. Les poses (tranche 3), les spéciaux et le Boost (tranche 2) et Riff ne changent pas.
 
-## 1. Les deux lumières
+Le principe : **chaque lumière sur Nayo vient d'une source de la rue** ([decor-rue.md](decor-rue.md) §5). Il n'y a pas de reflet générique, et rien n'est dynamique : tout est figé dans le sprite.
 
-- **La lumière principale** vient d'en haut et de l'avant, vers le spectateur. C'est celle de `tools/sprites/raster.ts` (`LIGHT`), commune aux deux combattants. Elle est chaude : ce sont les réverbères au sodium de la rue (`docs/art/decor-rue.md` §5). Chaque forme porte une normale (bras et jambes en cylindres, torse en tonneau, tête stampée), et chaque pixel prend un cran de sa rampe selon l'angle avec cette lumière. Elle suit donc toutes les poses.
-- **Le contre-jour** est un néon derrière Nayo, en haut : cyan, et magenta sur la seconde tenue. Il éclaire le dos, l'arrière des bras et des jambes, et les cheveux. Il est décrit par `NAYO_LIGHTING` (`tools/sprites/nayo/index.ts`) et appliqué par `PixelCanvas.finish(lighting)` :
-  - un pixel du bord de la silhouette regarde vers le néon quand les pixels vides autour de lui sont de ce côté (2 px à la ronde) ; c'est la forme de la pose qui décide, jamais un côté fixe d'une pièce ;
-  - un bord qui fait bien face au néon (cosinus ≥ 0,72) prend le ton de contre-jour de sa matière, un bord de biais (≥ 0,3) son ton clair, les autres rien : la lumière s'estompe en tournant, au lieu de détourer le personnage comme un autocollant ;
-  - la tête est un tampon dessiné à la main, avec son propre contour : le contre-jour des cheveux va sur le pixel juste à l'intérieur de ce contour ;
-  - les membres du fond restent un cran plus sombres, mais gardent le contre-jour : ce sont eux qui sont le plus près du néon.
+## 1. Les sources
+
+- **Les réverbères au sodium** donnent la lumière principale. Elle vient d'en haut, à l'avant, et elle est chaude.
+  - Sa direction est celle de `tools/sprites/raster.ts` (`LIGHT`), commune aux deux combattants.
+  - Chaque forme porte une normale (bras et jambes en cylindres, torse en tonneau). Chaque pixel prend un cran de sa rampe selon l'angle qu'il fait avec cette lumière, dans toutes les poses.
+  - Les tons clairs et les éclats se réchauffent vers l'orange des lampes.
+- **L'enseigne violette du club**, derrière lui et en hauteur, donne le contre-jour. Il est le même sur les deux tenues, car il éclaire la rue et non la tenue. Il est décrit par `NAYO_LIGHTING` (`tools/sprites/nayo/index.ts`) et appliqué par `PixelCanvas.finish(lighting)`.
+  - Il ne touche que les bords vraiment tournés vers lui, en haut et en arrière : haut du dos, épaules, arrière de la tête et des bras. Un pixel de bord regarde vers l'enseigne quand les pixels vides autour de lui (sur 2 px) sont de ce côté. C'est la forme de la pose qui décide, jamais un côté fixe d'une pièce.
+  - Un bord bien en face prend le ton de l'enseigne ; un bord un peu moins en face prend le ton clair de sa matière. Les autres bords ne prennent rien. Le contre-jour se pose donc en touches, et non en ligne qui ferait tout le tour.
+  - Il s'estompe vers le bas. Au-dessus de 110 px au-dessus des pieds (la poitrine et plus haut), il est entier ; entre 84 et 110 px, il ne garde que le ton clair ; sous 84 px (les hanches), il n'y en a plus. Il n'y a donc rien sur les jambes, les bottes ou les semelles.
+- **Le sol** assombrit le bas du corps, comme une occlusion ambiante.
+  - Sous 64 px, la lumière principale baisse progressivement : jusqu'à 0,55 en n·L au niveau du sol.
+  - Les tons suivent donc le volume, sans coupure droite.
+  - Aucun éclat ne brille dans cette zone : pas de reflet en ligne sur les semelles ni sur les tranches des bottes.
+- **Les LED de la tenue** (poche, botte, emblème) sont des sources elles-mêmes.
+  - Leur couleur est douce, et non fluo (`neonCore`).
+  - Le tissu qui les touche prend une lueur discrète (`neonHalo`, 1 px, 4 voisins), toujours à l'intérieur de la silhouette.
+  - L'anneau du casque reste une ligne simple.
 
 ## 2. Les rampes
 
-Chaque matière a cinq tons, du plus sombre au plus clair (contour, ombre profonde, ombre, base, lumière), puis un éclat et le ton de contre-jour (`tools/sprites/nayo/palette.ts`). Les teintes glissent avec la valeur : les ombres tirent vers le bleu-violet, sans jamais de noir pur ; les lumières se réchauffent. Le noir de la veste, du pantalon et des bottes se lit ainsi en volumes, et non plus en aplat gris.
+Chaque matière a cinq tons, du plus sombre au plus clair (contour, ombre profonde, ombre, base, lumière), puis un éclat et le ton de contre-jour (`tools/sprites/nayo/palette.ts`).
 
-- La veste matelassée gonfle entre ses coutures : à côté de chaque couture, la pente tournée vers la lumière principale prend un ton de plus, l'autre un ton de moins (`puffSeam` sur les manches, la même règle le long du dos). Le sens se lit d'après l'orientation du segment du squelette.
-- Les éclats (`gloss`) restent calculés par la réflexion de la lumière principale : bottes, gants, ceinture, casque, métal.
+- Les teintes glissent avec la valeur : les ombres tirent vers le bleu-violet, sans jamais de noir pur, et les lumières se réchauffent.
+- La veste matelassée gonfle entre ses coutures. À côté de chaque couture, la pente tournée vers les réverbères prend un ton de plus, l'autre un ton de moins (`puffSeam` sur les manches, la même règle le long du dos). Le sens se lit d'après l'orientation du segment du squelette.
+- Les manches sont mates : sur un tube matelassé fin, un éclat se lit comme un pixel égaré. Les éclats restent sur le dos de la veste, les gants, la ceinture, le métal, le casque et les bottes, au-dessus de la zone du sol.
 
-## 3. Les néons
+## 3. Le liseré du rendu
 
-Les bandes LED (poche, botte) et l'emblème de la manche ont un cœur presque blanc (`neonCore`). Les pixels de tissu qui le touchent prennent le halo (`neonHalo`, 1 px, 4 voisins), toujours à l'intérieur de la silhouette. L'anneau du casque reste une ligne simple : à cette taille, son halo le remplirait. La lumière est figée dans le sprite : rien ne clignote (`docs/flashs.md`).
+Le contour clair de l'option A (`src/render/silhouette.ts`, `?silhouette=a`, par défaut) doublait le contre-jour tout autour du corps, y compris sous les pieds. Ce liseré est maintenant réservé aux combattants dont les sprites n'ont pas leur propre lumière :
+
+- `FighterArt.ownLight` dit qu'un combattant a sa propre lumière ;
+- `contourFor` ne dessine aucun contour pour lui ;
+- Nayo (ses deux tenues) n'a plus de liseré ; Riff le garde tant qu'elle n'a pas sa propre lumière.
 
 ## 4. L'ombre au sol
 
@@ -28,12 +45,16 @@ Avant : une ellipse noire pleine, à 35 % d'opacité, qui rétrécit pendant un 
 
 ## 5. Contrats
 
-- **La silhouette ne bouge pas.** Les pixels opaques de chaque image sont les mêmes qu'avant cette tranche : 0 pixel de différence sur les 48 bandes, corps et effets. Les effets gardent leurs couleurs ; seuls les numéros de cases de la palette des effets du Boost ont glissé d'une case.
+- **La silhouette ne bouge pas.** Les pixels opaques de chaque image sont les mêmes qu'avant cette tranche : 0 pixel de différence sur les 48 bandes, corps et effets. Les effets gardent leurs couleurs. L'ajout d'une couleur de palette a seulement fait glisser d'une case les numéros des couleurs du Boost.
 - **Riff ne change pas.** Sans `lighting`, `finish()` garde l'ancien contre-jour : ses images restent identiques à l'octet.
-- Le test `tests/tools/nayo-lumiere.test.ts` vérifie les rampes (cinq tons croissants, pas de noir pur, des ombres froides), que l'éclairage reste dans la silhouette, et que le contre-jour tombe du bon côté.
+- **Les tests :**
+  - `tests/tools/nayo-lumiere.test.ts` vérifie les rampes (cinq tons croissants, pas de noir pur, des ombres froides, un contre-jour violet et jamais cyan). Il vérifie aussi que l'éclairage reste dans la silhouette, qu'aucun contre-jour ne descend sous les hanches, qu'il tombe en haut et en arrière, et que le bas s'assombrit.
+  - `tests/render/silhouette.test.ts` vérifie qui reçoit le liseré.
 
 ## 6. Écartés
 
+- **Première version (refusée par le propriétaire) :** un contre-jour cyan sur tous les bords tournés vers l'arrière, des pieds à la tête, avec des halos fluo. Le liseré du rendu par-dessus faisait « autocollant ».
 - **Huit cases par matière** (deux tons de contre-jour) : cela change la palette partagée, et donc les images de Riff. Le ton clair de la matière joue le second ton.
-- **Un contre-jour peint à la main par membre**, comme `rimRun` chez Riff : c'est plus fin, mais il faudrait le régler pose par pose. Ce sera à revoir avec la tranche 3, si les poses le demandent.
-- **Un contre-jour de la couleur du décor** pour les deux tenues : le cyan jure avec les accents magenta de la seconde tenue. Le contre-jour prend donc le néon de chaque tenue.
+- **Un contre-jour peint à la main par membre**, comme `rimRun` chez Riff : c'est plus fin, mais il faut le régler pose par pose. Ce sera à revoir avec la tranche 3, si les poses le demandent.
+- **Un liseré du rendu seulement atténué** pour Nayo : il ferait toujours le tour, pieds compris. Il est donc retiré pour lui.
+- **Une occlusion par paliers de hauteur**, qui baisse le ton d'un cran sous une hauteur fixe : elle trace une ligne droite à travers les jambes. Elle a été remplacée par une baisse progressive de la lumière.

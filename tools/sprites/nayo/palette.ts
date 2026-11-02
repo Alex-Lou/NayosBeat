@@ -10,36 +10,34 @@ import type { EffectStyle } from '../vfx.ts';
 export { farOf, matteOf, noGloss, type Colorway } from '../palette.ts';
 
 /**
- * The light (docs/art/nayo-lumiere.md): a warm key light from the top and the front (the street
- * lamps; its direction is raster.ts's), a neon back light from behind and above, cyan (magenta on
- * the second colorway). Every ramp shifts its hue with its value: the shadows sink toward blue
- * violet, never pure black; the lights warm up toward the lamps; the rim is the neon's.
+ * The street's light on him (docs/art/nayo-lumiere.md, docs/art/decor-rue.md §5): the sodium
+ * lamps, warm, from above and in front (the key light, raster.ts), and the club's violet sign
+ * behind him, up high (the back light, `RIM`). Every ramp shifts its hue with its value: the
+ * shadows sink toward blue violet, never pure black; the lights and the shine warm up toward the
+ * lamps. The back light is the sign's, the same on both colorways: it lights the street, not
+ * the outfit.
  */
-const RIM = { main: '#3ee6f4', alt: '#ff6ad0' } as const;
+const RIM = '#8e74c0';
+/** The sign's violet on a light material (the second colorway's jacket and boots). */
+const RIM_ON_LIGHT = '#cbb8ee';
 
 /** A ramp without its rim: outline, deep, shadow, base, light, gloss. */
 type Ramp = readonly [string, string, string, string, string, string];
 
-/** A material of the same colors in both colorways, its rim the colorway's neon. */
-function lit(
-  ramp: Ramp,
-  rim: { readonly main: string; readonly alt: string } = RIM,
-): MaterialTones {
-  return { main: [...ramp, rim.main], alt: [...ramp, rim.alt] };
+/** A material of the same colors in both colorways, its rim the sign's. */
+function lit(ramp: Ramp, rim: string = RIM): MaterialTones {
+  return { main: [...ramp, rim] };
 }
 
 /** Materials in slot order; each one owns 7 consecutive palette slots. */
 const MATERIALS = {
-  skin: lit(['#4e1624', '#a4423a', '#e8844c', '#fca86a', '#ffc286', '#ffdcb0'], {
-    main: '#bfeee6',
-    alt: '#ffc4e4',
-  }),
-  /** Black hair, its sheen blue violet. */
-  hair: lit(['#0a0816', '#140f26', '#1e1836', '#2a2248', '#3d3262', '#6e5ea2']),
+  skin: lit(['#4e1624', '#a4423a', '#e8844c', '#fca86a', '#ffc286', '#ffdcb0'], '#e0a6b4'),
+  /** Black hair, a mauve sheen where the lamps catch it. */
+  hair: lit(['#0a0816', '#140f26', '#1e1836', '#2a2248', '#3d3160', '#76607e']),
   /** Quilted tech jacket: black nylon, light grey on the second colorway. */
   jacket: {
-    main: ['#0b0914', '#171228', '#241e38', '#322a48', '#4b3f62', '#7c687e', RIM.main],
-    alt: ['#2a2238', '#5a4f72', '#8580a0', '#b1aec6', '#d8d6e6', '#fff8f2', '#ff86d8'],
+    main: ['#0b0914', '#171228', '#241e38', '#322a48', '#56425a', '#96706a', RIM],
+    alt: ['#2a2238', '#5a4f72', '#8580a0', '#b3aec4', '#ddd6de', '#fff4e6', RIM_ON_LIGHT],
   },
   /** Shirt under the open jacket: charcoal, matte. */
   shirt: {
@@ -47,11 +45,11 @@ const MATERIALS = {
     alt: ['#0a0910', '#131020', '#1c182b', '#272238', '#342e48', '#342e48', '#342e48'],
   },
   /** Fingerless gloves, belt: black leather, a warm shine. */
-  leather: lit(['#0c0910', '#19121f', '#261b2d', '#34253b', '#4c3652', '#ae8ea6']),
+  leather: lit(['#0c0910', '#19121f', '#261b2d', '#34253b', '#4c3648', '#a07c6c']),
   /** Cargo pants: black cotton, cooler than the jacket; mid grey on the second colorway. */
   pants: {
-    main: ['#0b0a14', '#151424', '#1f1d33', '#2a2842', '#3c3957', '#3c3957', RIM.main],
-    alt: ['#1a1626', '#34304a', '#4c4766', '#66627f', '#84809c', '#84809c', RIM.alt],
+    main: ['#0b0a14', '#151424', '#1f1d33', '#2a2842', '#3c3654', '#3c3654', RIM],
+    alt: ['#1a1626', '#34304a', '#4c4766', '#66627f', '#86809a', '#86809a', RIM_ON_LIGHT],
   },
   /** Cargo pocket and seams, a step darker than the pants. */
   pocket: {
@@ -60,18 +58,15 @@ const MATERIALS = {
   },
   /** Combat boots: black leather, white on the second colorway. */
   boot: {
-    main: ['#0a0812', '#151021', '#201a31', '#2c2441', '#413658', '#b6a0b6', RIM.main],
-    alt: ['#282034', '#5a5272', '#8c86a4', '#bebacf', '#e4e2ec', '#ffffff', '#ff8ad8'],
+    main: ['#0a0812', '#151021', '#201a31', '#2c2441', '#413552', '#a07c6e', RIM],
+    alt: ['#282034', '#5a5272', '#8c86a4', '#bebacf', '#e2dce4', '#fff4e6', RIM_ON_LIGHT],
   },
   sole: {
     main: ['#0a0812', '#110e19', '#191523', '#231d2f', '#2f283d', '#2f283d', '#2f283d'],
   },
-  metal: lit(['#1c1828', '#363048', '#5a5270', '#8e88a6', '#c8c4d8', '#fffaf0'], {
-    main: '#a8f6ff',
-    alt: '#ffc0ec',
-  }),
+  metal: lit(['#1c1828', '#363048', '#5a5270', '#8e88a6', '#ccc4d2', '#fff2dc'], RIM_ON_LIGHT),
   /** Headphones: black plastic with a soft sheen. */
-  plastic: lit(['#0a0812', '#141020', '#1f1a30', '#2c2642', '#443c5e', '#8e84b0']),
+  plastic: lit(['#0a0812', '#141020', '#1f1a30', '#2c2642', '#443a58', '#8a7080']),
 } as const satisfies Record<string, MaterialTones>;
 
 export type MaterialName = keyof typeof MATERIALS;
@@ -90,7 +85,8 @@ const DETAILS = {
   neonDeep: { main: '#00687e', alt: '#7a0e56' },
   neon: { main: '#00b8d0', alt: '#d0288e' },
   neonLight: { main: '#2ce8f8', alt: '#ff5cc8' },
-  neonCore: { main: '#c8fcff', alt: '#ffd6f2' },
+  /** The LED strips and the emblem: a soft lit color, not a fluorescent one (Lighting.glow). */
+  neonCore: { main: '#62c4d0', alt: '#d878b8' },
   /** Sound (the Vinyle, energy, trails): the neon color. */
   soundDeep: { main: '#006a80', alt: '#80105a' },
   sound: { main: '#00c0d8', alt: '#d82896' },
@@ -116,8 +112,8 @@ const DETAILS = {
   sandLight: { main: '#e6d8c2' },
   /** The dark smoky heart of a heavy hit spark (Tazz's hit VFX), on both colorways. */
   strikeSmoke: { main: '#3a3246' },
-  /** The 1 px glow of the neon accents on the cloth around them (index.ts, Lighting.glow). */
-  neonHalo: { main: '#16707e', alt: '#f08ad0' },
+  /** Their faint glow on the cloth around them, 1 px (index.ts, Lighting.glow). */
+  neonHalo: { main: '#253e52', alt: '#c4a4c4' },
 } as const satisfies Record<string, DetailColor>;
 
 export type DetailName = keyof typeof DETAILS;

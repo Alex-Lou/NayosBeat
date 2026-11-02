@@ -201,6 +201,12 @@ export interface FighterArt {
   readonly portrait?: Portrait;
   /** The bust drawn for the select screen (its URL), shown in place of `portrait` when there is one. */
   readonly portraitImage?: string;
+  /**
+   * Its sprites carry the street's light, a back light included (docs/art/nayo-lumiere.md): the
+   * fight draws no light contour around it (render/silhouette.ts, option A), which would double
+   * that back light all around the body.
+   */
+  readonly ownLight?: boolean;
 }
 
 /** A square of a strip's frame, in art pixels. */

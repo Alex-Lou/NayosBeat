@@ -67,7 +67,7 @@ import type { ShakeMode } from './shake';
 import { ProjectileView } from './projectile-view';
 import { isContextLost, type RenderMode } from './render-mode';
 import { loadArt } from './art-textures';
-import { contourOf, type SilhouetteLook } from './silhouette';
+import { contourFor, type SilhouetteLook } from './silhouette';
 import { SpriteFighterView } from './sprite-fighter-view';
 import { drawStage, FIGHT_STAGE_COLORS, loadStage } from './stage-view';
 import type { StagePropsView } from './stage-props';
@@ -485,7 +485,7 @@ export class FightScene extends Phaser.Scene {
           stage: FIGHT_STAGE_COLORS,
           budget,
           mode: this.sceneData.mode,
-          contour: this.sceneData.silhouette === 'outline' ? contourOf(style.energy) : null,
+          contour: contourFor(this.sceneData.silhouette, art, style.energy),
         })
       : new FighterView(
           this,

@@ -2,6 +2,7 @@
 
 import { NAYO_CLIPS } from '../../../src/art/nayo/clips.ts';
 import { NAYO_SHEETS } from '../../../src/art/nayo/sheets.ts';
+import { ANCHOR } from '../../../src/art/types.ts';
 import { namedEffects, timingOf } from '../clips.ts';
 import type { Fighter } from '../fighter.ts';
 import type { Lighting } from '../raster.ts';
@@ -22,17 +23,22 @@ const HAIR_TONES = [
 ];
 
 /**
- * His light beyond the key light (docs/art/nayo-lumiere.md): the neon behind him and above, on
- * his back, the back of his arms and legs, his hair; his neons glow on the cloth around them.
+ * The street's light beyond the key light (docs/art/nayo-lumiere.md): the club's violet sign
+ * behind him and up high, on the top of his back, his shoulders, the back of his head and arms,
+ * fading out by the hips; the lower body darkening toward the floor; his LEDs glowing faintly on
+ * the cloth around them. Heights in art pixels above the feet (he stands about 170 tall).
  */
 export const NAYO_LIGHTING: Lighting = {
+  ground: ANCHOR.y,
   rim: {
-    direction: { x: -0.7, y: -0.7 },
-    facing: { rim: 0.72, light: 0.3 },
+    direction: { x: -0.6, y: -0.8 },
+    facing: { rim: 0.75, light: 0.55 },
+    fade: { full: 110, none: 84 },
     exact: Object.fromEntries(
       HAIR_TONES.map((slot) => [slot, { rim: HAIR.rim ?? HAIR.light, light: HAIR.light }]),
     ),
   },
+  occlusion: { height: 64, depth: 0.55 },
   glow: { [DETAIL.neonCore]: DETAIL.neonHalo },
 };
 
