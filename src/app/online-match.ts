@@ -12,7 +12,9 @@ import { DesyncCheck } from '../net/desync';
 import { Lockstep } from '../net/lockstep';
 import { FLAG_PAUSE, type NetMessage } from '../net/protocol';
 import type { PingSummary, Session, SessionEnd } from '../net/session';
+import { recordReplay, type RecordedReplay } from '../net/replay-record';
 import { stateHash } from '../net/state-hash';
+import { ROUNDS_TO_WIN } from '../core/rules';
 import { resultsDue } from '../render/finisher-scene';
 import type { TickSource } from '../render/tick-source';
 import type { MatchPlan } from './salon';
@@ -22,7 +24,9 @@ export const RESEND_MS = 100;
 
 /** Why the match ended without the menu chosen: the link's end, or a desync at that tick. */
 export type OnlineEnd =
-  { readonly kind: SessionEnd } | { readonly kind: 'desync'; readonly tick: number };
+  | { readonly kind: SessionEnd }
+  /** The match written as a replay (replay-record.ts), to be played again where it went wrong. */
+  | { readonly kind: 'desync'; readonly tick: number; readonly replay: RecordedReplay };
 
 export interface OnlineMatchListener {
   /** A round trip was measured. */
@@ -104,6 +108,14 @@ export class OnlineMatch {
     };
   }
 
+  /**
+   * What each player held on the last tick played, as both devices know it: the Finisher's
+   * scene passes when both hold a button (docs/finisher.md §1.14).
+   */
+  held(): readonly [InputBits, InputBits] {
+    return this.inputs;
+  }
+
   /** This player asks for the pause: both devices take it a few ticks later, on the same tick. */
   requestPause(): void {
     if (this.fight.pausedBy === null) this.fight.pauseAsked = true;
@@ -139,13 +151,15 @@ export class OnlineMatch {
     const { fight } = this;
     if (this.stopped()) return null;
     const { lockstep, check } = fight;
-    // The state after the ticks played so far: hashed on the ticks to compare.
-    const hash = check.played(lockstep.tick, () => stateHash(state));
-    if (hash) this.session.send(hash);
     if (resultsDue(state)) {
       fight.over = true;
       return null;
     }
+    // The state after the ticks played so far, hashed on the ticks to compare; no more once the
+    // match is decided: nothing either player presses changes it then, and a skip of the
+    // Finisher's scene, made on each device as its own frames come, jumps it ahead.
+    const hash = matchDecided(state) ? null : check.played(lockstep.tick, () => stateHash(state));
+    if (hash) this.session.send(hash);
     const pause = fight.pauseAsked ? FLAG_PAUSE : 0;
     fight.pauseAsked = false;
     const [first, second] = lockstep.advance(struggle.apply(this.player, read, state) | pause);
@@ -161,7 +175,13 @@ export class OnlineMatch {
     if (this.ended) return;
     const desync = fight.check.desyncAt;
     if (desync !== null) {
-      this.end({ kind: 'desync', tick: desync });
+      const role = this.player === 0 ? 'hôte' : 'invité';
+      const replay = recordReplay(
+        `Match en ligne désynchronisé au tic ${desync}, joué par l'${role} (délai ${this.delay})`,
+        this.plan.fighters,
+        fight.lockstep.played(),
+      );
+      this.end({ kind: 'desync', tick: desync, replay });
       return;
     }
     if (!fight.rematchAsked) {
@@ -254,4 +274,9 @@ export function delayFor(median: number | null, max: number): number {
   if (median === null) return 3;
   const oneWay = Math.ceil(median / 2 / (1000 / 60));
   return Math.min(max, Math.max(2, oneWay + 1));
+}
+
+/** One player has won its rounds: the rest of the match plays itself, whatever is pressed. */
+function matchDecided({ round }: GameState): boolean {
+  return round.wins[0] >= ROUNDS_TO_WIN || round.wins[1] >= ROUNDS_TO_WIN;
 }
