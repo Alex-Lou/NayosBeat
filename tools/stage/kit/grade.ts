@@ -47,6 +47,42 @@ export function capped(color: Rgba): Rgba {
   return shown;
 }
 
+/** `color`, darkened (its hue kept) until none of its channels is past `ceiling`'s. */
+export function underCeiling(color: Rgba, ceiling: Rgba): Rgba {
+  const k = Math.min(
+    1,
+    ceiling.r / Math.max(color.r, 1),
+    ceiling.g / Math.max(color.g, 1),
+    ceiling.b / Math.max(color.b, 1),
+  );
+  const channel = (value: number) => Math.floor(value * k);
+  return { r: channel(color.r), g: channel(color.g), b: channel(color.b), a: color.a };
+}
+
+/**
+ * The ceiling an atmosphere's masses stay under, channel by channel, for the flash measures set
+ * over every large color of every stage not to move (docs/art/decor-dock.md §6):
+ * - the flash tables are measured over the brightest backdrop, each channel at its highest among
+ *   the street's and the gym's large colors (#6d4457, src/render/luminance.ts `brightestBackdrop`,
+ *   tests/render/flash-areas.test.ts);
+ * - the Finisher's cyan halo takes the highest alpha that lights none of them (0.27,
+ *   tests/render/finisher-halo.test.ts): cyan adds green, and a grey at that backdrop's green with
+ *   little red would lower it. So the green sits a few steps lower.
+ */
+export const BACKDROP_CEILING = rgba('#6d3c57');
+
+/**
+ * Brings the slots of `palette` that `base` (the stage's night palette) kept under the flashes'
+ * band back under BACKDROP_CEILING, its lights (`lit`) left as they are.
+ */
+export function ceiled(palette: Rgba[], base: readonly Rgba[], lit: ReadonlySet<number>): void {
+  palette.forEach((color, slot) => {
+    const night = base[slot];
+    if (slot === 0 || lit.has(slot) || !night || luminanceOf(night) > MOST_LUMINANCE) return;
+    palette[slot] = underCeiling(color, BACKDROP_CEILING);
+  });
+}
+
 /** A ramp of `palette` given other colors, step for step. */
 export function repaint(palette: Rgba[], ramp: readonly number[], hexes: readonly string[]): void {
   if (hexes.length !== ramp.length) {
