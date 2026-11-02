@@ -236,6 +236,36 @@ export function fitsZone(
 }
 
 /**
+ * The buttons as `layout` places them, on a button zone of `zone` CSS px: as they are if they fit
+ * in it (fitsZone), else the whole cluster shrunk around its corner as the « Taille » setting
+ * shrinks it, as little as it takes for every button to fit. A screen smaller than the one the
+ * layout was made on (the browser's bars back, the phone turned): the layout itself is never
+ * changed, and comes back whole on a screen it fits. A zone not measured yet (no size) leaves the
+ * buttons as they are. Pure.
+ */
+export function fittedButtons(
+  layout: TouchLayout,
+  zone: { readonly width: number; readonly height: number },
+): TouchButton[] {
+  const placed = placedButtons(layout);
+  if (zone.width <= 0 || zone.height <= 0 || fitsZone(placed, zone)) return placed;
+  // Each button's far edges, shrunk with the cluster; BOOST's ring keeps its width.
+  let fit = 1;
+  for (const button of placed) {
+    const half = button.diameter / 2;
+    const ring = reachOf(button) - half;
+    fit = Math.min(
+      fit,
+      (zone.width - ring) / (button.right + half),
+      (zone.height - TOP_CLEARANCE_PX - ring) / (button.bottom + half),
+    );
+  }
+  // In tenths of a percent, rounded down: the edges land inside, never a rounding past them.
+  const size = Math.floor(layout.size * Math.max(0, fit) * 10) / 10;
+  return placedButtons({ ...layout, size });
+}
+
+/**
  * A stored layout, checked once as it is read: the sizes and the opacity among those the screen
  * offers, each button's place finite and on a screen, its size offered; else its default. Buttons
  * that would overlap all go back to their places. Pure.

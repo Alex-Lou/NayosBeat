@@ -6,12 +6,14 @@ import {
   BUTTON_SIZES,
   CLUSTER_SIZES,
   DEFAULT_TOUCH_LAYOUT,
+  fittedButtons,
   fitsZone,
   LABEL_PADDING_PX,
   overlapping,
   parseTouchLayout,
   placedButtons,
   TOUCH_BUTTONS,
+  type TouchButton,
   type TouchLayout,
 } from '../../src/input/touch-layout';
 import { installFakePage, type FakeElement } from '../render/fake-dom';
@@ -95,6 +97,57 @@ describe('the touch layout as data (P24, « Disposition »)', () => {
   });
 });
 
+describe('the cluster on a screen smaller than its layout’s (P24, fittedButtons)', () => {
+  /** How much `fitted` shrinks `placed` around the corner: the same for every center and size. */
+  function shrinkOf(fitted: readonly TouchButton[], placed: readonly TouchButton[]): number {
+    const [first] = placed;
+    const [shrunk] = fitted;
+    if (!first || !shrunk) throw new Error('No button');
+    const scale = shrunk.diameter / first.diameter;
+    fitted.forEach((button, index) => {
+      const before = placed[index];
+      expect(button.right).toBeCloseTo((before?.right ?? NaN) * scale, 9);
+      expect(button.bottom).toBeCloseTo((before?.bottom ?? NaN) * scale, 9);
+      expect(button.diameter).toBeCloseTo((before?.diameter ?? NaN) * scale, 9);
+      expect(button.fontSize).toBeCloseTo((before?.fontSize ?? NaN) * scale, 9);
+    });
+    return scale;
+  }
+
+  it('leaves a cluster that fits as it is, and on a zone not measured yet', () => {
+    expect(fittedButtons(MOVED, ZONE)).toEqual(placedButtons(MOVED));
+    expect(fittedButtons(MOVED, { width: 0, height: 0 })).toEqual(placedButtons(MOVED));
+  });
+
+  // The two screens it was made for: the browser's bars back (a lower zone), the phone turned (a
+  // narrower one).
+  for (const [name, zone] of [
+    ['the browser’s bars back', { width: 333, height: 300 }],
+    ['the phone turned', { width: 187, height: 667 }],
+  ] as const) {
+    it(`shrinks it around its corner as « Taille » does, as little as it takes: ${name}`, () => {
+      const placed = placedButtons(MOVED);
+      expect(fitsZone(placed, zone)).toBe(false);
+      const fitted = fittedButtons(MOVED, zone);
+      expect(fitsZone(fitted, zone)).toBe(true);
+      expect(overlapping(fitted)).toBe(false);
+      const scale = shrinkOf(fitted, placed);
+      expect(scale).toBeLessThan(1);
+      // A step bigger (0.2 %) and it would leave the zone.
+      const bigger = placedButtons({ ...MOVED, size: MOVED.size * scale + 0.2 });
+      expect(fitsZone(bigger, zone)).toBe(false);
+    });
+  }
+
+  it('shrinks the cluster the player made bigger the same way', () => {
+    const big = { ...DEFAULT_TOUCH_LAYOUT, size: 120 };
+    const zone = { width: 300, height: 375 };
+    const fitted = fittedButtons(big, zone);
+    expect(fitsZone(fitted, zone)).toBe(true);
+    expect(shrinkOf(fitted, placedButtons(big))).toBeLessThan(1);
+  });
+});
+
 describe('parseTouchLayout (P24: parse, don’t validate)', () => {
   it('reads back a layout kept', () => {
     expect(parseTouchLayout(JSON.parse(JSON.stringify(MOVED)))).toEqual(MOVED);
@@ -144,7 +197,7 @@ describe('TouchControls with a layout (P24)', () => {
     const zone = page.body.children[0]?.children[2] as FakeElement;
     zone.rect = { left: 333, top: 0, right: 667, bottom: 375 };
     const dash = zone.children[TOUCH_BUTTONS.findIndex(({ action }) => action === 'dash')];
-    return { touch, zone, dash };
+    return { page, touch, zone, dash };
   }
 
   it('draws a moved button where the player put it, and presses it there', () => {
@@ -177,5 +230,48 @@ describe('TouchControls with a layout (P24)', () => {
     expect(controls.listenerCount).toBe(1);
     touch.dispose();
     expect(controls.listenerCount).toBe(0);
+  });
+
+  // The layout made on a 667×375 screen, played on smaller ones as the page changes size.
+  it('shrinks the cluster to a smaller screen as it changes, presses it there, gives it back whole', () => {
+    const controls = store(MOVED);
+    const { page, touch, zone, dash } = setup(controls);
+    const resize = (rect: FakeElement['rect']) => {
+      zone.rect = rect;
+      page.window.dispatchEvent(new Event('resize'));
+    };
+    const whole = { right: '149px', bottom: '218px', width: '56px' };
+    resize({ left: 333, top: 0, right: 667, bottom: 375 });
+    expect(dash?.style).toMatchObject(whole);
+    for (const smaller of [
+      // The browser's bars back: 75 px lower.
+      { left: 333, top: 0, right: 667, bottom: 300 },
+      // The phone turned: half of 375 px wide.
+      { left: 188, top: 0, right: 375, bottom: 667 },
+    ]) {
+      const version = touch.layoutVersion;
+      resize(smaller);
+      const width = parseFloat(dash?.style['width'] ?? '');
+      expect(width).toBeLessThan(56);
+      // Measured anew by what reads the buttons on the page (touch-cover.ts).
+      expect(touch.layoutVersion).not.toBe(version);
+      // Pressed where it is drawn now.
+      const right = parseFloat(dash?.style['right'] ?? '') + width / 2;
+      const bottom = parseFloat(dash?.style['bottom'] ?? '') + width / 2;
+      zone.dispatchEvent(pointer('pointerdown', 1, smaller.right - right, smaller.bottom - bottom));
+      expect(touch.read()).toBe(Input.Dash);
+      zone.dispatchEvent(pointer('pointerup', 1, 0, 0));
+      // The player's layout is theirs: never changed.
+      expect(controls.get().touch).toEqual(MOVED);
+    }
+    resize({ left: 333, top: 0, right: 667, bottom: 375 });
+    expect(dash?.style).toMatchObject(whole);
+  });
+
+  it('lets go of the window once disposed', () => {
+    const { page, touch } = setup(store());
+    const before = page.window.listenerCount;
+    touch.dispose();
+    expect(page.window.listenerCount).toBe(before - 1);
   });
 });
