@@ -1,22 +1,26 @@
 import { armOut, at, behindBack, GUARD, onBall, planted, raised, type Pose } from './common.ts';
+import type { Point } from '../../raster.ts';
 
 /**
  * Her grab and what she does with it: the one place her hands truly leave her back.
  *
  * - grab (Prise, 6 frames, 2, 3, 3, 6, 7, 7 ticks): the lead hand opens and shoots to the collar
  *   on frame 2 (ticks 5-7), hitbox 6..30 / 20..58; then it comes back, shaken out, to her back.
- * - hold (2 frames of 6, looping): the lead hand fast in the collar, the rear one still at her
- *   back, the mask level.
+ * - hold (2 frames of 6, looping): the savate clinch, both hands fast in the collar, the mask
+ *   level: the one time both her hands leave her back (tests/tools/hold-pairs.test.ts).
  * - held (2 frames of 4, looping): taken by the collar, she leans back from the grip, the hands
  *   up to it.
- * - pummel (Paume, 4 frames, 2, 3, 1, 8): the rear hand leaves her back and the palm lands on
- *   the plexus on frame 2.
+ * - pummel (Genou, 4 frames, 2, 3, 1, 8): the hands still at the collar, the lead knee rises
+ *   into the plexus on frame 2.
  * - throwForward (Croc-en-jambe, 7 frames, 3, 3, 4, 1, 7, 7, 8): a foot behind the ankle, the
  *   push of the lead hand; the release on frame 3.
- * - throwBack (Valse, 8 frames, 3, 3, 4, 4, 1, 8, 9, 9): a waltz turn, her back to the opponent,
- *   and over her shoulder; the release on frame 4, then round to face again.
+ * - throwBack (Valse, 8 frames, 3, 3, 4, 4, 1, 8, 9, 9): a waltz turn by the collar, both hands
+ *   lifting the opponent up and over her shoulder, then her back turned, down behind her:
+ *   the hands carry the collar along the path every victim's thrownBack strip is drawn for
+ *   (Nayo's throw); the release on frame 4, then round to face again.
  * - thrownBack (4 frames, 3, 3, 4, 4): thrown backward by the opponent, pulled off her feet and
- *   flung over, up to the release.
+ *   flung over, up to the release, her neck where Nayo's and Riff's ride (bent over at the
+ *   collar, lifted, upside down over the thrower's shoulder, flat on the floor behind).
  */
 
 /** The lead hand open at the collar, `x` px out. */
@@ -43,15 +47,23 @@ export const GRAB: readonly Pose[] = [
   behindBack({ ...GUARD, hip: at(-2, 34), torso: 2 }),
 ];
 
-const HOLDING: Pose = atCollar(
-  behindBack({ ...GUARD, hip: at(0, 34), torso: 8, nearFoot: onBall(11, -30) }),
-  24,
-  49,
-);
+/** Both hands at the collar: the lead wrist at `near`, the rear one at `far`. */
+const clinch = (pose: Pose, near: Point, far: Point): Pose => ({
+  ...pose,
+  nearFist: near,
+  farFist: far,
+  nearHand: 'open',
+  farHand: 'open',
+  bends: { ...pose.bends, nearElbow: 'down', farElbow: 'down' },
+});
+
+const CLINCH: Pose = { ...GUARD, hip: at(1, 34), torso: 10, nearFoot: onBall(11, -30) };
+
+const HOLDING: Pose = clinch(CLINCH, at(24, 49), at(22.5, 55.5));
 
 export const HOLD: readonly Pose[] = [
   HOLDING,
-  atCollar(behindBack({ ...HOLDING, hip: at(0, 33.5) }), 24, 48.5),
+  clinch({ ...CLINCH, hip: at(1, 33.5) }, at(24, 48.5), at(22.5, 55)),
 ];
 
 /** Held by the collar: leaning back from the grip, both hands up at it. */
@@ -60,7 +72,7 @@ const grabbed = (lean: number, y: number): Pose =>
     armOut(
       behindBack({
         ...GUARD,
-        hip: at(-2, y),
+        hip: at(0, y),
         torso: lean,
         head: -8,
         farFoot: planted(-14, -14),
@@ -75,13 +87,20 @@ const grabbed = (lean: number, y: number): Pose =>
     14,
   );
 
-export const HELD: readonly Pose[] = [grabbed(-6, 34), grabbed(-9, 33.5)];
+export const HELD: readonly Pose[] = [grabbed(-3, 34), grabbed(-5, 33.5)];
+
+/** The clinch, the lead knee up: its foot at (`x`, `y`), turned `angle` degrees. */
+const kneeing = (x: number, y: number, angle: number): Pose => ({
+  ...HOLDING,
+  nearFoot: raised(x, y, angle),
+  bends: { ...HOLDING.bends, nearKnee: 'up' },
+});
 
 export const PUMMEL: readonly Pose[] = [
-  armOut(HOLDING, 'far', -60, 12),
-  { ...armOut(HOLDING, 'far', -10, 14), face: 'effort' },
-  { ...armOut(HOLDING, 'far', 5, 19), farHand: 'open', face: 'kiai' },
-  armOut(HOLDING, 'far', -40, 13),
+  kneeing(6, 12, -50),
+  { ...kneeing(9, 18, -65), face: 'effort' },
+  { ...kneeing(12, 24, -75), hip: at(2, 34.5), face: 'kiai' },
+  kneeing(9, 8, -40),
 ];
 
 export const THROW_FORWARD: readonly Pose[] = [
@@ -119,39 +138,43 @@ export const THROW_FORWARD: readonly Pose[] = [
   behindBack({ ...GUARD, hip: at(-2, 34), torso: 2 }),
 ];
 
+/** Her wrist at `x`, `y` on screen, on a pose turned around its hip (Pose.turned). */
+const mirrored = (pose: Pose, x: number, y: number): Point => at(2 * pose.hip.x - x, y);
+
+const LIFT: Pose = {
+  ...GUARD,
+  hip: at(0, 33),
+  torso: -8,
+  head: -10,
+  nearFoot: onBall(8, -30),
+  farFoot: onBall(-8, -40),
+};
+const OVER: Pose = {
+  ...GUARD,
+  hip: at(-6, 33),
+  torso: -10,
+  head: 6,
+  nearFoot: onBall(4, -30),
+  farFoot: planted(-14, -14),
+};
+const DOWN: Pose = {
+  ...GUARD,
+  turned: true,
+  hip: at(3, 30),
+  torso: 50,
+  nearFoot: onBall(6, -34),
+  farFoot: planted(-8, -20),
+};
+
 export const THROW_BACK: readonly Pose[] = [
-  HOLDING,
-  atCollar(behindBack({ ...GUARD, hip: at(1, 34), torso: 4, farFoot: onBall(-6, -30) }), 22, 50),
+  clinch(CLINCH, at(22, 48.5), at(21, 54)),
+  { ...clinch(LIFT, at(8, 62), at(5.5, 64.5)), face: 'effort' },
   {
-    ...armOut(
-      behindBack({
-        ...GUARD,
-        turned: true,
-        hip: at(2, 33),
-        torso: 20,
-        nearFoot: onBall(4, -30),
-        farFoot: planted(-10, -14),
-      }),
-      'near',
-      55,
-      19,
-    ),
+    ...clinch(OVER, at(-0.5, 59), at(-4.5, 61)),
     face: 'effort',
   },
   {
-    ...armOut(
-      behindBack({
-        ...GUARD,
-        turned: true,
-        hip: at(3, 31),
-        torso: 34,
-        nearFoot: onBall(6, -32),
-        farFoot: planted(-8, -18),
-      }),
-      'near',
-      50,
-      19,
-    ),
+    ...clinch(DOWN, mirrored(DOWN, -21.5, 28), mirrored(DOWN, -24.5, 27)),
     face: 'kiai',
   },
   {
@@ -188,67 +211,53 @@ export const THROW_BACK: readonly Pose[] = [
   behindBack({ ...GUARD, hip: at(-2, 34), torso: 2 }),
 ];
 
+/**
+ * Thrown backward, flung over: the hip at `hip`, the body spun `spin` degrees, the legs and
+ * arms trailing as they hang from it (in the body's own space, before the spin).
+ */
+const flung = (hip: Point, spin: number): Pose =>
+  armOut(
+    armOut(
+      behindBack({
+        ...GUARD,
+        hip,
+        torso: 0,
+        spin,
+        nearFoot: raised(hip.x + 6, hip.y - 28, -40),
+        farFoot: raised(hip.x - 4, hip.y - 30, -60),
+        bends: { ...GUARD.bends, nearKnee: 'up', farKnee: 'down' },
+        face: 'hurt',
+      }),
+      'near',
+      70,
+      17,
+    ),
+    'far',
+    40,
+    17,
+  );
+
 export const THROWN_BACK: readonly Pose[] = [
-  grabbed(14, 33),
-  {
-    ...armOut(
-      armOut(
-        behindBack({
-          ...GUARD,
-          hip: at(2, 40),
-          torso: 0,
-          spin: 40,
-          nearFoot: raised(6, 12, -40),
-          farFoot: raised(-4, 10, -45),
-          face: 'hurt',
-        }),
-        'near',
-        60,
-        16,
-      ),
-      'far',
-      30,
-      16,
-    ),
-  },
   armOut(
     armOut(
       behindBack({
         ...GUARD,
-        hip: at(0, 50),
-        torso: 0,
-        spin: 120,
-        nearFoot: raised(6, 22, -40),
-        farFoot: raised(-2, 20, -60),
-        bends: { ...GUARD.bends, nearKnee: 'up', farKnee: 'down' },
+        hip: at(-11, 33),
+        torso: 40,
+        head: -20,
+        nearFoot: onBall(0, -40),
+        farFoot: planted(-16, -10),
         face: 'hurt',
       }),
       'near',
-      70,
-      17,
+      10,
+      15,
     ),
     'far',
-    40,
-    17,
+    -10,
+    14,
   ),
-  armOut(
-    armOut(
-      behindBack({
-        ...GUARD,
-        hip: at(-4, 52),
-        torso: 0,
-        spin: 190,
-        nearFoot: raised(2, 24, -40),
-        farFoot: raised(-6, 22, -60),
-        bends: { ...GUARD.bends, nearKnee: 'up', farKnee: 'down' },
-        face: 'hurt',
-      }),
-      'near',
-      70,
-      17,
-    ),
-    'far',
-    40,
-    17,
-  ),
+  flung(at(-3, 58), 72),
+  flung(at(-33.5, 84), 155),
+  flung(at(20.5, 33), 250),
 ];

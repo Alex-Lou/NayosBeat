@@ -119,7 +119,7 @@ export const SAPHIR_TEXTS: FighterTexts = {
     },
     pummel: {
       input: PUMMEL,
-      text: 'Des petits coups de paume au plexus. Deux au plus avant que la prise lâche.',
+      text: 'Des petits coups de genou au plexus. Deux au plus avant que la prise lâche.',
     },
     throwForward: {
       input: THROW_FORWARD,

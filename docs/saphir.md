@@ -12,7 +12,7 @@ Id : `saphir`. Nom affiché : `Saphir` (aucune capitale accentuée).
 
 ### Saphir, Contreuse : « un pas, une touche, dehors »
 
-- **Look** : une femme d'une trentaine d'années, droite, de profil. Un **masque de Janus** plein, en laque saphir : un profil sculpté devant, un autre derrière, son détail signature ; une queue de cheval noire sort du sommet. Trois couleurs, saphir, ivoire et noir : veste courte ivoire à col montant bordé de saphir, ceinture saphir, pantalon large de danse noir à liseré saphir, gants noirs, chaussures bicolores de savate (les armes de la savate). Tenue 2 : la même, inversée (veste noire, pantalon ivoire). **Son style** : elle se bat les mains jointes dans le dos, la pointe du pied avant posée ; seules ses jambes frappent. Au repos et sur ses petits coups, les deux mains restent au dos ; sur ses grands coups, une main lâche pour contrebalancer la jambe ; en l'air, dans ses saltos et ses chutes, les bras s'ouvrent (retour du propriétaire : « il est humain »).
+- **Look** : une femme d'une trentaine d'années, droite, de profil. Un **masque de Janus** plein, en laque saphir : un profil sculpté devant, un autre derrière, son détail signature ; une queue de cheval noire sort du sommet. Trois couleurs, saphir, ivoire et noir : veste courte ivoire à col montant bordé de saphir, ceinture saphir, pantalon large de danse noir à liseré saphir, gants noirs, chaussures bicolores de savate (les armes de la savate). Tenue 2 : la même, inversée (veste noire, pantalon ivoire). **Son style** : elle se bat les mains jointes dans le dos, la pointe du pied avant posée ; seules ses jambes frappent. Au repos et sur ses petits coups, les deux mains restent au dos ; sur ses grands coups, une main lâche pour contrebalancer la jambe ; en l'air, dans ses saltos et ses chutes, les bras s'ouvrent (retour du propriétaire : « il est humain »). Dans la prise seulement, ses deux mains tiennent le col, comme un clinch de savate (le Genou, la Valse).
 - **Couleurs** : masse ivoire `#ECE8DE`, masque saphir `#2A4CB8`, énergie saphir `#3A6CF0`. Tenue 2 : masse noire `#121216`, énergie lilas `#C0A0FF`. Mesures au §8.
 - **Effets** : arcs de coups de pied (`slash`, la forme de Nayo, en saphir), étincelles en losange, comme un saphir taillé ; dissolution `rise` ; lettrage néon. Une forme neuve serait du code (§4.11 du cahier) : ce n'est pas demandé.
 - **Personnalité** : polie, elle vouvoie tout le monde et parle peu. Elle invite, attend, puis punit. Elle salue après chaque combat, sans jamais ôter le masque. Personne ne sait qui est dessous, ni si c'est la même d'un soir à l'autre.
@@ -24,7 +24,7 @@ Id : `saphir`. Nom affiché : `Saphir` (aucune capitale accentuée).
 - **Faiblesses** :
   1. le coup le plus rapide à 5 tics (Pointe, Coup de pied bas), contre 4 et 3 ;
   2. ni reversal (Rubato forte traverse dès f3, jamais dès f0), ni projectile, et un Contre-ut sans invincibilité ;
-  3. des combos courts : sans jauge, 10 à 21 % de la vie de Nayo (Nayo : 18 à 31 %) ; un tabassage faible (Paume, 10 fixes).
+  3. des combos courts : sans jauge, 10 à 21 % de la vie de Nayo (Nayo : 18 à 31 %) ; un tabassage faible (Genou, 10 fixes).
 
 **Le test d'identité** (`tests/data/fighters.test.ts`, porte 1b) : Saphir a la plus longue portée immobile de H, la marche arrière la plus rapide et le plus long backdash du casting ; son coup le plus rapide est le plus lent.
 
@@ -45,7 +45,7 @@ Id : `saphir`. Nom affiché : `Saphir` (aucune capitale accentuée).
 | Overheads | Overhand 19 tics | Talon 17, Saut de l'ange 16 | Fouetté plongeant 18 tics (Plongé en corde) |
 | Reversal | Uppercut f0–6 | aucun au sol | aucun |
 | Projectile | Vinyle 3,5 px/tic | aucun | aucun |
-| Lancers (devant / derrière, tabassage) | 100 / 90, 2 × 15 | 85 / 80, 3 × 10 | 80 / 85, Paume 10 (2 visées, à mesurer en 1b) |
+| Lancers (devant / derrière, tabassage) | 100 / 90, 2 × 15 | 85 / 80, 3 × 10 | 80 / 85, Genou 10 (2 visées, à mesurer en 1b) |
 | Combo de base / lanceur | 163 / 164 | 143 / 140 | 99 (L, L, L) / 141 (←H → ↓S) |
 
 ## 3. Le matchup (au format de combat-v2 §6.4)
@@ -92,7 +92,7 @@ Les noms des normaux sont des gestes de savate ; la métaphore musicale est rés
 | → + S | **Rubato** | Elle retient son poids en arrière, puis fond de 36 px et fouette, en retard exprès | milieu, met au sol | punir un coup raté de très loin (103,5 px) | −9 en garde ; un projectile la prend en course |
 | ↓ + S | **Contre-ut** | Elle bondit, la jambe tendue droit vers le ciel | milieu, met au sol | l'anti-air, **sans invincibilité** | sauter tard, ou la feinte ; −17 en garde |
 | PRISE | **Prise** | Saisie au revers de la veste | — | la prise ordinaire (43,5 px) | dégager |
-| en tenant, L | **Paume** | Petits coups de paume au plexus | — | le tabassage | se débattre |
+| en tenant, L | **Genou** | Petits coups de genou au plexus | — | le tabassage | se débattre |
 | en tenant, H | **Croc-en-jambe** | Elle glisse un pied derrière la cheville, une poussée : l'adversaire tombe tout près | — | la pression au réveil | — |
 | en tenant, ← + H | **Valse** | Elle le fait tourner au bras, un tour de valse, et le passe par-dessus son épaule | — | changer de côté (projection debout : planches des victimes existantes) | — |
 | DASH | **Fente** | La fente avant de la savate, 48 px | — | entrer à mi-distance | un coup qui la cueille |
@@ -129,7 +129,7 @@ Portée : de centre à centre contre Nayo debout, mesurée sur les boîtes (comm
 | Id | Saphir |
 |---|---|
 | `grab` | 5/3/20 (28), 6..30 / 20..58, portée 43,5 |
-| `pummel` | **Paume** 5/1/8 (14), 10 fixes, gel 5 |
+| `pummel` | **Genou** 5/1/8 (14), 10 fixes, gel 5 |
 | `throwForward` | **Croc-en-jambe** 10/1/22 (33), 80, KD (3 ; vx 2,5) : retombe tout près (≈ 58 px, estimation) |
 | `throwBack` | **Valse** 14/1/26 (41), 85, côté changé f6, KD (3,5 ; vx 3) |
 | `dashForward` | **Fente** 18 tics, 48 px f1–13 |
@@ -269,6 +269,8 @@ Mesurées avec `hue` (`tests/render/hit-styles.test.ts`), `relativeLuminance` et
 - **Les 3 coups signatures**, animés à la porte 2 et retouchés à la porte 4 : **Syncope** (S), **Chassé** (H), **Contre-ut** (↓ + S). Chacun a un membre actif clair : une jambe tendue. La Syncope est un croissant (la jambe par-dessus la tête, puis en bas), le Chassé une poussée droite de la semelle, le Contre-ut une jambe droite vers le ciel.
 - **Ses enchaînements** (porte 3) : dessinés comme une seule phrase dansée, chaque coup sortant du précédent, les mains revenant au dos entre deux grands coups.
 - **Ses acrobaties** (porte 3, demande du propriétaire) : elle se retourne. Le Revers tournant et le Chassé arrière sont de vrais coups retournés, dos à l'adversaire (le masque montre alors son autre visage ; outil `Pose.turned`) ; la Coda est une tornade en l'air (un fouetté, un coup retourné en vrille, le revers en retombant) ; la Chandelle est un salto arrière ; le Fouetté plongeant est sauté. Les sauts sont dessinés dans la cellule, comme le Contre-ut.
+- **Sa parade** : le check de savate, bas. Le genou avant se lève devant le corps, la pointe du pied reste posée au sol : le tibia couvre, et un coup bas le touche là où il frappe (choix du propriétaire à l'étape 1 du branchement ; `combat-v2.md` §9.5).
+- **Ses hurtbox** (étape 1 du branchement) : mesurées sur le dessin (`npm run measure-boxes -- saphir`), debout 70,5 px de haut, l'avant aux orteils (14 px). Ses coups sautés (Contre-ut, Chandelle, Chandelle glissée, Fouetté plongeant, Plongé, Coda, Esquive) ont leurs boîtes propres tant qu'elle décolle : les coups bas passent dessous.
 - **Les retours passés du propriétaire** (D25 à D27) : les coups de pied hauts restent dans les limites d'anatomie, sans exception ; aucun bras tiré en arrière et plié.
 
 ## 10. La liste de coupes
@@ -284,7 +286,7 @@ Si le temps manque, dans cet ordre :
 
 - **La Syncope trop forte contre le CPU** : elle ressort hors de sa portée de punition. À mesurer en boîte grise ; la réponse est dans les plans du CPU (session principale), ou dans ses chiffres (plus de récupération), à la porte 1b.
 - **La pente contre Nayo** repose sur l'échange de normaux, que le CPU joue beaucoup ; entre humains, le Vinyle pèse plus. Estimation.
-- **Les hurtbox provisoires** : un coup de pied tendu expose la jambe. Mesurées sur le dessin aux portes 2 et 3, elles peuvent raccourcir sa portée utile.
+- **Les hurtbox** : mesurées sur le dessin à l'étape 1 du branchement (la boîte debout perd 10,5 px de haut, de 81 à 70,5) ; à jouer : les coups hauts et les sauts adverses qui passaient de justesse au-dessus de la tête.
 - **Le pantalon noir sur un fond sombre** : en tenue 1, ses jambes tiennent par le liseré saphir et le cuir blanc des chaussures ; à regarder sur le décor de la rue.
 - **Les coups de pied hauts** et l'anatomie (D25).
 - **L'ivoire de la tenue 1** est clair : ses éclats de frappe crème sont à mesurer contre le platine (porte 3).

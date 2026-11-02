@@ -37,7 +37,7 @@ const FRAMES: readonly Pose[] = [
     ...CROUCH,
     hip: at(14, 17),
     torso: 32,
-    nearFoot: raised(46, 8.5, 60),
+    nearFoot: raised(45, 6, 30),
     farFoot: onBall(5, -62),
     face: 'kiai',
     effects: [smear(3, [20, 8], [34, 7], [46, 9])],
