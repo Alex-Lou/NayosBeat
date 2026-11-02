@@ -5,6 +5,8 @@
  */
 
 import { definePalette, type DetailColor, type MaterialTones } from '../palette.ts';
+import type { Tint } from '../raster.ts';
+import type { Tone } from '../skeleton.ts';
 import type { EffectStyle } from '../vfx.ts';
 
 export { farOf, matteOf, noGloss, type Colorway } from '../palette.ts';
@@ -118,7 +120,100 @@ const DETAILS = {
 
 export type DetailName = keyof typeof DETAILS;
 
-const PALETTE = definePalette(MATERIALS, DETAILS);
+/**
+ * The colors of the light his own effects shed on him (docs/art/nayo-essence.md): the sound's
+ * (cyan, magenta on the second colorway), the strikes' (orange and gold), the Boost's (gold where
+ * it grazes, incandescent white where it hits square). Grazed, then squarely lit.
+ */
+const EFFECT_LIGHTS = {
+  sound: { kiss: { main: '#00c0d8', alt: '#d82896' }, lit: { main: '#40f0ff', alt: '#ff60cc' } },
+  strike: { kiss: { main: '#f07818' }, lit: { main: '#ffc040' } },
+  platine: { kiss: { main: '#ffc040' }, lit: { main: '#f2f6ff' } },
+} as const satisfies Record<Tone, Record<TintLevel, DetailColor>>;
+
+type TintLevel = 'kiss' | 'lit';
+type TintName = `${MaterialName}_${Tone}_${TintLevel}`;
+
+/**
+ * How a material takes a light: the light's hue at about the surface's own value, brighter where
+ * it hits square. A black jacket turns deep teal under the record, the skin pale cyan: the
+ * material still reads, lit.
+ */
+const TINT = {
+  kiss: { tone: 3, gain: 1.5, lift: 0.1, amount: 0.7 },
+  lit: { tone: 4, gain: 1.8, lift: 0.32, amount: 0.9 },
+} as const satisfies Record<
+  TintLevel,
+  { tone: number; gain: number; lift: number; amount: number }
+>;
+
+function tinted(surface: string, light: string, level: TintLevel): string {
+  const { gain, lift, amount } = TINT[level];
+  const s = rgbOf(surface);
+  const l = rgbOf(light);
+  const target = Math.min(1, luminance(s) * gain + lift);
+  const scaled = l.map((c) => c * (target / Math.max(luminance(l), 1e-3)));
+  // Past white, the extra goes into the other channels: brighter, paler.
+  const over = Math.max(0, ...scaled.map((c) => c - 1));
+  const light2 = scaled.map((c) => Math.min(1, c + over * 0.6));
+  return hexOf(s.map((c, i) => c + ((light2[i] ?? 0) - c) * amount));
+}
+
+function rgbOf(hex: string): number[] {
+  const value = Number.parseInt(hex.slice(1, 7), 16);
+  return [(value >> 16) & 255, (value >> 8) & 255, value & 255].map((c) => c / 255);
+}
+
+function luminance([r = 0, g = 0, b = 0]: readonly number[]): number {
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+function hexOf(rgb: readonly number[]): string {
+  return `#${rgb
+    .map((c) =>
+      Math.round(Math.min(1, Math.max(0, c)) * 255)
+        .toString(16)
+        .padStart(2, '0'),
+    )
+    .join('')}`;
+}
+
+/** Every material's tones under every light, in both colorways (one slot each). */
+const TINTS = Object.fromEntries(
+  (Object.keys(MATERIALS) as MaterialName[]).flatMap((name) =>
+    (Object.keys(EFFECT_LIGHTS) as Tone[]).flatMap((tone) =>
+      (['kiss', 'lit'] as const).map((level) => {
+        const material: MaterialTones = MATERIALS[name];
+        const light: DetailColor = EFFECT_LIGHTS[tone][level];
+        const of = (colorway: 'main' | 'alt'): string => {
+          const ramp = colorway === 'alt' ? (material.alt ?? material.main) : material.main;
+          const color = colorway === 'alt' ? (light.alt ?? light.main) : light.main;
+          return tinted(ramp[TINT[level].tone], color, level);
+        };
+        return [`${name}_${tone}_${level}`, { main: of('main'), alt: of('alt') }];
+      }),
+    ),
+  ),
+) as Record<TintName, DetailColor>;
+
+const PALETTE = definePalette(MATERIALS, { ...DETAILS, ...TINTS });
+
+/** The slots of each material's tones under each light, by its outline slot (raster.ts). */
+export const EFFECT_TINTS: Readonly<Record<Tone, Readonly<Record<number, Tint>>>> =
+  Object.fromEntries(
+    (Object.keys(EFFECT_LIGHTS) as Tone[]).map((tone) => [
+      tone,
+      Object.fromEntries(
+        (Object.keys(MATERIALS) as MaterialName[]).map((name) => [
+          PALETTE.material[name].outline,
+          {
+            kiss: PALETTE.detail[`${name}_${tone}_kiss`],
+            lit: PALETTE.detail[`${name}_${tone}_lit`],
+          },
+        ]),
+      ),
+    ]),
+  ) as Record<Tone, Record<number, Tint>>;
 
 /** Palette slots of every material (slot 0 is transparent). */
 export const MATERIAL = PALETTE.material;

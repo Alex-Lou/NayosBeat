@@ -156,6 +156,19 @@ export interface Pose {
   /** Defaults to focus. */
   readonly face?: Face;
   readonly effects?: readonly Effect[];
+  /**
+   * Lights on the body that no effect of the frame gives off (effect-light.ts reads those of the
+   * effects): the record just let go, the charge before it shows. Character space, like effects.
+   */
+  readonly glows?: readonly Glow[];
+}
+
+/** A light shed on the body, `reach` world pixels around `center`; `power` 1 is a flash in hand. */
+export interface Glow {
+  readonly center: Point;
+  readonly reach: number;
+  readonly power: number;
+  readonly tone: Tone;
 }
 
 /**

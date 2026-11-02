@@ -611,4 +611,7 @@ function drawNeck(ctx: Ctx): void {
 function drawHead(ctx: Ctx): void {
   const { canvas, at, s, swing } = ctx;
   stampHead(canvas, s.face, at(s.head), s.headAngle, swing.x * S * 0.5);
+  // A ball for the light of his effects: the jaw lit from below by the record, the cheek by a
+  // spark (docs/art/nayo-essence.md).
+  canvas.volume(at(s.head), BODY.headRadius * S * 1.15);
 }

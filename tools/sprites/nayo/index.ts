@@ -8,7 +8,7 @@ import type { Fighter } from '../fighter.ts';
 import type { Lighting } from '../raster.ts';
 import { BODY, type Pose } from '../skeleton.ts';
 import { drawNayo } from './look.ts';
-import { DETAIL, EFFECTS, MATERIAL, paletteOf } from './palette.ts';
+import { DETAIL, EFFECT_TINTS, EFFECTS, MATERIAL, paletteOf } from './palette.ts';
 import { NAYO_POSES, NAYO_PROJECTILE, NAYO_PROJECTILE_BOOST } from './poses/index.ts';
 
 const HAIR = MATERIAL.hair;
@@ -40,6 +40,25 @@ export const NAYO_LIGHTING: Lighting = {
   },
   occlusion: { height: 64, depth: 0.55 },
   glow: { [DETAIL.neonCore]: DETAIL.neonHalo },
+  // His effects light him (docs/art/nayo-essence.md): the record, the sparks, the column, the
+  // Boost's white.
+  fx: {
+    tints: EFFECT_TINTS,
+    exact: Object.fromEntries(
+      [MATERIAL.skin, HAIR].flatMap((material) => {
+        const ramp = [material.outline, material.deep, material.shadow, material.base];
+        const tones = [...ramp, material.light, material.gloss ?? material.light];
+        return tones.map((slot, i) => [
+          slot,
+          { material: material.outline, darker: tones[Math.max(1, i - 1)] ?? slot },
+        ]);
+      }),
+    ),
+    levels: { kiss: 0.3, lit: 0.58 },
+    drama: 0.22,
+    shadow: 0.55,
+    floor: 4,
+  },
 };
 
 const SHEETS: Readonly<Record<string, { frames: number }>> = NAYO_SHEETS;
