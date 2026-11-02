@@ -55,8 +55,11 @@ export function glowsOfEffect(effect: Effect): Glow[] {
       const head = effect.points[effect.points.length - 1];
       return head ? [glow(head, effect.width * 3 + 6, 0.35, effect.tone)] : [];
     }
+    case 'grooves':
+      return [glow(effect.center, effect.radius + 4, 0.3 * (1 - effect.progress), effect.tone)];
     case 'shield':
     case 'dust':
+    case 'notes':
       return [];
   }
 }

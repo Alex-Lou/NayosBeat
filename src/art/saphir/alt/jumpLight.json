@@ -1,35 +1,35 @@
 {
   "frames": {
     "0": {
-      "frame": { "x": 166, "y": 0, "w": 68, "h": 133 },
+      "frame": { "x": 112, "y": 0, "w": 68, "h": 133 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 12, "y": 0, "w": 68, "h": 133 },
-      "sourceSize": { "w": 96, "h": 139 }
+      "spriteSourceSize": { "x": 28, "y": 0, "w": 68, "h": 133 },
+      "sourceSize": { "w": 112, "h": 141 }
     },
     "1": {
-      "frame": { "x": 96, "y": 0, "w": 70, "h": 136 },
+      "frame": { "x": 337, "y": 0, "w": 77, "h": 130 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 9, "y": 0, "w": 70, "h": 136 },
-      "sourceSize": { "w": 96, "h": 139 }
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 77, "h": 130 },
+      "sourceSize": { "w": 112, "h": 141 }
     },
     "2": {
-      "frame": { "x": 0, "y": 0, "w": 96, "h": 138 },
+      "frame": { "x": 0, "y": 0, "w": 112, "h": 138 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 1, "w": 96, "h": 138 },
-      "sourceSize": { "w": 96, "h": 139 }
+      "spriteSourceSize": { "x": 0, "y": 3, "w": 112, "h": 138 },
+      "sourceSize": { "w": 112, "h": 141 }
     },
     "3": {
-      "frame": { "x": 234, "y": 0, "w": 71, "h": 133 },
+      "frame": { "x": 180, "y": 0, "w": 89, "h": 133 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 9, "y": 0, "w": 71, "h": 133 },
-      "sourceSize": { "w": 96, "h": 139 }
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 89, "h": 133 },
+      "sourceSize": { "w": 112, "h": 141 }
     },
     "4": {
-      "frame": { "x": 305, "y": 0, "w": 68, "h": 133 },
+      "frame": { "x": 269, "y": 0, "w": 68, "h": 133 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 12, "y": 0, "w": 68, "h": 133 },
-      "sourceSize": { "w": 96, "h": 139 }
+      "spriteSourceSize": { "x": 28, "y": 0, "w": 68, "h": 133 },
+      "sourceSize": { "w": 112, "h": 141 }
     }
   },
-  "meta": { "image": "jumpLight.png", "size": { "w": 373, "h": 138 } }
+  "meta": { "image": "jumpLight.png", "size": { "w": 414, "h": 138 } }
 }
