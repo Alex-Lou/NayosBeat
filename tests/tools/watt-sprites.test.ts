@@ -168,6 +168,8 @@ describe('Watt strips: reach', () => {
     'crouchHeavy',
     'jumpLight',
     'jumpHeavy',
+    'special',
+    'super',
   ] as const;
   const ANTI_AIRS: ReadonlySet<string> = new Set(['specialAntiAir', 'backHeavy', 'chainLaunch']);
   /** His strikes on the strips drawn so far: the moves and their Remixes playing them. */
@@ -191,12 +193,15 @@ describe('Watt strips: reach', () => {
         'jumpHeavy',
         'jumpLight',
         'lightFinisher',
+        'special',
         'specialAntiAir',
         'specialAntiAirBoost',
+        'specialBoost',
         'specialForward',
         'specialForwardBoost',
         'standHeavy',
         'standLight',
+        'super',
       ].sort(),
     );
   });

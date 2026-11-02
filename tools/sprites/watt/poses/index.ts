@@ -7,7 +7,7 @@
  */
 
 import { WATT_SHEETS, type WattSheet } from '../../../../src/art/watt/sheets.ts';
-import { at, GUARD, type Pose } from './common.ts';
+import { GUARD, type Pose } from './common.ts';
 import { POSES as blockPoses } from './block.ts';
 import { POSES as crouchPoses } from './crouch.ts';
 import { POSES as dashBackPoses } from './dashBack.ts';
@@ -26,9 +26,11 @@ import { POSES as koPoses } from './ko.ts';
 import { POSES as techPoses } from './tech.ts';
 import { POSES as jumpPoses } from './jump.ts';
 import { POSES as jumpForwardPoses } from './jumpForward.ts';
+import { POSES as specialPoses } from './special.ts';
 import { POSES as specialAntiAirPoses } from './specialAntiAir.ts';
 import { POSES as specialForwardPoses } from './specialForward.ts';
 import { POSES as standLightPoses } from './standLight.ts';
+import { POSES as superPoses } from './super.ts';
 import { POSES as chainLightPoses } from './chainLight.ts';
 import { POSES as lightFinisherPoses } from './lightFinisher.ts';
 import { POSES as forwardLightPoses } from './forwardLight.ts';
@@ -43,18 +45,6 @@ import { POSES as jumpLightPoses } from './jumpLight.ts';
 import { POSES as jumpHeavyPoses } from './jumpHeavy.ts';
 import { POSES as walkBackPoses } from './walkBack.ts';
 import { POSES as walkForwardPoses } from './walkForward.ts';
-
-/**
- * A special not drawn yet: the guard, with a touch of energy at the lead clamp on its active
- * frame, so its Remix has effects to redraw in platine (generate.ts).
- */
-function heldSpecial(frames: number, active: number): readonly Pose[] {
-  return Array.from({ length: frames }, (_, frame) =>
-    frame === active
-      ? { ...GUARD, effects: [{ kind: 'energy', center: at(12, 56), radius: 3 } as const] }
-      : GUARD,
-  );
-}
 
 /** The strips drawn so far, by their own files. */
 const DRAWN: Partial<Record<WattSheet, readonly Pose[]>> = {
@@ -91,7 +81,8 @@ const DRAWN: Partial<Record<WattSheet, readonly Pose[]>> = {
   getup: getupPoses,
   ko: koPoses,
   tech: techPoses,
-  special: heldSpecial(WATT_SHEETS.special.frames, 4),
+  special: specialPoses,
+  super: superPoses,
   specialForward: specialForwardPoses,
   specialAntiAir: specialAntiAirPoses,
 };
