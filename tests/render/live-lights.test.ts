@@ -153,6 +153,9 @@ describe('the street under the live lights (docs/flashs.md §5)', () => {
 
   it("lights at ΔL ≥ 0.1 nothing of the street's images: what would rise is drawn over, as it is", async () => {
     let checked = 0;
+    // The images share most of their colors: each is judged once, whatever image it is in.
+    const emitting = new Map<number, boolean>();
+    const judged = new Set<number>();
     for (const [name, image] of await stageImages()) {
       const colors = new Set<number>();
       let opaque = 0;
@@ -161,8 +164,13 @@ describe('the street under the live lights (docs/flashs.md §5)', () => {
         if ((image.alpha[at] ?? 0) === 0) continue;
         opaque++;
         const color = image.colors[at] ?? 0;
-        if (emits(color, STRONGEST)) kept++;
-        else colors.add(color);
+        let emitter = emitting.get(color);
+        if (emitter === undefined) {
+          emitter = emits(color, STRONGEST);
+          emitting.set(color, emitter);
+        }
+        if (emitter) kept++;
+        else if (!judged.has(color)) colors.add(color);
       }
       // Every level of a dim, finer than the steps the emitters were judged on.
       for (const { light, level, alpha } of FINE) {
@@ -172,6 +180,7 @@ describe('the street under the live lights (docs/flashs.md §5)', () => {
             expect(rise, `${name} #${color.toString(16)}`).toBeLessThan(FLASH_DELTA);
         }
       }
+      for (const color of colors) judged.add(color);
       // The street itself is lit: what lights itself is a small share of it (windows, lamps).
       expect(kept / opaque, name).toBeLessThan(0.08);
       checked++;
