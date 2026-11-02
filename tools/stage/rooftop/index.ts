@@ -7,6 +7,7 @@
  */
 
 import type { Canvas } from '../kit/canvas.ts';
+import { mistProp, type MistBank } from '../kit/fog.ts';
 import type { CodeMap, CodeProp, CodeStage, Rect } from '../kit/stage.ts';
 import { imageOf, sizeOf } from '../kit/stage.ts';
 import { ROOFTOP_ATMOSPHERES } from './atmospheres.ts';
@@ -22,7 +23,7 @@ import {
 } from './far.ts';
 import { drawFloor } from './floor.ts';
 import { drawMid, MID_ANIMATIONS } from './mid.ts';
-import { PALETTE } from './palette.ts';
+import { MIST, PALETTE } from './palette.ts';
 
 const SEED = 23;
 
@@ -100,6 +101,30 @@ function carProp(far: Canvas, index: number): CodeProp {
   };
 }
 
+/** The fog's banks of mist, drifting across the far layer each its own way (kit/fog.ts). */
+const MIST_BANKS: readonly MistBank[] = [
+  {
+    name: 'mist0',
+    layer: 'far',
+    y: 300,
+    height: 90,
+    width: 560,
+    steps: 3600,
+    facing: -1,
+    seed: 401,
+  },
+  {
+    name: 'mist1',
+    layer: 'far',
+    y: 372,
+    height: 70,
+    width: 460,
+    steps: 2700,
+    facing: 1,
+    seed: 433,
+  },
+];
+
 let drawn: CodeStage | undefined;
 
 /** The rooftop as the code draws it (drawn once, then kept: the tools ask for it several times). */
@@ -125,7 +150,12 @@ export function drawRooftop(): CodeStage {
       mid: imageOf(drawMid(mid.width, mid.height), PALETTE),
       floor: imageOf(drawFloor(floor.width, floor.height, SEED), PALETTE),
     },
-    props: [...CARS.map((_, index) => carProp(far, index)), blimpProp(far), ...props],
+    props: [
+      ...MIST_BANKS.map((bank) => mistProp(far, PALETTE, bank, MIST)),
+      ...CARS.map((_, index) => carProp(far, index)),
+      blimpProp(far),
+      ...props,
+    ],
   };
   return drawn;
 }

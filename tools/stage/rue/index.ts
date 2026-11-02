@@ -5,16 +5,42 @@
  * is one. Every pixel comes from fixed seeds: the same street on every run.
  */
 
+import { mistProp, type MistBank } from '../kit/fog.ts';
 import type { CodeMap, CodeProp, CodeStage } from '../kit/stage.ts';
 import { imageOf, sizeOf } from '../kit/stage.ts';
 import { STREET_ATMOSPHERES } from './atmospheres.ts';
 import { drawFar } from './far.ts';
 import { drawFloor } from './floor.ts';
 import { drawMid, MID_ANIMATIONS } from './mid.ts';
-import { PALETTE } from './palette.ts';
+import { MIST, PALETTE } from './palette.ts';
 
 /** The street's seed. Another draws another street (other towers, other tags, other stains). */
 const SEED = 1;
+
+/** The fog's banks of mist, drifting across the far layer each its own way (kit/fog.ts). */
+const MIST_BANKS: readonly MistBank[] = [
+  // Low along the ground behind the fighters, in front of the walls; and over the distance.
+  {
+    name: 'mist0',
+    layer: 'mid',
+    y: 426,
+    height: 52,
+    width: 760,
+    steps: 2400,
+    facing: -1,
+    seed: 401,
+  },
+  {
+    name: 'mist1',
+    layer: 'far',
+    y: 232,
+    height: 80,
+    width: 520,
+    steps: 3000,
+    facing: 1,
+    seed: 433,
+  },
+];
 
 let drawn: CodeStage | undefined;
 
@@ -34,13 +60,18 @@ export function drawRue(): CodeStage {
       return imageOf(canvas.crop(rect.x, rect.y, rect.width, rect.height), PALETTE);
     }),
   }));
+  const canvases = {
+    far: drawFar(far.width, far.height, SEED),
+    mid: drawMid(mid.width, mid.height),
+  };
+  const mist = MIST_BANKS.map((bank) => mistProp(canvases[bank.layer], PALETTE, bank, MIST));
   drawn = {
     layers: {
-      far: imageOf(drawFar(far.width, far.height, SEED), PALETTE),
-      mid: imageOf(drawMid(mid.width, mid.height), PALETTE),
+      far: imageOf(canvases.far, PALETTE),
+      mid: imageOf(canvases.mid, PALETTE),
       floor: imageOf(drawFloor(floor.width, floor.height, SEED), PALETTE),
     },
-    props,
+    props: [...mist, ...props],
   };
   return drawn;
 }

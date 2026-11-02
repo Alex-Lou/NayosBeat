@@ -138,10 +138,11 @@ describe("the code's Rooftop Rain (docs/art/decor-rooftop.md)", { timeout: 60_00
     }
   });
 
-  it('offers its two rains: at midnight and at dusk', () => {
+  it('offers its two rains, at midnight and at dusk, and its fog', () => {
     expect(Object.keys(STAGE_COLORS).sort()).toEqual([
       'dusk-rain',
       'midnight-clear',
+      'midnight-fog',
       'midnight-rain',
     ]);
   });
@@ -211,6 +212,8 @@ describe("the code's Rooftop Rain (docs/art/decor-rooftop.md)", { timeout: 60_00
       'car2',
       'car3',
       'car4',
+      'mist0',
+      'mist1',
     ]);
     for (const { name, frames, drift } of gliders) {
       if (!drift) continue;

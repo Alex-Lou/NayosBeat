@@ -4,6 +4,7 @@
  */
 
 import type { Rgba } from '../../sprites/png.ts';
+import { fogged } from '../kit/fog.ts';
 import { ceiled, grade, repaint, rgba } from '../kit/grade.ts';
 import type { StageAtmosphere } from '../kit/stage.ts';
 import {
@@ -91,9 +92,25 @@ function rain(): Rgba[] {
   return palette;
 }
 
+/**
+ * A fog at midnight (docs/art/brume.md): the city over the roof gone, the back street down the
+ * alley a grey hollow; the yard a little greyer; the wall packs and the club's violet as bright as
+ * ever, glowing out of it. Banks of mist drift over the distance (index.ts).
+ */
+function fog(): Rgba[] {
+  return fogged(PALETTE, {
+    color: rgba('#2a2838'),
+    far: [SKY, CLOUD, DISTANT, DISTANT_LIT],
+    lit: new Set([...SODIUM, ...GLASS.slice(3), ...GLASS_WARM, ...EXIT, ...EMBER]),
+    depth: 0.72,
+    near: 0.24,
+  });
+}
+
 /** The atmospheres the dock offers, the base one first (BASE_ATMOSPHERE: palette.ts as it is). */
 export const DOCK_ATMOSPHERES: readonly StageAtmosphere[] = [
   { atmosphere: { moment: 'midnight', weather: 'clear' }, palette: PALETTE },
   { atmosphere: { moment: 'dawn', weather: 'clear' }, palette: dawn() },
   { atmosphere: { moment: 'midnight', weather: 'rain' }, palette: rain() },
+  { atmosphere: { moment: 'midnight', weather: 'fog' }, palette: fog() },
 ];
