@@ -18,6 +18,19 @@ import { POSES as jumpPoses } from './jump.ts';
 import { POSES as jumpForwardPoses } from './jumpForward.ts';
 import { POSES as specialAntiAirPoses } from './specialAntiAir.ts';
 import { POSES as specialForwardPoses } from './specialForward.ts';
+import { POSES as standLightPoses } from './standLight.ts';
+import { POSES as chainLightPoses } from './chainLight.ts';
+import { POSES as lightFinisherPoses } from './lightFinisher.ts';
+import { POSES as forwardLightPoses } from './forwardLight.ts';
+import { POSES as standHeavyPoses } from './standHeavy.ts';
+import { POSES as chainHeavyPoses } from './chainHeavy.ts';
+import { POSES as forwardHeavyPoses } from './forwardHeavy.ts';
+import { POSES as backHeavyPoses } from './backHeavy.ts';
+import { POSES as chainLaunchPoses } from './chainLaunch.ts';
+import { POSES as crouchLightPoses } from './crouchLight.ts';
+import { POSES as crouchHeavyPoses } from './crouchHeavy.ts';
+import { POSES as jumpLightPoses } from './jumpLight.ts';
+import { POSES as jumpHeavyPoses } from './jumpHeavy.ts';
 import { POSES as walkBackPoses } from './walkBack.ts';
 import { POSES as walkForwardPoses } from './walkForward.ts';
 
@@ -45,6 +58,19 @@ const DRAWN: Partial<Record<WattSheet, readonly Pose[]>> = {
   dashForward: dashForwardPoses,
   dashBack: dashBackPoses,
   grab: grabPoses,
+  standLight: standLightPoses,
+  chainLight: chainLightPoses,
+  lightFinisher: lightFinisherPoses,
+  forwardLight: forwardLightPoses,
+  standHeavy: standHeavyPoses,
+  chainHeavy: chainHeavyPoses,
+  forwardHeavy: forwardHeavyPoses,
+  backHeavy: backHeavyPoses,
+  chainLaunch: chainLaunchPoses,
+  crouchLight: crouchLightPoses,
+  crouchHeavy: crouchHeavyPoses,
+  jumpLight: jumpLightPoses,
+  jumpHeavy: jumpHeavyPoses,
   special: heldSpecial(WATT_SHEETS.special.frames, 4),
   specialForward: specialForwardPoses,
   specialAntiAir: specialAntiAirPoses,

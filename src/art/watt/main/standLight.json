@@ -4,32 +4,32 @@
       "frame": { "x": 0, "y": 0, "w": 102, "h": 168 },
       "trimmed": true,
       "spriteSourceSize": { "x": 0, "y": 0, "w": 102, "h": 168 },
-      "sourceSize": { "w": 102, "h": 168 }
+      "sourceSize": { "w": 138, "h": 168 }
     },
     "1": {
+      "frame": { "x": 204, "y": 0, "w": 120, "h": 166 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 2, "w": 120, "h": 166 },
+      "sourceSize": { "w": 138, "h": 168 }
+    },
+    "2": {
+      "frame": { "x": 442, "y": 0, "w": 138, "h": 164 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 4, "w": 138, "h": 164 },
+      "sourceSize": { "w": 138, "h": 168 }
+    },
+    "3": {
+      "frame": { "x": 324, "y": 0, "w": 118, "h": 166 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 2, "w": 118, "h": 166 },
+      "sourceSize": { "w": 138, "h": 168 }
+    },
+    "4": {
       "frame": { "x": 102, "y": 0, "w": 102, "h": 168 },
       "trimmed": true,
       "spriteSourceSize": { "x": 0, "y": 0, "w": 102, "h": 168 },
-      "sourceSize": { "w": 102, "h": 168 }
-    },
-    "2": {
-      "frame": { "x": 204, "y": 0, "w": 102, "h": 168 },
-      "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 0, "w": 102, "h": 168 },
-      "sourceSize": { "w": 102, "h": 168 }
-    },
-    "3": {
-      "frame": { "x": 306, "y": 0, "w": 102, "h": 168 },
-      "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 0, "w": 102, "h": 168 },
-      "sourceSize": { "w": 102, "h": 168 }
-    },
-    "4": {
-      "frame": { "x": 408, "y": 0, "w": 102, "h": 168 },
-      "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 0, "w": 102, "h": 168 },
-      "sourceSize": { "w": 102, "h": 168 }
+      "sourceSize": { "w": 138, "h": 168 }
     }
   },
-  "meta": { "image": "standLight.png", "size": { "w": 510, "h": 168 } }
+  "meta": { "image": "standLight.png", "size": { "w": 580, "h": 168 } }
 }

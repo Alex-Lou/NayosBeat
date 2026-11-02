@@ -151,21 +151,52 @@ describe('Watt strips: drawing', () => {
  */
 describe('Watt strips: reach', () => {
   const REACH = { short: 3, past: 4 } as const;
-  const DRAWN = ['grab', 'specialForward', 'specialAntiAir'] as const;
-  const ANTI_AIRS: ReadonlySet<string> = new Set(['specialAntiAir']);
+  const DRAWN = [
+    'grab',
+    'specialForward',
+    'specialAntiAir',
+    'standLight',
+    'chainLight',
+    'lightFinisher',
+    'forwardLight',
+    'standHeavy',
+    'chainHeavy',
+    'forwardHeavy',
+    'backHeavy',
+    'chainLaunch',
+    'crouchLight',
+    'crouchHeavy',
+    'jumpLight',
+    'jumpHeavy',
+  ] as const;
+  const ANTI_AIRS: ReadonlySet<string> = new Set(['specialAntiAir', 'backHeavy', 'chainLaunch']);
   /** His strikes on the strips drawn so far: the moves and their Remixes playing them. */
   const STRIKES = strikesOf(WATT_CLIPS, WATT_TEMPLATE).filter(({ sheet }) =>
     (DRAWN as readonly string[]).includes(sheet),
   );
 
-  it('the three signature moves, and the Remixes that play them', () => {
+  it('his drawn moves, and the Remixes and the Coup de masse that play them', () => {
     expect(STRIKES.map(({ id }) => id).sort()).toEqual(
       [
+        'backHeavy',
+        'chainHeavy',
+        'chainHigh',
+        'chainLaunch',
+        'chainLight',
+        'crouchHeavy',
+        'crouchLight',
+        'forwardHeavy',
+        'forwardLight',
         'grab',
+        'jumpHeavy',
+        'jumpLight',
+        'lightFinisher',
         'specialAntiAir',
         'specialAntiAirBoost',
         'specialForward',
         'specialForwardBoost',
+        'standHeavy',
+        'standLight',
       ].sort(),
     );
   });

@@ -1,35 +1,35 @@
 {
   "frames": {
     "0": {
-      "frame": { "x": 0, "y": 0, "w": 102, "h": 168 },
+      "frame": { "x": 0, "y": 145, "w": 102, "h": 144 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 0, "w": 102, "h": 168 },
-      "sourceSize": { "w": 102, "h": 168 }
+      "spriteSourceSize": { "x": 0, "y": 1, "w": 102, "h": 144 },
+      "sourceSize": { "w": 135, "h": 145 }
     },
     "1": {
-      "frame": { "x": 102, "y": 0, "w": 102, "h": 168 },
+      "frame": { "x": 0, "y": 420, "w": 104, "h": 130 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 0, "w": 102, "h": 168 },
-      "sourceSize": { "w": 102, "h": 168 }
+      "spriteSourceSize": { "x": 10, "y": 15, "w": 104, "h": 130 },
+      "sourceSize": { "w": 135, "h": 145 }
     },
     "2": {
-      "frame": { "x": 204, "y": 0, "w": 102, "h": 168 },
+      "frame": { "x": 0, "y": 550, "w": 111, "h": 116 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 0, "w": 102, "h": 168 },
-      "sourceSize": { "w": 102, "h": 168 }
+      "spriteSourceSize": { "x": 24, "y": 29, "w": 111, "h": 116 },
+      "sourceSize": { "w": 135, "h": 145 }
     },
     "3": {
-      "frame": { "x": 306, "y": 0, "w": 102, "h": 168 },
+      "frame": { "x": 0, "y": 289, "w": 103, "h": 131 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 0, "w": 102, "h": 168 },
-      "sourceSize": { "w": 102, "h": 168 }
+      "spriteSourceSize": { "x": 10, "y": 14, "w": 103, "h": 131 },
+      "sourceSize": { "w": 135, "h": 145 }
     },
     "4": {
-      "frame": { "x": 408, "y": 0, "w": 102, "h": 168 },
+      "frame": { "x": 0, "y": 0, "w": 102, "h": 145 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 0, "w": 102, "h": 168 },
-      "sourceSize": { "w": 102, "h": 168 }
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 102, "h": 145 },
+      "sourceSize": { "w": 135, "h": 145 }
     }
   },
-  "meta": { "image": "crouchLight.png", "size": { "w": 510, "h": 168 } }
+  "meta": { "image": "crouchLight.png", "size": { "w": 111, "h": 666 } }
 }
