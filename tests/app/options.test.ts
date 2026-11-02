@@ -727,6 +727,12 @@ describe('the place and atmosphere drawn for each match (docs/art/decor-rue.md ¬
     expect(shownOf(start)?.stage).toBe('gym');
     expect(shownOf(start)?.atmosphere).toEqual({ moment: 'dusk', weather: 'clear' });
     app.showPause();
+    // The option cycles on through the places after the gym, then back to random.
+    const gym = STAGE_MAPS.findIndex(({ name }) => name === 'gym');
+    for (const { title } of STAGE_MAPS.slice(gym + 1)) {
+      choose('Lieu');
+      expect(screen().items[screen().selected]).toBe(`Lieu : ${title}`);
+    }
     choose('Lieu');
     expect(screen().items[screen().selected]).toBe('Lieu : al√©atoire');
   });

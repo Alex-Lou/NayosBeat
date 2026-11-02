@@ -78,4 +78,4 @@ Toutes les animations jouent dans le rendu seul (D17), image par image (D23).
 
 1. Les dégâts : les cordes qui cèdent, un sac qui crève, le plancher marqué aux chutes lourdes.
 2. La pluie sur la verrière, et une gouttière qui fuit dans un seau.
-3. L'aube, « le matin froid » : un nouveau moment, à ajouter à `MOMENTS`.
+3. L'aube, « le matin froid » : le moment `dawn` existe (Loading Dock, `decor-dock.md` §4), il reste à peindre sa palette.
