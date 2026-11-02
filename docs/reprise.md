@@ -1,6 +1,6 @@
 # Reprendre le développement sans Claude Code
 
-Ce guide sert quand les sessions Claude Code ne sont plus disponibles. Tu continues alors seul, ou avec **OpenCode** branché sur **OpenRouter**, depuis ton PC à la maison (via Tailscale et Termius) ou directement sur ton téléphone (Termux).
+Ce guide sert quand les sessions Claude Code ne sont plus disponibles. Tu continues alors seul, ou avec **OpenCode** et son propre service de modèles (**OpenCode Console**, aussi appelé Zen), depuis ton PC à la maison (via Tailscale et Termius) ou directement sur ton téléphone (Termux).
 
 Rédigé par la session principale le 2 novembre 2026, sur `main` à `c0221be`.
 
@@ -145,7 +145,12 @@ Chaque action se lance aussi directement : `npm run nayos -- check`, `dev`, `sta
    ```
    Le script vérifie git, Node 22 (version de `.nvmrc`), lua, tmux, gh et Tailscale. Il dit ce qui manque, lance `npm ci` et installe OpenCode depuis npm.
    Les outils de capture (Playwright) demandent un Chromium : `npx playwright install chromium`, seulement si tu veux faire des films.
-5. **OpenCode** (déjà installé par `--opencode`) : dans `opencode`, tape `/connect`, choisis **OpenRouter** et colle ta clé (créée sur le tableau de bord d'OpenRouter, « Create API Key »). Tape `/models` pour choisir le modèle. La clé est rangée dans `~/.local/share/opencode/auth.json`, **hors du dépôt** : ne la colle jamais dans un fichier du projet.
+5. **OpenCode** (déjà installé par `--opencode`) : son propre service de modèles s'appelle **OpenCode Console** (aussi appelé Zen).
+   1. Crée ton compte sur la console d'OpenCode (https://opencode.ai/console), ajoute des crédits si tu veux des modèles payants, et copie ta clé d'API.
+   2. Dans `opencode`, tape `/connect`, choisis le fournisseur **OpenCode** et colle ta clé.
+   3. Tape `/models` pour choisir le modèle. Certains modèles sont **gratuits**, souvent pour une durée limitée ; les autres se paient à la requête, avec des frais à chaque achat de crédits.
+
+   La clé est rangée dans `~/.local/share/opencode/auth.json`, **hors du dépôt** : ne la colle jamais dans un fichier du projet.
 
 ### 5.2 Depuis le téléphone
 
@@ -194,7 +199,7 @@ En secours, quand le PC est éteint. C'est plus lent ; le build et les tests pas
 
 ## 7. Claude Code sur d'autres modèles : Free Claude Code (FCC)
 
-[Free Claude Code](https://github.com/Alishahryar1/free-claude-code) (licence AGPL-3.0) fait tourner **Claude Code** sur d'autres fournisseurs, dont **OpenRouter**. C'est un petit serveur local qui traduit les requêtes. On garde ainsi les habitudes de Claude Code (`CLAUDE.md`, ses outils) avec ta clé OpenRouter.
+[Free Claude Code](https://github.com/Alishahryar1/free-claude-code) (licence AGPL-3.0) fait tourner **Claude Code** sur d'autres fournisseurs, dont **OpenCode Zen** (les modèles d'OpenCode, avec la même clé). C'est un petit serveur local qui traduit les requêtes. On garde ainsi les habitudes de Claude Code (`CLAUDE.md`, ses outils) avec ta clé OpenCode.
 
 **L'installation sûre, sur le PC seulement** : `tools/remote/setup.sh --fcc`.
 - Elle installe **FCC seul, à une version figée** (`free-claude-code==6.18.5`, depuis PyPI, avec `uv`), et Claude Code depuis npm s'il manque.
@@ -202,7 +207,7 @@ En secours, quand le PC est éteint. C'est plus lent ; le build et les tests pas
 - FCC demande exactement Python 3.14.10 : avec un `uv` ancien, `uv self update` d'abord.
 
 **Ensuite** :
-1. Lance `fcc-server`, puis ouvre son **Admin UI sur le PC lui-même** et colle ta clé OpenRouter. Le serveur ne doit écouter que la machine locale ; ne l'expose ni sur Internet ni sur le réseau.
+1. Lance `fcc-server`, puis ouvre son **Admin UI sur le PC lui-même** choisis le fournisseur **OpenCode Zen**, et colle ta clé OpenCode (son réglage `OPENCODE_API_KEY`). Les modèles s'y écrivent `opencode_zen/<modèle>`. Le serveur ne doit écouter que la machine locale ; ne l'expose ni sur Internet ni sur le réseau.
 2. Depuis le téléphone, dans le cockpit, choisis « Claude Code via Free Claude Code » (ou lance `fcc-claude`).
 
 **Ses robots Telegram et Discord** (piloter l'agent par messages, même vocaux) : je les laisse **éteints**. Un message reçu par ce robot devient une commande exécutée sur ton PC, et tout passe par les serveurs de Telegram ou de Discord. Tailscale et Termius font la même chose sans intermédiaire. Si tu veux quand même les essayer :
@@ -219,7 +224,7 @@ En secours, quand le PC est éteint. C'est plus lent ; le build et les tests pas
 
 ## 8. Sécurité
 
-- **Les clés** (OpenRouter, GitHub) restent dans les fichiers de configuration de chaque outil, jamais dans le dépôt, jamais dans un message de commit. Si une clé fuit, révoque-la tout de suite sur le site concerné.
+- **Les clés** (OpenCode, GitHub) restent dans les fichiers de configuration de chaque outil, jamais dans le dépôt, jamais dans un message de commit. Si une clé fuit, révoque-la tout de suite sur le site concerné.
 - **GitHub** : pour `gh auth login`, préfère un **jeton à grain fin** limité au seul dépôt NayosBeat, avec les droits « Contents » et « Pull requests » en lecture et écriture, et rien d'autre. Un agent qui déraille ne peut alors toucher que ce dépôt.
 - **Un environnement propre** : idéalement, un utilisateur dédié sur le PC pour le développement, sans tes autres clés, documents ni sessions de navigateur. L'agent exécute des commandes : il ne doit voir que ce qu'il lui faut.
 - **Tailscale** : n'expose pas le serveur de développement sur Internet. Le réseau Tailscale suffit.

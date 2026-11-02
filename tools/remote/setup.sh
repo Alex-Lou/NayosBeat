@@ -111,7 +111,7 @@ if [ "$want_fcc" = 1 ]; then
     echo "Échec : mets uv à jour (uv self update), puis relance --fcc." >&2
     exit 1
   fi
-  echo "Puis : fcc-server, ouvre son Admin UI sur cette machine, et colle ta clé OpenRouter."
+  echo "Puis : fcc-server, ouvre son Admin UI sur cette machine, choisis OpenCode Zen, et colle ta clé OpenCode."
   echo "Les robots Telegram et Discord restent éteints : voir docs/reprise.md, sécurité."
 fi
 
