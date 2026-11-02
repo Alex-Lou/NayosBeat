@@ -141,8 +141,9 @@ const WATT_PLAIN: FighterTemplate = {
       motion: advance(38, { from: 3, to: 18, distancePx: 56 }),
       knockdown: kd(3, 4),
     }),
-    // ↓ + S: he catches the jumper above his bulb and slams him down. The anti-air, invincible
-    // to attacks from the air on f0-8.
+    // ↓ + S: he catches the jumper above him and in front, and slams him down. The anti-air,
+    // invincible to attacks from the air on f0-8. Its box is his drawing's (porte 2): the
+    // clamps up to 90 px, 24 forward (docs/combat-v2.md §9.2).
     specialAntiAir: strike({
       name: 'Plafonnier',
       kind: 'special',
@@ -152,7 +153,7 @@ const WATT_PLAIN: FighterTemplate = {
       hitstop: 14,
       pushbackPx: 3,
       guard: 'mid',
-      hitbox: box(-4, 50, 38, 60),
+      hitbox: box(-4, 50, 28, 40),
       invincible: { from: 0, to: 9, against: 'air' },
       knockdown: kd(3, 2.5),
     }),
