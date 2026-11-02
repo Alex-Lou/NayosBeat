@@ -10,6 +10,7 @@ import { validateTemplate } from '../../src/core/validate';
 import { NAYO } from '../../src/data/fighters/nayo';
 import { RIFF } from '../../src/data/fighters/riff';
 import { SAPHIR } from '../../src/data/fighters/saphir';
+import { WATT } from '../../src/data/fighters/watt';
 import { playCombo } from './combo-helpers';
 import { facingOff, makeFighter, MIRROR_MATCH, playAlone, repeat } from './helpers';
 
@@ -148,7 +149,7 @@ describe('BOOST → move (combos-v3 §1.1)', () => {
       it(`${label} with ${boost}: ${String(expected)}`, () => {
         for (const side of [1, -1] as const) {
           const input = facing(held, side);
-          for (const template of [NAYO, RIFF, SAPHIR]) {
+          for (const template of [NAYO, RIFF, SAPHIR, WATT]) {
             expect(groundMove('boost', input, motion, side, template.moves, boost)).toBe(expected);
           }
           expect(groundMove('boost', input, motion, side, BASIC.moves, boost)).toBeNull();

@@ -1,10 +1,10 @@
 # NayosBeat — bible des univers
 
-Trois univers, par ordre de priorité. Chacun apporte **un stage** et ses combattants : d'abord un sur le gabarit **Polyvalent** (portée, projectile, uppercut) et un sur le gabarit **Rushdown** (vitesse, ruée, saut plongeant), puis, s'il en a un troisième, un **archétype neuf** (Sound Clash : Saphir, la **Contreuse**, à mi-distance). Le gabarit ou l'archétype fixe le gameplay (coups, frame data, hitbox) ; l'univers fixe tout le reste (look, noms, ambiance).
+Trois univers, par ordre de priorité. Chacun apporte **un stage** et ses combattants : d'abord un sur le gabarit **Polyvalent** (portée, projectile, uppercut) et un sur le gabarit **Rushdown** (vitesse, ruée, saut plongeant), puis, au-delà, des **archétypes neufs** (Sound Clash : Saphir, la **Contreuse**, à mi-distance ; Watt, le **Lutteur**, au corps à corps). Le gabarit ou l'archétype fixe le gameplay (coups, frame data, hitbox) ; l'univers fixe tout le reste (look, noms, ambiance).
 
-| Priorité | Univers | Polyvalent | Rushdown | 3e | Stage |
+| Priorité | Univers | Polyvalent | Rushdown | Archétypes neufs | Stage |
 |---|---|---|---|---|---|
-| 1 | **Sound Clash** | Nayo | Riff | Saphir (Contreuse) | Entrepôt-club |
+| 1 | **Sound Clash** | Nayo | Riff | Saphir (Contreuse), Watt (Lutteur) | Entrepôt-club |
 | 2 | **Néon Underground** | Kaï | Vexa | — | Toit sous la pluie |
 | Bonus | **Archipel des Légendes** | Sora | Kitsune | — | Cour de temple |
 
@@ -132,6 +132,37 @@ Entrepôt reconverti en club, la nuit. Mur d'enceintes empilées au fond, néons
 - **Entrée** : elle descend l'escalier sans se presser, s'incline vers la salle, puis tombe en garde sur le temps long.
 - **Victoire** : elle s'incline vers l'adversaire au sol ; le profil du dos regarde la salle.
 - **Temps écoulé** : elle regarde sa montre, la remonte, et salue quand même.
+
+### Watt — Lutteur
+
+> Le roadie du tournoi : il monte le mur d'enceintes, il porte le son, et il éteint à la fin. Une ampoule à la place de la tête ; personne ne demande. Contre lui, garder ne suffit plus : il attrape. Sa spec : [watt.md](../watt.md). Source : le colosse de Zen-Tazzer (`assets/Mobs/0 - Mobs/2 - Mob Idle`, `3 - Mob Idle`), la tête dessinée de zéro.
+
+- **Silhouette** : un colosse de trois quarts, épaules très larges, garde basse, les deux pinces ouvertes à hauteur de ceinture. Détail signature : **l'ampoule** (globe de verre sombre, filament de son énergie, culot de laiton vissé dans le col). Son filament monte d'un cran par barre de Boost : on lit son reversal sur sa tête. Rigide, elle n'a pas de ressort.
+- **Tenue** : blouson matelassé noir, sweat et pantalon de travail noirs, genouillères, rangers ; aux deux bras, un exosquelette de manutention à pinces, des diodes de VU-mètre sur les avant-bras et les épaules.
+- **Tenue 2** (miroir) : le blouson sable ; énergie **UV**. L'ampoule, l'exosquelette et les rangers ne changent pas.
+- **Tête** : dessinée de zéro. Le filament est son visage : ses 8 expressions sont des formes et des intensités du filament, éteint à `out`. Le verre ne casse jamais.
+- **Palette** (à figer à la porte 2) : masse noire (tenue 2 : sable) ; énergie, filament et diodes vert VU `#1EC85A` (tenue 2 : UV `#E070FF`).
+- **Effets de coup** : des pinces qui se referment (forme `claw`), vert VU, éclats blanc-vert, étincelles en croix (l'arc électrique) ; dissolution `rise`, à décider (une ampoule ne s'éparpille pas). Tenue 2 : UV.
+
+| Coup (gabarit) | Nom | Mise en scène |
+|---|---|---|
+| standLight | Paume | La pince avant pousse, paume à plat |
+| chainLight | Crochet court | Un crochet court de la pince arrière |
+| lightFinisher | Jeté | Les deux bras poussent, comme on jette une barre |
+| forwardLight | Pas lourd | Un pas lourd, puis la Paume |
+| standHeavy | Marteau | Le poing tombe de haut, et plie en CONTRE |
+| forwardHeavy | Coup de pilon | Le poing monte derrière l'ampoule, puis tombe tout droit |
+| backHeavy | Arraché | Les deux bras arrachent vers le ciel |
+| crouchLight | Paume basse | La pince à plat, au ras du sol |
+| crouchHeavy | Ratissage | Le bras balaie le sol comme un râteau |
+| special | Coup de jus | Les deux pinces en avant ; l'exosquelette décharge au contact |
+| specialForward | Surcharge | La charge, l'épaule d'abord |
+| specialAntiAir | Plafonnier | Il cueille le sauteur au-dessus de l'ampoule et le rabat |
+| throwForward, throwBack | Déchargement, Vissage | Il le pose plus loin comme une caisse ; il le visse d'un quart de tour, puis par-dessus l'épaule |
+
+- **Entrée** : le monte-charge s'ouvre, une seule lumière verte dedans ; il pose un flight-case, vérifie qu'il ne bouge plus, et l'ampoule monte d'un cran.
+- **Victoire** : la salle s'éteint, il ne reste que l'ampoule ; puis elle baisse.
+- **Temps écoulé** : il scotche un câble au sol, bien droit, avant de remettre ses pinces en garde.
 
 ---
 

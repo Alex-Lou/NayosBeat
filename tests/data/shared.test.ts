@@ -5,6 +5,7 @@ import { validateTemplate } from '../../src/core/validate';
 import { NAYO } from '../../src/data/fighters/nayo';
 import { RIFF } from '../../src/data/fighters/riff';
 import { SAPHIR } from '../../src/data/fighters/saphir';
+import { WATT } from '../../src/data/fighters/watt';
 import { advance, box, dash, glide, leapArc } from '../../src/data/fighters/shared';
 
 describe('fighter authoring helpers', () => {
@@ -17,7 +18,7 @@ describe('fighter authoring helpers', () => {
   });
 
   it('gives every moving move one step per frame', () => {
-    for (const template of [NAYO, RIFF, SAPHIR]) {
+    for (const template of [NAYO, RIFF, SAPHIR, WATT]) {
       for (const move of Object.values(template.moves)) {
         if (move.motion) expect(move.motion.dx).toHaveLength(moveDuration(move));
       }
