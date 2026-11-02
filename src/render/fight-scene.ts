@@ -25,6 +25,7 @@ import { HeldStruggle } from '../input/held-struggle';
 import { isTouchDevice, TouchControls } from '../input/touch-controls';
 import { clockGrainMs, FrameClock } from '../loop/cadence';
 import { TickPacer } from '../loop/tick-pacer';
+import { LocalTickSource, type TickSource } from './tick-source';
 import type { AnimOptions } from './anim-options';
 import { frontFighter, type ShowContext } from './animation';
 import { NO_ADVANTAGE, trackAdvantage, type Advantage } from './advantage-meter';
@@ -84,6 +85,9 @@ import { VIEW_SIZE } from './view';
 
 /** Caps the catch-up after a long stall (~83 ms of simulation at 60 Hz). */
 const MAX_TICKS_PER_FRAME = 5;
+
+/** Nobody pressing anything: the ticks the Finisher's scene seizes (training). */
+const NEUTRAL: readonly [InputBits, InputBits] = [0, 0];
 
 /** No light on a fighter (before the lights are made). */
 const NO_CAST: Cast = { lean: 0, glowColor: 0, glow: 0 };
@@ -157,6 +161,8 @@ interface Runtime {
   readonly padHaptics: PadHaptics;
   /** A button held in a grab struggling as mashed, for the humans who chose so (P25). */
   readonly heldStruggle: HeldStruggle;
+  /** Where each tick's inputs come from: this device's players and the CPU (tick-source.ts). */
+  readonly source: TickSource;
   readonly pauseInput: PauseInput;
   readonly fighterViews: readonly [FighterDisplay, FighterDisplay];
   readonly projectileView: ProjectileView;
@@ -256,7 +262,6 @@ export class FightScene extends Phaser.Scene {
   private governor: LightGovernor | undefined;
 
   /** Reused every tick to avoid allocating. */
-  private readonly tickInputs: [InputBits, InputBits] = [0, 0];
   private readonly tickEvents: FightEvent[] = [];
   /**
    * Reused every display frame by `syncViews`. What the framing keeps in view: both fighters,
@@ -359,12 +364,14 @@ export class FightScene extends Phaser.Scene {
       ),
     );
     this.governor.restart();
+    const heldStruggle = new HeldStruggle(this.sceneData.heldStruggle === true);
     const runtime: Omit<Runtime, 'finisherScene'> = {
       inputs: new PlayerInputs(window, touch, connectedGamepads()),
       padHaptics: new PadHaptics((player) =>
         this.runtime?.inputs.padOf(player, connectedGamepads()),
       ),
-      heldStruggle: new HeldStruggle(this.sceneData.heldStruggle === true),
+      heldStruggle,
+      source: new LocalTickSource(heldStruggle, () => (this.cpu ? this.cpuInput(this.cpu) : null)),
       touch,
       touchCover: touch
         ? new TouchCover(this.game.canvas, touch, this.config, GROUND_Y)
@@ -717,17 +724,14 @@ export class FightScene extends Phaser.Scene {
     // Read even when the scene seizes them (training): a tap made through it is lost, not played
     // after it.
     const seized = scene.seizesInputs();
-    const [player1, player2] = runtime.inputs.read(pads);
-    for (let i = 0; i < count; i++) {
-      const { heldStruggle } = runtime;
-      this.tickInputs[0] = seized ? 0 : heldStruggle.apply(0, player1, this.state);
-      this.tickInputs[1] = seized
-        ? 0
-        : this.cpu
-          ? this.cpuInput(this.cpu)
-          : heldStruggle.apply(1, player2, this.state);
+    // Online, only the ticks whose inputs have arrived; the devices are read only to play some.
+    const playable = runtime.source.playable(count);
+    if (playable <= 0) return 0;
+    const read = runtime.inputs.read(pads);
+    for (let i = 0; i < playable; i++) {
+      const inputs = seized ? NEUTRAL : runtime.source.next(read, this.state);
       const previous = this.state;
-      this.state = step(previous, this.tickInputs, this.config);
+      this.state = step(previous, inputs, this.config);
       detectEvents(previous, this.state, this.config, this.tickEvents);
       this.push = pushOf(this.tickEvents, previous, this.state, this.push);
       // A blow's flashes are counted at the close-up its push takes them to.
@@ -757,7 +761,7 @@ export class FightScene extends Phaser.Scene {
       for (const event of this.tickEvents) scene.react(event, this.state, viewLeft);
       if (!staged && scene.isActive()) return i + 1;
     }
-    return count;
+    return playable;
   }
 
   /** The camera's push shown now: none while the Finisher's scene plays, which frames its own. */
