@@ -5,10 +5,10 @@
  * neon has no name.
  */
 
-import { Canvas, Mask, at, tone } from './canvas.ts';
+import { Canvas, Mask, at, tone } from '../kit/canvas.ts';
 import { castShadow, drawLedge, wallLevel, type Rect, type Wall } from './facade.ts';
-import { spell } from './font.ts';
-import { lightAt } from './light.ts';
+import { spell } from '../kit/font.ts';
+import { lightAt } from '../kit/light.ts';
 import {
   BRICK_RED,
   GLASS,
@@ -19,7 +19,7 @@ import {
   SHUTTER,
   STEEL,
 } from './palette.ts';
-import { noise } from './random.ts';
+import { noise } from '../kit/random.ts';
 import { drawHalo, drawTubes } from './signs.ts';
 
 /**

@@ -1,5 +1,5 @@
 /**
- * The street's seeded randomness (mulberry32): the same seed draws the same street, pixel for
+ * A stage's seeded randomness (mulberry32): the same seed draws the same stage, pixel for
  * pixel, on every run and every machine. Each part of the drawing takes its own stream, so
  * retouching one never reshuffles another.
  */
@@ -64,7 +64,7 @@ export function noise(seed: number, x: number, y: number, cell: number): number 
   return top + (bottom - top) * sy;
 }
 
-/** A stream of its own for each part of the drawing, from the street's seed and the part's name. */
+/** A stream of its own for each part of the drawing, from the stage's seed and the part's name. */
 export function streamOf(seed: number, part: string): Random {
   let hash = seed >>> 0;
   for (const char of part) hash = Math.imul(hash ^ char.charCodeAt(0), 0x01000193) >>> 0;

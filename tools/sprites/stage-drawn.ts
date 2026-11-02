@@ -1,12 +1,12 @@
 /**
- * The stage (src/art/stage-layers.ts, docs/art/aseprite.md, docs/art/decor-rue.md): drawn by the
- * code (tools/stage/rue/), each layer of which may be drawn by hand instead, in art-src/rue/
- * far.png, mid.png and floor.png, one image each, in free palettes. `npm run sprites` installs
- * the layers in src/art/rue/ with the props laid on them (stage-props.ts), and writes their large
- * colors there (colors.ts): the flash veils are set on them, and the flash measures taken over the
- * darkest (docs/flashs.md §3). The street's other atmospheres (tools/stage/rue/atmospheres.ts: the
- * same street, another palette) go in a folder each, src/art/rue/<moment>-<weather>/, the code's
- * layers recolored: a layer drawn by hand is the base atmosphere's only.
+ * The stages (src/art/stage-layers.ts, docs/art/aseprite.md, docs/art/decor-rue.md): each drawn by
+ * the code (tools/stage/<stage>/). The street's layers (STAGE_NAME) may each be drawn by hand
+ * instead, in art-src/rue/ far.png, mid.png and floor.png, one image each, in free palettes.
+ * `npm run stages` installs each stage's layers in src/art/<stage>/ with the props laid on them
+ * (stage-props.ts), and writes their large colors there (colors.ts): the flash veils are set on
+ * them, and the flash measures taken over the darkest (docs/flashs.md §3). A stage's other
+ * atmospheres (the same stage, another palette) go in a folder each, src/art/<stage>/<moment>-
+ * <weather>/, the code's layers recolored: a layer drawn by hand is the base atmosphere's only.
  */
 
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
@@ -20,15 +20,18 @@ import {
   type StageLayer,
 } from '../../src/art/stage-layers.ts';
 import { VIEW_SIZE } from '../../src/render/view.ts';
-import { STREET_ATMOSPHERES } from '../stage/rue/atmospheres.ts';
+import type { CodeMap } from '../stage/kit/stage.ts';
 import { drawRue } from '../stage/rue/index.ts';
 import { compactImage, paletteBuilder, rgbaAt } from './colors.ts';
 import { checkDrawn, DRAWN_ROOT, DrawingProblems, listFolder, type DrawnRules } from './drawn.ts';
 import { decodeIndexedPng, encodeIndexedPng, type IndexedImage, type Rgba } from './png.ts';
 import { format, resolveConfig } from 'prettier';
-import { packProps, propsModule } from './stage-props.ts';
+import { liftedLayers, packProps, propsModule } from './stage-props.ts';
 
-const ART = new URL(`../../src/art/${STAGE_NAME}/`, import.meta.url);
+/** Where the game finds a stage's images: src/art/<stage>/. */
+function artOf(name: string): URL {
+  return new URL(`../../src/art/${name}/`, import.meta.url);
+}
 
 /** A color is one of the stage's large colors when a layer covers this share of the screen with it. */
 export const LARGE_SHARE = 0.01;
@@ -114,9 +117,11 @@ export function largeColorsOf(layers: readonly IndexedImage[]): number[] {
   return [...covered].sort(([, a], [, b]) => b - a).map(([color]) => color);
 }
 
-/** The layers the game shows: each drawn by hand when it is, the code's otherwise. */
-export function installedLayers(drawn: DrawnStage): Record<StageLayer, IndexedImage> {
-  const code = drawRue().layers;
+/** The layers the game shows: each drawn by hand when it is, the code's (the street's) otherwise. */
+export function installedLayers(
+  drawn: DrawnStage,
+  code: Readonly<Record<StageLayer, IndexedImage>> = drawRue().layers,
+): Record<StageLayer, IndexedImage> {
   return {
     far: drawn.far ?? code.far,
     mid: drawn.mid ?? code.mid,
@@ -161,40 +166,58 @@ async function writeLayers(
 }
 
 /**
- * Writes the stage as the game shows it: each layer (drawn by hand, else the code's) in the
- * smallest palette that holds it, the props still laid right on them and their sheet, and the
- * layers' large colors; then each other atmosphere of the street, the code's layers and the same
- * sheet in its palette, in its folder, its large colors with the base's.
+ * Writes `map` as the game shows it, in src/art/<its name>/: each layer (drawn by hand, else the
+ * code's) in the smallest palette that holds it, the props still laid right on them and their
+ * sheet, and the layers' large colors; then each other atmosphere of the stage, the code's layers
+ * and the same sheet in its palette, in its folder, its large colors with the base's.
  */
-export async function writeStage(drawn: DrawnStage): Promise<StageWritten> {
-  const layers = installedLayers(drawn);
-  const packed = packProps(drawRue().props, layers);
-  await writeLayers(ART, layers, packed.sheet);
-  const module = new URL('props.ts', ART);
+export async function writeStage(map: CodeMap, drawn: DrawnStage = {}): Promise<StageWritten> {
+  const art = artOf(map.name);
+  const code = map.draw();
+  const layers = installedLayers(drawn, code.layers);
+  const packed = packProps(code.props, layers);
+  await writeLayers(art, packed.layers, packed.sheet);
+  const module = new URL('props.ts', art);
   await writeFile(module, await propsModule(packed.props, module));
   const large: Record<string, number[]> = {
-    [atmosphereName(BASE_ATMOSPHERE)]: largeColorsOf(Object.values(layers)),
+    [atmosphereName(BASE_ATMOSPHERE)]: largeColorsOf(Object.values(packed.layers)),
   };
-  const code = drawRue().layers;
-  for (const { atmosphere, palette } of STREET_ATMOSPHERES) {
+  const lifted = liftedLayers(code.props, code.layers);
+  for (const { atmosphere, palette } of map.atmospheres) {
     const name = atmosphereName(atmosphere);
     if (name === atmosphereName(BASE_ATMOSPHERE)) continue;
     const shown = {
-      far: recolored(code.far, palette),
-      mid: recolored(code.mid, palette),
-      floor: recolored(code.floor, palette),
+      far: recolored(lifted.far, palette),
+      mid: recolored(lifted.mid, palette),
+      floor: recolored(lifted.floor, palette),
     };
     const sheet = packed.sheet && recolored(packed.sheet, palette);
-    await writeLayers(new URL(`${name}/`, ART), shown, sheet);
+    await writeLayers(new URL(`${name}/`, art), shown, sheet);
     large[name] = largeColorsOf(Object.values(shown));
   }
-  const colors = new URL('colors.ts', ART);
+  const colors = new URL('colors.ts', art);
   await writeFile(colors, await colorsModule(large, colors));
   return {
     drawn: STAGE_LAYER_NAMES.filter((layer) => drawn[layer] !== undefined),
     props: packed.props.length,
     dropped: packed.dropped,
   };
+}
+
+/**
+ * Writes every stage of `maps` (`writeStage`), the street (STAGE_NAME) with its layers `drawn` by
+ * hand, and says on the console what each holds.
+ */
+export async function writeStages(maps: readonly CodeMap[], drawn: DrawnStage): Promise<void> {
+  for (const map of maps) {
+    const written = await writeStage(map, map.name === STAGE_NAME ? drawn : {});
+    const by =
+      written.drawn.length > 0
+        ? `drawn by hand (${written.drawn.join(', ')}), the code's elsewhere`
+        : "the code's";
+    console.log(`stage ${map.name}: ${by}, ${written.props} props`);
+    for (const line of written.dropped) console.warn(`stage ${map.name}, prop left out: ${line}`);
+  }
 }
 
 /**

@@ -3,9 +3,9 @@
  * and the rooftops nearest it. Opaque everywhere: nothing is behind it. Image pixels (STAGE_SCALE).
  */
 
-import { Canvas, Mask, at, tone } from './canvas.ts';
+import { Canvas, Mask, at, tone } from '../kit/canvas.ts';
 import { CLOUD, DISTANT, DISTANT_LIT, SKY, STEEL } from './palette.ts';
-import { noise, streamOf, type Random } from './random.ts';
+import { noise, streamOf, type Random } from '../kit/random.ts';
 
 /** Image row of the ground line, under the floor: nothing below it shows. */
 const GROUND = 460;

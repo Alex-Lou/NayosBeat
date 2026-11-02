@@ -158,7 +158,7 @@ En rendu Canvas (`?rendu=canvas`, `render-mode.ts`), Phaser ne teinte rien. Le d
 
 ## 10. La propriété intellectuelle
 
-Rien n'est copié : aucun jeu, aucun lieu réel, aucune marque, aucun logo. Les enseignes sont des mots génériques. Leur langue dépend du lieu : en pleine ville, jamais seulement du français, mais de l'anglais, du chinois ou du japonais (« DELI GROCERY », « LAUNDRY », « 洗衣 »). Ailleurs, la langue de l'endroit. La vieille réclame dit « WAREHOUSE ». Les caractères chinois sont dessinés à la main sur une grille de 9 × 9 (`tools/stage/rue/font.ts`). Le néon du club est un dessin à nous. Les tags sont tracés au hasard par le code. Les affiches sont des aplats sans texte. La rue s'inspire des vieux quartiers de New York (escaliers de secours, réservoirs d'eau, échafaudages, ligne aérienne), mais ce n'est aucune rue réelle.
+Rien n'est copié : aucun jeu, aucun lieu réel, aucune marque, aucun logo. Les enseignes sont des mots génériques. Leur langue dépend du lieu : en pleine ville, jamais seulement du français, mais de l'anglais, du chinois ou du japonais (« DELI GROCERY », « LAUNDRY », « 洗衣 »). Ailleurs, la langue de l'endroit. La vieille réclame dit « WAREHOUSE ». Les caractères chinois sont dessinés à la main sur une grille de 9 × 9 (`tools/stage/kit/font.ts`). Le néon du club est un dessin à nous. Les tags sont tracés au hasard par le code. Les affiches sont des aplats sans texte. La rue s'inspire des vieux quartiers de New York (escaliers de secours, réservoirs d'eau, échafaudages, ligne aérienne), mais ce n'est aucune rue réelle.
 
 ## 11. Les itérations
 
@@ -183,8 +183,8 @@ La demande du propriétaire : « Un combat doit pouvoir afficher une météo al�
 Ses décisions :
 
 - **Une ambiance = un moment et une météo.** Les moments sont minuit et crépuscule ; les météos, ciel clair, pluie et brume (`MOMENTS` et `WEATHERS`, `src/art/stage-layers.ts`). Chaque map dit dans ses données les ambiances qu'elle offre. Pour la rue, c'est `tools/stage/rue/atmospheres.ts`.
-- **Tirée au hasard à chaque nouveau match, dans le rendu seul.** Le cœur n'en sait rien (D17), et les replays ne bougent pas. « Revanche » et « Recommencer » gardent la rue du match. En entraînement, l'option « Décor » de la pause choisit : au hasard, ou une ambiance pour la regarder. Elle prend effet à la reprise, comme « Position ».
-- **Une palette dessinée par ambiance, à la génération.** La rue est dessinée une seule fois, puis `npm run sprites` l'écrit dans chaque palette : la base (minuit, ciel clair) dans `src/art/rue/`, chaque autre ambiance dans un dossier à son nom (`src/art/rue/dusk-clear/`). Les palettes sont dessinées case pour case, jamais posées en filtre : chaque rampe garde ses crans. *Écarté :* recolorier au chargement, qui coûte une passe de calcul aux téléphones faibles. Un calque dessiné à la main ne vaut que pour la base, puisque sa palette n'a pas les cases de celle du code.
+- **Tirée au hasard à chaque nouveau match, dans le rendu seul.** Le cœur n'en sait rien (D17), et les replays ne bougent pas. « Revanche » et « Recommencer » gardent la rue du match. En entraînement, l'option « Ambiance » de la pause choisit : au hasard, ou une ambiance pour la regarder. Elle prend effet à la reprise, comme « Position ».
+- **Une palette dessinée par ambiance, à la génération.** La rue est dessinée une seule fois, puis `npm run stages` (ou `npm run sprites`) l'écrit dans chaque palette : la base (minuit, ciel clair) dans `src/art/rue/`, chaque autre ambiance dans un dossier à son nom (`src/art/rue/dusk-clear/`). Les palettes sont dessinées case pour case, jamais posées en filtre : chaque rampe garde ses crans. *Écarté :* recolorier au chargement, qui coûte une passe de calcul aux téléphones faibles. Un calque dessiné à la main ne vaut que pour la base, puisque sa palette n'a pas les cases de celle du code.
 - **Une seule ambiance en mémoire vidéo.** Le chargement d'un combat retire du cache les images des autres ambiances. Le budget du §7 reste celui d'une rue : 6,72 Mo.
 - **Les règles de flash valent pour toutes.** Les grandes couleurs de chaque ambiance rejoignent celles des flashs (`FIGHT_STAGE_COLORS`). Les voiles, le halo du Finisher et les mesures se règlent donc sur la plus contraignante. Aucune grande couleur n'est assez claire pour qu'un effet noir la change de plus de `VEIL_DELTA` (0,08).
 
@@ -201,3 +201,21 @@ La dernière lumière du jour, basse derrière la ville. Le ciel passe d'un bleu
 1. La nuit vivante (nuages qui dérivent, fenêtres qui s'allument et s'éteignent) et la pluie (rideau de gouttes, trottoir mouillé, reflets).
 2. Les dégâts : fissures du trottoir aux chutes lourdes et aux KO, mur du coin fissuré quand un combattant y est envoyé fort. Ils s'accumulent sur le match, avec un plafond, et la rue repart à neuf au match suivant.
 3. La brume : elle avale la ville et le viaduc, et pose des halos autour des réverbères, jamais devant les combattants.
+
+## 14. Les lieux
+
+La rue n'est plus le seul décor. Chaque lieu a son dossier : son dessin dans `tools/stage/<lieu>/`, ses images dans `src/art/<lieu>/`. Le gameplay ne change jamais d'un lieu à l'autre : même largeur, même sol, mêmes calques.
+
+- **Le registre.** `tools/stage/maps.ts` liste les lieux que le code dessine ; `src/art/stages.ts` liste ceux que le jeu propose, avec leur nom et leur description. Un lieu dont les images manquent n'est pas proposé.
+- **Le choix.**
+  - Contre l'ordinateur, le lieu et l'ambiance sont tirés au hasard, sans écran.
+  - En versus, l'écran « Lieu » suit le choix des combattants : « Aléatoire » d'abord, puis une vignette par lieu (le décor tel que le combat l'ouvre, caméra au centre). L'ambiance est tirée au hasard.
+  - En entraînement, l'écran « Lieu » suit le choix du mannequin. La pause offre « Lieu » et « Ambiance » ; un lieu qui n'a pas l'ambiance choisie la tire au hasard.
+  - L'écran ne s'affiche qu'à partir de deux lieux.
+- **Une seule ambiance d'un seul lieu en mémoire vidéo.** Les textures sont rangées sous `stage/<lieu>/<ambiance>/` ; le chargement d'un combat retire toutes les autres. Le budget vérifié est celui du lieu le plus lourd (`tests/build/vram-budget.test.ts`).
+- **Les flashs.** Les grandes couleurs de tous les lieux, dans toutes leurs ambiances, rejoignent `FIGHT_STAGE_COLORS`, et le test de la bande des flashs passe sur chacun.
+- **La langue des enseignes** dépend du lieu (§10).
+- **Les animations détachées.** Dans la rue, les silhouettes bougent devant des façades opaques : une image d'animation ne fait qu'ajouter des pixels. Ailleurs, une figure bouge parfois devant le vide du calque (le fond se voit derrière). Une telle animation est « détachée » : les pixels qu'elle traverse quittent le calque fixe, et chacune de ses images, la première comprise, est posée par-dessus (`liftedLayers`, `tools/sprites/stage-props.ts`).
+- **La boîte commune.** `tools/stage/kit/` réunit ce qui ne dépend d'aucune palette : la toile, le hasard, les lumières, la police, le virage des palettes (`grade.ts`) et les types d'un décor dessiné.
+
+Le premier lieu après la rue : le **Viaduct Gym** (`docs/art/decor-gym.md`).

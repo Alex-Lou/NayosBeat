@@ -18,7 +18,7 @@ import {
   stageStart,
 } from '../../tools/sprites/stage-drawn';
 import { drawRue } from '../../tools/stage/rue';
-import { STREET_ATMOSPHERES } from '../../tools/stage/rue/atmospheres';
+import { CODE_MAPS } from '../../tools/stage/maps';
 
 const NONE: Rgba = { r: 0, g: 0, b: 0, a: 0 };
 const SKY: Rgba = { r: 0x1b, g: 0x1b, b: 0x2f, a: 255 };
@@ -122,36 +122,42 @@ describe('The stage large colors', () => {
     expect(largeColorsOf([layer])).toEqual([0x1b1b2f, 0xff0000]);
   });
 
-  it("of the code's street, stay in the band the flash effects are tuned for", () => {
+  it("of the code's stages, stay in the band the flash effects are tuned for", () => {
     const colors = largeColorsOf(Object.values(drawRue().layers));
     // The darkest is the grey box's sky: the sparks and the words light the same over it.
     expect(Math.min(...colors.map(relativeLuminance))).toBe(relativeLuminance(0x1b1b2f));
-    // None so light that a black effect over it would change it by more than VEIL_DELTA, in any
-    // of the street's atmospheres (docs/art/decor-rue.md §13).
-    const { layers } = drawRue();
-    for (const { atmosphere, palette } of STREET_ATMOSPHERES) {
-      const shown = Object.values(layers).map((layer) => recolored(layer, palette));
-      for (const color of largeColorsOf(shown)) {
-        expect(
-          luminanceDelta(0x000000, color, 1),
-          `${atmosphereName(atmosphere)} ${color.toString(16)}`,
-        ).toBeLessThanOrEqual(VEIL_DELTA);
+    // None so light that a black effect over it would change it by more than VEIL_DELTA, on any
+    // stage, in any of its atmospheres (docs/art/decor-rue.md §13).
+    for (const { name, draw, atmospheres } of CODE_MAPS) {
+      const { layers } = draw();
+      for (const { atmosphere, palette } of atmospheres) {
+        const shown = Object.values(layers).map((layer) => recolored(layer, palette));
+        for (const color of largeColorsOf(shown)) {
+          const label = `${name} ${atmosphereName(atmosphere)} ${color.toString(16)}`;
+          expect(luminanceDelta(0x000000, color, 1), label).toBeLessThanOrEqual(VEIL_DELTA);
+          // None darker than the grey box's sky either: the flashes are measured over it.
+          expect(relativeLuminance(color), label).toBeGreaterThanOrEqual(
+            relativeLuminance(0x1b1b2f),
+          );
+        }
       }
     }
-  });
+  }, 60_000);
 
-  it('give each atmosphere of the street a whole palette, slot for slot with the night', () => {
-    const [night, ...others] = STREET_ATMOSPHERES;
-    expect(night?.atmosphere).toEqual(BASE_ATMOSPHERE);
-    for (const { palette } of others) {
-      expect(palette).toHaveLength(night?.palette.length ?? 0);
-      // Slot 0 stays transparent, every other opaque: the stage takes whole pixels only.
-      expect(palette[0]?.a).toBe(0);
-      expect(palette.slice(1).every(({ a }) => a === 255)).toBe(true);
+  it('give each atmosphere of a stage a whole palette, slot for slot with its base one', () => {
+    for (const { name, atmospheres } of CODE_MAPS) {
+      const [night, ...others] = atmospheres;
+      expect(night?.atmosphere, name).toEqual(BASE_ATMOSPHERE);
+      for (const { palette } of others) {
+        expect(palette).toHaveLength(night?.palette.length ?? 0);
+        // Slot 0 stays transparent, every other opaque: the stage takes whole pixels only.
+        expect(palette[0]?.a).toBe(0);
+        expect(palette.slice(1).every(({ a }) => a === 255)).toBe(true);
+      }
+      expect(new Set(atmospheres.map(({ atmosphere }) => atmosphereName(atmosphere))).size).toBe(
+        atmospheres.length,
+      );
     }
-    expect(
-      new Set(STREET_ATMOSPHERES.map(({ atmosphere }) => atmosphereName(atmosphere))).size,
-    ).toBe(STREET_ATMOSPHERES.length);
   });
 
   it('are written as Prettier writes them', async () => {

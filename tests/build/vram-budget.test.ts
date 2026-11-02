@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { artOf, type Colorway } from '../../src/art';
-import { STAGE_ART } from '../../src/art/rue';
-import { STAGE_NAME, STAGE_SCALE } from '../../src/art/stage-layers';
+import { STAGE_SCALE } from '../../src/art/stage-layers';
+import { STAGE_MAPS, type StageMap } from '../../src/art/stages';
 import { stripName, playedUrls } from '../../src/render/art-textures';
 import { ROSTER, type FighterId } from '../../src/data/roster';
 
@@ -48,26 +48,39 @@ function bytesOf(fighter: FighterId, colorway: Colorway): number {
 }
 
 /**
- * The stage's textures (src/art/stage-layers.ts): one image a layer, STAGE_SCALE times finer than
- * the world (`npm run sprites` refuses any other size), and its props' sheet; none for the grey box.
+ * Each stage's textures (src/art/stage-layers.ts, src/art/stages.ts): one image a layer,
+ * STAGE_SCALE times finer than the world (`npm run stages` refuses any other size), and its props'
+ * sheet. A fight loads one stage in one atmosphere, all of a stage's the same size: its base one's
+ * are counted. None for the grey box.
  */
-const STAGE_TEXTURES = [
-  ...(STAGE_ART?.layers ?? []).map(({ name, width, height }) => ({
-    name: `stage/${name}`,
-    width: width * STAGE_SCALE,
-    height: height * STAGE_SCALE,
-  })),
-  ...(STAGE_ART?.props
-    ? [
-        {
-          name: 'stage/props',
-          ...pngSize(new URL(`../../src/art/${STAGE_NAME}/props.png`, import.meta.url)),
-        },
-      ]
-    : []),
-];
+function stageTextures({ name: stage, variants }: StageMap) {
+  const art = variants[0]?.art;
+  return [
+    ...(art?.layers ?? []).map(({ name, width, height }) => ({
+      name: `${stage}/${name}`,
+      width: width * STAGE_SCALE,
+      height: height * STAGE_SCALE,
+    })),
+    ...(art?.props
+      ? [
+          {
+            name: `${stage}/props`,
+            ...pngSize(new URL(`../../src/art/${stage}/props.png`, import.meta.url)),
+          },
+        ]
+      : []),
+  ];
+}
 
-const STAGE_BYTES = STAGE_TEXTURES.reduce((sum, { width, height }) => sum + width * height * 4, 0);
+const STAGE_TEXTURES = STAGE_MAPS.flatMap(stageTextures);
+
+/** The stage that takes the most video memory. */
+const STAGE_BYTES = Math.max(
+  0,
+  ...STAGE_MAPS.map((map) =>
+    stageTextures(map).reduce((sum, { width, height }) => sum + width * height * 4, 0),
+  ),
+);
 
 /**
  * The live lights paint, for each layer, the pixels that light themselves on a canvas of its size,
@@ -81,14 +94,11 @@ const EMITTER_BYTES = STAGE_TEXTURES.filter(({ name }) => name !== 'stage/props'
 describe('video memory of a match', () => {
   const drawn = ROSTER.map(({ id }) => id).filter((id) => artOf(id) !== undefined);
 
-  it('counts the stage at the size it is drawn, its props included (docs/art/decor-rue.md §2)', () => {
+  it('counts each stage at the size it is drawn, its props included (docs/art/decor-rue.md §2)', () => {
     for (const { name, width, height } of STAGE_TEXTURES.filter(
-      ({ name }) => name !== 'stage/props',
+      ({ name }) => !name.endsWith('/props'),
     )) {
-      const file = new URL(
-        `../../src/art/${STAGE_NAME}/${name.slice('stage/'.length)}.png`,
-        import.meta.url,
-      );
+      const file = new URL(`../../src/art/${name}.png`, import.meta.url);
       expect(pngSize(file), name).toEqual({ width, height });
     }
     // About 7 MB: under a tenth of the ceiling.

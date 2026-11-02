@@ -3,10 +3,10 @@
  * laundromat and its cold light, a shop long closed. Worn, lit from inside, no real name.
  */
 
-import { Canvas, at, tone } from './canvas.ts';
+import { Canvas, at, tone } from '../kit/canvas.ts';
 import { drawLedge, type Rect } from './facade.ts';
 import { drawAwning, drawCrate, FRUITS } from './fixtures.ts';
-import type { Light } from './light.ts';
+import type { Light } from '../kit/light.ts';
 import {
   CAT,
   COOL,
@@ -19,7 +19,7 @@ import {
   STONE,
   WARM,
 } from './palette.ts';
-import type { Random } from './random.ts';
+import type { Random } from '../kit/random.ts';
 import { drawLightbox, drawNeonWord, drawPainted } from './signs.ts';
 
 /** A shop window's frame: a dark surround, a mullion, the bulkhead under it. */
