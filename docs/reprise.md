@@ -5,7 +5,7 @@ Ce guide sert quand les sessions Claude Code ne sont plus disponibles. Tu contin
 Rédigé par la session principale le 2 novembre 2026, sur `main` à `c0221be`.
 
 - **Pour un agent (OpenCode ou autre)** : `opencode.json` charge ce fichier, et `CLAUDE.md` est lu comme règles du projet. Lis les deux en entier avant d'agir.
-- **Pour toi** : les §1 à §4 disent où on en est et comment travailler ; les §5 à §8 expliquent l'installation.
+- **Pour toi** : les §1 à §4 disent où on en est et comment travailler ; les §5 à §8 expliquent l'installation, Free Claude Code et la sécurité.
 
 ---
 
@@ -66,10 +66,10 @@ C'était le rôle de la session Claude « principale » ; c'est maintenant le ti
    ```
 2. **Les contrôles de la CI, en local, avant chaque push** (c'est ce que fait `.github/workflows/ci.yml`) :
    ```sh
-   npm run format:check && npm run lint && npm run typecheck && npm test \
-     && npm run aseprite:check && npm run build
+   npm run check            # format, lint, types, tests, aseprite, build
    npm run replays:update   # ne doit RIEN changer : git status propre
    ```
+   Depuis le téléphone, `npm run nayos -- check` fait les deux et dit si les replays ont bougé.
    Après `npm run sprites`, vérifie `git status` : `public/icons` peut avoir été réécrit.
 3. **Ajouter les fichiers un par un**, jamais `git add -A`. Les docs et les commits sont en français, les commentaires du code en anglais.
 4. **Pousser et ouvrir une PR** :
@@ -111,6 +111,18 @@ Pour un chantier précis, colle plutôt le prompt qui lui correspond : [prompts/
 
 C'est le plus confortable : le PC fait le travail lourd (tests, build, captures), et le téléphone sert d'écran et de clavier.
 
+**En bref** : `tools/remote/setup.sh --opencode` sur le PC vérifie tout, installe les dépendances et OpenCode. Ensuite, depuis le téléphone, une seule commande : `npm run nayos`. Le détail suit.
+
+**Le cockpit `npm run nayos`** : un menu à gros boutons, dans une session `tmux` qui survit aux coupures. Il propose :
+- l'agent : OpenCode, ou Claude Code via Free Claude Code ;
+- les contrôles de la CI ;
+- le serveur de dev, avec l'adresse à ouvrir sur le téléphone ;
+- récupérer `main` ;
+- l'état du dépôt ;
+- les PR ouvertes.
+
+Chaque action se lance aussi directement : `npm run nayos -- check`, `dev`, `status`… Il ne pousse et ne fusionne **jamais** : publier reste un geste volontaire.
+
 ### 5.1 Sur le PC (Linux, macOS, ou Windows avec WSL)
 
 1. **Tailscale** : installe-le et connecte-le au même compte que ton téléphone. Note son adresse Tailscale (`100.x.y.z`) ou son nom MagicDNS.
@@ -129,14 +141,11 @@ C'est le plus confortable : le PC fait le travail lourd (tests, build, captures)
    ```sh
    git clone https://github.com/Alex-Lou/NayosBeat.git
    cd NayosBeat
-   npm ci
+   tools/remote/setup.sh --opencode
    ```
+   Le script vérifie git, Node 22 (version de `.nvmrc`), lua, tmux, gh et Tailscale. Il dit ce qui manque, lance `npm ci` et installe OpenCode depuis npm.
    Les outils de capture (Playwright) demandent un Chromium : `npx playwright install chromium`, seulement si tu veux faire des films.
-5. **OpenCode** :
-   ```sh
-   curl -fsSL https://opencode.ai/install | bash
-   ```
-   Ou `npm install -g opencode-ai`. Ensuite, dans `opencode`, tape `/connect`, choisis **OpenRouter** et colle ta clé (créée sur le tableau de bord d'OpenRouter, « Create API Key »). Tape `/models` pour choisir le modèle. La clé est rangée dans `~/.local/share/opencode/auth.json`, **hors du dépôt** : ne la colle jamais dans un fichier du projet.
+5. **OpenCode** (déjà installé par `--opencode`) : dans `opencode`, tape `/connect`, choisis **OpenRouter** et colle ta clé (créée sur le tableau de bord d'OpenRouter, « Create API Key »). Tape `/models` pour choisir le modèle. La clé est rangée dans `~/.local/share/opencode/auth.json`, **hors du dépôt** : ne la colle jamais dans un fichier du projet.
 
 ### 5.2 Depuis le téléphone
 
@@ -144,12 +153,11 @@ C'est le plus confortable : le PC fait le travail lourd (tests, build, captures)
 2. Dans **Termius**, crée un hôte avec l'adresse Tailscale du PC, ton utilisateur, et une clé SSH (Termius sait en générer une ; ajoute sa partie publique dans `~/.ssh/authorized_keys` sur le PC).
 3. Connecte-toi, puis :
    ```sh
-   tmux new -A -s nayos
    cd NayosBeat
-   opencode
+   npm run nayos
    ```
-   Si la connexion coupe, reconnecte-toi et retape `tmux new -A -s nayos` : tu retrouves tout.
-4. **Tester le jeu sur le téléphone** : sur le PC, lance `npm run dev` (il écoute déjà sur le réseau grâce à `--host`). Sur le téléphone, ouvre `http://100.x.y.z:5173`, avec l'**adresse IP** Tailscale : Vite refuse par défaut un nom d'hôte qu'il ne connaît pas (un nom en `.ts.net`), mais il accepte une adresse IP.
+   Si la connexion coupe, reconnecte-toi et relance `npm run nayos` : tu retrouves la session `tmux` telle que tu l'as laissée.
+4. **Tester le jeu sur le téléphone** : dans le cockpit, choisis « Serveur de dev ». Il affiche l'adresse à ouvrir, `http://100.x.y.z:5173`. Le nom MagicDNS du PC (`http://mon-pc.xxx.ts.net:5173`) marche aussi : `vite.config.ts` autorise les noms en `.ts.net`, pour le serveur de dev seulement.
 
 ---
 
@@ -165,8 +173,9 @@ En secours, quand le PC est éteint. C'est plus lent ; le build et les tests pas
    ```sh
    git clone https://github.com/Alex-Lou/NayosBeat.git
    cd NayosBeat
-   npm ci
+   tools/remote/setup.sh --opencode
    ```
+   Dans Termux, le script vérifie les outils, lance `npm ci`, puis indique la marche à suivre pour OpenCode (ci-dessous).
 3. **OpenCode dans Termux** : le binaire officiel ne tourne pas directement dans Termux. Deux voies :
    - **Debian dans Termux** (la plus sûre), puis l'installation normale de §5.1, étape 5, et l'éditeur à l'intérieur :
      ```sh
@@ -175,7 +184,7 @@ En secours, quand le PC est éteint. C'est plus lent ; le build et les tests pas
      proot-distro login debian
      ```
    - **un portage communautaire pour Termux**, plus rapide mais non officiel : à vérifier avant de lui confier ta clé.
-4. **Tester le jeu** : `npm run dev`, puis ouvre `http://localhost:5173` dans le navigateur du téléphone.
+4. **Le cockpit et le jeu** : `npm run nayos`, comme sur le PC. « Serveur de dev » donne `http://localhost:5173`, à ouvrir dans le navigateur du téléphone.
 
 **Incertitudes** :
 - je n'ai pas pu essayer OpenCode dans Termux ;
@@ -183,16 +192,42 @@ En secours, quand le PC est éteint. C'est plus lent ; le build et les tests pas
 
 ---
 
-## 7. Sécurité
+## 7. Claude Code sur d'autres modèles : Free Claude Code (FCC)
+
+[Free Claude Code](https://github.com/Alishahryar1/free-claude-code) (licence AGPL-3.0) fait tourner **Claude Code** sur d'autres fournisseurs, dont **OpenRouter**. C'est un petit serveur local qui traduit les requêtes. On garde ainsi les habitudes de Claude Code (`CLAUDE.md`, ses outils) avec ta clé OpenRouter.
+
+**L'installation sûre, sur le PC seulement** : `tools/remote/setup.sh --fcc`.
+- Elle installe **FCC seul, à une version figée** (`free-claude-code==6.18.5`, depuis PyPI, avec `uv`), et Claude Code depuis npm s'il manque.
+- **Elle n'utilise pas l'installateur officiel de FCC** : lancé sans choix, il installe aussi une dizaine d'autres agents (Aider, Muse et d'autres) à leur toute dernière version, dont un par un script téléchargé depuis un autre site. Je l'ai lu et lancé à blanc avant de l'écarter.
+- FCC demande exactement Python 3.14.10 : avec un `uv` ancien, `uv self update` d'abord.
+
+**Ensuite** :
+1. Lance `fcc-server`, puis ouvre son **Admin UI sur le PC lui-même** et colle ta clé OpenRouter. Le serveur ne doit écouter que la machine locale ; ne l'expose ni sur Internet ni sur le réseau.
+2. Depuis le téléphone, dans le cockpit, choisis « Claude Code via Free Claude Code » (ou lance `fcc-claude`).
+
+**Ses robots Telegram et Discord** (piloter l'agent par messages, même vocaux) : je les laisse **éteints**. Un message reçu par ce robot devient une commande exécutée sur ton PC, et tout passe par les serveurs de Telegram ou de Discord. Tailscale et Termius font la même chose sans intermédiaire. Si tu veux quand même les essayer :
+- un utilisateur dédié sur le PC, qui ne voit que le clone de NayosBeat ;
+- le dossier autorisé limité à ce clone ;
+- l'identifiant Telegram numérique de toi seul en liste blanche ;
+- aucune autre clé dans cet environnement que celles du jeu.
+
+**Incertitudes** :
+- je n'ai pas pu installer FCC jusqu'au bout ici, car le `uv` du conteneur ne connaît pas encore Python 3.14.10. Le script s'arrête avec ce message si ça t'arrive ;
+- la façon exacte dont `fcc-claude` aiguille Claude Code vers FCC est décrite dans sa doc, pas vérifiée ici.
+
+---
+
+## 8. Sécurité
 
 - **Les clés** (OpenRouter, GitHub) restent dans les fichiers de configuration de chaque outil, jamais dans le dépôt, jamais dans un message de commit. Si une clé fuit, révoque-la tout de suite sur le site concerné.
-- **GitHub** : pour `gh auth login`, garde les droits minimaux, c'est-à-dire le dépôt NayosBeat.
+- **GitHub** : pour `gh auth login`, préfère un **jeton à grain fin** limité au seul dépôt NayosBeat, avec les droits « Contents » et « Pull requests » en lecture et écriture, et rien d'autre. Un agent qui déraille ne peut alors toucher que ce dépôt.
+- **Un environnement propre** : idéalement, un utilisateur dédié sur le PC pour le développement, sans tes autres clés, documents ni sessions de navigateur. L'agent exécute des commandes : il ne doit voir que ce qu'il lui faut.
 - **Tailscale** : n'expose pas le serveur de développement sur Internet. Le réseau Tailscale suffit.
 - **Un agent** propose et fait sur une branche. **Toi seul** décides ce qui est fusionné, donc publié.
 
 ---
 
-## 8. Les sessions Claude encore ouvertes
+## 9. Les sessions Claude encore ouvertes
 
 Tant qu'elles existent, elles se répondent avec `send_message` :
 - **la session principale** : `session_01KAcVVTMwJQUKKCQ1pvSMFk` (revue, fusion, publication) ;
