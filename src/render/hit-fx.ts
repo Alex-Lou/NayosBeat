@@ -86,7 +86,7 @@ type LayerName = keyof typeof LAYERS;
  * All the images share one texture, as its frames: a whole effect draws in one batch, and it is
  * uploaded once. A flipbook's keys are frames of their own (see frameOf).
  */
-const ATLAS = 'hd:atlas';
+export const ATLAS = 'hd:atlas';
 const ATLAS_WIDTH = 1024;
 /** Pixels left clear between frames, so that filtering never bleeds across. */
 const GUTTER = 2;

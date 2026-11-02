@@ -1,5 +1,6 @@
 import type Phaser from 'phaser';
 import { describe, expect, it, vi } from 'vitest';
+import type { FighterArt } from '../../src/art/types';
 import type { MatchConfig } from '../../src/core/config';
 import { px, toPx } from '../../src/core/constants';
 import { Input, type InputBits } from '../../src/core/input';
@@ -10,7 +11,13 @@ import type { FightEvent } from '../../src/render/fight-events';
 import { FxRandom } from '../../src/render/fx-random';
 import { hitStyleOf } from '../../src/render/hit-styles';
 import { LightRig, POOL_FLATNESS } from '../../src/render/light-rig';
-import { addedDelta, brightestBackdrop, relativeLuminance } from '../../src/render/luminance';
+import {
+  addAlphaFor,
+  addedDelta,
+  brightestBackdrop,
+  relativeLuminance,
+} from '../../src/render/luminance';
+import { MoveEcho } from '../../src/render/move-echo';
 import {
   castOn,
   collectLights,
@@ -26,6 +33,47 @@ import { CALM_DELTA, glowProfile, VEIL_DELTA } from '../../src/render/veils';
 import { playCombo } from '../core/combo-helpers';
 import { facingOff } from '../core/helpers';
 
+/** The afterimages' sprites: what MoveEcho sets on them. */
+const sprites = vi.hoisted(
+  () =>
+    [] as {
+      alpha: number;
+      visible: boolean;
+      x: number;
+      fill: number;
+      added: boolean;
+    }[],
+);
+vi.mock('../../src/render/anchored-sprite', () => ({
+  AnchoredSprite: class {
+    private readonly state = { alpha: 1, visible: false, x: 0, fill: -1, added: false };
+    constructor() {
+      sprites.push(this.state);
+    }
+    setDepth() {
+      return this;
+    }
+    fill(color: number) {
+      this.state.fill = color;
+      return this;
+    }
+    added() {
+      this.state.added = true;
+      return this;
+    }
+    hide() {
+      this.state.visible = false;
+    }
+    show(_sheet: string, _frame: number, x: number) {
+      this.state.visible = true;
+      this.state.x = x;
+    }
+    setAlpha(alpha: number) {
+      this.state.alpha = alpha;
+      return this;
+    }
+  },
+}));
 vi.mock('phaser', () => ({
   default: {
     BlendModes: { NORMAL: 0, ADD: 1 },
@@ -318,5 +366,44 @@ describe('the light rig', () => {
     };
     expect(brightest(true).pool).toBeLessThan(brightest(false).pool);
     expect(brightest(true).glow).toBeLessThan(brightest(false).glow);
+  });
+});
+
+describe("the afterimages of Nayo's specials", () => {
+  const spec = { from: 0, to: 12, every: 2, life: 8, tone: 'energy' } as const;
+
+  it('add up to no more than VEIL_DELTA together, the newest the brightest; calm, CALM_DELTA', () => {
+    for (const calm of [false, true]) {
+      sprites.length = 0;
+      const echo = new MoveEcho(
+        {} as Phaser.Scene,
+        {} as FighterArt,
+        CYAN,
+        FIGHT_STAGE_COLORS,
+        'full',
+      );
+      echo.calm = calm;
+      const total = addAlphaFor(CYAN, FIGHT_STAGE_COLORS, calm ? CALM_DELTA : VEIL_DELTA);
+      let shownMost = 0;
+      for (let clock = 0; clock < 14; clock++) {
+        echo.update(clock, spec, clock, 'idle', 0, clock * 4, 100, false);
+        const shown = sprites.filter((sprite) => sprite.visible);
+        const sum = shown.reduce((all, sprite) => all + sprite.alpha, 0);
+        expect(sum).toBeLessThanOrEqual(total + 1e-9);
+        shownMost = Math.max(shownMost, shown.length);
+        // The newest, left last, is the brightest.
+        const newest = sprites.find(
+          (sprite) => sprite.visible && sprite.x === Math.max(...shown.map((each) => each.x)),
+        );
+        expect(newest?.alpha).toBe(Math.max(...shown.map((sprite) => sprite.alpha)));
+      }
+      expect(shownMost).toBeGreaterThan(2);
+      // Added, in its energy, as a light.
+      expect(sprites.every((sprite) => sprite.fill === CYAN && sprite.added)).toBe(true);
+      // The move over, they fade out and hide.
+      for (let clock = 14; clock < 30; clock++)
+        echo.update(clock, null, 0, 'idle', 0, 0, 100, false);
+      expect(sprites.some((sprite) => sprite.visible)).toBe(false);
+    }
   });
 });

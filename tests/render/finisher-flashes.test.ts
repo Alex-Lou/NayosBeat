@@ -33,10 +33,13 @@ import {
   SATURATED_RED,
 } from '../../src/render/luminance';
 import type { TickTally } from '../../src/render/onomatopoeia';
+import { SignatureFx } from '../../src/render/signature-fx';
+import { signatureOf } from '../../src/render/signatures';
 import { koVeil, VEIL_DELTA } from '../../src/render/veils';
 import { armed, film, LARSEN, LE_QUATRE, type Route } from './finisher-harness';
 import { fxStrips, outlineRings } from './fx-strips';
 import { fakeScene } from './hud-fakes';
+import { recordingScene } from './spark-area';
 
 /**
  * The Finisher's flashes (docs/finisher.md §4, §5.8 test 15): its chronology, from the combo's
@@ -48,7 +51,11 @@ import { fakeScene } from './hud-fakes';
  */
 
 const blood = vi.hoisted(() => vi.fn());
+vi.mock('phaser', () => ({
+  default: { BlendModes: { NORMAL: 0, ADD: 1 }, Textures: { FilterMode: { LINEAR: 0 } } },
+}));
 vi.mock('../../src/render/hit-fx', () => ({
+  ATLAS: 'hd:atlas',
   HitFx: class {
     play = vi.fn();
     update = vi.fn();
@@ -246,6 +253,16 @@ function counted(route: Route, mode: FlashMode, shake: Comfort['shake'] = 'norma
     },
   });
   const gates = [new FxGate(), new FxGate()] as const;
+  // The fighters' signature effects, as FightScene has them: none drawn in the scene.
+  const signature = new SignatureFx(recordingScene().scene, config, {
+    groundY: GROUND_Y,
+    signatures: [signatureOf(route.fighters[0]), signatureOf(route.fighters[1])],
+    energies: [styles[0].energy, styles[1].energy],
+    budget,
+    mode: 'full',
+    stage: GREYBOX_COLORS,
+  });
+  signature.calm = mode !== 'normal';
   const nowhere = { x: Number.NaN, y: Number.NaN, flip: false };
   const before: [typeof nowhere, typeof nowhere] = [nowhere, nowhere];
   const shown: Shown = { clip: 'idle', tick: 0, x: 0 };
@@ -272,6 +289,7 @@ function counted(route: Route, mode: FlashMode, shake: Comfort['shake'] = 'norma
         feedback.react(event, toPx(next.cameraX) - 240);
       }
       feedback.endTick();
+      signature.tick(next);
     },
     onShown: (state: GameState, director: FinisherScene) => {
       feedback.update(1);
@@ -323,6 +341,8 @@ function counted(route: Route, mode: FlashMode, shake: Comfort['shake'] = 'norma
           lit.set(now, (lit.get(now) ?? 0) + area * zoom ** 2);
         }
       }
+      signature.flush(!director.isActive());
+      signature.update(1);
       hud.update(state);
     },
   });

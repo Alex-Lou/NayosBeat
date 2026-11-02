@@ -37,11 +37,14 @@ import { hitStyleOf, hudColorOf, type HitStyle } from '../../src/render/hit-styl
 import { Hud } from '../../src/render/hud';
 import { freshPixels } from '../../src/render/luminance';
 import type { TickTally } from '../../src/render/onomatopoeia';
+import { SignatureFx } from '../../src/render/signature-fx';
+import { signatureOf } from '../../src/render/signatures';
 import { FIGHT_STAGE_COLORS } from '../../src/render/stage-view';
 import { playCombo } from '../core/combo-helpers';
 import { facingOff } from '../core/helpers';
 import { fxStrips } from './fx-strips';
 import { fakeScene } from './hud-fakes';
+import { recordingScene } from './spark-area';
 
 /**
  * The worst case of docs/flashs.md §4, on the real engine: combo routes played by the core, their
@@ -53,8 +56,12 @@ import { fakeScene } from './hud-fakes';
  * budget keeps them for (tests/render/delayed-words.test.ts).
  */
 
+vi.mock('phaser', () => ({
+  default: { BlendModes: { NORMAL: 0, ADD: 1 }, Textures: { FilterMode: { LINEAR: 0 } } },
+}));
 const sparks = vi.hoisted(() => vi.fn());
 vi.mock('../../src/render/hit-fx', () => ({
+  ATLAS: 'hd:atlas',
   HitFx: class {
     play = sparks;
     update = vi.fn();
@@ -321,6 +328,9 @@ interface Played {
   readonly sparks: readonly string[];
   /** The strips of front effects that played dark, by player. */
   readonly dark: readonly [ReadonlySet<string>, ReadonlySet<string>];
+  /** Nayo's signature cues played, and those the budget let light (signature-fx.ts). */
+  readonly cues: number;
+  readonly litCues: number;
 }
 
 /**
@@ -354,6 +364,28 @@ function play(route: Route, mode: FlashMode): Played {
     },
   });
   const gates = [new FxGate(), new FxGate()] as const;
+  // Nayo's signature effects, asking after the fighters' front effects, as FightScene has them.
+  const signatures = [
+    config.fighters[0] === NAYO ? signatureOf('nayo') : null,
+    config.fighters[1] === NAYO ? signatureOf('nayo') : null,
+  ] as const;
+  const signature = new SignatureFx(recordingScene().scene, config, {
+    groundY: GROUND_Y,
+    signatures,
+    energies: [styles[0].energy, styles[1].energy],
+    budget,
+    mode: 'full',
+    stage: FIGHT_STAGE_COLORS,
+  });
+  signature.calm = mode !== 'normal';
+  let cues = 0;
+  let litCues = 0;
+  const cue = signature.cue.bind(signature);
+  signature.cue = (...args) => {
+    cues++;
+    return cue(...args);
+  };
+  const admit = budget.admit.bind(budget);
   const nowhere = { x: Number.NaN, y: Number.NaN, flip: false };
   const before: [typeof nowhere, typeof nowhere] = [nowhere, nowhere];
   const dark = [new Set<string>(), new Set<string>()] as const;
@@ -383,6 +415,7 @@ function play(route: Route, mode: FlashMode): Played {
     feedback.beginTick(state.frame);
     for (const event of events) feedback.react(event, 0);
     feedback.endTick();
+    signature.tick(state);
     feedback.update(1);
     // As SpriteFighterView: what a new frame lights anew, all of it if the body moved.
     for (const player of [0, 1] as const) {
@@ -403,6 +436,15 @@ function play(route: Route, mode: FlashMode): Played {
         dark[player].add(sheet);
       }
     }
+    // What the signature cues ask, once the fighters' front effects have asked theirs.
+    budget.admit = (area: number) => {
+      const granted = admit(area);
+      if (granted) litCues++;
+      return granted;
+    };
+    signature.flush();
+    budget.admit = admit;
+    signature.update(1);
     hud.update(state);
     // The fighters always close: the closest framing, and its push.
     framing = frameFight({
@@ -425,6 +467,8 @@ function play(route: Route, mode: FlashMode): Played {
     flashes: screen.flashes(),
     sparks: sparks.mock.calls.map(([, kind]) => kind as string),
     dark,
+    cues,
+    litCues,
   };
 }
 
@@ -491,6 +535,15 @@ describe('the flashes of the combo routes, as shown (docs/flashs.md §4)', () =>
     expect(flashes('normal').length).toBeLessThanOrEqual(1);
     expect(flashes('reduced').length).toBeLessThanOrEqual(1);
     expect(flashes('off')).toEqual([]);
+  });
+
+  it("plays Nayo's signature cues on the routes, lit where they make no flash, quiet calm", () => {
+    const normal = play(route('Nayo E6 ↓S, ←BOOST'), 'normal');
+    expect(normal.cues).toBeGreaterThan(4);
+    expect(normal.litCues).toBeGreaterThan(0);
+    const calm = play(route('Nayo E6 ↓S, ←BOOST'), 'reduced');
+    expect(calm.cues).toBe(normal.cues);
+    expect(calm.litCues).toBe(0);
   });
 
   it("keeps the Uppercut lit as it lands: its frames held over a hit light little that's new", () => {

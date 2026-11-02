@@ -17,9 +17,11 @@ import { FxGate, type FlashBudget } from './flash-budget';
 import { FxDissolve } from './fx-dissolve';
 import { FxPixels } from './fx-pixels';
 import { hitShakeOf } from './hit-shake';
+import { MoveEcho } from './move-echo';
 import type { Cast } from './move-lights';
 import type { RenderMode } from './render-mode';
 import type { ShakeMode } from './shake';
+import type { Signature } from './signatures';
 
 /** Where the 1 px outline of a silhouette is drawn: the body, filled, a world pixel each way. */
 const OUTLINE = [
@@ -71,6 +73,11 @@ export interface SpriteFighterLook {
    */
   readonly contour: number | null;
   /**
+   * Its signature (signatures.ts): its specials leave afterimages in its energy (MoveEcho). None:
+   * none.
+   */
+  readonly signature?: Signature | null;
+  /**
    * The moves' lights are drawn (light-rig.ts): its shadow leans away from them, the other
    * fighter's glow on it (`light`). Off, neither.
    */
@@ -91,7 +98,8 @@ export interface SpriteFighterLook {
  * and their dissolve follow the pose shown. With a contour (`look.contour`), the body is outlined
  * at all times, on the pixels it is drawn on, until the Finisher's silhouette takes its place.
  * With the moves' lights (`look.lit`), its shadow leans away from them and the other fighter's
- * lights glow on its body (`light`). Its boxes show in the debug view (BoxOverlay).
+ * lights glow on its body (`light`); with a signature, its specials leave afterimages in its
+ * energy (MoveEcho). Its boxes show in the debug view (BoxOverlay).
  */
 export class SpriteFighterView {
   private readonly halo: FinisherHalo;
@@ -105,6 +113,7 @@ export class SpriteFighterView {
   private readonly effects: AnchoredSprite | undefined;
   private readonly trail: DashTrail;
   private readonly echo: BoostEcho;
+  private readonly moveEcho: MoveEcho | undefined;
   /** The other fighter's lights on its body: the body filled with their color, added. */
   private readonly glow: AnchoredSprite | undefined;
   private glowColor = -1;
@@ -113,6 +122,7 @@ export class SpriteFighterView {
   private readonly pixels: FxPixels;
   private readonly gate = new FxGate();
   private readonly budget: FlashBudget;
+  private readonly signature: Signature | null;
   /** Reused every frame. */
   private readonly shown: Shown = { clip: 'idle', tick: 0, x: 0 };
   /** Where the body stood the frame before: its effects' pixels compare only in place. */
@@ -130,6 +140,7 @@ export class SpriteFighterView {
     look: SpriteFighterLook,
   ) {
     this.budget = look.budget;
+    this.signature = look.signature ?? null;
     this.pixels = new FxPixels(scene, art, look.stage);
     // Under the shadow: the glow shows around the feet.
     this.halo = new FinisherHalo(scene, groundY, trailColor, look.stage);
@@ -160,6 +171,8 @@ export class SpriteFighterView {
       ? new AnchoredSprite(scene, art, 'fx', mode).setDepth(DEPTH.effects)
       : undefined;
     this.effects?.hide();
+    const echoes = Object.values(look.signature?.moves ?? {}).some((move) => move.echo);
+    this.moveEcho = echoes ? new MoveEcho(scene, art, trailColor, look.stage, mode) : undefined;
     this.glow = look.lit
       ? new AnchoredSprite(scene, art, 'body', mode)
           .setDepth(DEPTH.fighterBack + GLOW_DEPTH)
@@ -180,6 +193,7 @@ export class SpriteFighterView {
   setComfort(calm: boolean, shake: ShakeMode): void {
     this.echo.calm = calm;
     this.trail.calm = calm;
+    if (this.moveEcho) this.moveEcho.calm = calm;
     const still = shake === 'off';
     this.shake = shake;
     this.halo.calm = calm || still;
@@ -242,6 +256,17 @@ export class SpriteFighterView {
     this.echo.update(
       round.phaseFrame,
       isBoosting(fighter, template),
+      clip.sheet,
+      frame,
+      x,
+      y,
+      flip,
+    );
+    const signed = fighter.move ? this.signature?.moves[fighter.move]?.echo : undefined;
+    this.moveEcho?.update(
+      round.phaseFrame,
+      signed ?? null,
+      fighter.actionFrame,
       clip.sheet,
       frame,
       x,

@@ -70,6 +70,7 @@ import { ProjectileView } from './projectile-view';
 import { isContextLost, type RenderMode } from './render-mode';
 import { loadArt } from './art-textures';
 import { contourFor, type SilhouetteLook } from './silhouette';
+import { SignatureFx } from './signature-fx';
 import { signatureOf, type Signature } from './signatures';
 import { SpriteFighterView } from './sprite-fighter-view';
 import { drawStage, FIGHT_STAGE_COLORS, loadStage } from './stage-view';
@@ -162,6 +163,8 @@ interface Runtime {
   readonly feedback: FightFeedback;
   /** The moves' lights: their pools on the floor, the shadows and glows they cast (light-rig.ts). */
   readonly lights: LightRig;
+  /** The fighters' signature effects over the pixel art (signature-fx.ts). */
+  readonly signatureFx: SignatureFx;
   /** The Finisher's director: once it locks, it paces the game and frames it (finisher-scene.ts). */
   readonly finisherScene: FinisherScene;
   readonly hud: Hud;
@@ -383,6 +386,14 @@ export class FightScene extends Phaser.Scene {
         stage: FIGHT_STAGE_COLORS,
         mode,
       }),
+      signatureFx: new SignatureFx(this, this.config, {
+        groundY: GROUND_Y,
+        signatures: this.signatures,
+        energies,
+        budget,
+        mode,
+        stage: FIGHT_STAGE_COLORS,
+      }),
       holdRing: new HoldRing(this, GROUND_Y, [this.styles[0].energy, this.styles[1].energy], mode),
       caption: this.config.training ? new MoveCaption(this, this.config) : undefined,
       holdPrompt: this.config.training ? new HoldPrompt(this, this.config, GROUND_Y) : undefined,
@@ -445,6 +456,8 @@ export class FightScene extends Phaser.Scene {
     runtime.holdRing.calm = isCalm(comfort);
     runtime.finisherScene.setComfort(comfort);
     runtime.lights.calm = isCalm(comfort);
+    runtime.signatureFx.calm = isCalm(comfort);
+    runtime.signatureFx.still = comfort.shake === 'off';
     this.framingInput.comfort = comfort;
     for (const view of runtime.fighterViews) view.setComfort(isCalm(comfort), comfort.shake);
   }
@@ -512,6 +525,7 @@ export class FightScene extends Phaser.Scene {
           budget,
           mode: this.sceneData.mode,
           contour: contourFor(this.sceneData.silhouette, art, style.energy),
+          signature: this.signatures[player],
           lit: this.signatures.some((signature) => signature !== null),
         })
       : new FighterView(
@@ -592,6 +606,9 @@ export class FightScene extends Phaser.Scene {
       this.describeState,
     );
     this.syncViews(runtime, deltaMs / (1000 / TICK_RATE));
+    // After the fighters' front effects have asked the budget theirs; none in the Finisher's scene.
+    runtime.signatureFx.flush(!scene.isActive());
+    runtime.signatureFx.update(visualFrames);
     this.reportMatchEnd();
   }
 
@@ -639,6 +656,7 @@ export class FightScene extends Phaser.Scene {
       runtime.feedback.endTick();
       runtime.feedback.trail(this.state);
       for (const event of this.tickEvents) runtime.lights.react(event);
+      runtime.signatureFx.tick(this.state);
       // After the blows' own effects: they ask the flash budget first.
       for (const event of this.tickEvents) scene.react(event, this.state, viewLeft);
       if (!staged && scene.isActive()) return i + 1;
