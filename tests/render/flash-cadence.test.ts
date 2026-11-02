@@ -11,6 +11,7 @@ import type { FighterState } from '../../src/core/state';
 import { NAYO } from '../../src/data/fighters/nayo';
 import { RIFF } from '../../src/data/fighters/riff';
 import { SAPHIR } from '../../src/data/fighters/saphir';
+import { WATT } from '../../src/data/fighters/watt';
 import { ROSTER, type FighterId } from '../../src/data/roster';
 import { TRAINING_STAGE } from '../../src/data/stages';
 import { clipFrameAt, showFighter, type Shown } from '../../src/render/animation';
@@ -47,6 +48,7 @@ import { PLATINE, signatureOf } from '../../src/render/signatures';
 import { FIGHT_STAGE_COLORS } from '../../src/render/stage-view';
 import { playCombo } from '../core/combo-helpers';
 import { facingOff } from '../core/helpers';
+import { GREY_BOXES } from './finisher-harness';
 import { fxStrips } from './fx-strips';
 import { fakeScene } from './hud-fakes';
 import { liveScene } from './live-fakes';
@@ -144,6 +146,8 @@ const RN: MatchConfig = { stage: TRAINING_STAGE, fighters: [RIFF, NAYO] };
 const NN: MatchConfig = { stage: TRAINING_STAGE, fighters: [NAYO, NAYO] };
 const SN: MatchConfig = { stage: TRAINING_STAGE, fighters: [SAPHIR, NAYO] };
 const SS: MatchConfig = { stage: TRAINING_STAGE, fighters: [SAPHIR, SAPHIR] };
+const WN: MatchConfig = { stage: TRAINING_STAGE, fighters: [WATT, NAYO] };
+const WW: MatchConfig = { stage: TRAINING_STAGE, fighters: [WATT, WATT] };
 
 type Overrides = Partial<FighterState>;
 interface Route {
@@ -268,6 +272,33 @@ const ROUTES: readonly Route[] = [
     distance: 40,
     steps: [L, L, H, H, F | S],
   },
+  // Watt, in grey boxes until his art: his heavy string, the Rallumage, Plein feu that knocks
+  // out after it and alone, and the mirror.
+  { name: 'Watt L, L, H, H', config: WN, distance: 30, steps: [L, L, H, H] },
+  {
+    name: 'Watt Rallumage',
+    config: WN,
+    distance: 30,
+    steps: [L, L, H, Dash, L, L, H, S],
+    attacker: { boost: 1000 },
+  },
+  {
+    name: 'Watt L, L, H, H, ←BOOST, KO',
+    config: WN,
+    distance: 30,
+    steps: [L, L, H, H, B | X],
+    attacker: { boost: 3000 },
+    victim: { health: 280 },
+  },
+  {
+    name: 'Watt Plein feu, KO',
+    config: WN,
+    distance: 40,
+    steps: [B | X],
+    attacker: { boost: 3000 },
+    victim: { health: 200 },
+  },
+  { name: 'Watt, Watt: L, L, H, →S', config: WW, distance: 30, steps: [L, L, H, F | S] },
 ];
 
 /** The pixels of each frame of each strip of front effects, by fighter. */
@@ -367,12 +398,13 @@ function watched(mode: FlashMode) {
 /** Each fighter's look: the second one in its other colorway in a mirror match, as in a fight. */
 function looksOf(config: MatchConfig): {
   styles: readonly [HitStyle, HitStyle];
-  arts: readonly [FighterArt, FighterArt];
+  arts: readonly [FighterArt | undefined, FighterArt | undefined];
 } {
   const [first, second] = config.fighters;
   const of = (fighter: FighterTemplate, colorway: 'main' | 'alt') => ({
     style: hitStyleOf(idOf(fighter), colorway),
-    art: drawnArt(idOf(fighter), colorway),
+    // A fighter in grey boxes shows only its box: no effects (fighter-view).
+    art: GREY_BOXES.has(idOf(fighter)) ? undefined : drawnArt(idOf(fighter), colorway),
   });
   const a = of(first, 'main');
   const b = of(second, first === second ? 'alt' : 'main');
@@ -457,9 +489,10 @@ function play(route: Route, mode: FlashMode): Played {
     stage: FIGHT_STAGE_COLORS,
     colors: [...energies, PLATINE],
     budget,
+    // A box lights nothing under a live light (FightScene).
     fighterAreas: [
-      fighterLightArea(nameOf(0), colorway(0)),
-      fighterLightArea(nameOf(1), colorway(1)),
+      arts[0] ? fighterLightArea(nameOf(0), colorway(0)) : 0,
+      arts[1] ? fighterLightArea(nameOf(1), colorway(1)) : 0,
     ],
     groundY: GROUND_Y,
   });
@@ -523,6 +556,7 @@ function play(route: Route, mode: FlashMode): Played {
     // As SpriteFighterView: what a new frame lights anew, all of it if the body moved.
     for (const player of [0, 1] as const) {
       const art = arts[player];
+      if (!art) continue;
       showFighter(state, player, config, art, shown);
       const clip = clipOf(art, shown.clip);
       const index = clipFrameAt(clip, shown.tick);

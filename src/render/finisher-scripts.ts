@@ -235,7 +235,7 @@ export const SAPHIR_SCRIPT: FinisherScript = {
 };
 
 /** Watt's « Couvre-feu » (docs/watt.md §8): the room goes dark, then his bulb. */
-const WATT_SCRIPT: FinisherScript = {
+export const WATT_SCRIPT: FinisherScript = {
   fighter: 'watt',
   name: 'COUVRE-FEU',
   count: [],

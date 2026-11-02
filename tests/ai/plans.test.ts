@@ -8,6 +8,7 @@ import { FLAG_MOVE_HIT, type FighterState } from '../../src/core/state';
 import { NAYO } from '../../src/data/fighters/nayo';
 import { RIFF } from '../../src/data/fighters/riff';
 import { SAPHIR } from '../../src/data/fighters/saphir';
+import { WATT } from '../../src/data/fighters/watt';
 import { TRAINING_STAGE } from '../../src/data/stages';
 import { playCpuMatches } from '../core/cpu-match';
 import { makeFighter } from '../core/helpers';
@@ -87,6 +88,20 @@ describe('the plans (§6.4)', () => {
     expect(pointe('hard')).toContain(written([L, B | H, L, L, L]));
     // The Chassé blocked: the Syncope that steps her back out.
     expect(drawn(connected('standHeavy', false), 'hard', RIFF_HIT, SAPHIR)).toEqual(
+      new Set([written([S])]),
+    );
+  });
+
+  it("Watt's: L, L, L and L, H → S for easy, his strings for normal, the Soulevé's juggle for hard", () => {
+    const paume = (level: CpuLevel) => drawn(connected('standLight'), level, RIFF_HIT, WATT);
+    expect(paume('easy')).toEqual(new Set([written([L, L]), written([H, S])]));
+    const normal = paume('normal');
+    expect(normal).toContain(written([L, H, H]));
+    expect(normal).toContain(written([L, H, F | S]));
+    expect(normal).not.toContain(written([L, B | H, L, L, L]));
+    expect(paume('hard')).toContain(written([L, B | H, L, L, L]));
+    // Blocked, no plan of his: the Coup de jus the Paume cancels into, as for any fighter.
+    expect(drawn(connected('standLight', false), 'hard', RIFF_HIT, WATT)).toEqual(
       new Set([written([S])]),
     );
   });
@@ -192,7 +207,7 @@ describe('a plan played (§6.4)', () => {
   });
 });
 
-/** The duels of the cast, each fighter on each side: Nayo and Riff, then Saphir and each. */
+/** The duels of the cast, each fighter on each side: Nayo and Riff, then Saphir and Watt and each. */
 const DUELS = [
   [NAYO, RIFF],
   [RIFF, NAYO],
@@ -200,6 +215,12 @@ const DUELS = [
   [NAYO, SAPHIR],
   [SAPHIR, RIFF],
   [RIFF, SAPHIR],
+  [WATT, NAYO],
+  [NAYO, WATT],
+  [WATT, RIFF],
+  [RIFF, WATT],
+  [WATT, SAPHIR],
+  [SAPHIR, WATT],
 ] as const;
 
 describe('the gauge in a match', () => {
@@ -236,13 +257,18 @@ describe('the gauge in a match', () => {
     // presses ↓ + BOOST only as one, leaves it to the players.
     const saphir = all.filter((move) => move !== 'specialAntiAirBoost');
     expect([...(spent.get(SAPHIR) ?? [])].sort()).toEqual([...saphir].sort());
-  }, 30_000);
+    // Nor is Watt's Plafonnier survolté (invincible to the air alone, docs/watt.md §7).
+    expect([...(spent.get(WATT) ?? [])].sort()).toEqual([...saphir].sort());
+  }, 60_000);
 
   it('hard CPUs build 1.2 to 3 bars a round, each fighter 40 to 60 % of it (combos-v3 §6.2)', () => {
     for (const [a, b] of [
       [NAYO, RIFF],
       [SAPHIR, NAYO],
       [SAPHIR, RIFF],
+      [WATT, NAYO],
+      [WATT, RIFF],
+      [WATT, SAPHIR],
     ] as const) {
       // What each fighter's gauge gained, in points, and the rounds played, both sides in turn.
       const built = new Map([
@@ -290,6 +316,8 @@ describe('the strings in a match', () => {
       [[NAYO, RIFF], ['jabRepeat', ...strings], strings],
       // Saphir's L, L is her Fouetté, and L, L, L her Revers tournant: no jabRepeat.
       [[SAPHIR, NAYO], ['chainLight', 'lightFinisher', ...strings], []],
+      // Watt's L, L is his Crochet court, and L, L, L his Jeté: no jabRepeat either.
+      [[WATT, NAYO], ['chainLight', 'lightFinisher', ...strings], []],
     ] as const) {
       const config: MatchConfig = { stage: TRAINING_STAGE, fighters };
       const played: [Set<MoveId>, Set<MoveId>] = [new Set(), new Set()];

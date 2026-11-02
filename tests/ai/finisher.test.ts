@@ -21,6 +21,7 @@ import { step } from '../../src/core/step';
 import { NAYO } from '../../src/data/fighters/nayo';
 import { RIFF } from '../../src/data/fighters/riff';
 import { SAPHIR } from '../../src/data/fighters/saphir';
+import { WATT } from '../../src/data/fighters/watt';
 import { TRAINING_STAGE } from '../../src/data/stages';
 import { armedStart } from '../core/finisher-helpers';
 
@@ -134,6 +135,19 @@ describe('how the CPU weighs its super (§1.11)', () => {
     expect(finisher / free).toBeGreaterThan(2.5);
     expect(finisher / free).toBeLessThan(6);
     const hold = draws('hold', 'standLight', SAPHIR);
+    expect([...hold.keys()].filter((steps) => steps.includes(String(X)))).toEqual([]);
+  });
+
+  it("weighs Watt's Plein feu after L, L, H ×4 too, none on hold", () => {
+    // From 40 px: L, L, H, H drops Plein feu past 31 px (plan-routes.test.ts), L, L, H holds it.
+    const route = [L, H, B | X].join(' ');
+    const free = draws('free', 'standLight', WATT).get(route) ?? 0;
+    const finisher = draws('finisher', 'standLight', WATT).get(route) ?? 0;
+    expect(free).toBeGreaterThan(10);
+    // Measured: 207 against 53, about 3.9 times.
+    expect(finisher / free).toBeGreaterThan(2.5);
+    expect(finisher / free).toBeLessThan(6);
+    const hold = draws('hold', 'standLight', WATT);
     expect([...hold.keys()].filter((steps) => steps.includes(String(X)))).toEqual([]);
   });
 
@@ -372,6 +386,10 @@ describe('hard CPUs in real matches, at fixed seeds (§1.11, test 17)', () => {
     expect(count(riff, (match) => match.finisher === 'Riff')).toBeGreaterThanOrEqual(2);
     const saphir = playMatches(120, SAPHIR);
     expect(count(saphir, (match) => match.finisher === 'Saphir')).toBeGreaterThanOrEqual(4);
+    // Watt lands 1 in his first 40, 2 in 120 (1.7 %): Plein feu is a short reversal (58 px), its
+    // routes drawn from 41 px at most. The one-in-40 is barely met: the owner's call.
+    const watt = playMatches(40, WATT);
+    expect(count(watt, (match) => match.finisher === 'Watt')).toBeGreaterThanOrEqual(1);
   }, 60_000);
 
   it("leave the matchup Nayo's: Riff wins 6 to 20 % of it (the 40 to 60 % of §1.11 is not met)", () => {

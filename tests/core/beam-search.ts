@@ -8,6 +8,7 @@ import { step } from '../../src/core/step';
 import { NAYO } from '../../src/data/fighters/nayo';
 import { RIFF } from '../../src/data/fighters/riff';
 import { SAPHIR } from '../../src/data/fighters/saphir';
+import { WATT } from '../../src/data/fighters/watt';
 import { TRAINING_STAGE } from '../../src/data/stages';
 import { startsMove } from './combo-helpers';
 import { searchCombos, type Command } from './combo-search';
@@ -22,8 +23,8 @@ import { facingOff } from './helpers';
  * never takes half of it (Nayo's Crochet as a CONTRE, his string, the Rewind and a juggle: 48.6 %
  * with one bar). Without gauge, no combo earns a bar. The search is the prototype's (300
  * branches a depth), which plays the Rewind too: without gauge, it finds its longest combos
- * again, Nayo's 11 hits and Riff's 12, the limit's, and Saphir's 11 (her Plongé's Rebond, 30.8 % of
- * Riff's health without gauge).
+ * again, Nayo's 11 hits and Riff's 12, the limit's, Saphir's 11 (her Plongé's Rebond, 30.8 % of
+ * Riff's health without gauge), and Watt's 12.
  */
 
 const { Light: L, Heavy: H, Special: S, Down: D, Left: B, Right: F, Dash, Boost: X } = Input;
@@ -113,12 +114,18 @@ function started(
   return (action === 'hitstun' || action === 'airHit') && comboCount > 0 ? state : null;
 }
 
-export const PAIRS: readonly (readonly [FighterTemplate, FighterTemplate, number])[] = [
+/** The tick the opponent starts its blow on, by starter, for an attacker slower than the cast's. */
+type Contres = Readonly<Record<string, number>>;
+
+export const PAIRS: readonly (readonly [FighterTemplate, FighterTemplate, number, Contres?])[] = [
   // The attacker, its opponent, the longest combo it finds.
   [NAYO, RIFF, 11],
   [RIFF, NAYO, 12],
   // On Riff, the lightest of the cast: the share of her health is the tightest.
   [SAPHIR, RIFF, 11],
+  // Watt's Marteau comes out on f12 and his Coup de pilon on f22 (Nayo's on f8 and f19): Riff
+  // starts her blow later for his to land in it.
+  [WATT, RIFF, 12, { 'H CONTRE': 8, '→H CONTRE': 17 }],
 ];
 
 /** The attacker's gauge at the start: a number of points, or refilled on every tick. */
@@ -127,7 +134,7 @@ export type SearchGauge = number | 'refilled';
 /** The beam search's tests with the attacker's gauge at `gauge`, for both fighters. */
 export function describeBeamSearch(gauge: SearchGauge): void {
   describe(`the beam search, gauge ${gauge} (§1.13)`, () => {
-    for (const [attacker, defender, longestFound] of PAIRS) {
+    for (const [attacker, defender, longestFound, contres = {}] of PAIRS) {
       const refilled = gauge === 'refilled';
       const config: MatchConfig = {
         stage: TRAINING_STAGE,
@@ -141,7 +148,9 @@ export function describeBeamSearch(gauge: SearchGauge): void {
         let longest = 0;
         let fullest = 0;
         for (const corner of [false, true]) {
-          for (const starter of STARTERS) {
+          for (const opening of STARTERS) {
+            const attacksAt = contres[opening.name];
+            const starter = attacksAt === undefined ? opening : { ...opening, attacksAt };
             const start = started(config, starter, corner, boost);
             if (!start) throw new Error(`${starter.name} did not start a combo`);
             const found = searchCombos(start, starter.name, COMMANDS, config, WIDTH);

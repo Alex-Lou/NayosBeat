@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import { NAYO as NAYO_ART } from '../../src/art/nayo';
 import { RIFF as RIFF_ART } from '../../src/art/riff';
+import { RIFF } from '../../src/data/fighters/riff';
+import { WATT } from '../../src/data/fighters/watt';
 import { ART_SCALE, cellOf } from '../../src/art/types';
 import { toPx } from '../../src/core/constants';
 import { Input, type InputBits } from '../../src/core/input';
@@ -32,6 +34,7 @@ import { VIEW_SIZE } from '../../src/render/view';
 import {
   armed,
   film,
+  COUVRE_FEU,
   FACE_B,
   LARSEN,
   LE_QUATRE,
@@ -113,6 +116,21 @@ describe("the scene's timeline on the core (§2.3, §2.9, §3.3, §3.9)", () => 
     expect(short.results).toBe(167 + VICTORY_FRAMES);
   });
 
+  it("Couvre-feu in full: the KO at 56, the victim down at t0 + 60 on Nayo's grid, the card at R + 30 (146 to 217), the results at 278", () => {
+    const played = film(COUVRE_FEU, FULL);
+    expect(cardShots(played)[0]?.card.words).toContain('ON ÉTEINT.');
+    expect(played.ko).toBe(56);
+    expect(releaseOf(played)).toBe(56 + 60);
+    expect(touchdownOf(played)).toBe(116);
+    const card = cardShots(played);
+    expect([card[0]?.t, card.at(-1)?.t, card.length]).toEqual([116 + 30, 217, 72]);
+    expect(played.results).toBe(278);
+    const short = film(COUVRE_FEU, SHORT);
+    expect(releaseOf(short)).toBe(56 + 48);
+    expect(cardShots(short).map((shot) => shot.t)).toEqual(range(104 + 12, 48));
+    expect(short.results).toBe(224);
+  });
+
   it('plays short: the natural count, the landing at t0 + 48, Riff without L’Ange, a card of 4 + 36 + 8 at R + 12', () => {
     const nayo = film(LE_QUATRE, SHORT);
     expect(nayo.ko).toBe(54);
@@ -163,6 +181,8 @@ describe('the track: whole ticks, each held 1, 2 or 3 frames (§1.14, D23)', () 
     [LARSEN, SHORT, 1],
     [FACE_B, FULL, 3],
     [FACE_B, SHORT, 1],
+    [COUVRE_FEU, FULL, 2],
+    [COUVRE_FEU, SHORT, 1],
   ] as const) {
     it(`${route.name}, ${version.comfort.staging}: the victim flies one tick every ${pace} frames`, () => {
       const played = film(route, version);
@@ -177,7 +197,7 @@ describe('the track: whole ticks, each held 1, 2 or 3 frames (§1.14, D23)', () 
   }
 
   it('plays several ticks a frame only through the core’s freeze, which shows nothing that moves', () => {
-    for (const route of [LE_QUATRE, LARSEN, FACE_B]) {
+    for (const route of [LE_QUATRE, LARSEN, FACE_B, COUVRE_FEU]) {
       const played = film(route, FULL);
       const after = played.shots.filter((shot) => shot.t > played.ko);
       for (const [i, shot] of after.entries()) {
@@ -229,6 +249,7 @@ describe('the track: whole ticks, each held 1, 2 or 3 frames (§1.14, D23)', () 
       [LE_QUATRE, 22, 23],
       [LARSEN, 22, 19],
       [FACE_B, 21, 19],
+      [COUVRE_FEU, 22, 23],
     ] as const) {
       const { config } = armed(route);
       expect(measureFlight(koStateOf(route), 0, config)).toEqual({ freeze, flight });
@@ -242,6 +263,8 @@ describe('the close up (§1.14, §2.4, §3.4)', () => {
       [LE_QUATRE, 76],
       [LARSEN, 48],
       [FACE_B, 62],
+      // Watt's from the charge (zoomFrom 'charge'), as Nayo's.
+      [COUVRE_FEU, 49],
     ] as const) {
       const played = film(route, FULL);
       const release = releaseOf(played) ?? Number.NaN;
@@ -260,6 +283,9 @@ describe('the close up (§1.14, §2.4, §3.4)', () => {
       [LE_QUATRE, RIFF_ART],
       [LARSEN, NAYO_ART],
       [FACE_B, NAYO_ART],
+      // On Riff: on Nayo, his head rises 3 px into the HUD's band at ×2, as it does under his own
+      // Le Quatre in the mirror (both launch 6 ; 2): a gap of the shared framing, reported.
+      [{ ...COUVRE_FEU, fighters: ['watt', 'riff'], templates: [WATT, RIFF] }, RIFF_ART],
     ] as const) {
       const played = film(route, FULL);
       // Nayo's victim tops out at ×2, Riff's as the camera opens again after her reprise.
@@ -390,6 +416,7 @@ describe('the match’s end (§1.10)', () => {
       [LE_QUATRE, 22],
       [LARSEN, 22],
       [FACE_B, 21],
+      [COUVRE_FEU, 22],
     ] as const) {
       const played = film(route, FULL);
       expect(played.ticksAfterKo).toBe(
@@ -462,6 +489,20 @@ describe('the fight’s bus (§1.14, §2.8, §3.8)', () => {
     expect(at(106)?.gain).toBe(0);
     expect(at(107)?.gain).toBe(1);
     expect(between(played, 107, 107)[0]?.sounds).toEqual(['fall', 'remix']);
+  });
+
+  it('Watt: the hammer sounds, the room fades out in 6 frames, the fall, and the bass drops as the card ends', () => {
+    const played = film(COUVRE_FEU, FULL);
+    const at = (t: number) => between(played, t, t)[0]?.bus;
+    expect(between(played, 56, 56)[0]?.sounds).toEqual(['heavyHit']);
+    // hush: from t0 + 9, a fade of 6 frames, then silence through the flight.
+    expect(at(56 + 8)?.gain).toBe(1);
+    expect(at(56 + 9 + 6)?.gain).toBe(0);
+    expect(at(115)?.gain).toBe(0);
+    expect(at(116)?.gain).toBe(1);
+    expect(between(played, 116, 116)[0]?.sounds).toEqual(['fall']);
+    // The power cut's bass, on the card's last frame (docs/watt.md §8.3).
+    expect(between(played, 217, 217)[0]?.sounds).toEqual(['super']);
   });
 
   it('hands the bus back whole and lets go of everything on dispose, mid-scene too', () => {
