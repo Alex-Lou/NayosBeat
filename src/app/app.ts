@@ -53,6 +53,7 @@ import {
 import { controlsContent, currentDevices, helpPages } from './controls-content';
 import { installMethod, onInstallChange, promptInstall } from './install';
 import { multiCatalog } from './multi-catalog';
+import { keepDesync } from './desync-store';
 import { MultiScreen } from './multi-screen';
 import type { OnlineMatch, OnlineEnd } from './online-match';
 import { nameStore } from './name-store';
@@ -396,7 +397,7 @@ export class App {
    * The « Multi » screen (docs/multijoueur.md §7): its network code, PeerJS with it, is loaded as
    * the search first starts, never with the game. Back to the main menu closes it all.
    */
-  private showMulti(notice?: string): void {
+  private showMulti(notice?: string, replay?: string): void {
     this.show(
       new MultiScreen(this.root, {
         connect: () =>
@@ -407,6 +408,7 @@ export class App {
         feedback: this.menuFeedback,
         still: isStill(this.comfort),
         ...(notice ? { notice } : {}),
+        ...(replay ? { replay } : {}),
         onBack: () => {
           this.showMainMenu();
         },
@@ -446,9 +448,10 @@ export class App {
         this.startFight(true);
       },
       ended: (end) => {
-        if (end.kind === 'desync') console.error(`Online match desynchronized at tick ${end.tick}`);
+        const replay = end.kind === 'desync' ? keepDesync(end.replay) : undefined;
         this.leaveOnline(
           ONLINE_ENDS[end.kind].replace('{tick}', String(end.kind === 'desync' ? end.tick : '')),
+          replay,
         );
       },
     });
@@ -521,13 +524,14 @@ export class App {
   }
 
   /** The online match over: its link closed (the other one is told), back to « Multi ». */
-  private leaveOnline(notice: string): void {
+  /** `replay`: a desync's, which the « Multi » menu offers to copy. */
+  private leaveOnline(notice: string, replay?: string): void {
     this.online?.close();
     this.online = undefined;
     this.onlineBadge?.remove();
     this.onlineBadge = undefined;
     this.stopFight();
-    this.showMulti(notice);
+    this.showMulti(notice, replay);
   }
 
   /**
@@ -1039,7 +1043,11 @@ export class App {
         else this.showResults(winner);
       },
       ...(online && {
-        online: { player: online.player, source: (struggle) => online.source(struggle) },
+        online: {
+          player: online.player,
+          source: (struggle) => online.source(struggle),
+          held: () => online.held(),
+        },
       }),
       onShown: () => {
         card.leave();

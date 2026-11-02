@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { delayFor, OnlineMatch, type OnlineEnd } from '../../src/app/online-match';
-import type { InputBits } from '../../src/core/input';
+import { Input, type InputBits } from '../../src/core/input';
+import { matchWinner } from '../../src/core/round';
+import { resultsDue } from '../../src/render/finisher-scene';
 import { createInitialState } from '../../src/core/state';
 import { step } from '../../src/core/step';
 import { HeldStruggle } from '../../src/input/held-struggle';
@@ -8,7 +10,7 @@ import { HASH_EVERY } from '../../src/net/desync';
 import { encodeMessage, FLAG_PAUSE, MAX_DELAY } from '../../src/net/protocol';
 import { Session } from '../../src/net/session';
 import { stateHash } from '../../src/net/state-hash';
-import { parseInput, replayConfig, type Replay } from '../../tools/replays/replay';
+import { parseInput, playReplay, replayConfig, type Replay } from '../../tools/replays/replay';
 import { channelPair, FakeServer, type FakeChannel } from '../net/fake-net';
 
 const REPLAY = Object.values(
@@ -57,11 +59,13 @@ function device(channel: FakeChannel, role: 'host' | 'guest', delay = 2) {
     /** Any flag of the wire that reached the fight's inputs (none should). */
     flags: 0,
     source: match.source(new HeldStruggle(false)),
+    /** What this device's player holds on each tick of its fight: the golden replay's, by default. */
+    script: (tick: number, player: 0 | 1): InputBits => SCRIPT[tick]?.[player] ?? 0,
     /** A frame: up to `count` ticks, this device's player reading the script, then the flush. */
     frame(count = 1) {
       const playable = fight.source.playable(count);
       for (let i = 0; i < playable; i++) {
-        const own = SCRIPT[fight.ticks]?.[match.player] ?? 0;
+        const own = fight.script(fight.ticks, match.player);
         const inputs = fight.source.next([own, 0], fight.state);
         if (!inputs) break;
         fight.flags |= (inputs[0] | inputs[1]) & FLAG_PAUSE;
@@ -187,16 +191,88 @@ describe('an online match (docs/multijoueur.md §9.6)', () => {
     expect([...host.ends, ...guest.ends]).toEqual([]);
   });
 
-  it('ends on a desync, told with its tick, on both devices', async () => {
+  it('ends on a desync, told with its tick, on both devices, the host fight as a replay', async () => {
     const { host, guest } = setup();
-    await play([host, guest], 10);
+    // Well into the fight, where the inputs count (the round's intro ignores them).
+    await play([host, guest], 200);
+    const at = host.ticks;
     // The guest's fight goes its own way: its state is not the host's any more.
     const [a, b] = guest.state.fighters;
     guest.state = { ...guest.state, fighters: [{ ...a, health: a.health - 1 }, b] };
     await play([host, guest], HASH_EVERY + 20);
-    expect(host.ends).toEqual([{ kind: 'desync', tick: HASH_EVERY }]);
-    expect(guest.ends).toEqual([{ kind: 'desync', tick: HASH_EVERY }]);
+    const tick = Math.ceil(at / HASH_EVERY) * HASH_EVERY;
+    expect(host.ends).toMatchObject([{ kind: 'desync', tick }]);
+    expect(guest.ends).toMatchObject([{ kind: 'desync', tick }]);
+    const end = host.ends[0];
+    if (end?.kind !== 'desync') throw new Error('No desync');
+    expect(end.replay.fighters).toEqual(PLAN.fighters);
+    expect(end.replay.description).toBe(
+      `Match en ligne désynchronisé au tic ${tick}, joué par l'hôte (délai 2)`,
+    );
+    // Played again, the replay is the fight the host saw, tick by tick.
+    const replayed = replayHashes({ ...REPLAY, inputs: end.replay.inputs });
+    expect(replayed.length).toBeGreaterThan(at);
+    expect(replayed).toEqual(host.hashes.slice(0, replayed.length));
   });
+
+  it('compares no hash once the match is decided, whoever won: its end plays itself', async () => {
+    for (const wins of [
+      [2, 0],
+      [1, 2],
+    ] as const) {
+      const { host, guest } = setup();
+      await play([host, guest], 10);
+      for (const one of [host, guest]) {
+        const { round } = one.state;
+        one.state = { ...one.state, round: { ...round, wins, phase: 'roundEnd', phaseFrame: 0 } };
+      }
+      // A skip of the Finisher's scene on one device only: its state jumps ahead of the other's.
+      const [a, b] = guest.state.fighters;
+      guest.state = { ...guest.state, fighters: [{ ...a, health: a.health - 1 }, b] };
+      await play([host, guest], HASH_EVERY + 20);
+      expect([...host.ends, ...guest.ends], String(wins)).toEqual([]);
+      vi.useRealTimers();
+    }
+  });
+
+  it('tells what each player held on the last tick, as both devices know it', async () => {
+    const { host, guest } = setup();
+    host.script = () => Input.Light;
+    guest.script = () => Input.Heavy;
+    await play([host, guest], 10);
+    expect(host.match.held()).toEqual([Input.Light, Input.Heavy]);
+    expect(guest.match.held()).toEqual([Input.Light, Input.Heavy]);
+  });
+
+  it('plays a whole match to its end on the same tick, then the rematch from its first', async () => {
+    const { host, guest } = setup(3);
+    // The host walks in and hits hard, again and again; the guest does nothing.
+    const pressing = (tick: number, player: 0 | 1): InputBits =>
+      player === 0 ? Input.Right | (tick % 24 < 2 ? Input.Heavy : 0) : 0;
+    host.script = pressing;
+    guest.script = pressing;
+    for (let frame = 0; frame < 20_000; frame++) {
+      if (resultsDue(host.state) && resultsDue(guest.state)) break;
+      for (const one of [host, guest]) one.frame(4);
+      await vi.advanceTimersByTimeAsync(16);
+    }
+    expect(resultsDue(host.state) && resultsDue(guest.state)).toBe(true);
+    expect(host.ticks).toBe(guest.ticks);
+    expect(guest.hashes).toEqual(host.hashes);
+    expect(matchWinner(host.state.round)).toBe(0);
+    expect(host.source.playable(4)).toBe(0);
+    host.match.wantRematch();
+    guest.match.wantRematch();
+    await play([host, guest], 3);
+    expect(host.told).toEqual(['rematch']);
+    expect(guest.told).toEqual(['rematch']);
+    host.ticks = 0;
+    guest.ticks = 0;
+    await play([host, guest], 200);
+    expect(host.state.round.number).toBe(1);
+    expect(guest.hashes.slice(0, 150)).toEqual(host.hashes.slice(0, 150));
+    expect([...host.ends, ...guest.ends]).toEqual([]);
+  }, 60_000);
 
   it('ends when the other leaves, and cuts a link that speaks out of turn', async () => {
     const left = setup();
@@ -221,3 +297,10 @@ describe('an online match (docs/multijoueur.md §9.6)', () => {
     expect(delayFor(2000, MAX_DELAY)).toBe(MAX_DELAY);
   });
 });
+
+/** The hash of the state after every tick of `replay`. */
+function replayHashes(replay: Replay): string[] {
+  const hashes: string[] = [];
+  playReplay(replay, (state) => hashes.push(stateHash(state)));
+  return hashes;
+}

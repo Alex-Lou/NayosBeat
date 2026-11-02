@@ -44,6 +44,7 @@ function device(
   server: FakeServer,
   name: string,
   connect?: () => Promise<Matchmaker>,
+  back?: { notice: string; replay: string },
 ) {
   const root = new FakeElement('div', true);
   page.body.appendChild(root);
@@ -57,6 +58,7 @@ function device(
     names,
     onBack,
     onFight: (match) => matches.push(match),
+    ...back,
   });
   const texts = () => byClass(root, 'menu-notice').map((node) => node.textContent);
   const find = (className: string, label: string) =>
@@ -261,6 +263,26 @@ describe('the « Multi » screens (docs/multijoueur.md §7)', () => {
     expect(page.listeners()).toBe(0);
     expect(page.pendingFrames()).toBe(0);
     expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('says how the match ended, and offers to copy a desync’s replay', async () => {
+    const { page, server } = setup();
+    const writeText = vi.fn(() => Promise.resolve());
+    vi.stubGlobal('navigator', { clipboard: { writeText } });
+    const back = { notice: 'Désynchronisé au tic 60 : le match est arrêté.', replay: '{"x":1}' };
+    const me = device(page, server, 'Alex', undefined, back);
+    expect(me.texts()).toEqual([back.notice]);
+    me.choose('Copier le replay');
+    await flush();
+    expect(writeText).toHaveBeenCalledWith('{"x":1}');
+    expect(me.texts()).toEqual(['Replay copié : colle-le dans un message.']);
+    // Where the browser refuses the clipboard, the console still has it.
+    writeText.mockImplementation(() => Promise.reject(new Error('denied')));
+    me.choose('Copier le replay');
+    await flush();
+    expect(me.texts()[0]).toMatch(/^La copie a échoué/);
+    // Without a desync, nothing to copy.
+    expect(device(page, server, 'Lou').has('Copier le replay')).toBe(false);
   });
 
   it('goes back with « Retour »', () => {
