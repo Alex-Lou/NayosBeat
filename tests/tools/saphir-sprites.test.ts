@@ -57,6 +57,8 @@ describe('Saphir strips: hands behind her back', () => {
     'standHeavy',
     'special',
     'specialAntiAir',
+    'specialForward',
+    'super',
   ] as const)('%s', (sheet) => {
     SAPHIR_POSES[sheet].forEach((pose, frame) => {
       const skeleton = solve(pose, SAPHIR_BODY);
@@ -154,6 +156,8 @@ describe('Saphir strips: reach', () => {
     'chainLight',
     'lightFinisher',
     'chainHeavy',
+    'specialForward',
+    'super',
   ] as const;
   const ANTI_AIRS: ReadonlySet<string> = new Set(['specialAntiAir']);
   /** Her strikes on the strips drawn so far: the moves and their Remixes playing them. */
@@ -171,8 +175,11 @@ describe('Saphir strips: reach', () => {
         'specialAntiAir',
         'specialAntiAirBoost',
         'specialBoost',
+        'specialForward',
+        'specialForwardBoost',
         'standHeavy',
         'standLight',
+        'super',
       ].sort(),
     );
   });
