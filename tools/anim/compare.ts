@@ -20,10 +20,12 @@ import { GREYBOX_COLORS, GROUND_Y } from '../../src/render/greybox-stage.ts';
 import { toPx } from '../../src/core/constants.ts';
 import { fileUrl, option, type Film, type FilmTick } from './film.ts';
 
-const CELLS: Readonly<Record<FighterId, Readonly<Record<string, Cell>>>> = {
-  nayo: NAYO_CELLS,
-  riff: RIFF_CELLS,
-};
+/** The cells of the fighters that have art: one in grey boxes (Watt, docs/watt.md) has none. */
+const CELLS: Readonly<Record<Extract<FighterId, 'nayo' | 'riff'>, Readonly<Record<string, Cell>>>> =
+  {
+    nayo: NAYO_CELLS,
+    riff: RIFF_CELLS,
+  };
 
 /** Everything the page plays from. */
 interface PageData {

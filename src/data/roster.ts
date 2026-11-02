@@ -1,8 +1,9 @@
 import type { FighterTemplate } from '../core/config';
 import { NAYO } from './fighters/nayo';
 import { RIFF } from './fighters/riff';
+import { WATT } from './fighters/watt';
 
-export type FighterId = 'nayo' | 'riff';
+export type FighterId = 'nayo' | 'riff' | 'watt';
 
 export interface RosterEntry {
   readonly id: FighterId;
@@ -29,6 +30,13 @@ export const ROSTER: readonly RosterEntry[] = [
     // The punk of Zen-Tazzer, her identity in combat v2 (docs/combat-v2.md §6.2, §17.3).
     description: 'Punk de rue explosive · dash · Glissade · deux overheads · moins de vie',
     finisher: 'Larsen',
+  },
+  {
+    id: 'watt',
+    template: WATT,
+    // In grey boxes until his art (docs/watt.md): the owner's call, to play him online now.
+    description: "Roadie à tête d'ampoule · prise longue · Surcharge · Plein feu",
+    finisher: 'Couvre-feu',
   },
 ];
 

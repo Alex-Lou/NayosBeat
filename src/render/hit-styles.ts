@@ -39,6 +39,11 @@ const STYLES: Readonly<Record<FighterId, Readonly<Record<Colorway, HitStyle>>>> 
     // On the HUD, her crimson: her gold would be the health bar's yellow.
     alt: { shape: 'claw', energy: 0xffc83a, strike: 0xe0283c, core: 0xffe8ea, hud: 0xe0283c },
   },
+  // Watt: the clamps that close, in VU green; UV in his second outfit (docs/watt.md §9).
+  watt: {
+    main: { shape: 'claw', energy: 0x1ec85a, strike: 0xd8ffe6, core: 0xffffff },
+    alt: { shape: 'claw', energy: 0xe070ff, strike: 0xd8ffe6, core: 0xffffff },
+  },
 };
 
 export function hitStyleOf(fighter: FighterId, colorway: Colorway = 'main'): HitStyle {

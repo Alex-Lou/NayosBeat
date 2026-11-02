@@ -9,7 +9,7 @@ import { artOf } from '../../src/art';
 import { ROSTER, type FighterId } from '../../src/data/roster';
 import { FighterSelect } from '../../src/ui/fighter-select';
 import { installFakePage, type FakeElement } from '../render/fake-dom';
-import { cellPixels, savedStrip, type ColorwayName } from '../render/fx-strips';
+import { cellPixels, savedStrip, type ColorwayName, type FighterName } from '../render/fx-strips';
 
 /** The elements under `node` (itself included) that have the class `name`, in page order. */
 function byClass(node: FakeElement, name: string): FakeElement[] {
@@ -56,7 +56,7 @@ function sampled(
 
 /** How many pixels of `view` of the cell an element styled `style` shows unlike `cell` does. */
 async function wrongPixels(
-  fighter: FighterId,
+  fighter: FighterName,
   colorway: ColorwayName,
   style: Readonly<Record<string, unknown>>,
   frame: number,
@@ -81,6 +81,9 @@ async function wrongPixels(
   return wrong;
 }
 
+/** Fighters in the roster without art yet, by the owner's decision: they play in grey boxes. */
+const GREY_BOXES: ReadonlySet<FighterId> = new Set<FighterId>(['watt']);
+
 describe('select screen fighters', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
@@ -89,7 +92,13 @@ describe('select screen fighters', () => {
   it('offers the roster in its order, each fighter in both its colorways', () => {
     const fighters = selectFighters();
     expect(fighters.map(({ id }) => id)).toEqual(ROSTER.map(({ id }) => id));
-    for (const { look, mirrorLook } of fighters) {
+    for (const { id, look, mirrorLook } of fighters) {
+      // A fighter playing in grey boxes until his art shows no one on his tile (the owner's
+      // call, to play Watt online before his art: docs/watt.md). Every other one has both looks.
+      if (GREY_BOXES.has(id)) {
+        expect(look).toBeUndefined();
+        continue;
+      }
       expect(look).toBeDefined();
       expect(mirrorLook).toBeDefined();
       expect(mirrorLook?.strip).not.toBe(look?.strip);
