@@ -67,6 +67,16 @@ describe('Saphir strips: hands behind her back', () => {
     'crouchHeavy',
     'jumpLight',
     'jumpHeavy',
+    'jump',
+    'jumpForward',
+    'dashForward',
+    'dashBack',
+    'trip',
+    'airHit',
+    'knockdown',
+    'getup',
+    'ko',
+    'tech',
   ] as const)('%s', (sheet) => {
     SAPHIR_POSES[sheet].forEach((pose, frame) => {
       const skeleton = solve(pose, SAPHIR_BODY);
