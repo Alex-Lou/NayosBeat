@@ -110,6 +110,22 @@ Un combattant n'est « vivant et pro » que si, **à la taille d'un téléphone*
 5. **Sa lumière vit** : lumière de rue dès la porte 2, lumières de coup figées sur les spéciaux, le Boost et la super, lumières vivantes sur les 2 ou 3 coups signatures.
 6. **Son Boost** a ses propres images et sa propre lumière, nettement plus puissante que la version normale.
 7. **Tout est net** : traits fins, pas de bouillie, pas de contour d'encre épais, rien sous les pieds.
+8. **L'animation est fluide** :
+   - des images intermédiaires sur les transitions, les vols, les chutes et les réactions ([animation-plan.md](animation-plan.md)) ;
+   - pas d'à-coup entre deux clips ;
+   - un rythme qui se lit en phrase dans les enchaînements.
+9. **Les particules sont soignées** :
+   - de petites formes nettes, à sa signature (pas des carrés génériques) ;
+   - une trajectoire et un amorti crédibles, une durée de vie courte ;
+   - un départ dans le sens du coup ;
+   - dans une réserve fixe, sans allocation par image.
+10. **Les couleurs sont dans son thème** :
+    - une couleur d'énergie à lui, lisible à côté de celles des autres (perso-3 §4.7) ;
+    - la même famille de teintes dans ses sprites, ses effets, ses particules, sa lumière et son Boost ;
+    - une seconde tenue qui contraste ;
+    - le daltonisme vérifié en simulation.
+
+En un mot, la demande du propriétaire : « Animation fluide, particules chouettes, couleurs en thème. Du pro, quoi. »
 
 ---
 
@@ -191,7 +207,7 @@ Une PR **courte**, ouverte seulement quand le propriétaire dit « go » : l'id 
 À coller tel quel dans une nouvelle session Claude Code sur `Alex-Lou/NayosBeat` :
 
 ```text
-Tu es l'agent design de NayosBeat, un jeu de combat 2D en pixel art (Phaser 4, TypeScript strict), en ligne sur GitHub Pages. Ta mission : créer les prochains combattants à partir de l'existant de Zen-Tazzer, le jeu du propriétaire, en les rendant « hyper stylés, propres, utilisables dans le jeu », vivants et pro. Chaque combattant est livré entier et indépendant, hors du roster, puis branché par une courte PR finale quand le propriétaire dit « go ».
+Tu es l'agent design de NayosBeat, un jeu de combat 2D en pixel art (Phaser 4, TypeScript strict), en ligne sur GitHub Pages. Ta mission : créer les prochains combattants à partir de l'existant de Zen-Tazzer, le jeu du propriétaire, en les rendant « hyper stylés, propres, utilisables dans le jeu », vivants et pro : animation fluide, particules soignées, couleurs dans le thème de chacun. Chaque combattant est livré entier et indépendant, hors du roster, puis branché par une courte PR finale quand le propriétaire dit « go ».
 
 Avant toute chose :
 1. Lis docs/art/passation-personnages.md en entier. C'est ta passation, et il fait foi en cas de doute. Lis ensuite les documents qu'il cite (docs/art/perso-3.md, docs/saphir.md, docs/art/nayo-lumiere.md, riff-lumiere.md, nayo-essence.md, nayo-vfx.md, nayo-vivante.md, docs/flashs.md §5).
