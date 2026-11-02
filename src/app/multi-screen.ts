@@ -37,6 +37,8 @@ export interface MultiScreenOptions {
   readonly still?: boolean;
   /** What the menu says as it opens (back from an online match: how it ended). */
   readonly notice?: string;
+  /** A desync's replay (desync-store.ts): the menu offers to copy it, to send it on. */
+  readonly replay?: string;
   readonly onBack: () => void;
   /**
    * Both agreed and the host started the fight: the match, its link handed over (this screen
@@ -153,6 +155,22 @@ export class MultiScreen {
       },
       { label: 'Retour', onSelect: this.options.onBack },
     ];
+    const { replay } = this.options;
+    if (replay) {
+      items.splice(2, 0, {
+        label: 'Copier le replay',
+        hint: 'De la désynchronisation, pour l’envoyer',
+        onSelect: () => {
+          void copy(replay).then((copied) => {
+            this.showIdle(
+              copied
+                ? 'Replay copié : colle-le dans un message.'
+                : 'La copie a échoué : le replay est dans la console du navigateur.',
+            );
+          });
+        },
+      });
+    }
     this.showMenu([text], items, this.options.onBack);
   }
 
@@ -520,5 +538,15 @@ export class MultiScreen {
     this.screen = screen;
     this.shownKey = '';
     this.linkLine = undefined;
+  }
+}
+
+/** `text` on the clipboard; false where the browser refuses it. */
+async function copy(text: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    return false;
   }
 }

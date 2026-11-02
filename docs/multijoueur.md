@@ -21,7 +21,7 @@ On ne passe pas une porte sans le « oui » du propriétaire.
 |---|---|---|
 | 0, la preuve | Recherche automatique, ping affiché, rapport, CSP, dépendance, questions | **validée le 2 novembre 2026** |
 | 1, le salon | Pseudo, « Adversaire trouvé : … » à accepter ou refuser, l'hôte choisit la map, chacun son combattant ; une déconnexion ramène au menu | **livrée, en attente du « oui »** |
-| 2, le combat en lockstep | Un match complet et la revanche, synchrones (pause, fin de round, Finisher, KO), hash anti-désynchronisation, indicateur du ping et du délai | en cours, en trois tranches (§9.5) : **2a et 2b livrées** |
+| 2, le combat en lockstep | Un match complet et la revanche, synchrones (pause, fin de round, Finisher, KO), hash anti-désynchronisation, indicateur du ping et du délai | en trois tranches (§9.5) : **livrée, en attente du « oui »** |
 | 3, le rollback | Délai ressenti de 0 ou 1 tic sur Wi-Fi, effets jamais doublés, tests de resimulation | à faire |
 | 4, la finition | À distance, en 4G, reprise après une coupure courte, aide du mode, mesures sur un téléphone modeste | à faire |
 
@@ -288,7 +288,8 @@ Une course trouvée en écrivant la porte 1, et corrigée : l'hôte envoie son p
 ### 9.3 Les désynchronisations
 
 - Un hash de l'état est échangé tous les 60 tics (`HASH_EVERY`, une fois par seconde) : `stateHash`, FNV-1a, celui des replays dorés. Il a été déplacé tel quel dans `src/net/state-hash.ts` (les replays gardent leur hash, la preuve que rien n'a changé). `src/net/desync.ts` garde le premier tic où les deux hashes diffèrent.
-- Une différence s'affiche en clair (« Désynchronisé au tic X »). Elle s'enregistre avec les deux suites d'entrées, au format des replays dorés, pour pouvoir la rejouer.
+- Une différence s'affiche en clair (« Désynchronisé au tic X ») et arrête le match. **Fait (tranche 2c)** : elle s'enregistre au format des replays dorés (`src/net/replay-record.ts`), avec les entrées des deux joueurs à chaque tic, telles que l'appareil les a jouées. Le replay est gardé sur l'appareil (`nayosbeat.desync`) et écrit dans la console, et le menu « Multi » propose « Copier le replay » : depuis un téléphone, il suffit de le coller dans un message. Rejoué (`tools/replays/replay.ts`, puis `npm run replays:update` pour son hash), il refait le combat de cet appareil, tic par tic (testé).
+- **Plus de hash une fois le match décidé** (un joueur a gagné ses rounds). La fin du match se joue alors toute seule : le cœur ignore les entrées hors de la phase de combat, et un « passer » de la scène du Finisher, fait par chaque appareil à ses propres images, fait avancer l'état d'un coup. Comparer encore les hashes signalerait une fausse désynchronisation.
 
 ### 9.4 Ce que la lecture du code a déjà trouvé (à régler à la porte 2)
 
@@ -304,7 +305,7 @@ Une course trouvée en écrivant la porte 1, et corrigée : l'hôte envoie son p
 |---|---|---|
 | 2a | Le lockstep et le contrôle de désynchronisation, purs, et leurs tests sur les replays dorés ; le hash d'état passé dans `src` | livrée |
 | 2b | La scène du combat lit ses entrées d'une « source » (refactor sans changement de comportement, vérifié par les replays), puis le combat en ligne depuis le salon : pause partagée, coupure ramenée au menu sans vainqueur, délai mesuré au ping et affiché, revanche quand les deux la veulent | livrée (§9.6) |
-| 2c | La scène du Finisher passée seulement quand les deux tiennent un bouton, et le replay d'une désynchronisation. D'ici là, en ligne, la scène se joue en entier : sans son « passer », elle ne fait que cadencer les tics, et rien ne se désynchronise | à faire |
+| 2c | La scène du Finisher passée seulement quand les deux tiennent un bouton, et le replay d'une désynchronisation | livrée (§9.3, §9.6) |
 
 **Les réponses du propriétaire pour la porte 2 (2 novembre 2026)**, chacune la recommandation : une coupure en plein match ramène au menu sans vainqueur ; le délai est mesuré au ping au début du match, puis gardé et affiché ; la revanche part quand les deux la veulent ; la scène lit ses entrées d'une « source », un seul combat pour le local et le Multi.
 
@@ -317,7 +318,8 @@ Une course trouvée en écrivant la porte 1, et corrigée : l'hôte envoie son p
   - **La pause partagée** : la touche de pause demande la pause, qui part avec la prochaine entrée (`FLAG_PAUSE`). Les deux appareils la prennent après le même tic, et le menu dit qui l'a demandée. « Reprendre », d'un côté ou de l'autre, relance les deux ; « Quitter » arrête le match pour les deux.
   - **La fin du match** : le combat s'arrête sur le tic où le match est décidé (`resultsDue`, l'état seul), le même des deux côtés. Les résultats proposent « Revanche », qui part quand les deux l'ont choisie, chaque combat depuis son premier tic, et « Quitter ».
   - **Une coupure, un message invalide ou une désynchronisation** arrêtent le match sans vainqueur et ramènent au menu « Multi », avec leur phrase (« Désynchronisé au tic X » pour la dernière).
-- **Ce qui est différé à la tranche 2c** : la scène du Finisher n'est passée par personne en ligne (« passer » ferait avancer le match de ce que l'appareil seul tient) ; le replay d'une désynchronisation.
+- **La scène du Finisher (tranche 2c)** : elle passe, comme en local à deux, quand **les deux** joueurs tiennent un bouton (la règle de `finisher-scene.ts`, « tous les humains »). Chacun sait ce que l'autre tient par le flux d'entrées : ce que chaque joueur tenait au dernier tic joué (`OnlineMatch.held`), le même sur les deux appareils. Le match étant décidé, rien n'est plus comparé (§9.3).
+- **La revanche sur un match entier** est testée (`tests/app/online-match.test.ts`) : deux appareils jouent un match jusqu'à sa fin, sur le même tic et avec le même hash à chaque tic, puis la revanche repart du premier tic.
 
 ---
 

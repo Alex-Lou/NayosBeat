@@ -120,12 +120,13 @@ export interface FightSceneData {
   readonly onMatchEnd: (winner: 0 | 1 | null) => void;
   /**
    * Online (docs/multijoueur.md §9.6): the fighter this device plays, its controls being player
-   * 1's, and the match's source of inputs (the lockstep). Nobody skips the Finisher's scene there
-   * yet (gate 2c): a skip plays the match on unseen, from what this device alone holds.
+   * 1's, the match's source of inputs (the lockstep), and what each player held on the last tick
+   * as both devices know it: the Finisher's scene passes when both hold a button.
    */
   readonly online?: {
     readonly player: 0 | 1;
     readonly source: (struggle: HeldStruggle) => TickSource;
+    readonly held: () => readonly [InputBits, InputBits];
   };
   /** Called once, as the fight's first frame is drawn: what covered the loading may go. */
   readonly onShown?: () => void;
@@ -488,7 +489,7 @@ export class FightScene extends Phaser.Scene {
       budget,
       comfort,
       mode,
-      humans: this.sceneData.online ? [] : this.cpu ? [0] : [0, 1],
+      humans: this.cpu ? [0] : [0, 1],
       seen: this.sceneData.finishersSeen,
     });
     this.runtime = { ...runtime, finisherScene };
@@ -803,7 +804,8 @@ export class FightScene extends Phaser.Scene {
       top: this.cameraTop,
       viewLeft: toPx(this.state.cameraX) - VIEW_SIZE.width / 2,
     };
-    scene.update(this.state, this.sceneData.online ? NEUTRAL : runtime.inputs.held(pads), camera);
+    const { online } = this.sceneData;
+    scene.update(this.state, online ? online.held() : runtime.inputs.held(pads), camera);
     this.playUnseen(scene.takeSkipped());
     if (scene.wantsFastForward()) {
       this.state = playToResults(this.state, this.config);

@@ -14,11 +14,12 @@ import type {
   TrainingGauge,
   TrainingStart,
 } from '../../src/core/config.ts';
-import { Input, type InputBits } from '../../src/core/input.ts';
+import type { InputBits } from '../../src/core/input.ts';
 import { createInitialState, type GameState } from '../../src/core/state.ts';
 import { step } from '../../src/core/step.ts';
 import { templateOf, type FighterId } from '../../src/data/roster.ts';
 import { TRAINING_STAGE } from '../../src/data/stages.ts';
+import { REPLAY_BUTTONS } from '../../src/net/replay-record.ts';
 import { canonicalText, FNV_OFFSET, fnv, hex } from '../../src/net/state-hash.ts';
 
 export { FIGHTER_FIELDS, GAME_FIELDS, stateHash } from '../../src/net/state-hash.ts';
@@ -44,19 +45,7 @@ export interface Replay {
   readonly hash: string;
 }
 
-const BUTTONS: Readonly<Record<string, InputBits>> = {
-  up: Input.Up,
-  down: Input.Down,
-  left: Input.Left,
-  right: Input.Right,
-  jump: Input.Jump,
-  light: Input.Light,
-  heavy: Input.Heavy,
-  special: Input.Special,
-  grab: Input.Grab,
-  dash: Input.Dash,
-  boost: Input.Boost,
-};
+const BUTTONS = REPLAY_BUTTONS;
 
 export function parseInput(written: string): InputBits {
   if (written === '') return 0;
