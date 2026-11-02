@@ -109,7 +109,7 @@ Pour un chantier précis, colle plutôt le prompt qui lui correspond : [prompts/
 
 ## 5. Installation A : ton PC à la maison, piloté depuis le téléphone
 
-C'est le plus confortable : le PC fait le travail lourd (tests, build, captures), et le téléphone sert d'écran et de clavier.
+Le plus confortable quand le PC est allumé : il fait le travail lourd (tests, build, captures), et le téléphone sert d'écran et de clavier. **La voie principale du propriétaire est le téléphone seul : §6.**
 
 **En bref** : `tools/remote/setup.sh --opencode` sur le PC vérifie tout, installe les dépendances et OpenCode. Ensuite, depuis le téléphone, une seule commande : `npm run nayos`. Le détail suit.
 
@@ -166,34 +166,38 @@ Chaque action se lance aussi directement : `npm run nayos -- check`, `dev`, `sta
 
 ---
 
-## 6. Installation B : tout sur le téléphone (Termux)
+## 6. Installation B : tout sur le téléphone (Android, Termux), la voie principale
 
-En secours, quand le PC est éteint. C'est plus lent ; le build et les tests passent, mais les films (Chromium) ne marchent pas.
+Le propriétaire veut d'abord que tout marche **sur son téléphone, sans PC**. Tout tourne dans une **Debian à l'intérieur de Termux** (`proot-distro`) : le dépôt, Node 22, OpenCode, les tests, au même endroit. Le binaire officiel d'OpenCode ne tourne pas dans Termux nu, mais il tourne dans cette Debian, qui est un vrai Linux arm64. C'est plus lent qu'un PC : le build et les tests passent, mais les films (Chromium) ne marchent pas.
 
-1. **Termux** : installe-le depuis F-Droid (la version du Play Store est ancienne), puis :
+1. **Termux** : installe-le depuis **F-Droid** (la version du Play Store est ancienne). Dans les réglages Android, désactive l'**optimisation de batterie** pour Termux, sinon Android le coupe en arrière-plan.
+2. **Debian dans Termux** :
    ```sh
-   pkg update && pkg install git nodejs-lts lua54 tmux openssh gh
+   pkg update && pkg upgrade
+   pkg install proot-distro
+   proot-distro install debian
+   proot-distro login debian     # pour y revenir plus tard : la même commande
    ```
-2. **Le dépôt** :
+3. **Dans Debian, les outils** :
+   ```sh
+   apt update && apt install -y curl git ca-certificates tmux lua5.4
+   curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
+   apt install -y nodejs
+   ```
+4. **Le jeu, et OpenCode** :
    ```sh
    git clone https://github.com/Alex-Lou/NayosBeat.git
    cd NayosBeat
    tools/remote/setup.sh --opencode
    ```
-   Dans Termux, le script vérifie les outils, lance `npm ci`, puis indique la marche à suivre pour OpenCode (ci-dessous).
-3. **OpenCode dans Termux** : le binaire officiel ne tourne pas directement dans Termux. Deux voies :
-   - **Debian dans Termux** (la plus sûre), puis l'installation normale de §5.1, étape 5, et l'éditeur à l'intérieur :
-     ```sh
-     pkg install proot-distro
-     proot-distro install debian
-     proot-distro login debian
-     ```
-   - **un portage communautaire pour Termux**, plus rapide mais non officiel : à vérifier avant de lui confier ta clé.
-4. **Le cockpit et le jeu** : `npm run nayos`, comme sur le PC. « Serveur de dev » donne `http://localhost:5173`, à ouvrir dans le navigateur du téléphone.
+   Dans Debian, le script se comporte comme sur un PC Linux : il vérifie les outils, lance `npm ci` et installe OpenCode depuis npm. L'absence de Tailscale y est normale.
+5. **La clé** : `opencode`, puis `/connect`, puis **OpenCode** ; colle ta clé, puis `/models`. Une clé créée en **Restricted**, avec **Models : Request** et tout le reste sur **None**, suffit.
+6. **Au quotidien** : `npm run nayos`, le cockpit dans `tmux`. « Serveur de dev » donne `http://localhost:5173`, à ouvrir dans Chrome sur le téléphone : Debian et Android partagent le même réseau.
+7. **Pousser sur GitHub** : un **jeton à grain fin** limité au dépôt NayosBeat (« Contents » et « Pull requests » en lecture et écriture), donné à git ou à `gh auth login`. Jamais dans un fichier du dépôt.
 
 **Incertitudes** :
-- je n'ai pas pu essayer OpenCode dans Termux ;
-- `npm ci` peut échouer dans Termux si une dépendance a besoin d'un binaire natif. Le dépôt n'en a pas d'obligatoire, mais c'est à vérifier.
+- je n'ai pas pu essayer OpenCode dans cette Debian sur un vrai téléphone ;
+- un portage communautaire d'OpenCode pour Termux nu existe, plus rapide mais non officiel : à éviter tant que la voie Debian marche.
 
 ---
 
