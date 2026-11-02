@@ -12,6 +12,12 @@ export const PING_INTERVAL_MS = 1000;
 export const SILENCE_MS = 5000;
 /** The round trips the summary is computed over: the last ones. */
 export const PING_SAMPLES = 30;
+/**
+ * The most messages a second the other side may send: a ping and a pong a second are the
+ * protocol's own. Past it, the link is cut, as for a message that is not the protocol's: every
+ * ping it sends would be answered.
+ */
+export const MAX_MESSAGES_PER_SECOND = 10;
 
 /** The round trips measured, in milliseconds (null before the first). */
 export interface PingSummary {
@@ -25,7 +31,7 @@ export interface PingSummary {
   readonly lost: number;
 }
 
-/** Why the link ended: the other side closed it, it went silent, or it spoke nonsense. */
+/** Why the link ended: the other side closed it, it went silent, or it spoke nonsense or too much. */
 export type SessionEnd = 'left' | 'silent' | 'protocol';
 
 export interface SessionListener {
@@ -43,6 +49,9 @@ export class Session {
   /** The ping waiting for its pong, and when it left. */
   private pending: { seq: number; sentAt: number } | null = null;
   private lastHeard: number;
+  /** The messages received since `windowStart`, against MAX_MESSAGES_PER_SECOND. */
+  private windowStart: number;
+  private windowCount = 0;
   private readonly timer: ReturnType<typeof setInterval>;
   private over = false;
 
@@ -53,6 +62,7 @@ export class Session {
     private readonly listener: SessionListener,
   ) {
     this.lastHeard = now();
+    this.windowStart = this.lastHeard;
     channel.listen({
       message: (data) => {
         this.receive(data);
@@ -92,12 +102,17 @@ export class Session {
 
   private receive(data: unknown): void {
     if (this.over) return;
-    const message = parseMessage(data);
+    const now = this.now();
+    if (now - this.windowStart >= 1000) {
+      this.windowStart = now;
+      this.windowCount = 0;
+    }
+    const message = ++this.windowCount <= MAX_MESSAGES_PER_SECOND ? parseMessage(data) : null;
     if (!message) {
       this.end('protocol');
       return;
     }
-    this.lastHeard = this.now();
+    this.lastHeard = now;
     if (message.type === 'ping') {
       this.channel.send(encodeMessage({ type: 'pong', seq: message.seq }));
     } else if (message.type === 'pong' && message.seq === this.pending?.seq) {

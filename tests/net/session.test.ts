@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { encodeMessage, parseMessage } from '../../src/net/protocol';
 import {
+  MAX_MESSAGES_PER_SECOND,
   PING_INTERVAL_MS,
   PING_SAMPLES,
   Session,
@@ -84,6 +85,29 @@ describe('the link once paired (docs/multijoueur.md §4.3)', () => {
     await vi.advanceTimersByTimeAsync(0);
     expect(left.ends).toEqual(['left']);
     expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('cuts a link that floods it, even with valid messages, but not one that keeps the pace', async () => {
+    const steady = setup();
+    for (let second = 0; second < 3; second++) {
+      for (let seq = 0; seq < MAX_MESSAGES_PER_SECOND; seq++) {
+        steady.theirs.send(encodeMessage({ type: 'ping', seq }));
+      }
+      await vi.advanceTimersByTimeAsync(1000);
+    }
+    expect(steady.ends).toEqual([]);
+    steady.session.dispose();
+
+    const flood = setup();
+    for (let seq = 0; seq <= MAX_MESSAGES_PER_SECOND; seq++) {
+      flood.theirs.send(encodeMessage({ type: 'ping', seq }));
+    }
+    await vi.advanceTimersByTimeAsync(0);
+    expect(flood.ends).toEqual(['protocol']);
+    expect(flood.mine.isClosed).toBe(true);
+    // Answered up to the limit, never past it.
+    const pongs = flood.mine.sent.filter((text) => parseMessage(text)?.type === 'pong');
+    expect(pongs).toHaveLength(MAX_MESSAGES_PER_SECOND);
   });
 
   it('closes the link and its timer on dispose, telling no one', async () => {

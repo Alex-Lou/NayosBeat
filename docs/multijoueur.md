@@ -104,6 +104,7 @@ Rien n'est interprété (aucun `eval`), et l'heure d'envoi ne traverse jamais le
 
 - Un ping par seconde, auquel l'autre répond tout de suite. Le résumé porte sur les 30 derniers allers-retours : dernier, minimum, médiane, maximum, nombre de mesures, pings perdus.
 - **5 s sans rien recevoir** : le lien est perdu (« Connexion perdue »).
+- **Plus de 10 messages en une seconde**, même valides : le lien est coupé comme pour un message invalide. Le protocole n'en envoie que 2 (un ping, un pong), et chaque ping reçu appelle une réponse : sans plafond, un pair pourrait faire travailler l'autre appareil sans fin.
 - **Un message invalide** : le lien est coupé (« L'autre appareil a envoyé un message invalide »). Un pair qui envoie n'importe quoi est donc déconnecté proprement.
 - L'autre ferme le lien : « L'autre appareil a quitté ».
 
