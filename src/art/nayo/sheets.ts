@@ -61,6 +61,9 @@ export const NAYO_SHEETS = {
   specialRemix: { frames: 9 },
   specialForwardRemix: { frames: 9 },
   specialAntiAirRemix: { frames: 10 },
+  // Moves that borrowed another's frames, in their own (docs/art/nayo-essence.md §6).
+  jabRepeat: { frames: 5 },
+  chainHigh: { frames: 7 },
 } as const satisfies Record<string, SheetSpec>;
 
 export type NayoSheet = keyof typeof NAYO_SHEETS;

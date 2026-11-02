@@ -325,3 +325,40 @@ describe('the Mégabasse lights him from the floor', () => {
     expect(third).toBeGreaterThan(first ?? Infinity);
   });
 });
+
+describe('moves in their own images, no longer borrowed (docs/art/nayo-essence.md §6)', () => {
+  /** The pixels of frame `frame` of a strip lit by the light `tone`. */
+  const litIn = (sheet: string, frame: number, tone: string): number => {
+    const strip = drawStrip(NAYO, sheet);
+    const slots = TINT_SLOTS[tone] ?? new Set<number>();
+    let lit = 0;
+    for (let y = 0; y < CELL_SIZE; y++) {
+      for (let x = frame * CELL_SIZE; x < (frame + 1) * CELL_SIZE; x++) {
+        if (slots.has(strip.pixels[y * strip.width + x] ?? 0)) lit++;
+      }
+    }
+    return lit;
+  };
+
+  it.each([
+    ['jabRepeat', 'standLight', 1],
+    ['chainHigh', 'forwardHeavy', 2],
+  ] as const)('%s plays its own strip, the frames it borrowed in order', (move, from, first) => {
+    const clip = NAYO_CLIPS[move];
+    if (!clip) throw new Error(`no clip for ${move}`);
+    expect(clip.sheet).toBe(move);
+    expect(clip.frames).toEqual(clip.frames.map((_, index) => index));
+    expect(NAYO_SHEETS[move].frames).toBe(NAYO_SHEETS[from].frames - first);
+  });
+
+  it('the Double direct’s echo lights the arm more than the Direct alone', () => {
+    expect(litIn('jabRepeat', 1, 'sound')).toBeGreaterThan(litIn('standLight', 2, 'sound'));
+  });
+
+  it('the Marteau’s loaded fist glows gold where the Overhand’s does not', () => {
+    for (const frame of [0, 1]) {
+      expect(litIn('chainHigh', frame, 'strike'), `frame ${frame}`).toBeGreaterThan(20);
+      expect(litIn('forwardHeavy', frame + 2, 'strike'), `frame ${frame + 2}`).toBe(0);
+    }
+  });
+});

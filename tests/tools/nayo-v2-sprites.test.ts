@@ -94,6 +94,8 @@ const RULES: Readonly<Record<V2Sheet, Rules>> = {
   // Crochet or the Double direct (backHeavy's frames 2-6 after a call step: an anti-air).
   chainHeavy: { frames: 7, placeholder: GUARD, toGuard: 'exact', anchored: true },
   chainLaunch: { frames: 7, placeholder: GUARD, up: true, toGuard: 'exact', anchored: true },
+  // The Marteau: the Overhand from its fist already loaded (its frames 2-8), not from the guard.
+  chainHigh: { frames: 7, placeholder: GUARD, toGuard: 'exact', anchored: true },
   // The Mégabasse starts from the guard's stance on the cue, held through the freeze flash; its
   // speaker rings strike, filling the hitbox forward and up.
   super: {

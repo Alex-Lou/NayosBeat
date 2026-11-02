@@ -63,6 +63,7 @@ import * as chainHeavy from './chainHeavy.ts';
 import * as chainLaunch from './chainLaunch.ts';
 import * as megabasse from './super.ts';
 import { REMIXES } from './remixes.ts';
+import { CHAIN_HIGH, JAB_REPEAT } from './variations.ts';
 
 export {
   PROJECTILE as NAYO_PROJECTILE,
@@ -100,6 +101,8 @@ export const V2_SHEETS = [
   'chainHeavy',
   'chainLaunch',
   'super',
+  // The Marteau's own strip: the Overhand's frames 2-8 (docs/art/nayo-essence.md §6).
+  'chainHigh',
 ] as const satisfies readonly PosedSheet[];
 
 export type V2Sheet = (typeof V2_SHEETS)[number];
@@ -174,4 +177,6 @@ export const NAYO_POSES: Readonly<Record<PosedSheet, readonly Pose[]>> = {
   chainLaunch: V3_STRIPS.chainLaunch.POSES,
   super: V3_STRIPS.super.POSES,
   ...REMIXES,
+  jabRepeat: JAB_REPEAT,
+  chainHigh: CHAIN_HIGH,
 };
