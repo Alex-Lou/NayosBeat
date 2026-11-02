@@ -7,6 +7,7 @@ import type { GameState } from '../../src/core/state';
 import { step } from '../../src/core/step';
 import { NAYO } from '../../src/data/fighters/nayo';
 import { RIFF } from '../../src/data/fighters/riff';
+import { SAPHIR } from '../../src/data/fighters/saphir';
 import { TRAINING_STAGE } from '../../src/data/stages';
 import { startsMove } from './combo-helpers';
 import { searchCombos, type Command } from './combo-search';
@@ -21,7 +22,8 @@ import { facingOff } from './helpers';
  * never takes half of it (Nayo's Crochet as a CONTRE, his string, the Rewind and a juggle: 48.6 %
  * with one bar). Without gauge, no combo earns a bar. The search is the prototype's (300
  * branches a depth), which plays the Rewind too: without gauge, it finds its longest combos
- * again, Nayo's 11 hits and Riff's 12, the limit's.
+ * again, Nayo's 11 hits and Riff's 12, the limit's, and Saphir's 11 (her Plongé's Rebond, 30.8 % of
+ * Riff's health without gauge).
  */
 
 const { Light: L, Heavy: H, Special: S, Down: D, Left: B, Right: F, Dash, Boost: X } = Input;
@@ -115,6 +117,8 @@ export const PAIRS: readonly (readonly [FighterTemplate, FighterTemplate, number
   // The attacker, its opponent, the longest combo it finds.
   [NAYO, RIFF, 11],
   [RIFF, NAYO, 12],
+  // On Riff, the lightest of the cast: the share of her health is the tightest.
+  [SAPHIR, RIFF, 11],
 ];
 
 /** The attacker's gauge at the start: a number of points, or refilled on every tick. */
