@@ -192,6 +192,18 @@ export function drawEffect(ink: Ink, effect: Effect): void {
     case 'dust':
       drawDust(ink, effect.x, effect.size, effect.progress);
       return;
+    case 'grooves':
+      drawGrooves(ink, effect, tonesOf(ink.fx)[effect.tone ?? 'sound']);
+      return;
+    case 'notes':
+      drawNotes(
+        ink,
+        effect.center,
+        effect.count,
+        effect.progress,
+        tonesOf(ink.fx)[effect.tone ?? 'sound'],
+      );
+      return;
   }
 }
 
@@ -614,6 +626,65 @@ function drawShards(ink: Ink, center: Point, radius: number, progress: number, t
       y: center.y + Math.sin(angle) * (reach - size * 2.6),
     };
     drop(layer, [ink.at(tail), ink.at(head)], size * S * 0.5, bright);
+  }
+  layer.halo();
+  layer.draw();
+}
+
+// ---------------------------------------------------------------------------------------------
+// Grooves and notes
+
+/** The rank of a fading effect: bright when born, deep when it dies. */
+function fadingRank(progress: number): Rank {
+  return progress < 0.4 ? LIGHT : progress < 0.75 ? BASE : DEEP;
+}
+
+/**
+ * The grooves of a record round a turning limb (see Effect 'grooves'): three 1 px concentric
+ * arcs, 2 px apart (world), each broken twice where a record's grooves catch the light; the
+ * outer one brightest.
+ */
+function drawGrooves(ink: Ink, effect: Extract<Effect, { kind: 'grooves' }>, tones: Tones): void {
+  const layer = new Layer(ink, tones);
+  const c = ink.at(effect.center);
+  const bright = fadingRank(effect.progress);
+  const [low, high] = effect.from < effect.to ? [effect.from, effect.to] : [effect.to, effect.from];
+  for (let ring = 0; ring < 3; ring++) {
+    const radius = (effect.radius - ring * 2) * S;
+    if (radius <= S) break;
+    const rank = ring === 0 ? bright : lower(bright);
+    const step = 0.5 / radius;
+    for (let a = (low * Math.PI) / 180; a <= (high * Math.PI) / 180; a += step) {
+      // Two breaks a groove, at a third and two thirds of the arc, shifted ring by ring.
+      const t = ((a * 180) / Math.PI - low) / Math.max(1, high - low);
+      const gap = (t + ring * 0.13) % (1 / 3);
+      if (gap < 0.04) continue;
+      layer.plot(c.x + Math.cos(a) * radius, c.y - Math.sin(a) * radius, rank);
+    }
+  }
+  layer.halo();
+  layer.draw();
+}
+
+/**
+ * `count` eighth notes (see Effect 'notes'): a round head, a stem, a flag, rising and drifting
+ * forward as they fade, each a little higher than the one before.
+ */
+function drawNotes(ink: Ink, center: Point, count: number, progress: number, tones: Tones): void {
+  const layer = new Layer(ink, tones);
+  const bright = fadingRank(progress);
+  for (let note = 0; note < Math.min(3, count); note++) {
+    const head = ink.at({
+      x: center.x + note * 5 + progress * 3,
+      y: center.y + note * 3 + progress * 8,
+    });
+    // The head: a slanted oval 3 px wide (cell pixels), the stem up its right side, the flag.
+    layer.fill(
+      { left: head.x - 2, right: head.x + 2, top: head.y - 2, bottom: head.y + 2 },
+      (x, y) => (((x - head.x) / 2.2) ** 2 + ((y - head.y) / 1.5) ** 2 <= 1 ? bright : NONE),
+    );
+    for (let y = 1; y <= 8; y++) layer.plot(head.x + 1.5, head.y - y, lower(bright));
+    for (let f = 0; f < 3; f++) layer.plot(head.x + 2.5 + f, head.y - 8 + f, lower(bright));
   }
   layer.halo();
   layer.draw();

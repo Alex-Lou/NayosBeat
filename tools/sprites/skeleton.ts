@@ -125,7 +125,29 @@ export type Effect =
       readonly progress: number;
     }
   /** Dust kicked up from the floor at `x`, `progress` from 0 to 1. */
-  | { readonly kind: 'dust'; readonly x: number; readonly size: number; readonly progress: number };
+  | { readonly kind: 'dust'; readonly x: number; readonly size: number; readonly progress: number }
+  /**
+   * The grooves of a record round a turning limb: three concentric arcs around `center`, the
+   * outer one `radius` px, from `from` to `to` degrees (0 forward, 90 up, counterclockwise),
+   * broken like a record's grooves; `progress` from 0 (bright) to 1 (fading).
+   */
+  | {
+      readonly kind: 'grooves';
+      readonly center: Point;
+      readonly radius: number;
+      readonly from: number;
+      readonly to: number;
+      readonly progress: number;
+      readonly tone?: Tone;
+    }
+  /** `count` eighth notes (1 to 3) rising off a point, `progress` from 0 (born) to 1 (gone). */
+  | {
+      readonly kind: 'notes';
+      readonly center: Point;
+      readonly count: number;
+      readonly progress: number;
+      readonly tone?: Tone;
+    };
 
 export interface Pose {
   readonly hip: Point;

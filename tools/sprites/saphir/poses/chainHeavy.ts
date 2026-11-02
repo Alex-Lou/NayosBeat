@@ -10,6 +10,7 @@ import {
   type Arms,
   type Pose,
 } from './common.ts';
+import { turnMagic } from './jumpAttacks.ts';
 
 /**
  * chainHeavy (Chassé arrière, docs/saphir.md §4): 7 frames, 2, 2, 2, 3, 3, 8, 9 ticks (29), the
@@ -72,7 +73,10 @@ const FRAMES: readonly Pose[] = [
     farFoot: raised(-15, 44, -110),
     bends: { ...GUARD.bends, farKnee: 'down' },
     face: 'kiai',
-    effects: [smear(3.5, [24, 40], [38, 43], [47, 44])],
+    effects: [
+      smear(3.5, [24, 40], [38, 43], [47, 44]),
+      ...turnMagic([47, 44], [16, 36.5], 18, [-20, 50]),
+    ],
   },
   {
     ...GUARD,

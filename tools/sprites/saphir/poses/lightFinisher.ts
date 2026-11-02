@@ -10,6 +10,7 @@ import {
   type Arms,
   type Pose,
 } from './common.ts';
+import { turnMagic } from './jumpAttacks.ts';
 
 /**
  * lightFinisher (Revers tournant, docs/saphir.md §4): 7 frames, 2, 3, 3, 3, 5, 6, 7 ticks (29),
@@ -69,7 +70,10 @@ const FRAMES: readonly Pose[] = [
     farFoot: raised(-18.5, 47, -110),
     bends: { ...GUARD.bends, farKnee: 'down' },
     face: 'kiai',
-    effects: [smear(3.5, [-10, 24], [6, 14], [22, 22], [30, 34], [32, 44])],
+    effects: [
+      smear(3.5, [-10, 24], [6, 14], [22, 22], [30, 34], [32, 44]),
+      ...turnMagic([32, 44], [9, 36], 18, [10, 80]),
+    ],
   },
   {
     ...GUARD,
