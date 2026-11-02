@@ -109,11 +109,11 @@ C'est ce qui le montre vivant entre ses coups, sur l'horloge visuelle, sans rien
 
 ## 4. Les effets francs
 
-Ce sont des aplats opaques, cernés d'encre, lisibles d'un coup d'œil sur un téléphone (`bold-fx.ts`, données `MoveSignature.bold`). Leur corps est leur couleur assombrie jusqu'à ne changer aucune grande couleur du décor de 0,09 : c'est la teinte et la forme qui les portent, pas la lumière. Seul un fil chaud de 1 px, à l'intérieur d'un anneau, est vif : il demande sa longueur au budget au départ de l'anneau (`hotArea`, `admit`). Refusé, ou en effets calmes, il n'est pas tracé.
+Ce sont des formes nettes et lisibles d'un coup d'œil sur un téléphone (`bold-fx.ts`, données `MoveSignature.bold`). Retour du propriétaire sur la première version (« trop gras, grossier et pas soigné ») : plus de contour d'encre, des anneaux fins (3 px qui s'affinent à 1 px), lisses (96 segments), calés au pixel, qui s'effacent en s'élargissant, doublés d'un écho de 1 px à l'intérieur ; les lignes d'impact sont fines et s'effacent aussi. Leur corps est leur couleur assombrie jusqu'à ne changer aucune grande couleur du décor de 0,09 : c'est la teinte et la forme qui les portent, pas la lumière. Seul un fil chaud de 1 px, à l'intérieur d'un anneau, est vif : il demande sa longueur au budget au départ de l'anneau (`hotArea`, `admit`). Refusé, ou en effets calmes, il n'est pas tracé.
 
 | Coup | Image | Effet |
 |---|---|---|
-| Vinyle | 12 | Onde de choc debout à la main (un haut-parleur vu de profil), de 14 à 64 px, épaisseur de 7 à 2 px |
+| Vinyle | 12 | Onde de choc debout à la main (un haut-parleur vu de profil), de 14 à 64 px, épaisseur de 3 à 1 px |
 | Vinyle platine | 12 | La même en platine, ×1,3 |
 | Disque en vol | chaque image | Quatre lignes de vitesse derrière lui |
 | Mégabasse | 2, 8, 14 | Séisme au sol, de 36 à 230 px (×1, ×1,1, ×1,3 en platine), et douze lignes d'impact qui jaillissent du poing |

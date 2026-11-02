@@ -240,7 +240,7 @@ export function emits(color: number, strongest: ReturnType<typeof strongestGlows
 export const FIGHTER_LIGHT_AREAS: Readonly<Record<string, number>> = {
   'nayo/main': 400,
   'nayo/alt': 1130,
-  'riff/main': 490,
+  'riff/main': 525,
   'riff/alt': 715,
 };
 

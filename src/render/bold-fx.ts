@@ -28,10 +28,10 @@ import { DIM_COLOR } from './veils';
 export const BOLD_DELTA = 0.09;
 
 /** A ring: display frames, its size from and to (world px, at size 1), its thickness. */
-export const SHOCK = { life: 12, from: 14, to: 64, thick: [7, 2], ratio: 0.42 } as const;
-export const QUAKE = { life: 16, from: 36, to: 230, thick: [8, 2], ratio: 0.24 } as const;
+export const SHOCK = { life: 12, from: 14, to: 64, thick: [3, 1], ratio: 0.42 } as const;
+export const QUAKE = { life: 16, from: 36, to: 230, thick: [3, 1], ratio: 0.24 } as const;
 /** The impact lines around a fist: how many, display frames, from and to (world px). */
-export const SPIKES = { count: 12, life: 7, from: 18, to: 86, width: 5 } as const;
+export const SPIKES = { count: 12, life: 7, from: 18, to: 86, width: 2.5 } as const;
 /** The speed lines trailing a disc: their heights over its middle and their lengths, world px. */
 export const DISC_LINES = [
   [-11, 34],
@@ -41,6 +41,10 @@ export const DISC_LINES = [
 ] as const;
 /** A hot line is this thick, world px: what it lights is its length. */
 const HOT = 1;
+/** Segments of a ring's ellipse: smooth at its widest, no facets. */
+const SMOOTH = 96;
+/** The thin echo ring trailing inside the front: its size over the front's, and its opacity. */
+const ECHO = { size: 0.78, alpha: 0.5 } as const;
 
 type Shape = 'shock' | 'quake';
 
@@ -209,15 +213,25 @@ export class BoldFx {
 
   private drawRing(g: Phaser.GameObjects.Graphics, ring: Ring, t: number): void {
     const spec = ring.shape === 'shock' ? SHOCK : QUAKE;
-    const width = (spec.from + (spec.to - spec.from) * grow(t)) * ring.size;
-    const height = width * spec.ratio;
+    const width = Math.round((spec.from + (spec.to - spec.from) * grow(t)) * ring.size);
+    const height = Math.round(width * spec.ratio);
     const thick = (spec.thick[0] + (spec.thick[1] - spec.thick[0]) * t) * ring.size;
-    // The shock stands up (a speaker side on), the quake lies on the floor.
+    // A clean front: thin, smooth, fading as it spreads, a thinner echo trailing inside it. The
+    // shock stands up (a speaker side on), the quake lies on the floor.
+    const x = Math.round(ring.x);
+    const y = Math.round(ring.y);
+    const fade = 1 - t * t;
     const [w, h] = ring.shape === 'shock' ? [height, width] : [width, height];
-    g.lineStyle(thick + 2, DIM_COLOR, 1).strokeEllipse(ring.x, ring.y, w, h);
-    g.lineStyle(thick, ring.body, 1).strokeEllipse(ring.x, ring.y, w, h);
+    g.lineStyle(thick, ring.body, fade).strokeEllipse(x, y, w, h, SMOOTH);
+    g.lineStyle(1, ring.body, ECHO.alpha * fade).strokeEllipse(
+      x,
+      y,
+      Math.round(w * ECHO.size),
+      Math.round(h * ECHO.size),
+      SMOOTH,
+    );
     if (typeof ring.hot === 'number') {
-      g.lineStyle(HOT, ring.hot, 1).strokeEllipse(ring.x, ring.y, w - thick, h - thick);
+      g.lineStyle(HOT, ring.hot, fade).strokeEllipse(x, y, w - thick, h - thick, SMOOTH);
     }
   }
 
@@ -239,8 +253,7 @@ export class BoldFx {
       const ay = y0 + Math.sin(side) * half;
       const bx = x0 - Math.cos(side) * half;
       const by = y0 - Math.sin(side) * half;
-      g.fillStyle(DIM_COLOR, 1).fillTriangle(ax - 1, ay, bx + 1, by, tipX, tipY - 1);
-      g.fillStyle(ring.body, 1).fillTriangle(ax, ay, bx, by, tipX, tipY);
+      g.fillStyle(ring.body, 1 - t).fillTriangle(ax, ay, bx, by, tipX, tipY);
     }
   }
 
