@@ -5,8 +5,8 @@ import type { Facing, FighterAction } from '../core/state';
 import { controlsStore, type ControlsStore } from './controls-store';
 import {
   BOOST_RING_PX,
+  fittedButtons,
   nearestButton,
-  placedButtons,
   TOUCH_BUTTONS,
   type TouchButton,
   type TouchLayout,
@@ -58,8 +58,13 @@ export class TouchControls {
   private stickGhost: HTMLDivElement | undefined;
   private readonly buttonZone: HTMLDivElement;
   private readonly buttons: readonly HTMLDivElement[];
-  /** The buttons where the player's layout puts them (`placedButtons`): drawn and touched. */
+  /**
+   * The buttons where the player's layout puts them, shrunk if this screen is smaller than the
+   * layout's (`fittedButtons`): drawn and touched.
+   */
   private placed: readonly TouchButton[];
+  /** The player's layout as the store keeps it: never changed here. */
+  private layout: TouchLayout;
   /** Counts the layouts taken: what measured the buttons measures them again when it moves. */
   private layoutCount = 0;
   private readonly unsubscribe: () => void;
@@ -129,9 +134,10 @@ export class TouchControls {
     });
     this.boostButton = this.buttons[TOUCH_BUTTONS.findIndex((spec) => spec.flag === Input.Boost)];
     this.buttonZone.append(...this.buttons);
-    this.applyLayout(store.get().touch);
+    this.layout = store.get().touch;
     this.unsubscribe = store.subscribe(({ touch }) => {
-      this.applyLayout(touch);
+      this.layout = touch;
+      this.place();
     });
     this.root.append(stickZone, this.stickBase, this.buttonZone);
 
@@ -151,6 +157,10 @@ export class TouchControls {
     this.buttonZone.addEventListener('lostpointercapture', this.onButtonUp);
 
     parent.appendChild(this.root);
+    // On the page, the zone has its size: the buttons fit in it, and again whenever it changes
+    // (the browser's bars, fullscreen, a turn).
+    this.place();
+    window.addEventListener('resize', this.place);
   }
 
   /** Call once per frame. */
@@ -229,18 +239,21 @@ export class TouchControls {
   }
 
   /**
-   * Places the buttons where `layout` puts them, and the cluster's opacity: the layout is data,
-   * nothing of it duplicated in the stylesheet.
+   * Places the buttons where the layout puts them on this screen (`fittedButtons`), and the
+   * cluster's opacity: the layout is data, nothing of it duplicated in the stylesheet.
    */
-  private applyLayout(layout: TouchLayout): void {
-    this.placed = placedButtons(layout);
+  private readonly place = (): void => {
+    const { layout } = this;
+    const zone = this.buttonZone.getBoundingClientRect();
+    const size = { width: zone.right - zone.left, height: zone.bottom - zone.top };
+    this.placed = fittedButtons(layout, size);
     this.placed.forEach((spec, index) => {
       const button = this.buttons[index];
       if (button) placeButton(button, spec);
     });
     this.buttonZone.style.opacity = layout.opacity === 100 ? '' : String(layout.opacity / 100);
     this.layoutCount++;
-  }
+  };
 
   /** Changes each time the buttons move (`buttonCircles` measures them anew). */
   get layoutVersion(): number {
@@ -280,6 +293,7 @@ export class TouchControls {
   /** Removing the elements also drops every listener attached to them. */
   dispose(): void {
     this.unsubscribe();
+    window.removeEventListener('resize', this.place);
     this.root.remove();
     this.buttonPointers.clear();
   }
