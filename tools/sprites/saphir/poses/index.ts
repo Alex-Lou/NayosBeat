@@ -1,17 +1,23 @@
 /**
  * Saphir's poses, frame by frame. At porte 2 (docs/art/perso-3.md §5) her guard, its idle and
- * her three signature moves are drawn (the Syncope, the Chassé, the Contre-ut); every other strip
- * holds the guard for each of its frames, a placeholder with the right number of frames, until
- * its own file draws it (porte 3). A strip's placeholder plays to its exact timing in the game:
- * only the drawing waits.
+ * her three signature moves were drawn (the Syncope, the Chassé, the Contre-ut); porte 3 draws
+ * the rest in lots, the most seen first (lot 1: the walks, the crouch, the block, the hit
+ * reactions). Every strip not drawn yet holds the guard for each of its frames, a placeholder
+ * with the right number of frames: it plays to its exact timing in the game, only the drawing
+ * waits.
  */
 
 import { SAPHIR_SHEETS, type SaphirSheet } from '../../../../src/art/saphir/sheets.ts';
 import { at, GUARD, type Pose } from './common.ts';
+import { POSES as blockPoses } from './block.ts';
+import { POSES as crouchPoses } from './crouch.ts';
+import { HIT_CROUCH, HIT_HIGH, HIT_LOW, HIT_MID } from './hits.ts';
 import { POSES as idlePoses } from './idle.ts';
 import { POSES as specialPoses } from './special.ts';
 import { POSES as specialAntiAirPoses } from './specialAntiAir.ts';
 import { POSES as standHeavyPoses } from './standHeavy.ts';
+import { POSES as walkBackPoses } from './walkBack.ts';
+import { POSES as walkForwardPoses } from './walkForward.ts';
 
 /**
  * A special not drawn yet: the guard, with a touch of energy at the lead fist on its active frame,
@@ -28,6 +34,14 @@ function heldSpecial(frames: number, active: number): readonly Pose[] {
 /** The strips drawn so far, by their own files. */
 const DRAWN: Partial<Record<SaphirSheet, readonly Pose[]>> = {
   idle: idlePoses,
+  walkForward: walkForwardPoses,
+  walkBack: walkBackPoses,
+  crouch: crouchPoses,
+  block: blockPoses,
+  hitHigh: HIT_HIGH,
+  hitMid: HIT_MID,
+  hitLow: HIT_LOW,
+  hitCrouch: HIT_CROUCH,
   standHeavy: standHeavyPoses,
   special: specialPoses,
   specialForward: heldSpecial(SAPHIR_SHEETS.specialForward.frames, 4),
