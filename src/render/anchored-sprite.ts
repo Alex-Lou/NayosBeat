@@ -112,4 +112,25 @@ export class AnchoredSprite {
     this.sprite.setDepth(depth);
     return this;
   }
+
+  /**
+   * Its filters (WebGL only): `add` puts them on its internal list and returns the one to keep
+   * (presence.ts). Canvas has none: nothing is added, undefined.
+   */
+  filtered<T>(add: (filters: Phaser.GameObjects.Components.FilterList) => T): T | undefined {
+    if (this.mode === 'simple') return undefined;
+    const { filters } = this.sprite.enableFilters();
+    return filters ? add(filters.internal) : undefined;
+  }
+
+  /** Frees its sprite (and its filters). */
+  destroy(): void {
+    this.sprite.destroy();
+  }
+
+  /** Lit by the scene's live lights (light-show.ts), or not. WebGL only: Canvas ignores it. */
+  setLighting(on: boolean): this {
+    if (this.sprite.lighting !== on) this.sprite.setLighting(on);
+    return this;
+  }
 }

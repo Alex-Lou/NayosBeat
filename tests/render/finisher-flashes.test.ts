@@ -33,12 +33,17 @@ import {
   SATURATED_RED,
 } from '../../src/render/luminance';
 import type { TickTally } from '../../src/render/onomatopoeia';
+import { BoldFx } from '../../src/render/bold-fx';
+import { LightRig } from '../../src/render/light-rig';
+import { LightShow } from '../../src/render/light-show';
+import { fighterLightArea } from '../../src/render/live-lights';
 import { SignatureFx } from '../../src/render/signature-fx';
-import { signatureOf } from '../../src/render/signatures';
+import { PLATINE, signatureOf } from '../../src/render/signatures';
 import { koVeil, VEIL_DELTA } from '../../src/render/veils';
 import { armed, film, LARSEN, LE_QUATRE, type Route } from './finisher-harness';
 import { fxStrips, outlineRings } from './fx-strips';
 import { fakeScene } from './hud-fakes';
+import { liveScene } from './live-fakes';
 import { recordingScene } from './spark-area';
 
 /**
@@ -81,7 +86,9 @@ vi.mock('../../src/render/blood', () => ({
     update = vi.fn();
   },
 }));
-vi.mock('../../src/render/effects', () => ({
+vi.mock('../../src/render/effects', async (original) => ({
+  // The veils' textures, painted for real: the moves' lights draw from them (light-rig.ts).
+  ...(await original<typeof import('../../src/render/effects')>()),
   Effects: class {
     kick = vi.fn();
     jolt = vi.fn();
@@ -263,6 +270,37 @@ function counted(route: Route, mode: FlashMode, shake: Comfort['shake'] = 'norma
     stage: GREYBOX_COLORS,
   });
   signature.calm = mode !== 'normal';
+  // The moves' live lights and bold shapes, asking last, none in the scene (FightScene).
+  const signatures = [signatureOf(route.fighters[0]), signatureOf(route.fighters[1])] as const;
+  const energies = [styles[0].energy, styles[1].energy] as const;
+  const lightRig = new LightRig(recordingScene().scene, config, {
+    groundY: GROUND_Y,
+    signatures,
+    energies,
+    stage: GREYBOX_COLORS,
+    mode: 'full',
+  });
+  lightRig.live = true;
+  const lightShow = new LightShow(liveScene(), {
+    stage: GREYBOX_COLORS,
+    colors: [...energies, PLATINE],
+    budget,
+    fighterAreas: [
+      fighterLightArea(route.fighters[0], 'main'),
+      fighterLightArea(route.fighters[1], 'main'),
+    ],
+    groundY: GROUND_Y,
+  });
+  lightShow.setTier('full');
+  lightShow.calm = mode !== 'normal';
+  const bold = new BoldFx(liveScene(), config, {
+    groundY: GROUND_Y,
+    signatures,
+    energies,
+    budget,
+    stage: GREYBOX_COLORS,
+  });
+  bold.calm = mode !== 'normal';
   const nowhere = { x: Number.NaN, y: Number.NaN, flip: false };
   const before: [typeof nowhere, typeof nowhere] = [nowhere, nowhere];
   const shown: Shown = { clip: 'idle', tick: 0, x: 0 };
@@ -290,9 +328,15 @@ function counted(route: Route, mode: FlashMode, shake: Comfort['shake'] = 'norma
       }
       feedback.endTick();
       signature.tick(next);
+      bold.tick(next);
+      for (const event of events) {
+        lightRig.react(event);
+        lightShow.react(event);
+      }
     },
     onShown: (state: GameState, director: FinisherScene) => {
       feedback.update(1);
+      lightRig.update(state, 1, director.isActive());
       for (const player of [0, 1] as const) {
         const art = arts[player] as FighterArt;
         showFighter(state, player, config, art, shown);
@@ -343,6 +387,8 @@ function counted(route: Route, mode: FlashMode, shake: Comfort['shake'] = 'norma
       }
       signature.flush(!director.isActive());
       signature.update(1);
+      lightShow.update(lightRig.sources, lightRig.count, 1, director.isActive());
+      bold.update(1, director.isActive());
       hud.update(state);
     },
   });

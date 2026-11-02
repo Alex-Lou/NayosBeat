@@ -69,6 +69,15 @@ const STAGE_TEXTURES = [
 
 const STAGE_BYTES = STAGE_TEXTURES.reduce((sum, { width, height }) => sum + width * height * 4, 0);
 
+/**
+ * The live lights paint, for each layer, the pixels that light themselves on a canvas of its size,
+ * drawn over their glows (src/render/light-show.ts): at most one more texture a layer.
+ */
+const EMITTER_BYTES = STAGE_TEXTURES.filter(({ name }) => name !== 'stage/props').reduce(
+  (sum, { width, height }) => sum + width * height * 4,
+  0,
+);
+
 describe('video memory of a match', () => {
   const drawn = ROSTER.map(({ id }) => id).filter((id) => artOf(id) !== undefined);
 
@@ -93,7 +102,10 @@ describe('video memory of a match', () => {
         match: `${a} vs ${b}`,
         // In a mirror match, player 2 wears the other colorway: both are loaded.
         bytes:
-          STAGE_BYTES + bytesOf(a, 'main') + (a === b ? bytesOf(b, 'alt') : bytesOf(b, 'main')),
+          STAGE_BYTES +
+          EMITTER_BYTES +
+          bytesOf(a, 'main') +
+          (a === b ? bytesOf(b, 'alt') : bytesOf(b, 'main')),
       })),
     );
     const worst = pairings.reduce((most, pairing) => (pairing.bytes > most.bytes ? pairing : most));
