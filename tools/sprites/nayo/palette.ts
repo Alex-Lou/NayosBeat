@@ -9,53 +9,69 @@ import type { EffectStyle } from '../vfx.ts';
 
 export { farOf, matteOf, noGloss, type Colorway } from '../palette.ts';
 
+/**
+ * The light (docs/art/nayo-lumiere.md): a warm key light from the top and the front (the street
+ * lamps; its direction is raster.ts's), a neon back light from behind and above, cyan (magenta on
+ * the second colorway). Every ramp shifts its hue with its value: the shadows sink toward blue
+ * violet, never pure black; the lights warm up toward the lamps; the rim is the neon's.
+ */
+const RIM = { main: '#3ee6f4', alt: '#ff6ad0' } as const;
+
+/** A ramp without its rim: outline, deep, shadow, base, light, gloss. */
+type Ramp = readonly [string, string, string, string, string, string];
+
+/** A material of the same colors in both colorways, its rim the colorway's neon. */
+function lit(
+  ramp: Ramp,
+  rim: { readonly main: string; readonly alt: string } = RIM,
+): MaterialTones {
+  return { main: [...ramp, rim.main], alt: [...ramp, rim.alt] };
+}
+
 /** Materials in slot order; each one owns 7 consecutive palette slots. */
 const MATERIALS = {
-  skin: {
-    main: ['#5c1e10', '#b04a2a', '#e8844c', '#fca86a', '#ffc286', '#ffdcb0', '#e0a8a0'],
-  },
-  hair: {
-    main: ['#030304', '#0b0b0e', '#151519', '#202026', '#2e2e36', '#44444e', '#4a5468'],
-  },
-  /** Quilted tech jacket: black, light grey on the second colorway. */
+  skin: lit(['#4e1624', '#a4423a', '#e8844c', '#fca86a', '#ffc286', '#ffdcb0'], {
+    main: '#bfeee6',
+    alt: '#ffc4e4',
+  }),
+  /** Black hair, its sheen blue violet. */
+  hair: lit(['#0a0816', '#140f26', '#1e1836', '#2a2248', '#3d3262', '#6e5ea2']),
+  /** Quilted tech jacket: black nylon, light grey on the second colorway. */
   jacket: {
-    main: ['#040405', '#0d0d10', '#18181d', '#26262d', '#36363f', '#55555f', '#4e5a70'],
-    alt: ['#3a3a48', '#6e6e82', '#9a9aae', '#c4c4d2', '#e4e4ee', '#ffffff', '#b0b0d0'],
+    main: ['#0b0914', '#171228', '#241e38', '#322a48', '#4b3f62', '#7c687e', RIM.main],
+    alt: ['#2a2238', '#5a4f72', '#8580a0', '#b1aec6', '#d8d6e6', '#fff8f2', '#ff86d8'],
   },
-  /** Shirt under the open jacket: charcoal. */
+  /** Shirt under the open jacket: charcoal, matte. */
   shirt: {
-    main: ['#0a0a0c', '#16161a', '#222228', '#33333c', '#45454f', '#45454f', '#45454f'],
-    alt: ['#08080a', '#121216', '#1c1c22', '#2a2a32', '#3a3a44', '#3a3a44', '#3a3a44'],
+    main: ['#0b0912', '#15121e', '#1e1a2a', '#292337', '#373048', '#373048', '#373048'],
+    alt: ['#0a0910', '#131020', '#1c182b', '#272238', '#342e48', '#342e48', '#342e48'],
   },
-  /** Fingerless gloves, belt: black leather. */
-  leather: {
-    main: ['#030304', '#0c0c0f', '#16161a', '#232328', '#34343c', '#5a5a66', '#4e5a70'],
-  },
-  /** Cargo pants: black, mid grey on the second colorway. */
+  /** Fingerless gloves, belt: black leather, a warm shine. */
+  leather: lit(['#0c0910', '#19121f', '#261b2d', '#34253b', '#4c3652', '#ae8ea6']),
+  /** Cargo pants: black cotton, cooler than the jacket; mid grey on the second colorway. */
   pants: {
-    main: ['#040405', '#0e0e11', '#19191e', '#28282f', '#38383f', '#38383f', '#38383f'],
-    alt: ['#14141a', '#26262e', '#3a3a46', '#545462', '#70707e', '#70707e', '#70707e'],
+    main: ['#0b0a14', '#151424', '#1f1d33', '#2a2842', '#3c3957', '#3c3957', RIM.main],
+    alt: ['#1a1626', '#34304a', '#4c4766', '#66627f', '#84809c', '#84809c', RIM.alt],
   },
   /** Cargo pocket and seams, a step darker than the pants. */
   pocket: {
-    main: ['#040405', '#0b0b0e', '#141418', '#202026', '#2c2c33', '#2c2c33', '#2c2c33'],
-    alt: ['#101016', '#1e1e26', '#2e2e38', '#44444f', '#5c5c68', '#5c5c68', '#5c5c68'],
+    main: ['#0b0a14', '#12111f', '#1a182c', '#232139', '#302d4a', '#302d4a', '#302d4a'],
+    alt: ['#16121f', '#2c283e', '#403b56', '#56516e', '#6e6a88', '#6e6a88', '#6e6a88'],
   },
-  /** Combat boots: black, white on the second colorway. */
+  /** Combat boots: black leather, white on the second colorway. */
   boot: {
-    main: ['#030304', '#0b0b0e', '#151519', '#212127', '#32323a', '#5a5a66', '#4e5a70'],
-    alt: ['#2a2a34', '#55556a', '#8a8a9c', '#b8b8c8', '#dcdce6', '#ffffff', '#b0b0d0'],
+    main: ['#0a0812', '#151021', '#201a31', '#2c2441', '#413658', '#b6a0b6', RIM.main],
+    alt: ['#282034', '#5a5272', '#8c86a4', '#bebacf', '#e4e2ec', '#ffffff', '#ff8ad8'],
   },
   sole: {
-    main: ['#030304', '#0a0a0c', '#121216', '#1c1c22', '#2a2a32', '#2a2a32', '#2a2a32'],
+    main: ['#0a0812', '#110e19', '#191523', '#231d2f', '#2f283d', '#2f283d', '#2f283d'],
   },
-  metal: {
-    main: ['#24242e', '#44444f', '#6c6c7c', '#a0a0b2', '#d6d6e4', '#ffffff', '#d6d6e4'],
-  },
+  metal: lit(['#1c1828', '#363048', '#5a5270', '#8e88a6', '#c8c4d8', '#fffaf0'], {
+    main: '#a8f6ff',
+    alt: '#ffc0ec',
+  }),
   /** Headphones: black plastic with a soft sheen. */
-  plastic: {
-    main: ['#030304', '#0b0b0e', '#16161b', '#24242b', '#3a3a44', '#7a7a88', '#4e5a70'],
-  },
+  plastic: lit(['#0a0812', '#141020', '#1f1a30', '#2c2642', '#443c5e', '#8e84b0']),
 } as const satisfies Record<string, MaterialTones>;
 
 export type MaterialName = keyof typeof MATERIALS;
@@ -100,6 +116,8 @@ const DETAILS = {
   sandLight: { main: '#e6d8c2' },
   /** The dark smoky heart of a heavy hit spark (Tazz's hit VFX), on both colorways. */
   strikeSmoke: { main: '#3a3246' },
+  /** The 1 px glow of the neon accents on the cloth around them (index.ts, Lighting.glow). */
+  neonHalo: { main: '#16707e', alt: '#f08ad0' },
 } as const satisfies Record<string, DetailColor>;
 
 export type DetailName = keyof typeof DETAILS;

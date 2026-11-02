@@ -32,9 +32,16 @@ const OUTLINE_DEPTH = 0.01;
 /** The contour (option A): under the Finisher's outline, which takes its place. */
 const CONTOUR_DEPTH = 0.02;
 
-const SHADOW_WIDTH = 36;
-const SHADOW_HEIGHT = 6;
-const SHADOW_ALPHA = 0.35;
+/**
+ * The shadow on the floor, in two layers: a wide faint penumbra and a darker core, a soft edge in
+ * two steps without blur (docs/art/nayo-lumiere.md §4). Deep violet, as the night's darkest
+ * tones are, never pure black. Where they overlap, the core is about as dark as the old shadow.
+ */
+const SHADOW_LAYERS = [
+  { width: 44, height: 8, alpha: 0.2 },
+  { width: 30, height: 5, alpha: 0.3 },
+] as const;
+const SHADOW_COLOR = 0x0c0818;
 /** Jump height (px) at which the shadow has shrunk to half its size. */
 const SHADOW_HALF_HEIGHT = 120;
 
@@ -71,7 +78,7 @@ export interface SpriteFighterLook {
  */
 export class SpriteFighterView {
   private readonly halo: FinisherHalo;
-  private readonly shadow: Phaser.GameObjects.Ellipse;
+  private readonly shadow: readonly Phaser.GameObjects.Ellipse[];
   private readonly body: AnchoredSprite;
   /** The silhouette's outline: the body filled, drawn around it. */
   private readonly outline: readonly AnchoredSprite[];
@@ -105,13 +112,8 @@ export class SpriteFighterView {
     this.pixels = new FxPixels(scene, art, look.stage);
     // Under the shadow: the glow shows around the feet.
     this.halo = new FinisherHalo(scene, groundY, trailColor, look.stage);
-    this.shadow = scene.add.ellipse(
-      0,
-      groundY,
-      SHADOW_WIDTH,
-      SHADOW_HEIGHT,
-      0x000000,
-      SHADOW_ALPHA,
+    this.shadow = SHADOW_LAYERS.map(({ width, height, alpha }) =>
+      scene.add.ellipse(0, groundY, width, height, SHADOW_COLOR, alpha),
     );
     const { mode } = look;
     this.trail = new DashTrail(scene, art, trailColor, look.stage, mode);
@@ -237,7 +239,7 @@ export class SpriteFighterView {
     this.before.y = y;
     this.before.flip = flip;
     const shrink = SHADOW_HALF_HEIGHT / (SHADOW_HALF_HEIGHT + height);
-    this.shadow.setPosition(x, this.groundY).setScale(shrink);
+    for (const layer of this.shadow) layer.setPosition(x, this.groundY).setScale(shrink);
     this.halo.update(x, finisher, state.frame);
   }
 

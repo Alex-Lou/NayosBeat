@@ -12,7 +12,7 @@
 import { ANCHOR, ART_SCALE } from '../../../src/art/types.ts';
 import { STILL, type Motion } from '../fighter.ts';
 import { clamp, creases, headLocal, stripeAcross, unit } from '../parts.ts';
-import type { Material, PixelCanvas, Point } from '../raster.ts';
+import { KEY_LIGHT_2D, type Material, type PixelCanvas, type Point } from '../raster.ts';
 import { add, BODY, scale, sub, type Side, type Skeleton } from '../skeleton.ts';
 import { drawSmear, type Ink } from '../vfx.ts';
 import { stampHead } from './head.ts';
@@ -24,20 +24,52 @@ const S = ART_SCALE;
 
 const M = MATERIAL;
 const SKIN = noGloss(M.skin);
-const SKIN_FAR = farOf(SKIN);
+const SKIN_FAR = farLit(SKIN);
 const JACKET: Material = { ...M.jacket, glossCut: 0.92 };
-const JACKET_FAR: Material = { ...farOf(JACKET), base: JACKET.shadow, light: JACKET.base };
+const JACKET_FAR = farLit(JACKET);
 const SHIRT = matteOf(M.shirt);
 const LEATHER: Material = { ...M.leather, glossCut: 0.9 };
-const LEATHER_FAR = farOf(LEATHER);
+const LEATHER_FAR = farLit(LEATHER);
 const PANTS = noGloss(M.pants);
-const PANTS_FAR = farOf(PANTS);
+const PANTS_FAR = farLit(PANTS);
 const POCKET = matteOf(M.pocket);
 const BOOT: Material = { ...M.boot, glossCut: 0.9 };
-const BOOT_FAR = farOf(BOOT);
+const BOOT_FAR = farLit(BOOT);
 const SOLE = matteOf(M.sole);
 const METAL: Material = { ...M.metal, glossCut: 0.7 };
 const PLASTIC: Material = { ...M.plastic, glossCut: 0.86 };
+
+/**
+ * A far limb: a step darker (farOf), but it keeps the back light: on the side away from the
+ * viewer, it is the closest to the neon behind him.
+ */
+function farLit(material: Material): Material {
+  const far = farOf(material);
+  return material.rim === undefined ? far : { ...far, rim: material.rim };
+}
+
+/** Toward the key light, in world axes (y up). */
+const KEY: Point = { x: KEY_LIGHT_2D.x, y: -KEY_LIGHT_2D.y };
+
+/** A material a tone darker, keeping its volume: the slope of a puff turned from the light. */
+function darker(material: Material): Material {
+  return noGloss({
+    ...material,
+    shadow: material.deep,
+    base: material.shadow,
+    light: material.base,
+  });
+}
+
+/** A material a tone lighter, keeping its volume: the slope of a puff turned to the light. */
+function lighter(material: Material): Material {
+  return noGloss({
+    ...material,
+    deep: material.shadow,
+    shadow: material.base,
+    base: material.light,
+  });
+}
 
 interface Ctx extends Ink {
   readonly s: Skeleton;
@@ -90,8 +122,12 @@ export function drawNayo(
 // ---------------------------------------------------------------------------------------------
 // Neon accents: exact palette slots, never shaded (they light themselves)
 
-/** A neon line from `a` to `b` (world points): bright core, colored edge. */
-function neonLine(ctx: Ink, a: Point, b: Point, width = 1): void {
+/**
+ * A neon line from `a` to `b` (world points), colored ends. A `glowing` one (a LED strip, the
+ * emblem) has a near white core, and the cloth around it takes the neon's halo (the fighter's
+ * Lighting.glow); the others (a small ring) stay a plain bright line.
+ */
+function neonLine(ctx: Ink, a: Point, b: Point, glowing = false): void {
   const from = ctx.at(a);
   const to = ctx.at(b);
   const steps = Math.max(1, Math.ceil(Math.hypot(to.x - from.x, to.y - from.y)));
@@ -99,8 +135,7 @@ function neonLine(ctx: Ink, a: Point, b: Point, width = 1): void {
     const x = from.x + ((to.x - from.x) * i) / steps;
     const y = from.y + ((to.y - from.y) * i) / steps;
     const end = i === 0 || i === steps;
-    ctx.canvas.dot(x, y, end ? DETAIL.neon : DETAIL.neonLight);
-    if (width > 1) ctx.canvas.dot(x + 1, y, DETAIL.neon);
+    ctx.canvas.dot(x, y, end ? DETAIL.neon : glowing ? DETAIL.neonCore : DETAIL.neonLight);
   }
 }
 
@@ -120,6 +155,8 @@ function drawArm(ctx: Ctx, side: Side, which: 'near' | 'far'): void {
   canvas.capsule(at(side.elbow), at(cuffStart), 3.2 * S, 2.8 * S, jacket, { group });
   canvas.capsule(at(cuffStart), at(side.wrist), 2.5 * S, 2.4 * S, jacket, { group });
   const seam = { ...jacket, base: jacket.shadow, light: jacket.base };
+  puffSeam(ctx, side.shoulder, side.elbow, 0.45, jacket, 3.8, group);
+  puffSeam(ctx, side.elbow, cuffStart, 0.5, jacket, 3.3, group);
   stripeAcross(ctx, side.shoulder, side.elbow, [0.45], seam, 3.8, group);
   stripeAcross(ctx, side.elbow, cuffStart, [0.5], seam, 3.3, group);
   stripeAcross(
@@ -136,6 +173,47 @@ function drawArm(ctx: Ctx, side: Side, which: 'near' | 'far'): void {
   drawHand(ctx, side, near);
 }
 
+/**
+ * The two puffs on either side of a quilting seam across a limb segment (at fraction `t` from
+ * `from` to `to`): the one on the light's side shows its slope turned away from it, in shadow,
+ * the other its slope turned to it, lit. Read from the segment's direction, so it holds in
+ * every pose.
+ */
+function puffSeam(
+  ctx: Ctx,
+  from: Point,
+  to: Point,
+  t: number,
+  material: Material,
+  halfWidth: number,
+  group: string,
+): void {
+  const along = sub(to, from);
+  const u = unit(along);
+  const v = { x: -u.y, y: u.x };
+  const center = add(from, scale(along, t));
+  const toLight = u.x * KEY.x + u.y * KEY.y >= 0 ? 1 : -1;
+  const band = (start: number, end: number, tone: Material): void => {
+    const corner = (du: number, dv: number): Point =>
+      ctx.at(add(center, add(scale(u, du * toLight), scale(v, dv))));
+    ctx.canvas.decal(
+      [
+        corner(start, -halfWidth),
+        corner(end, -halfWidth),
+        corner(end, halfWidth),
+        corner(start, halfWidth),
+      ],
+      tone,
+      group,
+    );
+  };
+  band(PUFF.seam, PUFF.seam + PUFF.slope, darker(material));
+  band(-PUFF.seam - PUFF.slope, -PUFF.seam, lighter(material));
+}
+
+/** A quilting seam's half width and the width of the slopes beside it (world pixels). */
+const PUFF = { seam: 0.22, slope: 1.1 } as const;
+
 /** The glowing emblem on the upper sleeve: a neon square ring. */
 function drawEmblem(ctx: Ctx, side: Side): void {
   const along = unit(sub(side.elbow, side.shoulder));
@@ -147,7 +225,7 @@ function drawEmblem(ctx: Ctx, side: Side): void {
   for (let i = 0; i < square.length; i++) {
     const a = square[i];
     const b = square[(i + 1) % square.length];
-    if (a && b) neonLine(ctx, a, b);
+    if (a && b) neonLine(ctx, a, b, true);
   }
   const core = ctx.at(center);
   ctx.canvas.dot(core.x, core.y, DETAIL.neonDeep);
@@ -265,7 +343,7 @@ function drawCargoPocket(ctx: Ctx, side: Side, group: string): void {
     group,
   );
   // LED strip down the pocket.
-  neonLine(ctx, world(0.5, 1.4), world(0.74, 1.3));
+  neonLine(ctx, world(0.5, 1.4), world(0.74, 1.3), true);
 }
 
 function drawBoot(ctx: Ctx, side: Side, near: boolean): void {
@@ -324,7 +402,12 @@ function drawBoot(ctx: Ctx, side: Side, near: boolean): void {
   // LED strip down the back of the shaft.
   if (near) {
     const back = scale(front, -2.6);
-    neonLine(ctx, add(add(side.ankle, scale(sub(top, side.ankle), 0.15)), back), add(top, back));
+    neonLine(
+      ctx,
+      add(add(side.ankle, scale(sub(top, side.ankle), 0.15)), back),
+      add(top, back),
+      true,
+    );
   }
 }
 
@@ -408,8 +491,23 @@ function drawTorso(ctx: Ctx): void {
     JACKET,
     { group: 'jacket', axis, tilt: { x: 0.1, y: 0.15 } },
   );
-  // Quilting: horizontal stitch lines across the puffer, and the elastic hem.
+  // Quilting: horizontal stitch lines across the puffer, and the elastic hem. Each puff bulges
+  // between two of them: beside a stitch, the slope turned to the key light catches it, the
+  // other one falls in shadow (puffSeam, along the spine).
   const stitch = noGloss({ ...JACKET, base: JACKET.shadow, light: JACKET.base });
+  const upLit = s.up.x * KEY.x + s.up.y * KEY.y >= 0;
+  const slope = (from: number, to: number, tone: Material): void => {
+    canvas.decal(
+      [t(from, -9.4 + back), t(from, 2.8 + open), t(to, 2.8 + open), t(to, -9.4 + back)],
+      tone,
+      'jacket',
+    );
+  };
+  for (const distance of [8.4, 13.4, 18.4]) {
+    slope(distance + 0.45, distance + 0.45 + PUFF.slope, upLit ? darker(JACKET) : lighter(JACKET));
+    slope(distance - PUFF.slope, distance, upLit ? lighter(JACKET) : darker(JACKET));
+  }
+  slope(4.0, 4.0 + PUFF.slope, upLit ? darker(JACKET) : lighter(JACKET));
   for (const distance of [8.4, 13.4, 18.4]) {
     canvas.decal(
       [
