@@ -15,24 +15,31 @@ Rédigé par la session principale le 2 novembre 2026, sur `main` à `c0221be`.
 
 Ce qui est fait et publié :
 - **Nayo et Riff** jouables, avec la lumière de rue et leurs lumières vivantes (#97, #102). Pour Nayo seulement : les effets signature et le Boost avec ses propres images.
+- **Saphir**, la 3e combattante, jouable avec son CPU et son Finisher (#110, #113, #114). Porte 4 : sa présence, ses lumières, puis ses Remix avec leurs propres planches (#118, #119).
+- **Watt**, le colosse à tête d'ampoule, jouable **en boîte grise** (un bloc), avec son CPU et son Finisher « Couvre-feu » (#106, #112). Son dessin n'est pas encore branché.
 - **Le plan polish**, hors son : lots 1, 3, 6, 8, 9, 11, 14 et 16 (#81 à #95).
-- **Les décors** : la rue, ses ambiances tirées à chaque match, le Viaduct Gym et l'écran « Lieu » (#96, #98, #99, #103).
+- **Les décors** : la rue, ses ambiances tirées à chaque match, le Viaduct Gym, The Loading Dock, l'écran « Lieu », puis la pluie et des sols lisibles (#96, #98, #99, #103).
+- **Le salon du Multi** (portes 0 et 1, #111, #115), caché derrière `?multi` : la recherche automatique, l'acceptation, la map choisie par l'hôte, puis les combattants. Pas encore de combat.
+- **Le téléphone** : le cockpit et Claude Code en un tap depuis l'écran d'accueil (#108, #116, §6 et §7).
 - **Le son est abandonné** (décision du propriétaire).
 
-**En cours, hors du jeu en ligne :**
+**En cours :**
 
 | Chantier | Où | Prochaine étape | Ce qu'il faut |
 |---|---|---|---|
-| **Saphir** (3e combattante) | `docs/saphir.md`, `src/art/saphir/`, `tools/sprites/saphir/` | ses hurtbox mesurées, puis la porte 4, puis la PR de branchement (E), puis la PR F (plans du CPU, aide, équilibrage, D36 au journal) | « Branche quand c'est parfait » : le go est donné, sous condition de la porte 4 |
-| **Watt** (colosse à tête d'ampoule, tiré de Zen-Tazzer) | PR #106 (porte 1a, docs seules) | ton « oui » sur la spec, puis la porte 1b (données) | ta validation |
+| **Saphir**, porte 4 | `docs/saphir.md`, `src/art/saphir/`, `tools/sprites/saphir/` | le lot 3 : ses effets signatures en jeu, ses particules, la planche de silhouettes | — |
+| **Watt**, porte 3 | `docs/watt.md`, `tools/sprites/watt/` | toutes ses planches dessinées, puis la PR qui branche son art (`ART_BY_FIGHTER`, le retrait de `GREY_BOXES`) | — |
 | **Les prochains combattants** | [art/passation-personnages.md](art/passation-personnages.md) | suivre ses portes | — |
-| **Le multijoueur à deux** | [prompts/multijoueur.md](prompts/multijoueur.md) | la porte 0 : se trouver et afficher le ping | à lancer |
+| **Le Multi**, porte 2 | `docs/multijoueur.md` | le combat en lockstep entre deux appareils, avec le hash anti-désynchronisation | le « oui » du propriétaire à chaque porte |
 | **Les poses de Nayo** (tranche 3 : hanches et jambes qui bougent, images-clés dessinées à la main) | [art/nayo-essence.md](art/nayo-essence.md) | à démarrer | — |
 | **L'identité de Riff** (ses lumières de coup, ses effets, ses griffes) | [art/riff-lumiere.md](art/riff-lumiere.md), [art/nayo-vivante.md](art/nayo-vivante.md) | à démarrer, sur le modèle de Nayo | — |
 
 **Décisions qui attendent le propriétaire :**
 - la fluidité F2, sur la branche `feat/anim-f2` ;
 - les données de Riff (équilibrage, D33) ;
+- l'équilibrage de Saphir : entre CPU difficiles, Nayo la bat environ 8 fois sur 10 ;
+- l'équilibrage de Watt : entre CPU difficiles, il gagne 1 % contre Nayo, 40,5 % contre Riff et 16,5 % contre Saphir (`docs/watt.md` §17) ;
+- le cadrage du Finisher : au gros plan, la tête de Nayo projeté entre de 3 px dans la bande du HUD ;
 - la silhouette A ou B ;
 - la PWA (#36) ;
 - les poses du Finisher (PR 4) ;
@@ -50,7 +57,7 @@ Ce qui est fait et publié :
   - D23 : rien n'est interpolé entre deux tics ;
   - au plus 3 flashs par seconde ;
   - mémoire vidéo d'un match sous 90 Mo, textures de 4 096 px au plus.
-- **Le journal des décisions** : `docs/combat-v2.md` §0.2. Le dernier numéro est D35 ; D36 est réservé à Saphir et D37 à Watt.
+- **Le journal des décisions** : `docs/combat-v2.md` §0.2. D36 est Saphir, D37 Watt, D38 le Multi. Le prochain numéro libre est D39 : vérifie-le juste avant chaque fusion, car d'autres sessions écrivent aussi au journal.
 - **Les retours du propriétaire sur l'art**, à relire avant de montrer quoi que ce soit : [art/passation-personnages.md](art/passation-personnages.md) §2.1.
 
 ---
