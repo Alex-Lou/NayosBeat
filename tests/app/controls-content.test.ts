@@ -108,8 +108,10 @@ describe('helpPages', () => {
     expect(textOf('Les bases')).toContain("tu vois le gel et tu n'attaques pas, pare");
     expect(textOf('Nayo')).toMatch(/Mégabasse : .*Le Quatre/);
     expect(textOf('Riff')).toMatch(/Slam : .*Larsen/);
+    expect(textOf('Saphir')).toMatch(/Coda : .*Face B/);
     expect(textOf('Nayo')).toContain("l'adversaire tombe sur le quatre");
     expect(textOf('Riff')).toContain('toute la salle saute sur ton temps');
+    expect(textOf('Saphir')).toContain("toute la salle danse sur l'autre face");
   });
 
   it('shows BOOST on every device (combos-v3 §1.8.5)', () => {
