@@ -566,3 +566,19 @@ Le travail du GPU est le temps CPU du processus GPU de Chromium (SwiftShader, to
 Les planches A/B et les essais sont hors du dépôt, dans `/tmp/claude-0/-home-user/52a00850-d99a-5791-bce9-b2e169dbe15f/scratchpad/contexte-ab/` : `planches/` et `essai/` avant la retouche, `planches-v2/` (avec `mesures.txt`) et `essai-v2/` après.
 
 À vérifier (§7, point 4) : sous Safari, l'anneau de prise et le Finisher de Riff, à l'œil ; sur PC, Chrome en 1920×1080 : les images/s de la surcouche, avant et après.
+
+**Premier levier : les lumières et les filtres** (prototype « Nayo vivant », [art/nayo-vivante.md](art/nayo-vivante.md) §5), le 2 novembre 2026. C'est le levier que ce plan attendait (§0, §2.8). La décision du 1er novembre (« pas de baisse automatique pour l'instant ») ne visait que la HD ; celle-ci est à confirmer par le propriétaire pour ce levier.
+
+- **Les paliers** (`src/render/light-quality.ts`) :
+  - `full` : lumières vivantes, filtres (aura, LED) et particules ;
+  - `lean` : lumières et particules, sans filtre ;
+  - `off` : rien de tout cela, les flaques de lumière d'avant reviennent.
+
+  Le gameplay, le HUD et les effets des coups ne changent jamais (§2.1).
+- **Au départ, seulement des plafonds** (§2.8, R12) :
+  - en Canvas, `off` ;
+  - avec un rendu logiciel, `deviceMemory` ≤ 2 ou `MAX_TEXTURE_SIZE` < 4 096, `lean` ;
+  - `?lumieres=haut|moyen|non` force le plafond.
+- **En combat**, il ne fait que descendre, vite : après 90 images d'intro, une fenêtre de 120 images dont 20 % ou plus durent plus de 25 ms fait perdre un palier. Le palier perdu devient le plafond de la session.
+- **Ce qui manque encore à F** : la baisse à l'essai sous une cadence plus lente (S1, S1b), le plafond appris d'une session à l'autre et la demi-cadence. Une Économie d'énergie à 30 Hz fait donc descendre les lumières, ce qui est voulu mais reste à vérifier sur iPhone.
+- **Preuve** : `tests/render/light-quality.test.ts`. Les mutations « jamais de descente » et « Canvas en `full` » le font rougir.

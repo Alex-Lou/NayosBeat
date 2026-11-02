@@ -140,6 +140,9 @@ Un seul budget par combat, pour les deux joueurs. `FightScene` le crée, le fait
 | Effets signature (`signature-fx.ts`, à taille 1, × taille²) : anneau du Vinyle, ondes du disque (énergie / platine), Pied fendu, anneau au sol, montée de l'Uppercut | 325, 31 / 66, 210, 450, 140 | — |
 | Effets signature : montée et drop de la Mégabasse, éclat du Boost, dash, arc d'un coup lourd ; calmes ou refusés | 70, 430, 820, 44, 95 ; 0 | — |
 | Flaques de lumière, ombres, lueur sur l'adversaire, rémanences des spéciaux (sous ΔL 0,08, calmes 0,05) | 0 | — |
+| Lumière vivante sur les deux combattants (§5), par tenue, demandée à l'allumage | 400 (2ᵉ tenue 1 130) | 490 (2ᵉ tenue 715) |
+| Lueur de la rue, assombrissement de la super, aura, LED, particules, corps des effets francs (§5) | 0 | — |
+| Fil chaud d'un anneau franc (§5) : sa longueur, demandée au départ | onde ≤ 149 (×1,3 : 193), séisme ≤ 491 (×1,3 : 639) | — |
 
 Les gerbes sont mesurées sur la vraie `HitFx` (test, hasard à graine fixe), les fx sur les vraies planches, les effets signature sur la vraie `SignatureFx`, sur le fond le plus lumineux du décor (canal par canal : ce qu'une lumière ajoutée élève le plus), dans les deux tons des deux tenues et à chaque taille jouée ([art/nayo-vfx.md](art/nayo-vfx.md) §4). Ils demandent une fois, à leur départ, après les coups et les fx de planche de l'image (`admit` : ils ne prennent jamais de créneau) ; refusés, ils jouent calmes. La gerbe `pinpoint` a son propre compteur de hasard dans le test : les autres gardent le tirage avec lequel elles ont été mesurées. Le cadre de CONTRE et de PUNITION est tracé dans l'énergie du joueur assombrie vers l'encre jusqu'à ne changer aucune grande couleur de la scène de ΔL 0,1 (`toneUnder`) : il se voit, mais n'allume rien, ce que `one-voice.test.ts` vérifie dans chaque coloris. Les mots et les tampons sont mesurés sur leurs lettres : le test lit les contours des polices (Bangers, Press Start 2P), les remplit, les encre et pose leur ombre comme le fait le `Text` de Phaser, dans chaque coloris, et vérifie que la table les couvre à 5 % près. Un compteur n'allume jamais plus que son « x » et ses chiffres pris un à un : un « x123 » compte trois chiffres.
 
@@ -224,3 +227,41 @@ En effets réduits, les éclats de la jauge et de la barre restent, sans leur re
   - la vibration de l'attaquant en mode calme ;
   - rallumer un fx sombre quand son image fusionne avec un flash compté (les anneaux s4 de la Mégabasse sur le climax) : la règle « jamais rallumé dans le même clip » reste ;
   - la vérification des mesures des lettres par une capture du navigateur, et le passage des replays dans IRIS.
+
+---
+
+## 5. Lumières vivantes, présence et effets francs (prototype, [art/nayo-vivante.md](art/nayo-vivante.md))
+
+### 5.1 Ce qui est un flash, et ce qui n'en est pas
+
+Le prototype partait d'une idée : « une lumière qui monte et descend en douceur, en plus de 0,3 s, ou une aura stable, ne sont pas des flashs ». **La moitié de cette idée est fausse.**
+
+- **Faux : la lenteur n'exempte pas.**
+  - La définition de WCAG 2.3.1 (une paire de changements opposés de ΔL 0,1 ou plus, l'image la plus sombre sous 0,8) ne contient aucune vitesse. L'ITU-R BT.1702 et l'Ofcom non plus.
+  - Une lumière qui monte en 0,3 s puis redescend est un flash si elle change une grande surface de 0,1 ou plus. IRIS (EA) additionne les variations d'un même sens, image après image : une rampe lente y fait une transition comme un saut.
+  - La lenteur limite seulement combien de flashs une source fait seule par seconde (au plus un par aller-retour). Elle ne la retire pas du compte : ses flashs s'ajoutent aux coups dans la même seconde.
+- **Vrai : ce qui est stable n'est pas un flash.** Seuls son allumage et son extinction sont des changements.
+- **Vrai : ce qui varie de moins de ΔL 0,1 n'en est jamais un**, quels que soient son niveau, sa vitesse et sa taille.
+
+**La règle retenue** : borner la *variation*, jamais la vitesse. Ce qui couvre une grande surface varie de moins de 0,1. Ce qui varie de 0,1 ou plus est mesuré et demandé au budget, comme une gerbe.
+
+### 5.2 Les règles
+
+| Pièce | Règle | Surface à ΔL ≥ 0,1 |
+|---|---|---|
+| Lueur de la rue (`PointLight`) | Change les grandes couleurs du décor de 0,09 au plus (0,05 calmes), lueurs qui se chevauchent partagées, recalculée à chaque niveau d'assombrissement | 0 |
+| Pixels du décor qui s'éclairent eux-mêmes (fenêtres, lampes) | Redessinés par-dessus les lueurs, tels quels, tant qu'une lueur brille | 0 (mesuré sur les 6 images) |
+| Lumière par pixel sur les combattants | Demande au budget, à son allumage, l'aire des deux combattants (`admit`, jamais un créneau) ; refusée ou calme, elle ne les éclaire jamais de sa vie | table `FIGHTER_LIGHT_AREAS` |
+| Assombrissement de la super (teinte ×0,4 du décor) | Baisse des grandes couleurs de 0,065 au plus, en 4 images ; remplace la mise au noir de §2 | 0 |
+| Aura | Ton sombre opaque, sous 0,08 sur le décor ; respire à 0,4 Hz | 0 |
+| LED | Stables, quelques px² | — |
+| Particules de son | Quelques px² chacune, fondu en sin² sur 2,5 s | — |
+| Corps d'un effet franc | Ton sous 0,09, opaque, cerné d'encre | 0 |
+| Fil chaud d'un anneau franc | 1 px, sa longueur demandée au départ (`admit`) ; refusé ou calme, pas tracé | périmètre × 1 px |
+
+- **L'ordre.** La lumière vivante et les effets francs demandent **en dernier**, après les coups, les fx de planche et les effets signature (`FightScene`). Ils ne prennent donc jamais un créneau à un coup.
+- **Mesuré.** `flash-cadence.test.ts` et `finisher-flashes.test.ts` les jouent sur les vraies routes : mêmes registres qu'avant, la Mégabasse qui tue fait toujours 3 flashs. `live-lights.test.ts` et `bold-fx.test.ts` mesurent le reste.
+- **Mode simple (Canvas).** Ni lumière, ni lueur, ni filtre, ni particule. Les effets francs restent : ce sont des aplats, que Canvas dessine.
+- **Pas encore fait.**
+  - Une lumière qui se déplace n'est comptée qu'une fois, à son allumage, comme les anneaux de §4.
+  - La baisse que fait l'aura sur les pixels clairs de Riff, quand Nayo est devant elle, n'est pas comptée.
