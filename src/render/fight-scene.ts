@@ -730,6 +730,7 @@ export class FightScene extends Phaser.Scene {
     const read = runtime.inputs.read(pads);
     for (let i = 0; i < playable; i++) {
       const inputs = seized ? NEUTRAL : runtime.source.next(read, this.state);
+      if (!inputs) return i;
       const previous = this.state;
       this.state = step(previous, inputs, this.config);
       detectEvents(previous, this.state, this.config, this.tickEvents);

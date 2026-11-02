@@ -44,6 +44,11 @@ export class Lockstep {
     return this.next;
   }
 
+  /** How many ticks can be played from now on: those whose inputs have both arrived. */
+  available(): number {
+    return this.received - this.next + 1;
+  }
+
   /** Whether the next tick can be played: the other player's input for it has arrived. */
   ready(): boolean {
     return this.next <= this.received;

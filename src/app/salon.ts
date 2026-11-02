@@ -48,6 +48,13 @@ export type Salon =
       readonly theirs: FighterId | null;
     }
   | { readonly phase: 'ready'; readonly them: string; readonly plan: MatchPlan }
+  /** The host started the fight with this input delay: the salon is over, the fight begins. */
+  | {
+      readonly phase: 'fight';
+      readonly them: string;
+      readonly plan: MatchPlan;
+      readonly delay: number;
+    }
   | { readonly phase: 'over'; readonly them: string | null; readonly end: SalonEnd };
 
 export type SalonEvent =
@@ -57,7 +64,9 @@ export type SalonEvent =
   | { readonly type: 'refuse' }
   /** The host chose the place. */
   | { readonly type: 'stage'; readonly stage: StagePick }
-  | { readonly type: 'fighter'; readonly fighter: FighterId };
+  | { readonly type: 'fighter'; readonly fighter: FighterId }
+  /** The host starts the fight, with the input delay it measured (docs/multijoueur.md §9.1). */
+  | { readonly type: 'start'; readonly delay: number };
 
 export interface SalonStep {
   readonly salon: Salon;
@@ -83,7 +92,8 @@ export function salonStep(salon: Salon, event: SalonEvent, rules: SalonRules): S
     case 'fighters':
       return fighters(salon, event, rules);
     case 'ready':
-      return event.type === 'received' ? broken(salon.them) : still(salon);
+      return ready(salon, event, rules);
+    case 'fight':
     case 'over':
       return still(salon);
   }
@@ -170,6 +180,23 @@ function chosen(
   if (mine === null || theirs === null) return { salon, send };
   const fighters = rules.role === 'host' ? ([mine, theirs] as const) : ([theirs, mine] as const);
   return { salon: { phase: 'ready', them, plan: { stage: pick, fighters } }, send };
+}
+
+/** Both agreed: the host starts the fight, and the guest is told so. */
+function ready(
+  salon: Extract<Salon, { phase: 'ready' }>,
+  event: SalonEvent,
+  rules: SalonRules,
+): SalonStep {
+  const fight = (delay: number): Salon => ({ ...salon, phase: 'fight', delay });
+  if (event.type === 'start' && rules.role === 'host') {
+    return { salon: fight(event.delay), send: [{ type: 'start', delay: event.delay }] };
+  }
+  if (event.type !== 'received') return still(salon);
+  if (event.message.type === 'start' && rules.role === 'guest') {
+    return still(fight(event.message.delay));
+  }
+  return broken(salon.them);
 }
 
 function still(salon: Salon): SalonStep {

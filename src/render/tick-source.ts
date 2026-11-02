@@ -11,9 +11,15 @@ export interface TickSource {
   playable(count: number): number;
   /**
    * Both players' inputs for the next tick, from what this device's players hold (`read`, once a
-   * frame for all its ticks) and the state the tick starts from.
+   * frame for all its ticks) and the state the tick starts from; null: no more tick now (online,
+   * the shared pause or the match's end, on the same tick on both devices).
    */
-  next(read: readonly [InputBits, InputBits], state: GameState): readonly [InputBits, InputBits];
+  next(
+    read: readonly [InputBits, InputBits],
+    state: GameState,
+  ): readonly [InputBits, InputBits] | null;
+  /** Once a frame, its ticks played: online, what is to be sent goes. */
+  flush(): void;
 }
 
 /**
@@ -37,5 +43,9 @@ export class LocalTickSource implements TickSource {
     this.inputs[0] = this.struggle.apply(0, read[0], state);
     this.inputs[1] = this.cpu() ?? this.struggle.apply(1, read[1], state);
     return this.inputs;
+  }
+
+  flush(): void {
+    // Nothing leaves this device.
   }
 }
