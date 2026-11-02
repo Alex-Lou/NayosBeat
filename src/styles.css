@@ -330,6 +330,22 @@ body {
   background: #f0c94a;
   border-color: #fff;
 }
+/* The online fight's ping and input delay (src/app/app.ts, startOnline): small, under the fight,
+   never in the way of a touch. */
+.online-badge {
+  position: absolute;
+  bottom: calc(4px + env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 2px 6px;
+  font:
+    var(--text-tiny) / 1.4 'Press Start 2P',
+    monospace;
+  color: #dde;
+  background: rgba(17, 17, 31, 0.6);
+  border-radius: 3px;
+  pointer-events: none;
+}
 /* The online name's field (src/ui/name-entry.ts): 16 px, below which iOS zooms in on focus. */
 .menu-input {
   display: block;

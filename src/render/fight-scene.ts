@@ -25,6 +25,7 @@ import { HeldStruggle } from '../input/held-struggle';
 import { isTouchDevice, TouchControls } from '../input/touch-controls';
 import { clockGrainMs, FrameClock } from '../loop/cadence';
 import { TickPacer } from '../loop/tick-pacer';
+import { LocalTickSource, type TickSource } from './tick-source';
 import type { AnimOptions } from './anim-options';
 import { frontFighter, type ShowContext } from './animation';
 import { NO_ADVANTAGE, trackAdvantage, type Advantage } from './advantage-meter';
@@ -85,6 +86,9 @@ import { VIEW_SIZE } from './view';
 /** Caps the catch-up after a long stall (~83 ms of simulation at 60 Hz). */
 const MAX_TICKS_PER_FRAME = 5;
 
+/** Nobody pressing anything: the ticks the Finisher's scene seizes (training). */
+const NEUTRAL: readonly [InputBits, InputBits] = [0, 0];
+
 /** No light on a fighter (before the lights are made). */
 const NO_CAST: Cast = { lean: 0, glowColor: 0, glow: 0 };
 
@@ -114,6 +118,15 @@ export interface FightSceneData {
   readonly onPause: () => void;
   /** Called once, a moment after the final KO, with the winner's index. */
   readonly onMatchEnd: (winner: 0 | 1 | null) => void;
+  /**
+   * Online (docs/multijoueur.md §9.6): the fighter this device plays, its controls being player
+   * 1's, and the match's source of inputs (the lockstep). Nobody skips the Finisher's scene there
+   * yet (gate 2c): a skip plays the match on unseen, from what this device alone holds.
+   */
+  readonly online?: {
+    readonly player: 0 | 1;
+    readonly source: (struggle: HeldStruggle) => TickSource;
+  };
   /** Called once, as the fight's first frame is drawn: what covered the loading may go. */
   readonly onShown?: () => void;
   /**
@@ -157,6 +170,8 @@ interface Runtime {
   readonly padHaptics: PadHaptics;
   /** A button held in a grab struggling as mashed, for the humans who chose so (P25). */
   readonly heldStruggle: HeldStruggle;
+  /** Where each tick's inputs come from: this device's players and the CPU (tick-source.ts). */
+  readonly source: TickSource;
   readonly pauseInput: PauseInput;
   readonly fighterViews: readonly [FighterDisplay, FighterDisplay];
   readonly projectileView: ProjectileView;
@@ -256,7 +271,6 @@ export class FightScene extends Phaser.Scene {
   private governor: LightGovernor | undefined;
 
   /** Reused every tick to avoid allocating. */
-  private readonly tickInputs: [InputBits, InputBits] = [0, 0];
   private readonly tickEvents: FightEvent[] = [];
   /**
    * Reused every display frame by `syncViews`. What the framing keeps in view: both fighters,
@@ -359,12 +373,21 @@ export class FightScene extends Phaser.Scene {
       ),
     );
     this.governor.restart();
+    const heldStruggle = new HeldStruggle(this.sceneData.heldStruggle === true);
+    const { online } = this.sceneData;
+    // This device's controls (player 1's) play its own fighter: its pad rumbles for that one.
+    const me = online?.player ?? 0;
     const runtime: Omit<Runtime, 'finisherScene'> = {
       inputs: new PlayerInputs(window, touch, connectedGamepads()),
       padHaptics: new PadHaptics((player) =>
-        this.runtime?.inputs.padOf(player, connectedGamepads()),
+        online && player !== me
+          ? undefined
+          : this.runtime?.inputs.padOf(online ? 0 : player, connectedGamepads()),
       ),
-      heldStruggle: new HeldStruggle(this.sceneData.heldStruggle === true),
+      heldStruggle,
+      source: online
+        ? online.source(heldStruggle)
+        : new LocalTickSource(heldStruggle, () => (this.cpu ? this.cpuInput(this.cpu) : null)),
       touch,
       touchCover: touch
         ? new TouchCover(this.game.canvas, touch, this.config, GROUND_Y)
@@ -399,6 +422,7 @@ export class FightScene extends Phaser.Scene {
           mode,
           // Training writes the moves' names on a line under the HUD: the words stay under it.
           wordsTop: this.config.training ? UNDER_CAPTIONS : HUD_BAND,
+          touchPlayer: me,
           knockOut: (player, finish, still, hits) => {
             hud.knockOut(player, finish, still, hits);
           },
@@ -464,7 +488,7 @@ export class FightScene extends Phaser.Scene {
       budget,
       comfort,
       mode,
-      humans: this.cpu ? [0] : [0, 1],
+      humans: this.sceneData.online ? [] : this.cpu ? [0] : [0, 1],
       seen: this.sceneData.finishersSeen,
     });
     this.runtime = { ...runtime, finisherScene };
@@ -673,6 +697,8 @@ export class FightScene extends Phaser.Scene {
       // Locked on one of them: its scene takes the pace over from the next frame.
       if (scene.isActive()) this.stage(runtime, pads);
     }
+    // Online, the frame's inputs leave for the other device (tick-source.ts).
+    runtime.source.flush();
     runtime.feedback.update(visualFrames, gameFrames);
     // The Finisher's scene lights its own stage: no move lights then.
     runtime.lights.update(this.state, visualFrames, scene.isActive());
@@ -717,17 +743,15 @@ export class FightScene extends Phaser.Scene {
     // Read even when the scene seizes them (training): a tap made through it is lost, not played
     // after it.
     const seized = scene.seizesInputs();
-    const [player1, player2] = runtime.inputs.read(pads);
-    for (let i = 0; i < count; i++) {
-      const { heldStruggle } = runtime;
-      this.tickInputs[0] = seized ? 0 : heldStruggle.apply(0, player1, this.state);
-      this.tickInputs[1] = seized
-        ? 0
-        : this.cpu
-          ? this.cpuInput(this.cpu)
-          : heldStruggle.apply(1, player2, this.state);
+    // Online, only the ticks whose inputs have arrived; the devices are read only to play some.
+    const playable = runtime.source.playable(count);
+    if (playable <= 0) return 0;
+    const read = runtime.inputs.read(pads);
+    for (let i = 0; i < playable; i++) {
+      const inputs = seized ? NEUTRAL : runtime.source.next(read, this.state);
+      if (!inputs) return i;
       const previous = this.state;
-      this.state = step(previous, this.tickInputs, this.config);
+      this.state = step(previous, inputs, this.config);
       detectEvents(previous, this.state, this.config, this.tickEvents);
       this.push = pushOf(this.tickEvents, previous, this.state, this.push);
       // A blow's flashes are counted at the close-up its push takes them to.
@@ -757,7 +781,7 @@ export class FightScene extends Phaser.Scene {
       for (const event of this.tickEvents) scene.react(event, this.state, viewLeft);
       if (!staged && scene.isActive()) return i + 1;
     }
-    return count;
+    return playable;
   }
 
   /** The camera's push shown now: none while the Finisher's scene plays, which frames its own. */
@@ -779,7 +803,7 @@ export class FightScene extends Phaser.Scene {
       top: this.cameraTop,
       viewLeft: toPx(this.state.cameraX) - VIEW_SIZE.width / 2,
     };
-    scene.update(this.state, runtime.inputs.held(pads), camera);
+    scene.update(this.state, this.sceneData.online ? NEUTRAL : runtime.inputs.held(pads), camera);
     this.playUnseen(scene.takeSkipped());
     if (scene.wantsFastForward()) {
       this.state = playToResults(this.state, this.config);
@@ -825,8 +849,11 @@ export class FightScene extends Phaser.Scene {
     runtime.hud.update(this.state, finisher);
     runtime.hud.showAdvantage(this.advantage.last);
     runtime.hud.showCombo(this.combo.line);
-    runtime.touch?.showBoost(a.boost);
-    runtime.touch?.showFinisher(finisher[0], a.facing, a.action);
+    // The touch screen plays player 1, but online the fighter this device plays.
+    const me = this.sceneData.online?.player ?? 0;
+    const mine = this.state.fighters[me];
+    runtime.touch?.showBoost(mine.boost);
+    runtime.touch?.showFinisher(finisher[me], mine.facing, mine.action);
     runtime.holdRing.update(this.state);
     runtime.holdPrompt?.update(this.state);
     runtime.boxOverlay?.update(this.state);

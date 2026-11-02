@@ -13,11 +13,11 @@ export const SILENCE_MS = 5000;
 /** The round trips the summary is computed over: the last ones. */
 export const PING_SAMPLES = 30;
 /**
- * The most messages a second the other side may send: a ping and a pong a second are the
- * protocol's own. Past it, the link is cut, as for a message that is not the protocol's: every
- * ping it sends would be answered.
+ * The most messages a second the other side may send: in a fight, its inputs once a tick (60),
+ * a hash, a ping and a pong. Past it, the link is cut, as for a message that is not the
+ * protocol's: every ping it sends would be answered.
  */
-export const MAX_MESSAGES_PER_SECOND = 10;
+export const MAX_MESSAGES_PER_SECOND = 120;
 
 /** The round trips measured, in milliseconds (null before the first). */
 export interface PingSummary {
@@ -61,7 +61,7 @@ export class Session {
     private readonly channel: Channel,
     /** A monotonic clock in milliseconds (`performance.now`). */
     private readonly now: () => number,
-    private readonly listener: SessionListener,
+    private listener: SessionListener,
   ) {
     this.lastHeard = now();
     this.windowStart = this.lastHeard;
@@ -77,6 +77,11 @@ export class Session {
       this.beat();
     }, PING_INTERVAL_MS);
     this.ping();
+  }
+
+  /** Who is told from now on (the salon, then the fight): the same link, another listener. */
+  listen(listener: SessionListener): void {
+    this.listener = listener;
   }
 
   send(message: NetMessage): void {

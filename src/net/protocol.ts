@@ -20,8 +20,16 @@ export const SEQ_LIMIT = 0x80000000;
  */
 const PSEUDO = /^[A-Za-z0-9][A-Za-z0-9 -]{0,10}[A-Za-z0-9]$/;
 
-/** A tick's inputs on the wire: the core's buttons (src/core/input.ts), 11 bits. */
-export const INPUT_LIMIT = 1 << 11;
+/**
+ * A tick's input on the wire: the core's buttons (src/core/input.ts, 11 bits), and FLAG_PAUSE:
+ * its player asked for the pause, which both devices take after this tick (docs/multijoueur.md
+ * §9.6). The flag never reaches the core.
+ */
+export const FLAG_PAUSE = 1 << 11;
+export const INPUT_LIMIT = 1 << 12;
+
+/** The longest input delay the host may choose, in ticks: within a batch, with room. */
+export const MAX_DELAY = 10;
 
 /** The most ticks one `inputs` message carries (the oldest the other has not confirmed first). */
 export const MAX_BATCH = 12;
@@ -61,7 +69,13 @@ export type NetMessage =
       readonly ack: number;
     }
   /** The hash of the sender's state after tick `tick` (state-hash.ts): docs/multijoueur.md §9.3. */
-  | { readonly type: 'hash'; readonly tick: number; readonly hash: string };
+  | { readonly type: 'hash'; readonly tick: number; readonly hash: string }
+  /** The host starts the fight, with this input delay in ticks (1 to MAX_DELAY). */
+  | { readonly type: 'start'; readonly delay: number }
+  /** The sender leaves the shared pause: both fight on. */
+  | { readonly type: 'resume' }
+  /** The sender wants a rematch: it starts once both do. */
+  | { readonly type: 'rematch' };
 
 type Type = NetMessage['type'];
 
@@ -78,6 +92,9 @@ const FIELDS: Readonly<Record<Type, Readonly<Record<string, (value: unknown) => 
   fighter: { f: isToken },
   inputs: { k: isSeq, b: isBatch, a: isAck },
   hash: { k: isSeq, h: isHash },
+  start: { d: isDelay },
+  resume: {},
+  rematch: {},
 };
 
 export function encodeMessage(message: NetMessage): string {
@@ -87,6 +104,8 @@ export function encodeMessage(message: NetMessage): string {
     case 'busy':
     case 'accept':
     case 'refuse':
+    case 'resume':
+    case 'rematch':
       return JSON.stringify(head);
     case 'ping':
     case 'pong':
@@ -101,6 +120,8 @@ export function encodeMessage(message: NetMessage): string {
       return JSON.stringify({ ...head, k: message.first, b: message.bits, a: message.ack });
     case 'hash':
       return JSON.stringify({ ...head, k: message.tick, h: message.hash });
+    case 'start':
+      return JSON.stringify({ ...head, d: message.delay });
   }
 }
 
@@ -130,6 +151,8 @@ function messageOf(type: Type, fields: Record<string, unknown>): NetMessage {
     case 'busy':
     case 'accept':
     case 'refuse':
+    case 'resume':
+    case 'rematch':
       return { type };
     case 'ping':
     case 'pong':
@@ -149,6 +172,8 @@ function messageOf(type: Type, fields: Record<string, unknown>): NetMessage {
       };
     case 'hash':
       return { type, tick: fields.k as number, hash: fields.h as string };
+    case 'start':
+      return { type, delay: fields.d as number };
   }
 }
 
@@ -181,4 +206,8 @@ function isAck(value: unknown): boolean {
 
 function isHash(value: unknown): boolean {
   return typeof value === 'string' && /^[0-9a-f]{8}$/.test(value);
+}
+
+function isDelay(value: unknown): boolean {
+  return Number.isInteger(value) && (value as number) >= 1 && (value as number) <= MAX_DELAY;
 }

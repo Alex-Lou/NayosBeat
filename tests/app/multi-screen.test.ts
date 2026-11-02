@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { MultiCatalog } from '../../src/app/multi-catalog';
 import { ANSWER_MS, multiFromUrl, MultiScreen, RETRY_MS } from '../../src/app/multi-screen';
+import type { OnlineMatch } from '../../src/app/online-match';
 import type { NameStore } from '../../src/app/name-store';
 import type { FighterId } from '../../src/data/roster';
 import type { Matchmaker } from '../../src/net/lobby';
@@ -29,6 +30,7 @@ const CATALOG: MultiCatalog = {
   isFighter: (id): id is FighterId => id === 'nayo' || id === 'riff',
   title: ({ map }) => (map === 'gym' ? 'Gym' : 'Rue'),
   name: (id) => (id === 'nayo' ? 'Nayo' : 'Riff'),
+  variant: () => undefined,
 };
 
 function memoryNames(initial = ''): NameStore & { saved: string[] } {
@@ -46,6 +48,7 @@ function device(
   const root = new FakeElement('div', true);
   page.body.appendChild(root);
   const onBack = vi.fn();
+  const matches: OnlineMatch[] = [];
   const names = memoryNames(name);
   const screen = new MultiScreen(root as unknown as HTMLElement, {
     connect: connect ?? (() => Promise.resolve(server.device())),
@@ -53,6 +56,7 @@ function device(
     catalog: CATALOG,
     names,
     onBack,
+    onFight: (match) => matches.push(match),
   });
   const texts = () => byClass(root, 'menu-notice').map((node) => node.textContent);
   const find = (className: string, label: string) =>
@@ -64,7 +68,7 @@ function device(
       throw new Error(`No « ${label} » on ${name || 'the'} screen: ${texts().join(' / ')}`);
     item.dispatchEvent(new Event('click'));
   };
-  return { root, screen, onBack, names, texts, choose, has };
+  return { root, screen, onBack, names, texts, choose, has, matches };
 }
 
 /** Lets the fake network and timers move on. */
@@ -123,7 +127,7 @@ describe('the « Multi » screens (docs/multijoueur.md §7)', () => {
   });
 
   it('pairs, shows each name to accept, then the host chooses the place and both a fighter', async () => {
-    const { alex, lou } = await paired();
+    const { alex, lou, server } = await paired();
     expect(alex.texts()[0]).toBe('Adversaire trouvé : Lou');
     expect(lou.texts()[0]).toBe('Adversaire trouvé : Alex');
     alex.choose('Accepter');
@@ -140,14 +144,26 @@ describe('the « Multi » screens (docs/multijoueur.md §7)', () => {
     await flush();
     lou.choose('Nayo');
     await flush();
-    const ready = [
-      'Alex (Nayo) contre Lou (Nayo).',
-      'Lieu : Gym.',
-      'Le combat arrive à la porte 2.',
-    ];
-    expect(alex.texts().slice(0, 3)).toEqual(ready);
-    expect(lou.texts().slice(0, 3)).toEqual(ready);
-    expect(alex.texts()[3]).toMatch(/^Ping : .* · chemin : direct, même réseau$/);
+    // Both chose: the host starts the fight at once, and each one gets its match.
+    const [hostMatch] = alex.matches;
+    const [guestMatch] = lou.matches;
+    expect(hostMatch?.player).toBe(0);
+    expect(guestMatch?.player).toBe(1);
+    const plan = { stage: { map: 'gym', atmosphere: 'midnight-rain' }, fighters: ['nayo', 'nayo'] };
+    expect(hostMatch?.plan).toEqual(plan);
+    expect(guestMatch?.plan).toEqual(plan);
+    expect(hostMatch?.names).toEqual(['Alex', 'Lou']);
+    expect(guestMatch?.names).toEqual(['Alex', 'Lou']);
+    // The host's delay, from its pings, the same on both devices.
+    expect(guestMatch?.delay).toBe(hostMatch?.delay);
+    // Handed over: closing the screens keeps the link; the match closes it.
+    alex.screen.dispose();
+    lou.screen.dispose();
+    await flush();
+    expect(server.openChannels()).toBe(2);
+    hostMatch?.close();
+    await flush();
+    expect(server.openChannels()).toBe(0);
   });
 
   it('searches again after a refusal, the refused name refused at once from then on', async () => {

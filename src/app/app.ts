@@ -54,6 +54,7 @@ import { controlsContent, currentDevices, helpPages } from './controls-content';
 import { installMethod, onInstallChange, promptInstall } from './install';
 import { multiCatalog } from './multi-catalog';
 import { MultiScreen } from './multi-screen';
+import type { OnlineMatch, OnlineEnd } from './online-match';
 import { nameStore } from './name-store';
 import {
   DEFAULT_SETUP,
@@ -68,6 +69,14 @@ import { selectStages, STAGE_COLUMNS } from './select-stages';
 import { animLabel, DEFAULT_VIEWING, nextSlowdown, SLOWDOWN_LABELS, type Viewing } from './viewing';
 
 const FIGHT_SCENE = 'fight';
+
+/** How an online match ended, said on the « Multi » menu it goes back to (`{tick}`: the desync's). */
+const ONLINE_ENDS: Readonly<Record<OnlineEnd['kind'], string>> = {
+  left: 'L’autre joueur a quitté le match.',
+  silent: 'Connexion perdue pendant le match : il ne compte pour personne.',
+  protocol: 'L’autre appareil a envoyé un message invalide : le match est arrêté.',
+  desync: 'Désynchronisé au tic {tick} : le match est arrêté.',
+};
 /** The notice of the first launch ignores what is pressed this soon: it was meant for the title. */
 const NOTICE_GRACE_MS = 1000;
 
@@ -213,6 +222,11 @@ export class App {
    */
   private stageChoice: StageChoice = RANDOM_STAGE;
   private startedChoice: StageChoice = RANDOM_STAGE;
+  /** The online match being fought, if any (online-match.ts), and its ping and delay on screen. */
+  private online: OnlineMatch | undefined;
+  private onlineBadge: HTMLElement | undefined;
+  /** What the online salon offers and checks (multi-catalog.ts). */
+  private readonly catalog = multiCatalog();
 
   constructor(
     private readonly root: HTMLElement,
@@ -382,21 +396,138 @@ export class App {
    * The « Multi » screen (docs/multijoueur.md §7): its network code, PeerJS with it, is loaded as
    * the search first starts, never with the game. Back to the main menu closes it all.
    */
-  private showMulti(): void {
+  private showMulti(notice?: string): void {
     this.show(
       new MultiScreen(this.root, {
         connect: () =>
           import('../net/peer-matchmaker').then(({ peerMatchmaker }) => peerMatchmaker()),
         now: () => performance.now(),
-        catalog: multiCatalog(),
+        catalog: this.catalog,
         names: nameStore,
         feedback: this.menuFeedback,
         still: isStill(this.comfort),
+        ...(notice ? { notice } : {}),
         onBack: () => {
           this.showMainMenu();
         },
+        onFight: (match) => {
+          this.startOnline(match);
+        },
       }),
     );
+  }
+
+  /**
+   * An online match (docs/multijoueur.md §9.6): the plan both agreed on, fought as « 2 joueurs »
+   * is, each device playing its own fighter; the pause, the rematch and the end shared by both.
+   */
+  private startOnline(match: OnlineMatch): void {
+    this.online = match;
+    this.setup = { ...this.setup, mode: 'versus', fighters: match.plan.fighters };
+    this.stage = this.catalog.variant(match.plan.stage);
+    this.onlineBadge?.remove();
+    const badge = element('div', 'online-badge', `délai ${match.delay}`);
+    this.root.appendChild(badge);
+    this.onlineBadge = badge;
+    const fight = () => this.game.scene.getScene(FIGHT_SCENE) as FightScene | null;
+    match.listen({
+      ping: (summary) => {
+        badge.textContent = `${summary.median ?? '…'} ms · délai ${match.delay}`;
+      },
+      paused: (by) => {
+        this.showOnlinePause(match, by);
+      },
+      resumed: () => {
+        this.screen?.dispose();
+        this.screen = undefined;
+        fight()?.resumeMatch();
+      },
+      rematch: () => {
+        this.startFight(true);
+      },
+      ended: (end) => {
+        if (end.kind === 'desync') console.error(`Online match desynchronized at tick ${end.tick}`);
+        this.leaveOnline(
+          ONLINE_ENDS[end.kind].replace('{tick}', String(end.kind === 'desync' ? end.tick : '')),
+        );
+      },
+    });
+    this.startFight(true);
+  }
+
+  /** Both devices paused: either one resumes, for both; leaving ends the match for both. */
+  private showOnlinePause(match: OnlineMatch, by: 0 | 1, initialIndex = 0): void {
+    const items: MenuItem[] = [];
+    const optionsItem: MenuItem = {
+      label: 'Options',
+      onSelect: () => {
+        this.showOptions(true, () => {
+          this.showOnlinePause(match, by, items.indexOf(optionsItem));
+        });
+      },
+    };
+    const resume = () => {
+      match.resume();
+      this.screen?.dispose();
+      this.screen = undefined;
+      (this.game.scene.getScene(FIGHT_SCENE) as FightScene | null)?.resumeMatch();
+    };
+    items.push({ label: 'Reprendre', hint: 'Pour les deux', onSelect: resume }, optionsItem, {
+      label: 'Quitter',
+      hint: 'Le match s’arrête pour les deux',
+      onSelect: () => {
+        this.leaveOnline('Tu as quitté le match.');
+      },
+    });
+    this.showMenu({
+      title: 'Pause',
+      subtitle: `Demandée par ${match.names[by]}`,
+      overlay: true,
+      items,
+      onBack: resume,
+      initialIndex,
+    });
+  }
+
+  /** The match decided on both devices: the rematch once both want it, or back to « Multi ». */
+  private showOnlineResults(match: OnlineMatch, winner: 0 | 1 | null): void {
+    const name = winner === null ? null : templateOf(match.plan.fighters[winner]).name;
+    const leave = () => {
+      this.leaveOnline('Fin du match.');
+    };
+    this.showMenu({
+      title: name === null ? 'Egalité' : `${name} gagne !`,
+      ...(winner === null ? {} : { subtitle: `Victoire de ${match.names[winner]}` }),
+      overlay: true,
+      items: [
+        {
+          label: 'Revanche',
+          hint: 'Quand les deux la veulent',
+          onSelect: () => {
+            match.wantRematch();
+            if (this.online !== match || this.screen === undefined) return;
+            this.showMenu({
+              title: 'Revanche',
+              subtitle: `En attente de ${match.names[match.player === 0 ? 1 : 0]}…`,
+              overlay: true,
+              items: [{ label: 'Quitter', onSelect: leave }],
+              onBack: leave,
+            });
+          },
+        },
+        { label: 'Quitter', hint: 'Retour au menu « Multi »', onSelect: leave },
+      ],
+    });
+  }
+
+  /** The online match over: its link closed (the other one is told), back to « Multi ». */
+  private leaveOnline(notice: string): void {
+    this.online?.close();
+    this.online = undefined;
+    this.onlineBadge?.remove();
+    this.onlineBadge = undefined;
+    this.stopFight();
+    this.showMulti(notice);
   }
 
   /**
@@ -883,6 +1014,7 @@ export class App {
     );
     this.card = card;
     this.startedPosition = this.setup.position;
+    const { online } = this;
     const data: FightSceneData = {
       setup: this.setup,
       sfx: this.sfx,
@@ -896,11 +1028,19 @@ export class App {
       silhouette: this.silhouette,
       stage: this.stage,
       onPause: () => {
-        this.showPause();
+        // Online, the pause is both devices': asked here, taken a few ticks later by both.
+        if (online) {
+          online.requestPause();
+          (this.game.scene.getScene(FIGHT_SCENE) as FightScene | null)?.resumeMatch();
+        } else this.showPause();
       },
       onMatchEnd: (winner) => {
-        this.showResults(winner);
+        if (online) this.showOnlineResults(online, winner);
+        else this.showResults(winner);
       },
+      ...(online && {
+        online: { player: online.player, source: (struggle) => online.source(struggle) },
+      }),
       onShown: () => {
         card.leave();
         if (this.card === card) this.card = undefined;

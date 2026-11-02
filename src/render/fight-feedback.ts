@@ -95,6 +95,8 @@ export interface FeedbackStage {
    * HUD, or under training's line of move names (move-caption.ts).
    */
   readonly wordsTop?: number;
+  /** The fighter this device's touch screen plays, whose blows vibrate it: player 1 but online. */
+  readonly touchPlayer?: 0 | 1;
 }
 
 /** A blow of the tick, waiting for the others: the tick's blows light up together. */
@@ -278,7 +280,7 @@ export class FightFeedback {
   react(event: FightEvent, viewLeft: number): void {
     const { effects, sfx } = this;
     if (this.vibrate) {
-      const ms = vibrationFor(event, 0);
+      const ms = vibrationFor(event, this.stage.touchPlayer ?? 0);
       if (ms > 0) this.vibrate(ms);
     }
     switch (event.type) {
