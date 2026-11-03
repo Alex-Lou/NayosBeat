@@ -19,7 +19,7 @@ import {
   STAGE_SCALE,
   type StageLayer,
 } from '../../src/art/stage-layers.ts';
-import { ANCHOR, ART_SCALE, CELL_SIZE } from '../../src/art/types.ts';
+import { ANCHOR, CELL_SIZE } from '../../src/art/types.ts';
 import type { Box, FighterTemplate } from '../../src/core/config.ts';
 import { toPx } from '../../src/core/constants.ts';
 import { MOVE_IDS } from '../../src/core/move-data.ts';
@@ -28,7 +28,6 @@ import { strikeOf, type Clips } from './clips.ts';
 import {
   platinePixels,
   PORTRAIT,
-  PORTRAIT_SIZE,
   portraitRules,
   rulesOf,
   stripOf,
@@ -40,6 +39,7 @@ import {
 import type { Fighter } from './fighter.ts';
 import { isAirborne, moveHurtboxesAt, POSTURE_CLIPS, type Posture } from './measure.ts';
 import type { IndexedImage, Rgba } from './png.ts';
+import { bustOf } from './portrait.ts';
 import { solve } from './skeleton.ts';
 import { stageRulesOf, stageStart } from './stage-drawn.ts';
 import { UI_ARTS, UI_FOLDER, uiRulesOf, uiStart, type UiArtName } from './ui-drawn.ts';
@@ -277,12 +277,6 @@ export function portraitTemplateOf(fighter: Fighter, drawn: ReadonlyMap<string, 
   });
 }
 
-/**
- * Sprite pixels across the square of the guard a portrait starts from, enlarged twice: about the
- * framing of the select tiles' squares (56 and 58 px), at twice their detail.
- */
-const PORTRAIT_SOURCE = PORTRAIT_SIZE / 2;
-
 /** The head of the guard: a square of its first idle frame around the head, enlarged twice. */
 function portraitStart(fighter: Fighter, drawn: ReadonlyMap<string, Drawn>): Uint8Array {
   const own = drawn.get(PORTRAIT)?.body;
@@ -290,20 +284,7 @@ function portraitStart(fighter: Fighter, drawn: ReadonlyMap<string, Drawn>): Uin
   const idle = stripPixels(fighter, 'idle', drawn).body;
   const pose = fighter.poses('idle')?.[0];
   if (!pose) throw new Error(`${fighter.name} has no idle pose`);
-  const { head } = solve(pose, fighter.body);
-  const left = Math.round(ANCHOR.x + head.x * ART_SCALE - PORTRAIT_SOURCE / 2);
-  const top = Math.round(ANCHOR.y - head.y * ART_SCALE - PORTRAIT_SOURCE * 0.45);
-  const zoom = PORTRAIT_SIZE / PORTRAIT_SOURCE;
-  const pixels = new Uint8Array(PORTRAIT_SIZE * PORTRAIT_SIZE);
-  for (let y = 0; y < PORTRAIT_SIZE; y++) {
-    for (let x = 0; x < PORTRAIT_SIZE; x++) {
-      const cx = left + Math.floor(x / zoom);
-      const cy = top + Math.floor(y / zoom);
-      if (cx < 0 || cy < 0 || cx >= CELL_SIZE || cy >= CELL_SIZE) continue;
-      pixels[y * PORTRAIT_SIZE + x] = idle.pixels[cy * idle.width + cx] ?? 0;
-    }
-  }
-  return pixels;
+  return bustOf(idle.pixels, idle.width, solve(pose, fighter.body).head);
 }
 
 /**
