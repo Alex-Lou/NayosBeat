@@ -77,6 +77,17 @@ describe('the flash budget (docs/flashs.md §4)', () => {
     expect(budget.request(BIG)).toBe('muted');
   });
 
+  it('admits alone only what stays under the area on its own, never with a counted flash', () => {
+    const budget = budgetAt('reduced');
+    expect(budget.request(BIG, true)).toBe('lit');
+    budget.advance(FLASH_MERGE);
+    // Within 2 frames of the climax: it would join it, unless it may not.
+    expect(budget.admit(BIG, false)).toBe(false);
+    expect(budget.admit(BIG)).toBe(true);
+    budget.advance(FLASH_MERGE + 1);
+    expect(budget.admit(SMALL, false)).toBe(true);
+  });
+
   it('adds up what lights within 2 frames: a trade asks for a slot', () => {
     const budget = budgetAt('normal');
     const half = Math.ceil(FLASH_RULES.normal.area / 1.45 ** 2 / 2);

@@ -1,35 +1,35 @@
 {
   "frames": {
     "0": {
-      "frame": { "x": 0, "y": 0, "w": 107, "h": 168 },
+      "frame": { "x": 172, "y": 0, "w": 87, "h": 150 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 0, "w": 107, "h": 168 },
-      "sourceSize": { "w": 107, "h": 168 }
+      "spriteSourceSize": { "x": 1, "y": 1, "w": 87, "h": 150 },
+      "sourceSize": { "w": 118, "h": 169 }
     },
     "1": {
-      "frame": { "x": 107, "y": 0, "w": 107, "h": 168 },
+      "frame": { "x": 259, "y": 0, "w": 92, "h": 146 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 0, "w": 107, "h": 168 },
-      "sourceSize": { "w": 107, "h": 168 }
+      "spriteSourceSize": { "x": 7, "y": 10, "w": 92, "h": 146 },
+      "sourceSize": { "w": 118, "h": 169 }
     },
     "2": {
-      "frame": { "x": 214, "y": 0, "w": 107, "h": 168 },
+      "frame": { "x": 351, "y": 0, "w": 107, "h": 142 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 0, "w": 107, "h": 168 },
-      "sourceSize": { "w": 107, "h": 168 }
+      "spriteSourceSize": { "x": 11, "y": 21, "w": 107, "h": 142 },
+      "sourceSize": { "w": 118, "h": 169 }
     },
     "3": {
-      "frame": { "x": 321, "y": 0, "w": 107, "h": 168 },
+      "frame": { "x": 85, "y": 0, "w": 87, "h": 152 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 0, "w": 107, "h": 168 },
-      "sourceSize": { "w": 107, "h": 168 }
+      "spriteSourceSize": { "x": 5, "y": 9, "w": 87, "h": 152 },
+      "sourceSize": { "w": 118, "h": 169 }
     },
     "4": {
-      "frame": { "x": 428, "y": 0, "w": 107, "h": 168 },
+      "frame": { "x": 0, "y": 0, "w": 85, "h": 169 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 0, "w": 107, "h": 168 },
-      "sourceSize": { "w": 107, "h": 168 }
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 85, "h": 169 },
+      "sourceSize": { "w": 118, "h": 169 }
     }
   },
-  "meta": { "image": "jumpLight.png", "size": { "w": 535, "h": 168 } }
+  "meta": { "image": "jumpLight.png", "size": { "w": 458, "h": 169 } }
 }

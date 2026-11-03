@@ -24,6 +24,9 @@ import { RIFF_SHEETS } from '../../src/art/riff/sheets.ts';
 import { SAPHIR_CELLS } from '../../src/art/saphir/cells.ts';
 import { SAPHIR_CLIPS } from '../../src/art/saphir/clips.ts';
 import { SAPHIR_SHEETS } from '../../src/art/saphir/sheets.ts';
+import { WATT_CELLS } from '../../src/art/watt/cells.ts';
+import { WATT_CLIPS } from '../../src/art/watt/clips.ts';
+import { WATT_SHEETS } from '../../src/art/watt/sheets.ts';
 import { clipOf, effectsOf, type ClipId, type FighterArt } from '../../src/art/types.ts';
 import type { MatchConfig } from '../../src/core/config.ts';
 import { toPx } from '../../src/core/constants.ts';
@@ -122,7 +125,7 @@ export interface Film {
 
 /**
  * The art of a fighter as the game plays it, without its images (the bundler's alone). A fighter
- * in grey boxes (Watt, until his art: docs/watt.md) has none, and cannot be filmed.
+ * in grey boxes until his art has none, and cannot be filmed.
  */
 const ARTS: Readonly<Partial<Record<FighterId, FighterArt>>> = {
   nayo: {
@@ -141,6 +144,7 @@ const ARTS: Readonly<Partial<Record<FighterId, FighterArt>>> = {
     cells: SAPHIR_CELLS,
     urls: {},
   },
+  watt: { key: 'watt', sheets: WATT_SHEETS, clips: WATT_CLIPS, cells: WATT_CELLS, urls: {} },
 };
 
 /** The art `fighter` is filmed with; one in grey boxes has none to film. */

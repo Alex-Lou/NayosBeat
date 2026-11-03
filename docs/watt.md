@@ -498,7 +498,7 @@ D37, inscrit au journal (`docs/combat-v2.md` §0.2) : le 4e combattant de Sound 
   - le KO tombe à 56, la retombée à t0 + 60, la carte de 146 à 217 ;
   - le son baisse à t0 + 9, en 6 images ; la basse de la coupure tombe sur la dernière image de la carte ;
   - deux flashs à lui, à 116 et 146 (un seul, 146, en flashs réduits) : sous les règles.
-  - En boîte grise, aucun liseré n'est dessiné autour de lui.
+  - Dessiné, son liseré allume 410 px² monde (`OUTLINE_AREAS`, 450). Il est refusé, car il ferait un flash à lui seul. En flashs réduits, il ne peut pas non plus s'allumer avec le flash de sa dernière frappe (`admit(area, false)`) : juste sous le seuil à l'écran, celui-ci le franchirait (§4.5 de `finisher.md`).
 - **Un écart de cadrage, signalé** : au gros plan ×2, la tête de Nayo projeté par la dernière frappe (6 ; 2) monte de 3 px dans la bande du HUD. Le Quatre de Nayo fait de même en miroir. C'est le cadrage commun ; ce n'est pas corrigé ici.
 - **Équilibrage entre CPU difficiles**, 200 matchs par paire, les côtés en alternance, graines 1000 et suivantes :
   - Watt contre Nayo : **1 %** des matchs gagnés ;

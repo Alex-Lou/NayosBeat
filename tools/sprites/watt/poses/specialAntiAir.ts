@@ -13,13 +13,13 @@ export const ANIMATED: boolean = true;
 // Frame 0: the crouch, both clamps low, about to go up.
 const CROUCH: Pose = {
   ...GUARD,
-  hip: at(-5, 33.5),
+  hip: at(-9.5, 33.5),
   torso: 8,
   head: -14,
   shrug: 3.4,
-  nearFoot: onBall(-17, -26),
-  nearFist: at(5, 45),
-  farFist: at(15, 46.5),
+  nearFoot: onBall(-18, -26),
+  nearFist: at(0.5, 45),
+  farFist: at(9, 46.5),
   nearHand: 'open',
   farHand: 'open',
   face: 'effort',
@@ -28,7 +28,7 @@ const CROUCH: Pose = {
 // Frame 1: the arms going up, the body rising.
 const RISE: Pose = {
   ...GUARD,
-  hip: at(-4.5, 38),
+  hip: at(-6.5, 38),
   torso: 2,
   head: -16,
   shrug: 1.6,
@@ -79,6 +79,6 @@ const DOWN: Pose = {
 };
 
 // Frames 6-7: back up into the guard.
-const UP: Pose = { ...GUARD, hip: at(-4, 35.5), torso: 15 };
+const UP: Pose = { ...GUARD, hip: at(-8, 35.5), torso: 11 };
 
 export const POSES: readonly Pose[] = [CROUCH, RISE, CATCH, SHUT, SLAM, DOWN, UP, GUARD];
