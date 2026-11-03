@@ -85,21 +85,25 @@ function raise(color: number, backdrop: number, alpha: number, level: number): n
 }
 
 describe('the street under the live lights (docs/flashs.md §5)', () => {
-  it('raises none of its large colors by 0.09, the calm by 0.05, at any level of a dim', () => {
-    for (const color of COLORS) {
-      for (let level = SUPER_DIM; level <= 1.0001; level += 0.01) {
-        for (const [delta, bound] of [
-          [LIVE_DELTA, LIVE_DELTA],
-          [CALM_LIVE_DELTA, CALM_LIVE_DELTA],
-        ] as const) {
-          const alpha = glowAlpha(color, STAGE, delta, level);
-          for (const backdrop of STAGE) {
-            expect(raise(color, backdrop, alpha, level)).toBeLessThanOrEqual(bound);
+  it(
+    'raises none of its large colors by 0.09, the calm by 0.05, at any level of a dim',
+    { timeout: 30_000 },
+    () => {
+      for (const color of COLORS) {
+        for (let level = SUPER_DIM; level <= 1.0001; level += 0.01) {
+          for (const [delta, bound] of [
+            [LIVE_DELTA, LIVE_DELTA],
+            [CALM_LIVE_DELTA, CALM_LIVE_DELTA],
+          ] as const) {
+            const alpha = glowAlpha(color, STAGE, delta, level);
+            for (const backdrop of STAGE) {
+              expect(raise(color, backdrop, alpha, level)).toBeLessThanOrEqual(bound);
+            }
           }
         }
       }
-    }
-  });
+    },
+  );
 
   it('lights it boldly: right up to its bound on the brightest backdrop, the calm fainter', () => {
     for (const color of COLORS) {

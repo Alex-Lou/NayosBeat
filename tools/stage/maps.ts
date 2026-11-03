@@ -8,9 +8,20 @@ import { BAL } from './bal/index.ts';
 import { CLUB } from './club/index.ts';
 import { DOCK } from './dock/index.ts';
 import { GYM } from './gym/index.ts';
+import { MARCHE } from './marche/index.ts';
 import { PLAGE } from './plage/index.ts';
 import { ROOFTOP } from './rooftop/index.ts';
 import { RUE } from './rue/index.ts';
 import { TEMPLE } from './temple/index.ts';
 
-export const CODE_MAPS: readonly CodeMap[] = [RUE, GYM, DOCK, ROOFTOP, TEMPLE, CLUB, BAL, PLAGE];
+export const CODE_MAPS: readonly CodeMap[] = [
+  RUE,
+  GYM,
+  DOCK,
+  ROOFTOP,
+  TEMPLE,
+  CLUB,
+  BAL,
+  PLAGE,
+  MARCHE,
+];

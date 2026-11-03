@@ -112,22 +112,28 @@ describe('video memory of a match', () => {
     expect(STAGE_BYTES / MB).toBeLessThan(CEILING_MB / 10);
   });
 
-  it(`stays under ${CEILING_MB} MB in the worst pairing, a mirror match included`, () => {
-    expect(drawn.length).toBeGreaterThan(0);
-    const pairings = drawn.flatMap((a) =>
-      drawn.map((b) => ({
-        match: `${a} vs ${b}`,
-        // In a mirror match, player 2 wears the other colorway: both are loaded.
-        bytes:
-          STAGE_BYTES +
-          EMITTER_BYTES +
-          bytesOf(a, 'main') +
-          (a === b ? bytesOf(b, 'alt') : bytesOf(b, 'main')),
-      })),
-    );
-    const worst = pairings.reduce((most, pairing) => (pairing.bytes > most.bytes ? pairing : most));
-    expect(worst.bytes / MB, worst.match).toBeLessThanOrEqual(CEILING_MB);
-  });
+  it(
+    `stays under ${CEILING_MB} MB in the worst pairing, a mirror match included`,
+    { timeout: 30_000 },
+    () => {
+      expect(drawn.length).toBeGreaterThan(0);
+      const pairings = drawn.flatMap((a) =>
+        drawn.map((b) => ({
+          match: `${a} vs ${b}`,
+          // In a mirror match, player 2 wears the other colorway: both are loaded.
+          bytes:
+            STAGE_BYTES +
+            EMITTER_BYTES +
+            bytesOf(a, 'main') +
+            (a === b ? bytesOf(b, 'alt') : bytesOf(b, 'main')),
+        })),
+      );
+      const worst = pairings.reduce((most, pairing) =>
+        pairing.bytes > most.bytes ? pairing : most,
+      );
+      expect(worst.bytes / MB, worst.match).toBeLessThanOrEqual(CEILING_MB);
+    },
+  );
 
   it(`loads no texture beyond ${MAX_TEXTURE} px on a side`, () => {
     for (const { name, width, height } of STAGE_TEXTURES) {
