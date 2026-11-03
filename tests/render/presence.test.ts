@@ -246,3 +246,20 @@ describe("Watt's presence (docs/art/direction-combat.md §4)", () => {
     }
   });
 });
+
+describe("Watt's own effects (passation-personnages §2.3, rule 4)", () => {
+  /** Nayo's shapes: his rings, the equalizer, the speed arcs and streaks. */
+  const NAYOS = ['throwRing', 'kick', 'groundRing', 'rise', 'charge', 'drop', 'dash'];
+
+  it('plays his current, none of Nayo’s shapes, and no speed arc on his heavy blows', () => {
+    const watt = signatureOf('watt');
+    const kinds = Object.values(watt?.moves ?? {}).flatMap((move) =>
+      (move.cues ?? []).map((cue) => cue.kind),
+    );
+    expect(kinds).toContain('jolt');
+    expect(kinds).toContain('crackle');
+    expect(kinds.filter((kind) => NAYOS.includes(kind))).toEqual([]);
+    expect(Object.values(watt?.moves ?? {}).flatMap((move) => move.bold ?? [])).toEqual([]);
+    expect(watt?.heavySwing).toBe(false);
+  });
+});

@@ -75,6 +75,8 @@ export const SIGNATURE_AREAS: Readonly<Record<SignatureCue, number>> = {
   waveBoost: 66,
   facets: 62,
   grooves: 59,
+  jolt: 38,
+  crackle: 27,
 };
 
 /**

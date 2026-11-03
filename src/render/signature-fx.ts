@@ -690,6 +690,54 @@ export class SignatureFx {
         }
         break;
       }
+      case 'jolt': {
+        // His exoskeleton's current: short strokes zigzagging ahead, cross sparks off its end.
+        const ahead = mirror ? Math.PI : 0;
+        let tipX = x;
+        let tipY = y;
+        for (let i = 0; i < 4; i++) {
+          const bend = i % 2 ? -0.7 : 0.7;
+          const angle = ahead + (mirror ? -bend : bend);
+          const length = 8 * s;
+          const midX = tipX + (Math.cos(angle) * length) / 2;
+          const midY = tipY + (Math.sin(angle) * length) / 2;
+          this.piece('streak', i % 2 ? accent : color, midX, midY, 8, 0.9)
+            ?.sized(length, 2, length, 1.5)
+            .turned(angle)
+            .later(i % 2);
+          tipX += Math.cos(angle) * length;
+          tipY += Math.sin(angle) * length;
+        }
+        for (let i = 0; i < 3; i++) {
+          this.piece('shard', i === 1 ? accent : color, tipX, tipY, 10, 0.9)
+            ?.sized(3 * s, 3 * s, 1 * s, 1 * s)
+            .thrown((2.5 + i) * s, ahead + (i - 1) * 0.9, 0.85)
+            .turned(Math.PI / 4);
+        }
+        break;
+      }
+      case 'crackle': {
+        // The current running along the floor: a flat line of it, sparks hopping off both ways.
+        this.piece('streak', color, x, y - 1, 10, 0.75)?.sized(22 * s, 2, 36 * s, 1.5);
+        for (let i = 0; i < 5; i++) {
+          const side = i % 2 ? 1 : -1;
+          const piece = this.piece(
+            'shard',
+            i % 2 ? accent : color,
+            x + side * (4 + 4 * i) * s,
+            y - 2,
+            10,
+            0.85,
+          );
+          if (!piece) continue;
+          piece
+            .sized(2.5 * s, 2.5 * s, 1 * s, 1 * s)
+            .thrown((1.5 + 0.5 * i) * s, side > 0 ? -Math.PI / 3 : (-2 * Math.PI) / 3, 0.88)
+            .later(i % 3);
+          piece.gravity = 0.15;
+        }
+        break;
+      }
       case 'dash': {
         // Speed lines on the floor, left behind as the dash sets off.
         for (let i = 0; i < 3; i++) {

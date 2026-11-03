@@ -52,7 +52,9 @@ export interface MoveEchoSpec {
  * the equalizer's bars rising around it. `burst`: the Boost spent, a platine ring and shards.
  * `dash`: speed lines on the floor behind a dash. Saphir's: `facets`, her cut sapphire where the
  * heel lands (a slim crescent, facets thrown on in a fan, sparkles); `grooves`, the grooves of a
- * record round her turn (three thin crescents, one inside the other).
+ * record round her turn (three thin crescents, one inside the other). Watt's (direction-combat
+ * §4): `jolt`, his exoskeleton's current, an arc of short strokes zigzagging ahead with cross
+ * sparks off its end; `crackle`, the current running along the floor, sparks hopping on it.
  */
 export type CueKind =
   | 'throwRing'
@@ -64,7 +66,9 @@ export type CueKind =
   | 'burst'
   | 'dash'
   | 'facets'
-  | 'grooves';
+  | 'grooves'
+  | 'jolt'
+  | 'crackle';
 
 /** An effect a move plays on one of its action frames. */
 export interface Cue {
@@ -343,49 +347,48 @@ const CEILING = { height: 70, reach: 10 } as const;
 const FLOOR = { height: 0, reach: 30 } as const;
 
 /**
- * Watt (docs/art/direction-combat.md §4, docs/watt.md): his specials in his VU green, their
- * Remixes and Plein feu in platine. The Coup de jus charges his clamps then discharges; the
- * Surcharge rams, its afterimages behind it; the Plafonnier pushes off the floor and rises; Plein
- * feu, two hooks, then the bass on the floor and the equalizer rising: his VU meter. Between his
- * blows, his diodes glow. Frames from his data (src/data/fighters/watt.ts, watt-boost.ts).
+ * Watt (docs/art/direction-combat.md §4, docs/watt.md): his own effects, none of Nayo's (rings,
+ * the equalizer, speed arcs: passation-personnages §2.3, rule 4) but the Boost's burst. His
+ * exoskeleton's current (`jolt`) where his clamps strike, running along the floor (`crackle`)
+ * where he pushes off or lands; his specials in his VU green, their Remixes and Plein feu's last
+ * blow in platine. Between his blows, his diodes glow. Frames from his data (src/data/fighters/
+ * watt.ts, watt-boost.ts).
  */
 const WATT_SIGNATURE: Signature = {
   moves: {
-    // Coup de jus: the step on frames 2 to 9, the discharge on frame 10.
+    // Coup de jus: the clamps charge on frame 2, discharge on frame 10.
     special: {
       light: { from: 4, to: 16, tone: 'energy', strength: 0.8, ...CLAMPS },
       echo: { from: 2, to: 10, every: 2, life: 8, tone: 'energy' },
-      cues: [cue(2, 'charge', 'energy', BODY, 0.7), cue(10, 'kick', 'energy', CLAMPS)],
-      bold: [bold(10, 'shock', 'energy', CLAMPS)],
+      cues: [cue(2, 'jolt', 'energy', CLAMPS, 0.6), cue(10, 'jolt', 'energy', CLAMPS)],
     },
     specialBoost: {
       light: { from: 2, to: 18, tone: 'platine', strength: 1, ...CLAMPS },
       cues: [
         cue(1, 'burst', 'platine', BODY, 0.8),
-        cue(10, 'kick', 'platine', CLAMPS, 1.25),
-        cue(10, 'groundRing', 'energy', CLAMPS, 0.8),
+        cue(10, 'jolt', 'platine', CLAMPS, 1.25),
+        cue(10, 'crackle', 'energy', FEET, 0.8),
       ],
-      bold: [bold(10, 'shock', 'platine', CLAMPS, 1.3)],
     },
     // Surcharge: the rush on frames 3 to 17, the shoulder in on 14.
     specialForward: {
       light: { from: 6, to: 20, tone: 'energy', strength: 0.8, ...SHOULDER },
       echo: { from: 3, to: 18, every: 3, life: 9, tone: 'energy' },
-      cues: [cue(3, 'dash', 'energy', FEET), cue(14, 'kick', 'energy', SHOULDER)],
+      cues: [cue(3, 'crackle', 'energy', FEET), cue(14, 'jolt', 'energy', SHOULDER)],
     },
     specialForwardBoost: {
       light: { from: 2, to: 22, tone: 'platine', strength: 1, ...SHOULDER },
       cues: [
         cue(1, 'burst', 'platine', BODY, 0.8),
-        cue(14, 'kick', 'platine', SHOULDER, 1.25),
-        cue(14, 'groundRing', 'energy', SHOULDER, 0.8),
+        cue(14, 'jolt', 'platine', SHOULDER, 1.25),
+        cue(14, 'crackle', 'energy', FEET, 0.8),
       ],
     },
-    // Plafonnier: out on frame 6, the clamps up to frame 12; the floor rings as he pushes off.
+    // Plafonnier: out on frame 6, the clamps up to frame 12; the current runs off his feet.
     specialAntiAir: {
       light: { from: 2, to: 14, tone: 'energy', strength: 1, height: 30, reach: 10, toHeight: 95 },
       echo: { from: 2, to: 12, every: 2, life: 8, tone: 'energy' },
-      cues: [cue(2, 'groundRing', 'energy', FEET), cue(4, 'rise', 'energy', CEILING)],
+      cues: [cue(2, 'crackle', 'energy', FEET), cue(6, 'jolt', 'energy', CEILING)],
     },
     specialAntiAirBoost: {
       light: {
@@ -399,25 +402,24 @@ const WATT_SIGNATURE: Signature = {
       },
       cues: [
         cue(0, 'burst', 'platine', BODY, 0.8),
-        cue(2, 'groundRing', 'platine', FEET, 1.3),
-        cue(4, 'rise', 'platine', CEILING, 1.3),
+        cue(2, 'crackle', 'platine', FEET, 1.3),
+        cue(6, 'jolt', 'platine', CEILING, 1.3),
       ],
     },
-    // Plein feu: the cue and the freeze on frame 0, a hook on 3 and 9, both fists on the floor
-    // on 16.
+    // Plein feu: the freeze on frame 0, a hook on 3 and 9, both fists on the floor on 16.
     super: {
       light: { from: 0, to: 22, tone: 'platine', strength: 1, height: 6, reach: 30, radius: 200 },
       cues: [
-        cue(0, 'charge', 'platine', BODY, 1.2),
-        cue(3, 'kick', 'energy', CLAMPS),
-        cue(9, 'kick', 'energy', CLAMPS, 1.15),
-        cue(16, 'drop', 'platine', FLOOR, 1.3),
+        cue(0, 'burst', 'platine', BODY, 1),
+        cue(3, 'jolt', 'energy', CLAMPS),
+        cue(9, 'jolt', 'energy', CLAMPS, 1.15),
+        cue(16, 'crackle', 'platine', FLOOR, 1.3),
+        cue(16, 'jolt', 'platine', FLOOR, 1.3),
       ],
-      bold: [bold(16, 'quake', 'platine', FLOOR, 1.3)],
     },
-    // The dashes: speed lines on the floor as they set off (their afterimages: dash-trail.ts).
-    dashForward: { cues: [cue(1, 'dash', 'energy', FEET)] },
-    dashBack: { cues: [cue(1, 'dash', 'energy', FEET)] },
+    // The dashes: the current along the floor as they set off (afterimages: dash-trail.ts).
+    dashForward: { cues: [cue(1, 'crackle', 'energy', FEET, 0.7)] },
+    dashBack: { cues: [cue(1, 'crackle', 'energy', FEET, 0.7)] },
     // Rallumage: the heavy step, relit.
     boostCancel: {
       light: { from: 0, to: 8, tone: 'platine', strength: 0.8, ...BODY },
@@ -425,7 +427,8 @@ const WATT_SIGNATURE: Signature = {
     },
   },
   discs: {},
-  heavySwing: true,
+  // None of Nayo's speed arcs (passation-personnages §2.3, rule 4): his own current instead.
+  heavySwing: false,
   flares: true,
   // His diodes' lit core (tools/sprites/watt/palette.ts, `ledCore`).
   presence: { leds: { main: 0x7cf0a8, alt: 0xf0b8ff } },
