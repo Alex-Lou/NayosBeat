@@ -213,7 +213,16 @@ export function remix(
     Omit<MoveData, 'kind' | 'startup' | 'active' | 'recovery' | 'tier' | 'boostCost'>
   >,
 ): MoveData {
-  return { ...plain, ...changes, tier: 2, boostCost: BOOST_BAR };
+  // A Remix keeps the special's timing and look (D18), never its own mechanics: the armor, the
+  // reel, a command throw, the close range and the charged form are the plain special's.
+  const kept = { ...plain };
+  delete kept.armor;
+  delete kept.pull;
+  delete kept.throw;
+  delete kept.catches;
+  delete kept.closeRange;
+  delete kept.charged;
+  return { ...kept, ...changes, tier: 2, boostCost: BOOST_BAR };
 }
 
 /** The Rewind cancels into a normal or into any rung of the specials, never a grab. */
@@ -286,6 +295,8 @@ interface ThrowSpec {
   readonly knockdown?: Knockdown;
   /** The throw backward: when the opponent goes over to the holder's back. */
   readonly sideSwitchFrame?: number;
+  /** Its charged form (docs/watt-arsenal.md §3.2), read when the throw lands. */
+  readonly charged?: MoveData['charged'];
 }
 
 /**
@@ -293,7 +304,7 @@ interface ThrowSpec {
  * startup frame (one active tick) without a hitbox, and nothing blocks it.
  */
 export function throwMove(spec: ThrowSpec): MoveData {
-  const { knockdown, sideSwitchFrame, ...timing } = spec;
+  const { knockdown, sideSwitchFrame, charged, ...timing } = spec;
   return {
     ...timing,
     kind: 'throw',
@@ -304,5 +315,6 @@ export function throwMove(spec: ThrowSpec): MoveData {
     guard: 'mid',
     ...(knockdown && { knockdown }),
     ...(sideSwitchFrame !== undefined && { sideSwitchFrame }),
+    ...(charged && { charged }),
   };
 }

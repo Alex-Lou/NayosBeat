@@ -2,6 +2,7 @@ import type { Box, BoxSize, FighterTemplate, MatchConfig, StageConfig } from './
 import { CAMERA_WIDTH_PX, px } from './constants';
 import {
   AIR_MOVE_IDS,
+  CHARGED_MOVE_IDS,
   COMMAND_GRAB_IDS,
   CORE_MOVE_IDS,
   MOVE_IDS,
@@ -232,6 +233,30 @@ export function validateTemplate(template: FighterTemplate): string[] {
     }
     if (move.armor) {
       expect(!thrown && move.kind !== 'grab', `${id}: a throw or a grab has no armor`);
+    }
+    if (move.charged) {
+      expect(
+        CHARGED_MOVE_IDS.includes(id),
+        `${id}: only a plain special (or a command throw) has a charged form`,
+      );
+      for (const name of ['damage', 'hitstun', 'blockstun'] as const) {
+        const value = move.charged[name];
+        if (value !== undefined) {
+          expect(isInteger(value, 1), `${id}.charged.${name} must be an integer >= 1`);
+        }
+      }
+      if (move.charged.armor) {
+        expect(
+          isRangeWithin(move.charged.armor, duration),
+          `${id}.charged.armor must fit the move`,
+        );
+      }
+      if (move.charged.knockdown) {
+        expect(
+          !thrown && move.kind !== 'grab',
+          `${id}.charged.knockdown: only a strike's charged form sends flying`,
+        );
+      }
     }
     if (move.closeRange !== undefined) {
       expect(id === 'specialClose', `${id}: only the close special has a closeRange`);

@@ -5,13 +5,16 @@ import { signed } from '../numbers';
 import { BOUNCE_LIFT, BOUNCE_POINTS, HIT_GRAVITY } from '../rules';
 import { FLAG_BOUNCE, type FighterState } from '../state';
 import { enter, nextFrame } from './action';
-import { startAttack } from './move';
+import { chargeSpent, startAttack } from './move';
 
 /** Airborne and free: the buffered command may start an air attack, once per jump. */
 export function updateAir(fighter: FighterState, template: FighterTemplate): FighterState {
   const move = fighter.bufferedCommand ? airMove(fighter.bufferedCommand, template.moves) : null;
   return move
-    ? airborne(startAttack(fighter, 'airAttack', move), template)
+    ? airborne(
+        chargeSpent(startAttack(fighter, 'airAttack', move), fighter, template, move),
+        template,
+      )
     : airborne(nextFrame(fighter), template);
 }
 

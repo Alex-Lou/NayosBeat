@@ -92,9 +92,9 @@ describe('the plans (§6.4)', () => {
     );
   });
 
-  it("Watt's: L, L, L and L, H → S for easy, his strings for normal, the Soulevé's juggle for hard", () => {
+  it("Watt's: L, L, L and L, H → Surcharge for easy, his strings for normal, the Soulevé's juggle for hard", () => {
     const paume = (level: CpuLevel) => drawn(connected('standLight'), level, RIFF_HIT, WATT);
-    expect(paume('easy')).toEqual(new Set([written([L, L]), written([H, S])]));
+    expect(paume('easy')).toEqual(new Set([written([L, L]), written([H, F | S])]));
     const normal = paume('normal');
     expect(normal).toContain(written([L, H, H]));
     expect(normal).toContain(written([L, H, F | S]));

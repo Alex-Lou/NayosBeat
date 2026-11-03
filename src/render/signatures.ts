@@ -218,9 +218,6 @@ const NAYO_SIGNATURE: Signature = {
         bold(14, 'quake', 'platine', FIST, 1.3),
       ],
     },
-    // The dashes: speed lines on the floor as they set off (their afterimages: dash-trail.ts).
-    dashForward: { cues: [cue(1, 'dash', 'energy', FEET)] },
-    dashBack: { cues: [cue(1, 'dash', 'energy', FEET)] },
     // Rewind: the dive, head low.
     boostCancel: {
       light: { from: 0, to: 8, tone: 'platine', strength: 0.8, ...BODY },
@@ -415,9 +412,51 @@ const WATT_SIGNATURE: Signature = {
       ],
       bold: [bold(16, 'quake', 'platine', FLOOR, 1.3)],
     },
-    // The dashes: speed lines on the floor as they set off (their afterimages: dash-trail.ts).
-    dashForward: { cues: [cue(1, 'dash', 'energy', FEET)] },
+    // The Branchement (docs/watt-arsenal.md §4.1): the clamps reach, then the plant.
+    specialClose: {
+      light: { from: 0, to: 8, tone: 'energy', strength: 0.9, ...CLAMPS },
+      echo: { from: 0, to: 6, every: 2, life: 8, tone: 'energy' },
+      cues: [cue(1, 'charge', 'energy', BODY, 0.7)],
+    },
+    throwClose: {
+      light: { from: 0, to: 12, tone: 'energy', strength: 1, ...CEILING },
+      cues: [cue(2, 'rise', 'energy', CEILING), cue(10, 'drop', 'energy', FLOOR, 1.2)],
+      bold: [bold(10, 'quake', 'energy', FLOOR, 1.2)],
+    },
+    // The cable (docs/watt-arsenal.md §4.2): the line shoots out, the opponent reeled in.
+    specialBack: {
+      light: { from: 6, to: 16, tone: 'energy', strength: 0.7, height: 40, reach: 100 },
+      echo: { from: 0, to: 14, every: 2, life: 8, tone: 'energy' },
+      cues: [
+        cue(1, 'charge', 'energy', BODY, 0.6),
+        cue(14, 'kick', 'energy', { height: 40, reach: 90 }),
+      ],
+      bold: [bold(14, 'shock', 'energy', { height: 40, reach: 90 })],
+    },
+    // The Plongeon (docs/watt-arsenal.md §4.3): the fall, then the crush.
+    jumpSpecial: {
+      light: { from: 0, to: 12, tone: 'energy', strength: 0.8, height: 20, reach: 10 },
+      cues: [cue(0, 'rise', 'energy', BODY, 0.7)],
+    },
+    throwDive: {
+      light: { from: 0, to: 12, tone: 'energy', strength: 0.9, ...CEILING },
+      cues: [cue(10, 'drop', 'energy', FLOOR, 1.1)],
+      bold: [bold(10, 'quake', 'energy', FLOOR, 1.1)],
+    },
+    // The caught Plafonnier's plant (its catch is the anti-air's own light).
+    throwCatch: {
+      cues: [cue(10, 'drop', 'energy', FLOOR, 1.1)],
+      bold: [bold(10, 'quake', 'energy', FLOOR, 1.1)],
+    },
+    // The dashes: speed lines on the floor as they set off (their afterimages: dash-trail.ts);
+    // the Pas blindé's exoskeleton lit while its armor holds (docs/watt-arsenal.md §3.1).
+    dashForward: {
+      cues: [cue(1, 'dash', 'energy', FEET)],
+      light: { from: 3, to: 14, tone: 'energy', strength: 0.6, ...BODY },
+    },
     dashBack: { cues: [cue(1, 'dash', 'energy', FEET)] },
+    // The Coup de pilon's armor, the exoskeleton lit as the fist falls.
+    forwardHeavy: { light: { from: 8, to: 21, tone: 'energy', strength: 0.6, ...BODY } },
     // Rallumage: the heavy step, relit.
     boostCancel: {
       light: { from: 0, to: 8, tone: 'platine', strength: 0.8, ...BODY },

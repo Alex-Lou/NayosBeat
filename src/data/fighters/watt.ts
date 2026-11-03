@@ -6,11 +6,13 @@ import { wattBoost } from './watt-boost';
 import { WATT_STRINGS } from './watt-strings';
 
 /**
- * Watt, the grappler without armor, « il attrape, il porte, il éteint » (docs/watt.md): the
+ * Watt, « il attrape, il porte, il éteint » (docs/watt.md, docs/watt-arsenal.md): the
  * tournament's roadie, a lifting exoskeleton on both arms and a light bulb for a head. The
  * longest grab of the cast (53 px), the most health (1150) and the heaviest throws; slow, one
- * reversal only (his super). His Boost moves are written from his plain specials (`WATT`,
- * below). Hurtboxes are provisional until his drawing measures them (docs/combat-v2.md §9.2).
+ * reversal only (his super). His own kit: the armor, the tension gauge, the cable, the
+ * Branchement, the Plongeon, the caught Plafonnier and the Pas blindé. His Boost moves are
+ * written from his plain specials (`WATT`, below). Hurtboxes are provisional until his drawing
+ * measures them (docs/combat-v2.md §9.2).
  */
 const WATT_PLAIN: FighterTemplate = {
   name: 'Watt',
@@ -26,6 +28,9 @@ const WATT_PLAIN: FighterTemplate = {
   preJumpFrames: 5,
   landingFrames: 4,
   knockdownFrames: 40,
+  // His own gauge (docs/watt-arsenal.md §3.2): catching, absorbing and taking blows fill it,
+  // staying out of contact empties it; full, his next special is electrified.
+  tension: { max: 100, gains: { grab: 30, pummel: 5, armor: 20, hit: 10 }, decayEvery: 8 },
   // 28 px wide, the ceiling of the hold test (docs/art/perso-3.md §4.3.4): his mass is drawn.
   standingPushbox: { width: px(28), height: px(84) },
   crouchingPushbox: { width: px(32), height: px(54) },
@@ -50,6 +55,8 @@ const WATT_PLAIN: FighterTemplate = {
       guard: 'overhead',
       hitbox: box(12, 36, 34, 40),
       motion: advance(41, { from: 6, to: 18, distancePx: 12 }),
+      // The armor of the descending fist (docs/watt-arsenal.md §3.1): one blow absorbed on f8-21.
+      armor: { from: 8, to: 21 },
     }),
     // ← + H: both arms snatch upward. An anti-air without invincibility, and the launcher (4
     // juggle points); its box starts above a crouching body: it whiffs on it.
@@ -125,6 +132,8 @@ const WATT_PLAIN: FighterTemplate = {
       hitbox: box(10, 30, 34, 30),
       motion: advance(35, { from: 2, to: 10, distancePx: 16 }),
       knockdown: kd(3, 3),
+      // Electrified (docs/watt-arsenal.md §3.2): harder, and safe once blocked (−4).
+      charged: { damage: 113, blockstun: 20 },
     }),
     // → + S: the shoulder rush of the source drawing, 56 px: his punish from far (107.5 px). It
     // floors; a projectile catches him on his way in.
@@ -140,22 +149,107 @@ const WATT_PLAIN: FighterTemplate = {
       hitbox: box(8, 20, 30, 50),
       motion: advance(38, { from: 3, to: 18, distancePx: 56 }),
       knockdown: kd(3, 4),
+      // One blow absorbed through the rush (docs/watt-arsenal.md §3.1); electrified, the whole
+      // way (docs/watt-arsenal.md §3.2).
+      armor: { from: 3, to: 14 },
+      charged: { damage: 106, armor: { from: 0, to: 38 } },
     }),
-    // ↓ + S: he catches the jumper above him and in front, and slams him down. The anti-air,
-    // invincible to attacks from the air on f0-8. Its box is his drawing's (porte 2): the
-    // clamps up to 90 px, 24 forward (docs/combat-v2.md §9.2).
-    specialAntiAir: strike({
-      name: 'Plafonnier',
-      kind: 'special',
-      frames: [6, 6, 26],
-      damage: 95,
-      stun: [0, 12],
-      hitstop: 14,
-      pushbackPx: 3,
+    // ↓ + S: the clamps catch the jumper and slam him down (docs/watt-arsenal.md §4.4): a grab
+    // of the air, invincible to attacks from the air on f0-9, played at once on the catch.
+    specialAntiAir: {
+      name: 'Plafonnier saisi',
+      kind: 'grab',
+      startup: 6,
+      active: 6,
+      recovery: 26,
+      damage: 0,
+      hitstun: 0,
+      blockstun: 0,
+      hitstop: GRAB_HITSTOP,
+      pushback: 0,
       guard: 'mid',
       hitbox: box(-4, 50, 28, 40),
       invincible: { from: 0, to: 9, against: 'air' },
-      knockdown: kd(3, 2.5),
+      catches: 'air',
+      throw: 'throwCatch',
+    },
+    throwCatch: throwMove({
+      name: 'Plaqué',
+      startup: 10,
+      recovery: 20,
+      damage: 110,
+      hitstop: 16,
+      knockdown: kd(3.5, 2.5),
+      charged: { damage: 138 },
+    }),
+    // S up close (40 px or less): the command grab, 140, played at once (docs/watt-arsenal.md
+    // §4.1). It cannot be broken free of; missed, it leaves him wide open.
+    specialClose: {
+      name: 'Branchement',
+      kind: 'grab',
+      startup: 5,
+      active: 2,
+      recovery: 40,
+      damage: 0,
+      hitstun: 0,
+      blockstun: 0,
+      hitstop: GRAB_HITSTOP,
+      pushback: 0,
+      guard: 'mid',
+      hitbox: box(6, 20, 30, 40),
+      closeRange: px(40),
+      throw: 'throwClose',
+    },
+    throwClose: throwMove({
+      name: 'Branchement',
+      startup: 10,
+      recovery: 24,
+      damage: 140,
+      hitstop: 16,
+      knockdown: kd(4, 3),
+      charged: { damage: 175 },
+    }),
+    // ← + S: the cable, from 30 to 110 px, reeling the opponent in to 34 px on hit, +4 for him
+    // (docs/watt-arsenal.md §4.2). Electrified: stunned long enough for a guaranteed combo.
+    specialBack: strike({
+      name: 'Câble',
+      kind: 'special',
+      frames: [14, 4, 28],
+      damage: 40,
+      stun: [32, 10],
+      hitstop: 9,
+      pushbackPx: 2,
+      guard: 'mid',
+      hitbox: box(30, 30, 80, 12),
+      pull: px(34),
+      charged: { damage: 50, hitstun: 36 },
+    }),
+    // S in the air: the whole weight down on the opponent on the ground, caught and crushed
+    // (docs/watt-arsenal.md §4.3): a grab from above, played at once on the catch.
+    jumpSpecial: {
+      name: 'Plongeon',
+      kind: 'grab',
+      startup: 8,
+      active: 4,
+      recovery: 22,
+      damage: 0,
+      hitstun: 0,
+      blockstun: 0,
+      hitstop: GRAB_HITSTOP,
+      pushback: 0,
+      guard: 'mid',
+      // The Plaquage's own box: his body as it falls, the catch at his feet.
+      hitbox: box(0, -4, 34, 24),
+      throw: 'throwDive',
+    },
+    throwDive: throwMove({
+      name: 'Plongeon',
+      startup: 10,
+      recovery: 22,
+      damage: 100,
+      hitstop: 16,
+      knockdown: kd(3.5, 2.5),
+      charged: { damage: 125 },
     }),
     // His signature: the longest grab of the cast, the exoskeleton's clamps (up to 53 px on Nayo,
     // 54 on Riff, measured in the engine); a tick slower than the others'.
@@ -194,8 +288,12 @@ const WATT_PLAIN: FighterTemplate = {
       knockdown: kd(3.5, 3),
       sideSwitchFrame: 6,
     }),
-    // A heavy step, shoulders first, 36 px.
-    dashForward: dash({ name: 'Avancée', duration: 20, frames: 14, distancePx: 36 }),
+    // A heavy step, shoulders first, 36 px, that absorbs one blow on f3-14 (docs/watt-arsenal.md
+    // §5): through the Vinyle, then the grab.
+    dashForward: {
+      ...dash({ name: 'Pas blindé', duration: 20, frames: 14, distancePx: 36 }),
+      armor: { from: 3, to: 14 },
+    },
     // 32 px back, and nothing against a grab: he gets out badly.
     dashBack: dash({ name: 'Recul', duration: 24, frames: 16, distancePx: 32, back: true }),
   },

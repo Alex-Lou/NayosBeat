@@ -39,7 +39,19 @@ export const WATT_TEXTS: FighterTexts = {
     },
     specialAntiAir: {
       input: ANTI_AIR,
-      text: "Il cueille le sauteur au-dessus de sa tête et le rabat au sol. Invincible contre les attaques en l'air au départ, pas contre le reste.",
+      text: "Les pinces cueillent le sauteur et le plaquent au sol : une prise, impossible à dégager. Invincible contre les attaques en l'air au départ, pas contre le reste.",
+    },
+    specialClose: {
+      input: 'S, tout près',
+      text: "S à 40 px ou moins : il saisit des deux pinces, soulève, tourne et plante. Son coup le plus lourd, 140, impossible à dégager. Raté, il s'ouvre longtemps.",
+    },
+    specialBack: {
+      input: 'Arrière + S',
+      text: "Le câble part droit devant lui, de 30 à 110 px, et ramène l'adversaire à 34 px. Il garde l'avantage : prise, Branchement ou Marteau. Un projectile l'arrête au démarrage.",
+    },
+    jumpSpecial: {
+      input: "En l'air, S",
+      text: "Il se laisse tomber de tout son poids et écrase l'adversaire au sol, jusqu'à 30 px de son point de chute. C'est une prise : la garde ne le protège pas.",
     },
     specialBoost: {
       input: REMIX,
@@ -129,9 +141,21 @@ export const WATT_TEXTS: FighterTexts = {
       input: THROW_BACK,
       text: "Un quart de tour, comme on visse une ampoule, puis par-dessus l'épaule : il tombe derrière lui, dans le coin s'il y avait le dos.",
     },
+    throwClose: {
+      input: 'Branchement réussi',
+      text: "Soulevé, un tour complet, planté : 140, le coup le plus lourd du jeu. Aucun dégagement possible : c'est la prise de commande.",
+    },
+    throwDive: {
+      input: 'Plongeon réussi',
+      text: "Il lui tombe dessus de tout son poids : 100. Le Plongeon ne se dégage pas, la garde ne l'arrête pas.",
+    },
+    throwCatch: {
+      input: 'Plafonnier réussi',
+      text: "Cueilli en l'air et plaqué au sol : 110, sans dégagement possible.",
+    },
     dashForward: {
       input: DASH,
-      text: "Un pas lourd, les épaules d'abord. Court : il ne traverse pas l'écran.",
+      text: "Le Pas blindé, les épaules d'abord : il encaisse un coup au passage, même un projectile, à moitié de dégâts, et continue. Une prise le bat.",
     },
     boostCancel: {
       input: REWIND,
@@ -146,18 +170,21 @@ export const WATT_TEXTS: FighterTexts = {
   // Finisher (docs/finisher.md §5.6).
   combos: [
     { input: 'L, L, L', text: 'Paume, Crochet court, Jeté : partout où la Paume touche.' },
-    { input: 'L, H, S', text: 'Le Coup de jus après le Marteau, qui met au sol.' },
     {
       input: 'L, L, H, avant + S',
       text: "Le combo de base : la Surcharge emporte l'adversaire.",
     },
     {
-      input: 'L, L, arrière + H, bas + S',
-      text: 'Le Soulevé fait décoller, le Plafonnier rabat au sol.',
+      input: 'S, tout près',
+      text: "Le Branchement : 140 d'un geste, si tu es à 40 px.",
     },
     {
-      input: 'L, L, arrière + H, puis L, L, L',
-      text: "Le premier jongle : le Soulevé fait décoller, puis L, L, L en l'air.",
+      input: 'Arrière + S, puis S',
+      text: "Le câble ramène l'adversaire, puis le Branchement enchaîne.",
+    },
+    {
+      input: "En l'air, S",
+      text: "Le Plongeon écrase celui qui reste au sol, où qu'il garde.",
     },
     { input: SUPER_COMBO, text: 'Le combo lourd qui finit sur Plein feu.' },
     {
