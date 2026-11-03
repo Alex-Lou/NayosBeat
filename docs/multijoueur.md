@@ -190,10 +190,14 @@ Rien n'est interprété (aucun `eval`), et l'heure d'envoi ne traverse jamais le
 1. Créer un compte Cloudflare (gratuit), puis, dans le tableau de bord : Realtime, TURN, « Create TURN key ». Noter son **id** et son **API token**.
 2. Dans `tools/turn-worker/wrangler.toml`, mettre l'id dans `TURN_KEY_ID` (ce n'est pas un secret).
 3. Depuis `tools/turn-worker/` : `npx wrangler login`, puis `npx wrangler deploy`, puis `npx wrangler secret put TURN_KEY_API_TOKEN` (coller le token ; il reste chez Cloudflare).
-4. Me donner l'adresse du Worker (`https://nayosbeat-turn.<compte>.workers.dev/`). Je la mets dans `TURN_ENDPOINT`, et la CSP s'ouvre à elle seule.
+4. Me donner l'adresse du Worker (`https://nayosbeat-turn.<compte>.workers.dev/`).
+5. **Avant que le jeu ne s'en serve, une limite de débit sur le Worker.** L'`Origin` n'arrête que les navigateurs : un script peut l'imiter, et vider le quota de relais. Deux voies chez Cloudflare :
+   - la liaison « Rate Limiting » des Workers (`[[ratelimits]]` dans `wrangler.toml`), comptée par adresse IP du client (`CF-Connecting-IP`). Une recherche ne demande qu'une fois ses relais, donc une dizaine de demandes par minute suffit. Il faut quelques lignes de plus dans `worker.ts`, avec leurs tests, que j'écris une fois le Worker déployé ;
+   - ou une règle de limitation du WAF. À vérifier : si je ne me trompe pas, elle ne s'applique qu'à un Worker servi sur un domaine du compte, pas sur `workers.dev`.
+6. Une fois la limite en place, je mets l'adresse dans `TURN_ENDPOINT`, et la CSP s'ouvre à elle seule.
 
 **Les limites.**
-- N'importe qui peut appeler le Worker depuis un programme qui imite l'`Origin` du jeu, et utiliser des relais sur notre offre gratuite. Les identifiants expirent en 4 h, et l'offre de 1 000 Go par mois couvre des milliers d'heures de jeu relayé. Si un abus se voyait, Cloudflare permet de limiter le débit du Worker.
+- N'importe qui peut appeler le Worker depuis un programme qui imite l'`Origin` du jeu, et utiliser des relais sur notre offre gratuite. Les identifiants expirent en 4 h, et l'offre de 1 000 Go par mois couvre des milliers d'heures de jeu relayé. La limite de débit de l'étape 5 borne ce qu'un tel programme peut obtenir ; elle est posée avant que le jeu ne se serve du Worker.
 - Le Worker n'a pas pu être déployé ni exercé depuis le conteneur : seul son code est testé.
 
 ## 6. La sécurité
