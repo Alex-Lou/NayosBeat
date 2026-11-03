@@ -36,6 +36,8 @@ const shown = vi.hoisted(() => ({
   jolt: vi.fn(),
   lightJolt: vi.fn(),
   scrape: vi.fn(),
+  step: vi.fn(),
+  land: vi.fn(),
   veil: vi.fn(),
   shake: vi.fn(),
 }));
@@ -57,7 +59,13 @@ vi.mock('../../src/render/dust', () => ({
     kick = shown.kick;
     puff = vi.fn();
     scrape = shown.scrape;
+    step = shown.step;
+    land = shown.land;
     update = vi.fn();
+    readonly feet: boolean;
+    constructor(_scene: unknown, _groundY: number, _random: unknown, ground = 'hard') {
+      this.feet = ground === 'sand';
+    }
   },
 }));
 vi.mock('../../src/render/blood', () => ({
@@ -282,6 +290,50 @@ describe('the trail of a fighter pushed along the floor (P7)', () => {
     fight.feedback.trail(sliding('hitstun', 3.5, 8, 5));
     fight.feedback.trail(sliding('idle', 3.5));
     expect(shown.scrape).not.toHaveBeenCalled();
+  });
+});
+
+describe('the sand the feet kick up on the beach (docs/art/decor-plage.md §6)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  /** Riff, `action`, `y` up, moving at `vx` px a tick, on `frame`. */
+  const riff = (action: 'walkForward' | 'idle' | 'air' | 'landing', y = 0, vx = 1, frame = 0) => {
+    const state = facingOff(60);
+    const moved = { ...state.fighters[1], action, y, vx: px(vx) } as const;
+    return { ...state, frame, fighters: [state.fighters[0], moved] } as GameState;
+  };
+  const onSand = () => new Fight({ ...stageOf(), ground: 'sand' });
+
+  it('kicks it up at each step of a walk, every 12 ticks, each fighter on its own beat', () => {
+    const fight = onSand();
+    for (let frame = 0; frame < 24; frame++) {
+      fight.feedback.trail(riff('walkForward', 0, 1, frame), riff('walkForward', 0, 1, frame - 1));
+    }
+    expect(shown.step).toHaveBeenCalledTimes(2);
+    expect(shown.step).toHaveBeenLastCalledWith(riff('walkForward').fighters[1].x, 1);
+  });
+
+  it('kicks it up as a fighter takes off, sprays it as one lands', () => {
+    const fight = onSand();
+    fight.feedback.trail(riff('air', px(4), -1, 1), riff('idle', 0, 0, 0));
+    expect(shown.step).toHaveBeenCalledWith(expect.any(Number), -1);
+    fight.feedback.trail(riff('landing', 0, 0, 2), riff('air', px(1), 0, 1));
+    expect(shown.land).toHaveBeenCalledTimes(1);
+    // Landed already: once.
+    fight.feedback.trail(riff('landing', 0, 0, 3), riff('landing', 0, 0, 2));
+    expect(shown.land).toHaveBeenCalledTimes(1);
+  });
+
+  it('leaves the hard floors as they were: no steps, no landings', () => {
+    const fight = feedback();
+    for (let frame = 0; frame < 24; frame++) {
+      fight.feedback.trail(riff('walkForward', 0, 1, frame), riff('walkForward', 0, 1, frame - 1));
+    }
+    fight.feedback.trail(riff('landing', 0, 0, 30), riff('air', px(1), 0, 29));
+    expect(shown.step).not.toHaveBeenCalled();
+    expect(shown.land).not.toHaveBeenCalled();
   });
 });
 

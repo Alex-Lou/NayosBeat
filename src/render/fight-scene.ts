@@ -80,6 +80,7 @@ import { PLATINE, signatureOf, type Signature } from './signatures';
 import { SpriteFighterView } from './sprite-fighter-view';
 import { drawStage, FIGHT_STAGE_COLORS, loadStage, stageImagesOf } from './stage-view';
 import { precipitationOf, StageRainView } from './stage-rain';
+import { groundOf } from './dust';
 import type { StagePropsView } from './stage-props';
 import { VIEW_SIZE } from './view';
 
@@ -425,6 +426,8 @@ export class FightScene extends Phaser.Scene {
           // Training writes the moves' names on a line under the HUD: the words stay under it.
           wordsTop: this.config.training ? UNDER_CAPTIONS : HUD_BAND,
           touchPlayer: me,
+          // The beach's sand flies higher, falls back, and the feet kick it up (dust.ts).
+          ground: groundOf(stage),
           knockOut: (player, finish, still, hits) => {
             hud.knockOut(player, finish, still, hits);
           },
@@ -772,7 +775,7 @@ export class FightScene extends Phaser.Scene {
         runtime.padHaptics.react(event);
       }
       runtime.feedback.endTick();
-      runtime.feedback.trail(this.state);
+      runtime.feedback.trail(this.state, previous);
       for (const event of this.tickEvents) {
         runtime.lights.react(event);
         runtime.lightShow.react(event);
