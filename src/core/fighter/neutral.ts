@@ -45,6 +45,7 @@ export function actOnGround(
         template.moves,
         superGauge(f),
         discOut,
+        Math.abs(f.x - opponentX),
       )
     : null;
   if (move) return startGroundMove(f, move, template, false, armed);

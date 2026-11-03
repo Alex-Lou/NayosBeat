@@ -38,6 +38,10 @@ export const OPTIONAL_MOVE_IDS = [
   'chainHeavy',
   'chainHigh',
   'chainLaunch',
+  // A fighter's own specials (docs/watt-arsenal.md §4): S close up, ← + S, S in the air.
+  'specialClose',
+  'specialBack',
+  'jumpSpecial',
   // The Boost layer (docs/combos-v3.md §1.8): the Rewind, the three Remixes, the super.
   'boostCancel',
   'specialBoost',
@@ -79,7 +83,7 @@ export const PHRASE_MOVE_IDS = [
 export const PHRASE_TWICE_IDS = ['standLight', 'crouchLight'] as const satisfies readonly MoveId[];
 
 /** Moves performed in the air (a projectile there would never be fired). */
-export const AIR_MOVE_IDS: readonly MoveId[] = ['jumpLight', 'jumpHeavy'];
+export const AIR_MOVE_IDS: readonly MoveId[] = ['jumpLight', 'jumpHeavy', 'jumpSpecial'];
 
 /**
  * Decides what a move can cancel into, and how it is blocked (grabs cannot be). A `movement`
@@ -260,6 +264,11 @@ export interface MoveData {
    * dash): the move cancelled into keeps part of its speed (DASH_MOMENTUM_PERCENT).
    */
   readonly freeCancelFrom?: number;
+  /**
+   * A `specialClose` only: S gives it, instead of the special, while the opponent stands this
+   * close or closer (center to center, in sub-pixels; docs/watt-arsenal.md §4.1).
+   */
+  readonly closeRange?: number;
   /** Movement during the move. */
   readonly motion?: RootMotion;
   /** Replaces the posture's hurtboxes on some frames (the Glissade's body along the floor). */
