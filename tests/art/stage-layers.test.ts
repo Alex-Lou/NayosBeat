@@ -127,6 +127,28 @@ describe('the stage props', () => {
     ]);
   });
 
+  it('start on the first atmosphere their colors name, its images in the folder (the beach: dusk)', () => {
+    const sheet = { ...files, './props.png': 'props.png' };
+    const wet = Object.fromEntries(
+      Object.entries(sheet).map(([path, url]) => [path.replace('./', './dusk-rain/'), url]),
+    );
+    const variants = stageVariantsOf(
+      'test',
+      { ...sheet, ...wet },
+      { 'dusk-clear': colors, 'dusk-rain': colors },
+      [prop],
+    );
+    expect(variants.map(({ atmosphere }) => atmosphere)).toEqual([
+      { moment: 'dusk', weather: 'clear' },
+      { moment: 'dusk', weather: 'rain' },
+    ]);
+    expect(variants[0]?.art.layers.map(({ url }) => url)).toEqual([
+      'far.png',
+      'mid.png',
+      'floor.png',
+    ]);
+  });
+
   it('glide by whole pixels within their loop, standing still before and after (StageDrift)', () => {
     const drift = { from: 20, to: -80, start: 10, steps: 40 };
     expect([0, 10, 30, 50, 59].map((step) => driftAt(drift, step, 60))).toEqual([
