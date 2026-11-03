@@ -1,4 +1,5 @@
 import type { StageVariant } from './stage-layers';
+import { STAGE_VARIANTS as BAL } from './bal';
 import { STAGE_VARIANTS as CLUB } from './club';
 import { STAGE_VARIANTS as DOCK } from './dock';
 import { STAGE_VARIANTS as GYM } from './gym';
@@ -68,5 +69,12 @@ export const STAGE_MAPS: readonly StageMap[] = [
     description: 'Dans le club, sur la piste, devant le DJ',
     sheltered: true,
     variants: CLUB,
+  },
+  {
+    name: 'bal',
+    title: 'Le Bal du Samedi',
+    description: "Dans la salle de bal, sous les lustres, devant l'orchestre",
+    sheltered: true,
+    variants: BAL,
   },
 ].filter(({ variants }) => variants.length > 0);

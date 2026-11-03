@@ -21,7 +21,8 @@ Ce fichier est pour l'agent qui reprend les décors (les lieux de combat). Il di
 | Le gym sous la pluie : la verrière, la fuite dans le seau (`decor-gym.md`) | en ligne (#126) |
 | La brume, dans les quatre lieux ; les météos des dix lieux (`brume.md` §4) | en ligne (#130) |
 | La neige ; la propreté des décors (`proprete.md`) ; Temple Courtyard (`temple`), aube, crépuscule, nuit, pluie et neige (`decor-temple.md`) | en ligne (#131) |
-| L'Entrepôt, intérieur (`club`), minuit, fumée et pluie à la porte, la basse (`decor-club.md`) | PR du club |
+| L'Entrepôt, intérieur (`club`), minuit, fumée et pluie à la porte, la basse (`decor-club.md`) | en ligne (#134) |
+| Le Bal du Samedi (`bal`), minuit, pluie et neige aux hautes fenêtres, le chorus (`decor-bal.md`) | PR du bal |
 
 ## 2. Ce que veut le développeur
 
@@ -168,7 +169,7 @@ Déjà proposés au développeur et acceptés (« prends les 10 ») :
 2. **Rooftop Rain** (Néon Underground) : fait (`docs/art/decor-rooftop.md`), en minuit clair et sous deux pluies (minuit, crépuscule), avec le dirigeable pour moment fort.
 3. **Temple Courtyard** (Archipel des Légendes) : fait (`docs/art/decor-temple.md`), à l'aube, au crépuscule et la nuit (pas de plein jour, choix du développeur), sous la pluie et la neige, avec la bourrasque pour moment fort. C'est le premier lieu tenu aux règles de propreté (`proprete.md`).
 4. **L'Entrepôt, intérieur** (le club) : fait (`docs/art/decor-club.md`), à minuit, avec la fumée et la pluie à la porte du quai ; la basse pour moment fort ; aucun stroboscope (test).
-5. **Le Bal du Samedi** (le lieu de Saphir) : salle de bal des années 50, parquet, lustres, velours, orchestre swing en silhouettes ; vert profond et or. Le seul lieu où les enseignes en français sont justifiées (avec « SWING NIGHT »).
+5. **Le Bal du Samedi** (le lieu de Saphir) : fait (`docs/art/decor-bal.md`), à minuit, sous la pluie et la neige vues par les hautes fenêtres ; le chorus de l'orchestre pour moment fort ; « SWING NIGHT » et « TOUS LES SAMEDIS » sur le bandeau, « BAL » sur la grosse caisse.
 6. **Night Market** : stands, lampions, vapeur des woks, scooter au fond ; enseignes en chinois.
 7. **Pachinko Alley** : ruelle de salles de jeu, distributeurs, câbles ; enseignes en japonais et en anglais.
 8. **Ferry Deck** : le pont d'un bateau, les îles en parallaxe, un roulis de 1 à 2 px sur le décor seul, jamais sur les combattants. Vagues en cycle de palette, tempête.
