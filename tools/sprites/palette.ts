@@ -66,6 +66,13 @@ export interface Palette<M extends string, D extends string> {
 const TONES_PER_MATERIAL = 7;
 
 /**
+ * The ink of every fighter's outline (docs/art/direction-combat.md §2): one near black, a hair
+ * of violet like the shadows, in place of each material's own outline tone. The shadows never
+ * reach it: only the line does.
+ */
+export const INK = '#0a0710';
+
+/**
  * Slots in declaration order: transparent, then 7 per material, then 1 per detail, then the
  * platine's.
  */
@@ -89,7 +96,8 @@ export function definePalette<M extends string, D extends string>(
     const colors: string[] = ['#00000000'];
     for (const name of materialNames) {
       const tones = materials[name];
-      colors.push(...(colorway === 'alt' && tones.alt ? tones.alt : tones.main));
+      const [, ...ramp] = colorway === 'alt' && tones.alt ? tones.alt : tones.main;
+      colors.push(INK, ...ramp);
     }
     for (const name of detailNames) {
       const color = details[name];

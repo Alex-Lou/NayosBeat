@@ -849,7 +849,10 @@ export class PixelCanvas {
     this.pixels.set(next);
   }
 
-  /** Surrounds the silhouette: darkest tone on the shadow side, a softer one on the lit side. */
+  /**
+   * Surrounds the silhouette with its ink, all the way round (docs/art/direction-combat.md §2):
+   * the back light, inside the line, gives the lit side.
+   */
   private outline(): void {
     const next = this.pixels.slice();
     for (let y = 0; y < this.height; y++) {
@@ -863,9 +866,7 @@ export class PixelCanvas {
           const neighbor = ny * this.width + nx;
           const material = this.materials[this.host[neighbor] ?? EMPTY];
           if (!material || (this.flags[neighbor] ?? 0) & FLAG_GHOST) continue;
-          // This empty pixel lies on the lit side of the shape when it is toward the light.
-          const lit = -dx * LIGHT_2D.x - dy * LIGHT_2D.y > 0.5;
-          next[index] = lit ? material.deep : material.outline;
+          next[index] = material.outline;
           break;
         }
       }

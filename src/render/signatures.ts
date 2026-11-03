@@ -333,9 +333,108 @@ const SAPHIR_SIGNATURE: Signature = {
   presence: { leds: { main: 0x5c8cff, alt: 0xcbb2ff }, specks: 'diamond' },
 };
 
+/** The clamps out at chest height (the Coup de jus's hitbox, 30 to 60 px high, up to 44 ahead). */
+const CLAMPS = { height: 45, reach: 30 } as const;
+/** His shoulder as it rams (the Surcharge's hitbox, 20 to 70 px high). */
+const SHOULDER = { height: 45, reach: 22 } as const;
+/** The clamps up over his head (the Plafonnier's hitbox, 50 to 90 px high). */
+const CEILING = { height: 70, reach: 10 } as const;
+/** Both fists on the floor, ahead of him (Plein feu's last blow). */
+const FLOOR = { height: 0, reach: 30 } as const;
+
+/**
+ * Watt (docs/art/direction-combat.md §4, docs/watt.md): his specials in his VU green, their
+ * Remixes and Plein feu in platine. The Coup de jus charges his clamps then discharges; the
+ * Surcharge rams, its afterimages behind it; the Plafonnier pushes off the floor and rises; Plein
+ * feu, two hooks, then the bass on the floor and the equalizer rising: his VU meter. Between his
+ * blows, his diodes glow. Frames from his data (src/data/fighters/watt.ts, watt-boost.ts).
+ */
+const WATT_SIGNATURE: Signature = {
+  moves: {
+    // Coup de jus: the step on frames 2 to 9, the discharge on frame 10.
+    special: {
+      light: { from: 4, to: 16, tone: 'energy', strength: 0.8, ...CLAMPS },
+      echo: { from: 2, to: 10, every: 2, life: 8, tone: 'energy' },
+      cues: [cue(2, 'charge', 'energy', BODY, 0.7), cue(10, 'kick', 'energy', CLAMPS)],
+      bold: [bold(10, 'shock', 'energy', CLAMPS)],
+    },
+    specialBoost: {
+      light: { from: 2, to: 18, tone: 'platine', strength: 1, ...CLAMPS },
+      cues: [
+        cue(1, 'burst', 'platine', BODY, 0.8),
+        cue(10, 'kick', 'platine', CLAMPS, 1.25),
+        cue(10, 'groundRing', 'energy', CLAMPS, 0.8),
+      ],
+      bold: [bold(10, 'shock', 'platine', CLAMPS, 1.3)],
+    },
+    // Surcharge: the rush on frames 3 to 17, the shoulder in on 14.
+    specialForward: {
+      light: { from: 6, to: 20, tone: 'energy', strength: 0.8, ...SHOULDER },
+      echo: { from: 3, to: 18, every: 3, life: 9, tone: 'energy' },
+      cues: [cue(3, 'dash', 'energy', FEET), cue(14, 'kick', 'energy', SHOULDER)],
+    },
+    specialForwardBoost: {
+      light: { from: 2, to: 22, tone: 'platine', strength: 1, ...SHOULDER },
+      cues: [
+        cue(1, 'burst', 'platine', BODY, 0.8),
+        cue(14, 'kick', 'platine', SHOULDER, 1.25),
+        cue(14, 'groundRing', 'energy', SHOULDER, 0.8),
+      ],
+    },
+    // Plafonnier: out on frame 6, the clamps up to frame 12; the floor rings as he pushes off.
+    specialAntiAir: {
+      light: { from: 2, to: 14, tone: 'energy', strength: 1, height: 30, reach: 10, toHeight: 95 },
+      echo: { from: 2, to: 12, every: 2, life: 8, tone: 'energy' },
+      cues: [cue(2, 'groundRing', 'energy', FEET), cue(4, 'rise', 'energy', CEILING)],
+    },
+    specialAntiAirBoost: {
+      light: {
+        from: 0,
+        to: 16,
+        tone: 'platine',
+        strength: 1,
+        height: 30,
+        reach: 10,
+        toHeight: 110,
+      },
+      cues: [
+        cue(0, 'burst', 'platine', BODY, 0.8),
+        cue(2, 'groundRing', 'platine', FEET, 1.3),
+        cue(4, 'rise', 'platine', CEILING, 1.3),
+      ],
+    },
+    // Plein feu: the cue and the freeze on frame 0, a hook on 3 and 9, both fists on the floor
+    // on 16.
+    super: {
+      light: { from: 0, to: 22, tone: 'platine', strength: 1, height: 6, reach: 30, radius: 200 },
+      cues: [
+        cue(0, 'charge', 'platine', BODY, 1.2),
+        cue(3, 'kick', 'energy', CLAMPS),
+        cue(9, 'kick', 'energy', CLAMPS, 1.15),
+        cue(16, 'drop', 'platine', FLOOR, 1.3),
+      ],
+      bold: [bold(16, 'quake', 'platine', FLOOR, 1.3)],
+    },
+    // The dashes: speed lines on the floor as they set off (their afterimages: dash-trail.ts).
+    dashForward: { cues: [cue(1, 'dash', 'energy', FEET)] },
+    dashBack: { cues: [cue(1, 'dash', 'energy', FEET)] },
+    // Rallumage: the heavy step, relit.
+    boostCancel: {
+      light: { from: 0, to: 8, tone: 'platine', strength: 0.8, ...BODY },
+      cues: [cue(0, 'burst', 'platine', BODY, 0.7)],
+    },
+  },
+  discs: {},
+  heavySwing: true,
+  flares: true,
+  // His diodes' lit core (tools/sprites/watt/palette.ts, `ledCore`).
+  presence: { leds: { main: 0x7cf0a8, alt: 0xf0b8ff } },
+};
+
 const SIGNATURES: Partial<Readonly<Record<FighterId, Signature>>> = {
   nayo: NAYO_SIGNATURE,
   saphir: SAPHIR_SIGNATURE,
+  watt: WATT_SIGNATURE,
 };
 
 /** A fighter's signature, null for one without. */
