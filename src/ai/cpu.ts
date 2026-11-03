@@ -1,8 +1,9 @@
 import type { Box, MatchConfig } from '../core/config';
-import { toPx } from '../core/constants';
+import { px, toPx } from '../core/constants';
 import { superGauge } from '../core/fighter/move';
 import { Input, type InputBits } from '../core/input';
 import { leftEdge } from '../core/boxes';
+import { wallsAt } from '../core/positions';
 import { hurtboxesOf } from '../core/combat';
 import type { MoveData, MoveId } from '../core/move-data';
 import { BOOST_BAR, BOOST_MAX } from '../core/rules';
@@ -28,6 +29,7 @@ import {
 } from './plans';
 import { PROFILES, REACTION_JITTER, type CpuLevel, type Profile } from './profiles';
 import { nextRandom } from './rng';
+import { styleOf, type FightStyle, type PokePress } from './styles';
 
 export type { CpuLevel } from './profiles';
 /** Training dummies do not play: they stand still or block everything. */
@@ -55,6 +57,8 @@ const REVERSAL_CHANCE = 0.25;
  */
 const KEEP_AWAY_RANGE = 75;
 const NO_SPECIAL_RANGE = 80;
+/** Its back this close to a wall, in px, a fighter with a style no longer steps back out. */
+const CORNERED = 40;
 
 /** The opponent as the CPU saw it on a tick. */
 interface Sight {
@@ -409,6 +413,12 @@ class Decider {
     const boost = superGauge(this.me);
     const saving = this.level === 'hard' && savesForSuper(boost, this.outlook !== 'free');
     const remix = boost >= BOOST_BAR && !saving && this.chance(this.profile.remix);
+    // Its own game plan by distance first, if it has one (styles.ts).
+    const style = styleOf(this.config.fighters[this.cpu.player].name);
+    if (style && !wary) {
+      const styled = this.styled(style);
+      if (styled) return styled;
+    }
     if (this.distance > MID_RANGE) {
       if (hasProjectile && this.chance(0.35)) {
         return [remix ? Input.Boost : Input.Special, ...repeat(0, 20)];
@@ -447,6 +457,54 @@ class Decider {
     if (fits('crouchHeavy') && this.chance(0.15)) return [Input.Down | Input.Heavy, Input.Down, 0];
     if (this.chance(0.3)) return repeat(away | Input.Down, this.between(8, 16));
     return repeat(away, this.between(6, 12));
+  }
+
+  /**
+   * Its style's plan (styles.ts), or null where the common plan takes over: too close, it steps
+   * back out (backdashing as its level does), unless cornered; at its range, a poke that reaches,
+   * else it waits there, a step back now and then, for the opponent to whiff into its punish, or
+   * presses in.
+   */
+  private styled(style: FightStyle): InputBits[] | null {
+    const { min, max } = style.range;
+    if (this.distance < min) {
+      if (this.cornered() || !this.chance(style.retreat)) return null;
+      if (this.chance(this.profile.backdash)) return [this.away | Input.Dash, 0];
+      return repeat(this.away, this.between(6, 12));
+    }
+    if (this.distance > max) return null;
+    const { moves } = this.config.fighters[this.cpu.player];
+    for (const poke of style.pokes) {
+      if (this.reaches(moves[poke.move]) && this.chance(poke.chance))
+        return this.pressed(poke.press);
+    }
+    if (!style.waits) return repeat(this.toward, this.between(6, 12));
+    return repeat(this.chance(0.4) ? this.away : 0, this.between(4, 10));
+  }
+
+  /** Its back to a wall: within CORNERED px of it, on the side away from the opponent. */
+  private cornered(): boolean {
+    const walls = wallsAt(this.state.cameraX, this.config.stage);
+    const behind = this.away === Input.Left ? this.me.x - walls.min : walls.max - this.me.x;
+    return behind < px(CORNERED);
+  }
+
+  /** The inputs of a poke, held for its first ticks. */
+  private pressed(press: PokePress): InputBits[] {
+    switch (press) {
+      case 'light':
+        return [Input.Light, 0, 0, 0];
+      case 'heavy':
+        return [Input.Heavy, 0];
+      case 'special':
+        return [Input.Special, 0];
+      case 'forwardLight':
+        return [this.toward | Input.Light, 0, 0];
+      case 'downLight':
+        return [Input.Down | Input.Light, Input.Down, 0];
+      case 'downHeavy':
+        return [Input.Down | Input.Heavy, Input.Down, 0];
+    }
   }
 
   /**

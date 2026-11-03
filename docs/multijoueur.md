@@ -79,13 +79,13 @@ Le serveur public de PeerJS (`0.peerjs.com`) **ne liste pas les pairs**. `listAl
 
 ---
 
-## 4. Le protocole, version 3
+## 4. Le protocole, version 4
 
-La version 2 (porte 1) a ajouté le salon ; la version 3 (porte 2) ajoute les entrées du combat et le hash de l'état. Les salles deviennent `nayosbeat-3-lobby-<n>` : deux versions différentes ne se rencontrent jamais.
+La version 2 (porte 1) a ajouté le salon ; la version 3 (porte 2) ajoute les entrées du combat et le hash de l'état. La version 4 n'ajoute aucun message : les données de Saphir changent (D39), et deux jeux aux données différentes se désynchroniseraient. Les salles deviennent `nayosbeat-4-lobby-<n>` : deux versions différentes ne se rencontrent jamais. La version monte donc aussi à chaque changement des données de jeu.
 
 ### 4.1 Le format
 
-- Des textes JSON courts, chacun avec sa version : `{"v":3,"t":"ping","n":12}`.
+- Des textes JSON courts, chacun avec sa version : `{"v":4,"t":"ping","n":12}`.
 - Ils passent par un canal WebRTC fiable et ordonné, en sérialisation `raw` de PeerJS : le texte arrive tel qu'envoyé.
 
 | Message | Champs | Sens |

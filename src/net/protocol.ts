@@ -6,10 +6,11 @@
  */
 
 /**
- * The wire format's version. It is also part of the rooms' ids: two versions never meet. Raised
- * whenever the state or its hash changes (4: the tension, docs/watt-arsenal.md §3.2).
+ * The wire format's version. It is also part of the rooms' ids: two versions never meet. It goes
+ * up whenever the game's data change too, since two builds that play differently would desync,
+ * and whenever the state or its hash changes (5: the tension, docs/watt-arsenal.md §3.2).
  */
-export const PROTOCOL_VERSION = 4;
+export const PROTOCOL_VERSION = 5;
 
 /** The longest text accepted, checked before parsing it. */
 export const MAX_MESSAGE_LENGTH = 128;

@@ -19,7 +19,9 @@ Ce fichier est pour l'agent qui reprend les décors (les lieux de combat). Il di
 | Rooftop Rain (`rooftop`), minuit et deux pluies, le dirigeable (`decor-rooftop.md`) | en ligne (#122) |
 | Le gym a sa propre palette ; un lieu couvert (`sheltered`) ; des animations d'une seule météo (`weather`) | en ligne (#126) |
 | Le gym sous la pluie : la verrière, la fuite dans le seau (`decor-gym.md`) | en ligne (#126) |
-| La brume, dans les quatre lieux ; les météos des dix lieux (`brume.md` §4) | PR de la brume |
+| La brume, dans les quatre lieux ; les météos des dix lieux (`brume.md` §4) | en ligne (#130) |
+| La neige ; la propreté des décors (`proprete.md`) ; Temple Courtyard (`temple`), aube, crépuscule, nuit, pluie et neige (`decor-temple.md`) | en ligne (#131) |
+| L'Entrepôt, intérieur (`club`), minuit, fumée et pluie à la porte, la basse (`decor-club.md`) | PR du club |
 
 ## 2. Ce que veut le développeur
 
@@ -105,7 +107,7 @@ Elle gère l'écran « Lieu », `stageChoice`, et les options « Lieu » et « A
    - `tools/stage/maps.ts` ;
    - `src/art/<lieu>/index.ts`, en copiant celui du gym ;
    - `src/art/stages.ts` (titre, description) ;
-   - un test de contrat `tests/tools/stage-<lieu>.test.ts`, en copiant `stage-gym.test.ts`.
+   - un test de contrat `tests/tools/stage-<lieu>.test.ts`, qui appelle les vérifications communes (`stage-contract.ts`, voir `stage-club.test.ts`) et ajoute celles du lieu.
 7. **`npm run stages`**, puis `npm run stages:preview -- <lieu> --ends`. Regarde, corrige, recommence.
 8. **Les captures en jeu** : `npm run build`, puis servir `dist/` et piloter Chromium avec Playwright (préinstallé). Passe par l'écran « Lieu », lance un combat, et photographie les moments qui vivent. Envoie les captures au développeur.
 9. **La CI complète avant de pousser** :
@@ -164,8 +166,8 @@ Déjà proposés au développeur et acceptés (« prends les 10 ») :
 
 1. **The Loading Dock** (le lieu de Riff) : fait (`docs/art/decor-dock.md`), en minuit et en aube grise, avec la basse du club pour moment fort. Il lui reste la pluie battante, qui viendra avec la tranche pluie.
 2. **Rooftop Rain** (Néon Underground) : fait (`docs/art/decor-rooftop.md`), en minuit clair et sous deux pluies (minuit, crépuscule), avec le dirigeable pour moment fort.
-3. **Temple Courtyard** (Archipel des Légendes) : lanternes de pierre, grand arbre, torii, mousse. Le premier décor de jour : il prouve que les palettes tiennent hors de la nuit. Pétales, carillons, renards ; aube, crépuscule doré, neige, pluie.
-4. **L'Entrepôt, intérieur** (le club) : mur d'enceintes, cabine du DJ, fumée basse, foule en contre-jour sur le tempo. Le stroboscope est interdit par la règle des 3 flashs.
+3. **Temple Courtyard** (Archipel des Légendes) : fait (`docs/art/decor-temple.md`), à l'aube, au crépuscule et la nuit (pas de plein jour, choix du développeur), sous la pluie et la neige, avec la bourrasque pour moment fort. C'est le premier lieu tenu aux règles de propreté (`proprete.md`).
+4. **L'Entrepôt, intérieur** (le club) : fait (`docs/art/decor-club.md`), à minuit, avec la fumée et la pluie à la porte du quai ; la basse pour moment fort ; aucun stroboscope (test).
 5. **Le Bal du Samedi** (le lieu de Saphir) : salle de bal des années 50, parquet, lustres, velours, orchestre swing en silhouettes ; vert profond et or. Le seul lieu où les enseignes en français sont justifiées (avec « SWING NIGHT »).
 6. **Night Market** : stands, lampions, vapeur des woks, scooter au fond ; enseignes en chinois.
 7. **Pachinko Alley** : ruelle de salles de jeu, distributeurs, câbles ; enseignes en japonais et en anglais.
