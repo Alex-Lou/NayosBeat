@@ -37,7 +37,7 @@ Ce qui est fait et publié :
 **Décisions qui attendent le propriétaire :**
 - la fluidité F2, sur la branche `feat/anim-f2` ;
 - les données de Riff (équilibrage, D33) ;
-- l'équilibrage de Saphir : entre CPU difficiles, Nayo la bat environ 8 fois sur 10 ;
+- l'équilibrage du casting : après D39, entre CPU difficiles, Nayo bat encore Saphir 3 fois sur 4, et bat Riff et Watt plus souvent encore ; le levier suivant est l'IA de Riff et de Watt ;
 - l'équilibrage de Watt : entre CPU difficiles, il gagne 1 % contre Nayo, 40,5 % contre Riff et 16,5 % contre Saphir (`docs/watt.md` §17) ;
 - le cadrage du Finisher : au gros plan, la tête de Nayo projeté entre de 3 px dans la bande du HUD ;
 - la silhouette A ou B ;
@@ -78,6 +78,10 @@ C'était le rôle de la session Claude « principale » ; c'est maintenant le ti
    ```
    Depuis le téléphone, `npm run nayos -- check` fait les deux et dit si les replays ont bougé.
    Après `npm run sprites`, vérifie `git status` : `public/icons` peut avoir été réécrit.
+   Après un changement de données de combat ou d'IA, mesure l'équilibre au banc CPU contre CPU (sans noms : toutes les paires du roster ; `--levels easy,normal,hard` pour les trois niveaux) :
+   ```sh
+   npm run bench:cpu -- saphir nayo --matches 400
+   ```
 3. **Ajouter les fichiers un par un**, jamais `git add -A`. Les docs et les commits sont en français, les commentaires du code en anglais.
 4. **Pousser et ouvrir une PR** :
    ```sh
