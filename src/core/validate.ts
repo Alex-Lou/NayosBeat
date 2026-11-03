@@ -2,6 +2,7 @@ import type { Box, BoxSize, FighterTemplate, MatchConfig, StageConfig } from './
 import { CAMERA_WIDTH_PX, px } from './constants';
 import {
   AIR_MOVE_IDS,
+  COMMAND_GRAB_IDS,
   CORE_MOVE_IDS,
   MOVE_IDS,
   MOVEMENT_MOVE_IDS,
@@ -34,6 +35,12 @@ const OPTIONAL_KINDS: Readonly<Partial<Record<MoveId, readonly MoveKind[]>>> = {
   chainHeavy: ['normal'],
   chainHigh: ['normal'],
   chainLaunch: ['normal'],
+  specialClose: ['special', 'grab'],
+  specialBack: ['special', 'grab'],
+  jumpSpecial: ['special', 'grab'],
+  throwClose: ['throw'],
+  throwDive: ['throw'],
+  throwCatch: ['throw'],
   boostCancel: ['movement'],
   specialBoost: ['special'],
   specialForwardBoost: ['special'],
@@ -63,6 +70,14 @@ export function validateTemplate(template: FighterTemplate): string[] {
   }
   for (const name of ['maxHealth', 'gravity', 'preJumpFrames', 'landingFrames'] as const) {
     expect(isInteger(template[name], 1), `${name} must be an integer >= 1`);
+  }
+  const tension = template.tension;
+  if (tension) {
+    expect(isInteger(tension.max, 1), 'tension.max must be an integer >= 1');
+    expect(isInteger(tension.decayEvery, 1), 'tension.decayEvery must be an integer >= 1');
+    for (const [name, gain] of Object.entries(tension.gains)) {
+      expect(isInteger(gain, 0), `tension.gains.${name} must be an integer >= 0`);
+    }
   }
   expect(
     isInteger(template.jumpVelocity, template.gravity + 1),
@@ -99,10 +114,27 @@ export function validateTemplate(template: FighterTemplate): string[] {
     const kinds = OPTIONAL_KINDS[id];
     expect(!kinds || kinds.includes(move.kind), `${id} must be of kind ${kinds?.join(' or ')}`);
     const thrown = move.kind === 'throw';
+    const command = COMMAND_GRAB_IDS.includes(id) && move.throw !== undefined;
     expect(
-      (id === 'grab') === (move.kind === 'grab'),
-      `${id}: only the grab move may (and must) be of kind "grab"`,
+      (id === 'grab' || command) === (move.kind === 'grab'),
+      `${id}: only the grab move, and a command grab with its throw, may (and must) be of kind "grab"`,
     );
+    if (move.throw !== undefined) {
+      expect(
+        COMMAND_GRAB_IDS.includes(id) && template.moves[move.throw] !== undefined,
+        `${id}.throw must be one of the fighter's own throws, played by a command grab`,
+      );
+    }
+    if (move.catches !== undefined) {
+      expect(move.kind === 'grab', `${id}: only a grab catches a jumper`);
+    }
+    if (move.pull !== undefined) {
+      expect(
+        move.hitbox !== undefined && move.kind !== 'grab' && !thrown,
+        `${id}: only a strike reels the opponent in`,
+      );
+      expect(isInteger(move.pull, 1), `${id}.pull must be an integer >= 1`);
+    }
     expect(
       MOVEMENT_MOVE_IDS.includes(id) === movement,
       `${id}: only the dashes and the Rewind may (and must) be of kind "movement"`,
@@ -194,9 +226,16 @@ export function validateTemplate(template: FighterTemplate): string[] {
         `${id}.sideSwitchFrame must come before the release`,
       );
     }
-    for (const name of ['invincible', 'throwInvincible'] as const) {
+    for (const name of ['invincible', 'throwInvincible', 'armor'] as const) {
       const range = move[name];
       if (range) expect(isRangeWithin(range, duration), `${id}.${name} must fit within the move`);
+    }
+    if (move.armor) {
+      expect(!thrown && move.kind !== 'grab', `${id}: a throw or a grab has no armor`);
+    }
+    if (move.closeRange !== undefined) {
+      expect(id === 'specialClose', `${id}: only the close special has a closeRange`);
+      expect(isInteger(move.closeRange, 1), `${id}.closeRange must be an integer >= 1`);
     }
     if (move.freeCancelFrom !== undefined) {
       expect(movement, `${id}: only a movement can be cancelled without contact`);

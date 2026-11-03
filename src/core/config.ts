@@ -23,9 +23,30 @@ export interface Box extends BoxSize {
 }
 
 /** Everything that defines a playable character. */
+/**
+ * A fighter's own gauge, the tension (docs/watt-arsenal.md §3.2, `tension.ts`): from 0 to
+ * `max`, what each contact gives, and a point lost every `decayEvery` ticks.
+ */
+export interface TensionRules {
+  readonly max: number;
+  readonly gains: {
+    /** Its grab catches. */
+    readonly grab: number;
+    /** It pummels the held opponent. */
+    readonly pummel: number;
+    /** Its armor absorbs a blow. */
+    readonly armor: number;
+    /** It takes a blow. */
+    readonly hit: number;
+  };
+  readonly decayEvery: number;
+}
+
 export interface FighterTemplate {
   readonly name: string;
   readonly maxHealth: number;
+  /** Its own gauge, the tension: only Watt has one (docs/watt-arsenal.md §3.2). */
+  readonly tension?: TensionRules;
   readonly walkForwardSpeed: number;
   readonly walkBackSpeed: number;
   readonly jumpVelocity: number;

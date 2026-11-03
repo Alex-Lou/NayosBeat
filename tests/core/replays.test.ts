@@ -3,6 +3,7 @@ import { createInitialState } from '../../src/core/state';
 import {
   FIGHTER_FIELDS,
   GAME_FIELDS,
+  LATER_FIGHTER_FIELDS,
   playReplay,
   replayConfig,
   replayHash,
@@ -32,7 +33,9 @@ describe('golden replays', () => {
     if (!first) throw new Error('No replay found');
     const state = createInitialState(replayConfig(first));
     expect([...GAME_FIELDS].sort()).toEqual(Object.keys(state).sort());
-    expect([...FIGHTER_FIELDS].sort()).toEqual(Object.keys(state.fighters[0]).sort());
+    expect([...FIGHTER_FIELDS, ...LATER_FIGHTER_FIELDS].sort()).toEqual(
+      Object.keys(state.fighters[0]).sort(),
+    );
   });
 
   it('change hash when the state changes', () => {
@@ -43,6 +46,18 @@ describe('golden replays', () => {
     const moved = { ...state, fighters: [{ ...a, x: a.x + 1 }, b] as const };
     expect(stateHash(moved)).not.toBe(stateHash(state));
     expect(stateHash(structuredClone(state))).toBe(stateHash(state));
+  });
+
+  it('hash a later field once it is set, and only then (watt-arsenal §7)', () => {
+    const [first] = Object.values(REPLAYS);
+    if (!first) throw new Error('No replay found');
+    const state = createInitialState(replayConfig(first));
+    const [a, b] = state.fighters;
+    const charged = { ...state, fighters: [{ ...a, tension: 30 }, b] as const };
+    expect(stateHash(charged)).not.toBe(stateHash(state));
+    expect(stateHash({ ...state, fighters: [{ ...a, tension: 0 }, b] as const })).toBe(
+      stateHash(state),
+    );
   });
 
   it('hash every tick, not only the state the match ends in', () => {

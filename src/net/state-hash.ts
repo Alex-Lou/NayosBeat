@@ -48,6 +48,13 @@ export const FIGHTER_FIELDS = [
 ] as const satisfies readonly (keyof FighterState)[];
 
 /**
+ * Fields added since the hash was first pinned (docs/watt-arsenal.md §7): hashed, with their
+ * name, only when they differ from 0, so a fight that never uses them keeps its hash, and the
+ * golden replays keep proving nothing else changed.
+ */
+export const LATER_FIGHTER_FIELDS = ['tension'] as const satisfies readonly (keyof FighterState)[];
+
+/**
  * The game's fields, in a fixed order, `contacts` included: health and stun do not tell where a
  * hit landed, and the impact point moves with any hitbox or hurtbox.
  */
@@ -90,7 +97,12 @@ export function canonicalText(state: GameState): string {
 function canonical(state: GameState): unknown {
   return GAME_FIELDS.map((field) =>
     field === 'fighters'
-      ? state.fighters.map((fighter) => FIGHTER_FIELDS.map((name) => fighter[name]))
+      ? state.fighters.map((fighter) => [
+          ...FIGHTER_FIELDS.map((name) => fighter[name]),
+          ...LATER_FIGHTER_FIELDS.flatMap((name) =>
+            fighter[name] === 0 ? [] : [name, fighter[name]],
+          ),
+        ])
       : sortedKeys(state[field]),
   );
 }

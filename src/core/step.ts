@@ -1,5 +1,14 @@
 import { boosted, flashOf } from './boost';
-import { applyHit, contactOf, findHit, impactOf, techGrab, type PlacedBox } from './combat';
+import {
+  absorbs,
+  applyArmored,
+  applyHit,
+  contactOf,
+  findHit,
+  impactOf,
+  techGrab,
+  type PlacedBox,
+} from './combat';
 import type { MatchConfig } from './config';
 import { isCounterHit } from './damage';
 import { pushboxOf, updateFighter } from './fighter';
@@ -7,6 +16,7 @@ import { finisherBlowOf, finisherReady, inDanger, locks, type FinisherBlow } fro
 import { readFighter, startHold, struggleInHitstop, updateHold, type HoldTick } from './hold';
 import type { InputBits } from './input';
 import type { MoveData, MoveId } from './move-data';
+import { moveOf, tierOf } from './moves';
 import { followCamera, resolvePositions } from './positions';
 import {
   findProjectileHit,
@@ -18,6 +28,7 @@ import {
 import { impactPercent } from './reaction';
 import { updateRound } from './round';
 import { COUNTER_HITSTOP, EXTENDER_HITSTOP } from './rules';
+import { tensioned } from './tension';
 import { isThreatened } from './threat';
 import { applyTrainingRules } from './training';
 import {
@@ -217,7 +228,7 @@ function assembled(
   projectiles: readonly ProjectileState[],
   config: MatchConfig,
 ): GameState {
-  const gauged = boosted(fighters, contacts, config);
+  const gauged = tensioned(boosted(fighters, contacts, config), contacts, state.frame, config);
   const [a, b] = gauged;
   const [templateA, templateB] = config.fighters;
   const next = applyTrainingRules(
@@ -295,16 +306,32 @@ function struck(
   if (!landed) return null;
   const template = config.fighters[defenderIndex];
   const impact = impactOf(landed.striker, defender, template);
+  const by = defenderIndex === 0 ? 1 : 0;
+  const blowTier = tierOf(moveOf(config.fighters[by], landed.move));
+  if (absorbs(defender, template, landed.data, blowTier)) {
+    const fighter = applyArmored(defender, landed.data, minHealth);
+    const damage = defender.health - fighter.health;
+    return {
+      fighter,
+      contact: contactOf(by, 'armor', landed.move, impact, damage),
+      hitstop: landed.data.hitstop,
+    };
+  }
   const detail = {
     counter: isCounterHit(defender, template),
     impactPercent: impactPercent(impact.y - defender.y, template),
     danger: inDanger(defender, template.maxHealth),
     finisher,
   };
-  const fighter = applyHit(defender, landed.fromX, landed.data, minHealth, detail);
-  const blocked = fighter.action === 'blockstun';
+  const hit = applyHit(defender, landed.fromX, landed.data, minHealth, detail);
+  const blocked = hit.action === 'blockstun';
+  const pull = landed.data.pull;
+  // The cable reels the opponent in, in front of the attacker (validated: strikes only).
+  const fighter =
+    pull !== undefined && !blocked
+      ? { ...hit, x: landed.fromX + landed.striker.facing * pull, vx: 0 }
+      : hit;
   const counter = blocked ? null : detail.counter;
-  const by = defenderIndex === 0 ? 1 : 0;
   const damage = defender.health - fighter.health;
   const kind = blocked ? 'block' : 'hit';
   const extended = (fighter.flags & ~defender.flags & FLAG_EXTENDED) !== 0;

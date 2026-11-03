@@ -22,7 +22,12 @@ import { TRAINING_STAGE } from '../../src/data/stages.ts';
 import { REPLAY_BUTTONS } from '../../src/net/replay-record.ts';
 import { canonicalText, FNV_OFFSET, fnv, hex } from '../../src/net/state-hash.ts';
 
-export { FIGHTER_FIELDS, GAME_FIELDS, stateHash } from '../../src/net/state-hash.ts';
+export {
+  FIGHTER_FIELDS,
+  GAME_FIELDS,
+  LATER_FIGHTER_FIELDS,
+  stateHash,
+} from '../../src/net/state-hash.ts';
 
 /** `ticks` ticks with these inputs held, written as button names: "down+light", "" for none. */
 export type InputRun = readonly [ticks: number, player1: string, player2: string];

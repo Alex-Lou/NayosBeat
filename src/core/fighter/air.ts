@@ -9,7 +9,7 @@ import { startAttack } from './move';
 
 /** Airborne and free: the buffered command may start an air attack, once per jump. */
 export function updateAir(fighter: FighterState, template: FighterTemplate): FighterState {
-  const move = fighter.bufferedCommand ? airMove(fighter.bufferedCommand) : null;
+  const move = fighter.bufferedCommand ? airMove(fighter.bufferedCommand, template.moves) : null;
   return move
     ? airborne(startAttack(fighter, 'airAttack', move), template)
     : airborne(nextFrame(fighter), template);

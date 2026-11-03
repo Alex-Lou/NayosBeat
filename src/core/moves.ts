@@ -58,6 +58,7 @@ export function groundMove(
   moves: FighterMoves,
   boost = 0,
   discOut = false,
+  distance = Infinity,
 ): MoveId | null {
   if (command === 'grab') return 'grab';
   if (command === 'dash' || command === 'boostDash') return 'dashForward';
@@ -69,7 +70,7 @@ export function groundMove(
   if (motion === 'dragonPunch') return 'specialAntiAir';
   if (motion === 'quarterCircleForward') return 'special';
 
-  if (command === 'special') return specialFromDirection(input, facing);
+  if (command === 'special') return ownSpecial(input, facing, moves, distance);
   const light = command === 'light';
   if (has(input, Input.Down)) return light ? 'crouchLight' : 'crouchHeavy';
   // Back + L stays the jab: the quickest reversal out of a guard.
@@ -98,10 +99,14 @@ export function isHoldChoice(command: Command | null): boolean {
   return command === 'light' || command === 'heavy' || command === 'special' || command === 'grab';
 }
 
-/** Air move for a command; there are no air specials, air grabs nor air dashes. */
-export function airMove(command: Command): MoveId | null {
+/**
+ * Air move for a command: S only for a fighter that has an air special (docs/watt-arsenal.md
+ * §4.3); there are no air grabs nor air dashes.
+ */
+export function airMove(command: Command, moves: FighterMoves): MoveId | null {
   if (command === 'light') return 'jumpLight';
   if (command === 'heavy') return 'jumpHeavy';
+  if (command === 'special' && moves.jumpSpecial) return 'jumpSpecial';
   return null;
 }
 
@@ -181,6 +186,25 @@ export function branchMove(
     else if (branch.dirs.includes(dir)) return branch.move;
   }
   return anyDirection;
+}
+
+/**
+ * S with a direction, for the fighter's own specials too (docs/watt-arsenal.md §4): ← + S gives
+ * its `specialBack`, S alone its `specialClose` while the opponent stands within its
+ * `closeRange` (`distance`, center to center); otherwise the simplified specials. BOOST keeps
+ * reading the simplified ones: ← + BOOST stays the super.
+ */
+function ownSpecial(
+  input: InputBits,
+  facing: Facing,
+  moves: FighterMoves,
+  distance: number,
+): MoveId {
+  const special = specialFromDirection(input, facing);
+  if (special !== 'special') return special;
+  if (moves.specialBack && has(input, backOf(facing))) return 'specialBack';
+  const close = moves.specialClose;
+  return close && distance <= (close.closeRange ?? 0) ? 'specialClose' : 'special';
 }
 
 /** Simplified specials: special alone, forward + special, down + special. */
