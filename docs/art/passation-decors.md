@@ -175,6 +175,11 @@ L'ordre recommandé : Loading Dock, Rooftop Rain (avec la tranche pluie), Temple
 
 ### 7.3 Les dettes connues
 
+- **Bug ouvert : sur Android, le décor du gym disparaît parfois** (signalé par le développeur, le 3 novembre 2026). À reprendre plus tard, à sa demande.
+  - Non reproduit : sur Chromium de bureau, sans GPU, aucune erreur dans la console, et la même fluidité que les autres lieux (environ 45 images par seconde partout, dans chaque ambiance du gym).
+  - Piste principale, non vérifiée : le gym est le lieu le plus lourd en mémoire vidéo (8,7 Mo avec la pluie). Un téléphone peut perdre ses textures ou son contexte WebGL, et le décor s'efface alors.
+  - Autres pistes : des animations détachées mal reposées après un changement d'ambiance dans la pause ; un calque laissé vide pendant le chargement d'une ambiance.
+  - À faire : le reproduire sur un vrai Android (Chrome, avec le débogage à distance), regarder les événements `webglcontextlost`, puis corriger, avec un test de régression.
 - **L'écran « Lieu » est en grille de 4 colonnes** : à vérifier à 11 lieux sur téléphone en paysage.
 - **Le métro du gym passe toutes les 40 s** au lieu de 4 minutes (choix assumé, documenté).
 - **La rue s'appelle « Warehouse Street »** dans l'écran « Lieu » : le nom reste à valider par le développeur.
