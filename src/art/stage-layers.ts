@@ -26,7 +26,11 @@ export interface Atmosphere {
   readonly weather: Weather;
 }
 
-/** The stage as drawn first: midnight, a clear night. Its images sit in the stage's folder. */
+/**
+ * The stage as most are drawn first: midnight, a clear night. A stage's base atmosphere is the first
+ * its colors name (`npm run stages` writes it first): its images sit in the stage's folder. A stage
+ * that has no night (the beach, docs/art/decor-plage.md) starts on another.
+ */
 export const BASE_ATMOSPHERE: Atmosphere = { moment: 'midnight', weather: 'clear' };
 
 /** An atmosphere's name, its images' folder under the stage's (the base's: the folder itself). */
@@ -167,7 +171,7 @@ export function stageVariantsOf(
   colors: Readonly<Record<string, readonly number[]>>,
   props: readonly StageProp[] = [],
 ): StageVariant[] {
-  const base = atmosphereName(BASE_ATMOSPHERE);
+  const base = Object.keys(colors)[0] ?? atmosphereName(BASE_ATMOSPHERE);
   const names = [base, ...Object.keys(colors).filter((name) => name !== base)];
   return names.flatMap((name) => {
     const atmosphere = atmosphereOf(name);

@@ -179,13 +179,15 @@ export async function writeStage(map: CodeMap, drawn: DrawnStage = {}): Promise<
   await writeLayers(art, packed.layers, packed.sheet);
   const module = new URL('props.ts', art);
   await writeFile(module, await propsModule(packed.props, module));
+  // The base atmosphere, the first (midnight's for most): its images in the stage's folder.
+  const base = atmosphereName(map.atmospheres[0]?.atmosphere ?? BASE_ATMOSPHERE);
   const large: Record<string, number[]> = {
-    [atmosphereName(BASE_ATMOSPHERE)]: largeColorsOf(Object.values(packed.layers)),
+    [base]: largeColorsOf(Object.values(packed.layers)),
   };
   const lifted = liftedLayers(code.props, code.layers);
   for (const { atmosphere, palette } of map.atmospheres) {
     const name = atmosphereName(atmosphere);
-    if (name === atmosphereName(BASE_ATMOSPHERE)) continue;
+    if (name === base) continue;
     const shown = {
       far: recolored(lifted.far, palette),
       mid: recolored(lifted.mid, palette),

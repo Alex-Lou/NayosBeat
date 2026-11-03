@@ -146,10 +146,12 @@ describe('The stage large colors', () => {
 
   it('give each atmosphere of a stage a whole palette, slot for slot with its base one', () => {
     for (const { name, atmospheres } of CODE_MAPS) {
-      const [night, ...others] = atmospheres;
-      expect(night?.atmosphere, name).toEqual(BASE_ATMOSPHERE);
+      // The base, first: a clear sky, at midnight but where the stage has no night (the beach).
+      const [base, ...others] = atmospheres;
+      expect(base?.atmosphere.weather, name).toBe('clear');
+      if (name !== 'plage') expect(base?.atmosphere, name).toEqual(BASE_ATMOSPHERE);
       for (const { palette } of others) {
-        expect(palette).toHaveLength(night?.palette.length ?? 0);
+        expect(palette).toHaveLength(base?.palette.length ?? 0);
         // Slot 0 stays transparent, every other opaque: the stage takes whole pixels only.
         expect(palette[0]?.a).toBe(0);
         expect(palette.slice(1).every(({ a }) => a === 255)).toBe(true);
