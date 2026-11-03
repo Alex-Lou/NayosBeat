@@ -1,4 +1,5 @@
 import type { StageVariant } from './stage-layers';
+import { STAGE_VARIANTS as CLUB } from './club';
 import { STAGE_VARIANTS as DOCK } from './dock';
 import { STAGE_VARIANTS as GYM } from './gym';
 import { STAGE_VARIANTS as ROOFTOP } from './rooftop';
@@ -60,5 +61,12 @@ export const STAGE_MAPS: readonly StageMap[] = [
     description: "La cour d'un temple sur une île, la mer derrière le mur",
     sheltered: false,
     variants: TEMPLE,
+  },
+  {
+    name: 'club',
+    title: "L'Entrepôt",
+    description: 'Dans le club, sur la piste, devant le DJ',
+    sheltered: true,
+    variants: CLUB,
   },
 ].filter(({ variants }) => variants.length > 0);

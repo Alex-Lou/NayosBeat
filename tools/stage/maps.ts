@@ -4,10 +4,11 @@
  */
 
 import type { CodeMap } from './kit/stage.ts';
+import { CLUB } from './club/index.ts';
 import { DOCK } from './dock/index.ts';
 import { GYM } from './gym/index.ts';
 import { ROOFTOP } from './rooftop/index.ts';
 import { RUE } from './rue/index.ts';
 import { TEMPLE } from './temple/index.ts';
 
-export const CODE_MAPS: readonly CodeMap[] = [RUE, GYM, DOCK, ROOFTOP, TEMPLE];
+export const CODE_MAPS: readonly CodeMap[] = [RUE, GYM, DOCK, ROOFTOP, TEMPLE, CLUB];
