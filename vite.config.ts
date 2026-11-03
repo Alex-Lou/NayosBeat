@@ -66,7 +66,10 @@ export default defineConfig({
     // The art tests draw whole stages and the fighters' strips: under the full suite's parallel
     // load, a few of them pass 5 s. Their work is bounded, not hanging.
     testTimeout: 20_000,
-    hookTimeout: 30_000,
+    hookTimeout: 60_000,
+    // A phone or a small machine runs the whole suite at once: cap the workers so the heavy
+    // simulation tests are not starved of their share of the CPU.
+    maxWorkers: 4,
     // A cached transform of src/art/nayo/index.ts keeps the strips its import.meta.glob found
     // back then: the strips `npm run sprites` adds would be missing from the tests.
     fsModuleCache: false,

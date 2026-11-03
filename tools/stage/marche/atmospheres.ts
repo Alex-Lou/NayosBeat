@@ -8,10 +8,21 @@ import type { Rgba } from '../../sprites/png.ts';
 import { fogged } from '../kit/fog.ts';
 import { ceiled, grade, repaint, rgba } from '../kit/grade.ts';
 import type { StageAtmosphere } from '../kit/stage.ts';
-import { CLOUD, DISTANT, HAZE, LANTERN, PALETTE, SKY, WINDOW } from './palette.ts';
+import {
+  CLOUD,
+  DISTANT,
+  DISTANT_FAR,
+  HAZE,
+  LANTERN,
+  LANTERN_PALE,
+  MOON,
+  PALETTE,
+  SKY,
+  WINDOW,
+} from './palette.ts';
 
 /** What gives light: the lanterns, the far windows. */
-const LIT: ReadonlySet<number> = new Set([...LANTERN, ...WINDOW]);
+const LIT: ReadonlySet<number> = new Set([...LANTERN, ...LANTERN_PALE, ...WINDOW]);
 
 /**
  * Dusk, golden: the sky from a deep blue overhead to a dull amber over the roofs, the city dark
@@ -72,8 +83,8 @@ function rain(): Rgba[] {
 function fog(): Rgba[] {
   return fogged(PALETTE, {
     color: rgba('#3a3648'),
-    far: [SKY, CLOUD, HAZE, DISTANT],
-    lit: new Set(LANTERN),
+    far: [SKY, CLOUD, HAZE, DISTANT_FAR, DISTANT, MOON],
+    lit: new Set([...LANTERN, ...LANTERN_PALE]),
     depth: 0.7,
     near: 0.2,
   });

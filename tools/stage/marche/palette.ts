@@ -67,6 +67,25 @@ export const SIGN = ramp('#3a322a', '#463c30', '#524436');
 export const PERSON = ramp('#1a1824', '#201d2b', '#272333', '#2f2a3c', '#3a3446');
 export const SKIN = ramp('#5e3e38', '#86584a', '#a87660');
 export const RIM = ramp('#8a5a3a', '#c08452');
+/** The moon, high and dim, and the stars. */
+export const MOON = ramp('#4a4a5e', '#8a889a', '#c8c4cc');
+/** The farthest skyline, a step off the haze: it recedes. */
+export const DISTANT_FAR = ramp('#2a2b38', '#30313e', '#363744', '#3c3d4a');
+/** The shade the stalls and the figures lay on the stone, and the light the lanterns lay. */
+export const SHADOW = ramp('#24202a', '#2a2530');
+export const LIGHT_POOL = ramp('#3a2c28', '#46342c', '#523c30', '#5e4434');
+/** Dull gold and paper: the small goods, the scraps, the banners. */
+export const GOLD_DULL = ramp('#4a3a24', '#544226', '#5e4a2c');
+export const PAPER = ramp('#3e362e', '#4a423a', '#544a3e');
+/** The cloth the left stall sells: a dull green and a dull teal, far from the fighters' cyan. */
+export const FABRIC_GREEN = ramp('#2e3a30', '#3a4638');
+export const FABRIC_TEAL = ramp('#26383a', '#304446');
+/** The elevated train: its body, and the dull gold of its windows (not a light the flash test follows). */
+export const TRAIN = ramp('#1c1e2a', '#242634', '#2e3040');
+export const TRAIN_LIGHT = ramp('#8a6a44', '#c89a5a', '#f0c878');
+/** A warm white lantern, beside the red ones. */
+export const LANTERN_PALE = ramp('#5a4a3a', '#8a6a44', '#c89a5a', '#f0c878', '#fff0b0');
+
 /** The mist, drawn only in the fog (kit/fog.ts). */
 export const MIST = ramp(...MIST_HEXES);
 
