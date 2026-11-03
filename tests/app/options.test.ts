@@ -230,6 +230,29 @@ describe('the options (docs/flashs.md §4)', () => {
     expect(rows).toContainEqual(['B', 'Coup léger (L) : rapide']);
   });
 
+  it('offers « 2 joueurs » on a keyboard and pads, never on a touch screen', () => {
+    const twoPlayers = (items: readonly string[]) =>
+      items.some((item) => item.startsWith('2 joueurs'));
+    const desktop = launch({ 'nayosbeat.notice': 'seen' });
+    desktop.press('Enter');
+    expect(twoPlayers(desktop.screen().items)).toBe(true);
+
+    // On a touch screen (the main menu built anew, back from the options).
+    const phone = launch({ 'nayosbeat.notice': 'seen' });
+    phone.press('Enter');
+    Object.assign(phone.page.window, {
+      matchMedia: (media: string) => ({
+        matches: media.includes('coarse'),
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+      }),
+    });
+    phone.choose('Options');
+    phone.press('Escape');
+    expect(twoPlayers(phone.screen().items)).toBe(false);
+    expect(phone.screen().items.some((item) => item.startsWith("Contre l'ordinateur"))).toBe(true);
+  });
+
   it('moves the sound from the main menu into the options screen', () => {
     const { press, screen, choose } = launch({ 'nayosbeat.notice': 'seen' });
     press('Enter');

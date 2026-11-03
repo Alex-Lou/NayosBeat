@@ -345,7 +345,11 @@ export class App {
     };
     const items: MenuItem[] = [
       { label: "Contre l'ordinateur", hint: 'Un joueur', onSelect: choose('cpu') },
-      { label: '2 joueurs', hint: 'Sur le même appareil', onSelect: choose('versus') },
+      // Two players on one device: a keyboard and pads share it, a touch screen does not (one
+      // pair of thumbs on the controls); there, playing two is the online « Multi ».
+      ...(isTouchDevice()
+        ? []
+        : [{ label: '2 joueurs', hint: 'Sur le même appareil', onSelect: choose('versus') }]),
       { label: 'Entraînement', hint: 'Sans chrono, vie infinie', onSelect: choose('training') },
       ...(this.multi
         ? [
