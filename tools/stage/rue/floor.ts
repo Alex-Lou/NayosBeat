@@ -5,7 +5,16 @@
  */
 
 import { Canvas, at, tone } from '../kit/canvas.ts';
-import { ASPHALT, CONCRETE, STONE } from './palette.ts';
+import {
+  ASPHALT,
+  CONCRETE,
+  CONCRETE_VIOLET,
+  FRUIT,
+  PAPER,
+  POSTER_RED,
+  STEEL,
+  STONE,
+} from './palette.ts';
 import { noise, streamOf, type Random } from '../kit/random.ts';
 
 /** Image pixels per world pixel: the floor's measures are counted in world pixels. */
@@ -96,11 +105,78 @@ function drawCurb(canvas: Canvas, seed: number): void {
   });
 }
 
+/**
+ * The club's violet on the damp slabs (docs/art/decor-rue.md §3.3): long streaks of short
+ * horizontal dashes, as a wet sidewalk holds a neon, shorter and sparser away from the wall; each
+ * dash the slabs' own tones in their violet twin.
+ */
+function drawReflections(canvas: Canvas): void {
+  for (let x = 300; x < canvas.width; x += 620) {
+    for (let y = 3; y < ROWS.slabs - 2; y += 2) {
+      const half = Math.round(9 - y / 7 + Math.sin(y * 1.7 + x) * 3);
+      if (half < 1) continue;
+      for (let dx = -half; dx <= half; dx++) {
+        const slot = canvas.get(x + dx, y);
+        const step = CONCRETE.indexOf(slot);
+        if (step < 0) continue;
+        const lift = Math.abs(dx) < half / 2 && y < 24 ? 1 : 0;
+        canvas.set(
+          x + dx,
+          y,
+          at(CONCRETE_VIOLET, Math.min(step + lift, CONCRETE_VIOLET.length - 1)),
+        );
+      }
+    }
+  }
+}
+
+/** The curb's old yellow paint, worn away in places; a drain grate every so often. */
+function drawCurbDetails(canvas: Canvas, seed: number): void {
+  const { width } = canvas;
+  canvas.paint(0, ROWS.slabs + 2, width, 2, (x, y) =>
+    noise(seed, x, y, 30) > 0.42 ? at(FRUIT.yellow, 0) : undefined,
+  );
+  for (let x = 420; x < width; x += 760) {
+    canvas.fill(x, ROWS.curbTop + 1, 34, ROWS.curbFace - ROWS.curbTop - 1, at(STEEL, 0));
+    for (let bar = x + 3; bar < x + 32; bar += 5) {
+      canvas.vline(bar, ROWS.curbTop + 2, ROWS.curbFace - ROWS.curbTop - 3, at(STEEL, 2));
+    }
+  }
+}
+
+/** Litter on the sidewalk: a crushed can, a flyer, a few butts. Small, never under the feet's line. */
+function drawLitter(canvas: Canvas, random: Random): void {
+  for (const x of [260, 1180]) {
+    canvas.fill(x, 44, 6, 3, at(POSTER_RED, 1));
+    canvas.hline(x, 44, 6, at(STEEL, 4));
+  }
+  for (const [x, y] of [
+    [700, 46],
+    [1560, 40],
+  ] as const) {
+    canvas.fill(x, y, 10, 5, at(PAPER, 1));
+    canvas.hline(x, y, 10, at(PAPER, 3));
+    canvas.hline(x + 2, y + 2, 5, at(PAPER, 0));
+  }
+  for (let butt = 0; butt < 10; butt++) {
+    canvas.fill(
+      random.int(10, canvas.width - 10),
+      random.int(38, ROWS.slabs - 3),
+      2,
+      1,
+      at(PAPER, 2),
+    );
+  }
+}
+
 /** The floor, `width` × `height` image pixels, from the street's seed. */
 export function drawFloor(width: number, height: number, seed: number): Canvas {
   const canvas = new Canvas(width, height);
   drawSlabs(canvas, seed + 51);
   drawWear(canvas, streamOf(seed, 'floor'));
+  drawReflections(canvas);
   drawCurb(canvas, seed + 61);
+  drawCurbDetails(canvas, seed + 71);
+  drawLitter(canvas, streamOf(seed, 'litter'));
   return canvas;
 }

@@ -5,7 +5,8 @@
  * ground line (row 460) is hidden by the floor.
  */
 
-import { Canvas, at, tone } from '../kit/canvas.ts';
+import type { StageDrift } from '../../../src/art/stage-layers.ts';
+import { Canvas, Mask, at, tone } from '../kit/canvas.ts';
 import {
   drawCagedLamp,
   drawClubNeon,
@@ -37,18 +38,23 @@ import {
   drawShutter,
   drawStreetLamp,
 } from './fixtures.ts';
-import { lightAt, type Light } from '../kit/light.ts';
+import { lightAt, spill, type Light } from '../kit/light.ts';
 import {
   BRICK_PAINTED,
   BRICK_RED,
   CURTAIN,
   BRICK_TAN,
   CLEAR,
+  CLOTH,
   CONCRETE,
+  CONCRETE_VIOLET,
   COOL,
   FIGURE_RAMPS,
   NEON_VIOLET,
+  PAINTED_VIOLET,
+  PAPER,
   GLASS,
+  HAIR,
   LAMP,
   SHUTTER,
   RIM_VIOLET,
@@ -69,6 +75,7 @@ import {
   boundsOf,
   drawFigure,
   type Figure,
+  type Outfit,
   type Pose,
 } from './people.ts';
 import { noise, streamOf } from '../kit/random.ts';
@@ -105,6 +112,8 @@ export interface Animation {
   readonly frames: number;
   /** Frame and the steps (1/60 s) it lasts, in order, looping. */
   readonly timeline: readonly (readonly [number, number])[];
+  /** It glides along the layer (src/art/stage-layers.ts `StageDrift`). */
+  readonly drift?: StageDrift;
   readonly draw: (canvas: Canvas, frame: number) => void;
 }
 
@@ -172,27 +181,124 @@ function person(
   head: Figure['head'],
   coat: Figure['coat'],
   pose: Pose,
+  outfit: Outfit,
 ): Figure {
-  return { x, y: feet, height, shoulders, facing, head, coat, pose, rim: rimNear(x) };
+  return { x, y: feet, height, shoulders, facing, head, coat, pose, rim: rimNear(x), outfit };
+}
+
+/** An outfit: a top, trousers, shoes, a hair or hat (docs/art/decor-rue.md §6.1). */
+function dressed(
+  top: readonly number[],
+  legs: readonly number[],
+  hair: readonly number[],
+  shoes: readonly number[] = CLOTH.black,
+): Outfit {
+  return { top, legs, hair, shoes };
 }
 
 const QUEUE: readonly QueueMember[] = [
-  { figure: person(506, QUEUE_FEET, 80, 21, 1, 'hood', 'short', POCKETS), phase: 0, move: 'dip' },
-  { figure: person(532, QUEUE_FEET + 3, 72, 18, 1, 'long', 'long', HIP), phase: 2, move: 'nod' },
   {
-    figure: person(552, QUEUE_FEET + 1, 84, 23, -1, 'cap', 'puffer', PHONE),
+    figure: person(
+      506,
+      QUEUE_FEET,
+      80,
+      21,
+      1,
+      'hood',
+      'short',
+      POCKETS,
+      dressed(CLOTH.grey, CLOTH.black, CLOTH.grey, CLOTH.white),
+    ),
+    phase: 0,
+    move: 'dip',
+  },
+  {
+    figure: person(
+      532,
+      QUEUE_FEET + 3,
+      72,
+      18,
+      1,
+      'long',
+      'long',
+      HIP,
+      dressed(CLOTH.beige, CLOTH.black, HAIR.blond),
+    ),
+    phase: 2,
+    move: 'nod',
+  },
+  {
+    figure: person(
+      552,
+      QUEUE_FEET + 1,
+      84,
+      23,
+      -1,
+      'cap',
+      'puffer',
+      PHONE,
+      dressed(CLOTH.olive, CLOTH.khaki, CLOTH.black, CLOTH.white),
+    ),
     phase: 1,
     move: 'dip',
   },
   {
-    figure: person(594, QUEUE_FEET + 2, 75, 19, 1, 'bun', 'short', STANDING),
+    figure: person(
+      594,
+      QUEUE_FEET + 2,
+      75,
+      19,
+      1,
+      'bun',
+      'short',
+      STANDING,
+      dressed(CLOTH.maroon, CLOTH.denim, HAIR.black),
+    ),
     phase: 3,
     move: 'dip',
   },
-  { figure: person(618, QUEUE_FEET, 81, 21, 1, 'beanie', 'long', POCKETS), phase: 0, move: 'nod' },
-  { figure: person(656, QUEUE_FEET + 3, 70, 18, -1, 'curls', 'short', HIP), phase: 2, move: 'dip' },
   {
-    figure: person(684, QUEUE_FEET + 1, 79, 20, 1, 'bare', 'puffer', CROSSED),
+    figure: person(
+      618,
+      QUEUE_FEET,
+      81,
+      21,
+      1,
+      'beanie',
+      'long',
+      POCKETS,
+      dressed(CLOTH.leather, CLOTH.denim, CLOTH.mustard),
+    ),
+    phase: 0,
+    move: 'nod',
+  },
+  {
+    figure: person(
+      656,
+      QUEUE_FEET + 3,
+      70,
+      18,
+      -1,
+      'curls',
+      'short',
+      HIP,
+      dressed(CLOTH.mustard, CLOTH.black, HAIR.red, CLOTH.white),
+    ),
+    phase: 2,
+    move: 'dip',
+  },
+  {
+    figure: person(
+      684,
+      QUEUE_FEET + 1,
+      79,
+      20,
+      1,
+      'bare',
+      'puffer',
+      CROSSED,
+      dressed(CLOTH.black, CLOTH.grey, HAIR.brown),
+    ),
     phase: 1,
     move: 'dip',
   },
@@ -219,6 +325,7 @@ const BOUNCER: Figure = {
   coat: 'puffer',
   pose: CROSSED,
   rim: { side: -1, above: true, ramp: RIM_WARM },
+  outfit: { top: CLOTH.black, legs: CLOTH.black, shoes: CLOTH.leather, hair: CLOTH.grey },
 };
 
 /** The smoker leaning out of a window of the red building: its sill, its hand, its smoke. */
@@ -246,6 +353,7 @@ function drawSmoker(canvas: Canvas, frame: number): void {
       ],
     },
     rim: { side: 0, above: true, ramp: RIM_WARM },
+    outfit: { top: CLOTH.white, legs: CLOTH.grey, shoes: CLOTH.black, hair: HAIR.black },
   };
   const before = canvas.clip;
   canvas.clip = { left: x + 2, top: top + 2, right: x + WINDOW.width - 2, bottom: sill + 3 };
@@ -292,6 +400,7 @@ function drawBalconyPair(canvas: Canvas, frame: number): void {
       ],
     },
     rim: { side: -1, above: true, ramp: RIM_WARM },
+    outfit: { top: CLOTH.denim, legs: CLOTH.black, shoes: CLOTH.white, hair: HAIR.brown },
   };
   const listener: Figure = {
     x: x + 78,
@@ -303,6 +412,7 @@ function drawBalconyPair(canvas: Canvas, frame: number): void {
     coat: 'short',
     pose: { ...POCKETS, lean: frame === 2 ? 2 : 0 },
     rim: { side: 1, above: true, ramp: RIM_WARM },
+    outfit: { top: CLOTH.maroon, legs: CLOTH.khaki, shoes: CLOTH.black, hair: CLOTH.olive },
   };
   drawFigure(canvas, talker, FIGURE_RAMPS);
   drawFigure(canvas, listener, FIGURE_RAMPS);
@@ -331,6 +441,7 @@ function drawLeaner(canvas: Canvas, frame: number): void {
         lean: frame === 1 ? 4 : 3,
       },
       rim: { side: 1, above: true, ramp: RIM_WARM },
+      outfit: { top: CLOTH.olive, legs: CLOTH.black, shoes: CLOTH.black, hair: CLOTH.olive },
     },
     FIGURE_RAMPS,
   );
@@ -405,6 +516,82 @@ function drawSteam(canvas: Canvas, frame: number): void {
 const CAT_SPOT = { x: 136, sill: 392 } as const;
 
 /** The animations of the layer, each over its own rectangle. */
+// --- Small life: moths at the lamps, pigeons on the ledge, a newspaper on the wind. -----------
+
+/** The street lamps' heads, where their light is: the moths fly there. */
+const LAMP_HEADS = [
+  { x: 405, y: 144 },
+  { x: 1031, y: 144 },
+] as const;
+
+/** Three moths around a lamp's head, each on its loop, `frame` one step of it. */
+function drawMoths(canvas: Canvas, x: number, y: number, frame: number): void {
+  for (let moth = 0; moth < 3; moth++) {
+    const angle = ((frame + moth * 1.4) / 4) * Math.PI * 2 * (moth % 2 === 0 ? 1 : -1);
+    const mx = Math.round(x + Math.cos(angle) * (9 + moth * 3));
+    const my = Math.round(y + 8 + Math.sin(angle) * (4 + moth));
+    canvas.fill(mx, my, 2, 1, at(LAMP, moth === 0 ? 2 : 1));
+  }
+}
+
+/** The pigeons on the club's ledge, where they sleep. */
+const PIGEON_LEDGE = 206;
+const PIGEONS = [538, 552, 572] as const;
+
+/** A pigeon at x on the ledge: `peck` its head down, `up` its head raised, looking about. */
+function drawPigeon(canvas: Canvas, x: number, pose: 'rest' | 'peck' | 'up', facing: -1 | 1): void {
+  const y = PIGEON_LEDGE;
+  canvas.ellipse(x - 5, y - 7, 10, 6, at(STEEL, 2));
+  canvas.hline(x - 4, y - 7, 7, at(STEEL, 4));
+  canvas.fill(x - facing * 6, y - 5, 3, 2, at(STEEL, 1));
+  const head =
+    pose === 'peck' ? { dx: 5, dy: -3 } : pose === 'up' ? { dx: 4, dy: -10 } : { dx: 4, dy: -8 };
+  canvas.fill(x + facing * head.dx - 1, y + head.dy, 3, 3, at(STEEL, 3));
+  canvas.set(x + facing * (head.dx + 2), y + head.dy + 1, at(WARM, 2));
+  canvas.vline(x, y - 1, 1, at(WARM, 1));
+}
+
+/** The three pigeons: one pecks now and then, another raises its head. */
+function drawPigeons(canvas: Canvas, frame: number): void {
+  drawPigeon(canvas, PIGEONS[0], frame === 1 ? 'peck' : 'rest', 1);
+  drawPigeon(canvas, PIGEONS[1], 'rest', -1);
+  drawPigeon(canvas, PIGEONS[2], frame === 2 ? 'up' : 'rest', -1);
+}
+
+/** A sheet of newspaper blown along the sidewalk, tumbling (`frame` 1 to 3; 0, none). */
+function drawNewspaper(canvas: Canvas, frame: number): void {
+  if (frame === 0) return;
+  const x = 1410;
+  const y = 402;
+  const shapes: readonly (readonly [number, number])[][] = [
+    [
+      [x + 2, y + 10],
+      [x + 18, y + 6],
+      [x + 20, y + 12],
+      [x + 4, y + 13],
+    ],
+    [
+      [x + 6, y + 2],
+      [x + 16, y + 4],
+      [x + 14, y + 13],
+      [x + 4, y + 11],
+    ],
+    [
+      [x + 1, y + 6],
+      [x + 12, y + 1],
+      [x + 21, y + 8],
+      [x + 9, y + 12],
+    ],
+  ];
+  const sheet = new Mask(canvas.width, canvas.height);
+  sheet.polygon(shapes[frame - 1] ?? []);
+  canvas.paint(x, y, 22, 14, (px, py) => {
+    if (!sheet.has(px, py)) return undefined;
+    if (!sheet.has(px, py - 1)) return at(PAPER, 3);
+    return at(PAPER, (px + py) % 5 === 0 ? 0 : 1);
+  });
+}
+
 export const MID_ANIMATIONS: readonly Animation[] = [
   {
     name: 'queue',
@@ -524,6 +711,52 @@ export const MID_ANIMATIONS: readonly Animation[] = [
     draw: (canvas, frame) => {
       drawClubNeon(canvas, NEON.x, NEON.y, frame / 2);
     },
+  },
+  ...LAMP_HEADS.map(({ x, y }, index): Animation => ({
+    name: `moths${index}`,
+    rect: { x: x - 18, y: y - 4, width: 36, height: 26 },
+    frames: 4,
+    timeline: [
+      [0, 6],
+      [1, 6],
+      [2, 6],
+      [3, 6],
+    ],
+    draw: (canvas, frame) => {
+      drawMoths(canvas, x, y, frame + index);
+    },
+  })),
+  {
+    name: 'pigeons',
+    rect: {
+      x: PIGEONS[0] - 8,
+      y: PIGEON_LEDGE - 12,
+      width: PIGEONS[2] - PIGEONS[0] + 18,
+      height: 13,
+    },
+    frames: 3,
+    timeline: [
+      [0, 90],
+      [1, 10],
+      [0, 14],
+      [1, 10],
+      [0, 120],
+      [2, 40],
+      [0, 60],
+    ],
+    draw: drawPigeons,
+  },
+  {
+    name: 'newspaper',
+    rect: { x: 1410, y: 402, width: 22, height: 14 },
+    frames: 4,
+    // Blown along the sidewalk from right to left, tumbling, once every 40 s.
+    timeline: Array.from({ length: 2400 / 10 }, (_, step): [number, number] => [
+      1 + (step % 3),
+      10,
+    ]),
+    drift: { from: 40, to: -1440, start: 300, steps: 900 },
+    draw: drawNewspaper,
   },
 ];
 
@@ -788,6 +1021,14 @@ export function drawMid(
   drawAlley(canvas);
   drawTanBuilding(canvas);
   drawSidewalk(canvas);
+  // The club's neon, violet on its wall and on the sidewalk in front of the door.
+  spill(canvas, {
+    light: { x: NEON.x, y: NEON.y + 40, radius: 150, strength: 0, squash: 0.85 },
+    twins: [
+      [BRICK_PAINTED, PAINTED_VIOLET],
+      [CONCRETE, CONCRETE_VIOLET],
+    ],
+  });
   drawScaffoldCorner(canvas);
   drawStreetLife(canvas, frameOf);
   drawIronwork(canvas);
