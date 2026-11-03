@@ -59,7 +59,9 @@ export function isRecovering(fighter: FighterState, template: FighterTemplate): 
 
 /**
  * The grab of `holderIndex` caught the opponent, on this tick: the pair forms, touching, both
- * standing and still, the held fighter turned to the holder. `fighters` are placed for the tick.
+ * standing and still on the ground (an air catch brings both down), the held fighter turned to
+ * the holder. `fighters` are placed for the tick. A command grab (its `throw`, docs/watt-
+ * arsenal.md §4) cannot be broken free of, and its throw starts at once.
  */
 export function startHold(
   holderIndex: 0 | 1,
@@ -71,22 +73,27 @@ export function startHold(
   const grabber = fighters[holderIndex];
   const caught = fighters[heldIndex];
   const holderTemplate = config.fighters[holderIndex];
-  const grab = holderTemplate.moves.grab;
+  const grabId = grabber.move ?? 'grab';
+  const grab = moveOf(holderTemplate, grabId);
+  const command = grab.throw;
   const hold: HoldState = {
     holder: holderIndex,
     frame: 0,
     limit: HOLD_LIMIT_FRAMES,
-    techable: !isRecovering(caught, config.fighters[heldIndex]),
+    techable: command === undefined && !isRecovering(caught, config.fighters[heldIndex]),
     pummels: 0,
   };
   // The holder keeps its buffer: a choice pressed during the grab waits for the clinch's end.
-  const holder: FighterState = {
+  const standing: FighterState = {
     ...enter(grabber, 'holding'),
     move: null,
     moveConnected: false,
     crouching: false,
     vx: 0,
+    y: 0,
+    vy: 0,
   };
+  const holder = command ? startAttack(standing, 'holding', command) : standing;
   const held: FighterState = {
     ...enter(caught, 'held'),
     facing: sideOf(caught, grabber.x),
@@ -96,6 +103,7 @@ export function startHold(
     stunFrames: 0,
     comboCount: 0,
     vx: 0,
+    y: 0,
     vy: 0,
   };
   // Where the grab met the body, before the pair is placed (data validation gives it a box).
@@ -105,7 +113,7 @@ export function startHold(
   const counter = hold.techable ? null : 'punish';
   const caughtTemplate = config.fighters[heldIndex];
   const impact = impactOf(striker, caught, caughtTemplate);
-  const contact = contactOf(holderIndex, 'grab', 'grab', impact, 0, counter);
+  const contact = contactOf(holderIndex, 'grab', grabId, impact, 0, counter);
   return {
     fighters: pairOf(hold, ...placeHeld(hold, holder, held, holder.facing, cameraX, config)),
     hold,

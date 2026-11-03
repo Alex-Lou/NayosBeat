@@ -42,6 +42,10 @@ export const OPTIONAL_MOVE_IDS = [
   'specialClose',
   'specialBack',
   'jumpSpecial',
+  // The throws of the command grabs (docs/watt-arsenal.md §4): played at once on the catch.
+  'throwClose',
+  'throwDive',
+  'throwCatch',
   // The Boost layer (docs/combos-v3.md §1.8): the Rewind, the three Remixes, the super.
   'boostCancel',
   'specialBoost',
@@ -104,7 +108,29 @@ export const REMIX_OF = {
 } as const satisfies Partial<Record<MoveId, MoveId>>;
 
 /** The moves of kind `throw`, and only they: what the holder does with the opponent it holds. */
-export const THROW_MOVE_IDS: readonly MoveId[] = ['pummel', 'throwForward', 'throwBack'];
+export const THROW_MOVE_IDS: readonly MoveId[] = [
+  'pummel',
+  'throwForward',
+  'throwBack',
+  'throwClose',
+  'throwDive',
+  'throwCatch',
+];
+
+/** The throws a command grab may play (its `throw`): never the pummel nor the plain throws. */
+export const COMMAND_THROW_IDS = ['throwClose', 'throwDive', 'throwCatch'] as const;
+export type CommandThrowId = (typeof COMMAND_THROW_IDS)[number];
+
+/**
+ * The specials that may be command grabs (docs/watt-arsenal.md §4): kind `grab` with a `throw`.
+ * Only the grab itself is a grab without one.
+ */
+export const COMMAND_GRAB_IDS: readonly MoveId[] = [
+  'specialClose',
+  'specialBack',
+  'specialAntiAir',
+  'jumpSpecial',
+];
 
 /** How a move must be blocked: low = crouching, overhead = standing, mid = either. */
 export type Guard = 'mid' | 'low' | 'overhead';
@@ -273,6 +299,13 @@ export interface MoveData {
   readonly motion?: RootMotion;
   /** Replaces the posture's hurtboxes on some frames (the Glissade's body along the floor). */
   readonly hurtboxes?: readonly MoveHurtbox[];
+  /**
+   * A command grab (docs/watt-arsenal.md §4): caught, the held opponent cannot break free and
+   * the holder plays this throw at once, instead of choosing in the clinch.
+   */
+  readonly throw?: CommandThrowId;
+  /** A grab that catches a jumper (its default: an opponent on the ground). */
+  readonly catches?: 'air';
   /** Frames during which strikes, projectiles and grabs (or attacks from the air) whiff. */
   readonly invincible?: Invincibility;
   /**

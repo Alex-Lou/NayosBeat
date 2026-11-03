@@ -67,6 +67,9 @@ const GRAB_IMMUNE_ACTIONS: ReadonlySet<FighterAction> = new Set([
   'held',
 ]);
 
+/** A jumper, the only body an air catch takes (not one sent flying: docs/watt-arsenal.md §4.4). */
+const JUMPING_ACTIONS: ReadonlySet<FighterAction> = new Set(['air', 'airAttack']);
+
 /** A box placed in the stage: an attacker's hitbox, or its projectile's. */
 export interface PlacedBox {
   readonly box: Box;
@@ -170,7 +173,7 @@ export function findHit(
   if (!active?.hitbox) return null;
   const move = landingData(active, attacker.actionFrame);
   if (!canBeHit(defender, defenderTemplate, attacker.y > 0, move.juggleCost)) return null;
-  if (move.kind === 'grab' && !canBeGrabbed(defender, defenderTemplate)) return null;
+  if (move.kind === 'grab' && !canBeGrabbed(defender, defenderTemplate, move.catches)) return null;
 
   const { x, y, facing } = attacker;
   return touchedHurtbox(active.hitbox, x, y, facing, defender, defenderTemplate) ? move : null;
@@ -351,7 +354,12 @@ export function techGrab(fighter: FighterState, opponentX: number): FighterState
  * Grabs only take a grounded fighter that is not reeling, nor just out of a stun (the throw
  * protection), nor in the grab-proof frames of a backdash.
  */
-export function canBeGrabbed(fighter: FighterState, template: FighterTemplate): boolean {
+export function canBeGrabbed(
+  fighter: FighterState,
+  template: FighterTemplate,
+  catches?: 'air',
+): boolean {
+  if (catches === 'air') return JUMPING_ACTIONS.has(fighter.action) && fighter.y > 0;
   if (fighter.y !== 0 || fighter.throwImmuneFrames > 0) return false;
   if (GRAB_IMMUNE_ACTIONS.has(fighter.action)) return false;
   return !(fighter.move && isThrowInvincible(moveOf(template, fighter.move), fighter.actionFrame));
