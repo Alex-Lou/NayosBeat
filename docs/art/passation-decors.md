@@ -43,7 +43,7 @@ Ses choix, déjà faits (ne pas les redemander) :
 - **Variantes** : des palettes calculées à la génération.
 - **Tirage** : nouveau à chaque combat, et « Revanche » garde le décor.
 - **Livraison** : par tranches.
-- **Choix du lieu** : un écran avec « Aléatoire » en premier ; contre l'ordinateur, tout au hasard ; en entraînement, la pause change le lieu et l'ambiance.
+- **Choix du lieu** : un écran avec « Aléatoire » en premier ; contre l'ordinateur, il suit la difficulté et l'ambiance est tirée au hasard ; en entraînement, la pause change le lieu et l'ambiance.
 
 Sa manière de travailler (voir `CLAUDE.md`) :
 

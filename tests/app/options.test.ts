@@ -616,6 +616,7 @@ describe('how a fight is watched (docs/art/animation-plan.md Â§2, V0)', () => {
     choose("Contre l'ordinateur");
     flow.afterFighterChosen(1);
     choose('Normal');
+    choose('AlÃ©atoire');
     expect(start).toHaveBeenLastCalledWith(
       'fight',
       expect.objectContaining({ viewing: { slowdown: 2, anim: { legacy: false } } }),
@@ -777,7 +778,7 @@ describe('the place and atmosphere drawn for each match (docs/art/decor-rue.md Â
     expect(shownOf(start)?.stage).toBe(STAGE_MAPS[STAGE_MAPS.length - 1]?.name);
   });
 
-  it('draws anywhere against the computer, without asking; asks in versus, back to player 2', () => {
+  it('asks against the computer after the level, back to it; asks in versus, back to player 2', () => {
     vi.spyOn(Math, 'random').mockReturnValue(0.999);
     const { app, root, screen, choose, start } = launch({ 'nayosbeat.notice': 'seen' }, false);
     const flow = app as unknown as {
@@ -787,7 +788,12 @@ describe('the place and atmosphere drawn for each match (docs/art/decor-rue.md Â
     flow.setup = { ...flow.setup, mode: 'cpu' };
     flow.afterFighterChosen(1);
     choose('Normal');
-    expect(shownOf(start)?.stage).toBe(STAGE_MAPS[STAGE_MAPS.length - 1]?.name);
+    expect(screen().title).toBe('Lieu');
+    byClass(root, 'menu-back')[0]?.dispatchEvent(new Event('click'));
+    expect(screen().title).toBe('DifficultÃ©');
+    choose('Normal');
+    choose('Viaduct Gym');
+    expect(shownOf(start)?.stage).toBe('gym');
     flow.setup = { ...flow.setup, mode: 'versus' };
     flow.afterFighterChosen(1);
     expect(screen().title).toBe('Lieu');

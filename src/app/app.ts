@@ -787,7 +787,7 @@ export class App {
   }
 
   /**
-   * The « Lieu » screen (docs/art/decor-rue.md §14), versus and training: « Aléatoire » or a place,
+   * The « Lieu » screen (docs/art/decor-rue.md §14), in every mode: « Aléatoire » or a place,
    * its atmosphere at random (training's pause chooses it); then the fight. Skipped while the fights
    * have one place or none. `back`: the screen before it.
    */
@@ -819,7 +819,9 @@ export class App {
         hint,
         onSelect: () => {
           this.setup = { ...this.setup, cpuLevel: level };
-          this.startFight();
+          this.chooseStage(() => {
+            this.chooseLevel();
+          });
         },
       })),
       onBack: () => {
@@ -1001,18 +1003,16 @@ export class App {
 
   /**
    * `again`: the same match once more (« Revanche », « Recommencer »), on the same stage; else a
-   * new one, its stage drawn anew: against the computer, anywhere; in versus, at the place chosen;
-   * in training, as its « Lieu » and « Ambiance » say.
+   * new one, its stage drawn anew: against the computer and in versus, at the place chosen; in
+   * training, as its « Lieu » and « Ambiance » say.
    */
   private startFight(again = false): void {
     if (!again || !this.stage) {
       const { mode } = this.setup;
       const chosen: StageChoice =
-        mode === 'cpu'
-          ? RANDOM_STAGE
-          : mode === 'versus'
-            ? { map: this.stageChoice.map, atmosphere: 'random' }
-            : this.stageChoice;
+        mode === 'training'
+          ? this.stageChoice
+          : { map: this.stageChoice.map, atmosphere: 'random' };
       this.stage = stageVariantFor(chosen);
       this.startedChoice = this.stageChoice;
     }
