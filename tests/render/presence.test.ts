@@ -13,6 +13,10 @@ import {
   paletteOf as saphirPaletteOf,
 } from '../../tools/sprites/saphir/palette';
 import { drawStrip } from '../../tools/sprites/sheet';
+import {
+  DETAIL as WATT_DETAIL,
+  paletteOf as wattPaletteOf,
+} from '../../tools/sprites/watt/palette';
 import { fake, type Fake } from './live-fakes';
 
 vi.mock('phaser', () => ({ default: { BlendModes: { NORMAL: 0, ADD: 1 } } }));
@@ -228,5 +232,17 @@ describe("Saphir's presence (docs/saphir.md §9)", () => {
   it('draws the glint in both slits of her guard, and none when she is hit', () => {
     expect(glints('idle')).toBeGreaterThan(0);
     expect(glints('hitHigh')).toBe(0);
+  });
+});
+
+describe("Watt's presence (docs/art/direction-combat.md §4)", () => {
+  it('glows his diodes in their own color, in each colorway', () => {
+    const toHex = ({ r, g, b }: { r: number; g: number; b: number }) => (r << 16) | (g << 8) | b;
+    const leds = signatureOf('watt')?.presence?.leds;
+    for (const colorway of ['main', 'alt'] as const) {
+      const core = wattPaletteOf(colorway)[WATT_DETAIL.ledCore];
+      expect(core).toBeDefined();
+      expect(leds?.[colorway]).toBe(toHex(core as { r: number; g: number; b: number }));
+    }
   });
 });
