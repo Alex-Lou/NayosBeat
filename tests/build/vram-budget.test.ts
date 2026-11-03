@@ -84,11 +84,18 @@ const STAGE_BYTES = Math.max(
 
 /**
  * The live lights paint, for each layer, the pixels that light themselves on a canvas of its size,
- * drawn over their glows (src/render/light-show.ts): at most one more texture a layer.
+ * drawn over their glows (src/render/light-show.ts): at most one more texture a layer, of the one
+ * stage a fight loads (stage-view.ts `loadStage`), its props' sheet left out. (Since there are
+ * several stages, a filter on « stage/props » matched nothing: every stage's every texture was
+ * summed, as if a fight held them all.)
  */
-const EMITTER_BYTES = STAGE_TEXTURES.filter(({ name }) => name !== 'stage/props').reduce(
-  (sum, { width, height }) => sum + width * height * 4,
+const EMITTER_BYTES = Math.max(
   0,
+  ...STAGE_MAPS.map((map) =>
+    stageTextures(map)
+      .filter(({ name }) => !name.endsWith('/props'))
+      .reduce((sum, { width, height }) => sum + width * height * 4, 0),
+  ),
 );
 
 describe('video memory of a match', () => {
