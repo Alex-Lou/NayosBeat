@@ -120,6 +120,51 @@ export const HYDRANT = ramp('#3e1e26', '#5a2a30', '#7a3a3a', '#9a5446');
 export const BAG = ramp('#19171f', '#221f29', '#2e2a36', '#423c4c');
 export const STEAM = ramp('#4a4252', '#5e5464', '#746876', '#8a7c86');
 export const CAT = ramp('#1a161e', '#2a2430');
+/**
+ * The club's violet neon falling on the painted wall and the sidewalk (kit/light.ts `spill`): each
+ * their twin, slot for slot, the hue of the light added to their own tones.
+ */
+export const PAINTED_VIOLET = ramp(
+  '#221c2c',
+  '#2c2340',
+  '#352a48',
+  '#3f3152',
+  '#4a3a5c',
+  '#5a4768',
+  '#6a5670',
+);
+export const CONCRETE_VIOLET = ramp(
+  '#262132',
+  '#2d273a',
+  '#352c44',
+  '#3e324e',
+  '#473857',
+  '#524062',
+  '#5e486a',
+  '#6a5070',
+);
+/**
+ * The clothes of the street's people (docs/art/decor-rue.md §6.1): shadow, base, lit, dim in the
+ * night. Small: none is a large color (docs/flashs.md §3).
+ */
+export const CLOTH = {
+  maroon: ramp('#3a1f26', '#52303a', '#6c414a'),
+  olive: ramp('#2b2f24', '#3e4332', '#555a42'),
+  denim: ramp('#212739', '#2d374e', '#3f4c66'),
+  beige: ramp('#463b36', '#5e5046', '#786958'),
+  leather: ramp('#1f1a20', '#2d252b', '#43363e'),
+  grey: ramp('#28282f', '#383842', '#4e4c58'),
+  mustard: ramp('#463620', '#614b28', '#7e6438'),
+  black: ramp('#19171e', '#23202a', '#312c38'),
+  khaki: ramp('#383226', '#4b4432', '#625942'),
+  white: ramp('#4c4a54', '#6a6672', '#8a8692'),
+} as const;
+export const HAIR = {
+  black: ramp('#151218', '#1f1a22', '#2e2632'),
+  brown: ramp('#2b1e1e', '#402a24', '#56392e'),
+  blond: ramp('#54412e', '#72593c', '#8c714a'),
+  red: ramp('#45221f', '#5f3024', '#7c4232'),
+} as const;
 
 /** The street's ramps for the shared drawing code (people.ts, signs.ts): no new color. */
 export const FIGURE_RAMPS = { body: PERSON, skin: SKIN } as const;

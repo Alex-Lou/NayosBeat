@@ -4,7 +4,7 @@
  */
 
 import { Canvas, Mask, at, tone } from '../kit/canvas.ts';
-import { CLOUD, DISTANT, DISTANT_LIT, SKY, STEEL } from './palette.ts';
+import { CLOUD, DISTANT, DISTANT_LIT, LAMP, SKY, STEEL, WARM } from './palette.ts';
 import { noise, streamOf, type Random } from '../kit/random.ts';
 
 /** Image row of the ground line, under the floor: nothing below it shows. */
@@ -173,6 +173,35 @@ function drawViaduct(canvas: Canvas): void {
     // The cap plate under the girder.
     canvas.fill(x - 12, DECK_BOTTOM, 24, 4, at(STEEL, 2));
   }
+}
+
+/** The elevated train's cars: how long, how tall, how many; where its wheels run (on the deck). */
+export const TRAIN = { car: 118, height: 26, cars: 3, gap: 4, rail: DECK_TOP - 4 } as const;
+
+/**
+ * The elevated train, its lit windows, at x (its rear end), going left (docs/art/decor-rue.md
+ * §6.2): three steel cars under a darker roof, a lit line along the top, a row of warm windows,
+ * the doors between, the headlight at the front.
+ */
+export function drawTrain(canvas: Canvas, x: number): void {
+  const { car, height, cars, gap, rail } = TRAIN;
+  const top = rail - height;
+  for (let index = 0; index < cars; index++) {
+    const left = x + index * (car + gap);
+    canvas.fill(left, top, car, height, at(STEEL, 3));
+    canvas.fill(left + 2, top - 2, car - 4, 3, at(STEEL, 1));
+    canvas.hline(left + 2, top + 1, car - 4, at(STEEL, 5));
+    canvas.fill(left, rail - 4, car, 4, at(STEEL, 0));
+    for (let window = left + 8; window < left + car - 12; window += 14) {
+      const lit = (window * 13 + index * 7) % 5 !== 0;
+      canvas.fill(window, top + 6, 9, 9, at(WARM, lit ? 3 : 1));
+      if (lit) canvas.hline(window, top + 14, 9, at(WARM, 2));
+    }
+    canvas.fill(left + car / 2 - 3, top + 5, 6, height - 9, at(STEEL, 2));
+    if (index < cars - 1) canvas.fill(left + car, top + 6, gap, height - 10, at(STEEL, 0));
+  }
+  canvas.fill(x - 3, top + 4, 4, height - 8, at(STEEL, 2));
+  canvas.fill(x - 2, top + height - 10, 3, 3, at(LAMP, 2));
 }
 
 interface Rooftop {
