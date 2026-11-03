@@ -4,7 +4,7 @@ import { STAGE_COLORS } from '../../src/art/marche/colors';
 import { STAGE_PROPS } from '../../src/art/marche/props';
 import { drawMarche } from '../../tools/stage/marche';
 import { CYCLE, FLARE_AT } from '../../tools/stage/marche/mid';
-import { LANTERN, PALETTE, WINDOW } from '../../tools/stage/marche/palette';
+import { LANTERN, LANTERN_PALE, PALETTE, WINDOW } from '../../tools/stage/marche/palette';
 import { stageContract } from './stage-contract';
 
 function propNamed(name: string) {
@@ -47,7 +47,7 @@ describe("the code's Night Market (docs/art/decor-night-market.md)", { timeout: 
   });
 
   it('never flashes: no animation lights or puts out a lantern or a far window', () => {
-    const lights = new Set([...LANTERN.slice(1), ...WINDOW.slice(1)]);
+    const lights = new Set([...LANTERN.slice(1), ...LANTERN_PALE.slice(1), ...WINDOW.slice(1)]);
     for (const { name, frames } of drawMarche().props) {
       const [still] = frames;
       if (!still) throw new Error(name);
@@ -61,12 +61,32 @@ describe("the code's Night Market (docs/art/decor-night-market.md)", { timeout: 
     expect(lights.size).toBeGreaterThan(0);
   });
 
-  it('loops its steam and its tassels over the same cycle as the flare', () => {
-    for (const name of ['steam', 'tasselL', 'tasselR']) {
+  it('passes its elevated train once a cycle, with the wok flare', () => {
+    const train = propNamed('train');
+    expect(train.timeline.reduce((sum, [, steps]) => sum + steps, 0)).toBe(CYCLE);
+    const drift = train.drift;
+    expect(drift).toBeDefined();
+    expect(drift && drift.start <= FLARE_AT && drift.start + drift.steps >= FLARE_AT).toBe(true);
+  });
+
+  it('loops every living detail over the same cycle as the flare', () => {
+    for (const name of [
+      'steam',
+      'tasselL',
+      'tasselR',
+      'cook',
+      'cat',
+      'crowd0',
+      'crowd1',
+      'cloth',
+      'drip',
+    ]) {
       expect(
         propNamed(name).timeline.reduce((sum, [, steps]) => sum + steps, 0),
         name,
       ).toBe(CYCLE);
     }
+    // The drip is the rain's own: the other weathers do not show it.
+    expect(propNamed('drip').weather).toBe('rain');
   });
 });
