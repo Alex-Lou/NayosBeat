@@ -4,7 +4,7 @@ import { STAGE_LAYER_NAMES } from '../../src/art/stage-layers';
 import { rgbaAt } from '../../tools/sprites/colors';
 import { decodeIndexedPng, type IndexedImage } from '../../tools/sprites/png';
 import { stageRulesOf } from '../../tools/sprites/stage-drawn';
-import { packProps } from '../../tools/sprites/stage-props';
+import { liftedLayers, packProps } from '../../tools/sprites/stage-props';
 import { drawRue } from '../../tools/stage/rue';
 import { drawMid } from '../../tools/stage/rue/mid';
 import { PALETTE } from '../../tools/stage/rue/palette';
@@ -41,12 +41,15 @@ function hsv(r: number, g: number, b: number): { hue: number; saturation: number
 
 describe("the code's street (docs/art/decor-rue.md)", () => {
   const { layers, props } = drawRue();
+  // The layers as installed: what the props that move against nothing, or glide, move through
+  // is lifted off them, their frames draw it (tools/sprites/stage-props.ts).
+  const lifted = liftedLayers(props, layers);
 
   it('is what the game shows: npm run sprites installed it', async () => {
     for (const layer of STAGE_LAYER_NAMES) {
       const file = new URL(`../../src/art/rue/${layer}.png`, import.meta.url);
       const installed = await decodeIndexedPng(await readFile(file));
-      expect(firstDifference(installed, layers[layer]), layer).toBe(-1);
+      expect(firstDifference(installed, lifted[layer]), layer).toBe(-1);
     }
     const sheet = await decodeIndexedPng(
       await readFile(new URL('../../src/art/rue/props.png', import.meta.url)),
@@ -87,12 +90,14 @@ describe("the code's street (docs/art/decor-rue.md)", () => {
     }
   });
 
-  it('animates its props over its still layer: frame 0 is the layer, no frame clears a pixel', () => {
+  it('animates its props over its still layer: frame 0 is the layer the code drew', () => {
     expect(props.map(({ name }) => name)).toEqual([
-      // The fog's banks of mist, on the far layer (kit/fog.ts).
+      // The fog's banks of mist (kit/fog.ts), the elevated train gliding over the far layer.
       'mist0',
       'mist1',
+      'train',
       'queue',
+      'door',
       'bouncer',
       'smoker',
       'balcony',
@@ -101,6 +106,11 @@ describe("the code's street (docs/art/decor-rue.md)", () => {
       'cat',
       'steam',
       'neon',
+      // The small life (docs/art/decor-rue.md §6.2).
+      'moths0',
+      'moths1',
+      'pigeons',
+      'newspaper',
     ]);
     for (const { name, layer, rect, frames } of props) {
       const [still] = frames;
@@ -124,6 +134,18 @@ describe("the code's street (docs/art/decor-rue.md)", () => {
     for (const prop of packed) {
       const code = props.find(({ name }) => name === prop.name);
       if (!code) throw new Error(prop.name);
+      // The layer as shown under this prop: lifted, with the other props' first frames on it.
+      const under = { ...lifted[prop.layer], pixels: Uint8Array.from(lifted[prop.layer].pixels) };
+      for (const other of packed) {
+        const first = other.frames[0];
+        if (other === prop || other.layer !== prop.layer || !first) continue;
+        for (let y = 0; y < first.height; y++) {
+          for (let x = 0; x < first.width; x++) {
+            const slot = sheet.pixels[(first.sheetY + y) * sheet.width + first.sheetX + x] ?? 0;
+            if (slot !== 0) under.pixels[(first.y + y) * under.width + first.x + x] = slot;
+          }
+        }
+      }
       prop.frames.forEach((frame, index) => {
         const drawn = code.frames[index];
         if (!drawn) throw new Error(`${prop.name} ${index}`);
@@ -144,7 +166,6 @@ describe("the code's street (docs/art/decor-rue.md)", () => {
               ] ?? 0;
             if (slot !== 0) return slot;
           }
-          const under = layers[prop.layer];
           return under.pixels[y * under.width + x] ?? 0;
         });
         expect(shown, `${prop.name} frame ${index}`).toEqual(Array.from(drawn.pixels));
@@ -170,5 +191,47 @@ describe("the code's street (docs/art/decor-rue.md)", () => {
     });
     expect(kept.map(({ name }) => name)).not.toContain('queue');
     expect(dropped).toEqual(['queue: the mid layer drawn by hand differs under it']);
+  });
+});
+
+/** The frame of prop `name` at `step` of its loop. */
+function frameAtOf(
+  props: readonly import('../../tools/stage/kit/stage').CodeProp[],
+  name: string,
+  step: number,
+): number {
+  const prop = props.find((each) => each.name === name);
+  if (!prop) throw new Error(name);
+  const total = prop.timeline.reduce((sum, [, steps]) => sum + steps, 0);
+  let left = step % total;
+  for (const [frame, steps] of prop.timeline) {
+    if (left < steps) return frame;
+    left -= steps;
+  }
+  throw new Error(name);
+}
+
+describe('the street moment (docs/art/decor-rue.md §6.2)', () => {
+  const { props } = drawRue();
+  const door = props.find((prop) => prop.name === 'door');
+  const train = props.find((prop) => prop.name === 'train');
+  const timelineOf = (name: string) =>
+    (props.find((prop) => prop.name === name)?.timeline ?? []).reduce(
+      (sum, [, steps]) => sum + steps,
+      0,
+    );
+
+  it('opens its club door once a cycle, the light held 240 steps', () => {
+    if (!door) throw new Error('no door');
+    expect(timelineOf('door')).toBe(2400);
+    const open = Array.from({ length: 2400 }, (_, step) => frameAtOf(props, 'door', step) === 2);
+    expect(open.indexOf(true)).toBe(1740);
+    expect(open.filter(Boolean).length).toBe(240);
+  });
+
+  it('passes its train once a cycle, away from the door', () => {
+    if (!train?.drift) throw new Error('no train');
+    expect(timelineOf('train')).toBe(2400);
+    expect(train.drift.start + train.drift.steps <= 1700).toBe(true);
   });
 });

@@ -101,6 +101,15 @@ Les sources :
 
 La lumière sculpte les volumes. Les corniches et les appuis de fenêtre ont une arête éclairée et une ombre portée dessous. Les escaliers de secours sont éclairés sur le dessus de leurs barres. Les gens ont un liseré sur le côté de leur source et restent sombres ailleurs, comme les silhouettes à contre-jour de l'Entrepôt.
 
+### 5.1 La lumière colorée (lieu témoin, 3 novembre 2026)
+
+La rue est le lieu témoin de la nouvelle recette : plus de lumière, de matière, de vie et de profondeur. C'est la réponse au développeur, qui trouvait les décors « austères ».
+
+Une lumière de couleur tombe sur ce qui est déjà dessiné (`kit/light.ts`, `spill`). Dans sa portée, chaque pixel d'une rampe qu'elle teinte prend le même cran de sa **jumelle** de couleur. Au cœur, il prend un cran de plus. Ses bords et son cœur se fondent en trame ordonnée, si bien que la flaque n'a pas de contour. La texture (joints, briques, taches) reste : seule la teinte de la lumière s'ajoute.
+
+- **Le néon du club** baigne de violet le mur peint de l'Entrepôt et le trottoir devant la porte (`PAINTED_VIOLET`, `CONCRETE_VIOLET`).
+- **Le trottoir mouillé** garde des traînées de reflets violets, en tirets horizontaux, plus courtes et plus rares loin du mur (`floor.ts`).
+
 ## 6. Ce qui bouge
 
 Des « props » : de petites animations de quelques images, posées sur un calque et jouées par le rendu (`src/render/stage-props.ts`). Elles ne touchent jamais au cœur (D17). Elles comptent les pas de l'horloge visuelle, 60 par seconde, et changent d'image d'un coup, sans rien interpoler (D23). Ce sont des découpes : chaque image ne porte que les pixels qui changent par rapport à l'image fixe du calque.
@@ -122,6 +131,30 @@ Aucune lumière ne s'allume ni ne s'éteint, et aucun néon ne clignote. Le néo
 Les gens bougent à la mesure du club : un temps dure 30 pas (120 BPM). La file avance par demi-temps, chacun plonge ou hoche la tête sur le sien.
 
 Un prop est libéré à la fin du combat, avec le reste (`tests/render/disposal.test.ts`). Sa texture, comme celle des calques, reste chargée pour le combat suivant.
+
+### 6.1 Les gens habillés (lieu témoin)
+
+Les gens de la rue ne sont plus des silhouettes : ils portent des vêtements (`people.ts`, `outfit`). Chaque partie a sa rampe, ombre, base, lumière :
+- la veste ou le manteau, et ses manches ;
+- le pantalon et les chaussures ;
+- les cheveux, ou le bonnet, la capuche, la casquette ;
+- le visage et les mains, dans la peau.
+
+Le côté de la lumière monte d'un cran, l'autre côté et le dessous descendent d'un cran. Une manche se détache du torse par son ombre. Les jambes s'assombrissent vers les chaussures. Le liseré de la lumière où ils se tiennent reste, comme sur une silhouette. Les autres lieux gardent leurs silhouettes jusqu'à ce que la recette leur soit appliquée : une figure sans `outfit` se dessine comme avant, au pixel près.
+
+Les couleurs des vêtements (`CLOTH`, `HAIR`) restent sombres, la nuit, et petites : aucune n'est une grande couleur.
+
+### 6.2 La petite vie et le train (lieu témoin)
+
+| Prop | Calque | Rythme |
+|---|---|---|
+| Le train aérien | `far` | Il traverse la ligne aérienne toutes les 40 s, ses fenêtres chaudes (une image qui glisse) |
+| Les papillons de nuit | `mid` | Trois autour de chaque réverbère, 6 pas par image |
+| Les pigeons | `mid` | Endormis sur la corniche du club, l'un picore, un autre lève la tête |
+| Le journal | `mid` | Une feuille que le vent pousse sur le trottoir, de droite à gauche, toutes les 40 s |
+| **La porte du club** | `mid` | **Le moment fort** : toutes les 40 s, elle s'entrouvre, s'ouvre en grand sur l'intérieur violet et chaud, quelqu'un vient au seuil, la lumière se répand sur le perron et le trottoir, puis elle se referme. Chaque état tient au moins 40 pas : rien ne clignote |
+
+En combat, le HUD cache la ligne aérienne : le train ne se voit qu'en plan large et sur l'écran « Lieu ». Le moment fort de la rue, à la hauteur des combattants, est la porte du club qui s'ouvre (choix du développeur) : le train passe au loin au milieu du cycle, la porte s'ouvre ensuite (`DOOR_AT`, 1 700 pas).
 
 ## 7. Les budgets
 

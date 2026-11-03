@@ -225,6 +225,11 @@ function bayerAt(x: number, y: number): number {
  */
 const DITHER_SHARPNESS = 3;
 
+/** Whether a pixel at x, y is on, for a fraction 0 to 1 of the pixels on: an ordered dither. */
+export function dithered(fraction: number, x: number, y: number): boolean {
+  return fraction > bayerAt(x, y);
+}
+
 /**
  * The tone of a ramp at a fractional `level` (0: its first, darkest slot), at pixel x, y: a flat
  * step, or near the middle between two steps, an ordered dither of both.
