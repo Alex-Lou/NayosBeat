@@ -1,4 +1,5 @@
 import {
+  actionBar,
   backButton,
   element,
   helpLine,
@@ -49,7 +50,8 @@ const RANDOM = { name: 'Aléatoire', description: 'Un lieu au hasard' } as const
  * The « Lieu » screen (docs/art/decor-rue.md §14): « Aléatoire » first, then a tile per place, its
  * thumbnail the stage as the fight opens on it; beside them, the one under the cursor larger, its
  * name and what it is like. Driven by keyboard, gamepad, mouse or touch like the character select
- * screen (a tap or a click picks). Nothing is focusable: the selection is managed here.
+ * screen (a tap or a click selects, « Valider » picks). Nothing is focusable: the selection
+ * is managed here.
  */
 export class StageSelect<Id extends string> {
   private readonly root: HTMLDivElement;
@@ -98,9 +100,21 @@ export class StageSelect<Id extends string> {
     });
     body.append(preview, grid);
     panel.appendChild(body);
+    panel.appendChild(
+      actionBar(
+        () => {
+          this.activate();
+        },
+        options.onBack,
+        options.feedback,
+      ),
+    );
     // "Echap" without accent: the pixel font has no capital É.
     panel.appendChild(
-      helpLine('Flèches choisir · Entrée / A valider · Echap / B retour', 'Touche un lieu'),
+      helpLine(
+        'Flèches choisir · Entrée / A valider · Echap / B annuler',
+        'Touche un lieu, puis Valide',
+      ),
     );
     this.root.appendChild(backButton(options.onBack, options.feedback));
     this.root.appendChild(panel);
@@ -118,7 +132,7 @@ export class StageSelect<Id extends string> {
     this.root.remove();
   }
 
-  /** Puts `tile` in the grid as tile `index`: the pointer selects it, a click or a tap picks it. */
+  /** Puts `tile` in the grid as tile `index`: the pointer selects it, « Valider » picks it. */
   private wire(tile: HTMLButtonElement, index: number, grid: HTMLElement): void {
     tile.type = 'button';
     tile.tabIndex = -1;
@@ -127,7 +141,6 @@ export class StageSelect<Id extends string> {
     });
     tile.addEventListener('click', () => {
       this.select(index);
-      this.activate();
     });
     grid.appendChild(tile);
     this.tiles.push(tile);

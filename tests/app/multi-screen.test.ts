@@ -69,6 +69,12 @@ function device(
     if (!item)
       throw new Error(`No « ${label} » on ${name || 'the'} screen: ${texts().join(' / ')}`);
     item.dispatchEvent(new Event('click'));
+    // A tile only selects now: the player then taps « Valider », as these choices mean.
+    if (item.className.split(' ').includes('select-tile')) {
+      const confirm = byClass(root, 'select-confirm')[0];
+      if (!confirm) throw new Error(`No « Valider » after ${label} on ${name || 'the'} screen`);
+      confirm.dispatchEvent(new Event('click'));
+    }
   };
   return { root, screen, onBack, names, texts, choose, has, matches };
 }

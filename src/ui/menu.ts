@@ -228,6 +228,37 @@ export function backButton(
   return button;
 }
 
+/**
+ * « Annuler » and « Valider », under a screen of choices, for a touch screen or a mouse: a tap on
+ * a tile only selects it, these decide. `onCancel` omitted: no way back from this screen.
+ */
+export function actionBar(
+  onConfirm: () => void,
+  onCancel?: () => void,
+  feedback?: (action: MenuFeedback) => void,
+): HTMLDivElement {
+  const actions = element('div', 'select-actions');
+  if (onCancel) {
+    const cancel = element('button', 'select-action select-cancel', 'Annuler');
+    cancel.type = 'button';
+    cancel.tabIndex = -1;
+    cancel.addEventListener('click', () => {
+      feedback?.('back');
+      onCancel();
+    });
+    actions.appendChild(cancel);
+  }
+  const confirm = element('button', 'select-action select-confirm', 'Valider');
+  confirm.type = 'button';
+  confirm.tabIndex = -1;
+  confirm.addEventListener('click', () => {
+    feedback?.('confirm');
+    onConfirm();
+  });
+  actions.appendChild(confirm);
+  return actions;
+}
+
 /** Menu-relevant buttons held on any gamepad (standard mapping), as a bitmask. */
 export function readMenuPad(): number {
   let bits = 0;
