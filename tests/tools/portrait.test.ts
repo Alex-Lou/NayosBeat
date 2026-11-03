@@ -5,10 +5,9 @@ import { decodeIndexedPng } from '../../tools/sprites/png';
 import { codePortrait } from '../../tools/sprites/portrait';
 import { NAYO } from '../../tools/sprites/nayo/index';
 import { SAPHIR } from '../../tools/sprites/saphir/index';
-import { WATT } from '../../tools/sprites/watt/index';
 
 /** The busts of the select screen drawn by the code (tools/sprites/portrait.ts). */
-describe.each([SAPHIR, WATT])("$name's bust, drawn by the code", (fighter) => {
+describe.each([SAPHIR])("$name's bust, drawn by the code", (fighter) => {
   const bust = codePortrait(fighter);
   const fileOf = (colorway: string) =>
     new URL(`../../src/art/${fighter.name}/${colorway}/portrait.png`, import.meta.url);
@@ -32,5 +31,19 @@ describe('a fighter without a bust pose', () => {
   it('leaves a fighter without a portrait pose to its guard', () => {
     expect(NAYO.portrait).toBeUndefined();
     expect(codePortrait(NAYO)).toBeUndefined();
+  });
+});
+
+/** Watt's bust is drawn by hand (art-src/watt/portrait.png): installed as it is, both colorways. */
+describe("Watt's bust, drawn", () => {
+  it.each(['main', 'alt'])('is the drawing, in %s', async (colorway) => {
+    const drawn = await decodeIndexedPng(
+      readFileSync(new URL('../../art-src/watt/portrait.png', import.meta.url)),
+    );
+    const installed = await decodeIndexedPng(
+      readFileSync(new URL(`../../src/art/watt/${colorway}/portrait.png`, import.meta.url)),
+    );
+    expect(installed.width).toBe(PORTRAIT_SIZE);
+    expect(Array.from(installed.pixels)).toEqual(Array.from(drawn.pixels));
   });
 });

@@ -11,7 +11,6 @@ import { WATT_BODY } from './body.ts';
 import { drawWatt } from './look.ts';
 import { DETAIL, EFFECTS, MATERIAL, paletteOf } from './palette.ts';
 import { WATT_POSES } from './poses/index.ts';
-import { PORTRAIT } from './poses/portrait.ts';
 
 /**
  * The tones of a stamped head's exact pixels (head.ts) under the back light, found by their
@@ -47,19 +46,6 @@ export const WATT_LIGHTING: Lighting = {
 
 const isSheet = (sheet: string): sheet is WattSheet => sheet in WATT_SHEETS;
 
-/**
- * His bulb lit for the select screen's tile: each tone of the smoked glass one step brighter, the
- * light in the smoke round the filament wider. Only his bust; the fight keeps the smoked glass.
- */
-const GLASS = MATERIAL.glass;
-const LIT_BULB: Readonly<Record<number, number>> = {
-  [GLASS.deep]: DETAIL.glowDeep,
-  [GLASS.shadow]: DETAIL.glow,
-  [GLASS.base]: DETAIL.glow,
-  [DETAIL.glowDeep]: DETAIL.sound,
-  [DETAIL.glow]: DETAIL.sound,
-};
-
 export const WATT: Fighter = {
   name: 'watt',
   sheets: WATT_SHEETS,
@@ -75,5 +61,4 @@ export const WATT: Fighter = {
   fx: EFFECTS,
   platine: namedEffects(WATT_CLIPS),
   paletteOf,
-  portrait: { pose: PORTRAIT, relight: LIT_BULB },
 };
