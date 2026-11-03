@@ -6,7 +6,6 @@ import {
   type StageProp,
   type StagePropFrame,
 } from '../art/stage-layers';
-import { DEPTH } from './depth';
 
 /** The frame of `prop` its timeline shows `step` steps (1/60 s) after it started: it loops. */
 export function propFrameAt(prop: StageProp, step: number): number {
@@ -63,8 +62,16 @@ export class StagePropsView {
   /** `sheet`: the props' sheet in the texture cache (stage-view.ts, `propsKeyOf`). */
   constructor(private readonly sheet: string) {}
 
-  /** Lays the props of `layer` over it: call right after adding the layer's image. */
-  add(scene: Phaser.Scene, layer: StageArtLayer, props: readonly StageProp[]): void {
+  /**
+   * Lays the props of `layer` over it, each at the next of `depths` (stage-view.ts `stageDepths`):
+   * call right after adding the layer's image.
+   */
+  add(
+    scene: Phaser.Scene,
+    layer: StageArtLayer,
+    props: readonly StageProp[],
+    depths: () => number,
+  ): void {
     const texture = scene.textures.get(this.sheet);
     for (const prop of props) {
       if (prop.layer !== layer.name) continue;
@@ -74,7 +81,7 @@ export class StagePropsView {
         .setOrigin(0, 0)
         .setScale(1 / STAGE_SCALE)
         .setScrollFactor(layer.scroll, 1)
-        .setDepth(DEPTH.stage)
+        .setDepth(depths())
         .setVisible(false);
       this.playing.push({ prop, layer, image, shown: -1, moved: 0 });
     }

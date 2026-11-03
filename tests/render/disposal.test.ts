@@ -9,6 +9,7 @@ import { DebugOverlay } from '../../src/render/debug-overlay';
 import { FinisherProps } from '../../src/render/finisher-props';
 import { HoldRing } from '../../src/render/hold-ring';
 import { StagePropsView } from '../../src/render/stage-props';
+import { stageDepths } from '../../src/render/stage-view';
 import type { RenderMode } from '../../src/render/render-mode';
 import { ControlsStore } from '../../src/input/controls-store';
 import { BindingsScreen } from '../../src/ui/bindings-screen';
@@ -252,7 +253,7 @@ describe('disposal of the stage props', () => {
         [1, 15],
       ],
     };
-    props.add(scene, layer, [prop, { ...prop, name: 'bouncer' }]);
+    props.add(scene, layer, [prop, { ...prop, name: 'bouncer' }], stageDepths());
     props.update(20);
     expect(images).toHaveLength(2);
     props.dispose();

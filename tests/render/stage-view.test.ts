@@ -141,8 +141,8 @@ describe('the stage view', () => {
     for (const image of images) {
       expect(image.origin).toEqual([0, 0]);
       expect(image.scale).toBe(1 / STAGE_SCALE);
-      expect(image.depth).toBe(DEPTH.stage);
-      expect(image.depth).toBeLessThan(DEPTH.dim);
+      expect(image.depth).toBeGreaterThanOrEqual(DEPTH.stage);
+      expect(image.depth).toBeLessThan(DEPTH.rain);
     }
     // Past an edge, a shake shows the most covering color.
     expect(camera.background).toBe(0x2a2030);
@@ -209,6 +209,32 @@ describe('the stage view', () => {
     expect(prop.visible).toBe(false);
     props.dispose();
     expect(prop.destroyed).toBe(true);
+  });
+
+  it('keeps its images in the order drawn, whatever the lights raise over their glows and set back', () => {
+    // Regression (the gym on Android, 3 Nov 2026): every stage image had the same depth, so once
+    // the live lights had raised the far layer over their glows and set it back (light-show.ts
+    // `showEmitters`), Phaser's stable depth sort put it after the middle layer and the floor,
+    // and the opaque far layer hid them: the stage « flat and empty » but at some blows.
+    const { scene, images } = fakeScene();
+    drawStage(scene, WITH_PROPS);
+    const drawn = images.map(({ key }) => key);
+    const depths = images.map(({ depth }) => depth);
+    for (let i = 1; i < depths.length; i++) {
+      expect(depths[i], drawn[i]).toBeGreaterThan(depths[i - 1] ?? Infinity);
+    }
+    // What Phaser does (DisplayList.depthSort, a stable sort by depth) after the lights raise the
+    // far layer and the prop, then give them back their depths.
+    const list = [...images];
+    const sort = () => list.sort((a, b) => a.depth - b.depth);
+    const raised = [images[0], images[2]];
+    for (const image of raised) if (image) image.depth = DEPTH.pools + 0.002;
+    sort();
+    raised.forEach((image, index) => {
+      if (image) image.depth = depths[index === 0 ? 0 : 2] ?? 0;
+    });
+    sort();
+    expect(list.map(({ key }) => key)).toEqual(drawn);
   });
 
   it('glides a drifting prop along its layer, whole image pixels a step', () => {
