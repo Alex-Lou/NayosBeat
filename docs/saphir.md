@@ -16,14 +16,14 @@ Id : `saphir`. Nom affiché : `Saphir` (aucune capitale accentuée).
 - **Couleurs** : masse ivoire `#ECE8DE`, masque saphir `#2A4CB8`, énergie saphir `#3A6CF0`. Tenue 2 : masse noire `#121216`, énergie lilas `#C0A0FF`. Mesures au §8.
 - **Effets** : arcs de coups de pied (`slash`, la forme de Nayo, en saphir), étincelles en losange, comme un saphir taillé ; dissolution `rise` ; lettrage néon. Une forme neuve serait du code (§4.11 du cahier) : ce n'est pas demandé.
 - **Personnalité** : polie, elle vouvoie tout le monde et parle peu. Elle invite, attend, puis punit. Elle salue après chaque combat, sans jamais ôter le masque. Personne ne sait qui est dessous, ni si c'est la même d'un soir à l'autre.
-- **Plan de jeu** : tenir l'adversaire entre 60 et 100 px ; le Chassé (71,5 px) pour gagner les échanges de pieds ; la Syncope pour toucher de loin et ressortir ; le Rubato pour punir un coup raté de très loin ; l'Esquive (52 px) pour sortir du contact ; le Contre-ut contre les sauts.
+- **Plan de jeu** : tenir l'adversaire entre 60 et 100 px ; le Chassé (77,5 px) pour gagner les échanges de pieds ; la Syncope pour toucher de loin et ressortir ; le Rubato pour punir un coup raté de très loin ; l'Esquive (52 px) pour sortir du contact ; le Contre-ut contre les sauts.
 - **Forces** (dans les données) :
-  1. la plus longue portée sans bouger du jeu : Chassé 71,5 px, contre Crochet 65 et Coude 56 ;
+  1. la plus longue portée sans bouger du jeu : Chassé 77,5 px, contre Crochet 65 et Coude 56 ;
   2. la marche arrière la plus rapide (1,6 contre 1,2 et 1,4) et le plus long backdash (52 px contre 44 et 48) ;
   3. la Syncope : 99,5 px avec son pas, puis elle recule de 28 px ; le Rubato porte à 103,5 px et met au sol.
 - **Faiblesses** :
   1. le coup le plus rapide à 5 tics (Pointe, Coup de pied bas), contre 4 et 3 ;
-  2. ni reversal (Rubato forte traverse dès f3, jamais dès f0), ni projectile, et un Contre-ut sans invincibilité ;
+  2. ni reversal (Rubato forte traverse dès f3, jamais dès f0), ni projectile, et un Contre-ut qui ne traverse que les attaques aériennes (de f3 à f8) : un coup au sol le bat toujours ;
   3. des combos courts : sans jauge, 10 à 21 % de la vie de Nayo (Nayo : 18 à 31 %) ; un tabassage faible (Genou, 10 fixes).
 
 **Le test d'identité** (`tests/data/fighters.test.ts`, porte 1b) : Saphir a la plus longue portée immobile de H, la marche arrière la plus rapide et le plus long backdash du casting ; son coup le plus rapide est le plus lent.
@@ -41,7 +41,7 @@ Id : `saphir`. Nom affiché : `Saphir` (aucune capitale accentuée).
 | Dash / backdash | 18 tics, 56 px / 22 tics, 44 px | 16 tics, 64 px, annulable f8 / 20 tics, 48 px | 18 tics, 48 px / 18 tics, 52 px, anti-prise f0–10 |
 | Saut (en l'air, sommet, distance) | 31 tics, 79,6 px, 70 px | 27 tics, 66,5 px, 73 px | 29 tics, 70,8 px, 66 px |
 | Coup le plus rapide | 4 tics | 3 tics | 5 tics (Pointe, Coup de pied bas) |
-| Plus longue portée sans bouger | Crochet 65 px | Coude 56 px | Chassé 71,5 px |
+| Plus longue portée sans bouger | Crochet 65 px | Coude 56 px | Chassé 77,5 px |
 | Overheads | Overhand 19 tics | Talon 17, Saut de l'ange 16 | Fouetté plongeant 18 tics (Plongé en corde) |
 | Reversal | Uppercut f0–6 | aucun au sol | aucun |
 | Projectile | Vinyle 3,5 px/tic | aucun | aucun |
@@ -54,7 +54,7 @@ Pente visée : **favorable contre Nayo, défavorable contre Riff, à 6-4 au plus
 
 - Saphir veut 60 à 100 px ; Nayo 90 à 150 ; Riff moins de 60.
 - **Contre Nayo**
-  - Le Chassé (71,5) dépasse le Crochet (65) et le Coup bas : à mi-distance, Nayo perd l'échange de normaux, ce qui pèse le plus entre CPU (PR #79).
+  - Le Chassé (77,5) dépasse le Crochet (65) et le Coup bas : à mi-distance, Nayo perd l'échange de normaux, ce qui pèse le plus entre CPU (PR #79).
   - La Syncope touche à 99,5 px et ressort : le Crochet et le Pied fendu ne la punissent qu'au contact.
   - Le Vinyle reste sa réponse. Saphir le saute (elle passe 48 px de haut pendant une bonne partie de son saut, à mesurer en 1b), le garde, ou le traverse avec le Rubato forte (1 barre, invincible de f3 à f12). Le Rubato simple, lui, le prend en pleine course.
   - L'Uppercut l'attend si elle saute de près : elle saute de loin, ou pas du tout.
@@ -62,7 +62,7 @@ Pente visée : **favorable contre Nayo, défavorable contre Riff, à 6-4 au plus
   - Sous 60 px, le Jab (3 tics) passe avant la Pointe (5) : Saphir doit garder ses distances.
   - La Glissade (corps de 28,5 px de haut) passe sous le Chassé et la Syncope (boîte de 34 à 48 px) : le Coup de pied bas et la Fauche, eux, la touchent.
   - Le dash annulable entre dans sa portée ; l'Esquive (52 px, anti-prise) et la Syncope qui ressort sont ses sorties.
-  - Le Saut de l'ange passe au-dessus de ses coups bas ; le Contre-ut la cueille, sans invincibilité.
+  - Le Saut de l'ange passe au-dessus de ses coups bas ; le Contre-ut la cueille, et traverse son coup sauté (de f3 à f8).
 
 **Ce qu'elle donne à un CPU** : les CPU gardent peu et échangent (PR #79). Elle gagne les échanges à mi-distance. Un CPU ne punit qu'à sa portée : la Syncope qui ressort risque de le battre trop facilement. C'est la limite à surveiller en boîte grise, et peut-être un plan du CPU de la session principale.
 
@@ -78,7 +78,7 @@ Les noms des normaux sont des gestes de savate ; la métaphore musicale est rés
 | L, L | **Fouetté** | La jambe arrière fouette en arc, petit pas de 10 px | milieu | prolonge la Pointe ; s'annule en spécial | −2 en garde |
 | L, L, L | **Revers tournant** | Elle tourne sur la jambe d'appui, le talon balaie à hauteur de côtes | milieu | finit la chaîne, met au sol | −8 en garde : le punir |
 | → + L | **Pas glissé** | Pas glissé de 16 px, puis une pointe | milieu | s'approcher en frappant ; 0 en garde | un coup bas au démarrage |
-| H | **Chassé** | Le chassé latéral, semelle en avant, jambe tendue à hauteur de hanche | milieu | **la portée du casting** (71,5 px) ; gagner les échanges de pieds | la Glissade passe dessous ; −4 en garde |
+| H | **Chassé** | Le chassé latéral, semelle en avant, jambe tendue à hauteur de hanche | milieu | **la portée du casting** (77,5 px) ; gagner les échanges de pieds | la Glissade passe dessous ; −4 en garde |
 | H, H | **Chassé arrière** | Elle pivote et pousse du talon arrière, 12 px en avant | milieu | finir la corde lourde | −6 en garde |
 | L, L, → + H | **Plongé** | Le fouetté plongeant dans la corde, le pied passe par-dessus la garde | **overhead** | ouvrir une garde basse en combo ; **Rebond** sur un corps jonglé | garder debout ; −6 |
 | L, L, ← + H | **Chandelle glissée** | La Chandelle après un pas de 12 px | milieu | le lanceur de corde | rate l'accroupi |
@@ -90,7 +90,7 @@ Les noms des normaux sont des gestes de savate ; la métaphore musicale est rés
 | en l'air, H | **Chassé sauté** | Chassé en l'air, semelle en avant | overhead | le saut lourd | l'Uppercut, le Genou montant |
 | S | **Syncope** | Un pas de swing sur le temps long (28 px), la jambe passe par-dessus sa tête et retombe en croissant sur le temps court, comme l'aiguille sur le disque, et elle repart en arrière (28 px). Sa traînée saphir écrit un S | milieu | **l'outil signature** : toucher à 99,5 px et ressortir avant la riposte | la garder (−10 au contact) et la punir **si** elle ne ressort pas assez ; la Glissade passe dessous |
 | → + S | **Rubato** | Elle retient son poids en arrière, puis fond de 36 px et fouette, en retard exprès | milieu, met au sol | punir un coup raté de très loin (103,5 px) | −9 en garde ; un projectile la prend en course |
-| ↓ + S | **Contre-ut** | Elle bondit, la jambe tendue droit vers le ciel | milieu, met au sol | l'anti-air, **sans invincibilité** | sauter tard, ou la feinte ; −17 en garde |
+| ↓ + S | **Contre-ut** | Elle bondit, la jambe tendue droit vers le ciel | milieu, met au sol | l'anti-air, **invincible aux attaques aériennes de f3 à f8**, jamais à celles du sol | la feinte (sauter sans frapper), un coup au sol ; −17 en garde |
 | PRISE | **Prise** | Saisie au revers de la veste | — | la prise ordinaire (43,5 px) | dégager |
 | en tenant, L | **Genou** | Petits coups de genou au plexus | — | le tabassage | se débattre |
 | en tenant, H | **Croc-en-jambe** | Elle glisse un pied derrière la cheville, une poussée : l'adversaire tombe tout près | — | la pression au réveil | — |
@@ -110,7 +110,7 @@ Portée : de centre à centre contre Nayo debout, mesurée sur les boîtes (comm
 | chainLight | L après Pointe | Fouetté | 6/3/12 (21) | 35 | 17/12 | 8 | 1,5 | mid | 10..44 / 46..60 | +10 px f0–5 | +3/−2 | 67,5 | spécial ; cordes : L (toute direction) Revers tournant, H Chassé, →H Plongé, ↓H Fauche, ←H Chandelle glissée |
 | lightFinisher | L après Fouetté | Revers tournant | 8/3/18 (29) | 50 | KD (3)/12 | 10 | 4 | mid | 8..44 / 36..60 | +12 px f0–7 | KD/−8 | 69,5 | — |
 | forwardLight | → + L | Pas glissé | 8/2/10 (20) | 30 | 15/11 | 8 | 2,5 | mid | 10..40 / 44..56 | +16 px f0–7 | +4/0 | 69,5 | spécial ; corde L (neutre, →, ←) Fouetté |
-| standHeavy | H | Chassé | 10/3/16 (29) | 75 | 20/14 | 12 | 3 | mid | **14..58** / 34..48 | — | +2/−4 | **71,5** | spécial ; cordes : H (neutre, →) Chassé arrière, ↓H Fauche, ←H Chandelle ; jongle 2 |
+| standHeavy | H | Chassé | 10/3/16 (29) | 75 | 20/14 | 12 | 3 | mid | **14..64** / 34..48 | — | +2/−4 | **77,5** | spécial ; cordes : H (neutre, →) Chassé arrière, ↓H Fauche, ←H Chandelle ; jongle 2 |
 | chainHeavy | H, H | Chassé arrière | 9/3/17 (29) | 55 | 19/13 | 10 | 2,5 | mid | 12..52 / 36..50 | +12 px f0–7 | 0/−6 | 77,5 | spécial |
 | chainHigh | L, L, → + H | Plongé | 13/3/15 (31) | 55 | 18/11 | 10 | 3 | **overhead** | 12..42 / 36..70 | +12 px f0–7 | +1/−6 | 67,5 | spécial ; **Rebond** une fois par combo |
 | chainLaunch | L, L, ← + H | Chandelle glissée | 7/4/17 (28) | 55 | lance (8, 4 points)/14 | 10 | 3 | mid | 4..32 / 58..104 | +12 px f0–5 | lance/−6 | 57,5 (rate l'accroupi) | spécial |
@@ -122,7 +122,7 @@ Portée : de centre à centre contre Nayo debout, mesurée sur les boîtes (comm
 | jumpHeavy | air H | Chassé sauté | 7/5/10 | 68 | 18/12 | 11 | 3 | overhead | 4..40 / −2..18 | — | — | 53,5 | — |
 | special | S, ↓↘→ | **Syncope** | 12/3/22 (37) | 70 (10) | 24/14 | 12 | 3 | mid | 14..58 / 34..48 | **+28 px f2–9, puis −28 px f16–29** | 0/−10 au contact, puis elle recule | **99,5** | — |
 | specialForward | → + S | **Rubato** | 16/4/18 (38) | 80 (12) | KD (3)/12 | 13 | 3,5 | mid | 12..54 / 36..52 | +36 px f4–15 | KD/−9 | **103,5** | — |
-| specialAntiAir | ↓ + S, →↓↘ | **Contre-ut** | 5/6/24 (35) | 90 (13) | KD (3)/12 | 14 | 3 | mid | 2..28 / 36..106 | — | KD/−17 | 41,5 | — ; **sans invincibilité** |
+| specialAntiAir | ↓ + S, →↓↘ | **Contre-ut** | 5/6/24 (35) | 90 (13) | KD (3)/12 | 14 | 3 | mid | 2..28 / 36..106 | — | KD/−17 | 41,5 | — ; **invincible aux attaques aériennes f3–8** |
 
 **Prise et déplacements** (au format de combat-v2 §10.3)
 

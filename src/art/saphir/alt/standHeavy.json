@@ -4,44 +4,44 @@
       "frame": { "x": 272, "y": 0, "w": 69, "h": 147 },
       "trimmed": true,
       "spriteSourceSize": { "x": 0, "y": 2, "w": 69, "h": 147 },
-      "sourceSize": { "w": 161, "h": 150 }
+      "sourceSize": { "w": 165, "h": 150 }
     },
     "1": {
       "frame": { "x": 0, "y": 0, "w": 53, "h": 150 },
       "trimmed": true,
       "spriteSourceSize": { "x": 19, "y": 0, "w": 53, "h": 150 },
-      "sourceSize": { "w": 161, "h": 150 }
+      "sourceSize": { "w": 165, "h": 150 }
     },
     "2": {
       "frame": { "x": 53, "y": 0, "w": 74, "h": 149 },
       "trimmed": true,
       "spriteSourceSize": { "x": 10, "y": 1, "w": 74, "h": 149 },
-      "sourceSize": { "w": 161, "h": 150 }
+      "sourceSize": { "w": 165, "h": 150 }
     },
     "3": {
       "frame": { "x": 341, "y": 0, "w": 118, "h": 145 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 9, "y": 5, "w": 118, "h": 145 },
-      "sourceSize": { "w": 161, "h": 150 }
+      "spriteSourceSize": { "x": 15, "y": 5, "w": 118, "h": 145 },
+      "sourceSize": { "w": 165, "h": 150 }
     },
     "4": {
-      "frame": { "x": 459, "y": 0, "w": 149, "h": 141 },
+      "frame": { "x": 459, "y": 0, "w": 147, "h": 141 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 12, "y": 9, "w": 149, "h": 141 },
-      "sourceSize": { "w": 161, "h": 150 }
+      "spriteSourceSize": { "x": 18, "y": 9, "w": 147, "h": 141 },
+      "sourceSize": { "w": 165, "h": 150 }
     },
     "5": {
       "frame": { "x": 127, "y": 0, "w": 77, "h": 149 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 15, "y": 1, "w": 77, "h": 149 },
-      "sourceSize": { "w": 161, "h": 150 }
+      "spriteSourceSize": { "x": 19, "y": 1, "w": 77, "h": 149 },
+      "sourceSize": { "w": 165, "h": 150 }
     },
     "6": {
       "frame": { "x": 204, "y": 0, "w": 68, "h": 148 },
       "trimmed": true,
       "spriteSourceSize": { "x": 5, "y": 1, "w": 68, "h": 148 },
-      "sourceSize": { "w": 161, "h": 150 }
+      "sourceSize": { "w": 165, "h": 150 }
     }
   },
-  "meta": { "image": "standHeavy.png", "size": { "w": 608, "h": 150 } }
+  "meta": { "image": "standHeavy.png", "size": { "w": 606, "h": 150 } }
 }
