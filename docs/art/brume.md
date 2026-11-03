@@ -46,7 +46,7 @@ Le ciel clair partout, plus deux météos qui vont au lieu. Les moments (minuit,
 | Viaduct Gym (`gym`), couvert | pluie, brume (par la verrière) | minuit, crépuscule |
 | The Loading Dock (`dock`) | pluie, brume | minuit, aube |
 | Rooftop Rain (`rooftop`) | pluie (minuit, crépuscule), brume | minuit, crépuscule |
-| Temple Courtyard | pluie, neige | aube, crépuscule, nuit |
+| Temple Courtyard (`decor-temple.md`) | pluie (crépuscule), neige (nuit) | aube, crépuscule, nuit |
 | L'Entrepôt, intérieur (le club), couvert | brume (la fumée de la piste), pluie (par la porte du quai) | minuit |
 | Le Bal du Samedi, couvert | pluie, neige (par les hautes fenêtres) | minuit |
 | Night Market | pluie, brume | minuit, crépuscule |

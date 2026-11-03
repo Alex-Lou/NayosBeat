@@ -3,6 +3,7 @@ import { STAGE_VARIANTS as DOCK } from './dock';
 import { STAGE_VARIANTS as GYM } from './gym';
 import { STAGE_VARIANTS as ROOFTOP } from './rooftop';
 import { STAGE_VARIANTS as RUE } from './rue';
+import { STAGE_VARIANTS as TEMPLE } from './temple';
 
 /** A place the fights may be held in (docs/art/decor-rue.md §14): its name, its atmospheres. */
 export interface StageMap {
@@ -52,5 +53,12 @@ export const STAGE_MAPS: readonly StageMap[] = [
     description: 'Un toit de la mégapole, sous les enseignes géantes',
     sheltered: false,
     variants: ROOFTOP,
+  },
+  {
+    name: 'temple',
+    title: 'Temple Courtyard',
+    description: "La cour d'un temple sur une île, la mer derrière le mur",
+    sheltered: false,
+    variants: TEMPLE,
   },
 ].filter(({ variants }) => variants.length > 0);

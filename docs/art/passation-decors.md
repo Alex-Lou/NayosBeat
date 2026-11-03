@@ -20,6 +20,7 @@ Ce fichier est pour l'agent qui reprend les décors (les lieux de combat). Il di
 | Le gym a sa propre palette ; un lieu couvert (`sheltered`) ; des animations d'une seule météo (`weather`) | en ligne (#126) |
 | Le gym sous la pluie : la verrière, la fuite dans le seau (`decor-gym.md`) | en ligne (#126) |
 | La brume, dans les quatre lieux ; les météos des dix lieux (`brume.md` §4) | PR de la brume |
+| La neige ; la propreté des décors (`proprete.md`) ; Temple Courtyard (`temple`), aube, crépuscule, nuit, pluie et neige (`decor-temple.md`) | PR du temple |
 
 ## 2. Ce que veut le développeur
 
@@ -164,7 +165,7 @@ Déjà proposés au développeur et acceptés (« prends les 10 ») :
 
 1. **The Loading Dock** (le lieu de Riff) : fait (`docs/art/decor-dock.md`), en minuit et en aube grise, avec la basse du club pour moment fort. Il lui reste la pluie battante, qui viendra avec la tranche pluie.
 2. **Rooftop Rain** (Néon Underground) : fait (`docs/art/decor-rooftop.md`), en minuit clair et sous deux pluies (minuit, crépuscule), avec le dirigeable pour moment fort.
-3. **Temple Courtyard** (Archipel des Légendes) : lanternes de pierre, grand arbre, torii, mousse. Le premier décor de jour : il prouve que les palettes tiennent hors de la nuit. Pétales, carillons, renards ; aube, crépuscule doré, neige, pluie.
+3. **Temple Courtyard** (Archipel des Légendes) : fait (`docs/art/decor-temple.md`), à l'aube, au crépuscule et la nuit (pas de plein jour, choix du développeur), sous la pluie et la neige, avec la bourrasque pour moment fort. C'est le premier lieu tenu aux règles de propreté (`proprete.md`).
 4. **L'Entrepôt, intérieur** (le club) : mur d'enceintes, cabine du DJ, fumée basse, foule en contre-jour sur le tempo. Le stroboscope est interdit par la règle des 3 flashs.
 5. **Le Bal du Samedi** (le lieu de Saphir) : salle de bal des années 50, parquet, lustres, velours, orchestre swing en silhouettes ; vert profond et or. Le seul lieu où les enseignes en français sont justifiées (avec « SWING NIGHT »).
 6. **Night Market** : stands, lampions, vapeur des woks, scooter au fond ; enseignes en chinois.
