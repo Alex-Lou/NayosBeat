@@ -208,7 +208,7 @@ La rue n'est plus le seul décor. Chaque lieu a son dossier : son dessin dans `t
 
 - **Le registre.** `tools/stage/maps.ts` liste les lieux que le code dessine ; `src/art/stages.ts` liste ceux que le jeu propose, avec leur nom et leur description. Un lieu dont les images manquent n'est pas proposé.
 - **Le choix.**
-  - Contre l'ordinateur, le lieu et l'ambiance sont tirés au hasard, sans écran.
+  - Contre l'ordinateur, l'écran « Lieu » suit le choix de la difficulté ; l'ambiance est tirée au hasard (choix du développeur, 3 novembre 2026 : avant, tout y était tiré au hasard, sans écran).
   - En versus, l'écran « Lieu » suit le choix des combattants : « Aléatoire » d'abord, puis une vignette par lieu (le décor tel que le combat l'ouvre, caméra au centre). L'ambiance est tirée au hasard.
   - En entraînement, l'écran « Lieu » suit le choix du mannequin. La pause offre « Lieu » et « Ambiance » ; un lieu qui n'a pas l'ambiance choisie la tire au hasard.
   - L'écran ne s'affiche qu'à partir de deux lieux.
