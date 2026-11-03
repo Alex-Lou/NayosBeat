@@ -107,6 +107,11 @@ export interface FighterState {
   readonly reactionHeavy: boolean;
   /** The whole hit or block stun it gave, so the reaction ends with it. */
   readonly stunTotal: number;
+  /**
+   * Its own gauge, the tension (docs/watt-arsenal.md §3.2): 0 for a fighter without one, empty
+   * at the start of each round.
+   */
+  readonly tension: number;
 }
 
 /**
@@ -346,5 +351,6 @@ function createFighter(
     reaction: null,
     reactionHeavy: false,
     stunTotal: 0,
+    tension: 0,
   };
 }

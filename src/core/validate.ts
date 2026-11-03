@@ -67,6 +67,14 @@ export function validateTemplate(template: FighterTemplate): string[] {
   for (const name of ['maxHealth', 'gravity', 'preJumpFrames', 'landingFrames'] as const) {
     expect(isInteger(template[name], 1), `${name} must be an integer >= 1`);
   }
+  const tension = template.tension;
+  if (tension) {
+    expect(isInteger(tension.max, 1), 'tension.max must be an integer >= 1');
+    expect(isInteger(tension.decayEvery, 1), 'tension.decayEvery must be an integer >= 1');
+    for (const [name, gain] of Object.entries(tension.gains)) {
+      expect(isInteger(gain, 0), `tension.gains.${name} must be an integer >= 0`);
+    }
+  }
   expect(
     isInteger(template.jumpVelocity, template.gravity + 1),
     'jumpVelocity must be an integer greater than gravity (or the jump lands at once)',

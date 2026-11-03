@@ -28,6 +28,7 @@ import {
 import { impactPercent } from './reaction';
 import { updateRound } from './round';
 import { COUNTER_HITSTOP, EXTENDER_HITSTOP } from './rules';
+import { tensioned } from './tension';
 import { isThreatened } from './threat';
 import { applyTrainingRules } from './training';
 import {
@@ -227,7 +228,7 @@ function assembled(
   projectiles: readonly ProjectileState[],
   config: MatchConfig,
 ): GameState {
-  const gauged = boosted(fighters, contacts, config);
+  const gauged = tensioned(boosted(fighters, contacts, config), contacts, state.frame, config);
   const [a, b] = gauged;
   const [templateA, templateB] = config.fighters;
   const next = applyTrainingRules(
