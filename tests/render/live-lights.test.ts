@@ -236,7 +236,8 @@ describe('the live lights on the fighters (docs/flashs.md §5)', () => {
       const known = new Map<number, boolean>();
       let worst = 0;
       for (const file of await readdir(folder)) {
-        if (!file.endsWith('.png')) continue;
+        // The select screen's bust is no strip: the fight never shows it, nor lights it.
+        if (!file.endsWith('.png') || file === 'portrait.png') continue;
         const strip = file.replace(/\.png$/, '');
         for (const pixels of cellPixels(await savedStrip(fighter, colorway, strip))) {
           let lit = 0;
