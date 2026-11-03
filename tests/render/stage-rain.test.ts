@@ -7,6 +7,7 @@ import { DEPTH } from '../../src/render/depth';
 import { FLASH_DELTA, luminanceDelta } from '../../src/render/luminance';
 import {
   curtainPixels,
+  precipitationOf,
   RAIN_DRIFT,
   RAIN_FALL,
   RAIN_LOOK,
@@ -15,6 +16,10 @@ import {
   rains,
   SPLASH_ROWS,
   SPLASH_VARIANTS,
+  SNOW_FALL,
+  SNOW_LOOK,
+  snowOffsetsAt,
+  snowPixels,
   SPLASH_WIDTH,
   splashPixels,
   StageRainView,
@@ -151,5 +156,62 @@ describe('the rain (docs/art/pluie.md)', () => {
     expect(painted.size).toBe(2);
     new StageRainView(scene).dispose();
     expect(painted.size).toBe(2);
+  });
+
+  it('snows on the snow atmospheres, never under a roof', () => {
+    const [open] = STAGE_MAPS.flatMap(({ variants }) => variants).filter((each) => rains(each));
+    if (!open) throw new Error('a rain');
+    const map = STAGE_MAPS.find(({ name }) => name === open.stage);
+    if (!map) throw new Error(open.stage);
+    const snowing = { ...open, atmosphere: { ...open.atmosphere, weather: 'snow' as const } };
+    expect(precipitationOf(snowing, [{ ...map, sheltered: false }])).toBe('snow');
+    expect(precipitationOf(snowing, [{ ...map, sheltered: true }])).toBeUndefined();
+    expect(precipitationOf(open, [{ ...map, sheltered: false }])).toBe('rain');
+    expect(rains(snowing, [{ ...map, sheltered: false }])).toBe(false);
+  });
+
+  it('never flashes with its snow either: no flake changes a large color by FLASH_DELTA', () => {
+    for (const [look, { color, alpha }] of Object.entries(SNOW_LOOK)) {
+      for (const backdrop of FIGHT_STAGE_COLORS) {
+        expect(
+          luminanceDelta(color, backdrop, alpha),
+          `${look} ${backdrop.toString(16)}`,
+        ).toBeLessThan(FLASH_DELTA);
+      }
+    }
+  });
+
+  it('lets its snow fall slowly by whole pixels, swaying, over a seamless tile', () => {
+    for (let steps = 0; steps < 600; steps++) {
+      const now = snowOffsetsAt(steps);
+      const next = snowOffsetsAt(steps + 1);
+      for (const value of [now.x, now.y]) {
+        expect(Number.isInteger(value)).toBe(true);
+        expect(value).toBeGreaterThanOrEqual(0);
+        expect(value).toBeLessThan(RAIN_TILE);
+      }
+      // Falling: the tile moves up SNOW_FALL a step, looping; sideways a pixel or two at most.
+      expect((now.y - next.y + RAIN_TILE) % RAIN_TILE).toBe(SNOW_FALL);
+      const side = Math.abs(next.x - now.x);
+      expect(Math.min(side, RAIN_TILE - side)).toBeLessThanOrEqual(2);
+    }
+    const pixels = snowPixels();
+    expect(pixels).toEqual(snowPixels());
+    for (const { x, y } of pixels) {
+      expect(x >= 0 && x < RAIN_TILE && y >= 0 && y < RAIN_TILE).toBe(true);
+    }
+  });
+
+  it('snows without splashes, one curtain, gone with the fight', () => {
+    const { scene, sprites, painted } = fakeScene();
+    const snow = new StageRainView(scene, 'snow');
+    expect(sprites).toHaveLength(1);
+    snow.update(7);
+    const { x, y } = snowOffsetsAt(7);
+    expect(sprites[0]?.tile).toEqual([x, y]);
+    snow.setTier('off');
+    expect(sprites[0]?.visible).toBe(false);
+    snow.dispose();
+    expect(painted.size).toBe(1);
   });
 });
