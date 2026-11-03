@@ -48,7 +48,7 @@ Ce qu'il ne fait pas :
 | Le polish « plus massif, plus détaillé » des quatre | `tools/sprites/*`, en commençant par un essai sur Nayo | Budgets (mémoire vidéo, textures, surfaces de lumière, flashs), mêmes boîtes, propriété intellectuelle |
 | Le buste de sélection de Saphir (#135) | `tools/sprites/saphir`, l'écran de sélection | Sprites regénérés à l'identique, `public/icons` |
 | Le Multi, porte 3 (rollback) | `src/net`, `src/render/fight-scene.ts` | Attend le « oui » du propriétaire. Effets jamais rejoués deux fois |
-| Les décors | `tools/stage`, `src/render/stage-*` | **Cette session pousse directement sur `main`** : vérifier `main` après ses commits (§5) |
+| Les décors | `tools/stage`, `src/render/stage-*` | Elle passe par des PR depuis le 3 novembre, comme les autres sessions (décision du propriétaire), après avoir longtemps poussé directement sur `main`. Si un push direct réapparaît, il faut revérifier `main` (§5) et le lui rappeler |
 
 ---
 
@@ -113,7 +113,7 @@ Le propriétaire a donné son accord permanent (D30) : une PR vérifiée et dont
 1. Le CI GitHub de la tête de la PR est vert (`check`, GitGuardian).
 2. `main` n'a pas bougé depuis la vérification. S'il a bougé, on revérifie.
 3. On sort la PR du brouillon, puis on fusionne **en squash**, avec `expectedHeadSha` (le SHA complet de 40 caractères), le titre en français, et le numéro de la PR à la fin.
-4. **On compare l'arbre** : `git rev-parse origin/main^{tree}` doit égaler l'arbre vérifié. Sinon (un commit poussé entre-temps, par exemple par la session des décors), on revérifie `main` en entier tout de suite.
+4. **On compare l'arbre** : `git rev-parse origin/main^{tree}` doit égaler l'arbre vérifié. Sinon (un commit arrivé entre-temps, une autre fusion ou un push direct), on revérifie `main` en entier tout de suite.
 5. On prévient la session auteure (« fusionnée, base à jour : pars de `<sha>` »), puis le propriétaire, en une phrase sur ce qui change pour le joueur.
 
 **Ce que le gardien ne fusionne pas seul** :
