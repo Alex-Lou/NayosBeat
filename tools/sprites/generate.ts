@@ -25,6 +25,7 @@ import {
   loadDrawn,
   platinePixels,
   PORTRAIT,
+  PORTRAIT_SIZE,
   reportingDrawingProblems,
   stripPixels,
   unseenStrikes,
@@ -38,6 +39,7 @@ import { drawIcons } from './icons.ts';
 import { NAYO } from './nayo/index.ts';
 import type { Colorway } from './palette.ts';
 import { encodeIndexedPng } from './png.ts';
+import { codePortrait } from './portrait.ts';
 import { CODE_MAPS } from '../stage/maps.ts';
 import { loadStageDrawn, writeStages } from './stage-drawn.ts';
 import { loadUiDrawn } from './ui-drawn.ts';
@@ -257,12 +259,14 @@ async function generate(fighter: Fighter, drawn: ReadonlyMap<string, Drawn>): Pr
     const how = platine.drawn ? 'drawn' : `the effects of ${sheet} in platine`;
     console.log(`${fighter.name} ${name}: ${how}`);
   }
-  // The select screen's bust, drawn apart; without it, the game cuts one from the guard. One
-  // image shown whole, not a strip of cells: no atlas.
-  const portrait = drawn.get(PORTRAIT)?.body;
+  // The select screen's bust, drawn apart, else drawn by the code from its pose (portrait.ts);
+  // without either, the game cuts one from the guard. One image shown whole: no atlas.
+  const own = drawn.get(PORTRAIT)?.body;
+  const coded = own ? undefined : codePortrait(fighter);
+  const portrait = own ?? (coded && { width: PORTRAIT_SIZE, height: PORTRAIT_SIZE, pixels: coded });
   if (portrait) {
     await savePng(fighter, portrait, PORTRAIT);
-    console.log(`${fighter.name} ${PORTRAIT}: drawn`);
+    console.log(`${fighter.name} ${PORTRAIT}: ${own ? 'drawn' : 'drawn by the code'}`);
   } else {
     for (const colorway of COLORWAYS) {
       await rm(new URL(`${colorway}/${PORTRAIT}.png`, assets), { force: true, recursive: true });

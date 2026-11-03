@@ -11,6 +11,7 @@ import { SAPHIR_BODY } from './body.ts';
 import { drawSaphir } from './look.ts';
 import { EFFECT_TINTS, EFFECTS, MATERIAL, paletteOf } from './palette.ts';
 import { SAPHIR_POSES } from './poses/index.ts';
+import { PORTRAIT } from './poses/portrait.ts';
 
 /** The tones of a material's stamped pixels (the mask, the ponytail: head.ts), by slot. */
 function tonesOf(material: Material): number[] {
@@ -78,4 +79,5 @@ export const SAPHIR: Fighter = {
   fx: EFFECTS,
   platine: namedEffects(SAPHIR_CLIPS),
   paletteOf,
+  portrait: PORTRAIT,
 };

@@ -39,7 +39,7 @@ import {
 import type { Fighter } from './fighter.ts';
 import { isAirborne, moveHurtboxesAt, POSTURE_CLIPS, type Posture } from './measure.ts';
 import type { IndexedImage, Rgba } from './png.ts';
-import { bustOf } from './portrait.ts';
+import { bustOf, codePortrait } from './portrait.ts';
 import { solve } from './skeleton.ts';
 import { stageRulesOf, stageStart } from './stage-drawn.ts';
 import { UI_ARTS, UI_FOLDER, uiRulesOf, uiStart, type UiArtName } from './ui-drawn.ts';
@@ -277,10 +277,15 @@ export function portraitTemplateOf(fighter: Fighter, drawn: ReadonlyMap<string, 
   });
 }
 
-/** The head of the guard: a square of its first idle frame around the head, enlarged twice. */
+/**
+ * The portrait drawn, else the code's (portrait.ts), else the head of the guard: a square of its
+ * first idle frame around the head, enlarged twice.
+ */
 function portraitStart(fighter: Fighter, drawn: ReadonlyMap<string, Drawn>): Uint8Array {
   const own = drawn.get(PORTRAIT)?.body;
   if (own) return own.pixels;
+  const coded = codePortrait(fighter);
+  if (coded) return coded;
   const idle = stripPixels(fighter, 'idle', drawn).body;
   const pose = fighter.poses('idle')?.[0];
   if (!pose) throw new Error(`${fighter.name} has no idle pose`);

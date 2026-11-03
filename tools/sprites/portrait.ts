@@ -1,11 +1,18 @@
 /**
- * How the bust of the select screen is framed (drawn.ts `portraitRules`): the square around the
- * head, enlarged twice, the start of a portrait drawn by hand (aseprite-template.ts).
+ * The bust of the select screen drawn by the code (`Fighter.portrait`): its pose drawn in one cell
+ * as a strip's frame is (sheet.ts: the body shaded, outlined and lit by its effects, then its front
+ * effects over it), then the square around its head, enlarged twice, as a portrait drawn by hand
+ * is framed (drawn.ts `portraitRules`, aseprite-template.ts). One image in the fighter's palette
+ * slots, saved once per colorway.
  */
 
 import { ANCHOR, ART_SCALE, CELL_SIZE } from '../../src/art/types.ts';
 import { PORTRAIT_SIZE } from './drawn.ts';
-import type { Point } from './raster.ts';
+import { effectLightsOf } from './effect-light.ts';
+import { STILL, type Fighter } from './fighter.ts';
+import { PixelCanvas, type Point } from './raster.ts';
+import { solve, type Pose } from './skeleton.ts';
+import { drawEffect, inkAt } from './vfx.ts';
 
 /**
  * The square of the cell a portrait shows, in sprite pixels, enlarged twice: about the framing of
@@ -32,4 +39,30 @@ export function bustOf(pixels: Uint8Array, width: number, head: Point): Uint8Arr
     }
   }
   return bust;
+}
+
+/** The fighter's bust drawn from its portrait pose, or undefined when it has none. */
+export function codePortrait(fighter: Fighter): Uint8Array | undefined {
+  const pose = fighter.portrait;
+  if (!pose) return undefined;
+  const cell = drawPose(fighter, pose);
+  return bustOf(cell, CELL_SIZE, solve(pose, fighter.body).head);
+}
+
+/** `pose` in one cell: its body as drawStrip draws a frame, its front effects over it. */
+function drawPose(fighter: Fighter, pose: Pose): Uint8Array {
+  const body = new PixelCanvas(CELL_SIZE, CELL_SIZE);
+  fighter.draw(body, solve(pose, fighter.body), 0, STILL);
+  if (fighter.lighting?.fx) {
+    for (const light of effectLightsOf(pose, 0, CELL_SIZE)) body.lightBy(light);
+  }
+  body.finish(fighter.lighting);
+  // The motion trails are drawn behind the body, by the fighter; the rest in front (sheet.ts).
+  const front = new PixelCanvas(CELL_SIZE, CELL_SIZE);
+  const ink = inkAt(front, 0, fighter.fx);
+  for (const effect of pose.effects ?? []) {
+    if (effect.kind !== 'smear') drawEffect(ink, effect);
+  }
+  front.finish();
+  return body.pixels.map((slot, at) => front.pixels[at] || slot);
 }
