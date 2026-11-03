@@ -129,6 +129,7 @@ export function drawStage(scene: Phaser.Scene, variant: StageVariant): StageProp
   const { art } = variant;
   const [background] = art.colors;
   if (background !== undefined) scene.cameras.main.setBackgroundColor(background);
+  const depths = stageDepths();
   const props = new StagePropsView(propsKeyOf(variant));
   for (const layer of art.layers) {
     scene.add
@@ -136,8 +137,28 @@ export function drawStage(scene: Phaser.Scene, variant: StageVariant): StageProp
       .setOrigin(0, 0)
       .setScale(1 / STAGE_SCALE)
       .setScrollFactor(layer.scroll, 1)
-      .setDepth(DEPTH.stage);
-    if (art.props) props.add(scene, layer, art.props.props);
+      .setDepth(depths());
+    if (art.props) props.add(scene, layer, art.props.props, depths);
   }
   return props;
+}
+
+/** Depth a stage image is from the next: far apart enough to stay apart, close enough to stay under the rain. */
+const STAGE_DEPTH_STEP = 1e-4;
+
+/**
+ * The depths of a stage's images, one each, in the order they are drawn (far, its props, middle,
+ * its props, floor): never two the same. Phaser sorts by depth, keeping the order of equal ones as
+ * it finds them: had they all the same, an image the live lights raise over their glows and set
+ * back (light-show.ts `showEmitters`) would come back over the others — the far layer over the
+ * middle one and the floor, hiding them.
+ */
+export function stageDepths(): () => number {
+  let next = 0;
+  return () => {
+    const depth = DEPTH.stage + next * STAGE_DEPTH_STEP;
+    next += 1;
+    if (depth >= DEPTH.rain) throw new Error(`The stage has more images than its depths: ${next}`);
+    return depth;
+  };
 }

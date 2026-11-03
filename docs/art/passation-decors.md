@@ -138,6 +138,7 @@ Elle gère l'écran « Lieu », `stageChoice`, et les options « Lieu » et « A
 - **Une grande couleur qui pousse un canal plus haut que `#6d4457`** fait grossir toutes les mesures des effets : ils sont mesurés sur le fond le plus clair, canal par canal (`brightestBackdrop`). `flash-areas.test.ts` échoue alors sur une table (« expected 557 to be less than or equal to 549 »). Le Dock l'a vécu avec la masse de son verre violet (`#503a76`, trop de bleu) et les gris de son aube (trop de vert). Garde la masse dans l'enveloppe et la lumière en touches de moins de 1 % de l'écran, ou ramène une ambiance sous un plafond (`DAWN_CEILING`, `dock/atmospheres.ts`).
 - **Le halo du Finisher** (`finisher-halo.test.ts`, 0,27 en cyan) est réglé lui aussi sur toutes les grandes couleurs. Un gris au vert de l'enveloppe, avec peu de rouge, le fait baisser (« expected 0.26 to be close to 0.27 »). Le plafond de l'aube du Dock a un vert un peu plus bas pour cette raison. Un lieu de jour (Temple Courtyard) butera là : il faudra peut-être re-mesurer les tables, ce qui est une décision du développeur.
 - **Un premier essai de planche d'animations du gym faisait 1 007 × 1 211.** Les chaînes qui bougeaient, la poussière sur toute la largeur et le train en 30 images ont été allégés. Mesure la planche après chaque animation ajoutée.
+- **Chaque image du décor a sa propre profondeur** (`stageDepths`, `stage-view.ts`), croissante dans l'ordre du dessin. Avant, elles avaient toutes la profondeur 0, et l'ordre d'ajout faisait le reste. Les lumières en direct passent devant leurs halos les images sans pixel qui éclaire (`light-show.ts` `showEmitters`), puis les remettent : à profondeur égale, Phaser les rangeait alors après les autres. Au gym, le lointain opaque recouvrait ainsi le milieu et le sol après les premiers coups : « le décor disparaît, il n'apparaît qu'à certains coups » (Android, 3 novembre 2026 ; reproduit avec `?lumieres=haut`). Ne rends jamais deux images du décor à la même profondeur ; le test de régression est dans `stage-view.test.ts`.
 - **Deux animations détachées qui se chevauchent** : le test de contrat compose les autres animations à leur première image ; garde ce modèle.
 - **Dessiner un lieu prend environ 10 s** : les tests qui le dessinent ont un délai de 60 s.
 - **Playwright** :
@@ -175,11 +176,6 @@ L'ordre recommandé : Loading Dock, Rooftop Rain (avec la tranche pluie), Temple
 
 ### 7.3 Les dettes connues
 
-- **Bug ouvert : sur Android, le décor du gym disparaît parfois** (signalé par le développeur, le 3 novembre 2026). À reprendre plus tard, à sa demande.
-  - Non reproduit : sur Chromium de bureau, sans GPU, aucune erreur dans la console, et la même fluidité que les autres lieux (environ 45 images par seconde partout, dans chaque ambiance du gym).
-  - Piste principale, non vérifiée : le gym est le lieu le plus lourd en mémoire vidéo (8,7 Mo avec la pluie). Un téléphone peut perdre ses textures ou son contexte WebGL, et le décor s'efface alors.
-  - Autres pistes : des animations détachées mal reposées après un changement d'ambiance dans la pause ; un calque laissé vide pendant le chargement d'une ambiance.
-  - À faire : le reproduire sur un vrai Android (Chrome, avec le débogage à distance), regarder les événements `webglcontextlost`, puis corriger, avec un test de régression.
 - **L'écran « Lieu » est en grille de 4 colonnes** : à vérifier à 11 lieux sur téléphone en paysage.
 - **Le métro du gym passe toutes les 40 s** au lieu de 4 minutes (choix assumé, documenté).
 - **La rue s'appelle « Warehouse Street »** dans l'écran « Lieu » : le nom reste à valider par le développeur.
