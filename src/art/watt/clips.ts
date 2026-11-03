@@ -86,6 +86,28 @@ export const WATT_CLIPS: FighterClips<WattClip> = {
   special: COUP_DE_JUS,
   specialForward: SURCHARGE,
   specialAntiAir: PLAFONNIER,
+  // Branchement: the clamps out on frame 1, the catch on 2, held high until the plant.
+  specialClose: { sheet: 'grab', frames: [0, 1, 2, 3, 4, 5], ticks: [3, 2, 6, 8, 14, 14] }, // active: frames 1-2
+  // The throw it plays on the catch: lifted, spun, planted (the release: frame 3).
+  throwClose: {
+    sheet: 'throwForward',
+    frames: [0, 1, 2, 3, 4, 5, 6],
+    ticks: [4, 4, 2, 1, 8, 8, 8],
+  },
+  // Câble: the clamps out, the line across, the reel in (the discharge on frame 3).
+  specialBack: {
+    sheet: 'special',
+    frames: [0, 1, 2, 3, 4, 5, 6, 7],
+    ticks: [4, 4, 6, 6, 6, 6, 7, 7],
+  }, // active: frames 3-4
+  // Plongeon: the fall from the air, the catch in the Plaquage's dive (frame 2).
+  jumpSpecial: { sheet: 'jumpHeavy', frames: [0, 1, 2, 3, 4, 5], ticks: [4, 4, 4, 6, 8, 8] }, // active: frame 2
+  throwDive: { sheet: 'throwForward', frames: [0, 1, 2, 3, 4, 5, 6], ticks: [4, 4, 2, 1, 8, 7, 7] },
+  throwCatch: {
+    sheet: 'throwForward',
+    frames: [0, 1, 2, 3, 4, 5, 6],
+    ticks: [4, 4, 2, 1, 6, 7, 7],
+  },
   specialBoost: { ...COUP_DE_JUS, fx: 'specialBoost' },
   specialForwardBoost: { ...SURCHARGE, fx: 'specialForwardBoost' },
   specialAntiAirBoost: { ...PLAFONNIER, fx: 'specialAntiAirBoost' },
@@ -97,10 +119,10 @@ export const WATT_CLIPS: FighterClips<WattClip> = {
   pummel: play('pummel', [3, 4, 1, 10]), // the clamps squeeze: frame 2
   throwForward: play('throwForward', [4, 4, 4, 1, 7, 8, 9]), // the release: frame 3
   throwBack: play('throwBack', [3, 3, 4, 4, 1, 8, 9, 9]), // the release: frame 4
-  // Avancée and Recul: the game moves him, the poses ride the floor.
+  // Pas blindé and Recul: the game moves him, the poses ride the floor.
   dashForward: play('dashForward', [2, 3, 4, 4, 4, 3]),
   dashBack: play('dashBack', [2, 4, 4, 5, 5, 4]),
-  // Rallumage, his Rewind: the Avancée cut short, a heavy step of 24 px in 14 ticks.
+  // Rallumage, his Rewind: the Pas blindé cut short, a heavy step of 24 px in 14 ticks.
   boostCancel: { sheet: 'dashForward', frames: [0, 1, 2, 4, 5], ticks: [1, 3, 3, 4, 3] },
 
   // Round poses, played on the round clock: the entrance fills the 90-tick intro.

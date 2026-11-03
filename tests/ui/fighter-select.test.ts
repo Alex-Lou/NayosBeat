@@ -96,6 +96,7 @@ function open(page: FakePage, options: Partial<FighterSelectOptions<Id>> = {}) {
   const tiles = byClass(root, 'select-tile');
   return {
     page,
+    root,
     onPick,
     feedback,
     tiles,
@@ -340,14 +341,17 @@ describe('FighterSelect', () => {
     expect(onPick).not.toHaveBeenCalled();
   });
 
-  it('frames the tile under the pointer, and picks it on a click or a tap', () => {
-    const { onPick, tile, selected } = setup();
+  it('frames the tile under the pointer, selects it on a click, and picks it with « Valider »', () => {
+    const { root, onPick, tile, selected } = setup();
     tile(6).dispatchEvent(new Event('pointerenter'));
     expect(selected()).toEqual([6]);
     expect(onPick).not.toHaveBeenCalled();
 
     tile(1).dispatchEvent(new Event('click'));
     expect(selected()).toEqual([1]);
+    expect(onPick).not.toHaveBeenCalled();
+
+    only(root, 'select-confirm').dispatchEvent(new Event('click'));
     expect(onPick).toHaveBeenCalledExactlyOnceWith('riff');
   });
 
@@ -400,15 +404,15 @@ describe('FighterSelect', () => {
     expect(feedback).toHaveBeenLastCalledWith('back');
   });
 
-  it('goes back with « Retour » on a touch screen, and tells what to touch', () => {
+  it('goes back with « Retour » or « Annuler » on a touch screen, and tells what to touch', () => {
     const onBack = vi.fn();
-    const { page, feedback } = setup({ onBack });
-    const [root] = page.body.children;
-    if (!root) throw new Error('No select screen');
+    const { root, feedback } = setup({ onBack });
     only(root, 'menu-back').dispatchEvent(new Event('click'));
     expect(onBack).toHaveBeenCalledOnce();
     expect(feedback).toHaveBeenLastCalledWith('back');
-    expect(only(root, 'menu-help-touch').textContent).toBe('Touche un combattant');
+    only(root, 'select-cancel').dispatchEvent(new Event('click'));
+    expect(onBack).toHaveBeenCalledTimes(2);
+    expect(only(root, 'menu-help-touch').textContent).toBe('Touche un combattant, puis Valide');
   });
 
   it('stays on Escape without a way back', () => {

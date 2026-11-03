@@ -3,6 +3,7 @@ import { STAGE_VARIANTS as BAL } from './bal';
 import { STAGE_VARIANTS as CLUB } from './club';
 import { STAGE_VARIANTS as DOCK } from './dock';
 import { STAGE_VARIANTS as GYM } from './gym';
+import { STAGE_VARIANTS as MARCHE } from './marche';
 import { STAGE_VARIANTS as PLAGE } from './plage';
 import { STAGE_VARIANTS as ROOFTOP } from './rooftop';
 import { STAGE_VARIANTS as RUE } from './rue';
@@ -98,6 +99,14 @@ export const STAGE_MAPS: readonly StageMap[] = (
       sheltered: false,
       ground: 'sand',
       variants: PLAGE,
+    },
+    {
+      name: 'marche',
+      title: 'Night Market',
+      description: 'Dans la ruelle du marché de nuit, sous les lampions',
+      sheltered: false,
+      ground: 'hard',
+      variants: MARCHE,
     },
   ] satisfies StageMap[]
 ).filter(({ variants }) => variants.length > 0);

@@ -112,6 +112,12 @@ function launch(
       );
     if (!item) throw new Error(`No item ${label}`);
     item.dispatchEvent(new Event('click'));
+    // A tile only selects now: the player then taps « Valider », as these choices mean.
+    if (item.className.split(' ').includes('select-tile')) {
+      const confirm = byClass(root as FakeElement, 'select-confirm')[0];
+      if (!confirm) throw new Error(`No « Valider » after ${label}`);
+      confirm.dispatchEvent(new Event('click'));
+    }
   };
   return { page, app, fight, start, kept, press, screen, choose, root: page.body };
 }

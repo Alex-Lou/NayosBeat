@@ -178,7 +178,7 @@ Topologie : l'état vit dans `FighterState` (le cœur), le retour d'info passe p
 
 ## 8. Les phases (chacune finit sur quelque chose de jouable ou de vérifiable)
 
-**Où on en est (3 novembre 2026)** : la phase 1 est faite (PR #133). Le moteur sait lire S près, ← + S et S en l'air. Il connaît l'armure, la tension, les prises de commande au sol et en l'air, et le câble qui ramène. L'effet « électrifié » de la tension pleine (§3.2) se règlera avec les chiffres de Watt, en phase 2 : le moteur dit seulement quand elle est pleine (`isCharged`). Une règle est à respecter alors : un Remix garde le rythme de son spécial (D18), donc le Plafonnier saisi et son Plafonnier survolté devront garder le même.
+**Où on en est (3 novembre 2026)** : la phase 1 est faite (PR #133), et la phase 2 aussi. Watt joue son kit dans `src/data/fighters/watt.ts` : le Branchement (S à 40 px ou moins, 140, la prise de commande), le câble (← + S, de 30 à 110 px, ramène à 34 px, +4), le Plongeon (S en l'air, 100), le Plafonnier saisi (↓ + S, la prise du sauteur, 110), le Pas blindé (armure f3–14), l'armure de la Surcharge (f3–14) et du Coup de pilon (f8–21), et la tension. La tension pleine électrifie le prochain spécial : +25 % de dégâts, le Coup de jus à −4 en garde, la Surcharge blindée sur toute sa course, le câble qui étourdit assez longtemps pour une phrase garantie, le Branchement à 175. Les routes sont mesurées et testées (`tests/core/watt-combos.test.ts`). Le CPU garde ses plans corrigés : la suite est de lui apprendre le câble et le Pas blindé en neutral (phase 3).
 
 1. **Moteur, sans changement de jeu** : les nouveaux emplacements et propriétés existent, mais personne ne s'en sert. Les replays sont identiques, hors hachage.
 2. **Watt en boîte grise, jouable** :

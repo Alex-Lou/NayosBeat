@@ -1,4 +1,4 @@
-import { contactOf, impactOf, techGrab } from './combat';
+import { chargedMove, contactOf, impactOf, techGrab } from './combat';
 import { agedBuffer, readInput } from './commands';
 import type { FighterTemplate, MatchConfig } from './config';
 import { enter, nextFrame } from './fighter/action';
@@ -12,6 +12,7 @@ import { GRAB_TECH_FRAMES, HOLD_LIMIT_FRAMES, HOLD_MIN_FRAMES, STRUGGLE_FRAMES }
 import { sideOf } from './side';
 import { heldOf, holdContact, pairOf, placeHeld } from './hold-pair';
 import {
+  FLAG_CHARGED,
   EMPTY_CONTACTS,
   type Contact,
   type FighterState,
@@ -93,7 +94,10 @@ export function startHold(
     y: 0,
     vy: 0,
   };
-  const holder = command ? startAttack(standing, 'holding', command) : standing;
+  // A command grab caught charged (docs/watt-arsenal.md §3.2): its throw plays charged too.
+  const charged = (grabber.flags & FLAG_CHARGED) !== 0;
+  const thrown = command ? startAttack(standing, 'holding', command) : standing;
+  const holder = charged ? { ...thrown, flags: thrown.flags | FLAG_CHARGED } : thrown;
   const held: FighterState = {
     ...enter(caught, 'held'),
     facing: sideOf(caught, grabber.x),
@@ -261,6 +265,7 @@ function lands(
   held: FighterState,
   config: MatchConfig,
 ): HoldTick {
+  move = chargedMove(move, holder);
   const health = Math.max(config.training ? 1 : 0, held.health - move.damage);
   const comboCount = held.comboCount + 1;
   const danger = inDanger(held, config.fighters[heldOf(hold)].maxHealth);

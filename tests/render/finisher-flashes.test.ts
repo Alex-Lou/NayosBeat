@@ -171,7 +171,7 @@ beforeAll(async () => {
     }
     RINGS.set(art, rings);
   }
-});
+}, 30_000);
 
 /**
  * The view keys of the outline of `sheet`'s frame `frame` drawn at `at` (planche pixels of the

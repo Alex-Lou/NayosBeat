@@ -244,6 +244,7 @@ La rue n'est plus le seul décor. Chaque lieu a son dossier : son dessin dans `t
   - En versus, l'écran « Lieu » suit le choix des combattants : « Aléatoire » d'abord, puis une vignette par lieu (le décor tel que le combat l'ouvre, caméra au centre). L'ambiance est tirée au hasard.
   - En entraînement, l'écran « Lieu » suit le choix du mannequin. La pause offre « Lieu » et « Ambiance » ; un lieu qui n'a pas l'ambiance choisie la tire au hasard.
   - L'écran ne s'affiche qu'à partir de deux lieux.
+  - Un tap sur une vignette la sélectionne et l'affiche en grand ; « Valider » lance le combat, « Annuler » revient. Au clavier et à la manette, Entrée / A valide et Échap / B annule.
 - **Une seule ambiance d'un seul lieu en mémoire vidéo.** Les textures sont rangées sous `stage/<lieu>/<ambiance>/` ; le chargement d'un combat retire toutes les autres. Le budget vérifié est celui du lieu le plus lourd (`tests/build/vram-budget.test.ts`).
 - **Les flashs.** Les grandes couleurs de tous les lieux, dans toutes leurs ambiances, rejoignent `FIGHT_STAGE_COLORS`, et le test de la bande des flashs passe sur chacun.
 - **La langue des enseignes** dépend du lieu (§10).

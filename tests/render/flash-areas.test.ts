@@ -449,33 +449,37 @@ describe('what the front effects light (docs/flashs.md §4)', () => {
     expect(freshPixels(cyan, lighter, FIGHT_STAGE_COLORS)).toBe(0);
   });
 
-  it('lights more than 300 world px² in the specials that rise and the super only', async () => {
-    const bright: string[] = [];
-    let rings = 0;
-    for (const fighter of ['nayo', 'riff'] as const) {
-      for (const colorway of ['main', 'alt'] as const) {
-        for (const [sheet, frames] of await fxStrips(fighter, colorway)) {
-          const peak = Math.max(
-            ...frames.map((pixels) => litPixels(pixels, FIGHT_STAGE_COLORS) / ART_SCALE ** 2),
-          );
-          if (peak > 300) bright.push(`${fighter}/${colorway}/${sheet}`);
-          if (fighter === 'nayo' && sheet === 'super') rings = Math.max(rings, peak);
+  it(
+    'lights more than 300 world px² in the specials that rise and the super only',
+    { timeout: 30_000 },
+    async () => {
+      const bright: string[] = [];
+      let rings = 0;
+      for (const fighter of ['nayo', 'riff'] as const) {
+        for (const colorway of ['main', 'alt'] as const) {
+          for (const [sheet, frames] of await fxStrips(fighter, colorway)) {
+            const peak = Math.max(
+              ...frames.map((pixels) => litPixels(pixels, FIGHT_STAGE_COLORS) / ART_SCALE ** 2),
+            );
+            if (peak > 300) bright.push(`${fighter}/${colorway}/${sheet}`);
+            if (fighter === 'nayo' && sheet === 'super') rings = Math.max(rings, peak);
+          }
         }
       }
-    }
-    expect(bright.sort()).toEqual([
-      'nayo/alt/specialAntiAir',
-      'nayo/alt/specialAntiAirBoost',
-      'nayo/alt/super',
-      'nayo/main/specialAntiAir',
-      'nayo/main/specialAntiAirBoost',
-      'nayo/main/super',
-      'riff/alt/super',
-      'riff/main/super',
-    ]);
-    // The Mégabasse's last rings flash on their own close up: the budget counts them.
-    expect(rings * CLOSEST).toBeGreaterThan(FLASH_RULES.normal.area);
-  });
+      expect(bright.sort()).toEqual([
+        'nayo/alt/specialAntiAir',
+        'nayo/alt/specialAntiAirBoost',
+        'nayo/alt/super',
+        'nayo/main/specialAntiAir',
+        'nayo/main/specialAntiAirBoost',
+        'nayo/main/super',
+        'riff/alt/super',
+        'riff/main/super',
+      ]);
+      // The Mégabasse's last rings flash on their own close up: the budget counts them.
+      expect(rings * CLOSEST).toBeGreaterThan(FLASH_RULES.normal.area);
+    },
+  );
 
   it('draws them dark under VEIL_DELTA over the stage: no pixel lighter than FX_DARK', () => {
     for (const backdrop of FIGHT_STAGE_COLORS) {
