@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Command } from '../../src/core/commands';
 import type { FighterMoves, FighterTemplate } from '../../src/core/config';
+import { px } from '../../src/core/constants';
 import { Input, type InputBits } from '../../src/core/input';
 import { OPTIONAL_MOVE_IDS, type MoveData, type MoveId } from '../../src/core/move-data';
 import type { Motion } from '../../src/core/motion';
@@ -39,6 +40,20 @@ const BASIC: FighterTemplate = {
       .filter(([id]) => !(OPTIONAL_MOVE_IDS as readonly string[]).includes(id))
       .map(([id, move]) => [id, stringless(move)]),
   ) as unknown as FighterMoves,
+};
+
+/**
+ * Nayo with a fighter's own specials (docs/watt-arsenal.md §4): S close up within 40 px, ← + S,
+ * S in the air. Only the selection is read here: their content is Nayo's special's.
+ */
+const OWN: FighterTemplate = {
+  ...NAYO,
+  moves: {
+    ...NAYO.moves,
+    specialClose: { ...NAYO.moves.special, name: 'Près', closeRange: px(40) },
+    specialBack: { ...NAYO.moves.special, name: 'Arrière' },
+    jumpSpecial: { ...NAYO.moves.jumpHeavy, name: 'En l’air', kind: 'special' },
+  },
 };
 
 interface Row {
@@ -107,11 +122,18 @@ describe('command → move (§2.8)', () => {
   }
 
   it('in the air: L and H only, no special, grab nor dash', () => {
-    expect(airMove('light')).toBe('jumpLight');
-    expect(airMove('heavy')).toBe('jumpHeavy');
+    expect(airMove('light', NAYO.moves)).toBe('jumpLight');
+    expect(airMove('heavy', NAYO.moves)).toBe('jumpHeavy');
     for (const command of ['special', 'grab', 'dash', 'backdash', 'jump'] as const) {
-      expect(airMove(command)).toBeNull();
+      for (const template of [NAYO, RIFF, SAPHIR, WATT, BASIC]) {
+        expect(airMove(command, template.moves)).toBeNull();
+      }
     }
+  });
+
+  it('in the air, S plays the air special of a fighter that has one (watt-arsenal §4.3)', () => {
+    expect(airMove('special', OWN.moves)).toBe('jumpSpecial');
+    expect(airMove('grab', OWN.moves)).toBeNull();
   });
 
   it('holding: L pummels; H, S or the grab throw, backward with back held', () => {
@@ -166,7 +188,50 @@ describe('BOOST → move (combos-v3 §1.1)', () => {
   });
 
   it('in the air, nothing', () => {
-    expect(airMove('boost')).toBeNull();
+    expect(airMove('boost', NAYO.moves)).toBeNull();
+    expect(airMove('boost', OWN.moves)).toBeNull();
+  });
+});
+
+describe("a fighter's own specials (watt-arsenal §4)", () => {
+  const near = px(40);
+  for (const side of [1, -1] as const) {
+    const back = side === 1 ? Left : Right;
+    const forward = side === 1 ? Right : Left;
+    it(`facing ${side}: ← + S, S close up, the other directions unchanged`, () => {
+      const S = (input: InputBits, distance: number, motion: Motion | null = null) =>
+        groundMove('special', input, motion, side, OWN.moves, 0, false, distance);
+      expect(S(back, near * 3)).toBe('specialBack');
+      expect(S(back | Up, near)).toBe('specialBack');
+      expect(S(0, near)).toBe('specialClose');
+      expect(S(0, near + 1)).toBe('special');
+      expect(S(forward, near)).toBe('specialForward');
+      expect(S(Down, near)).toBe('specialAntiAir');
+      expect(S(Down | back, near)).toBe('specialAntiAir');
+      // A fresh motion comes first, close up too.
+      expect(S(forward, near, 'quarterCircleForward')).toBe('special');
+      // Without them, the same inputs give the plain specials, as before.
+      for (const template of [NAYO, RIFF, SAPHIR, WATT, BASIC]) {
+        const plain = (input: InputBits) =>
+          groundMove('special', input, null, side, template.moves, 0, false, 0);
+        expect(plain(back)).toBe('special');
+        expect(plain(0)).toBe('special');
+      }
+    });
+    it(`facing ${side}: BOOST reads as before, ← + BOOST stays the super`, () => {
+      expect(groundMove('boost', back, null, side, OWN.moves, 3000, false, 0)).toBe('super');
+      expect(groundMove('boost', 0, null, side, OWN.moves, 1000, false, 0)).toBe('specialBoost');
+    });
+  }
+
+  it('are valid optional moves', () => {
+    expect(validateTemplate(OWN)).toEqual([]);
+    expect(
+      validateTemplate({
+        ...OWN,
+        moves: { ...OWN.moves, specialBack: { ...OWN.moves.standLight } },
+      }),
+    ).not.toEqual([]);
   });
 });
 

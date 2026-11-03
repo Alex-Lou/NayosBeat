@@ -23,8 +23,11 @@ export type { FighterTexts, MoveText } from './texts/shared';
  */
 export const MOVE_ORDER: readonly MoveId[] = [
   'special',
+  'specialClose',
   'specialForward',
+  'specialBack',
   'specialAntiAir',
+  'jumpSpecial',
   'specialBoost',
   'specialForwardBoost',
   'specialAntiAirBoost',
@@ -48,6 +51,9 @@ export const MOVE_ORDER: readonly MoveId[] = [
   'pummel',
   'throwForward',
   'throwBack',
+  'throwClose',
+  'throwDive',
+  'throwCatch',
   'dashForward',
   'boostCancel',
   'dashBack',
