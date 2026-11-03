@@ -38,6 +38,8 @@ Le cœur est pur, déterministe, en entiers, à 60 tics par seconde : deux appar
 | `src/net/session.ts` | Le lien une fois appairé : ping, silence, message invalide | `protocol`, `lobby` (types) |
 | `src/net/route.ts` | Le chemin du lien (direct, STUN, relais), lu dans les statistiques WebRTC | `lobby` (types) |
 | `src/net/peer-matchmaker.ts` | `Matchmaker` avec PeerJS : **le seul fichier qui importe `peerjs`** | `peerjs`, `lobby`, `route`, `protocol` |
+| `src/net/ice-servers.ts` | Les serveurs STUN et TURN, les relais demandés au Worker (§5.2) et validés | rien |
+| `tools/turn-worker/worker.ts` | Le Worker Cloudflare qui fabrique les identifiants des relais (§5.2) | rien |
 | `src/app/salon.ts` | Le salon (porte 1) : un réducteur pur, un événement en entrée, le salon et les messages à envoyer en sortie | `net/protocol` (types), `data/roster` (types) |
 | `src/app/multi-catalog.ts` | Ce que le salon offre et vérifie : les lieux et les combattants du jeu, le tirage de l'hôte | `art`, `data`, `render/stage-view` |
 | `src/app/name-store.ts` | Le pseudo, gardé sur l'appareil | `net/protocol` |
@@ -135,9 +137,9 @@ Rien n'est interprété (aucun `eval`), et l'heure d'envoi ne traverse jamais le
 ## 5. Le réseau : STUN, TURN, chemin
 
 - **STUN** : le serveur public et gratuit de Google, `stun:stun.l.google.com:19302`. Il dit à chaque appareil son adresse publique. Il est sans compte, mais aussi sans garantie écrite.
-- **TURN** (un relais) : il faut un relais quand deux réseaux ne se laissent pas joindre en direct, par exemple en 4G ou derrière un NAT strict. **Le jeu utilise les relais publics de PeerJS** (décision du propriétaire, §10) : `turn:eu-0.turn.peerjs.com:3478` et `turn:us-0.turn.peerjs.com:3478`, sans compte, avec les identifiants publics que PeerJS 1.5.5 met dans sa propre configuration par défaut. Ils sont sans garantie de service ; un service à compte ne viendra que si la porte 4 les montre insuffisants.
-  - Ces relais ne servent qu'en dernier recours : le navigateur essaie d'abord le direct. Un relais voit passer les entrées du match, rien de sensible.
-  - Ils n'ont pas pu être exercés depuis le conteneur de test (le port 3478 y est injoignable) : la 4G de la porte 4 le dira.
+- **TURN** (un relais) : il faut un relais quand deux réseaux ne se laissent pas joindre en direct, par exemple en 4G ou derrière un NAT strict.
+  - **Corrigé le 2 novembre 2026 : le jeu n'a aujourd'hui aucun relais qui marche.** À la porte 0, le jeu a repris les relais publics de PeerJS (`eu-0` et `us-0.turn.peerjs.com`), trouvés dans la configuration par défaut de PeerJS 1.5.5. Or PeerJS a arrêté ses relais gratuits le 5 décembre 2023 (annonce [#1172](https://github.com/peers/peerjs/discussions/1172)) ; seul son serveur de mise en relation, `0.peerjs.com`, continue. Ces deux noms n'ont plus d'adresse (vérifié le 2 novembre 2026). Sur le même Wi-Fi rien ne change, le lien est direct ; en 4G, sans STUN qui suffise, la connexion échoue avec « il faudrait un relais ».
+  - Le choix d'un vrai relais est le rapport du §5.1. **Le propriétaire a choisi Cloudflare** (2 novembre 2026) ; les relais morts sont retirés, et le jeu est prêt à demander ceux de Cloudflare dès que leur petit service sera déployé (§5.2).
 - **Sur le même Wi-Fi, le lien est direct**, sans STUN ni TURN.
 - **Le chemin est affiché** à l'écran, lu dans les statistiques WebRTC (`route.ts`) :
   - « direct, même réseau » (les deux candidats sont locaux) ;
@@ -148,6 +150,55 @@ Rien n'est interprété (aucun `eval`), et l'heure d'envoi ne traverse jamais le
 - **L'adresse IP.** WebRTC révèle à l'autre joueur l'adresse IP de l'appareil (locale sur le même Wi-Fi, publique à distance). Le serveur de PeerJS et celui de Google la voient aussi.
 
 ---
+
+### 5.1 Rapport : un relais pour la 4G (porte 4)
+
+**La question.** En 4G, les opérateurs placent souvent les téléphones derrière un NAT dit symétrique : le STUN ne suffit plus à se joindre en direct, et il faut un relais (TURN). Lequel, pour un jeu publié sur GitHub Pages, sans serveur à nous ?
+
+**Ce que coûte un match relayé.** Le jeu n'échange que des entrées : environ 60 messages par seconde dans chaque sens (une centaine d'octets chacun, enveloppe WebRTC comprise, environ 150), soit de l'ordre de 30 Mo par heure et par sens, **environ 65 Mo par heure de jeu relayé**. C'est une estimation, à mesurer à la porte 4. Le relais ne sert que si le direct échoue : sur le même Wi-Fi, jamais.
+
+| Service | Offre gratuite | Identifiants | Ce qu'il faut en plus | Fiabilité |
+|---|---|---|---|---|
+| **Relais de PeerJS** | arrêtés en décembre 2023 | — | — | morts (plus d'adresse) |
+| **Cloudflare Realtime TURN** | 1 000 Go par mois (partagés avec son SFU), puis 0,05 $ le Go ([tarifs](https://developers.cloudflare.com/realtime/pricing/)) | de courte durée, fabriqués par un serveur qui garde la clé secrète ([doc](https://developers.cloudflare.com/realtime/turn/generate-credentials/)) | un petit serveur : un Cloudflare Worker (gratuit), la clé dans ses secrets, hors du dépôt ; la CSP ouverte à son adresse | élevée : un grand réseau mondial, des ports 443 en TLS qui passent presque partout |
+| **ExpressTURN** | 1 To par mois, selon le fournisseur ([doc PeerJS](https://www.expressturn.com/docs/peerjs)) | fixes, écrits dans le jeu, donc lisibles par tous ; les identifiants par joueur sont réservés à l'offre payante | un compte | inconnue : un petit fournisseur, chiffres donnés par lui seul |
+| **Metered** | 500 Mo par mois (essai), puis 99 $ par mois ([tarifs](https://metered.ca/pricing)) | par clé d'API | un compte | bonne, mais l'offre gratuite est petite (environ 7 h de jeu relayé par mois) |
+| **Notre propre coturn** | — | au choix | un serveur à louer, surveiller, mettre à jour | à notre charge |
+
+**Les risques.**
+- **Des identifiants fixes dans le jeu** (ExpressTURN) : n'importe qui peut les lire dans le code publié et s'en servir pour son propre trafic, jusqu'à épuiser le quota. Pour un mode caché joué à deux, le risque est faible ; pour un mode public, il ne l'est plus.
+- **Un serveur de plus** (Cloudflare) : un Worker de quelques lignes, à déployer une fois, qui rend des identifiants valables quelques heures. C'est la seule pièce hors de GitHub Pages.
+- **La vie privée** : le relais voit passer les adresses IP et les entrées du match, rien d'autre (le canal est chiffré par WebRTC de bout en bout).
+
+**Recommandation.**
+1. **Tout de suite** : retirer les deux relais morts de `peer-matchmaker.ts`. Ils ne servent à rien, et la doc ne doit plus les promettre.
+2. **Ton essai en 4G d'abord** : la ligne « Chemin » dira si le STUN suffit avec ton opérateur (« direct, par Internet »), ou s'il faut un relais (« il faudrait un relais »). Si le direct passe, aucun relais n'est nécessaire pour jouer à deux.
+3. **S'il faut un relais** : **Cloudflare**, avec un Worker qui fabrique les identifiants. C'est le plus sûr : aucune clé dans le jeu, un réseau fiable, une offre gratuite qui couvre des milliers d'heures. C'est aussi ce qu'il faudra pour rendre le Multi public après la porte 4. ExpressTURN, plus simple (aucun serveur), ne convient qu'à des essais privés.
+4. **Ce qu'il te faudrait faire** : créer un compte Cloudflare (gratuit), une clé TURN, et me laisser écrire le Worker. Le déploiement et la clé restent chez toi, hors du dépôt.
+
+### 5.2 Le service des relais (Cloudflare) : à déployer par le propriétaire
+
+**Ce qui est fait dans le dépôt.**
+- `tools/turn-worker/worker.ts` : un Cloudflare Worker de quelques lignes. Il demande à Cloudflare des identifiants de relais valables 4 h (`CREDENTIALS_TTL_S`), et les rend au jeu. Il ne répond qu'aux pages du jeu (leur `Origin`), sans cache. La clé reste dans ses secrets, jamais dans le jeu ni dans le dépôt ; une erreur de Cloudflare ne sort pas du Worker. Testé (`tests/tools/turn-worker.test.ts`).
+- `src/net/ice-servers.ts` : au début de chaque recherche, le jeu demande ses relais au Worker (`TURN_ENDPOINT`) :
+  - il valide la réponse à la frontière : 1 à 4 serveurs, 1 à 8 adresses `stun:`, `turn:` ou `turns:`, jamais le port 53, un relais toujours avec son identifiant et son mot de passe ;
+  - il n'attend pas plus de 3 s ;
+  - sans réponse valable, il cherche avec le STUN seul : sur le même Wi-Fi, rien ne change.
+- La CSP ne s'ouvre qu'à l'origine du Worker, et seulement une fois `TURN_ENDPOINT` rempli (`vite.config.ts`). Les relais eux-mêmes passent par WebRTC, hors de `connect-src` (§6.1).
+
+**Ce qui reste à faire, chez le propriétaire** (une fois) :
+1. Créer un compte Cloudflare (gratuit), puis, dans le tableau de bord : Realtime, TURN, « Create TURN key ». Noter son **id** et son **API token**.
+2. Dans `tools/turn-worker/wrangler.toml`, mettre l'id dans `TURN_KEY_ID` (ce n'est pas un secret).
+3. Depuis `tools/turn-worker/` : `npx wrangler login`, puis `npx wrangler deploy`, puis `npx wrangler secret put TURN_KEY_API_TOKEN` (coller le token ; il reste chez Cloudflare).
+4. Me donner l'adresse du Worker (`https://nayosbeat-turn.<compte>.workers.dev/`).
+5. **Avant que le jeu ne s'en serve, une limite de débit sur le Worker.** L'`Origin` n'arrête que les navigateurs : un script peut l'imiter, et vider le quota de relais. Deux voies chez Cloudflare :
+   - la liaison « Rate Limiting » des Workers (`[[ratelimits]]` dans `wrangler.toml`), comptée par adresse IP du client (`CF-Connecting-IP`). Une recherche ne demande qu'une fois ses relais, donc une dizaine de demandes par minute suffit. Il faut quelques lignes de plus dans `worker.ts`, avec leurs tests, que j'écris une fois le Worker déployé ;
+   - ou une règle de limitation du WAF. À vérifier : si je ne me trompe pas, elle ne s'applique qu'à un Worker servi sur un domaine du compte, pas sur `workers.dev`.
+6. Une fois la limite en place, je mets l'adresse dans `TURN_ENDPOINT`, et la CSP s'ouvre à elle seule.
+
+**Les limites.**
+- N'importe qui peut appeler le Worker depuis un programme qui imite l'`Origin` du jeu, et utiliser des relais sur notre offre gratuite. Les identifiants expirent en 4 h, et l'offre de 1 000 Go par mois couvre des milliers d'heures de jeu relayé. La limite de débit de l'étape 5 borne ce qu'un tel programme peut obtenir ; elle est posée avant que le jeu ne se serve du Worker.
+- Le Worker n'a pas pu être déployé ni exercé depuis le conteneur : seul son code est testé.
 
 ## 6. La sécurité
 
@@ -328,8 +379,8 @@ Une course trouvée en écrivant la porte 1, et corrigée : l'hôte envoie son p
 Chacune avait son hypothèse de départ. **Le 2 novembre 2026, le propriétaire a dit oui aux trois.**
 
 1. **TURN pour la 4G et les réseaux stricts.**
-   - **Retenu** : commencer par les relais publics de PeerJS (déjà dans PeerJS, sans compte, identifiants publics, sans garantie de service), et ne prendre un service à compte que si la mesure de la porte 4 les montre insuffisants. Exemples de services à compte : Cloudflare, Metered (un compte et une clé, qu'il faudrait garder hors du dépôt).
-   - Ce que ça change : un relais voit passer les entrées du match (rien de sensible), et la CSP n'a pas à bouger (§6.1). Activé dès la porte 0 (`peer-matchmaker.ts`).
+   - **Retenu** : commencer par les relais publics de PeerJS, et ne prendre un service à compte que si la mesure de la porte 4 les montrait insuffisants.
+   - **Caduc** : ces relais sont arrêtés depuis décembre 2023 (§5). La recommandation qui les remplace est au §5.1.
 2. **Le pseudo (porte 1).**
    - **Retenu** : 2 à 12 caractères (lettres, chiffres, espace, tiret), demandé à la première recherche et retenu sur l'appareil.
    - Il est affiché tel quel, jamais interprété. Il passe par le protocole v2, validé comme le reste.

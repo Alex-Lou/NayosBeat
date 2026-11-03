@@ -48,7 +48,6 @@ import { PLATINE, signatureOf } from '../../src/render/signatures';
 import { FIGHT_STAGE_COLORS } from '../../src/render/stage-view';
 import { playCombo } from '../core/combo-helpers';
 import { facingOff } from '../core/helpers';
-import { GREY_BOXES } from './finisher-harness';
 import { fxStrips } from './fx-strips';
 import { fakeScene } from './hud-fakes';
 import { liveScene } from './live-fakes';
@@ -327,6 +326,8 @@ beforeAll(async () => {
     ['riff', 'main'],
     ['saphir', 'main'],
     ['saphir', 'alt'],
+    ['watt', 'main'],
+    ['watt', 'alt'],
   ] as const) {
     STRIPS.set(drawnArt(fighter, colorway), new Map(await fxStrips(fighter, colorway)));
   }
@@ -398,13 +399,12 @@ function watched(mode: FlashMode) {
 /** Each fighter's look: the second one in its other colorway in a mirror match, as in a fight. */
 function looksOf(config: MatchConfig): {
   styles: readonly [HitStyle, HitStyle];
-  arts: readonly [FighterArt | undefined, FighterArt | undefined];
+  arts: readonly [FighterArt, FighterArt];
 } {
   const [first, second] = config.fighters;
   const of = (fighter: FighterTemplate, colorway: 'main' | 'alt') => ({
     style: hitStyleOf(idOf(fighter), colorway),
-    // A fighter in grey boxes shows only its box: no effects (fighter-view).
-    art: GREY_BOXES.has(idOf(fighter)) ? undefined : drawnArt(idOf(fighter), colorway),
+    art: drawnArt(idOf(fighter), colorway),
   });
   const a = of(first, 'main');
   const b = of(second, first === second ? 'alt' : 'main');
@@ -489,10 +489,9 @@ function play(route: Route, mode: FlashMode): Played {
     stage: FIGHT_STAGE_COLORS,
     colors: [...energies, PLATINE],
     budget,
-    // A box lights nothing under a live light (FightScene).
     fighterAreas: [
-      arts[0] ? fighterLightArea(nameOf(0), colorway(0)) : 0,
-      arts[1] ? fighterLightArea(nameOf(1), colorway(1)) : 0,
+      fighterLightArea(nameOf(0), colorway(0)),
+      fighterLightArea(nameOf(1), colorway(1)),
     ],
     groundY: GROUND_Y,
   });
@@ -556,7 +555,6 @@ function play(route: Route, mode: FlashMode): Played {
     // As SpriteFighterView: what a new frame lights anew, all of it if the body moved.
     for (const player of [0, 1] as const) {
       const art = arts[player];
-      if (!art) continue;
       showFighter(state, player, config, art, shown);
       const clip = clipOf(art, shown.clip);
       const index = clipFrameAt(clip, shown.tick);

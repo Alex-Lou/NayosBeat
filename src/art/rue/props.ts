@@ -7,6 +7,22 @@ import type { StageProp } from '../stage-layers';
  */
 export const STAGE_PROPS: readonly StageProp[] = [
   {
+    name: 'mist0',
+    layer: 'mid',
+    frames: [null, { x: 343, y: 404, width: 697, height: 44, sheetX: 0, sheetY: 192 }],
+    timeline: [[1, 2400]],
+    drift: { from: 1102, to: -1102, start: 0, steps: 2400 },
+    weather: 'fog',
+  },
+  {
+    name: 'mist1',
+    layer: 'far',
+    frames: [null, { x: 368, y: 197, width: 480, height: 69, sheetX: 177, sheetY: 111 }],
+    timeline: [[1, 3000]],
+    drift: { from: -862, to: 862, start: 0, steps: 3000 },
+    weather: 'fog',
+  },
+  {
     name: 'queue',
     layer: 'mid',
     frames: [
@@ -25,7 +41,7 @@ export const STAGE_PROPS: readonly StageProp[] = [
   {
     name: 'bouncer',
     layer: 'mid',
-    frames: [null, { x: 790, y: 323, width: 37, height: 40, sheetX: 300, sheetY: 111 }],
+    frames: [null, { x: 790, y: 323, width: 37, height: 40, sheetX: 760, sheetY: 192 }],
     timeline: [
       [0, 210],
       [1, 30],
@@ -38,9 +54,9 @@ export const STAGE_PROPS: readonly StageProp[] = [
     layer: 'mid',
     frames: [
       null,
-      { x: 135, y: 189, width: 14, height: 59, sheetX: 177, sheetY: 111 },
-      { x: 135, y: 195, width: 14, height: 53, sheetX: 192, sheetY: 111 },
-      { x: 143, y: 224, width: 6, height: 19, sheetX: 479, sheetY: 111 },
+      { x: 135, y: 189, width: 14, height: 59, sheetX: 658, sheetY: 111 },
+      { x: 135, y: 195, width: 14, height: 53, sheetX: 673, sheetY: 111 },
+      { x: 143, y: 224, width: 6, height: 19, sheetX: 939, sheetY: 192 },
     ],
     timeline: [
       [0, 100],
@@ -54,8 +70,8 @@ export const STAGE_PROPS: readonly StageProp[] = [
     layer: 'mid',
     frames: [
       null,
-      { x: 1291, y: 190, width: 17, height: 17, sheetX: 486, sheetY: 111 },
-      { x: 1304, y: 171, width: 30, height: 46, sheetX: 207, sheetY: 111 },
+      { x: 1291, y: 190, width: 17, height: 17, sheetX: 946, sheetY: 192 },
+      { x: 1304, y: 171, width: 30, height: 46, sheetX: 688, sheetY: 111 },
     ],
     timeline: [
       [0, 60],
@@ -67,7 +83,7 @@ export const STAGE_PROPS: readonly StageProp[] = [
   {
     name: 'leaner',
     layer: 'mid',
-    frames: [null, { x: 269, y: 73, width: 35, height: 34, sheetX: 375, sheetY: 111 }],
+    frames: [null, { x: 269, y: 73, width: 35, height: 34, sheetX: 835, sheetY: 192 }],
     timeline: [
       [0, 60],
       [1, 60],
@@ -78,9 +94,9 @@ export const STAGE_PROPS: readonly StageProp[] = [
     layer: 'mid',
     frames: [
       null,
-      { x: 1333, y: 102, width: 22, height: 42, sheetX: 238, sheetY: 111 },
-      { x: 1341, y: 102, width: 23, height: 42, sheetX: 261, sheetY: 111 },
-      { x: 1350, y: 102, width: 14, height: 42, sheetX: 285, sheetY: 111 },
+      { x: 1333, y: 102, width: 22, height: 42, sheetX: 698, sheetY: 192 },
+      { x: 1341, y: 102, width: 23, height: 42, sheetX: 721, sheetY: 192 },
+      { x: 1350, y: 102, width: 14, height: 42, sheetX: 745, sheetY: 192 },
     ],
     timeline: [
       [0, 600],
@@ -94,8 +110,8 @@ export const STAGE_PROPS: readonly StageProp[] = [
     layer: 'mid',
     frames: [
       null,
-      { x: 152, y: 384, width: 6, height: 9, sheetX: 504, sheetY: 111 },
-      { x: 154, y: 386, width: 5, height: 7, sheetX: 511, sheetY: 111 },
+      { x: 152, y: 384, width: 6, height: 9, sheetX: 964, sheetY: 192 },
+      { x: 154, y: 386, width: 5, height: 7, sheetX: 971, sheetY: 192 },
     ],
     timeline: [
       [0, 120],
@@ -142,9 +158,9 @@ export const STAGE_PROPS: readonly StageProp[] = [
     layer: 'mid',
     frames: [
       null,
-      { x: 724, y: 234, width: 32, height: 32, sheetX: 446, sheetY: 111 },
-      { x: 723, y: 233, width: 34, height: 34, sheetX: 411, sheetY: 111 },
-      { x: 722, y: 232, width: 36, height: 36, sheetX: 338, sheetY: 111 },
+      { x: 724, y: 234, width: 32, height: 32, sheetX: 906, sheetY: 192 },
+      { x: 723, y: 233, width: 34, height: 34, sheetX: 871, sheetY: 192 },
+      { x: 722, y: 232, width: 36, height: 36, sheetX: 798, sheetY: 192 },
     ],
     timeline: [
       [0, 30],

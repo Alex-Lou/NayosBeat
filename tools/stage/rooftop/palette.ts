@@ -6,6 +6,7 @@
  * and magenta; nothing vivid here comes near them (the city's cyan and magenta are theirs alone).
  */
 
+import { MIST_HEXES } from '../kit/fog.ts';
 import type { Rgba } from '../../sprites/png.ts';
 import type { FigureRamps } from '../rue/people.ts';
 import type { SprayRamps } from '../rue/signs.ts';
@@ -146,6 +147,9 @@ export const SPRAY_RAMPS: SprayRamps = {
   pale: TAG.cream,
   colors: [TAG.violet, TAG.yellow, TAG.green, TAG.cream],
 };
+
+/** The mist's wisps, drawn only in the fog (kit/fog.ts). */
+export const MIST = ramp(...MIST_HEXES);
 
 /** Every color, slot by slot (256 at most: one PNG palette). */
 export const PALETTE: readonly Rgba[] = colors;

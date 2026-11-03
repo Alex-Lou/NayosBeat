@@ -95,9 +95,6 @@ export const COUVRE_FEU: Route = {
   steps: [H, B | X],
 };
 
-/** The fighters on the roster without art yet (docs/watt.md): the owner's call. */
-export const GREY_BOXES: ReadonlySet<FighterId> = new Set<FighterId>(['watt']);
-
 /** One frame on the screen. */
 export interface Shot {
   /** Frames since back + BOOST came out (the press); negative before. */
@@ -211,8 +208,7 @@ export function film(route: Route, take: Take = {}): Film {
   const styles = [hitStyleOf(route.fighters[0]), hitStyleOf(route.fighters[1])] as const;
   const arts = route.fighters.map((id) => {
     const art = artOf(id);
-    // A fighter in grey boxes until his art plays his Finisher without one, as in the game.
-    if (!art && !GREY_BOXES.has(id)) throw new Error(`${id} has no art`);
+    if (!art) throw new Error(`${id} has no art`);
     return art;
   });
   const director = new FinisherScene(scene, {

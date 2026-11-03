@@ -122,23 +122,27 @@ export class FlashBudget {
    * could start with it (on its frame, or on one of the next FLASH_MERGE where something else
    * lights) adds up what lights in its window, before and after now: what lit just before, what
    * waits to light (a word, a stamp). It must stay under the mode's area (with FLASH_MARGIN), or
-   * merge with a flash counted (within FLASH_MERGE frames after it).
+   * merge with a flash counted (within FLASH_MERGE frames after it), unless it may not `join` one.
    */
-  fits(area: number, delay = 0): boolean {
+  fits(area: number, delay = 0, join = true): boolean {
     const at = this.now + delay;
     const limit = (FLASH_RULES[this.flashMode].area * FLASH_MARGIN) / this.scale;
     for (let end = at; end <= at + FLASH_MERGE; end++) {
       if (end !== at && !this.onsets.some((onset) => onset.frame === end)) continue;
-      if (this.merges(end)) continue;
+      if (join && this.merges(end)) continue;
       if (this.litUpTo(end) + area >= limit) return false;
     }
     return true;
   }
 
-  /** Shows `area` now if it fits (it makes no flash), and says whether it does. */
-  admit(area: number): boolean {
+  /**
+   * Shows `area` now if it fits (it makes no flash), and says whether it does. With `join` false,
+   * only if it stays under the mode's area on its own: lit with a counted flash, it would make
+   * that flash larger on screen (a climax just under the threshold as shown would cross it).
+   */
+  admit(area: number, join = true): boolean {
     if (area <= 0) return true;
-    if (!this.fits(area)) return false;
+    if (!this.fits(area, 0, join)) return false;
     this.show(area);
     return true;
   }

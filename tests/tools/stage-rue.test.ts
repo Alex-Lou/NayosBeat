@@ -89,6 +89,9 @@ describe("the code's street (docs/art/decor-rue.md)", () => {
 
   it('animates its props over its still layer: frame 0 is the layer, no frame clears a pixel', () => {
     expect(props.map(({ name }) => name)).toEqual([
+      // The fog's banks of mist, on the far layer (kit/fog.ts).
+      'mist0',
+      'mist1',
       'queue',
       'bouncer',
       'smoker',
@@ -99,13 +102,14 @@ describe("the code's street (docs/art/decor-rue.md)", () => {
       'steam',
       'neon',
     ]);
-    for (const { name, rect, frames } of props) {
+    for (const { name, layer, rect, frames } of props) {
       const [still] = frames;
       if (!still) throw new Error(name);
+      const under = layers[layer];
       const crop = still.pixels.map(
         (_, at) =>
-          layers.mid.pixels[
-            (rect.y + Math.floor(at / rect.width)) * layers.mid.width + rect.x + (at % rect.width)
+          under.pixels[
+            (rect.y + Math.floor(at / rect.width)) * under.width + rect.x + (at % rect.width)
           ] ?? 0,
       );
       expect(still.pixels, name).toEqual(crop);
@@ -140,7 +144,8 @@ describe("the code's street (docs/art/decor-rue.md)", () => {
               ] ?? 0;
             if (slot !== 0) return slot;
           }
-          return layers.mid.pixels[y * layers.mid.width + x] ?? 0;
+          const under = layers[prop.layer];
+          return under.pixels[y * under.width + x] ?? 0;
         });
         expect(shown, `${prop.name} frame ${index}`).toEqual(Array.from(drawn.pixels));
       });

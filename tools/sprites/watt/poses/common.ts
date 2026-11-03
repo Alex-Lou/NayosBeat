@@ -113,17 +113,28 @@ export function toeOf(foot: Foot): number {
  * upright above the collar. The lead clamp stays inside the no-clinch line (x = 14).
  */
 export const GUARD: Pose = {
-  hip: at(-4.5, 37.5),
-  torso: 11,
+  hip: at(-9, 37.5),
+  torso: 8,
   head: -11,
   shrug: 2.8,
-  nearFoot: onBall(-17, -18),
-  farFoot: planted(10.5, 0),
-  nearFist: at(5, 52.5),
-  farFist: at(13.5, 52.5),
+  nearFoot: onBall(-18, -18),
+  farFoot: planted(7.5, 0),
+  nearFist: at(-0.5, 53),
+  farFist: at(7, 52.5),
   bends: { nearElbow: 'down', farElbow: 'down', nearKnee: 'front' },
   twist: 0.35,
 };
+
+/**
+ * His crouch, the hips and the boots every crouching pose starts from (crouch.ts, the low
+ * blows, the crouching reactions): the hips low enough that the bulb tops out under 65 px, so
+ * that his crouch ducks what the cast's crouches duck (tools/sprites/measure-boxes.ts).
+ */
+export const CROUCHED = {
+  hip: [-12.5, 24.5],
+  nearFoot: onBall(-20, -24),
+  farFoot: planted(8.5),
+} as const;
 
 /**
  * The least angle his rear ankle keeps between the shin and the foot (90: the shin square to
@@ -161,4 +172,37 @@ export function springAnkle(pose: Pose): Pose {
     if (rearAnkle(best) >= MIN_ANKLE) break;
   }
   return best;
+}
+
+/** Where the guard holds each clamp from its shoulder (the shoulders do not depend on the hands). */
+const GUARD_HOLD = (() => {
+  const { near, far } = solve(GUARD, WATT_BODY);
+  return {
+    near: { x: GUARD.nearFist.x - near.shoulder.x, y: GUARD.nearFist.y - near.shoulder.y },
+    far: { x: GUARD.farFist.x - far.shoulder.x, y: GUARD.farFist.y - far.shoulder.y },
+  };
+})();
+
+/** `p` turned `degrees` clockwise on screen (a lean forward). */
+function leaned(p: Point, degrees: number): Point {
+  const a = (-degrees * Math.PI) / 180;
+  return { x: p.x * Math.cos(a) - p.y * Math.sin(a), y: p.x * Math.sin(a) + p.y * Math.cos(a) };
+}
+
+/**
+ * `pose` with its clamps held from its shoulders as the guard holds them, turned with the
+ * torso's lean, then moved by `near` and `far` (world px): the arms keep the guard's fold
+ * whatever the body does, so the far elbow never folds back out of the chest (anatomy.ts,
+ * farArmBack). For the strips the no-clinch rule does not bind (the air, the moves).
+ */
+export function fistsOnShoulders(pose: Pose, near: Point = at(0, 0), far: Point = at(0, 0)): Pose {
+  const s = solve(pose, WATT_BODY);
+  const lean = pose.torso - GUARD.torso;
+  const n = leaned(GUARD_HOLD.near, lean);
+  const f = leaned(GUARD_HOLD.far, lean);
+  return {
+    ...pose,
+    nearFist: at(s.near.shoulder.x + n.x + near.x, s.near.shoulder.y + n.y + near.y),
+    farFist: at(s.far.shoulder.x + f.x + far.x, s.far.shoulder.y + f.y + far.y),
+  };
 }

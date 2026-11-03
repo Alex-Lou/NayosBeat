@@ -7,29 +7,100 @@
  */
 
 import { WATT_SHEETS, type WattSheet } from '../../../../src/art/watt/sheets.ts';
-import { at, GUARD, type Pose } from './common.ts';
+import { GUARD, type Pose } from './common.ts';
+import { POSES as blockPoses } from './block.ts';
+import { POSES as crouchPoses } from './crouch.ts';
+import { POSES as dashBackPoses } from './dashBack.ts';
+import { POSES as dashForwardPoses } from './dashForward.ts';
 import { POSES as grabPoses } from './grab.ts';
 import { POSES as idlePoses } from './idle.ts';
+import { POSES as holdPoses } from './hold.ts';
+import { POSES as heldPoses } from './held.ts';
+import { POSES as pummelPoses } from './pummel.ts';
+import { POSES as throwForwardPoses } from './throwForward.ts';
+import { POSES as throwBackPoses } from './throwBack.ts';
+import { POSES as thrownBackPoses } from './thrownBack.ts';
+import { POSES as introPoses } from './intro.ts';
+import { POSES as victoryPoses } from './victory.ts';
+import { POSES as timeOverPoses } from './timeOver.ts';
+import { POSES as hitHighPoses } from './hitHigh.ts';
+import { POSES as hitMidPoses } from './hitMid.ts';
+import { POSES as hitLowPoses } from './hitLow.ts';
+import { POSES as hitCrouchPoses } from './hitCrouch.ts';
+import { POSES as airHitPoses } from './airHit.ts';
+import { POSES as tripPoses } from './trip.ts';
+import { POSES as knockdownPoses } from './knockdown.ts';
+import { POSES as getupPoses } from './getup.ts';
+import { POSES as koPoses } from './ko.ts';
+import { POSES as techPoses } from './tech.ts';
+import { POSES as jumpPoses } from './jump.ts';
+import { POSES as jumpForwardPoses } from './jumpForward.ts';
+import { POSES as specialPoses } from './special.ts';
 import { POSES as specialAntiAirPoses } from './specialAntiAir.ts';
 import { POSES as specialForwardPoses } from './specialForward.ts';
-
-/**
- * A special not drawn yet: the guard, with a touch of energy at the lead clamp on its active
- * frame, so its Remix has effects to redraw in platine (generate.ts).
- */
-function heldSpecial(frames: number, active: number): readonly Pose[] {
-  return Array.from({ length: frames }, (_, frame) =>
-    frame === active
-      ? { ...GUARD, effects: [{ kind: 'energy', center: at(12, 56), radius: 3 } as const] }
-      : GUARD,
-  );
-}
+import { POSES as standLightPoses } from './standLight.ts';
+import { POSES as superPoses } from './super.ts';
+import { POSES as chainLightPoses } from './chainLight.ts';
+import { POSES as lightFinisherPoses } from './lightFinisher.ts';
+import { POSES as forwardLightPoses } from './forwardLight.ts';
+import { POSES as standHeavyPoses } from './standHeavy.ts';
+import { POSES as chainHeavyPoses } from './chainHeavy.ts';
+import { POSES as forwardHeavyPoses } from './forwardHeavy.ts';
+import { POSES as backHeavyPoses } from './backHeavy.ts';
+import { POSES as chainLaunchPoses } from './chainLaunch.ts';
+import { POSES as crouchLightPoses } from './crouchLight.ts';
+import { POSES as crouchHeavyPoses } from './crouchHeavy.ts';
+import { POSES as jumpLightPoses } from './jumpLight.ts';
+import { POSES as jumpHeavyPoses } from './jumpHeavy.ts';
+import { POSES as walkBackPoses } from './walkBack.ts';
+import { POSES as walkForwardPoses } from './walkForward.ts';
 
 /** The strips drawn so far, by their own files. */
 const DRAWN: Partial<Record<WattSheet, readonly Pose[]>> = {
   idle: idlePoses,
+  walkForward: walkForwardPoses,
+  walkBack: walkBackPoses,
+  crouch: crouchPoses,
+  block: blockPoses,
+  jump: jumpPoses,
+  jumpForward: jumpForwardPoses,
+  dashForward: dashForwardPoses,
+  dashBack: dashBackPoses,
   grab: grabPoses,
-  special: heldSpecial(WATT_SHEETS.special.frames, 4),
+  standLight: standLightPoses,
+  chainLight: chainLightPoses,
+  lightFinisher: lightFinisherPoses,
+  forwardLight: forwardLightPoses,
+  standHeavy: standHeavyPoses,
+  chainHeavy: chainHeavyPoses,
+  forwardHeavy: forwardHeavyPoses,
+  backHeavy: backHeavyPoses,
+  chainLaunch: chainLaunchPoses,
+  crouchLight: crouchLightPoses,
+  crouchHeavy: crouchHeavyPoses,
+  jumpLight: jumpLightPoses,
+  jumpHeavy: jumpHeavyPoses,
+  hitHigh: hitHighPoses,
+  hitMid: hitMidPoses,
+  hitLow: hitLowPoses,
+  hitCrouch: hitCrouchPoses,
+  airHit: airHitPoses,
+  trip: tripPoses,
+  knockdown: knockdownPoses,
+  getup: getupPoses,
+  ko: koPoses,
+  tech: techPoses,
+  special: specialPoses,
+  super: superPoses,
+  hold: holdPoses,
+  held: heldPoses,
+  pummel: pummelPoses,
+  throwForward: throwForwardPoses,
+  throwBack: throwBackPoses,
+  thrownBack: thrownBackPoses,
+  intro: introPoses,
+  victory: victoryPoses,
+  timeOver: timeOverPoses,
   specialForward: specialForwardPoses,
   specialAntiAir: specialAntiAirPoses,
 };

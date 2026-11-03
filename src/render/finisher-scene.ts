@@ -536,8 +536,8 @@ export class FinisherScene {
   /**
    * The winner's outline (§2.3, §3.3), a rise over the flat: in its energy while it stays under
    * FLASH_DELTA there; on the frame it would reach it, asked of the budget once (§4.5: in reduced
-   * flashes, none counted out of the card), then in its energy if admitted, in a tone that never
-   * flashes (VEIL_DELTA over the flat) if not. From the release, in that tone as it leaves with the
+   * flashes, none counted out of the card, so it may not join the flash of the last blow), then in
+   * its energy if admitted, in a tone that never flashes (VEIL_DELTA over the flat) if not. From the release, in that tone as it leaves with the
    * silhouette: the pose moves then, and each frame of it would light its outline anew.
    */
   private outlineOf(by: 0 | 1, after: After, shade: number, flat: number): number {
@@ -546,7 +546,8 @@ export class FinisherScene {
     if (after.k >= after.timeline.release) return calm();
     if (after.outline === null && luminanceDelta(energy, flat, shade) >= FLASH_DELTA) {
       const area = OUTLINE_AREAS[this.cast.fighters[by]];
-      after.outline = this.cast.budget.admit(area) ? energy : calm();
+      const { budget } = this.cast;
+      after.outline = budget.admit(area, budget.mode === 'normal') ? energy : calm();
     }
     return after.outline ?? energy;
   }
@@ -728,14 +729,14 @@ const SHARD_AREA = 8 * 12.5;
 /**
  * World px² each winner's 1 px outline lights at most around its held pose, measured on the
  * planches (Nayo's s4: 236, Riff's s5: 291; Saphir's tornado, a leg out and the arms open:
- * 660.5; tests/render/finisher-flashes.test.ts). Watt's held pose is not drawn yet (porte 3,
- * docs/watt.md): Saphir's bound until it is measured, an ask too large only ever calms it.
+ * 660.5; Watt's, a colosse over his clamps: 410;
+ * tests/render/finisher-flashes.test.ts).
  */
 export const OUTLINE_AREAS: Readonly<Record<FighterId, number>> = {
   nayo: 300,
   riff: 300,
   saphir: 700,
-  watt: 700,
+  watt: 450,
 };
 
 /**

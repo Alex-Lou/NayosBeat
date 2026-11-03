@@ -6,6 +6,7 @@
  * every other color opaque. The fighters own cyan and magenta; nothing vivid here comes near them.
  */
 
+import { MIST_HEXES } from '../kit/fog.ts';
 import type { Rgba } from '../../sprites/png.ts';
 import type { FigureRamps } from '../rue/people.ts';
 import type { SignRamps, SprayRamps } from '../rue/signs.ts';
@@ -151,6 +152,9 @@ export const SPRAY_RAMPS: SprayRamps = {
   pale: TAG.cream,
   colors: [TAG.rose, TAG.violet, TAG.ochre, TAG.cream, TAG.green],
 };
+
+/** The mist's wisps, drawn only in the fog (kit/fog.ts). */
+export const MIST = ramp(...MIST_HEXES);
 
 /** Every color, slot by slot (256 at most: one PNG palette). */
 export const PALETTE: readonly Rgba[] = colors;

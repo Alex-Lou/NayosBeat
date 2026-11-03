@@ -10,7 +10,7 @@ import { clipFrameAt, showFighter, type Shown } from '../../src/render/animation
 import type { Point } from '../../tools/sprites/raster';
 import { solve, type Side, type Skeleton } from '../../tools/sprites/skeleton';
 import { atHoldTick, grabbed, play } from '../core/hold-helpers';
-import { DRAWN_FIGHTERS, DRAWN_RIFF, stripOf, type DrawnFighter } from './fighters';
+import { DRAWN_FIGHTERS, DRAWN_RIFF, DRAWN_WATT, stripOf, type DrawnFighter } from './fighters';
 
 /**
  * The hold reads as one grip (docs/combat-v2.md §4, §11.1), for each fighter holding each one,
@@ -93,8 +93,11 @@ function pairOf(state: GameState, holder: DrawnFighter, held: DrawnFighter, conf
 
 const at = (p: Point): string => `(${p.x.toFixed(1)}, ${p.y.toFixed(1)})`;
 
-describe.each(DRAWN_FIGHTERS)('$name holding', (holder) => {
-  for (const held of DRAWN_FIGHTERS) {
+/** The cast, and Watt, whose holds are drawn before his hurtboxes are measured (fighters.ts). */
+const HOLDERS: readonly DrawnFighter[] = [...DRAWN_FIGHTERS, DRAWN_WATT];
+
+describe.each(HOLDERS)('$name holding', (holder) => {
+  for (const held of HOLDERS) {
     const config: MatchConfig = {
       stage: TRAINING_STAGE,
       fighters: [holder.template, held.template],

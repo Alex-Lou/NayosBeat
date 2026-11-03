@@ -6,7 +6,7 @@ import {
   selectFighters,
 } from '../../src/app/select-fighters';
 import { artOf } from '../../src/art';
-import { ROSTER, type FighterId } from '../../src/data/roster';
+import { ROSTER } from '../../src/data/roster';
 import { FighterSelect } from '../../src/ui/fighter-select';
 import { installFakePage, type FakeElement } from '../render/fake-dom';
 import { cellPixels, savedStrip, type ColorwayName, type FighterName } from '../render/fx-strips';
@@ -81,9 +81,6 @@ async function wrongPixels(
   return wrong;
 }
 
-/** Fighters in the roster without art yet, by the owner's decision: they play in grey boxes. */
-const GREY_BOXES: ReadonlySet<FighterId> = new Set<FighterId>(['watt']);
-
 describe('select screen fighters', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
@@ -92,13 +89,7 @@ describe('select screen fighters', () => {
   it('offers the roster in its order, each fighter in both its colorways', () => {
     const fighters = selectFighters();
     expect(fighters.map(({ id }) => id)).toEqual(ROSTER.map(({ id }) => id));
-    for (const { id, look, mirrorLook } of fighters) {
-      // A fighter playing in grey boxes until his art shows no one on his tile (the owner's
-      // call, to play Watt online before his art: docs/watt.md). Every other one has both looks.
-      if (GREY_BOXES.has(id)) {
-        expect(look).toBeUndefined();
-        continue;
-      }
+    for (const { look, mirrorLook } of fighters) {
       expect(look).toBeDefined();
       expect(mirrorLook).toBeDefined();
       expect(mirrorLook?.strip).not.toBe(look?.strip);
@@ -167,8 +158,7 @@ describe('select screen fighters', () => {
     expect(look?.cuts[3]).toEqual({ x: 0, y: 0, width: 88, height: 162, left: 264, top: 0 });
   });
 
-  // A fighter in grey boxes has no bust yet (checked above).
-  it.each(ROSTER.map(({ id }) => id).filter((id) => !GREY_BOXES.has(id)))(
+  it.each(ROSTER.map(({ id }) => id))(
     "shows %s's bust and each idle frame pixel for pixel as its cells do",
     async (id) => {
       for (const colorway of ['main', 'alt'] as const) {

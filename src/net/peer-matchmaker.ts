@@ -19,34 +19,25 @@ import type {
 import { PROTOCOL_VERSION } from './protocol';
 import { routeOf } from './route';
 
-/**
- * How both devices find a way to each other (docs/multijoueur.md §5): Google's free public STUN
- * server, which tells each one its public address; and, when no direct way works (4G, strict
- * NAT), PeerJS's own public relays (TURN), as its defaults list them. Their credentials are
- * PeerJS's public ones, no secret. Same Wi-Fi, the link stays direct: a relay is the last resort.
- */
-const ICE_SERVERS: RTCIceServer[] = [
-  { urls: 'stun:stun.l.google.com:19302' },
-  {
-    urls: ['turn:eu-0.turn.peerjs.com:3478', 'turn:us-0.turn.peerjs.com:3478'],
-    username: 'peerjs',
-    credential: 'peerjsp',
-  },
-];
-
 /** How long a claim or a join may take: the server's answer, then the other device's. */
 const ANSWER_MS = 15_000;
 /** How long a guest's channel may take to open. */
 const LINK_MS = 10_000;
 
-export function peerMatchmaker(): Matchmaker {
-  return new PeerMatchmaker();
+/**
+ * `iceServers`: how both devices find a way to each other (ice-servers.ts): the STUN server, and
+ * the relays when their service gave some.
+ */
+export function peerMatchmaker(iceServers: readonly RTCIceServer[]): Matchmaker {
+  return new PeerMatchmaker(iceServers);
 }
 
 class PeerMatchmaker implements Matchmaker {
   private readonly peers = new Set<Peer>();
   private readonly channels = new Set<PeerChannel>();
   private disposed = false;
+
+  constructor(private readonly iceServers: readonly RTCIceServer[]) {}
 
   claim(id: string): Promise<ClaimOutcome> {
     const peer = this.newPeer(id);
@@ -133,7 +124,7 @@ class PeerMatchmaker implements Matchmaker {
 
   private newPeer(id: string): Peer | null {
     if (this.disposed) return null;
-    const peer = new Peer(id, { config: { iceServers: ICE_SERVERS } });
+    const peer = new Peer(id, { config: { iceServers: [...this.iceServers] } });
     this.peers.add(peer);
     return peer;
   }

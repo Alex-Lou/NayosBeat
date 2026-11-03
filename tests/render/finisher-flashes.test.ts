@@ -46,16 +46,7 @@ import { SignatureFx } from '../../src/render/signature-fx';
 import { PLATINE, signatureOf } from '../../src/render/signatures';
 import { koVeil, VEIL_DELTA } from '../../src/render/veils';
 import type { FighterId } from '../../src/data/roster';
-import {
-  armed,
-  COUVRE_FEU,
-  FACE_B,
-  film,
-  GREY_BOXES,
-  LARSEN,
-  LE_QUATRE,
-  type Route,
-} from './finisher-harness';
+import { armed, COUVRE_FEU, FACE_B, film, LARSEN, LE_QUATRE, type Route } from './finisher-harness';
 import { fxStrips, outlineRings } from './fx-strips';
 import { fakeScene } from './hud-fakes';
 import { liveScene } from './live-fakes';
@@ -167,10 +158,11 @@ beforeAll(async () => {
     ['nayo', 'alt'],
     ['riff', 'main'],
     ['saphir', 'main'],
+    ['watt', 'main'],
   ] as const) {
     STRIPS.set(drawnArt(fighter, colorway), new Map(await fxStrips(fighter, colorway)));
   }
-  for (const fighter of ['nayo', 'riff', 'saphir'] as const) {
+  for (const fighter of ['nayo', 'riff', 'saphir', 'watt'] as const) {
     const art = drawnArt(fighter);
     const rings = new Map<string, Int16Array[]>();
     for (const clip of Object.values(art.clips)) {
@@ -240,9 +232,9 @@ function counted(route: Route, mode: FlashMode, shake: Comfort['shake'] = 'norma
     if (area > 0 && !outlineAsks) lit.set(at, (lit.get(at) ?? 0) + area * zoom ** 2);
   };
   const admit = budget.admit.bind(budget);
-  budget.admit = (area: number) => {
+  budget.admit = (area: number, join?: boolean) => {
     outlineAsks = area === OUTLINE_AREAS[route.fighters[0]];
-    const answer = admit(area);
+    const answer = admit(area, join);
     outlineAsks = false;
     return answer;
   };
@@ -261,8 +253,7 @@ function counted(route: Route, mode: FlashMode, shake: Comfort['shake'] = 'norma
   const ringBefore: [Set<number>, Set<number>] = [new Set(), new Set()];
   const flatShown = vi.spyOn(FinisherProps.prototype, 'showFlat');
   const styles = [hitStyleOf(route.fighters[0]), hitStyleOf(route.fighters[1])] as const;
-  // A fighter in grey boxes shows only its box's silhouette: no effects, no outline (fighter-view).
-  const arts = route.fighters.map((id) => (GREY_BOXES.has(id) ? undefined : drawnArt(id)));
+  const arts = route.fighters.map((id) => drawnArt(id));
   const { config } = armed(route);
   const hud = new Hud(
     fakeScene().scene,
@@ -307,10 +298,9 @@ function counted(route: Route, mode: FlashMode, shake: Comfort['shake'] = 'norma
     stage: GREYBOX_COLORS,
     colors: [...energies, PLATINE],
     budget,
-    // A box lights nothing under a live light (FightScene).
     fighterAreas: [
-      arts[0] ? fighterLightArea(route.fighters[0], 'main') : 0,
-      arts[1] ? fighterLightArea(route.fighters[1], 'main') : 0,
+      fighterLightArea(route.fighters[0], 'main'),
+      fighterLightArea(route.fighters[1], 'main'),
     ],
     groundY: GROUND_Y,
   });
@@ -361,8 +351,7 @@ function counted(route: Route, mode: FlashMode, shake: Comfort['shake'] = 'norma
       feedback.update(1);
       lightRig.update(state, 1, director.isActive());
       for (const player of [0, 1] as const) {
-        const art = arts[player];
-        if (!art) continue;
+        const art = arts[player] as FighterArt;
         showFighter(state, player, config, art, shown);
         const pose = director.lookOf(player).pose;
         if (pose) {
@@ -463,8 +452,9 @@ const REGISTRY: readonly {
   // The reprise's éclat, the card. Her outline, wide around the tornado (OUTLINE_AREAS), would
   // be a flash of its own on DOUM: refused, it is drawn in the tone that never flashes.
   { route: FACE_B, scene: [107, 137], outline: null, blood: 2, reduced: [137], rings: 0 },
-  // The landing's éclat, the card. In grey boxes until his art (docs/watt.md): no outline drawn
-  // around his box.
+  // The landing's éclat, the card. His outline, wide around a colosse (OUTLINE_AREAS), would be
+  // a flash of its own: refused. With the flashes reduced, it may not join his last blow's flash
+  // (§4.5): with it, that blow, just under the threshold as shown, would cross it.
   { route: COUVRE_FEU, scene: [116, 146], outline: null, blood: 1, reduced: [146], rings: 0 },
 ];
 
@@ -503,7 +493,8 @@ describe("the Finisher's flashes, as shown (§4.3, §5.8 test 15)", () => {
       const reduced = counted(route, 'reduced');
       expect(most(reduced.flashes, SECOND)).toBeLessThanOrEqual(FLASH_RULES.reduced.perSecond);
       // No flash counted out of the card (§4.5); Nayo's outline, which would make one with TROIS,
-      // is refused and drawn in a tone that never flashes, Riff's lights alone, under the threshold.
+      // is refused and drawn in a tone that never flashes, Riff's lights alone, under the threshold,
+      // Watt's may not light with his last blow's flash.
       const scene = reduced.flashes.filter((at) => at >= reduced.lock);
       expect(scene).toEqual(shown);
       expect(reduced.outlines.size).toBe(rings);
