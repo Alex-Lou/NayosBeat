@@ -11,6 +11,7 @@ import {
 } from '../rules';
 import {
   FLAG_FINISHER,
+  FLAG_ARMOR_SPENT,
   FLAG_MOVE_HIT,
   FLAG_SPENT_CANCEL,
   FLAG_SPENT_SUPER,
@@ -85,7 +86,7 @@ export function startAttack(
     ...enter(fighter, action),
     move,
     moveConnected: false,
-    flags: fighter.flags & ~(FLAG_MOVE_HIT | FLAG_FINISHER),
+    flags: fighter.flags & ~(FLAG_MOVE_HIT | FLAG_FINISHER | FLAG_ARMOR_SPENT),
     bufferedCommand: null,
     bufferFrames: 0,
   };

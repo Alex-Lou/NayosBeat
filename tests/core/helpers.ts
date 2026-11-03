@@ -73,6 +73,7 @@ export function makeFighter(overrides: Partial<FighterState> = {}): FighterState
     reaction: null,
     reactionHeavy: false,
     stunTotal: 0,
+    tension: 0,
     ...overrides,
   };
 }

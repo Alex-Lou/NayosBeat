@@ -47,8 +47,8 @@ Le ciel clair partout, plus deux météos qui vont au lieu. Les moments (minuit,
 | The Loading Dock (`dock`) | pluie, brume | minuit, aube |
 | Rooftop Rain (`rooftop`) | pluie (minuit, crépuscule), brume | minuit, crépuscule |
 | Temple Courtyard (`decor-temple.md`) | pluie (crépuscule), neige (nuit) | aube, crépuscule, nuit |
-| L'Entrepôt, intérieur (le club), couvert | brume (la fumée de la piste), pluie (par la porte du quai) | minuit |
-| Le Bal du Samedi, couvert | pluie, neige (par les hautes fenêtres) | minuit |
+| L'Entrepôt, intérieur (`decor-club.md`), couvert | brume (la fumée de la piste), pluie (par la porte du quai) | minuit |
+| Le Bal du Samedi (`decor-bal.md`), couvert | pluie, neige (par les hautes fenêtres) | minuit |
 | Night Market | pluie, brume | minuit, crépuscule |
 | Pachinko Alley | pluie, brume | minuit |
 | Ferry Deck | brume, pluie (la tempête) | minuit, crépuscule |

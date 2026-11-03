@@ -288,6 +288,10 @@ function contactEvent(contact: Contact, next: GameState, config: MatchConfig): F
   switch (contact.kind) {
     case 'block':
       return { type: 'block', ...impact, heavy: isHeavy(move) };
+    // A blow absorbed by an armor (docs/watt-arsenal.md §3.1) sounds and sparks like a heavy
+    // block until the armor has its own clang (phase 4, his drawing).
+    case 'armor':
+      return { type: 'block', ...impact, heavy: true };
     case 'grab':
       return {
         type: 'grab',

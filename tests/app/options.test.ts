@@ -230,6 +230,29 @@ describe('the options (docs/flashs.md §4)', () => {
     expect(rows).toContainEqual(['B', 'Coup léger (L) : rapide']);
   });
 
+  it('offers « 2 joueurs » on a keyboard and pads, never on a touch screen', () => {
+    const twoPlayers = (items: readonly string[]) =>
+      items.some((item) => item.startsWith('2 joueurs'));
+    const desktop = launch({ 'nayosbeat.notice': 'seen' });
+    desktop.press('Enter');
+    expect(twoPlayers(desktop.screen().items)).toBe(true);
+
+    // On a touch screen (the main menu built anew, back from the options).
+    const phone = launch({ 'nayosbeat.notice': 'seen' });
+    phone.press('Enter');
+    Object.assign(phone.page.window, {
+      matchMedia: (media: string) => ({
+        matches: media.includes('coarse'),
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+      }),
+    });
+    phone.choose('Options');
+    phone.press('Escape');
+    expect(twoPlayers(phone.screen().items)).toBe(false);
+    expect(phone.screen().items.some((item) => item.startsWith("Contre l'ordinateur"))).toBe(true);
+  });
+
   it('moves the sound from the main menu into the options screen', () => {
     const { press, screen, choose } = launch({ 'nayosbeat.notice': 'seen' });
     press('Enter');
@@ -593,6 +616,7 @@ describe('how a fight is watched (docs/art/animation-plan.md §2, V0)', () => {
     choose("Contre l'ordinateur");
     flow.afterFighterChosen(1);
     choose('Normal');
+    choose('Aléatoire');
     expect(start).toHaveBeenLastCalledWith(
       'fight',
       expect.objectContaining({ viewing: { slowdown: 2, anim: { legacy: false } } }),
@@ -754,7 +778,7 @@ describe('the place and atmosphere drawn for each match (docs/art/decor-rue.md �
     expect(shownOf(start)?.stage).toBe(STAGE_MAPS[STAGE_MAPS.length - 1]?.name);
   });
 
-  it('draws anywhere against the computer, without asking; asks in versus, back to player 2', () => {
+  it('asks against the computer after the level, back to it; asks in versus, back to player 2', () => {
     vi.spyOn(Math, 'random').mockReturnValue(0.999);
     const { app, root, screen, choose, start } = launch({ 'nayosbeat.notice': 'seen' }, false);
     const flow = app as unknown as {
@@ -764,7 +788,12 @@ describe('the place and atmosphere drawn for each match (docs/art/decor-rue.md �
     flow.setup = { ...flow.setup, mode: 'cpu' };
     flow.afterFighterChosen(1);
     choose('Normal');
-    expect(shownOf(start)?.stage).toBe(STAGE_MAPS[STAGE_MAPS.length - 1]?.name);
+    expect(screen().title).toBe('Lieu');
+    byClass(root, 'menu-back')[0]?.dispatchEvent(new Event('click'));
+    expect(screen().title).toBe('Difficulté');
+    choose('Normal');
+    choose('Viaduct Gym');
+    expect(shownOf(start)?.stage).toBe('gym');
     flow.setup = { ...flow.setup, mode: 'versus' };
     flow.afterFighterChosen(1);
     expect(screen().title).toBe('Lieu');

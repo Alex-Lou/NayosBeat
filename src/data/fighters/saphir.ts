@@ -23,9 +23,9 @@ function inAndOut(
 /**
  * Saphir, the counter-fighter at mid-range, « un pas, une touche, dehors » (docs/saphir.md): a
  * former record dealer who fights in savate. The longest reach without moving and the best walk
- * back of the cast, a Syncope that strikes and steps out again; no reversal, no projectile, and
- * slow up close (5 ticks). Her Boost moves are written from her plain specials (`SAPHIR`,
- * below). Her hurtboxes follow her drawing (docs/combat-v2.md §9.2, `npm run measure-boxes`).
+ * back of the cast, a Syncope that strikes and steps out again; no reversal (her Contre-ut beats
+ * the air only), no projectile, and slow up close (5 ticks). Her Boost moves are written from her
+ * plain specials (`SAPHIR`, below). Her hurtboxes follow her drawing (docs/combat-v2.md §9.2, `npm run measure-boxes`).
  */
 const SAPHIR_PLAIN: FighterTemplate = {
   name: 'Saphir',
@@ -160,7 +160,8 @@ const SAPHIR_PLAIN: FighterTemplate = {
       motion: advance(38, { from: 4, to: 16, distancePx: 36 }),
       knockdown: kd(3, 3),
     }),
-    // ↓ + S: she leaps, the leg straight to the sky. The anti-air, without invincibility.
+    // ↓ + S: she leaps, the leg straight to the sky. The anti-air: it goes through a blow from
+    // the air on f3-8, never through one from the ground (still no reversal: docs/saphir.md).
     specialAntiAir: strike({
       name: 'Contre-ut',
       kind: 'special',
@@ -171,6 +172,7 @@ const SAPHIR_PLAIN: FighterTemplate = {
       pushbackPx: 3,
       guard: 'mid',
       hitbox: box(2, 36, 26, 70),
+      invincible: { from: 3, to: 9, against: 'air' },
       // Drawn leaping (frames 2-4), the striking leg over her head: her body alone is hit.
       hurtboxes: [
         { frames: { from: 5, to: 11 }, boxes: [box(-11, 27.5, 26, 73.5)] },
