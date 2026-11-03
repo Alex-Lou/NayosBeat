@@ -117,7 +117,8 @@ Les entrées restent **une direction et un bouton**, comme tout le jeu. Les mouv
   - une portée de 30 à 110 px ;
   - 28 tics de récupération (il se pare à −10, il rate à −20).
 - **S'il touche** : l'adversaire est ramené à 34 px devant lui. Watt garde **+4** : l'adversaire doit deviner (Branchement, Prise ou Marteau). Électrifié, c'est une combo garantie.
-- **Contre les projectiles** : le câble est coupé par un projectile, sans victoire gratuite. C'est l'armure du Pas blindé qui passe à travers.
+- **Contre les projectiles** : pendant ses 14 tics de démarrage, Watt peut être touché. Un projectile lancé avant interrompt donc le câble, sans victoire gratuite. C'est l'armure du Pas blindé qui passe à travers.
+- **Ce que c'est dans le moteur** : une frappe longue (`pull`), pas un projectile. Un projectile aurait demandé un nouveau champ dans l'état des projectiles, et donc changé le hachage de tous les replays qui en lancent. Le joueur ne voit pas la différence : le câble porte de 30 à 110 px et ramène sur un coup réussi (phase 1, 3 novembre 2026).
 
 ### 4.3 S en l'air : **le plongeon**
 
@@ -159,7 +160,7 @@ Topologie : l'état vit dans `FighterState` (le cœur), le retour d'info passe p
 |---|---|
 | `src/core/move-data.ts` | de nouveaux coups optionnels : `specialClose` (Branchement), `specialBack` (le câble), `jumpSpecial` (le plongeon). De nouvelles propriétés : `armor`, et une prise de commande (`kind: 'commandThrow'`, ou une prise qui mène directement à un lancer) |
 | `src/core/moves.ts` | S lit la distance (près ou loin), ← + S donne `specialBack`, S en l'air donne `jumpSpecial`. Seulement pour un combattant qui a ces coups |
-| `src/core/combat.ts` | l'absorption de l'armure ; le câble, un projectile qui ramène |
+| `src/core/combat.ts`, `step.ts` | l'absorption de l'armure ; le câble, une frappe qui ramène (`pull`) |
 | `src/core/state.ts` | `tension`, et les coups absorbés pendant le coup en cours |
 | HUD et rendu | le rappel de la tension ; l'exosquelette allumé pendant l'armure ; les LED qui montent |
 | `src/ai` | les plans du CPU de Watt, réécrits. Le CPU commun apprend l'armure, et à ne pas taper dans un Pas blindé |
@@ -177,6 +178,8 @@ Topologie : l'état vit dans `FighterState` (le cœur), le retour d'info passe p
 
 ## 8. Les phases (chacune finit sur quelque chose de jouable ou de vérifiable)
 
+**Où on en est (3 novembre 2026)** : la phase 1 est faite (PR #133). Le moteur sait lire S près, ← + S et S en l'air. Il connaît l'armure, la tension, les prises de commande au sol et en l'air, et le câble qui ramène. L'effet « électrifié » de la tension pleine (§3.2) se règlera avec les chiffres de Watt, en phase 2 : le moteur dit seulement quand elle est pleine (`isCharged`). Une règle est à respecter alors : un Remix garde le rythme de son spécial (D18), donc le Plafonnier saisi et son Plafonnier survolté devront garder le même.
+
 1. **Moteur, sans changement de jeu** : les nouveaux emplacements et propriétés existent, mais personne ne s'en sert. Les replays sont identiques, hors hachage.
 2. **Watt en boîte grise, jouable** :
    - l'armure, la tension, le câble, le Branchement, le plongeon, le Plafonnier saisi et le Pas blindé ;
@@ -190,7 +193,7 @@ Topologie : l'état vit dans `FighterState` (le cœur), le retour d'info passe p
 1. Le **Branchement à 140** : une exception à la borne des lancers, pour lui seul.
 2. L'**armure absorbe aussi les projectiles** : c'est sa réponse aux zoneurs.
 3. La **tension se vide hors du contact**, lentement, pour qu'il reste agressif.
-4. Le **câble est coupé par un projectile**, pour que Nayo garde une réponse.
+4. Le **câble est coupé par un projectile**, pour que Nayo garde une réponse. En pratique, un projectile touche Watt pendant le démarrage du câble (§4.2).
 
 ## 10. Les risques
 

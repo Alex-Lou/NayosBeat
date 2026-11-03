@@ -306,6 +306,12 @@ export interface MoveData {
   readonly throw?: CommandThrowId;
   /** A grab that catches a jumper (its default: an opponent on the ground). */
   readonly catches?: 'air';
+  /**
+   * A strike that reels the opponent in (the cable, docs/watt-arsenal.md §4.2): on hit, it is
+   * placed this far in front of the attacker (sub-pixels, center to center). Blocked or
+   * absorbed, it stays where it was.
+   */
+  readonly pull?: number;
   /** Frames during which strikes, projectiles and grabs (or attacks from the air) whiff. */
   readonly invincible?: Invincibility;
   /**

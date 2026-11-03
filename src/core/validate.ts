@@ -128,6 +128,13 @@ export function validateTemplate(template: FighterTemplate): string[] {
     if (move.catches !== undefined) {
       expect(move.kind === 'grab', `${id}: only a grab catches a jumper`);
     }
+    if (move.pull !== undefined) {
+      expect(
+        move.hitbox !== undefined && move.kind !== 'grab' && !thrown,
+        `${id}: only a strike reels the opponent in`,
+      );
+      expect(isInteger(move.pull, 1), `${id}.pull must be an integer >= 1`);
+    }
     expect(
       MOVEMENT_MOVE_IDS.includes(id) === movement,
       `${id}: only the dashes and the Rewind may (and must) be of kind "movement"`,

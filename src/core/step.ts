@@ -323,8 +323,14 @@ function struck(
     danger: inDanger(defender, template.maxHealth),
     finisher,
   };
-  const fighter = applyHit(defender, landed.fromX, landed.data, minHealth, detail);
-  const blocked = fighter.action === 'blockstun';
+  const hit = applyHit(defender, landed.fromX, landed.data, minHealth, detail);
+  const blocked = hit.action === 'blockstun';
+  const pull = landed.data.pull;
+  // The cable reels the opponent in, in front of the attacker (validated: strikes only).
+  const fighter =
+    pull !== undefined && !blocked
+      ? { ...hit, x: landed.fromX + landed.striker.facing * pull, vx: 0 }
+      : hit;
   const counter = blocked ? null : detail.counter;
   const damage = defender.health - fighter.health;
   const kind = blocked ? 'block' : 'hit';
