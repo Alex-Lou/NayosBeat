@@ -37,13 +37,14 @@ Ce qu'il ne fait pas :
   - la porte 3 (rollback) attend le « oui » du propriétaire après un vrai combat à deux ;
   - les relais TURN de Cloudflare sont prêts mais pas déployés (`TURN_ENDPOINT` vide).
 - **Le son est abandonné** (décision du propriétaire).
-- **Le journal** va jusqu'à **D39**. **`PROTOCOL_VERSION` vaut 4.** Il y a **31 replays dorés**.
+- **Le moteur de l'arsenal de Watt** (#133, phase 1) est sur `main` : emplacements de coups optionnels, armure, prises de commande, jauge de tension. Personne ne s'en sert encore.
+- **Le journal** va jusqu'à **D39**. **`PROTOCOL_VERSION` vaut 5.** Il y a **31 replays dorés**.
 
 **Les chantiers en cours dans d'autres sessions** (au 3 novembre) :
 
 | Chantier | Où | Ce qui touche au gardien |
 |---|---|---|
-| L'arsenal de Watt, phase 1 (#133) | `src/core` : emplacements de coups optionnels, armure, prise de commande, jauge de tension | **Le cœur.** Replays, `PROTOCOL_VERSION`, aucun changement de jeu pour les trois autres |
+| L'arsenal de Watt, phases 2 à 4 : boîte grise jouable, son CPU, puis son dessin | ses données (`src/data/fighters/watt*`), `src/ai`, `tools/sprites/watt` | Les données de jeu changent : `PROTOCOL_VERSION` monte, et le CPU des autres se mesure avant et après |
 | Le polish « plus massif, plus détaillé » des quatre | `tools/sprites/*`, en commençant par un essai sur Nayo | Budgets (mémoire vidéo, textures, surfaces de lumière, flashs), mêmes boîtes, propriété intellectuelle |
 | Le buste de sélection de Saphir (#135) | `tools/sprites/saphir`, l'écran de sélection | Sprites regénérés à l'identique, `public/icons` |
 | Le Multi, porte 3 (rollback) | `src/net`, `src/render/fight-scene.ts` | Attend le « oui » du propriétaire. Effets jamais rejoués deux fois |
