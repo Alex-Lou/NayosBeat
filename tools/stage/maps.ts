@@ -9,6 +9,7 @@ import { CLUB } from './club/index.ts';
 import { DOCK } from './dock/index.ts';
 import { GYM } from './gym/index.ts';
 import { MARCHE } from './marche/index.ts';
+import { NEON } from './neon/index.ts';
 import { PLAGE } from './plage/index.ts';
 import { ROOFTOP } from './rooftop/index.ts';
 import { RUE } from './rue/index.ts';
@@ -24,4 +25,5 @@ export const CODE_MAPS: readonly CodeMap[] = [
   BAL,
   PLAGE,
   MARCHE,
+  NEON,
 ];

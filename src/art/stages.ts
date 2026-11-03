@@ -4,6 +4,7 @@ import { STAGE_VARIANTS as CLUB } from './club';
 import { STAGE_VARIANTS as DOCK } from './dock';
 import { STAGE_VARIANTS as GYM } from './gym';
 import { STAGE_VARIANTS as MARCHE } from './marche';
+import { STAGE_VARIANTS as NEON } from './neon';
 import { STAGE_VARIANTS as PLAGE } from './plage';
 import { STAGE_VARIANTS as ROOFTOP } from './rooftop';
 import { STAGE_VARIANTS as RUE } from './rue';
@@ -107,6 +108,14 @@ export const STAGE_MAPS: readonly StageMap[] = (
       sheltered: false,
       ground: 'hard',
       variants: MARCHE,
+    },
+    {
+      name: 'neon',
+      title: 'Neon Dusk',
+      description: 'La rue cyberpunk sous la pluie, entre les néons',
+      sheltered: false,
+      ground: 'hard',
+      variants: NEON,
     },
   ] satisfies StageMap[]
 ).filter(({ variants }) => variants.length > 0);
