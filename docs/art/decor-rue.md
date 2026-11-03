@@ -152,8 +152,9 @@ Les couleurs des vêtements (`CLOTH`, `HAIR`) restent sombres, la nuit, et petit
 | Les papillons de nuit | `mid` | Trois autour de chaque réverbère, 6 pas par image |
 | Les pigeons | `mid` | Endormis sur la corniche du club, l'un picore, un autre lève la tête |
 | Le journal | `mid` | Une feuille que le vent pousse sur le trottoir, de droite à gauche, toutes les 40 s |
+| **La porte du club** | `mid` | **Le moment fort** : toutes les 40 s, elle s'entrouvre, s'ouvre en grand sur l'intérieur violet et chaud, quelqu'un vient au seuil, la lumière se répand sur le perron et le trottoir, puis elle se referme. Chaque état tient au moins 40 pas : rien ne clignote |
 
-En combat, le HUD cache la ligne aérienne : le train ne se voit qu'en plan large et sur l'écran « Lieu ». Le moment fort de la rue, à la hauteur des combattants, sera donc la porte du club qui s'ouvre (choix du développeur).
+En combat, le HUD cache la ligne aérienne : le train ne se voit qu'en plan large et sur l'écran « Lieu ». Le moment fort de la rue, à la hauteur des combattants, est la porte du club qui s'ouvre (choix du développeur) : le train passe au loin au milieu du cycle, la porte s'ouvre ensuite (`DOOR_AT`, 1 700 pas).
 
 ## 7. Les budgets
 

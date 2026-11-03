@@ -97,6 +97,7 @@ describe("the code's street (docs/art/decor-rue.md)", () => {
       'mist1',
       'train',
       'queue',
+      'door',
       'bouncer',
       'smoker',
       'balcony',
@@ -190,5 +191,47 @@ describe("the code's street (docs/art/decor-rue.md)", () => {
     });
     expect(kept.map(({ name }) => name)).not.toContain('queue');
     expect(dropped).toEqual(['queue: the mid layer drawn by hand differs under it']);
+  });
+});
+
+/** The frame of prop `name` at `step` of its loop. */
+function frameAtOf(
+  props: readonly import('../../tools/stage/kit/stage').CodeProp[],
+  name: string,
+  step: number,
+): number {
+  const prop = props.find((each) => each.name === name);
+  if (!prop) throw new Error(name);
+  const total = prop.timeline.reduce((sum, [, steps]) => sum + steps, 0);
+  let left = step % total;
+  for (const [frame, steps] of prop.timeline) {
+    if (left < steps) return frame;
+    left -= steps;
+  }
+  throw new Error(name);
+}
+
+describe('the street moment (docs/art/decor-rue.md §6.2)', () => {
+  const { props } = drawRue();
+  const door = props.find((prop) => prop.name === 'door');
+  const train = props.find((prop) => prop.name === 'train');
+  const timelineOf = (name: string) =>
+    (props.find((prop) => prop.name === name)?.timeline ?? []).reduce(
+      (sum, [, steps]) => sum + steps,
+      0,
+    );
+
+  it('opens its club door once a cycle, the light held 240 steps', () => {
+    if (!door) throw new Error('no door');
+    expect(timelineOf('door')).toBe(2400);
+    const open = Array.from({ length: 2400 }, (_, step) => frameAtOf(props, 'door', step) === 2);
+    expect(open.indexOf(true)).toBe(1740);
+    expect(open.filter(Boolean).length).toBe(240);
+  });
+
+  it('passes its train once a cycle, away from the door', () => {
+    if (!train?.drift) throw new Error('no train');
+    expect(timelineOf('train')).toBe(2400);
+    expect(train.drift.start + train.drift.steps <= 1700).toBe(true);
   });
 });

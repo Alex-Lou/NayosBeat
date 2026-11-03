@@ -137,6 +137,8 @@ const PAINTED: Wall = {
 };
 const ENTREPOT_RECT: Rect = { x: 474, y: 212, width: 516, height: BASE - 212 };
 const IRON_DOOR: Rect = { x: 714, y: 300, width: 52, height: 100 };
+/** The street's cycle: 40 s; the club's door opens at its moment (docs/art/decor-rue.md §6.2). */
+export const DOOR_AT = 1700;
 const NEON = { x: 740, y: 250 } as const;
 
 // --- The alley. -------------------------------------------------------------------------------
@@ -327,6 +329,48 @@ const BOUNCER: Figure = {
   rim: { side: -1, above: true, ramp: RIM_WARM },
   outfit: { top: CLOTH.black, legs: CLOTH.black, shoes: CLOTH.leather, hair: CLOTH.grey },
 };
+
+/**
+ * The club's door opens (docs/art/decor-rue.md §6.2): frame 1 ajar, 2 wide open with someone
+ * looking out and the light spilled on the step, 3 closing. The still layer draws it shut.
+ */
+function drawOpenDoor(canvas: Canvas, frame: number): void {
+  if (frame === 0) return;
+  const { x, y, width, height } = IRON_DOOR;
+  const opening = frame === 2 ? width - 8 : frame === 1 ? 16 : 8;
+  // The doorway: the club's warm violet inside, brighter the wider it is.
+  canvas.paint(x + opening, y, width - opening, height, (px, py) => {
+    const fromTop = (py - y) / height;
+    return tone(NEON_VIOLET, 1.4 + fromTop * 1.6, px, py);
+  });
+  // The threshold, lit warm.
+  canvas.fill(x + opening - 2, y + height - 4, width - opening + 4, 4, at(WARM, 3));
+  // The leaf, edge-lit against the jamb.
+  canvas.fill(x, y, opening, height, at(SHUTTER, 1));
+  canvas.vline(x + opening - 1, y, height, at(NEON_VIOLET, 3));
+  if (frame !== 2) return;
+  // Someone steps to the threshold, a silhouette against the light.
+  drawFigure(
+    canvas,
+    {
+      x: x + width - 16,
+      y: y + height - 2,
+      height: 62,
+      shoulders: 20,
+      facing: 1,
+      head: 'beanie',
+      coat: 'short',
+      pose: STANDING,
+      rim: { side: 1, above: true, ramp: RIM_VIOLET },
+      outfit: dressed(CLOTH.black, CLOTH.black, CLOTH.black),
+    },
+    FIGURE_RAMPS,
+  );
+  // The light spills on the step and the sidewalk, under the neon's violet.
+  canvas.ellipse(x + 4, y + height + 6, 120, 18, at(NEON_VIOLET, 1));
+  canvas.ellipse(x + 14, y + height + 8, 84, 12, at(NEON_VIOLET, 2));
+  canvas.hline(x + 32, y + height + 14, 60, at(NEON_VIOLET, 3));
+}
 
 /** The smoker leaning out of a window of the red building: its sill, its hand, its smoke. */
 const SMOKER_WINDOW = { x: RED_BAYS[1], top: FLOORS[0].top } as const;
@@ -606,6 +650,19 @@ export const MID_ANIMATIONS: readonly Animation[] = [
     draw: (canvas, frame) => {
       for (const figure of queueAt(frame)) drawFigure(canvas, figure, FIGURE_RAMPS);
     },
+  },
+  {
+    name: 'door',
+    rect: { x: 648, y: 296, width: 192, height: 144 },
+    frames: 4,
+    timeline: [
+      [0, DOOR_AT],
+      [1, 40],
+      [2, 240],
+      [3, 40],
+      [0, 2400 - DOOR_AT - 320],
+    ],
+    draw: drawOpenDoor,
   },
   {
     name: 'bouncer',
