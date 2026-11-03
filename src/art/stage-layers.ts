@@ -16,7 +16,7 @@ export const STAGE_NAME = 'rue';
 
 /** The moments of the night a stage may show, and its weathers (docs/art/decor-rue.md §13). */
 export const MOMENTS = ['midnight', 'dusk', 'dawn'] as const;
-export const WEATHERS = ['clear', 'rain', 'fog'] as const;
+export const WEATHERS = ['clear', 'rain', 'fog', 'snow'] as const;
 export type Moment = (typeof MOMENTS)[number];
 export type Weather = (typeof WEATHERS)[number];
 

@@ -6,10 +6,11 @@ import type { LightTier } from './live-lights';
 import { VIEW_SIZE } from './view';
 
 /**
- * The rain of a stage's rain atmospheres (docs/art/pluie.md): a curtain of streaks behind the
- * fighters and splashes along the ground line, drawn by the render only (D17), moved by whole
- * pixels a step of the visual clock (D23). Its tiles are made here from a fixed seed, once, and
- * stay in the texture cache: a few hundred KB of video memory for every stage that rains.
+ * What falls over a stage's rain and snow atmospheres (docs/art/pluie.md, docs/art/decor-temple.md):
+ * a curtain behind the fighters, of streaks for the rain (with splashes along the ground line) or
+ * of flakes for the snow, drawn by the render only (D17), moved by whole pixels a step of the
+ * visual clock (D23). Its tiles are made here from a fixed seed, once, and stay in the texture
+ * cache: a few hundred KB of video memory for every stage where something falls.
  */
 
 /**
@@ -22,6 +23,22 @@ export const RAIN_LOOK = {
   far: { color: 0x6e7c9c, alpha: 0.22 },
   splash: { color: 0xb4bed4, alpha: 0.34 },
 } as const;
+
+/**
+ * The snow's flakes: the near ones, two pixels square; the far ones, one. Held to the rain's
+ * measure (test): over every large color of every stage, none changes the luminance by FLASH_DELTA.
+ */
+export const SNOW_LOOK = {
+  flake: { color: 0xc8ccd8, alpha: 0.28 },
+  speck: { color: 0x8e94aa, alpha: 0.24 },
+} as const;
+/** Image pixels a step: the flakes fall slowly, drift with the wind and sway in it. */
+export const SNOW_FALL = 2;
+export const SNOW_DRIFT = 1;
+export const SNOW_SWAY = 3;
+
+/** What falls: rain or snow. */
+export type Precipitation = 'rain' | 'snow';
 
 /** The curtain's tile, image pixels (STAGE_SCALE a world pixel): its streaks repeat past it. */
 export const RAIN_TILE = 384;
@@ -42,11 +59,24 @@ export const RAIN_SCROLL = 0.75;
 
 const CURTAIN_KEY = 'rain/curtain';
 const SPLASH_KEY = 'rain/splash';
+const SNOW_KEY = 'rain/snow';
 
-/** Whether the curtain falls over `variant`: it rains, and not under a roof (`sheltered`). */
-export function rains(variant: StageVariant, maps: readonly StageMap[] = STAGE_MAPS): boolean {
+/**
+ * What falls over `variant`, if anything: its weather's rain or snow, never under a roof
+ * (`sheltered`: its own images show it, at a window).
+ */
+export function precipitationOf(
+  variant: StageVariant,
+  maps: readonly StageMap[] = STAGE_MAPS,
+): Precipitation | undefined {
   const sheltered = maps.find(({ name }) => name === variant.stage)?.sheltered ?? false;
-  return variant.atmosphere.weather === 'rain' && !sheltered;
+  const { weather } = variant.atmosphere;
+  return !sheltered && (weather === 'rain' || weather === 'snow') ? weather : undefined;
+}
+
+/** Whether the rain's curtain falls over `variant`. */
+export function rains(variant: StageVariant, maps: readonly StageMap[] = STAGE_MAPS): boolean {
+  return precipitationOf(variant, maps) === 'rain';
 }
 
 /** A seeded randomness (mulberry32): the same rain on every run and every machine. */
@@ -65,8 +95,10 @@ function seeded(seed: number): () => number {
 export interface RainPixel {
   readonly x: number;
   readonly y: number;
-  readonly look: 'near' | 'far' | 'splash';
+  readonly look: keyof typeof RAIN_LOOK | keyof typeof SNOW_LOOK;
 }
+
+const LOOKS = { ...RAIN_LOOK, ...SNOW_LOOK } as const;
 
 /**
  * The curtain's pixels, RAIN_TILE square: streaks slanting with the wind (RAIN_DRIFT across for
@@ -114,6 +146,40 @@ export function splashPixels(seed = 73): RainPixel[] {
   return pixels;
 }
 
+/**
+ * The snow's pixels, RAIN_TILE square: flakes scattered, a third of them near (two pixels square),
+ * wrapping at the tile's edges so it repeats without a seam.
+ */
+export function snowPixels(seed = 79): RainPixel[] {
+  const random = seeded(seed);
+  const pixels: RainPixel[] = [];
+  for (let flake = 0; flake < 300; flake++) {
+    const near = flake % 3 === 0;
+    const x0 = Math.floor(random() * RAIN_TILE);
+    const y0 = Math.floor(random() * RAIN_TILE);
+    const size = near ? 2 : 1;
+    for (let dy = 0; dy < size; dy++) {
+      for (let dx = 0; dx < size; dx++) {
+        pixels.push({
+          x: (x0 + dx) % RAIN_TILE,
+          y: (y0 + dy) % RAIN_TILE,
+          look: near ? 'flake' : 'speck',
+        });
+      }
+    }
+  }
+  return pixels;
+}
+
+/** Where the snow's tile stands `steps` steps in: falling slowly, drifting, swaying; whole pixels. */
+export function snowOffsetsAt(steps: number): { x: number; y: number } {
+  const sway = Math.round(Math.sin(steps / 45) * SNOW_SWAY);
+  return {
+    x: (((steps * SNOW_DRIFT + sway) % RAIN_TILE) + RAIN_TILE) % RAIN_TILE,
+    y: (RAIN_TILE - ((steps * SNOW_FALL) % RAIN_TILE)) % RAIN_TILE,
+  };
+}
+
 /** Where the tiles stand `steps` steps of the visual clock in: whole image pixels, looping. */
 export function rainOffsetsAt(steps: number): { x: number; y: number; splash: number } {
   return {
@@ -137,7 +203,7 @@ function paint(
   texture.setFilter(Phaser.Textures.FilterMode.NEAREST);
   const image = texture.context.createImageData(width, height);
   for (const { x, y, look } of pixels) {
-    const { color, alpha } = RAIN_LOOK[look];
+    const { color, alpha } = LOOKS[look];
     const i = (y * width + x) * 4;
     image.data[i] = (color >> 16) & 0xff;
     image.data[i + 1] = (color >> 8) & 0xff;
@@ -149,33 +215,49 @@ function paint(
 }
 
 /**
- * The rain over a fight's stage: the curtain from the top of the stage to the ground line, behind
- * the fighters and under the super's dark (DEPTH.rain), following RAIN_SCROLL of the camera; the
- * splashes along the ground line. A view only, like the stage's props: it counts the visual
- * clock's steps. At the lowest light tier (light-quality.ts), the curtain goes, the splashes stay.
+ * The rain or the snow over a fight's stage: the curtain from the top of the stage to the ground
+ * line, behind the fighters and under the super's dark (DEPTH.rain), following RAIN_SCROLL of the
+ * camera; for the rain, the splashes along the ground line. A view only, like the stage's props:
+ * it counts the visual clock's steps. At the lowest light tier (light-quality.ts), the curtain
+ * goes, the splashes stay.
  */
 export class StageRainView {
   private readonly curtain: Phaser.GameObjects.TileSprite;
-  private readonly splashes: Phaser.GameObjects.TileSprite;
+  private readonly splashes: Phaser.GameObjects.TileSprite | undefined;
   private steps = 0;
 
-  constructor(scene: Phaser.Scene) {
-    paint(scene, CURTAIN_KEY, RAIN_TILE, RAIN_TILE, curtainPixels());
-    paint(scene, SPLASH_KEY, SPLASH_WIDTH, SPLASH_ROWS * SPLASH_VARIANTS, splashPixels());
+  constructor(
+    scene: Phaser.Scene,
+    private readonly kind: Precipitation = 'rain',
+  ) {
+    const snow = kind === 'snow';
+    if (snow) paint(scene, SNOW_KEY, RAIN_TILE, RAIN_TILE, snowPixels());
+    else {
+      paint(scene, CURTAIN_KEY, RAIN_TILE, RAIN_TILE, curtainPixels());
+      paint(scene, SPLASH_KEY, SPLASH_WIDTH, SPLASH_ROWS * SPLASH_VARIANTS, splashPixels());
+    }
     const ground = STAGE_LAYERS.floor.y;
     const travel = STAGE_LAYERS.floor.width - VIEW_SIZE.width;
     this.curtain = scene.add
-      .tileSprite(0, 0, VIEW_SIZE.width + travel * RAIN_SCROLL, ground, CURTAIN_KEY)
+      .tileSprite(
+        0,
+        0,
+        VIEW_SIZE.width + travel * RAIN_SCROLL,
+        ground,
+        snow ? SNOW_KEY : CURTAIN_KEY,
+      )
       .setOrigin(0, 0)
       .setTileScale(1 / STAGE_SCALE, 1 / STAGE_SCALE)
       .setScrollFactor(RAIN_SCROLL, 1)
       .setDepth(DEPTH.rain);
-    this.splashes = scene.add
-      .tileSprite(0, ground, STAGE_LAYERS.floor.width, SPLASH_ROWS / STAGE_SCALE, SPLASH_KEY)
-      .setOrigin(0, 0)
-      .setTileScale(1 / STAGE_SCALE, 1 / STAGE_SCALE)
-      .setScrollFactor(1, 1)
-      .setDepth(DEPTH.rain);
+    this.splashes = snow
+      ? undefined
+      : scene.add
+          .tileSprite(0, ground, STAGE_LAYERS.floor.width, SPLASH_ROWS / STAGE_SCALE, SPLASH_KEY)
+          .setOrigin(0, 0)
+          .setTileScale(1 / STAGE_SCALE, 1 / STAGE_SCALE)
+          .setScrollFactor(1, 1)
+          .setDepth(DEPTH.rain);
     this.show();
   }
 
@@ -192,12 +274,17 @@ export class StageRainView {
 
   dispose(): void {
     this.curtain.destroy();
-    this.splashes.destroy();
+    this.splashes?.destroy();
   }
 
   private show(): void {
+    if (this.kind === 'snow') {
+      const { x, y } = snowOffsetsAt(this.steps);
+      this.curtain.setTilePosition(x, y);
+      return;
+    }
     const { x, y, splash } = rainOffsetsAt(this.steps);
     this.curtain.setTilePosition(x, y);
-    this.splashes.setTilePosition(0, splash);
+    this.splashes?.setTilePosition(0, splash);
   }
 }

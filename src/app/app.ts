@@ -130,6 +130,7 @@ const WEATHER_LABELS: Readonly<Record<Weather, string>> = {
   clear: 'ciel clair',
   rain: 'pluie',
   fog: 'brume',
+  snow: 'neige',
 };
 
 /** Training's « Lieu » choices, in the order the option cycles: at random, then each place. */

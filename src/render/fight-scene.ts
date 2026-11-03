@@ -79,7 +79,7 @@ import { SignatureFx } from './signature-fx';
 import { PLATINE, signatureOf, type Signature } from './signatures';
 import { SpriteFighterView } from './sprite-fighter-view';
 import { drawStage, FIGHT_STAGE_COLORS, loadStage, stageImagesOf } from './stage-view';
-import { rains, StageRainView } from './stage-rain';
+import { precipitationOf, StageRainView } from './stage-rain';
 import type { StagePropsView } from './stage-props';
 import { VIEW_SIZE } from './view';
 
@@ -348,7 +348,8 @@ export class FightScene extends Phaser.Scene {
     // the fight (§13); the grey box without it.
     const { stage } = this.sceneData;
     const stageProps = stage ? drawStage(this, stage) : undefined;
-    const stageRain = stage && rains(stage) ? new StageRainView(this) : undefined;
+    const falling = stage && precipitationOf(stage);
+    const stageRain = falling ? new StageRainView(this, falling) : undefined;
     if (!stage) {
       drawGreyboxStage(this, stageWidth, { silhouette: this.sceneData.silhouette, debug });
     }
