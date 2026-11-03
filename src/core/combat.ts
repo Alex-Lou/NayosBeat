@@ -17,7 +17,14 @@ import {
   THROW_TECH_STUN,
 } from './rules';
 import { sideOf } from './side';
-import type { Contact, CounterHit, Facing, FighterAction, FighterState } from './state';
+import {
+  FLAG_ARMOR_SPENT,
+  type Contact,
+  type CounterHit,
+  type Facing,
+  type FighterAction,
+  type FighterState,
+} from './state';
 
 /**
  * States in which holding back blocks. Attacking, jumping or walking forward does not; pushed
@@ -167,6 +174,38 @@ export function findHit(
 
   const { x, y, facing } = attacker;
   return touchedHurtbox(active.hitbox, x, y, facing, defender, defenderTemplate) ? move : null;
+}
+
+/**
+ * Whether `defender`'s move absorbs `blow` on this tick (docs/watt-arsenal.md §3.1): within its
+ * `armor` frames, the first blow of the move only, never a grab nor a Boost move (`blowTier` 2
+ * or 3: a Remix, the super, whose blows count for two).
+ */
+export function absorbs(
+  defender: FighterState,
+  template: FighterTemplate,
+  blow: MoveData,
+  blowTier: number,
+): boolean {
+  if (!defender.move || (defender.flags & FLAG_ARMOR_SPENT) !== 0) return false;
+  if (blow.kind === 'grab' || blowTier >= 2) return false;
+  const armor = moveOf(template, defender.move).armor;
+  return (
+    armor !== undefined && defender.actionFrame >= armor.from && defender.actionFrame < armor.to
+  );
+}
+
+/**
+ * A blow absorbed by the defender's armor: half its damage (never below `minHealth`), no stun,
+ * no push, the move goes on; its armor is spent for the rest of the move.
+ */
+export function applyArmored(defender: FighterState, blow: MoveData, minHealth = 0): FighterState {
+  const damage = Math.trunc(blow.damage / 2);
+  return {
+    ...defender,
+    health: Math.max(minHealth, defender.health - damage),
+    flags: defender.flags | FLAG_ARMOR_SPENT,
+  };
 }
 
 /** The blow a move lands on `actionFrame`: its last pulse reached, or the move itself. */

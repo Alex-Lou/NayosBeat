@@ -275,6 +275,12 @@ export interface MoveData {
   readonly hurtboxes?: readonly MoveHurtbox[];
   /** Frames during which strikes, projectiles and grabs (or attacks from the air) whiff. */
   readonly invincible?: Invincibility;
+  /**
+   * Frames during which the move absorbs one strike or projectile (docs/watt-arsenal.md §3.1):
+   * half its damage taken, no stun, the move goes on. A grab, a second blow in the move, and a
+   * Boost move (a Remix, the super) go through it.
+   */
+  readonly armor?: FrameRange;
   /** Frames during which grabs whiff, strikes do not (the backdash). */
   readonly throwInvincible?: FrameRange;
   /** Sends the defender to the ground on hit, even when standing. */

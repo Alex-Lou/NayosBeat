@@ -127,6 +127,8 @@ export const FLAG_BOUNCE = 16;
 export const FLAG_LIMIT = 32;
 export const FLAG_DANGER = 64;
 export const FLAG_FINISHER = 128;
+/** The defender's current move already absorbed a blow (its `armor`): cleared as the next starts. */
+export const FLAG_ARMOR_SPENT = 256;
 /** The attacker's spends, once each per sequence. */
 export const SEQUENCE_FLAGS = FLAG_SPENT_CANCEL | FLAG_SPENT_SUPER;
 /** The victim's marks. */
@@ -151,10 +153,10 @@ export interface Contact {
   /** The attacker; for a tech, the player who broke free (both, on a same-tick tech). */
   readonly by: 0 | 1;
   /**
-   * A strike or projectile hit or blocked; a grab that catches; a tech; a pummel or throw on
-   * the held opponent (its release).
+   * A strike or projectile hit, blocked or absorbed by an armor; a grab that catches; a tech; a
+   * pummel or throw on the held opponent (its release).
    */
-  readonly kind: 'hit' | 'block' | 'grab' | 'tech' | 'pummel' | 'throw';
+  readonly kind: 'hit' | 'block' | 'armor' | 'grab' | 'tech' | 'pummel' | 'throw';
   readonly move: MoveId;
   /**
    * Middle of the overlap between what struck (the attacker's hitbox, or its projectile's) and

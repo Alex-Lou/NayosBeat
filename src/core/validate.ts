@@ -197,9 +197,16 @@ export function validateTemplate(template: FighterTemplate): string[] {
         `${id}.sideSwitchFrame must come before the release`,
       );
     }
-    for (const name of ['invincible', 'throwInvincible'] as const) {
+    for (const name of ['invincible', 'throwInvincible', 'armor'] as const) {
       const range = move[name];
       if (range) expect(isRangeWithin(range, duration), `${id}.${name} must fit within the move`);
+    }
+    if (move.armor) {
+      expect(!thrown && move.kind !== 'grab', `${id}: a throw or a grab has no armor`);
+    }
+    if (move.closeRange !== undefined) {
+      expect(id === 'specialClose', `${id}: only the close special has a closeRange`);
+      expect(isInteger(move.closeRange, 1), `${id}.closeRange must be an integer >= 1`);
     }
     if (move.freeCancelFrom !== undefined) {
       expect(movement, `${id}: only a movement can be cancelled without contact`);

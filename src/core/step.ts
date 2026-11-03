@@ -1,5 +1,14 @@
 import { boosted, flashOf } from './boost';
-import { applyHit, contactOf, findHit, impactOf, techGrab, type PlacedBox } from './combat';
+import {
+  absorbs,
+  applyArmored,
+  applyHit,
+  contactOf,
+  findHit,
+  impactOf,
+  techGrab,
+  type PlacedBox,
+} from './combat';
 import type { MatchConfig } from './config';
 import { isCounterHit } from './damage';
 import { pushboxOf, updateFighter } from './fighter';
@@ -7,6 +16,7 @@ import { finisherBlowOf, finisherReady, inDanger, locks, type FinisherBlow } fro
 import { readFighter, startHold, struggleInHitstop, updateHold, type HoldTick } from './hold';
 import type { InputBits } from './input';
 import type { MoveData, MoveId } from './move-data';
+import { moveOf, tierOf } from './moves';
 import { followCamera, resolvePositions } from './positions';
 import {
   findProjectileHit,
@@ -295,6 +305,17 @@ function struck(
   if (!landed) return null;
   const template = config.fighters[defenderIndex];
   const impact = impactOf(landed.striker, defender, template);
+  const by = defenderIndex === 0 ? 1 : 0;
+  const blowTier = tierOf(moveOf(config.fighters[by], landed.move));
+  if (absorbs(defender, template, landed.data, blowTier)) {
+    const fighter = applyArmored(defender, landed.data, minHealth);
+    const damage = defender.health - fighter.health;
+    return {
+      fighter,
+      contact: contactOf(by, 'armor', landed.move, impact, damage),
+      hitstop: landed.data.hitstop,
+    };
+  }
   const detail = {
     counter: isCounterHit(defender, template),
     impactPercent: impactPercent(impact.y - defender.y, template),
@@ -304,7 +325,6 @@ function struck(
   const fighter = applyHit(defender, landed.fromX, landed.data, minHealth, detail);
   const blocked = fighter.action === 'blockstun';
   const counter = blocked ? null : detail.counter;
-  const by = defenderIndex === 0 ? 1 : 0;
   const damage = defender.health - fighter.health;
   const kind = blocked ? 'block' : 'hit';
   const extended = (fighter.flags & ~defender.flags & FLAG_EXTENDED) !== 0;

@@ -79,7 +79,8 @@ function specialGain(
 function attackerGain(contact: Contact, defender: FighterState, template: FighterTemplate): number {
   if (contact.kind === 'grab' || contact.kind === 'tech') return 0;
   if (moveOf(template, contact.move).boostCost) return 0;
-  if (contact.kind === 'block') return BOOST_GAIN_BLOCKED;
+  // Absorbed by an armor, the blow still touched: as much as a blocked one.
+  if (contact.kind === 'block' || contact.kind === 'armor') return BOOST_GAIN_BLOCKED;
   if (defender.comboCount > BOOST_GAIN_HITS) return 0;
   return Math.trunc((contact.damage * BOOST_GAIN_HIT_NUM) / BOOST_GAIN_HIT_DEN);
 }
