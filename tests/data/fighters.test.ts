@@ -83,6 +83,30 @@ describe('fighter templates', () => {
     const fromStart = (move: MoveData | undefined) =>
       move?.invincible?.from === 0 && (move.invincible.against ?? 'all') === 'all';
     expect(moves.some(fromStart)).toBe(false);
+    // Her Contre-ut beats a jump, never a blow from the ground: still no reversal.
+    expect(SAPHIR.moves.specialAntiAir.invincible?.against).toBe('air');
+  });
+
+  // Nayo, the all-rounder (docs/combat-v2.md §6.1): the only projectile of the cast, and the only
+  // anti-air that goes through everything from its first tick (the Uppercut, a reversal); but the
+  // one that leaves him open longest when it misses.
+  it('play differently: the all-rounder throws, reverses, and pays for a missed Uppercut', () => {
+    const others = [RIFF, SAPHIR, WATT];
+    const reverses = (t: FighterTemplate) =>
+      t.moves.specialAntiAir.invincible?.from === 0 &&
+      (t.moves.specialAntiAir.invincible.against ?? 'all') === 'all';
+    expect(NAYO.moves.special.projectile).toBeDefined();
+    expect(reverses(NAYO)).toBe(true);
+    for (const other of others) {
+      expect(
+        Object.values(other.moves).some((move) => move.projectile),
+        other.name,
+      ).toBe(false);
+      expect(reverses(other), other.name).toBe(false);
+      expect(NAYO.moves.specialAntiAir.recovery, other.name).toBeGreaterThan(
+        other.moves.specialAntiAir.recovery,
+      );
+    }
   });
 
   // Watt, the grappler without armor (docs/watt.md §1): the most health, the longest grab and the
