@@ -78,7 +78,8 @@ export interface Fighter {
   readonly paletteOf: (colorway: Colorway, drawn?: Uint8Array) => readonly Rgba[];
   /**
    * The pose of its bust on the select screen (portrait.ts), drawn by the code when no portrait
-   * is drawn by hand; without either, the game cuts a square from its guard.
+   * is drawn by hand, and the palette slots it lights, each to a brighter one (a smoked glass, lit
+   * for its tile); without either, the game cuts a square from its guard.
    */
-  readonly portrait?: Pose;
+  readonly portrait?: { readonly pose: Pose; readonly relight?: Readonly<Record<number, number>> };
 }

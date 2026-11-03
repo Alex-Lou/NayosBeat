@@ -79,5 +79,5 @@ export const SAPHIR: Fighter = {
   fx: EFFECTS,
   platine: namedEffects(SAPHIR_CLIPS),
   paletteOf,
-  portrait: PORTRAIT,
+  portrait: { pose: PORTRAIT },
 };

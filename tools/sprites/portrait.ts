@@ -43,10 +43,11 @@ export function bustOf(pixels: Uint8Array, width: number, head: Point): Uint8Arr
 
 /** The fighter's bust drawn from its portrait pose, or undefined when it has none. */
 export function codePortrait(fighter: Fighter): Uint8Array | undefined {
-  const pose = fighter.portrait;
-  if (!pose) return undefined;
+  if (!fighter.portrait) return undefined;
+  const { pose, relight = {} } = fighter.portrait;
   const cell = drawPose(fighter, pose);
-  return bustOf(cell, CELL_SIZE, solve(pose, fighter.body).head);
+  const bust = bustOf(cell, CELL_SIZE, solve(pose, fighter.body).head);
+  return bust.map((slot) => relight[slot] ?? slot);
 }
 
 /** `pose` in one cell: its body as drawStrip draws a frame, its front effects over it. */
