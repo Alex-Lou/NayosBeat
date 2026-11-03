@@ -1,4 +1,5 @@
 import {
+  actionBar,
   backButton,
   element,
   helpLine,
@@ -96,7 +97,7 @@ const RANDOM = { name: 'Aléatoire', description: 'Un combattant au hasard' } as
  * The character select screen: a grid of tiles, one per fighter and the rest kept for those to
  * come, with a yellow frame around the one under the cursor; beside it, that fighter standing
  * in guard, its name and what it plays like. Driven by keyboard, gamepad, mouse or touch like a
- * menu (a tap or a click picks). Nothing is focusable: the selection is managed here.
+ * menu (a tap or a click selects, « Valider » picks). Nothing is focusable: the selection is managed here.
  */
 export class FighterSelect<Id extends string> {
   private readonly root: HTMLDivElement;
@@ -147,9 +148,21 @@ export class FighterSelect<Id extends string> {
     }
     body.append(preview, grid);
     panel.appendChild(body);
+    panel.appendChild(
+      actionBar(
+        () => {
+          this.activate();
+        },
+        options.onBack,
+        options.feedback,
+      ),
+    );
     // "Echap" without accent: the pixel font has no capital É.
     panel.appendChild(
-      helpLine('Flèches choisir · Entrée / A valider · Echap / B retour', 'Touche un combattant'),
+      helpLine(
+        'Flèches choisir · Entrée / A valider · Echap / B annuler',
+        'Touche un combattant, puis Valide',
+      ),
     );
     if (options.onBack) this.root.appendChild(backButton(options.onBack, options.feedback));
     this.root.appendChild(panel);
@@ -178,7 +191,7 @@ export class FighterSelect<Id extends string> {
     return tile;
   }
 
-  /** Puts `tile` in the grid as tile `index`: the pointer selects it, a click or a tap picks it. */
+  /** Puts `tile` in the grid as tile `index`: the pointer selects it, « Valider » picks it. */
   private wire(tile: HTMLButtonElement, index: number, grid: HTMLElement): void {
     tile.type = 'button';
     tile.tabIndex = -1;
@@ -187,7 +200,6 @@ export class FighterSelect<Id extends string> {
     });
     tile.addEventListener('click', () => {
       this.select(index);
-      this.activate();
     });
     grid.appendChild(tile);
     this.tiles.push(tile);

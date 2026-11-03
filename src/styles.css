@@ -1091,6 +1091,38 @@ body {
   height: 36px;
   font-size: 10px;
 }
+/* « Annuler » and « Valider » under a screen of choices (src/ui/menu.ts): a tap on a tile only
+   selects it, these decide. Large enough for a thumb (44 px), and the confirm is the lit one. */
+.select-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin: 4px 0 10px;
+}
+.select-action {
+  min-height: 44px;
+  padding: 8px 18px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 11px;
+  color: #dde;
+  background: #22223a;
+  border: 3px solid #3a3a5c;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.select-cancel:hover,
+.select-cancel:active {
+  border-color: #f0c94a;
+}
+.select-confirm {
+  color: #11111f;
+  background: #f0c94a;
+  border-color: #fff;
+}
+.select-confirm:hover,
+.select-confirm:active {
+  background: #ffd75e;
+}
 /* The « Lieu » screen (src/ui/stage-select.ts): tiles as wide as the screen, each the stage as
    the fight opens on it; the one under the frame larger beside them. */
 .stage-select {
@@ -1127,6 +1159,13 @@ body {
   justify-content: center;
   font-size: 18px;
   color: #3d3d5c;
+}
+/* A phone held sideways: the tiles are too narrow for the places' long names. The chosen one is
+   named, larger, in the preview beside them; the thumbnails alone say the rest. */
+@media (max-height: 480px) {
+  .stage-select .select-tile-name {
+    display: none;
+  }
 }
 .stage-layer {
   position: absolute;

@@ -119,17 +119,25 @@ describe('StageSelect', () => {
     expect(onPick).toHaveBeenLastCalledWith('random');
   });
 
-  it('picks with a tap, goes back with Escape or B, and lets go of everything', () => {
+  it('selects with a tap, validates with « Valider », and goes back with « Annuler », Escape or B', () => {
     const pad = { connected: true, axes: [0, 0], buttons: [] as { pressed: boolean }[] };
     vi.stubGlobal('navigator', { getGamepads: () => [pad] });
-    const { page, tiles, onPick, onBack, screen } = setup();
+    const { page, root, tiles, onPick, onBack, screen } = setup();
+    expect(only(root, 'menu-help-touch').textContent).toBe('Touche un lieu, puis Valide');
+    // A tap only shows the place: the player sees it, then validates.
     tiles[2]?.dispatchEvent(new Event('click'));
+    expect(tiles[2]?.classList.contains('selected')).toBe(true);
+    expect(onPick).not.toHaveBeenCalled();
+    only(root, 'select-confirm').dispatchEvent(new Event('click'));
     expect(onPick).toHaveBeenLastCalledWith('gym');
-    press(page, 'Escape');
+    // « Annuler » does what Escape and B do.
+    only(root, 'select-cancel').dispatchEvent(new Event('click'));
     expect(onBack).toHaveBeenCalledTimes(1);
+    press(page, 'Escape');
+    expect(onBack).toHaveBeenCalledTimes(2);
     pad.buttons[PadButton.East] = { pressed: true };
     page.runFrames();
-    expect(onBack).toHaveBeenCalledTimes(2);
+    expect(onBack).toHaveBeenCalledTimes(3);
     screen.dispose();
     expect(page.body.children).toHaveLength(0);
     expect(page.listeners()).toBe(0);
