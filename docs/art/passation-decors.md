@@ -22,7 +22,9 @@ Ce fichier est pour l'agent qui reprend les décors (les lieux de combat). Il di
 | La brume, dans les quatre lieux ; les météos des dix lieux (`brume.md` §4) | en ligne (#130) |
 | La neige ; la propreté des décors (`proprete.md`) ; Temple Courtyard (`temple`), aube, crépuscule, nuit, pluie et neige (`decor-temple.md`) | en ligne (#131) |
 | L'Entrepôt, intérieur (`club`), minuit, fumée et pluie à la porte, la basse (`decor-club.md`) | en ligne (#134) |
-| Le Bal du Samedi (`bal`), minuit, pluie et neige aux hautes fenêtres, le chorus (`decor-bal.md`) | PR du bal |
+| Le Bal du Samedi (`bal`), minuit, pluie et neige aux hautes fenêtres, le chorus (`decor-bal.md`) | en ligne (#138) |
+| L'écran « Lieu » aussi contre l'ordinateur | en ligne (#140) |
+| Sunset Beach (`plage`), le crépuscule seul, averse et brume, la grande vague ; le sable des sols (`ground`) ; un lieu commence sur sa première ambiance (`decor-plage.md`) | PR de la plage |
 
 ## 2. Ce que veut le développeur
 
@@ -107,7 +109,7 @@ Elle gère l'écran « Lieu », `stageChoice`, et les options « Lieu » et « A
 6. **Le brancher** :
    - `tools/stage/maps.ts` ;
    - `src/art/<lieu>/index.ts`, en copiant celui du gym ;
-   - `src/art/stages.ts` (titre, description) ;
+   - `src/art/stages.ts` (titre, description, couvert ou non, son sol : `hard` ou `sand`) ;
    - un test de contrat `tests/tools/stage-<lieu>.test.ts`, qui appelle les vérifications communes (`stage-contract.ts`, voir `stage-club.test.ts`) et ajoute celles du lieu.
 7. **`npm run stages`**, puis `npm run stages:preview -- <lieu> --ends`. Regarde, corrige, recommence.
 8. **Les captures en jeu** : `npm run build`, puis servir `dist/` et piloter Chromium avec Playwright (préinstallé). Passe par l'écran « Lieu », lance un combat, et photographie les moments qui vivent. Envoie les captures au développeur.

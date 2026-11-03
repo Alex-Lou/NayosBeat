@@ -29,7 +29,9 @@ describe('the places of the « Lieu » screen', () => {
     }
     // A stage whose images are missing is not offered.
     expect(
-      selectStages([{ name: 'x', title: 'X', description: '', sheltered: false, variants: [] }]),
+      selectStages([
+        { name: 'x', title: 'X', description: '', sheltered: false, ground: 'hard', variants: [] },
+      ]),
     ).toEqual([]);
   });
 });

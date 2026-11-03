@@ -3,9 +3,13 @@ import { STAGE_VARIANTS as BAL } from './bal';
 import { STAGE_VARIANTS as CLUB } from './club';
 import { STAGE_VARIANTS as DOCK } from './dock';
 import { STAGE_VARIANTS as GYM } from './gym';
+import { STAGE_VARIANTS as PLAGE } from './plage';
 import { STAGE_VARIANTS as ROOFTOP } from './rooftop';
 import { STAGE_VARIANTS as RUE } from './rue';
 import { STAGE_VARIANTS as TEMPLE } from './temple';
+
+/** A floor: hard (asphalt, concrete, wood, stone) or sand (docs/art/decor-plage.md §6). */
+export type Ground = 'hard' | 'sand';
 
 /** A place the fights may be held in (docs/art/decor-rue.md §14): its name, its atmospheres. */
 export interface StageMap {
@@ -19,6 +23,8 @@ export interface StageMap {
    * render's curtain over the fight (docs/art/pluie.md).
    */
   readonly sheltered: boolean;
+  /** Its floor, which the dust kicked up from it shows (src/render/dust.ts). */
+  readonly ground: Ground;
   /** In each atmosphere it offers, the base one first. */
   readonly variants: readonly StageVariant[];
 }
@@ -27,54 +33,71 @@ export interface StageMap {
  * The places the fights may be held in, in the order the « Lieu » screen offers them: those whose
  * images are drawn (`npm run stages`). None: the grey box.
  */
-export const STAGE_MAPS: readonly StageMap[] = [
-  {
-    name: 'rue',
-    title: 'Warehouse Street',
-    description: 'Devant le club, sous la ligne aérienne',
-    sheltered: false,
-    variants: RUE,
-  },
-  {
-    name: 'gym',
-    title: 'Viaduct Gym',
-    description: 'La salle de boxe sous les arches, où Nayo a appris',
-    sheltered: true,
-    variants: GYM,
-  },
-  {
-    name: 'dock',
-    title: 'The Loading Dock',
-    description: 'La cour derrière le club, où les vigiles chassaient Riff',
-    sheltered: false,
-    variants: DOCK,
-  },
-  {
-    name: 'rooftop',
-    title: 'Rooftop Rain',
-    description: 'Un toit de la mégapole, sous les enseignes géantes',
-    sheltered: false,
-    variants: ROOFTOP,
-  },
-  {
-    name: 'temple',
-    title: 'Temple Courtyard',
-    description: "La cour d'un temple sur une île, la mer derrière le mur",
-    sheltered: false,
-    variants: TEMPLE,
-  },
-  {
-    name: 'club',
-    title: "L'Entrepôt",
-    description: 'Dans le club, sur la piste, devant le DJ',
-    sheltered: true,
-    variants: CLUB,
-  },
-  {
-    name: 'bal',
-    title: 'Le Bal du Samedi',
-    description: "Dans la salle de bal, sous les lustres, devant l'orchestre",
-    sheltered: true,
-    variants: BAL,
-  },
-].filter(({ variants }) => variants.length > 0);
+export const STAGE_MAPS: readonly StageMap[] = (
+  [
+    {
+      name: 'rue',
+      title: 'Warehouse Street',
+      description: 'Devant le club, sous la ligne aérienne',
+      sheltered: false,
+      ground: 'hard',
+      variants: RUE,
+    },
+    {
+      name: 'gym',
+      title: 'Viaduct Gym',
+      description: 'La salle de boxe sous les arches, où Nayo a appris',
+      sheltered: true,
+      ground: 'hard',
+      variants: GYM,
+    },
+    {
+      name: 'dock',
+      title: 'The Loading Dock',
+      description: 'La cour derrière le club, où les vigiles chassaient Riff',
+      sheltered: false,
+      ground: 'hard',
+      variants: DOCK,
+    },
+    {
+      name: 'rooftop',
+      title: 'Rooftop Rain',
+      description: 'Un toit de la mégapole, sous les enseignes géantes',
+      sheltered: false,
+      ground: 'hard',
+      variants: ROOFTOP,
+    },
+    {
+      name: 'temple',
+      title: 'Temple Courtyard',
+      description: "La cour d'un temple sur une île, la mer derrière le mur",
+      sheltered: false,
+      ground: 'hard',
+      variants: TEMPLE,
+    },
+    {
+      name: 'club',
+      title: "L'Entrepôt",
+      description: 'Dans le club, sur la piste, devant le DJ',
+      sheltered: true,
+      ground: 'hard',
+      variants: CLUB,
+    },
+    {
+      name: 'bal',
+      title: 'Le Bal du Samedi',
+      description: "Dans la salle de bal, sous les lustres, devant l'orchestre",
+      sheltered: true,
+      ground: 'hard',
+      variants: BAL,
+    },
+    {
+      name: 'plage',
+      title: 'Sunset Beach',
+      description: 'Sur la plage au soleil couchant, entre la mer et le bar',
+      sheltered: false,
+      ground: 'sand',
+      variants: PLAGE,
+    },
+  ] satisfies StageMap[]
+).filter(({ variants }) => variants.length > 0);

@@ -1,3 +1,4 @@
+import type { Ground } from '../art/stages';
 import type Phaser from 'phaser';
 import type { Comfort } from '../app/comfort';
 import type { Sfx } from '../audio/sfx';
@@ -48,6 +49,8 @@ const KO_SLOW_MOTION = { ticks: 7, frames: 20 } as const;
 /** A pushed fighter's trail (P7): from this speed (sub-pixels a tick), every this many ticks. */
 const SLIDE_SPEED = px(2);
 const SLIDE_EVERY = 4;
+/** Ticks between the steps of a fighter walking on sand. */
+const STEP_EVERY = 12;
 const KO_SLOW_MOTION_SCALE = KO_SLOW_MOTION.ticks / KO_SLOW_MOTION.frames;
 
 /** The super's halo glows behind the body of the one who lets it go: this high over its feet. */
@@ -97,6 +100,8 @@ export interface FeedbackStage {
   readonly wordsTop?: number;
   /** The fighter this device's touch screen plays, whose blows vibrate it: player 1 but online. */
   readonly touchPlayer?: 0 | 1;
+  /** Its floor, the dust's look (dust.ts): hard but on the beach's sand. */
+  readonly ground?: Ground;
 }
 
 /** A blow of the tick, waiting for the others: the tick's blows light up together. */
@@ -181,7 +186,7 @@ export class FightFeedback {
     this.eclatAreas = [eclat(styles[0]), eclat(styles[1])];
     this.hitFx = new HitFx(scene, groundY, stage.mode, this.random);
     this.blood = new Blood(scene, groundY, this.random);
-    this.dust = new Dust(scene, groundY, this.random);
+    this.dust = new Dust(scene, groundY, this.random, stage.ground);
     this.graze = new Graze(scene, groundY, this.random);
     this.words = new Onomatopoeia(scene, groundY, styles, stage.wordsTop);
     this.stamps = new Stamps(scene, groundY, styles, stage.colors);
@@ -217,15 +222,35 @@ export class FightFeedback {
   /**
    * A fighter pushed along the floor by a blow, hit or guarding, SLIDE_SPEED or faster, leaves
    * a trail behind its heels every SLIDE_EVERY ticks (docs/polish/AUDIT-ET-PLAN.md, P7): read in
-   * `state`, so still through a freeze. Call once a simulation tick.
+   * `state`, so still through a freeze. On a floor whose dust the feet kick up (the sand), the
+   * steps of a fighter walking, every STEP_EVERY ticks, and its take-off and landing, read from
+   * `previous`, the tick before. Call once a simulation tick.
    */
-  trail(state: GameState): void {
-    if (state.hitstop > 0 || state.frame % SLIDE_EVERY !== 0) return;
+  trail(state: GameState, previous?: GameState): void {
+    if (state.hitstop > 0) return;
+    if (this.dust.feet && previous) this.feet(state, previous);
+    if (state.frame % SLIDE_EVERY !== 0) return;
     for (const fighter of state.fighters) {
       const pushed = fighter.action === 'hitstun' || fighter.action === 'blockstun';
       if (!pushed || fighter.y > 0 || Math.abs(fighter.vx) < SLIDE_SPEED) continue;
       this.dust.scrape(fighter.x, fighter.vx > 0 ? 1 : -1);
     }
+  }
+
+  /** The sand the feet kick up (`trail`): steps, take-offs, landings. */
+  private feet(state: GameState, previous: GameState): void {
+    state.fighters.forEach((fighter, player) => {
+      const before = previous.fighters[player];
+      if (!before) return;
+      const toward = fighter.vx >= 0 ? 1 : -1;
+      if (fighter.action === 'landing' && before.action !== 'landing') this.dust.land(fighter.x);
+      else if (fighter.y > 0 && before.y === 0) this.dust.step(fighter.x, toward);
+      const walking = fighter.action === 'walkForward' || fighter.action === 'walkBack';
+      // Each fighter on its own beat: their steps never fall together.
+      if (walking && fighter.y === 0 && (state.frame + player * 6) % STEP_EVERY === 0) {
+        this.dust.step(fighter.x, toward);
+      }
+    });
   }
 
   /**
