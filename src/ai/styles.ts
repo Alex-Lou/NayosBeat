@@ -32,7 +32,9 @@ export const STYLES: Readonly<Record<string, FightStyle>> = {
   // Syncope from the farthest, the Chassé, the Pas glissé, the Pointe; then she steps back out.
   Saphir: {
     range: { min: 64, max: 100 },
-    retreat: 0.6,
+    // Not always: up close she still plays her strings (more often, her Chandelle glissée never
+    // came out in a match, plans.test.ts).
+    retreat: 0.3,
     waits: true,
     pokes: [
       { move: 'special', press: 'special', chance: 0.18 },
