@@ -172,10 +172,14 @@ describe('Watt strips: reach', () => {
     'super',
   ] as const;
   const ANTI_AIRS: ReadonlySet<string> = new Set(['specialAntiAir', 'backHeavy', 'chainLaunch']);
-  /** His strikes on the strips drawn so far: the moves and their Remixes playing them. */
-  const STRIKES = strikesOf(WATT_CLIPS, WATT_TEMPLATE).filter(({ sheet }) =>
-    (DRAWN as readonly string[]).includes(sheet),
-  );
+  /**
+   * His strikes on the strips drawn so far: the moves and their Remixes playing them. The
+   * Câble's line is not drawn yet (porte 3): its box reaches 110 px where the clamp's strip
+   * stops at 44, so it is measured on its own below.
+   */
+  const STRIKES = strikesOf(WATT_CLIPS, WATT_TEMPLATE)
+    .filter(({ sheet }) => (DRAWN as readonly string[]).includes(sheet))
+    .filter(({ id }) => id !== 'specialBack');
 
   it('his drawn moves, and the Remixes and the Coup de masse that play them', () => {
     expect(STRIKES.map(({ id }) => id).sort()).toEqual(
@@ -194,9 +198,11 @@ describe('Watt strips: reach', () => {
         'jumpLight',
         'lightFinisher',
         'special',
+        'jumpSpecial',
         'specialAntiAir',
         'specialAntiAirBoost',
         'specialBoost',
+        'specialClose',
         'specialForward',
         'specialForwardBoost',
         'standHeavy',
@@ -248,6 +254,11 @@ describe('Watt strips: reach', () => {
       }
     }
   }
+
+  it('specialBack: the clamp stands in until its line is drawn (porte 3), the box stays the game', () => {
+    const cable = strikesOf(WATT_CLIPS, WATT_TEMPLATE).find(({ id }) => id === 'specialBack');
+    expect(cable?.box).toEqual({ x: 30, y: 30, width: 80, height: 12 });
+  });
 
   for (const strike of STRIKES) {
     it(reachCheck(strike.id), () => {

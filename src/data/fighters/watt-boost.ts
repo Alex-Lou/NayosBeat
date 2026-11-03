@@ -1,3 +1,4 @@
+import { BOOST_BAR } from '../../core/rules';
 import {
   boostStep,
   box,
@@ -30,14 +31,26 @@ export function wattBoost(plain: PlainSpecials): BoostMoves {
       damage: 100,
       invincible: { from: 4, to: 18 },
     }),
-    // ↓ + BOOST: the catch from above, invincible to attacks from the air on f0-11, that
-    // launches (2 points).
-    specialAntiAirBoost: remix(plain.specialAntiAir, {
-      name: 'Plafonnier survolté',
-      damage: 115,
-      invincible: { from: 0, to: 12, against: 'air' },
-      knockdown: kd(6, 1, { juggle: 2 }),
-    }),
+    // ↓ + BOOST: the catch from above stays a blow (the plain one is now a grab,
+    // docs/watt-arsenal.md §4.4), the same timing (D18), invincible to attacks from the air on
+    // f0-12, and it launches (2 points).
+    specialAntiAirBoost: {
+      ...strike({
+        name: 'Plafonnier survolté',
+        kind: 'special',
+        frames: [6, 6, 26],
+        damage: 115,
+        stun: [0, 12],
+        hitstop: 14,
+        pushbackPx: 3,
+        guard: 'mid',
+        hitbox: box(-4, 50, 28, 40),
+        invincible: { from: 0, to: 12, against: 'air' },
+        knockdown: kd(6, 1, { juggle: 2 }),
+      }),
+      tier: 2,
+      boostCost: BOOST_BAR,
+    },
     // ← + BOOST, three bars: a left hook, a right hook, then both fists down to the floor. A
     // reversal, invincible from f0 against everything, short (every blow finds its victim up to
     // 58 px); he never steps, so every blow lands where the first one did (docs/watt.md §7).

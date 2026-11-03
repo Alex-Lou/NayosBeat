@@ -5,6 +5,7 @@ import { NAYO } from '../../src/data/fighters/nayo';
 import { RIFF } from '../../src/data/fighters/riff';
 import { WATT } from '../../src/data/fighters/watt';
 import { TRAINING_STAGE } from '../../src/data/stages';
+import { step } from '../../src/core/step';
 import { floored, landsFloored, playCombo, unbroken } from './combo-helpers';
 import { facingOff } from './helpers';
 
@@ -45,18 +46,11 @@ const ROUTES: readonly Route[] = [
     damages: [30, 34, 48, 63],
   },
   {
-    notation: 'L, L, ←H (Soulevé) → ↓S (Plafonnier)',
-    distance: 28,
-    steps: [L, L, B | H, D | S],
-    damages: [30, 34, 44, 66],
-  },
-  {
     notation: 'L, L, ←H ⇢ L, L, L',
     distance: 28,
     steps: [L, L, B | H, L, L, L],
     damages: [30, 34, 44, 21, 22, 27],
   },
-  { notation: '←H (Arraché) → ↓S', distance: 24, steps: [B | H, D | S], damages: [65, 85] },
   { notation: 'H → S', distance: 40, steps: [H, S], damages: [85, 81] },
 ];
 
@@ -115,6 +109,91 @@ describe("Watt's routes with the gauge (docs/watt.md §6)", () => {
       expect(landsFloored(result, WATT_VS_NAYO)).toBe(true);
     });
   }
+});
+
+describe('his own kit (docs/watt-arsenal.md §4)', () => {
+  it('S up close is the Branchement, 140 on the catch, the grab contact counted once', () => {
+    const result = playCombo(facingOff(30, WATT_VS_NAYO), WATT_VS_NAYO, [S]);
+    expect(result.hits.map((hit) => hit.damage)).toEqual([0, 140]);
+    // A throw opens its own count: the grab and the throw are one catch, then it floors.
+    expect(floored(result)).toBe(true);
+    // Past 40 px, S stays the Coup de jus.
+    const far = playCombo(facingOff(45, WATT_VS_NAYO), WATT_VS_NAYO, [S]);
+    expect(far.hits.map((hit) => hit.damage)).toEqual([90]);
+  });
+
+  it('the cable reels the opponent in to 34 px, +4 for him: the Branchement follows', () => {
+    const result = playCombo(facingOff(80, WATT_VS_NAYO), WATT_VS_NAYO, [B | S, S]);
+    expect(result.hits.map((hit) => hit.damage)).toEqual([40, 0, 140]);
+    expect(floored(result)).toBe(true);
+  });
+
+  it('a full tension electrifies the next special, then empties', () => {
+    const start = facingOff(50, WATT_VS_NAYO, [{ tension: 100 }, {}]);
+    const result = playCombo(start, WATT_VS_NAYO, [S]);
+    expect(result.hits.map((hit) => hit.damage)).toEqual([113]);
+    expect(result.end.fighters[0].tension).toBe(0);
+    // The Surcharge, armored on its whole run, hits harder too.
+    const rush = playCombo(facingOff(80, WATT_VS_NAYO, [{ tension: 100 }, {}]), WATT_VS_NAYO, [
+      F | S,
+    ]);
+    expect(rush.hits.map((hit) => hit.damage)).toEqual([106]);
+    // The cable, stunned long enough for the whole phrase.
+    const cable = playCombo(facingOff(80, WATT_VS_NAYO, [{ tension: 100 }, {}]), WATT_VS_NAYO, [
+      B | S,
+      L,
+      L,
+      H,
+    ]);
+    expect(cable.hits.map((hit) => hit.damage)).toEqual([50, 27, 30, 59]);
+    // The charged cable stuns past his recovery and the Paume's startup: a guaranteed phrase.
+    expect(unbroken(cable)).toBe(true);
+    // The Branchement, 175 once electrified.
+    const branch = playCombo(facingOff(30, WATT_VS_NAYO, [{ tension: 100 }, {}]), WATT_VS_NAYO, [
+      S,
+    ]);
+    expect(branch.hits.map((hit) => hit.damage)).toEqual([0, 175]);
+  });
+
+  it('a charged Coup de jus is safe once blocked: blockstun 20, not 12', () => {
+    const start = facingOff(50, WATT_VS_NAYO, [{ tension: 100 }, {}]);
+    const result = playCombo(start, WATT_VS_NAYO, [S], () => Input.Right);
+    const blocked = result.states.find((state) => state.fighters[1].action === 'blockstun');
+    expect(blocked).toBeDefined();
+    expect(blocked?.fighters[1].stunFrames).toBe(20);
+  });
+
+  it('the Plafonnier saisi catches the jumper, 110 on the catch', () => {
+    let state = facingOff(10, WATT_VS_NAYO);
+    for (let tick = 0; tick < 120 && !state.contacts.some((c) => c.move === 'throwCatch'); tick++) {
+      const watt = tick < 12 ? D | S : 0;
+      const nayo = tick < 2 ? Input.Jump : 0;
+      state = step(state, [watt, nayo], WATT_VS_NAYO);
+    }
+    const caught = state.contacts.find((c) => c.move === 'throwCatch');
+    expect(caught?.damage).toBe(110);
+  });
+
+  it('the Plongeon falls on the grounded opponent, 100 on the catch', () => {
+    let state = facingOff(30, WATT_VS_NAYO);
+    const ticks: readonly InputBits[] = [Input.Jump, S, S, S, S, S, 0];
+    for (let tick = 0; tick < 160 && !state.contacts.some((c) => c.move === 'throwDive'); tick++) {
+      const watt = ticks[tick] ?? 0;
+      state = step(state, [watt, 0], WATT_VS_NAYO);
+    }
+    const caught = state.contacts.find((c) => c.move === 'throwDive');
+    expect(caught?.damage).toBe(100);
+  });
+
+  it('the Pas blindé absorbs one blow through its dash', () => {
+    // Nayo jabs as Watt dashes into it: the armor eats it, the dash goes on.
+    const result = playCombo(facingOff(60, WATT_VS_NAYO), WATT_VS_NAYO, [Dash, L], (tick) =>
+      tick < 20 ? Input.Light : 0,
+    );
+    expect(result.states.some((state) => state.contacts.some((c) => c.kind === 'armor'))).toBe(
+      true,
+    );
+  });
 });
 
 describe('his signature tools (docs/watt.md §1, §7)', () => {

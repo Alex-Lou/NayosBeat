@@ -125,9 +125,11 @@ describe('command → move (§2.8)', () => {
     expect(airMove('light', NAYO.moves)).toBe('jumpLight');
     expect(airMove('heavy', NAYO.moves)).toBe('jumpHeavy');
     for (const command of ['special', 'grab', 'dash', 'backdash', 'jump'] as const) {
-      for (const template of [NAYO, RIFF, SAPHIR, WATT, BASIC]) {
+      for (const template of [NAYO, RIFF, SAPHIR, BASIC]) {
         expect(airMove(command, template.moves)).toBeNull();
       }
+      // Watt has his Plongeon (watt-arsenal §4.3): S in the air plays it, the rest nothing.
+      expect(airMove(command, WATT.moves)).toBe(command === 'special' ? 'jumpSpecial' : null);
     }
   });
 
@@ -211,12 +213,15 @@ describe("a fighter's own specials (watt-arsenal §4)", () => {
       // A fresh motion comes first, close up too.
       expect(S(forward, near, 'quarterCircleForward')).toBe('special');
       // Without them, the same inputs give the plain specials, as before.
-      for (const template of [NAYO, RIFF, SAPHIR, WATT, BASIC]) {
+      for (const template of [NAYO, RIFF, SAPHIR, BASIC]) {
         const plain = (input: InputBits) =>
           groundMove('special', input, null, side, template.moves, 0, false, 0);
         expect(plain(back)).toBe('special');
         expect(plain(0)).toBe('special');
       }
+      // Watt has them (watt-arsenal §4): back + S is his cable, S close up his Branchement.
+      expect(groundMove('special', back, null, side, WATT.moves, 0, false, 0)).toBe('specialBack');
+      expect(groundMove('special', 0, null, side, WATT.moves, 0, false, near)).toBe('specialClose');
     });
     it(`facing ${side}: BOOST reads as before, ← + BOOST stays the super`, () => {
       expect(groundMove('boost', back, null, side, OWN.moves, 3000, false, 0)).toBe('super');

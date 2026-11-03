@@ -1,6 +1,7 @@
 import type { FighterTemplate } from '../config';
-import type { MoveData, MoveId } from '../move-data';
+import { PLAIN_SPECIAL_IDS, type MoveData, type MoveId } from '../move-data';
 import { branchMove, groundMove, moveDuration, moveOf, tierOf } from '../moves';
+import { isCharged } from '../tension';
 import { signed } from '../numbers';
 import { phraseAllows, phraseWith } from '../phrase';
 import {
@@ -10,8 +11,9 @@ import {
   THROW_CONVERSION_FRAMES,
 } from '../rules';
 import {
-  FLAG_FINISHER,
   FLAG_ARMOR_SPENT,
+  FLAG_CHARGED,
+  FLAG_FINISHER,
   FLAG_MOVE_HIT,
   FLAG_SPENT_CANCEL,
   FLAG_SPENT_SUPER,
@@ -59,7 +61,7 @@ export function startGroundMove(
   armed = false,
 ): FighterState {
   const move = moveOf(template, moveId);
-  const started = startAttack(fighter, 'attack', moveId);
+  const started = chargeSpent(startAttack(fighter, 'attack', moveId), fighter, template, moveId);
   const finisher = armed && tierOf(move) === 3 ? FLAG_FINISHER : 0;
   return applyMotion(
     {
@@ -75,7 +77,7 @@ export function startGroundMove(
 
 /**
  * Starts a move of any kind: it has neither connected nor hit anything yet, nor is it the
- * Finisher.
+ * Finisher. A fresh move never carries the charge of the one before.
  */
 export function startAttack(
   fighter: FighterState,
@@ -86,10 +88,24 @@ export function startAttack(
     ...enter(fighter, action),
     move,
     moveConnected: false,
-    flags: fighter.flags & ~(FLAG_MOVE_HIT | FLAG_FINISHER | FLAG_ARMOR_SPENT),
+    flags: fighter.flags & ~(FLAG_MOVE_HIT | FLAG_FINISHER | FLAG_ARMOR_SPENT | FLAG_CHARGED),
     bufferedCommand: null,
     bufferFrames: 0,
   };
+}
+
+/**
+ * `started`, its move `moveId`: if it is a plain special started while the tension is full, the
+ * gauge empties and the move plays charged (docs/watt-arsenal.md §3.2).
+ */
+export function chargeSpent(
+  started: FighterState,
+  fighter: FighterState,
+  template: FighterTemplate,
+  moveId: MoveId,
+): FighterState {
+  if (!PLAIN_SPECIAL_IDS.includes(moveId) || !isCharged(fighter, template)) return started;
+  return { ...started, tension: 0, flags: started.flags | FLAG_CHARGED };
 }
 
 /**

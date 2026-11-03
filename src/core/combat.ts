@@ -19,6 +19,7 @@ import {
 import { sideOf } from './side';
 import {
   FLAG_ARMOR_SPENT,
+  FLAG_CHARGED,
   type Contact,
   type CounterHit,
   type Facing,
@@ -101,6 +102,23 @@ export interface HitDetail {
 export const PLAIN_HIT: HitDetail = { counter: null, impactPercent: BODY_PERCENT };
 
 /**
+ * `move` as a charged attacker plays it: its `charged` numbers over its own (docs/watt-
+ * arsenal.md §3.2). The flag is set as the special starts, when the tension was full.
+ */
+export function chargedMove(move: MoveData, attacker: FighterState): MoveData {
+  const charged = move.charged;
+  if (!charged || (attacker.flags & FLAG_CHARGED) === 0) return move;
+  return {
+    ...move,
+    damage: charged.damage ?? move.damage,
+    hitstun: charged.hitstun ?? move.hitstun,
+    blockstun: charged.blockstun ?? move.blockstun,
+    ...(charged.armor ? { armor: charged.armor } : {}),
+    ...(charged.knockdown ? { knockdown: charged.knockdown } : {}),
+  };
+}
+
+/**
  * Where the fighter can be hit on this tick: the move's own boxes on the frames it has some
  * (the Glissade along the floor), otherwise its posture's.
  */
@@ -176,7 +194,9 @@ export function findHit(
   if (move.kind === 'grab' && !canBeGrabbed(defender, defenderTemplate, move.catches)) return null;
 
   const { x, y, facing } = attacker;
-  return touchedHurtbox(active.hitbox, x, y, facing, defender, defenderTemplate) ? move : null;
+  return touchedHurtbox(active.hitbox, x, y, facing, defender, defenderTemplate)
+    ? chargedMove(move, attacker)
+    : null;
 }
 
 /**
@@ -192,7 +212,7 @@ export function absorbs(
 ): boolean {
   if (!defender.move || (defender.flags & FLAG_ARMOR_SPENT) !== 0) return false;
   if (blow.kind === 'grab' || blowTier >= 2) return false;
-  const armor = moveOf(template, defender.move).armor;
+  const armor = chargedMove(moveOf(template, defender.move), defender).armor;
   return (
     armor !== undefined && defender.actionFrame >= armor.from && defender.actionFrame < armor.to
   );

@@ -90,6 +90,20 @@ export const PHRASE_TWICE_IDS = ['standLight', 'crouchLight'] as const satisfies
 export const AIR_MOVE_IDS: readonly MoveId[] = ['jumpLight', 'jumpHeavy', 'jumpSpecial'];
 
 /**
+ * The plain specials (docs/watt-arsenal.md §3.2): S and its directions, S close up, back + S, S
+ * in the air. A fighter whose tension is full spends it on one of these, and the move plays its
+ * `charged` data instead of its own.
+ */
+export const PLAIN_SPECIAL_IDS: readonly MoveId[] = [
+  'special',
+  'specialForward',
+  'specialAntiAir',
+  'specialClose',
+  'specialBack',
+  'jumpSpecial',
+];
+
+/**
  * Decides what a move can cancel into, and how it is blocked (grabs cannot be). A `movement`
  * (dash, backdash, the Rewind) carries the fighter and never strikes: the CPU does not guard
  * against it, and a fighter hit during one is not caught attacking. A `throw` is played on a
@@ -120,6 +134,9 @@ export const THROW_MOVE_IDS: readonly MoveId[] = [
 /** The throws a command grab may play (its `throw`): never the pummel nor the plain throws. */
 export const COMMAND_THROW_IDS = ['throwClose', 'throwDive', 'throwCatch'] as const;
 export type CommandThrowId = (typeof COMMAND_THROW_IDS)[number];
+
+/** The moves that may have a `charged` form: the plain specials, and the command throws. */
+export const CHARGED_MOVE_IDS: readonly MoveId[] = [...PLAIN_SPECIAL_IDS, ...COMMAND_THROW_IDS];
 
 /**
  * The specials that may be command grabs (docs/watt-arsenal.md §4): kind `grab` with a `throw`.
@@ -320,6 +337,18 @@ export interface MoveData {
    * Boost move (a Remix, the super) go through it.
    */
   readonly armor?: FrameRange;
+  /**
+   * What the move does once the fighter's tension is full (docs/watt-arsenal.md §3.2): these
+   * replace its own numbers, and the gauge empties as the move starts. On a command grab's throw
+   * (throwClose, throwDive, throwCatch), it is read when the throw lands.
+   */
+  readonly charged?: {
+    readonly damage?: number;
+    readonly hitstun?: number;
+    readonly blockstun?: number;
+    readonly armor?: FrameRange;
+    readonly knockdown?: Knockdown;
+  };
   /** Frames during which grabs whiff, strikes do not (the backdash). */
   readonly throwInvincible?: FrameRange;
   /** Sends the defender to the ground on hit, even when standing. */

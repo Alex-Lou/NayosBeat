@@ -141,14 +141,18 @@ Les noms des normaux sont des gestes, ceux de l'haltérophilie : il **porte** (S
 | ↓ + H | **Ratissage** | Accroupi, le bras balaie le sol comme un râteau | **bas**, met au sol | le balayage | −10 en garde |
 | en l'air, L | **Coude plongeant** | Le coude vers le bas | overhead | sauter sur un adversaire | un anti-air |
 | en l'air, H | **Plaquage** | Le corps entier vers le bas, bras ouverts | overhead | le saut lourd | l'Uppercut, le Genou montant |
-| S | **Coup de jus** | Les deux pinces en avant sur un pas de 16 px ; au contact, l'exosquelette décharge, et une petite gerbe d'arcs verts part | milieu, met au sol | finir un combo ; sa punition proche (73,5 px) | −12 en garde |
+| S | **Coup de jus** (ou **Branchement** à 40 px ou moins) | Les deux pinces en avant sur un pas de 16 px ; au contact, l'exosquelette décharge, et une petite gerbe d'arcs verts part | milieu, met au sol | finir un combo ; sa punition proche (73,5 px) | −12 en garde |
+| S, tout près | **Branchement** | Il saisit des deux pinces, soulève, tourne et plante : la prise de commande, 140, impossible à dégager | — | le coup le plus lourd du jeu, à 40 px ou moins | sauter, un jab (4 tics), ou punir les 40 tics d'un raté |
+| ← + S | **Câble** | Le câble part droit devant lui, de 30 à 110 px, et ramène à 34 px | milieu | ramener le zoneur ; +4 sur la réussite | un projectile pendant le démarrage |
+| S en l'air | **Plongeon** | Il se laisse tomber de tout son poids et écrase l'adversaire au sol | prise aérienne | punir qui garde bas ou se relève ; 100 | un anti-air |
+| ↓ + S | **Plafonnier saisi** | Il cueille le sauteur et le plaque au sol : une prise, 110 | — | l'anti-air, invincible aux coups aériens f0–9 | sauter tard, ou feindre le saut |
 | → + S | **Surcharge** | La charge du dessin source : épaule en avant, 56 px | milieu, met au sol | **punir de loin** (107,5 px) | −11 en garde ; un projectile le prend en course |
-| ↓ + S | **Plafonnier** | Il cueille le sauteur au-dessus de lui, devant, et le rabat au sol | milieu, met au sol | l'anti-air, **invincible aux coups aériens** de f0 à f9 | sauter tard, ou feinter le saut ; −19 en garde |
+| ↓ + S | **Plafonnier saisi** | Il cueille le sauteur au-dessus de lui, devant, et le plaque au sol : une prise | — | l'anti-air, **invincible aux coups aériens** de f0 à f9 | sauter tard, ou feinter le saut |
 | PRISE | **Prise** | Les pinces s'ouvrent, puis se referment sur les épaules ; le visage adverse passe au vert | — | **l'outil signature** : la prise la plus longue (53 px) | sauter, ou rester à plus de 54 px ; démarre en 6 tics |
 | en tenant, L | **Serrage** | Les pinces serrent, les LED montent | — | le tabassage, 18 par coup | se débattre |
 | en tenant, H | **Déchargement** | Il soulève l'adversaire et le pose plus loin, comme une caisse qu'on décharge | — | le gros lancer devant (120) | — |
 | en tenant, ← + H | **Vissage** | Il le fait tourner d'un quart de tour, comme on visse une ampoule, puis le passe par-dessus son épaule | — | changer de côté (projection debout, sur les planches de victime existantes) | — |
-| DASH | **Avancée** | Un pas lourd, les épaules d'abord, 36 px | — | entrer | un coup qui le cueille |
+| DASH | **Pas blindé** | Un pas lourd, les épaules d'abord, 36 px, qui **encaisse un coup** de f3 à f14 | — | entrer à travers un coup | une prise |
 | ← + DASH | **Recul** | Un pas en arrière, 32 px, sans protection contre la prise | — | sortir, mal | une prise, une course |
 
 `jabRepeat` n'est pas pris, comme chez Riff et Saphir : **28 ids sur 29.**
@@ -185,7 +189,7 @@ Portée : de centre à centre, contre Nayo debout, mesurée sur les boîtes (com
 | `pummel` | **Serrage** 7/1/10 (18), 18 fixes, gel 6 |
 | `throwForward` | **Déchargement** 12/1/24 (37), 120, gel 16, KD (3,5 ; vx 4) |
 | `throwBack` | **Vissage** 14/1/26 (41), 110, gel 15, côté changé à f6, KD (3,5 ; vx 3) |
-| `dashForward` | **Avancée**, 20 tics, 36 px de f1 à f14 |
+| `dashForward` | **Pas blindé**, 20 tics, 36 px de f1 à f14, armure f3–14 |
 | `dashBack` | **Recul**, 24 tics, 32 px de f1 à f16, sans protection contre la prise |
 
 **Les bornes, vérifiées** :

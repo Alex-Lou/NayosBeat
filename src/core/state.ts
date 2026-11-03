@@ -134,6 +134,8 @@ export const FLAG_DANGER = 64;
 export const FLAG_FINISHER = 128;
 /** The defender's current move already absorbed a blow (its `armor`): cleared as the next starts. */
 export const FLAG_ARMOR_SPENT = 256;
+/** The move playing started while the fighter's tension was full: it plays charged (docs/watt-arsenal.md §3.2). */
+export const FLAG_CHARGED = 512;
 /** The attacker's spends, once each per sequence. */
 export const SEQUENCE_FLAGS = FLAG_SPENT_CANCEL | FLAG_SPENT_SUPER;
 /** The victim's marks. */
