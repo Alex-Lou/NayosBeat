@@ -488,8 +488,8 @@ describe('what the front effects light (docs/flashs.md §4)', () => {
 describe('what the signature effects light (docs/flashs.md §4, docs/art/nayo-vfx.md)', () => {
   /** Every cue the signatures play, and the heavy swing and the waves they play themselves. */
   const CUES = Object.keys(SIGNATURE_AREAS) as SignatureCue[];
-  /** The fighters with a signature: Nayo's, Saphir's (porte 4) and Watt's (direction-combat §4). */
-  const SIGNED = ['nayo', 'saphir', 'watt'] as const;
+  /** The fighters with a signature: all four (Riff's and Watt's: direction-combat §4). */
+  const SIGNED = ['nayo', 'riff', 'saphir', 'watt'] as const;
   /** The sizes each cue plays at in the signatures (the swing's are read in the hitboxes). */
   function sizesOf(kind: SignatureCue): number[] {
     const sizes = new Set<number>([1]);

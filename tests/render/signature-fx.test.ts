@@ -133,12 +133,18 @@ describe("Nayo's signature effects (docs/art/nayo-vfx.md §3)", () => {
     expect(light.cues).toEqual([]);
   });
 
-  it('plays nothing for Riff: she keeps her look', () => {
-    for (const steps of [[D | S], [S], [H], [F | S]]) {
+  it("plays Riff's own effects, none of Nayo's (direction-combat §4, passation §2.3 rule 4)", () => {
+    const nayos = new Set(['throwRing', 'kick', 'groundRing', 'rise', 'charge', 'drop', 'dash']);
+    for (const steps of [[D | S], [S], [F | S]]) {
       const played = signatureFx(RN);
       played.play(route(RN, 40, steps));
-      expect(played.cues, String(steps)).toEqual([]);
+      expect(played.cues.length, String(steps)).toBeGreaterThan(0);
+      expect(played.cues.filter(({ kind }) => nayos.has(kind))).toEqual([]);
     }
+    // Her heavy normals swing no speed arc: Nayo's.
+    const heavy = signatureFx(RN);
+    heavy.play(route(RN, 40, [H]));
+    expect(heavy.cues).toEqual([]);
   });
 
   it('asks the budget for what each cue lights at its size, once, lit only if granted', () => {

@@ -55,6 +55,8 @@ export interface MoveEchoSpec {
  * record round her turn (three thin crescents, one inside the other). Watt's (direction-combat
  * §4): `jolt`, his exoskeleton's current, an arc of short strokes zigzagging ahead with cross
  * sparks off its end; `crackle`, the current running along the floor, sparks hopping on it.
+ * Riff's: `claws`, three slashes side by side, down and ahead; `feedback`, her larsen, short
+ * screeching strokes fanned out ahead.
  */
 export type CueKind =
   | 'throwRing'
@@ -68,7 +70,9 @@ export type CueKind =
   | 'facets'
   | 'grooves'
   | 'jolt'
-  | 'crackle';
+  | 'crackle'
+  | 'claws'
+  | 'feedback';
 
 /** An effect a move plays on one of its action frames. */
 export interface Cue {
@@ -434,8 +438,102 @@ const WATT_SIGNATURE: Signature = {
   presence: { leds: { main: 0x7cf0a8, alt: 0xf0b8ff } },
 };
 
+/** Her boots out low as she slides (the Glissade's hitbox, 2 to 14 px high). */
+const SLIDE = { height: 8, reach: 30 } as const;
+/** Her heels as the spin lands, ahead of her. */
+const HEELS = { height: 4, reach: 20 } as const;
+/** Her knee up (the Genou montant's hitbox, 30 to 92 px high). */
+const KNEE = { height: 60, reach: 16 } as const;
+/** The Slam's landing, both fists on the floor ahead of her. */
+const SLAM = { height: 4, reach: 26 } as const;
+
+/**
+ * Riff (docs/art/direction-combat.md §4): her own effects, none of Nayo's (rings, the equalizer,
+ * speed arcs: passation-personnages §2.3, rule 4) but the Boost's burst. Her claws (`claws`)
+ * where her blows land, her larsen (`feedback`) where she pushes off or comes down; her
+ * specials in her magenta, their Remixes and the Slam's landing in platine. No presence: her
+ * outfit has no light of its own. Frames from her data (src/data/fighters/riff.ts,
+ * riff-boost.ts).
+ */
+const RIFF_SIGNATURE: Signature = {
+  moves: {
+    // Glissade: the glide on frames 1 to 18, the boots striking from frame 10.
+    special: {
+      light: { from: 4, to: 18, tone: 'energy', strength: 0.8, ...SLIDE },
+      echo: { from: 1, to: 18, every: 3, life: 9, tone: 'energy' },
+      cues: [cue(10, 'claws', 'energy', SLIDE)],
+    },
+    specialBoost: {
+      light: { from: 2, to: 20, tone: 'platine', strength: 1, ...SLIDE },
+      cues: [
+        cue(1, 'burst', 'platine', BODY, 0.8),
+        cue(10, 'claws', 'platine', SLIDE, 1.25),
+        cue(10, 'feedback', 'energy', SLIDE, 0.8),
+      ],
+    },
+    // Saut de l'ange: off the floor from frame 4, the heels down on 16.
+    specialForward: {
+      light: { from: 6, to: 20, tone: 'energy', strength: 0.8, height: 40, reach: 16 },
+      echo: { from: 4, to: 16, every: 2, life: 8, tone: 'energy' },
+      cues: [cue(16, 'claws', 'energy', HEELS), cue(16, 'feedback', 'energy', HEELS, 0.8)],
+    },
+    specialForwardBoost: {
+      light: { from: 2, to: 20, tone: 'platine', strength: 1, height: 40, reach: 16 },
+      cues: [
+        cue(1, 'burst', 'platine', BODY, 0.8),
+        cue(16, 'claws', 'platine', HEELS, 1.25),
+        cue(16, 'feedback', 'energy', HEELS),
+      ],
+    },
+    // Genou montant: out on frame 4, the knee up to frame 9; her larsen as she pushes off.
+    specialAntiAir: {
+      light: { from: 1, to: 12, tone: 'energy', strength: 1, height: 30, reach: 10, toHeight: 95 },
+      echo: { from: 0, to: 10, every: 2, life: 8, tone: 'energy' },
+      cues: [cue(0, 'feedback', 'energy', FEET, 0.8), cue(4, 'claws', 'energy', KNEE)],
+    },
+    specialAntiAirBoost: {
+      light: {
+        from: 0,
+        to: 14,
+        tone: 'platine',
+        strength: 1,
+        height: 30,
+        reach: 10,
+        toHeight: 110,
+      },
+      cues: [
+        cue(0, 'burst', 'platine', BODY, 0.8),
+        cue(0, 'feedback', 'platine', FEET),
+        cue(4, 'claws', 'platine', KNEE, 1.3),
+      ],
+    },
+    // Slam: the leap from frame 2, the freeze at the top on frame 10, the landing on 16.
+    super: {
+      light: { from: 0, to: 22, tone: 'platine', strength: 1, height: 6, reach: 26, radius: 200 },
+      cues: [
+        cue(0, 'burst', 'platine', BODY, 1),
+        cue(16, 'claws', 'platine', SLAM, 1.3),
+        cue(16, 'feedback', 'energy', SLAM, 1.2),
+      ],
+    },
+    // The dashes: her larsen behind her as they set off (afterimages: dash-trail.ts).
+    dashForward: { cues: [cue(1, 'feedback', 'energy', FEET, 0.6)] },
+    dashBack: { cues: [cue(1, 'feedback', 'energy', FEET, 0.6)] },
+    // Pogo: the hop, relit.
+    boostCancel: {
+      light: { from: 0, to: 6, tone: 'platine', strength: 0.8, ...BODY },
+      cues: [cue(0, 'burst', 'platine', BODY, 0.7)],
+    },
+  },
+  discs: {},
+  // None of Nayo's speed arcs (passation-personnages §2.3, rule 4).
+  heavySwing: false,
+  flares: true,
+};
+
 const SIGNATURES: Partial<Readonly<Record<FighterId, Signature>>> = {
   nayo: NAYO_SIGNATURE,
+  riff: RIFF_SIGNATURE,
   saphir: SAPHIR_SIGNATURE,
   watt: WATT_SIGNATURE,
 };

@@ -738,6 +738,48 @@ export class SignatureFx {
         }
         break;
       }
+      case 'claws': {
+        // Her claws: three slashes side by side, down and ahead, one after the other.
+        const angle = mirror ? Math.PI - 0.9 : 0.9;
+        const across = angle + Math.PI / 2;
+        for (let i = 0; i < 3; i++) {
+          const offset = (i - 1) * 5 * s;
+          this.piece(
+            'streak',
+            i === 1 ? accent : color,
+            x + Math.cos(across) * offset,
+            y + Math.sin(across) * offset,
+            9,
+            0.9,
+          )
+            ?.sized(10 * s, 2.5, 22 * s, 1.5)
+            .turned(angle)
+            .later(i);
+        }
+        break;
+      }
+      case 'feedback': {
+        // Her larsen: short strokes screeching out ahead in a fan, thrown away as they fade.
+        const ahead = mirror ? Math.PI : 0;
+        for (let i = 0; i < 5; i++) {
+          const spread = (i - 2) * 0.3;
+          const along = ahead + spread;
+          const from = (6 + 2 * Math.abs(i - 2)) * s;
+          this.piece(
+            'streak',
+            i % 2 ? accent : color,
+            x + Math.cos(along) * from,
+            y + Math.sin(along) * from,
+            8,
+            0.85,
+          )
+            ?.sized(6 * s, 2, 12 * s, 1.5)
+            .thrown(2 * s, along, 0.85)
+            .turned(along)
+            .later(i % 2);
+        }
+        break;
+      }
       case 'dash': {
         // Speed lines on the floor, left behind as the dash sets off.
         for (let i = 0; i < 3; i++) {

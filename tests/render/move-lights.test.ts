@@ -127,12 +127,18 @@ describe('the lights of the moves (docs/art/nayo-vfx.md §2)', () => {
     expect(seen).toBeGreaterThan(10);
   });
 
-  it("lights nothing of Riff's: she keeps her look", () => {
+  it("lights Riff's specials in her magenta, never her normals (direction-combat §4)", () => {
     const lights = lightPool();
-    for (const steps of [[D | S], [S], [H], [L]]) {
+    for (const steps of [[H], [L]]) {
       for (const state of route(RN, 40, steps)) {
         expect(collectLights(state, RN, RIFF_NAYO, [MAGENTA, CYAN], lights)).toBe(0);
       }
+    }
+    for (const steps of [[D | S], [S]]) {
+      const lit = route(RN, 40, steps).map((state) =>
+        collectLights(state, RN, RIFF_NAYO, [MAGENTA, CYAN], lights),
+      );
+      expect(Math.max(...lit), String(steps)).toBeGreaterThan(0);
     }
   });
 });
@@ -316,11 +322,12 @@ describe('the light rig', () => {
   });
   const quiet = facingOff(200, NR);
 
-  it("flares a heavy blow of Nayo's at its impact, a moment; not a light one, nor Riff's", () => {
-    for (const [event, flares] of [
-      [blow(0, true), true],
-      [blow(0, false), false],
-      [blow(1, true), false],
+  it('flares a heavy blow at its impact, a moment, in its striker’s energy; not a light one', () => {
+    for (const [event, flares, tint] of [
+      [blow(0, true), true, CYAN],
+      [blow(0, false), false, CYAN],
+      [blow(1, true), true, MAGENTA],
+      [blow(1, false), false, MAGENTA],
     ] as const) {
       const { scene, made } = fakeScene();
       const rig = new LightRig(scene, NR, look());
@@ -328,7 +335,7 @@ describe('the light rig', () => {
       rig.update(quiet, 1, false);
       const shown = made.filter((image) => image.visible);
       expect(shown.length, JSON.stringify(event)).toBe(flares ? 1 : 0);
-      if (flares) expect(shown[0]).toMatchObject({ x: 200, y: 230, tint: CYAN, blend: 1 });
+      if (flares) expect(shown[0]).toMatchObject({ x: 200, y: 230, tint, blend: 1 });
       rig.update(quiet, 30, false);
       rig.update(quiet, 1, false);
       expect(made.filter((image) => image.visible)).toHaveLength(0);
