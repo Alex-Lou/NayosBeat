@@ -5,8 +5,11 @@
  * means (a place, a fighter) is checked by whoever reads it, against the game's own data.
  */
 
-/** The wire format's version. It is also part of the rooms' ids: two versions never meet. */
-export const PROTOCOL_VERSION = 3;
+/**
+ * The wire format's version. It is also part of the rooms' ids: two versions never meet. It goes
+ * up whenever the game's data change too, since two builds that play differently would desync.
+ */
+export const PROTOCOL_VERSION = 4;
 
 /** The longest text accepted, checked before parsing it. */
 export const MAX_MESSAGE_LENGTH = 128;

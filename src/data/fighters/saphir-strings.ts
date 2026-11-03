@@ -124,7 +124,7 @@ export const SAPHIR_STRINGS: Pick<
     branches: [{ button: 'light', dirs: ['neutral', 'forward', 'back'], move: 'chainLight' }],
   }),
   // H: the side thrust kick, sole first, leg straight at the hip. The longest reach of the cast
-  // without moving (71.5 px): she wins the exchanges of feet.
+  // without moving (77.5 px): she wins the exchanges of feet.
   standHeavy: strike({
     name: 'Chassé',
     frames: [10, 3, 16],
@@ -133,7 +133,7 @@ export const SAPHIR_STRINGS: Pick<
     hitstop: 12,
     pushbackPx: 3,
     guard: 'mid',
-    hitbox: box(14, 34, 44, 14),
+    hitbox: box(14, 34, 50, 14),
     cancelInto: HEAVY_CANCELS,
     // A heavy hits hard and seldom in a juggle.
     juggleCost: 2,
