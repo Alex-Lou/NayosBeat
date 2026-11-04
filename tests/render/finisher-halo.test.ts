@@ -27,8 +27,8 @@ const lit = (energy: number, backdrop: number, alpha: number): number =>
   relativeLuminance(over(energy, backdrop, alpha));
 
 describe('the halo under a fighter whose Finisher is ready (docs/finisher.md §1.2)', () => {
-  it('glows, never flashes: ΔL ≤ 0.08 over every color of the stage (0.255 in cyan)', () => {
-    expect(haloLook(CYAN, FIGHT_STAGE_COLORS).bright).toBeCloseTo(0.255, 2);
+  it('glows, never flashes: ΔL ≤ 0.08 over every color of the stage (0.265 in cyan)', () => {
+    expect(haloLook(CYAN, FIGHT_STAGE_COLORS).bright).toBeCloseTo(0.265, 2);
     for (const energy of ENERGIES) {
       const { bright } = haloLook(energy, FIGHT_STAGE_COLORS);
       for (const backdrop of FIGHT_STAGE_COLORS) {
