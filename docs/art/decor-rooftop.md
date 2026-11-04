@@ -90,9 +90,13 @@ Toutes les animations jouent dans le rendu seul (D17), image par image (D23).
 | `car0` à `car4` | une voiture volante par voie, qui traverse et revient | de 10 à 24 s la traversée |
 | `blimp` | le dirigeable et son projecteur (plus bas) | toutes les 40 s |
 | `mast` | le feu rouge de l'antenne ; ses fouets qui vibrent | 1 s allumé, 1 s éteint |
+| `spark` | l'arc électrique sur les isolateurs du poste haute tension au passage du dirigeable | sur `overhead` |
+| `puddleNeon`, `puddleLuck` | les flaques sous ネオン et 大吉 qui ondoient au passage du dirigeable | sur `overhead` |
+| `watcher` | le spectateur près de l'enseigne 大吉 qui lève la tête au passage du dirigeable | sur `overhead` |
+| `turbine` | la tourelle d'extraction qui tourne sur le parapet droit | 5 tics par image |
 | `smoker` | la personne en capuche tire sur sa cigarette (braise vive, fumée) | une bouffée toutes les 9 s |
-| `steam` | la vapeur du tuyau de la cabane | 14 tics par image |
-| `fan0`, `fan1` | les ventilateurs des climatiseurs | 6 et 7 tics par image |
+| `steam`, `ventSteam` | la vapeur du tuyau de la cabane et de la bouche du toit | 11 et 14 tics par image |
+| `fan0`, `fan1` | les ventilateurs et rubans des climatiseurs | 6 et 7 tics par image |
 | `laundry` | le linge qui bat au vent | de 40 à 50 tics par image |
 | `drone` | le drone qui monte et descend d'un pixel, son voyant | 24 tics par image |
 
