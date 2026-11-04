@@ -290,9 +290,12 @@ const WATT_PLANS: readonly Plan[] = [
   // which never takes a stunned body: the string ends on the rush instead).
   { after: 'standLight', when: HIT, steps: [L, L], weight: EASY },
   { after: 'standLight', when: HIT, steps: [H, F | S], weight: EASY },
-  // His strings: the Crochet court into the Marteau, its Double marteau, the Coup de jus or the
-  // Surcharge; or into the Coup de masse, then the Coup de jus.
+  // His strings: the Crochet court into the Marteau, its Double marteau into the Coup de jus or
+  // the Surcharge, or the Secousse (L, ← + L); or into the Coup de masse, then the Coup de jus.
   { after: 'standLight', when: within(43), steps: [L, H, H], weight: STRING },
+  { after: 'standLight', when: within(35), steps: [L, H, H, S], weight: STRING },
+  { after: 'standLight', when: within(35), steps: [L, H, H, F | S], weight: STRING },
+  { after: 'standLight', when: within(38), steps: [B | L, L, L], weight: STRING },
   { after: 'standLight', when: HIT, steps: [L, H, S], weight: STRING },
   { after: 'standLight', when: HIT, steps: [L, H, F | S], weight: STRING },
   { after: 'standLight', when: HIT, steps: [L, F | H, S], weight: STRING },
@@ -313,9 +316,9 @@ const WATT_PLANS: readonly Plan[] = [
     steps: [D | H],
     weight: MIX,
   },
-  // The Marteau: the Coup de jus, or its Double marteau, from closer than its tip.
+  // The Marteau: the Coup de jus, or its Double marteau into the Coup de jus, from closer than its tip.
   { after: 'standHeavy', when: within(54), steps: [S], weight: STRING },
-  { after: 'standHeavy', when: within(49), steps: [H], weight: STRING },
+  { after: 'standHeavy', when: within(49), steps: [H, S], weight: STRING },
   // The Coup de pilon (armored overhead): cancels into the Coup de jus or the Câble.
   { after: 'forwardHeavy', when: within(42), steps: [S], weight: EASY },
   { after: 'forwardHeavy', when: HIT, steps: [B | S], weight: STRING },

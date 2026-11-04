@@ -316,8 +316,8 @@ describe('the strings in a match', () => {
       [[NAYO, RIFF], ['jabRepeat', ...strings], strings],
       // Saphir's L, L is her Fouetté, and L, L, L her Revers tournant: no jabRepeat.
       [[SAPHIR, NAYO], ['chainLight', 'lightFinisher', ...strings], []],
-      // Watt's L, L is his Crochet court, and L, L, L his Jeté: no jabRepeat either.
-      [[WATT, NAYO], ['chainLight', 'lightFinisher', ...strings], []],
+      // Watt's L, ← + L is his Secousse, L, L his Crochet court, and L, L, L his Jeté.
+      [[WATT, NAYO], ['jabRepeat', 'chainLight', 'lightFinisher', ...strings], []],
     ] as const) {
       const config: MatchConfig = { stage: TRAINING_STAGE, fighters };
       const played: [Set<MoveId>, Set<MoveId>] = [new Set(), new Set()];

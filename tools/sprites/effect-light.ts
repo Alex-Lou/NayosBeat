@@ -57,6 +57,14 @@ export function glowsOfEffect(effect: Effect): Glow[] {
     }
     case 'grooves':
       return [glow(effect.center, effect.radius + 4, 0.3 * (1 - effect.progress), effect.tone)];
+    case 'arc': {
+      const mid = { x: (effect.from.x + effect.to.x) / 2, y: (effect.from.y + effect.to.y) / 2 };
+      return [
+        glow(effect.from, 16, 0.65, effect.tone),
+        glow(mid, 20, 0.85, effect.tone),
+        glow(effect.to, 18, 0.75, effect.tone),
+      ];
+    }
     case 'shield':
     case 'dust':
     case 'notes':

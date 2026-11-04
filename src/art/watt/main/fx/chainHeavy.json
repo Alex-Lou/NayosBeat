@@ -1,47 +1,47 @@
 {
   "frames": {
     "0": {
-      "frame": { "x": 0, "y": 37, "w": 1, "h": 1 },
+      "frame": { "x": 0, "y": 71, "w": 1, "h": 1 },
       "trimmed": true,
       "spriteSourceSize": { "x": 0, "y": 0, "w": 1, "h": 1 },
-      "sourceSize": { "w": 41, "h": 37 }
+      "sourceSize": { "w": 72, "h": 71 }
     },
     "1": {
-      "frame": { "x": 1, "y": 37, "w": 1, "h": 1 },
+      "frame": { "x": 1, "y": 71, "w": 1, "h": 1 },
       "trimmed": true,
       "spriteSourceSize": { "x": 0, "y": 0, "w": 1, "h": 1 },
-      "sourceSize": { "w": 41, "h": 37 }
+      "sourceSize": { "w": 72, "h": 71 }
     },
     "2": {
-      "frame": { "x": 2, "y": 37, "w": 1, "h": 1 },
+      "frame": { "x": 2, "y": 71, "w": 1, "h": 1 },
       "trimmed": true,
       "spriteSourceSize": { "x": 0, "y": 0, "w": 1, "h": 1 },
-      "sourceSize": { "w": 41, "h": 37 }
+      "sourceSize": { "w": 72, "h": 71 }
     },
     "3": {
-      "frame": { "x": 3, "y": 37, "w": 1, "h": 1 },
+      "frame": { "x": 3, "y": 71, "w": 1, "h": 1 },
       "trimmed": true,
       "spriteSourceSize": { "x": 0, "y": 0, "w": 1, "h": 1 },
-      "sourceSize": { "w": 41, "h": 37 }
+      "sourceSize": { "w": 72, "h": 71 }
     },
     "4": {
-      "frame": { "x": 0, "y": 0, "w": 41, "h": 37 },
+      "frame": { "x": 0, "y": 0, "w": 72, "h": 71 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 0, "w": 41, "h": 37 },
-      "sourceSize": { "w": 41, "h": 37 }
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 72, "h": 71 },
+      "sourceSize": { "w": 72, "h": 71 }
     },
     "5": {
-      "frame": { "x": 4, "y": 37, "w": 1, "h": 1 },
+      "frame": { "x": 4, "y": 71, "w": 1, "h": 1 },
       "trimmed": true,
       "spriteSourceSize": { "x": 0, "y": 0, "w": 1, "h": 1 },
-      "sourceSize": { "w": 41, "h": 37 }
+      "sourceSize": { "w": 72, "h": 71 }
     },
     "6": {
-      "frame": { "x": 5, "y": 37, "w": 1, "h": 1 },
+      "frame": { "x": 5, "y": 71, "w": 1, "h": 1 },
       "trimmed": true,
       "spriteSourceSize": { "x": 0, "y": 0, "w": 1, "h": 1 },
-      "sourceSize": { "w": 41, "h": 37 }
+      "sourceSize": { "w": 72, "h": 71 }
     }
   },
-  "meta": { "image": "chainHeavy.png", "size": { "w": 41, "h": 38 } }
+  "meta": { "image": "chainHeavy.png", "size": { "w": 72, "h": 72 } }
 }

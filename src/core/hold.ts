@@ -1,6 +1,7 @@
 import { chargedMove, contactOf, impactOf, techGrab } from './combat';
 import { agedBuffer, readInput } from './commands';
 import type { FighterTemplate, MatchConfig } from './config';
+import { scaledDamage } from './damage';
 import { enter, nextFrame } from './fighter/action';
 import { startAttack } from './fighter/move';
 import { dangerMarked, inDanger } from './finisher';
@@ -105,7 +106,7 @@ export function startHold(
     moveConnected: false,
     crouching: false,
     stunFrames: 0,
-    comboCount: 0,
+    comboCount: caught.action === 'airHit' ? caught.comboCount : 0,
     vx: 0,
     y: 0,
     vy: 0,
@@ -266,8 +267,10 @@ function lands(
   config: MatchConfig,
 ): HoldTick {
   move = chargedMove(move, holder);
-  const health = Math.max(config.training ? 1 : 0, held.health - move.damage);
   const comboCount = held.comboCount + 1;
+  const scale = !hold.techable && move.knockdown !== undefined && held.comboCount > 0;
+  const damage = scale ? scaledDamage(move.damage, comboCount, false) : move.damage;
+  const health = Math.max(config.training ? 1 : 0, held.health - damage);
   const danger = inDanger(held, config.fighters[heldOf(hold)].maxHealth);
   const hurt: FighterState = {
     ...held,

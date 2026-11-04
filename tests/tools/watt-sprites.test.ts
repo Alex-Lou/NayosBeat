@@ -17,8 +17,8 @@ const SHEETS = Object.keys(WATT_SHEETS) as WattSheet[];
 
 /** docs/combat-v2.md §11.3: the 43 strips, and the 3 of combos v3, as Saphir has them. */
 describe('Watt strips: the set', () => {
-  it('has the 43 strips, the 3 of combos v3, his 3 Remixes and his 7 arsenal strips', () => {
-    expect(SHEETS).toHaveLength(56);
+  it('has the 43 strips, the 3 of combos v3, his 3 Remixes and his 8 arsenal strips', () => {
+    expect(SHEETS).toHaveLength(57);
   });
 
   it.each(SHEETS)('%s: poses and ticks for every frame', (sheet) => {
@@ -156,6 +156,7 @@ describe('Watt strips: reach', () => {
     'specialForward',
     'specialAntiAir',
     'standLight',
+    'jabRepeat',
     'chainLight',
     'lightFinisher',
     'forwardLight',
@@ -205,6 +206,7 @@ describe('Watt strips: reach', () => {
         'forwardHeavy',
         'forwardLight',
         'grab',
+        'jabRepeat',
         'jumpHeavy',
         'jumpLight',
         'lightFinisher',

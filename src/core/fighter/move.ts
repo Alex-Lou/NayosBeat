@@ -164,7 +164,12 @@ function cancelMove(
   if (branch) return phraseAllows(fighter, branch) ? branch : null;
 
   const next = groundMove(command, input, motion, facing, template.moves, boost, discOut);
-  if (!next || !move.cancelInto?.includes(moveOf(template, next).kind)) return null;
+  if (!next) return null;
+  const nextMove = moveOf(template, next);
+  const allowedKind =
+    move.cancelInto?.includes(nextMove.kind) ||
+    (move.cancelInto?.includes('special') && nextMove.catches === 'air');
+  if (!allowedKind) return null;
   return phraseAllows(fighter, next) ? next : null;
 }
 

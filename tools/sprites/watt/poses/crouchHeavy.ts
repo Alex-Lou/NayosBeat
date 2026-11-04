@@ -1,4 +1,4 @@
-import { CROUCHED, onBall, planted, type Pose, smear } from './common.ts';
+import { at, CROUCHED, onBall, planted, type Pose, smear } from './common.ts';
 import { keyPose } from './strike.ts';
 
 export const ANIMATED: boolean = true;
@@ -49,6 +49,7 @@ export const POSES: readonly Pose[] = [
     face: 'kiai',
     effects: [
       smear(3, [24, 14], [32, 9], [38, 7]),
+      { kind: 'arc', from: at(16, 14), to: at(42, 7), spread: 3 },
       { kind: 'dust', x: 40, size: 1.2, progress: 0.3 },
     ],
   }),

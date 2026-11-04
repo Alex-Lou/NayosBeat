@@ -30,8 +30,25 @@ interface Route {
 
 const ROUTES: readonly Route[] = [
   { notation: 'L, L, L', distance: 30, steps: [L, L, L], damages: [30, 34, 44] },
+  {
+    notation: 'L, ←L (Secousse), L, L',
+    distance: 30,
+    steps: [L, B | L, L, L],
+    damages: [30, 18, 30, 38],
+  },
   { notation: 'L, H → S (Coup de jus)', distance: 30, steps: [L, H, S], damages: [30, 76, 72] },
-  { notation: 'L, L, H, H', distance: 30, steps: [L, L, H, H], damages: [30, 34, 68, 49] },
+  {
+    notation: 'L, L, H, H → S (Coup de jus)',
+    distance: 30,
+    steps: [L, L, H, H, S],
+    damages: [30, 34, 68, 49, 54],
+  },
+  {
+    notation: 'L, ←L, L, H, H → S (6 hits)',
+    distance: 28,
+    steps: [L, B | L, L, H, H, S],
+    damages: [30, 18, 30, 59, 42, 45],
+  },
   { notation: 'L, L, H → S', distance: 30, steps: [L, L, H, S], damages: [30, 34, 68, 63] },
   {
     notation: 'L, L, H → →S (Surcharge)',
@@ -191,7 +208,7 @@ describe('his own kit (docs/watt-arsenal.md §4)', () => {
     expect(blocked?.fighters[1].stunFrames).toBe(20);
   });
 
-  it('the Plafonnier saisi catches the jumper, 110 on the catch', () => {
+  it('the Plafonnier saisi catches a jumper (110) or a juggled body after Arraché / Soulevé', () => {
     let state = facingOff(10, WATT_VS_NAYO);
     for (let tick = 0; tick < 120 && !state.contacts.some((c) => c.move === 'throwCatch'); tick++) {
       const watt = tick < 12 ? D | S : 0;
@@ -200,6 +217,12 @@ describe('his own kit (docs/watt-arsenal.md §4)', () => {
     }
     const caught = state.contacts.find((c) => c.move === 'throwCatch');
     expect(caught?.damage).toBe(110);
+    const fromArrache = playCombo(facingOff(26, WATT_VS_NAYO), WATT_VS_NAYO, [B | H, D | S]);
+    expect(fromArrache.hits.map((hit) => hit.damage)).toEqual([65, 0, 99]);
+    expect(floored(fromArrache)).toBe(true);
+    const fromSouleve = playCombo(facingOff(28, WATT_VS_NAYO), WATT_VS_NAYO, [L, L, B | H, D | S]);
+    expect(fromSouleve.hits.map((hit) => hit.damage)).toEqual([30, 34, 44, 0, 77]);
+    expect(floored(fromSouleve)).toBe(true);
   });
 
   it('the Plongeon falls on the grounded opponent, 100 on the catch', () => {

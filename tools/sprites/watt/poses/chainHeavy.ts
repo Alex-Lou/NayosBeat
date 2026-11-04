@@ -37,6 +37,7 @@ export const POSES: readonly Pose[] = [
     face: 'kiai',
     effects: [
       smear(4, [24, 72], [34, 60], [39, 46]),
+      { kind: 'arc', from: at(18, 70), to: at(43, 45), spread: 4 },
       { kind: 'flash', center: at(41, 46), radius: 4.5, tone: 'strike' },
       { kind: 'shards', center: at(41, 46), radius: 8, progress: 0.25, tone: 'strike' },
     ],

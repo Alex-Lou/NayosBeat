@@ -46,6 +46,7 @@ export const POSES: readonly Pose[] = [
     face: 'kiai',
     effects: [
       smear(3.5, [18, 62], [30, 60], [40, 56]),
+      { kind: 'arc', from: at(16, 62), to: at(44, 55), spread: 4 },
       { kind: 'flash', center: at(42, 56), radius: 4.5, tone: 'sound' },
     ],
     glows: [{ center: at(40, 56), reach: 32, power: 1.2, tone: 'sound' }],
@@ -62,6 +63,7 @@ export const POSES: readonly Pose[] = [
     face: 'kiai',
     effects: [
       smear(3.5, [14, 60], [28, 58], [41, 54]),
+      { kind: 'arc', from: at(12, 60), to: at(45, 53), spread: 4.5 },
       { kind: 'flash', center: at(43, 54), radius: 5, tone: 'sound' },
     ],
     glows: [{ center: at(41, 54), reach: 32, power: 1.2, tone: 'sound' }],
@@ -77,6 +79,8 @@ export const POSES: readonly Pose[] = [
     face: 'kiai',
     effects: [
       smear(3, [28, 50], [33, 32], [34, 14]),
+      { kind: 'column', base: at(36, 2), height: 86, width: 18, progress: 0.25, tone: 'platine' },
+      { kind: 'arc', from: at(18, 72), to: at(38, 8), spread: 5, tone: 'platine' },
       { kind: 'flash', center: at(36, 12), radius: 5.5, tone: 'platine' },
       { kind: 'ring', center: at(36, 8), radius: 14, progress: 0.2, squash: 0.3, tone: 'platine' },
       { kind: 'dust', x: 36, size: 1.6, progress: 0.3 },

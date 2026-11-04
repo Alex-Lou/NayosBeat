@@ -204,6 +204,15 @@ export function drawEffect(ink: Ink, effect: Effect): void {
         tonesOf(ink.fx)[effect.tone ?? 'sound'],
       );
       return;
+    case 'arc':
+      drawLightningArc(
+        ink,
+        effect.from,
+        effect.to,
+        effect.spread ?? 4,
+        tonesOf(ink.fx)[effect.tone ?? 'sound'],
+      );
+      return;
   }
 }
 
@@ -1646,4 +1655,67 @@ function boundsOf(points: readonly Point[], margin: number): Bounds {
     top: Math.min(...ys) - margin,
     bottom: Math.max(...ys) + margin,
   };
+}
+
+/**
+ * Watt's high-voltage lightning arc between `from` and `to` (world px): a jagged 7-segment bolt
+ * with a white-hot core, two forked side branches, and cross sparkles at the joints.
+ */
+function drawLightningArc(ink: Ink, from: Point, to: Point, spread: number, tones: Tones): void {
+  const layer = new Layer(ink, tones);
+  const a = ink.at(from);
+  const b = ink.at(to);
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const length = Math.hypot(dx, dy) || 1;
+  const nx = -dy / length;
+  const ny = dx / length;
+  const random = randomFrom(from.x, from.y, to.x, to.y, spread);
+  const steps = 6;
+  const spine: Point[] = [a];
+  for (let i = 1; i < steps; i++) {
+    const t = i / steps;
+    const jag =
+      (i % 2 === 0 ? 1 : -1) * (0.45 + random() * 0.55) * spread * S * Math.sin(Math.PI * t);
+    const point = { x: a.x + dx * t + nx * jag, y: a.y + dy * t + ny * jag };
+    spine.push(point);
+    if (i === 2 || i === 4) {
+      const side = i === 2 ? 1 : -1;
+      const forkLen = (0.3 + random() * 0.25) * length;
+      const forkAngle = Math.atan2(dy, dx) + side * (0.55 + random() * 0.35);
+      const midFork = {
+        x: point.x + Math.cos(forkAngle) * forkLen * 0.55,
+        y: point.y + Math.sin(forkAngle) * forkLen * 0.55,
+      };
+      const tipFork = {
+        x: midFork.x + Math.cos(forkAngle - side * 0.3) * forkLen * 0.45,
+        y: midFork.y + Math.sin(forkAngle - side * 0.3) * forkLen * 0.45,
+      };
+      trace(
+        layer,
+        [point, midFork, tipFork],
+        (u) => (u < 0.4 ? LIGHT : u < 0.8 ? BASE : DEEP),
+        true,
+      );
+    }
+  }
+  spine.push(b);
+  trace(layer, spine, (t) => (t > 0.15 && t < 0.85 ? CORE : LIGHT), true);
+  for (let i = 0; i < spine.length - 1; i++) {
+    const p1 = spine[i];
+    const p2 = spine[i + 1];
+    if (p1 && p2) {
+      trace(
+        layer,
+        [
+          { x: p1.x + nx, y: p1.y + ny },
+          { x: p2.x + nx, y: p2.y + ny },
+        ],
+        () => BASE,
+      );
+    }
+  }
+  layer.halo();
+  cross(layer, b.x, b.y, 1, LIGHT);
+  layer.draw();
 }
