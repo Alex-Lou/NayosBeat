@@ -19,6 +19,7 @@
     "bench:cpu": "node --experimental-transform-types --no-warnings --import ./tools/sprites/ts-imports.js tools/bench/cpu.ts",
     "replays:update": "node --import ./tools/sprites/ts-imports.js tools/replays/update.ts",
     "sprites": "node --import ./tools/sprites/ts-imports.js tools/sprites/generate.ts",
+    "accueil": "node --import ./tools/sprites/ts-imports.js tools/sprites/accueil.ts",
     "stages": "node --import ./tools/sprites/ts-imports.js tools/sprites/stages.ts",
     "stages:preview": "node --import ./tools/sprites/ts-imports.js tools/sprites/stage-preview.ts",
     "sprites:preview": "node --import ./tools/sprites/ts-imports.js tools/sprites/preview.ts",

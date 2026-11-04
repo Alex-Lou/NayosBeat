@@ -1,4 +1,4 @@
-import { STAGE_LAYERS, STAGE_SCALE, type StageVariant } from '../art/stage-layers';
+import { STAGE_LAYERS, STAGE_SCALE } from '../art/stage-layers';
 import type { FighterLook } from './fighter-look';
 import { cutElement, idleKeyframes } from './idle-figure';
 import { element } from './menu';
@@ -29,49 +29,31 @@ export function homeStageScale(width: number, height: number): number {
 }
 
 /**
- * The street and two fighters behind the title and the home menu (docs/art/decor-rue.md), laid
- * out without Phaser: the menus need no render loop. Decoration only (aria-hidden), its idle
- * stops with reduced motion.
+ * The home key art and two fighters behind the title and the menu, laid out without Phaser:
+ * the menus need no render loop. Decoration only (aria-hidden), its idle stops with reduced motion.
  */
 export class HomeBackdrop {
   private readonly root: HTMLDivElement;
   private readonly stage: HTMLDivElement;
   private readonly playing: { readonly sprite: HTMLElement; readonly look: FighterLook }[] = [];
   private readonly animations: Animation[] = [];
-  private readonly layerCount: number;
-  private loaded = 0;
   private visible = true;
   private still: boolean;
 
-  constructor(
-    parent: HTMLElement,
-    variant: StageVariant | undefined,
-    fighters: readonly HomeFighter[],
-    still = false,
-  ) {
+  constructor(parent: HTMLElement, art: string, fighters: readonly HomeFighter[], still = false) {
     this.still = still;
     this.root = element('div', 'home-backdrop');
     this.root.setAttribute('aria-hidden', 'true');
     this.stage = element('div', 'home-stage');
     this.root.appendChild(this.stage);
 
-    const layers = variant?.art.layers ?? [];
-    this.layerCount = layers.length;
-    for (const layer of layers) {
-      const image = document.createElement('img');
-      image.className = 'home-layer';
-      image.alt = '';
-      image.addEventListener('load', this.onLayerLoad);
-      image.addEventListener('error', this.onLayerLoad);
-      image.style.left = `${(VIEW.width - layer.width) * (STAGE_SCALE / 2)}px`;
-      image.style.top = `${layer.y * STAGE_SCALE}px`;
-      image.style.width = `${layer.width * STAGE_SCALE}px`;
-      image.style.height = `${layer.height * STAGE_SCALE}px`;
-      image.src = layer.url;
-      this.stage.appendChild(image);
-    }
-    // The street is optional (a checkout without its drawn layers): the dark backdrop stays.
-    if (this.layerCount === 0) this.root.classList.add('ready');
+    const image = document.createElement('img');
+    image.className = 'home-key-art';
+    image.alt = '';
+    image.addEventListener('load', this.onArtLoad);
+    image.addEventListener('error', this.onArtLoad);
+    image.src = art;
+    this.stage.appendChild(image);
 
     for (const { look, x, facing } of fighters) {
       const figure = element('div', 'home-fighter');
@@ -119,9 +101,8 @@ export class HomeBackdrop {
     this.root.remove();
   }
 
-  private readonly onLayerLoad = (): void => {
-    this.loaded += 1;
-    if (this.loaded >= this.layerCount) this.root.classList.add('ready');
+  private readonly onArtLoad = (): void => {
+    this.root.classList.add('ready');
   };
 
   private readonly resize = (): void => {

@@ -25,6 +25,7 @@ import { TouchLayoutEditor } from '../ui/touch-layout-editor';
 import { FightCard } from '../ui/fight-card';
 import { FighterSelect } from '../ui/fighter-select';
 import { StageSelect } from '../ui/stage-select';
+import homeBackground from '../ui/accueil-fond.png';
 import { HomeBackdrop, type HomeFighter } from '../ui/home-backdrop';
 import { element, Menu, type MenuFeedback, type MenuItem, type MenuOptions } from '../ui/menu';
 import { TitleScreen } from '../ui/title-screen';
@@ -272,9 +273,8 @@ export class App {
     return this.onTitle || this.onMainMenu;
   }
 
-  /** The street in front of the club, with the two rivals standing in guard. */
+  /** The key art, with the two rivals standing in guard. */
   private createBackdrop(): HomeBackdrop {
-    const variant = STAGE_MAPS.find(({ name }) => name === 'rue')?.variants[0];
     const standing: readonly (readonly [FighterId, number, 1 | -1])[] = [
       ['nayo', 120, 1],
       ['riff', 360, -1],
@@ -284,7 +284,7 @@ export class App {
       const look = lookOf(artOf(id));
       if (look) fighters.push({ look, x, facing });
     }
-    return new HomeBackdrop(this.root, variant, fighters, isStill(this.comfort));
+    return new HomeBackdrop(this.root, homeBackground, fighters, isStill(this.comfort));
   }
 
   /** `backdrop`: the street stays behind this screen (the title, its notice, the home menu). */
