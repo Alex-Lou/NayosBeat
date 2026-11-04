@@ -5,10 +5,10 @@
  */
 
 import type { StageDrift } from '../../../src/art/stage-layers.ts';
-import { Canvas, Mask, at } from '../kit/canvas.ts';
+import { Canvas, Mask, at, dithered } from '../kit/canvas.ts';
 import { spell, spellHan } from '../kit/font.ts';
 import { lightAt, spill, type Light, type Spill } from '../kit/light.ts';
-import { streamOf } from '../kit/random.ts';
+import { noise, streamOf } from '../kit/random.ts';
 import type { Rect } from '../kit/stage.ts';
 import { CROSSED, drawFigure, type Figure, type Outfit, type Pose } from '../rue/people.ts';
 import { drawTag, drawThrowUp } from '../rue/signs.ts';
@@ -189,12 +189,13 @@ function timelineOf(frameAt: (step: number) => number): [number, number][] {
   return timeline;
 }
 
-function clampedBrick(step: number): number {
-  return at(BRICK, Math.max(0, Math.min(BRICK.length - 1, Math.round(step))));
-}
-
-function clampedConcrete(ramp: readonly number[], step: number): number {
-  return at(ramp, Math.max(0, Math.min(ramp.length - 1, Math.round(step))));
+function hdTone(ramp: readonly number[], level: number, x: number, y: number): number {
+  const top = ramp.length - 1;
+  const clamped = Math.min(Math.max(level, 0), top);
+  const base = Math.floor(clamped);
+  const fraction = clamped - base;
+  const step = dithered(fraction, x >> 1, y) ? 1 : 0;
+  return ramp[Math.min(base + step, top)] ?? 0;
 }
 
 function pierAt(x: number): 'face' | 'edge' | 'shade' | 'cast' | undefined {
@@ -209,11 +210,10 @@ function pierAt(x: number): 'face' | 'edge' | 'shade' | 'cast' | undefined {
 function brickStepAt(x: number, y: number, base: number): number {
   const course = Math.floor(y / 6);
   const joint = y % 6 === 5 || (x + (course % 2) * 8) % 16 === 0;
-  const highShade = y < 156 ? -1 : 0;
-  const lowBounce = y > 316 ? 1 : 0;
-  const lit = lightAt(LIGHTS, x, y);
-  const lampLift = lit > 1.1 ? 2 : lit > 0.48 ? 1 : 0;
-  return base + highShade + lowBounce + lampLift - (joint ? 1 : 0);
+  const soot = (noise(71, x >> 2, y >> 1, 14) - 0.5) * 0.9 - Math.max(0, (196 - y) / 110);
+  const lowBounce = Math.max(0, (y - 300) / 110) * 0.6;
+  const lit = lightAt(LIGHTS, x, y) * 0.95;
+  return base + soot + lowBounce + lit - (joint ? 0.9 : 0);
 }
 
 function drawWall(canvas: Canvas): void {
@@ -222,8 +222,14 @@ function drawWall(canvas: Canvas): void {
     if (y < ROOF + 3) return at(BRICK, 0);
     const pier = pierAt(x);
     const delta =
-      pier === 'edge' ? 2 : pier === 'face' ? 1 : pier === 'shade' || pier === 'cast' ? -1 : 0;
-    return clampedBrick(brickStepAt(x, y, 2 + delta));
+      pier === 'edge'
+        ? 1.5
+        : pier === 'face'
+          ? 0.6
+          : pier === 'shade' || pier === 'cast'
+            ? -0.8
+            : 0;
+    return hdTone(BRICK, brickStepAt(x, y, 2 + delta), x, y);
   });
   canvas.fill(WALL.left - 4, ROOF - 8, WALL.right - WALL.left + 8, 8, at(CONCRETE, 3));
   canvas.hline(WALL.left - 4, ROOF - 8, WALL.right - WALL.left + 8, at(CONCRETE, 5));
@@ -243,7 +249,7 @@ function drawRoof(canvas: Canvas): void {
     at(BRICK, 1),
   );
   canvas.paint(hut.x, hut.y, hut.width, hut.height, (x, y) =>
-    clampedBrick(brickStepAt(x, y, 2) + (x < hut.x + 2 ? 1 : 0)),
+    hdTone(BRICK, brickStepAt(x, y, 1.8) + (x < hut.x + 2 ? 1 : 0), x, y),
   );
   canvas.fill(hut.x - 10, hut.y - 4, hut.width + 14, 4, at(CONCRETE, 3));
   canvas.hline(hut.x - 10, hut.y - 4, hut.width + 14, at(CONCRETE, 5));
@@ -410,8 +416,8 @@ function drawDockFace(canvas: Canvas): void {
     const dy = y - DOCK_DECK;
     const perspX = x - Math.round(((x - 720) * dy) / 90);
     const joint = perspX % 64 === 0;
-    const step = concreteAt(x, DOCK_TOP, 3.4, LIGHTS) - (joint ? 1 : 0);
-    return clampedConcrete(CONCRETE, step);
+    const step = concreteAt(x, DOCK_TOP, 3.4, LIGHTS) - (joint ? 1.2 : 0);
+    return hdTone(CONCRETE, step, x, y);
   });
   canvas.paint(DOCK_LEFT, DOCK_TOP, deckW, BASE - DOCK_TOP, (x, y) => {
     const row = y - DOCK_TOP;
@@ -422,8 +428,8 @@ function drawDockFace(canvas: Canvas): void {
       return stripe ? at(HAZARD, row < 4 ? 1 : 0) : at(STEEL, 1);
     }
     if (row < 11) return at(CONCRETE, 0);
-    const step = concreteAt(x, y, row < 26 ? 2.6 : 2, LIGHTS);
-    return clampedConcrete(CONCRETE, step);
+    const step = concreteAt(x, y, 2.5 - (row - 11) * 0.015, LIGHTS);
+    return hdTone(CONCRETE, step, x, y);
   });
   for (let x = DOCK_LEFT + 20; x < canvas.width; x += 64) {
     drawStreak(canvas, x, DOCK_TOP + 9, 16);
@@ -505,8 +511,8 @@ function drawAnnex(canvas: Canvas): void {
       if (y < ANNEX.roof + 3) return at(CONCRETE, 0);
       const course = Math.floor((y - ANNEX.roof) / 8);
       const joint = (y - ANNEX.roof) % 8 === 7 || (x + (course % 2) * 8) % 16 === 0;
-      const step = concreteAt(x, y, 2, LIGHTS) - (joint ? 1 : 0);
-      return clampedConcrete(CONCRETE, step);
+      const step = concreteAt(x, y, 2, LIGHTS) - (joint ? 0.9 : 0);
+      return hdTone(CONCRETE, step, x, y);
     },
   );
   canvas.fill(ANNEX.left - 2, ANNEX.roof - 6, canvas.width - ANNEX.left + 2, 6, at(CONCRETE, 4));
@@ -549,8 +555,8 @@ function drawSteam(canvas: Canvas, frame: number): void {
 
 function drawAlley(canvas: Canvas): void {
   canvas.paint(0, 0, GATE.left, BASE, (x, y) => {
-    if (x >= GATE.left - 3) return clampedBrick(brickStepAt(x, y, 2) + 1);
-    return clampedBrick(brickStepAt(x, y, 1));
+    const step = brickStepAt(x, y, 1.2) + (x >= GATE.left - 3 ? 1 : 0);
+    return hdTone(BRICK, step, x, y);
   });
   canvas.fill(35, 0, 6, BASE, at(STEEL, 1));
   canvas.vline(35, 0, BASE, at(STEEL, 3));
@@ -572,18 +578,18 @@ function drawYard(canvas: Canvas): void {
       const joint = perspX % 128 === 0 && y > BASE + 2;
       const shade = y < BASE + 3 ? -1 : 0;
       const ramp = y > BASE + 3 && wet ? WET : CONCRETE;
-      const step = concreteAt(x, y, 2.2, LIGHTS) + shade - (joint ? 1 : 0);
-      return clampedConcrete(ramp, step);
+      const step = concreteAt(x, y, 2.2, LIGHTS) + shade - (joint ? 1.1 : 0);
+      return hdTone(ramp, step, x, y);
     }
     if (y < APRON.asphalt) {
       if (y === APRON.drain) return at(STEEL, 3);
       if (y === APRON.asphalt - 1) return at(STEEL, 2);
       return at(STEEL, x % 8 < 5 ? 0 : 2);
     }
-    const lit = lightAt(LIGHTS, x, y);
+    const lit = lightAt(LIGHTS, x, y) * 0.9;
+    const grain = (noise(88, x >> 2, y >> 1, 10) - 0.5) * 0.5;
     const ramp = wet ? WET_ASPHALT : ASPHALT;
-    const step = lit > 0.7 ? 2 : 1;
-    return at(ramp, step);
+    return hdTone(ramp, 1.3 + grain + lit, x, y);
   });
   canvas.hline(DOCK_LEFT, BASE, canvas.width - DOCK_LEFT, at(CONCRETE, 0));
 }

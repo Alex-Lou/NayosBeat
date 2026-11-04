@@ -1,85 +1,135 @@
 /**
  * The far layer (docs/art/decor-dock.md §2.1): what shows over L'Entrepôt's roof and down the alley
- * on the left. The street's night sky, the city's towers with a few windows awake, a smokestack and
- * water tanks on the roofs around; down the alley, the back street: low warehouses with sawtooth
- * roofs, the elevated line on its girders, a street lamp. Clean flat tones (docs/art/proprete.md).
+ * on the left, in high-detail pixel art (docs/art/proprete.md). Night sky with city glow dome and
+ * crescent moon, volumetric clouds, 3D towers with curtain walls and bracing, brick smokestack,
+ * wooden water tanks, and the back-street viaduct where the elevated train glides (index.ts).
  */
 
-import { Canvas, Mask, at, tone } from '../kit/canvas.ts';
+import { Canvas, Mask, at, dithered } from '../kit/canvas.ts';
 import { noise, streamOf, type Random } from '../kit/random.ts';
 import { BRICK, CLOUD, DISTANT, DISTANT_LIT, SKY, SODIUM, STEAM, STEEL } from './palette.ts';
 
-const GLOW = 300;
+const GLOW = 310;
 const STREET = 430;
 const DECK_TOP = 316;
 const DECK_BOTTOM = 332;
 
+function hdTone(ramp: readonly number[], level: number, x: number, y: number): number {
+  const top = ramp.length - 1;
+  const clamped = Math.min(Math.max(level, 0), top);
+  const base = Math.floor(clamped);
+  const fraction = clamped - base;
+  const step = dithered(fraction, x >> 1, y) ? 1 : 0;
+  return ramp[Math.min(base + step, top)] ?? 0;
+}
+
 function skyLevel(y: number): number {
   const t = Math.min(Math.max(y / GLOW, 0), 1);
-  return (SKY.length - 1) * t ** 1.5;
+  return (SKY.length - 1) * t ** 1.4;
+}
+
+function drawSky(canvas: Canvas): void {
+  const { width, height } = canvas;
+  const cx = 640;
+  const cy = 220;
+  canvas.paint(0, 0, width, height, (x, y) => {
+    const d = Math.hypot((x - cx) / 460, (y - cy) / 210);
+    const dome = d < 1 ? (1 - d * d) * 1.15 : 0;
+    return hdTone(SKY, skyLevel(y) + dome, x, y);
+  });
+  const mx = 1040;
+  const my = 56;
+  for (let y = my - 26; y <= my + 26; y++) {
+    for (let x = mx - 26; x <= mx + 26; x++) {
+      const d = Math.hypot(x - mx, y - my);
+      if (d > 24) continue;
+      if (d > 14) {
+        if (dithered((24 - d) / 10, x >> 1, y)) canvas.set(x, y, at(CLOUD, 2));
+        continue;
+      }
+      if (Math.hypot(x - (mx - 5), y - (my - 3)) >= 12.5) {
+        canvas.set(x, y, at(DISTANT_LIT, d < 10 ? 2 : 1));
+      }
+    }
+  }
 }
 
 function drawCloud(canvas: Canvas, seed: number, base: number, height: number): void {
   for (let x = 0; x < canvas.width; x++) {
     const presence = noise(seed, x, 0, 220);
-    if (presence < 0.42) continue;
-    const swell = (presence - 0.42) / 0.58;
+    if (presence < 0.36) continue;
+    const swell = (presence - 0.36) / 0.64;
     const bumps = noise(seed + 1, x, 0, 30) * 0.7 + noise(seed + 2, x, 0, 8) * 0.3;
     const top = Math.round(base - height * swell * (0.35 + bumps * 0.65));
     const bottom = Math.round(base + 3 + noise(seed + 3, x, 0, 20) * 4 * swell);
     for (let y = top; y < bottom; y++) {
       const depth = (y - top) / Math.max(bottom - top, 1);
-      const step = depth > 0.72 ? 3 : depth > 0.48 ? 2 : depth > 0.22 ? 1 : 0;
-      canvas.set(x, y, at(CLOUD, step));
+      canvas.set(x, y, hdTone(CLOUD, depth * 3.3, x, y));
     }
   }
 }
 
 function drawTowers(canvas: Canvas, random: Random): void {
+  const center = canvas.width / 2;
   let x = -10;
   while (x < canvas.width) {
-    const width = random.int(40, 86);
-    const top = random.int(42, 186);
-    const inset = random.chance(0.55) ? random.int(6, 12) : 0;
-    const tier = inset > 0 ? random.int(12, 26) : 0;
+    const width = random.int(44, 92);
+    const top = random.int(34, 178);
+    const inset = random.chance(0.6) ? random.int(6, 14) : 0;
+    const tier = inset > 0 ? random.int(12, 28) : 0;
+    const spire = random.chance(0.35) ? random.int(14, 32) : 0;
     const mask = new Mask(canvas.width, canvas.height);
     mask.rect(x, top, width, STREET - top);
     if (tier > 0) mask.rect(x + inset, top - tier, width - inset * 2, tier);
-    for (let y = Math.max(0, top - tier); y < STREET; y++) {
-      const band = y > 260 ? 1 : 0;
+    if (spire > 0) mask.rect(x + Math.floor(width / 2) - 1, top - tier - spire, 2, spire);
+    const sideW = Math.max(5, Math.round(width * 0.18));
+    const litRight = x + width / 2 < center;
+    for (let y = Math.max(0, top - tier - spire); y < STREET; y++) {
+      const hgrad = ((y - top) / Math.max(1, STREET - top)) * 1.2;
+      const spandrel = y > top + 4 && (y - top) % 8 === 0;
       for (let px = x; px < x + width; px++) {
         if (!mask.has(px, y)) continue;
         const topEdge = !mask.has(px, y - 1);
-        const rightEdge = !mask.has(px + 1, y) || !mask.has(px + 2, y);
-        const leftShade = !mask.has(px - 1, y);
-        const step = topEdge ? 3 : rightEdge ? 2 : leftShade ? 0 : band + 1;
-        canvas.set(px, y, at(DISTANT, step));
+        const rightEdge = !mask.has(px + 1, y);
+        const leftEdge = !mask.has(px - 1, y);
+        const inSide = litRight ? px >= x + width - sideW : px < x + sideW;
+        if (topEdge || (litRight ? rightEdge : leftEdge)) {
+          canvas.set(px, y, at(DISTANT, 3));
+        } else if (litRight ? leftEdge : rightEdge) {
+          canvas.set(px, y, at(DISTANT, 0));
+        } else if (inSide) {
+          canvas.set(px, y, hdTone(DISTANT, 2.1 + hgrad * 0.6, px, y));
+        } else {
+          canvas.set(px, y, hdTone(DISTANT, (spandrel ? 0.4 : 1) + hgrad * 0.6, px, y));
+        }
       }
     }
-    for (let y = top + 8; y < STREET - 12; y += 9) {
-      if (!random.chance(0.35)) continue;
-      const from = x + 5 + random.int(0, Math.max(0, width - 22));
-      const run = random.int(2, 5);
+    const fl = litRight ? x + 4 : x + sideW + 3;
+    const fr = litRight ? x + width - sideW - 3 : x + width - 4;
+    for (let y = top + 8; y < STREET - 12; y += 8) {
+      if (!random.chance(0.45)) continue;
       const toneStep = random.int(0, 2);
-      for (let w = 0; w < run; w++) {
-        const wx = from + w * 6;
-        if (wx + 3 >= x + width - 4) break;
-        canvas.fill(wx, y, 3, 4, at(DISTANT_LIT, toneStep));
+      for (let wx = fl; wx < fr - 4; wx += 6) {
+        if (random.chance(0.6)) canvas.fill(wx, y, 3, 4, at(DISTANT_LIT, toneStep));
       }
     }
-    x += width + random.int(-8, 6);
+    x += width + random.int(-6, 6);
   }
 }
 
 function drawStack(canvas: Canvas, x: number, top: number): void {
-  const width = 26;
+  const width = 28;
   canvas.paint(x, top, width, STREET - top, (px, py) => {
     const course = Math.floor(py / 4);
     const joint = py % 4 === 3 || (px + (course % 2) * 4) % 8 === 0;
-    const col = px - x;
-    const base = col < 4 ? 3 : col < 10 ? 2 : col > width - 5 ? 0 : 1;
-    return at(BRICK, Math.max(0, base - (joint ? 1 : 0)));
+    const u = (px - x) / width;
+    const round = 2.4 - u * 1.8 - (joint ? 0.8 : 0);
+    return hdTone(BRICK, round, px, py);
   });
+  for (let hy = top + 16; hy < STREET - 16; hy += 22) {
+    canvas.hline(x, hy, width, at(STEEL, 3));
+    canvas.hline(x, hy + 1, width, at(STEEL, 0));
+  }
   canvas.fill(x - 3, top, width + 6, 5, at(BRICK, 3));
   canvas.hline(x - 3, top, width + 6, at(BRICK, 5));
   canvas.hline(x - 3, top + 4, width + 6, at(BRICK, 1));
@@ -96,32 +146,35 @@ function drawStack(canvas: Canvas, x: number, top: number): void {
     if (!plume.has(px, py)) return undefined;
     const rise = top - py;
     const lit = !plume.has(px, py - 1) || !plume.has(px - 1, py);
-    const step = rise > 44 ? 0 : rise > 22 ? (lit ? 2 : 1) : lit ? 2 : 1;
-    return at(STEAM, step);
+    const level = (lit ? 2.4 : 1.3) - (rise / 65) * 1.4;
+    return hdTone(STEAM, level, px, py);
   });
 }
 
 function drawTank(canvas: Canvas, cx: number, base: number): void {
-  const width = 46;
+  const width = 48;
   const left = cx - width / 2;
   const legs = 30;
   for (const lx of [left + 4, left + width - 7, left + width / 2 - 1]) {
     canvas.fill(lx, base - legs, 3, legs, at(STEEL, 1));
-    canvas.vline(lx + 2, base - legs, legs, at(STEEL, 2));
+    canvas.vline(lx + 2, base - legs, legs, at(STEEL, 3));
   }
   canvas.line(left + 4, base - legs, left + width - 5, base - 4, at(STEEL, 1));
   canvas.line(left + width - 5, base - legs, left + 4, base - 4, at(STEEL, 1));
   const top = base - legs - 52;
   canvas.paint(left, top, width, 52, (px, py) => {
     const hoop = (py - top) % 13 === 12;
-    if (hoop) return at(STEEL, 1);
-    const col = px - left;
-    return at(DISTANT, col > width - 8 ? 3 : col > width - 16 ? 2 : col < 5 ? 0 : 1);
+    if (hoop) return at(STEEL, 2);
+    const u = (px - left) / width;
+    const stave = (px - left) % 6 === 0 ? -0.4 : 0;
+    return hdTone(DISTANT, 1.1 + u * 2 + stave, px, py);
   });
   for (let row = 0; row < 16; row++) {
     const half = Math.round((width / 2 + 2) * (row / 15));
-    canvas.hline(cx - half, top - 16 + row, half * 2, at(DISTANT, row < 4 ? 3 : 2));
-    if (half > 2) canvas.fill(cx + half - 3, top - 16 + row, 3, 1, at(DISTANT, 3));
+    for (let px = cx - half; px < cx + half; px++) {
+      const u = (px - cx) / Math.max(1, half);
+      canvas.set(px, top - 16 + row, hdTone(DISTANT, 1.8 + u * 1.2, px, top - 16 + row));
+    }
   }
   canvas.hline(left - 2, top - 1, width + 4, at(DISTANT, 3));
 }
@@ -170,10 +223,10 @@ function drawBackStreet(canvas: Canvas, random: Random): void {
       if (py < roof && py < roof - 14 + tooth / 2) return undefined;
       if (py < roof && (tooth === 0 || tooth === 1)) return at(DISTANT, 3);
       if (py === roof) return at(DISTANT, 2);
-      return at(DISTANT, py > 360 ? 2 : 1);
+      return hdTone(DISTANT, 1.1 + (py - roof) / 140, px, py);
     });
     for (let wx = x + 12; wx < x + width - 16; wx += 24) {
-      if (random.chance(0.28)) {
+      if (random.chance(0.32)) {
         canvas.fill(wx, roof + 26, 8, 10, at(DISTANT_LIT, 0));
         canvas.hline(wx, roof + 26, 8, at(DISTANT_LIT, 1));
       }
@@ -198,8 +251,8 @@ function drawBackStreet(canvas: Canvas, random: Random): void {
     canvas.line(px - 6, DECK_BOTTOM + 22, px - 26, DECK_BOTTOM, at(STEEL, 1), 2);
     canvas.line(px + 8, DECK_BOTTOM + 22, px + 28, DECK_BOTTOM, at(STEEL, 1), 2);
   }
-  canvas.paint(0, STREET, right, canvas.height - STREET, (_px, py) =>
-    at(DISTANT, py < STREET + 4 ? 2 : py < STREET + 32 ? 1 : 0),
+  canvas.paint(0, STREET, right, canvas.height - STREET, (px, py) =>
+    hdTone(DISTANT, 1.8 - (py - STREET) / 48, px, py),
   );
   const lamp = 84;
   canvas.fill(lamp, 302, 3, STREET - 302, at(STEEL, 1));
@@ -212,7 +265,7 @@ function drawBackStreet(canvas: Canvas, random: Random): void {
 
 export function drawFar(width: number, height: number, seed: number): Canvas {
   const canvas = new Canvas(width, height);
-  canvas.paint(0, 0, width, height, (x, y) => tone(SKY, skyLevel(y), x, y));
+  drawSky(canvas);
   drawCloud(canvas, seed + 1, 70, 22);
   drawCloud(canvas, seed + 5, 150, 30);
   drawTowers(canvas, streamOf(seed, 'towers'));
