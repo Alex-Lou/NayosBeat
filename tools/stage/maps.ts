@@ -10,6 +10,7 @@ import { DOCK } from './dock/index.ts';
 import { DUNES } from './dunes/index.ts';
 import { FORET } from './foret/index.ts';
 import { GYM } from './gym/index.ts';
+import { LUCIOLES } from './lucioles/index.ts';
 import { MARCHE } from './marche/index.ts';
 import { NEON } from './neon/index.ts';
 import { PLAGE } from './plage/index.ts';
@@ -30,4 +31,5 @@ export const CODE_MAPS: readonly CodeMap[] = [
   NEON,
   FORET,
   DUNES,
+  LUCIOLES,
 ];
