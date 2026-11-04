@@ -881,12 +881,21 @@ export class App {
   }
 
   private chooseLevel(): void {
+    const tones = ['cyan', 'orange', 'magenta'] as const;
+    const badges = ['I', 'II', 'III'] as const;
     this.showMenu({
       title: 'Difficulté',
+      subtitle: 'Choisis le rythme du combat',
       backdrop: 'system',
-      items: LEVELS.map(({ level, label, hint }) => ({
+      columns: 3,
+      description: true,
+      help: 'Flèches choisir · Entrée / A valider · Echap / B retour',
+      items: LEVELS.map(({ level, label, hint }, index) => ({
         label,
         hint,
+        primary: true,
+        badge: badges[index] ?? 'I',
+        tone: tones[index] ?? 'cyan',
         onSelect: () => {
           this.setup = { ...this.setup, cpuLevel: level };
           this.chooseStage(() => {

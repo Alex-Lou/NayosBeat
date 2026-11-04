@@ -429,6 +429,63 @@ body {
     background-position: -1760px 0;
   }
 }
+/* Two electric strikes, one every 9 s: a blue bolt and its impact star. */
+.menu-bolt {
+  display: none;
+  position: absolute;
+  width: 480px;
+  height: 360px;
+  background-image: url('./ui/menu-bolt.png');
+  background-size: 3840px 360px;
+  opacity: 0;
+  pointer-events: none;
+}
+.menu-keyart.is-home .menu-bolt {
+  display: block;
+}
+.menu-bolt-a {
+  left: 300px;
+  top: 30px;
+  animation: menu-bolt 9s steps(1, end) infinite;
+}
+.menu-bolt-b {
+  left: 60px;
+  top: 50px;
+  animation: menu-bolt 9s steps(1, end) infinite;
+  animation-delay: -4.5s;
+}
+@keyframes menu-bolt {
+  0%,
+  82% {
+    opacity: 0;
+    background-position: 0 0;
+  }
+  83% {
+    opacity: 1;
+    background-position: -480px 0;
+  }
+  84% {
+    opacity: 1;
+    background-position: -960px 0;
+  }
+  85% {
+    opacity: 1;
+    background-position: -1440px 0;
+  }
+  86% {
+    opacity: 1;
+    background-position: -1920px 0;
+  }
+  88% {
+    opacity: 0.8;
+    background-position: -2400px 0;
+  }
+  90%,
+  100% {
+    opacity: 0;
+    background-position: -2880px 0;
+  }
+}
 /* The music: dotted waves around the scene, and an equalizer that breathes (CSS only). */
 .menu-wave {
   position: absolute;
@@ -646,6 +703,65 @@ body {
   background: #f0c94a;
   border-color: #fff;
   box-shadow:
+    inset 0 -3px 0 #c4561c,
+    0 0 0 2px #000;
+}
+/* A difficulty card: a rank in the corner and an accent in the fighter's tones. */
+.menu-grid .menu-item {
+  position: relative;
+}
+.menu-grid .menu-item.has-badge {
+  padding-right: 34px;
+}
+.menu-grid .menu-item .menu-badge {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  padding: 2px 4px;
+  font-size: var(--text-tiny);
+  line-height: 1.2;
+  color: #dde;
+  border: 1px solid currentColor;
+  border-radius: 2px;
+  opacity: 0.85;
+}
+.menu-grid .menu-item.tone-cyan {
+  box-shadow: inset 0 4px 0 #30e8ff;
+}
+.menu-grid .menu-item.tone-orange {
+  box-shadow: inset 0 4px 0 #e07a22;
+}
+.menu-grid .menu-item.tone-magenta {
+  box-shadow: inset 0 4px 0 #ff3ca0;
+}
+.menu-grid .menu-item.tone-cyan .menu-badge {
+  color: #30e8ff;
+}
+.menu-grid .menu-item.tone-orange .menu-badge {
+  color: #e07a22;
+}
+.menu-grid .menu-item.tone-magenta .menu-badge {
+  color: #ff3ca0;
+}
+.menu-grid .menu-item.selected .menu-badge {
+  color: #11111f;
+  border-color: #11111f;
+}
+.menu-grid .menu-item.selected.tone-cyan {
+  box-shadow:
+    inset 0 4px 0 #30e8ff,
+    inset 0 -3px 0 #c4561c,
+    0 0 0 2px #000;
+}
+.menu-grid .menu-item.selected.tone-orange {
+  box-shadow:
+    inset 0 4px 0 #e07a22,
+    inset 0 -3px 0 #c4561c,
+    0 0 0 2px #000;
+}
+.menu-grid .menu-item.selected.tone-magenta {
+  box-shadow:
+    inset 0 4px 0 #ff3ca0,
     inset 0 -3px 0 #c4561c,
     0 0 0 2px #000;
 }
@@ -1715,7 +1831,8 @@ body {
 .still .menu-crowd-front,
 .still .menu-smoke,
 .still .menu-spot,
-.still .menu-vinyl-sheen {
+.still .menu-vinyl-sheen,
+.still .menu-bolt {
   animation: none;
 }
 .rotate-hint {
