@@ -1,57 +1,52 @@
 # Dancing Forest
 
-Le douzième lieu, un choix du développeur : « Forêt au matin, arbres dansants. Feuilles. » La référence du développeur (le pin Pinterest) a donné l'atmosphère et la composition : une **forêt de nuit**, une **hutte** à toit de tuiles et verrière, un **chat noir** dans la lumière, un **vélo**, un **panneau**, un **banc**, des herbes folles, de grands arbres et une canopée dense. Le lieu est **dessiné par le code**, à sa manière : la référence inspire, elle n'est pas copiée.
+Le douzième lieu, un nouveau choix du développeur : « Forêt au matin, arbres dansants. Feuilles. » Il est dessiné selon les règles de propreté (`proprete.md`), et le système des lieux est décrit au §14 de `decor-rue.md`. Une PR par lieu.
 
 ## 1. Les choix du développeur
 
-- **La nuit** : minuit, ciel clair, la pluie et la brume. Les grandes couleurs restent dans la bande des flashs (`flashs.md` §3) ; la lumière chaude de la hutte est une petite touche.
-- **La hutte** : le cœur du lieu — son toit, sa verrière bleu-vert, ses fenêtres chaudes, sa lampe, son panneau, son banc et son vélo. Le chat noir veille dans la flaque de lumière.
-- **Les feuilles** : la signature. Elles tombent sans cesse, et le **vent** est le moment fort : toutes les 40 s, une rafale balaie la clairière et les couronnes dansent plus fort.
-- **Les couleurs** : les verts et les teals restent sombres, loin du cyan des combattants ; la lumière de la hutte est chaude, loin du magenta.
+- **Le matin, et rien d'autre** : l'aube, la brume et une pluie fine. Pas de plein jour : les grandes couleurs restent dans la bande des flashs (`flashs.md` §3), comme l'aube du temple.
+- **Les feuilles** : c'est sa signature. Elles tombent sans cesse, et le **vent** est le moment fort : toutes les 40 s, une rafale balaie la clairière et les couronnes dansent plus fort.
+- **Les couleurs** : les verts restent sombres et ternes, loin du cyan des combattants ; le rose de l'aube reste éteint, loin du magenta.
 
 ## 2. La composition, de loin à près
 
 ### 2.1 `far`, le fond de la forêt (25 %)
 
-- La forêt de nuit, d'un seul tenant : la **haute canopée** (deux ou trois couches de masses de feuilles, des branches), les **grands troncs** et leurs plans successifs, la brume entre les plans.
-- Le ciel ne se voit que par les trouées de la canopée ; aucune grande bande de ciel vide.
-- Opaque partout.
+- Le ciel de l'aube, du bleu-gris au-dessus jusqu'à une lueur chaude derrière les arbres. Son dégradé est la seule trame du lieu.
+- La lueur du soleil bas, à travers les troncs.
+- **Trois plans d'arbres** en silhouettes de plus en plus sombres, les plus lointains pâles et rapprochés de la brume.
 
-### 2.2 `mid`, la hutte et la clairière (50 %)
+### 2.2 `mid`, la clairière (50 %)
 
-- **Au centre, la hutte** : un toit de tuiles à bord ondulé, une **verrière bleu-vert** à gauche, des murs de planches, une porte, deux fenêtres chaudes, une lampe sur le poteau de droite, un panneau, un banc, un vélo.
-- **Le chat noir** dans la lumière de la lampe, sa queue qui remue (`cat`).
-- **À gauche et à droite**, deux grands arbres, leurs troncs, leurs racines et leurs couronnes qui dansent (`canopy0`, `canopy1`).
-- **Au-dessus**, la branche et les feuilles du premier plan (`canopy2`), qui dansent aussi.
+- **À gauche et à droite**, deux grands arbres, leurs troncs et leurs racines, leurs couronnes qui dansent (`canopy0`, `canopy1`).
+- **Au centre**, la clairière reste ouverte : une souche, un oiseau qui sautille, des feuilles mortes.
 - Des feuilles qui tombent sans cesse (`leaves`), et la rafale qui les balaie (`gust`, le moment fort).
-- Les fougères, les buissons et l'herbe au pied de la hutte.
+- **Au sol du milieu**, la terre du sentier, l'ombre des couronnes.
 
-### 2.3 `floor`, le sol de la forêt (100 %)
+### 2.3 `floor`, le sentier (100 %)
 
-- La terre, la mousse, le sentier de terre, l'herbe et les fougères, les feuilles mortes, les cailloux et les racines.
-- Les flaques de lumière chaude de la hutte entre les herbes.
-- Plat là où les combattants se tiennent (`proprete.md`).
+- La terre tassée, ses repères tous les 64 unités du monde, ses cailloux et ses racines.
+- Les feuilles mortes, brunes et vertes, éparpillées.
+- Les flaques de lumière de l'aube entre les arbres.
 
 ## 3. La palette
 
-`tools/stage/foret/palette.ts`, la sienne : la nuit bleu-vert, la canopée (verts et teals sombres), les écorces, la hutte (bois sombre, verrière, lumière chaude), le chat noir, la terre, la mousse, l'herbe, les feuilles mortes, la pierre, la brume. Les grandes masses restent dans la bande des flashs ; la lumière de la hutte, petite, peut briller. Les verts restent loin du cyan et la lumière chaude loin du magenta (test).
+`tools/stage/foret/palette.ts`, la sienne : le ciel de l'aube, la lueur, les silhouettes d'arbres, les écorces, les couronnes (vertes, sombres), les feuilles mortes, la terre, la mousse, la pierre, l'oiseau, la brume. Les verts restent loin du cyan et le rose de l'aube, éteint, loin du magenta (test).
 
 ## 4. Les ambiances
 
-- **Minuit, ciel clair** : la base.
-- **Minuit, brume** : la forêt se noie dans la brume, deux bancs dérivent entre les troncs.
-- **Minuit, pluie** : une pluie fine, la terre fonce, les feuilles luisent.
+- **Aube, ciel clair** : la base.
+- **Aube, brume** : la forêt se noie dans la brume du matin, deux bancs dérivent entre les troncs.
+- **Aube, pluie** : une pluie fine, la terre fonce, les feuilles luisent.
 
 ## 5. Ce qui bouge
 
 | Animation | Ce qu'elle montre | Rythme |
 | --- | --- | --- |
 | `gust` | la rafale qui balaie les feuilles à travers la clairière : le moment fort | une fois par cycle, centrée au `GUST_AT` |
-| `canopy0`, `canopy1`, `canopy2` | les couronnes et la branche du premier plan qui dansent, plus fort pendant la rafale | 1,5 s |
+| `canopy0`, `canopy1` | les couronnes qui dansent, plus fort pendant la rafale | 1,5 s |
 | `leaves` | des feuilles qui tombent en tournoyant | 160 pas par boucle |
 | `bird` | l'oiseau qui sautille sur la souche | 6 s |
-| `hut` | la lampe et les fenêtres qui respirent | 1,5 s |
-| `cat` | la queue du chat qui remue | 2 s |
 | `mist0`, `mist1` | la brume, par temps de brume seulement | 50 et 40 s |
 
 **La rafale** est le moment fort : toutes les 40 s, à `GUST_AT`, une volée de feuilles traverse la clairière et les couronnes dansent plus fort. Rien ne clignote : chaque état tient au moins 20 pas (test).
@@ -60,11 +55,4 @@ Le douzième lieu, un choix du développeur : « Forêt au matin, arbres dansant
 
 - **La planche** reste sous 9 Mo pour le lieu, aucune texture au-delà de 2 048 px.
 - **La propreté** : sous 4 % de bruit dans `far`, 5 % dans `mid`, 3 % dans `floor`.
-- **Les grandes couleurs** restent sous le fond le plus clair des tables de flashs, dans chaque ambiance (test de contrat).
-- **La lumière de la hutte** reste une petite touche : elle ne doit pas devenir une grande couleur claire (`stage-foret.test.ts`).
-
-## 7. La suite
-
-1. Pousser les détails de la référence : les feuilles de la canopée, l'écorce des grands arbres, les herbes folles.
-2. Peut-être une deuxième hutte ou un second chat, si le développeur le souhaite.
-3. Les autres ambiances (la neige, l'aube) si le lieu en a besoin.
+- **Les grandes couleurs** restent dans la bande des flashs, dans chaque ambiance (test de contrat).

@@ -8,26 +8,19 @@
  */
 
 import { Canvas, at } from '../kit/canvas.ts';
-import { noise } from '../kit/random.ts';
 import type { Rect } from '../kit/stage.ts';
 import {
   BARK,
   BIRD,
-  CAT_BLACK,
   DEAD_LEAF,
   EARTH,
-  GLASS,
-  GLOW,
   GRASS,
   LEAF,
-  LEAF_BRIGHT,
-  LEAF_TEAL,
+  LEAF_LIT,
   LIGHT_POOL,
   MOSS,
   SHADOW,
   STONE,
-  SUNGLOW,
-  WOOD_HUT,
 } from './palette.ts';
 
 /** Row where the trees' roots rest, and the fighters' ground. */
@@ -38,9 +31,9 @@ const GROUND = 460;
 export const CYCLE = 2400;
 export const GUST_AT = 1200;
 
-const LEFT_TREE = { x: 260, top: 20, crown: 260 } as const;
-const RIGHT_TREE = { x: 1190, top: 30, crown: 230 } as const;
-const STUMP = { x: 360, y: 424 } as const;
+const LEFT_TREE = { x: 96, top: 96, crown: 150 } as const;
+const RIGHT_TREE = { x: 1344, top: 86, crown: 170 } as const;
+const STUMP = { x: 720, y: 424 } as const;
 
 export interface Animation {
   readonly name: string;
@@ -77,16 +70,6 @@ function leavesAt(step: number): number {
 /** The bird: a hop now and then. */
 function birdAt(step: number): number {
   return step % 360 < 60 ? 1 : 0;
-}
-
-/** The hut's glow: a slow breath, each state held long. */
-function hutAt(step: number): number {
-  return Math.floor(step / 60) % 3;
-}
-
-/** The cat's tail: a slow flick. */
-function catAt(step: number): number {
-  return step % 240 < 24 ? 1 : 0;
 }
 
 /** A great tree: its trunk, its roots, its crown of leaf masses, swayed by `sway` (−1, 0, 1). */
@@ -130,22 +113,21 @@ function drawTree(
   for (const [index, mass] of masses.entries()) {
     const cx = x + mass.dx + sway * (2 + index);
     const top2 = cy + mass.dy;
-    const green = index % 3 === 2 ? LEAF_TEAL : LEAF;
-    canvas.ellipse(cx - mass.w / 2, top2, mass.w, mass.w * 0.72, at(green, mass.lit ? 1 : 0));
+    canvas.ellipse(cx - mass.w / 2, top2, mass.w, mass.w * 0.72, at(LEAF, mass.lit ? 1 : 0));
     if (mass.lit) {
       canvas.ellipse(
         cx - mass.w * 0.3,
         top2 + mass.w * 0.08,
         mass.w * 0.5,
         mass.w * 0.34,
-        at(LEAF_BRIGHT, 0),
+        at(LEAF_LIT, 0),
       );
       canvas.ellipse(
         cx - mass.w * 0.28,
         top2 + mass.w * 0.14,
         mass.w * 0.4,
         mass.w * 0.24,
-        at(green, 0),
+        at(LEAF, 0),
       );
     } else {
       canvas.ellipse(
@@ -153,16 +135,7 @@ function drawTree(
         top2 + mass.w * 0.12,
         mass.w * 0.42,
         mass.w * 0.26,
-        at(green, 0),
-      );
-    }
-    for (let leaf = 0; leaf < 3; leaf++) {
-      canvas.fill(
-        cx - mass.w * 0.3 + leaf * mass.w * 0.24,
-        top2 + mass.w * 0.2 + (leaf % 2) * 6,
-        3,
-        3,
-        at(LEAF_BRIGHT, leaf % 2),
+        at(LEAF, 0),
       );
     }
   }
@@ -238,211 +211,24 @@ export function drawGust(canvas: Canvas, x: number): void {
   }
 }
 
-/**
- * The forester's hut, like the developer's reference: warm wood, a glass roof in panes, the light
- * inside breathing with `frame`, a door and a porch.
- */
-function drawHut(canvas: Canvas, frame: number): void {
-  const left = 470;
-  const top = 200;
-  const width = 500;
-  const glow = [0, 1, 2][frame] ?? 0;
-  // The roof: dark tiles, a scalloped lower edge, and the blue-green glass panel of the reference.
-  const roofBottom = top + 74;
-  canvas.paint(left - 34, top - 8, width + 68, 94, (x, y) => {
-    const scallop = Math.round(Math.sin((x - left) / 20) * 3);
-    if (y > roofBottom + scallop) return undefined;
-    if (y < top + 8) return at(WOOD_HUT, 3);
-    const tile = Math.floor((x - left) / 30) + Math.floor((y - top) / 10);
-    return at(WOOD_HUT, tile % 3 === 0 ? 0 : tile % 3 === 1 ? 1 : 2);
-  });
-  canvas.hline(left - 34, top + 8, width + 68, at(WOOD_HUT, 3));
-  canvas.paint(left - 24, top + 12, 170, 54, (x, y) => {
-    if (y > top + 52) return undefined;
-    return at(GLASS, (x - left) % 18 < 9 ? 1 : 0);
-  });
-  canvas.line(left - 24, top + 12, left + 146, top + 52, at(WOOD_HUT, 1), 2);
-  // The walls, their planks, the door, the warm windows.
-  canvas.fill(left, top + 70, width, BASE - top - 70, at(WOOD_HUT, 2));
-  for (let x = left + 6; x < left + width; x += 18) {
-    canvas.vline(x, top + 72, BASE - top - 72, at(WOOD_HUT, 1));
-  }
-  canvas.hline(left, top + 70, width, at(WOOD_HUT, 3));
-  const doorX = left + width * 0.42;
-  canvas.fill(doorX, top + 118, 64, BASE - top - 118, at(WOOD_HUT, 0));
-  canvas.hline(doorX, top + 118, 64, at(WOOD_HUT, 1));
-  canvas.fill(doorX + 14, top + 130, 18, 10, at(GLOW, glow > 0 ? 1 : 0));
-  if (glow > 1) canvas.fill(doorX + 18, top + 133, 11, 5, at(GLOW, 2));
-  for (const wx of [left + 40, left + width - 110]) {
-    canvas.fill(wx, top + 108, 58, 46, at(WOOD_HUT, 0));
-    canvas.fill(wx + 12, top + 118, 28, 20, at(GLOW, glow > 0 ? 1 : 0));
-    if (glow > 1) canvas.fill(wx + 17, top + 122, 19, 12, at(GLOW, 2));
-    canvas.vline(wx + 26, top + 118, 20, at(WOOD_HUT, 2));
-    canvas.hline(wx + 12, top + 128, 28, at(WOOD_HUT, 2));
-  }
-  // The porch, its posts and its step.
-  canvas.fill(left - 16, BASE - 16, width + 32, 16, at(WOOD_HUT, 1));
-  canvas.hline(left - 16, BASE - 16, width + 32, at(WOOD_HUT, 3));
-  for (const px of [left - 12, left + width + 4]) {
-    canvas.fill(px, top + 70, 8, BASE - top - 70, at(WOOD_HUT, 0));
-  }
-  // The lamp on the right post, its warm light, and the sign under it.
-  const lampX = left + width + 8;
-  canvas.vline(lampX, top + 70, BASE - top - 70, at(WOOD_HUT, 0));
-  canvas.fill(lampX - 6, top + 88, 20, 26, at(GLOW, glow > 0 ? 2 : 1));
-  canvas.fill(lampX - 2, top + 92, 12, 16, at(GLOW, 3));
-  canvas.fill(lampX - 12, top + 84, 32, 4, at(WOOD_HUT, 0));
-  canvas.fill(lampX + 14, top + 132, 34, 22, at(WOOD_HUT, 2));
-  canvas.fill(lampX + 18, top + 136, 26, 14, at(GLOW, 0));
-  // The bench in front, the bicycle to the left.
-  const benchX = left + 150;
-  canvas.fill(benchX, BASE - 30, 160, 8, at(WOOD_HUT, 3));
-  canvas.fill(benchX + 8, BASE - 22, 8, 22, at(WOOD_HUT, 0));
-  canvas.fill(benchX + 140, BASE - 22, 8, 22, at(WOOD_HUT, 0));
-  canvas.fill(benchX - 4, BASE - 44, 168, 5, at(WOOD_HUT, 1));
-  const bikeX = left - 54;
-  for (const wx of [bikeX, bikeX + 44]) {
-    canvas.ellipse(wx, BASE - 28, 26, 26, at(STONE, 1));
-    canvas.ellipse(wx + 4, BASE - 24, 18, 18, at(STONE, 0));
-  }
-  canvas.line(bikeX + 4, BASE - 28, bikeX + 24, BASE - 52, at(BARK, 1), 3);
-  canvas.line(bikeX + 24, BASE - 52, bikeX + 48, BASE - 28, at(BARK, 1), 3);
-  canvas.line(bikeX + 12, BASE - 46, bikeX + 36, BASE - 46, at(BARK, 2), 2);
-  // The warm pool under the lamp.
-  canvas.ellipse(lampX - 30, BASE - 6, 86, 12, at(LIGHT_POOL, 1));
-  canvas.ellipse(lampX - 18, BASE - 4, 44, 6, at(GLOW, 0));
-}
-
-/** The cats: a dark one at the hut's door, a pale one by the path; their tails flick (`frame`). */
-function drawCats(canvas: Canvas, frame: number): void {
-  const x = 900;
-  const y = BASE - 2;
-  const tail = frame === 1 ? 6 : 0;
-  // The warm pool under the lamp, and the black cat of the reference.
-  canvas.ellipse(x - 40, y - 8, 94, 12, at(LIGHT_POOL, 1));
-  canvas.ellipse(x - 26, y - 6, 44, 6, at(GLOW, 0));
-  canvas.ellipse(x - 20, y - 28, 48, 28, at(CAT_BLACK, 1));
-  canvas.ellipse(x - 12, y - 46, 28, 24, at(CAT_BLACK, 2));
-  canvas.fill(x - 20, y - 60, 8, 10, at(CAT_BLACK, 2));
-  canvas.fill(x + 8, y - 60, 8, 10, at(CAT_BLACK, 2));
-  canvas.line(x + 20, y - 24, x + 36 + tail, y - 40 - tail, at(CAT_BLACK, 1), 3);
-  canvas.set(x - 14, y - 50, at(GLOW, 2));
-  canvas.set(x - 4, y - 50, at(GLOW, 2));
-}
-
-/** The dawn's shafts through the canopy: pale slants of light on the clearing. */
-function drawShafts(canvas: Canvas): void {
-  for (const [x, w] of [
-    [420, 34],
-    [640, 26],
-    [880, 40],
-  ] as const) {
-    canvas.paint(x, 150, w, BASE - 150, (px, py) => {
-      const t = (px - x) / w;
-      if (py < 150 + t * 120) return undefined;
-      return at(SUNGLOW, (px - x) % 8 < 4 ? 0 : 1);
-    });
-  }
-}
-
-/** The ferns, the bushes and the grass, dense along the floor and under the trees. */
-function drawUndergrowth(canvas: Canvas): void {
-  const tuft = (x: number, tall: number, ramp: readonly number[]): void => {
-    for (const [dx, len] of [
-      [-8, tall],
-      [-3, tall - 3],
-      [3, tall - 5],
-      [8, tall - 8],
-      [0, tall - 2],
-    ] as const) {
-      canvas.line(x + dx, BASE, x + dx * 2, BASE - len, at(ramp, dx === 0 ? 1 : 0), 3);
-    }
-  };
-  for (const [x, tall, ramp] of [
-    [220, 26, GRASS],
-    [300, 20, MOSS],
-    [380, 24, GRASS],
-    [520, 18, MOSS],
-    [600, 22, GRASS],
-    [760, 26, GRASS],
-    [840, 20, MOSS],
-    [980, 24, GRASS],
-    [1060, 18, MOSS],
-    [1160, 26, GRASS],
-    [1260, 20, MOSS],
-    [1350, 24, GRASS],
-  ] as const) {
-    tuft(x, tall, ramp);
-  }
-  for (const [x, w, h] of [
-    [180, 70, 30],
-    [300, 50, 22],
-    [520, 60, 26],
-    [700, 80, 34],
-    [900, 60, 28],
-    [1080, 70, 30],
-    [1240, 56, 24],
-    [1380, 60, 24],
-  ] as const) {
-    canvas.ellipse(x, BASE - h + 10, w, h, at(MOSS, 1));
-    canvas.ellipse(x + w * 0.18, BASE - h + 14, w * 0.5, h * 0.6, at(LEAF_TEAL, 2));
-    canvas.ellipse(x - w * 0.2, BASE - h + 16, w * 0.4, h * 0.5, at(LEAF, 2));
-  }
-}
-
-/** The foreground leaves over the clearing: a branch from the top, two masses, swayed. */
-function drawHangingCanopy(canvas: Canvas, sway: number): void {
-  const cx = 720 + sway * 2;
-  canvas.line(cx - 180, 0, cx + 40, 82, at(BARK, 0), 10);
-  canvas.line(cx - 180, 0, cx + 40, 82, at(BARK, 1), 6);
-  for (const mass of [
-    { dx: -60, dy: 82, w: 190, lit: false },
-    { dx: 90, dy: 60, w: 220, lit: true },
-    { dx: 240, dy: 96, w: 160, lit: false },
-  ] as const) {
-    const x = cx + mass.dx + sway * 3;
-    canvas.ellipse(x - mass.w / 2, mass.dy - mass.w * 0.25, mass.w, mass.w * 0.5, at(LEAF, 0));
-    for (let leaf = 0; leaf < 20; leaf++) {
-      const lx = x - mass.w / 2 + Math.round(noise(700 + mass.dx, leaf, 0, mass.w));
-      const ly = mass.dy - mass.w * 0.25 + Math.round(noise(701 + mass.dx, leaf, 0, mass.w * 0.5));
-      canvas.fill(
-        lx,
-        ly,
-        3,
-        3,
-        at(
-          mass.lit && leaf % 4 === 0 ? LEAF_BRIGHT : leaf % 2 === 0 ? LEAF_TEAL : LEAF,
-          leaf % 3 === 0 ? 1 : 0,
-        ),
-      );
-    }
-  }
-}
-
 // --- The animations. ----------------------------------------------------------------------------
 
 export const MID_ANIMATIONS: readonly Animation[] = [
   {
     name: 'canopy0',
-    rect: { x: 110, y: 0, width: 300, height: 200 },
+    rect: { x: 0, y: 0, width: 320, height: 250 },
     frames: 3,
     timeline: timelineOf((step) => canopyAt(step, 0)),
   },
   {
     name: 'canopy1',
-    rect: { x: 1050, y: 0, width: 300, height: 200 },
+    rect: { x: 1120, y: 0, width: 320, height: 260 },
     frames: 3,
     timeline: timelineOf((step) => canopyAt(step, 60)),
   },
   {
-    name: 'canopy2',
-    rect: { x: 550, y: 0, width: 340, height: 170 },
-    frames: 3,
-    timeline: timelineOf((step) => canopyAt(step, 120)),
-  },
-  {
     name: 'leaves',
-    rect: { x: 520, y: 120, width: 520, height: 110 },
+    rect: { x: 480, y: 110, width: 680, height: 140 },
     frames: 3,
     timeline: timelineOf(leavesAt),
   },
@@ -451,18 +237,6 @@ export const MID_ANIMATIONS: readonly Animation[] = [
     rect: { x: STUMP.x - 26, y: STUMP.y - 56, width: 52, height: 36 },
     frames: 2,
     timeline: timelineOf(birdAt),
-  },
-  {
-    name: 'hut',
-    rect: { x: 400, y: 150, width: 660, height: BASE - 150 + 40 },
-    frames: 3,
-    timeline: timelineOf(hutAt),
-  },
-  {
-    name: 'cat',
-    rect: { x: 810, y: BASE - 80, width: 180, height: 90 },
-    frames: 2,
-    timeline: timelineOf(catAt),
   },
 ];
 
@@ -526,14 +300,9 @@ export function drawMid(
       canvas.line(fx + dx, fy, fx + dx + dx * 2, fy - len + dy, at(GRASS, dx === 0 ? 1 : 0), 3);
     }
   }
-  drawShafts(canvas);
   drawTree(canvas, LEFT_TREE, (frameOf('canopy0') - 1) * 2);
   drawTree(canvas, RIGHT_TREE, (frameOf('canopy1') - 1) * 2);
-  drawHangingCanopy(canvas, (frameOf('canopy2') - 1) * 2);
-  drawHut(canvas, frameOf('hut'));
-  drawUndergrowth(canvas);
   drawStump(canvas, frameOf('bird'));
-  drawCats(canvas, frameOf('cat'));
   drawLeaves(canvas, frameOf('leaves'));
   // The stones at the edges.
   for (const [x, y, w, h] of [

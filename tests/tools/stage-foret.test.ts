@@ -16,11 +16,11 @@ function propNamed(name: string) {
 describe("the code's Dancing Forest (docs/art/decor-forest-dance.md)", { timeout: 60_000 }, () => {
   stageContract({ name: 'foret', drawn: drawForet(), palette: PALETTE, colors: STAGE_COLORS });
 
-  it('is a night only: clear, rain, fog, the night first', () => {
-    expect(Object.keys(STAGE_COLORS)).toEqual(['midnight-clear', 'midnight-rain', 'midnight-fog']);
+  it('is a dawn only: clear, rain, fog, the dawn first', () => {
+    expect(Object.keys(STAGE_COLORS)).toEqual(['dawn-clear', 'dawn-rain', 'dawn-fog']);
     const map = STAGE_MAPS.find(({ name }) => name === 'foret');
     expect(map?.sheltered).toBe(false);
-    expect(map?.variants[0]?.atmosphere).toEqual({ moment: 'midnight', weather: 'clear' });
+    expect(map?.variants[0]?.atmosphere).toEqual({ moment: 'dawn', weather: 'clear' });
   });
 
   it('sweeps its gust of leaves once a cycle, centered on GUST_AT', () => {
@@ -32,7 +32,7 @@ describe("the code's Dancing Forest (docs/art/decor-forest-dance.md)", { timeout
   });
 
   it('dances its crowns stronger as the gust sweeps, every state held 20 steps at least', () => {
-    for (const name of ['canopy0', 'canopy1', 'canopy2']) {
+    for (const name of ['canopy0', 'canopy1']) {
       const timeline = propNamed(name).timeline;
       expect(
         timeline.reduce((sum, [, steps]) => sum + steps, 0),
@@ -56,8 +56,8 @@ describe("the code's Dancing Forest (docs/art/decor-forest-dance.md)", { timeout
     }
   });
 
-  it('loops its leaves, its bird, its hut and its cat over the same cycle', () => {
-    for (const name of ['leaves', 'bird', 'hut', 'cat']) {
+  it('loops its leaves and its bird over the same cycle', () => {
+    for (const name of ['leaves', 'bird']) {
       expect(
         propNamed(name).timeline.reduce((sum, [, steps]) => sum + steps, 0),
         name,

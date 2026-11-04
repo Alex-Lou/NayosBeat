@@ -1,10 +1,10 @@
 /**
- * The middle layer (docs/art/decor-rooftop.md §2.2): the roof behind the fighters, in clean flat
- * tones and 3D perspective (docs/art/proprete.md). Every animation the blimp shakes loops over
+ * The middle layer (docs/art/decor-rooftop.md §2.2): the roof behind the fighters, in high-detail
+ * pixel art and 3D perspective (docs/art/proprete.md). Every animation the blimp shakes loops over
  * BLIMP_CYCLE, with it (far.ts).
  */
 
-import { Canvas, Mask, at } from '../kit/canvas.ts';
+import { Canvas, Mask, at, dithered } from '../kit/canvas.ts';
 import { spell } from '../kit/font.ts';
 import { lightAt, spill, type Light, type Spill } from '../kit/light.ts';
 import { noise, streamOf } from '../kit/random.ts';
@@ -45,36 +45,36 @@ import {
 import { drawSignBack, signLetters } from './signs.ts';
 
 export const BASE = 404;
-const PARAPET = 382;
+const PARAPET = 368;
 const FLOOR_END = 470;
 const BACK_FEET = 424;
 const FEET = 452;
-const HUT = { left: 48, right: 248, roof: 262, foot: 448 } as const;
-const DOOR: Rect = { x: 142, y: 342, width: 42, height: HUT.foot - 342 };
-const LAMP = { x: 163, y: 326 } as const;
+const HUT = { left: 48, right: 248, roof: 256, foot: 448 } as const;
+const DOOR: Rect = { x: 142, y: 338, width: 42, height: HUT.foot - 338 };
+const LAMP = { x: 163, y: 322 } as const;
 const NEON = { x: 318, y: 128, scale: 12 } as const;
 const TRUSS = { left: 312, right: 716, top: 254 } as const;
-const TANK_AT = { cx: 800, top: 196, body: 104, width: 108 } as const;
+const TANK_AT = { cx: 800, top: 192, body: 108, width: 110 } as const;
 const UNITS = [
   { x: 878, width: 70 },
   { x: 958, width: 70 },
 ] as const;
-const UNIT = { top: 374, height: FEET - 374 } as const;
+const UNIT = { top: 368, height: FEET - 368 } as const;
 const MAST = { x: 1056, top: 236 } as const;
 const LUCK = { x: 1096, y: 116, scale: 9, spine: 1136 } as const;
-const LINE = { left: 1236, right: 1400, y: 326 } as const;
+const LINE = { left: 1242, right: 1404, y: 326 } as const;
 const DRONE = { x: 700, y: 296 } as const;
-const SUBSTATION = { x: 500, y: 396, width: 48, height: 58 } as const;
-const TURBINE = { x: 1368, y: 368 } as const;
+const SUBSTATION = { x: 500, y: 392, width: 52, height: 62 } as const;
+const TURBINE = { x: 1368, y: 354 } as const;
 const PUDDLE_NEON = { x: 364, y: 442, width: 120, height: 18 } as const;
 const PUDDLE_LUCK = { x: 1084, y: 442, width: 96, height: 16 } as const;
 const DECK_VENT = { x: 638, y: 454 } as const;
 
 const LIGHTS: readonly Light[] = [
-  { x: LAMP.x, y: LAMP.y + 8, radius: 130, strength: 1.8, squash: 1 },
-  { x: LAMP.x, y: 444, radius: 120, strength: 1, squash: 0.35 },
-  { x: 516, y: 250, radius: 260, strength: 1.1, squash: 0.7 },
-  { x: LUCK.spine, y: 230, radius: 170, strength: 0.9, squash: 0.9 },
+  { x: LAMP.x, y: LAMP.y + 8, radius: 135, strength: 1.9, squash: 1 },
+  { x: LAMP.x, y: 444, radius: 120, strength: 1.1, squash: 0.35 },
+  { x: 516, y: 250, radius: 260, strength: 1.2, squash: 0.7 },
+  { x: LUCK.spine, y: 230, radius: 175, strength: 1, squash: 0.9 },
 ];
 
 const ROOF_SPILLS: readonly Spill[] = [
@@ -98,6 +98,15 @@ export interface Animation {
   readonly timeline: readonly (readonly [number, number])[];
 }
 
+function hdTone(ramp: readonly number[], level: number, x: number, y: number): number {
+  const top = ramp.length - 1;
+  const clamped = Math.min(Math.max(level, 0), top);
+  const base = Math.floor(clamped);
+  const fraction = clamped - base;
+  const step = dithered(fraction, x >> 1, y) ? 1 : 0;
+  return ramp[Math.min(base + step, top)] ?? 0;
+}
+
 function timelineOf(frameAt: (step: number) => number): [number, number][] {
   const timeline: [number, number][] = [];
   for (let step = 0; step < BLIMP_CYCLE; step++) {
@@ -113,35 +122,42 @@ export function overhead(step: number): boolean {
   return step >= PASS_AT + PASS * 0.3 && step < PASS_AT + PASS * 0.7;
 }
 
-function clampedSlot(ramp: readonly number[], step: number): number {
-  return at(ramp, Math.max(0, Math.min(ramp.length - 1, Math.round(step))));
-}
-
 function drawParapet(canvas: Canvas): void {
   const center = canvas.width / 2;
   for (const [rLeft, rRight] of [
-    [268, 308],
+    [264, 308],
     [720, 748],
-    [1166, 1232],
+    [1164, 1236],
   ] as const) {
-    canvas.hline(rLeft, PARAPET - 14, rRight - rLeft, at(STEEL, 3));
-    canvas.hline(rLeft, PARAPET - 7, rRight - rLeft, at(STEEL, 2));
+    canvas.hline(rLeft, PARAPET - 16, rRight - rLeft, at(STEEL, 4));
+    canvas.hline(rLeft, PARAPET - 9, rRight - rLeft, at(STEEL, 2));
     for (let px = rLeft; px <= rRight; px += 16) {
-      canvas.fill(px, PARAPET - 14, 2, 14, at(STEEL, 2));
+      canvas.fill(px, PARAPET - 16, 2, 16, at(STEEL, 2));
+      canvas.vline(px + 1, PARAPET - 16, 16, at(STEEL, 3));
     }
   }
   canvas.paint(0, PARAPET, canvas.width, BASE - PARAPET, (x, y) => {
     const dy = y - PARAPET;
     const perspX = x - Math.round(((x - center) * dy) / 180);
-    const joint = ((perspX % 96) + 96) % 96 === 0;
-    const lit = lightAt(LIGHTS, x, y) > 0.65 ? 1 : 0;
-    if (y === PARAPET) return at(CONCRETE, 5 + lit);
-    if (y < PARAPET + 5) return clampedSlot(CONCRETE, 4 + lit - (joint ? 1 : 0));
-    if (y === PARAPET + 5) return at(CONCRETE, 1);
-    const scupper = ((x % 192) + 192) % 192 > 88 && ((x % 192) + 192) % 192 < 104 && y > BASE - 6;
+    const along = ((perspX % 96) + 96) % 96;
+    const joint = along < 2;
+    const pilaster = along >= 40 && along < 56;
+    const lit = lightAt(LIGHTS, x, y) * 0.7;
+    if (y === PARAPET) return at(CONCRETE, 6);
+    if (y < PARAPET + 6) {
+      return hdTone(CONCRETE, 4.2 + lit - (joint ? 1.5 : 0), x, y);
+    }
+    if (y === PARAPET + 6) return at(CONCRETE, 0);
+    const scupper = along > 14 && along < 30 && y > BASE - 7;
     if (scupper) return at(MEMBRANE, 0);
-    return clampedSlot(CONCRETE, 2 + lit - (joint ? 1 : 0));
+    const pLift = pilaster ? (along < 43 ? 1.2 : along > 53 ? -0.8 : 0.5) : 0;
+    const stain = (noise(31, x >> 2, y >> 1, 5) - 0.5) * 0.6;
+    return hdTone(CONCRETE, 1.8 + pLift + lit + stain - (joint ? 1 : 0), x, y);
   });
+  for (const ry of [PARAPET + 12, PARAPET + 18]) {
+    canvas.hline(256, ry, canvas.width - 256, at(STEEL, 3));
+    canvas.hline(256, ry + 1, canvas.width - 256, at(STEEL, 0));
+  }
 }
 
 interface Reflected {
@@ -160,29 +176,29 @@ function drawMembrane(canvas: Canvas, signs: readonly Reflected[]): void {
     const perspX = x - Math.round(((x - center) * dy) / 360);
     const along = ((perspX % 128) + 128) % 128;
     const hCourse = y === BASE + 10 || y === BASE + 24 || y === BASE + 40 || y === BASE + 52;
-    const seam = along === 0 || along === 1 || hCourse ? -1 : along === 2 ? 1 : 0;
-    const tile = Math.floor(perspX / 128) % 2 === 0 ? 2 : 3;
-    const lit = lightAt(LIGHTS, x, y);
-    const lift = lit > 1 ? 1 : 0;
-    const step = Math.max(0, Math.min(MEMBRANE.length - 1, tile + seam + lift));
+    const seam = along === 0 || along === 1 || hCourse ? -1.2 : along === 2 ? 0.9 : 0;
+    const tile = Math.floor(perspX / 128) % 2 === 0 ? 1.9 : 2.5;
+    const lit = lightAt(LIGHTS, x, y) * 0.85;
+    const wear = (noise(37, x >> 2, y >> 1, 8) - 0.5) * 0.5;
+    const level = tile + seam + lit + wear;
     const sign = signs.find(({ left, right }) => x >= left && x < right);
     const pooled = sign !== undefined && noise(45, Math.floor(x / 8), Math.floor(y / 4), 6) > 0.38;
     if (!wetAt(41, x, y) && !pooled) {
       if (y >= 452) {
         const paverJoint = along < 3 || (along >= 64 && along < 66) || y === 452;
         if (paverJoint) return at(MEMBRANE, 0);
-        const pStep = Math.floor(perspX / 64) % 2 === 0 ? 3 : 2;
-        return at(CONCRETE, pStep + (y === 453 ? 1 : 0));
+        const pStep = Math.floor(perspX / 64) % 2 === 0 ? 3.1 : 2.4;
+        return hdTone(CONCRETE, pStep + (y === 453 ? 1 : 0) + wear, x, y);
       }
-      return at(MEMBRANE, step);
+      return hdTone(MEMBRANE, level, x, y);
     }
     if (sign && y % 3 !== 0) {
       const ripple = Math.round(Math.sin(y * 1.5) * 2);
       const mirrored = Math.round(sign.bottom - (y - BASE) * sign.stretch);
       const reflected = [-2, 0, 2].some((d) => sign.letters.has(x + ripple, mirrored + d));
-      if (reflected) return at(sign.ramp, step);
+      if (reflected) return hdTone(sign.ramp, level, x, y);
     }
-    return at(WET, step);
+    return hdTone(WET, level, x, y);
   });
   canvas.fill(0, BASE, canvas.width, 3, at(MEMBRANE, 0));
 }
@@ -242,62 +258,68 @@ function drawHut(canvas: Canvas): void {
   canvas.line(right, roof, right + sideW, roof - 10, at(CONCRETE, 4));
   canvas.paint(left, roof, right - left, foot - roof, (x, y) => {
     if (y < roof + 3) return at(CONCRETE, 0);
-    const course = (y - roof) % 24 === 23;
-    const vJoint = (x - left) % 48 === 0;
-    const edge = x - left < 3 ? -1 : right - x <= 3 ? 1 : 0;
-    const lit = lightAt(LIGHTS, x, y);
-    const lift = lit > 1.1 ? 2 : lit > 0.5 ? 1 : 0;
-    return clampedSlot(CONCRETE, 2 + edge + lift - (course || vJoint ? 1 : 0));
+    const course = (y - roof) % 20 === 19;
+    const vJoint = (x - left + Math.floor((y - roof) / 20) * 24) % 48 === 0;
+    const edge = x - left < 3 ? -0.8 : right - x <= 3 ? 1.1 : 0;
+    const lit = lightAt(LIGHTS, x, y) * 0.95;
+    const stain = (noise(47, x >> 2, y >> 1, 7) - 0.5) * 0.7;
+    return hdTone(CONCRETE, 1.9 + edge + lit + stain - (course || vJoint ? 1 : 0), x, y);
   });
   canvas.polygon(
     [
-      [left - 6, roof - 6],
-      [right + 4, roof - 6],
-      [right + sideW + 4, roof - 16],
+      [left - 6, roof - 8],
+      [right + 4, roof - 8],
+      [right + sideW + 4, roof - 18],
       [right + sideW + 4, roof - 10],
       [right + 4, roof],
       [left - 6, roof],
     ],
     at(CONCRETE, 3),
   );
-  canvas.hline(left - 6, roof - 6, right - left + 10, at(CONCRETE, 5));
-  canvas.fill(68, roof + 16, 12, 74, at(STEEL, 2));
-  canvas.vline(68, roof + 16, 74, at(STEEL, 4));
-  canvas.vline(79, roof + 16, 74, at(STEEL, 0));
-  for (let y = roof + 24; y < roof + 88; y += 16) {
-    canvas.hline(67, y, 14, at(STEEL, 3));
+  canvas.hline(left - 6, roof - 8, right - left + 10, at(CONCRETE, 6));
+  for (let gx = left - 4; gx < right + 2; gx += 8) {
+    canvas.vline(gx, roof - 6, 4, at(STEEL, 2));
   }
-  canvas.fill(84, roof - 34, 10, 28, at(STEEL, 2));
-  canvas.fill(81, roof - 38, 16, 5, at(STEEL, 3));
-  canvas.hline(81, roof - 38, 16, at(STEEL, 5));
-  canvas.vline(85, roof - 34, 28, at(STEEL, 4));
-  canvas.line(right + 10, roof + 10, TRUSS.left + 6, TRUSS.top + 30, at(STEEL, 1));
-  canvas.line(right + 10, roof + 16, TRUSS.left + 6, TRUSS.top + 40, at(STEEL, 1));
+  canvas.fill(66, roof + 14, 14, 82, at(STEEL, 2));
+  canvas.vline(66, roof + 14, 82, at(STEEL, 4));
+  canvas.vline(79, roof + 14, 82, at(STEEL, 0));
+  for (let y = roof + 22; y < roof + 92; y += 14) {
+    canvas.fill(65, y, 16, 2, at(STEEL, 4));
+  }
+  canvas.fill(84, roof - 36, 12, 28, at(STEEL, 2));
+  canvas.fill(80, roof - 41, 20, 6, at(STEEL, 3));
+  canvas.hline(80, roof - 41, 20, at(STEEL, 5));
+  canvas.vline(85, roof - 36, 28, at(STEEL, 4));
+  for (const cy of [roof + 10, roof + 16, roof + 22]) {
+    canvas.line(right + 10, cy, TRUSS.left + 6, cy + 20, at(STEEL, 1));
+  }
   canvas.polygon(
     [
-      [DOOR.x - 10, DOOR.y - 6],
-      [DOOR.x + DOOR.width + 10, DOOR.y - 6],
-      [DOOR.x + DOOR.width + 14, DOOR.y - 1],
-      [DOOR.x - 6, DOOR.y - 1],
+      [DOOR.x - 12, DOOR.y - 8],
+      [DOOR.x + DOOR.width + 12, DOOR.y - 8],
+      [DOOR.x + DOOR.width + 16, DOOR.y - 1],
+      [DOOR.x - 8, DOOR.y - 1],
     ],
-    at(CONCRETE, 4),
+    at(STEEL, 3),
   );
-  canvas.hline(DOOR.x - 6, DOOR.y - 1, DOOR.width + 20, at(CONCRETE, 6));
+  canvas.hline(DOOR.x - 8, DOOR.y - 1, DOOR.width + 24, at(STEEL, 5));
   canvas.fill(DOOR.x - 3, DOOR.y, DOOR.width + 6, DOOR.height, at(STEEL, 0));
   canvas.paint(DOOR.x, DOOR.y, DOOR.width, DOOR.height, (x, y) => {
     const frame = x === DOOR.x || x === DOOR.x + DOOR.width - 1 || y === DOOR.y;
     if (frame) return at(STEEL, 4);
     const plate = y > DOOR.y + DOOR.height - 16;
-    if (plate) return at(STEEL, 3);
+    if (plate) return hdTone(STEEL, 2.8, x, y);
+    const windowSlit = x >= DOOR.x + 14 && x < DOOR.x + 28 && y >= DOOR.y + 14 && y < DOOR.y + 24;
+    if (windowSlit) return at(SODIUM, y === DOOR.y + 14 ? 3 : 1);
     const panel =
       x >= DOOR.x + 6 &&
       x < DOOR.x + DOOR.width - 6 &&
       ((y >= DOOR.y + 8 && y < DOOR.y + 38) || (y >= DOOR.y + 46 && y < DOOR.y + DOOR.height - 20));
     if (panel) {
       if (y === DOOR.y + 8 || y === DOOR.y + 46 || x === DOOR.x + 6) return at(STEEL, 0);
-      return at(STEEL, 1);
+      return hdTone(STEEL, 1.4 + lightAt(LIGHTS, x, y) * 0.4, x, y);
     }
-    return at(STEEL, 2);
+    return hdTone(STEEL, 2.2 + lightAt(LIGHTS, x, y) * 0.5, x, y);
   });
   canvas.fill(DOOR.x + DOOR.width - 9, DOOR.y + 44, 4, 3, at(STEEL, 5));
   canvas.fill(LAMP.x - 7, LAMP.y - 3, 14, 3, at(STEEL, 3));
@@ -319,7 +341,7 @@ function drawHut(canvas: Canvas): void {
       }
     }
   }
-  const vm = { x: right + 10, y: foot - 68, w: 34, h: 68 };
+  const vm = { x: right + 10, y: foot - 68, w: 36, h: 68 };
   canvas.polygon(
     [
       [vm.x + vm.w, vm.y],
@@ -340,17 +362,18 @@ function drawHut(canvas: Canvas): void {
   ] as const) {
     canvas.hline(vm.x + 6, ry, vm.w - 16, at(ramp, 2));
     for (let bx = vm.x + 7; bx < vm.x + vm.w - 11; bx += 5) {
-      canvas.fill(bx, ry - 3, 3, 3, at(ramp, 1));
+      canvas.fill(bx, ry - 3, 3, 3, at(ramp, 2));
+      canvas.set(bx, ry - 3, at(ramp, 3));
     }
   }
-  canvas.fill(vm.x + vm.w - 6, vm.y + 14, 3, 10, at(NEON_GREEN, 2));
+  canvas.fill(vm.x + vm.w - 6, vm.y + 14, 3, 10, at(NEON_GREEN, 3));
   canvas.fill(vm.x + 6, vm.y + 46, vm.w - 14, 8, at(STEEL, 0));
   canvas.hline(vm.x + 6, vm.y + 46, vm.w - 14, at(STEEL, 3));
 }
 
 function drawSteam(canvas: Canvas, frame: number): void {
-  const x0 = 89;
-  const top = HUT.roof - 40;
+  const x0 = 90;
+  const top = HUT.roof - 42;
   const cloud = new Mask(canvas.width, canvas.height);
   for (let i = 0; i < 7; i++) {
     const rise = ((i * 8 + frame * 4) % 56) + 4;
@@ -505,70 +528,151 @@ function drawWatcher(canvas: Canvas, frame: number): void {
   const pose: Pose = frame === 1 ? { ...CROSSED, lean: 2, dip: -1 } : CROSSED;
   canvas.ellipse(WATCHER.x - 12, WATCHER.y - 2, 24, 4, at(MEMBRANE, 0));
   drawFigure(canvas, { ...WATCHER, pose }, FIGURE_RAMPS);
+  canvas.fill(WATCHER.x + 18, FEET - 22, 22, 20, at(STEEL, 2));
+  canvas.hline(WATCHER.x + 18, FEET - 22, 22, at(STEEL, 4));
+  canvas.hline(WATCHER.x + 18, FEET - 12, 22, at(NEON_YELLOW, 2));
+}
+
+function drawCargoPod(canvas: Canvas, x: number, foot: number): void {
+  const w = 86;
+  const h = 48;
+  const top = foot - h;
+  canvas.polygon(
+    [
+      [x - 8, top + 5],
+      [x, top],
+      [x, foot],
+      [x - 8, foot - 4],
+    ],
+    at(STEEL, 0),
+  );
+  canvas.line(x - 8, top + 5, x, top, at(STEEL, 3));
+  canvas.paint(x, top, w, h, (px, py) => {
+    const rx = px - x;
+    const ry = py - top;
+    if (ry === 0) return at(STEEL, 4);
+    if (ry === 1 || ry >= h - 3) return at(STEEL, 1);
+    if (rx < 4 || rx >= w - 4) return at(STEEL, 3);
+    if (ry >= 8 && ry < h - 8 && rx % 10 === 0) return at(STEEL, 0);
+    if (ry >= 8 && ry < h - 8 && rx % 10 === 1) return at(STEEL, 3);
+    return at(STEEL, 2);
+  });
+  canvas.fill(x + 10, top + 12, 28, 10, at(STEEL, 0));
+  canvas.hline(x + 12, top + 15, 18, at(NEON_ORANGE, 2));
+  canvas.hline(x + 12, top + 18, 12, at(NEON_YELLOW, 2));
 }
 
 function drawTruss(canvas: Canvas, sparkFrame: number): void {
   const { left, right, top } = TRUSS;
+  const annex = { x: left + 16, y: 318, w: 368, h: BACK_FEET - 318 };
+  canvas.polygon(
+    [
+      [annex.x - 10, annex.y + 6],
+      [annex.x, annex.y],
+      [annex.x, BACK_FEET],
+      [annex.x - 10, BACK_FEET - 4],
+    ],
+    at(STEEL, 0),
+  );
+  canvas.paint(annex.x, annex.y, annex.w, annex.h, (px, py) => {
+    const rx = px - annex.x;
+    const ry = py - annex.y;
+    if (ry === 0) return at(STEEL, 4);
+    if (ry < 4) return at(STEEL, 2);
+    if (ry >= 12 && ry < 42) {
+      const bay = rx % 46;
+      if (bay < 4 || bay >= 42) return at(STEEL, 2);
+      if (ry === 12 || ry === 41 || bay === 22) return at(STEEL, 0);
+      const glow = ry > 26 ? 2 : 1;
+      return (rx >> 4) % 2 === 0 ? at(NEON_VIOLET, glow - 1) : at(SODIUM, glow - 1);
+    }
+    if (ry === 42) return at(CONCRETE, 4);
+    return rx % 12 === 0 ? at(STEEL, 0) : hdTone(STEEL, 1.3, px, py);
+  });
+  for (const py of [296, 304]) {
+    canvas.fill(left + 12, py, right - left + 560, 5, at(STEEL, 2));
+    canvas.hline(left + 12, py, right - left + 560, at(STEEL, 4));
+    canvas.hline(left + 12, py + 4, right - left + 560, at(STEEL, 0));
+    for (let fx = left + 28; fx < right + 540; fx += 44) {
+      canvas.fill(fx, py - 1, 3, 7, at(STEEL, 3));
+      canvas.vline(fx + 1, py - 1, 7, at(STEEL, 5));
+    }
+  }
+  drawCargoPod(canvas, left + 22, BACK_FEET + 4);
   const beam = (x0: number, y0: number, x1: number, y1: number, slot = 1) => {
     canvas.line(x0, y0, x1, y1, at(STEEL, slot), 3);
     canvas.line(x0, y0 - 1, x1, y1 - 1, at(STEEL, slot + 2));
   };
-  const posts = [left, left + 101, left + 202, left + 303, right - 6];
+  const posts = [left, left + 101, left + 202, left + 303, right - 8];
   for (const x of posts) {
     const backX = x + 12;
-    canvas.fill(backX, top + 6, 4, BACK_FEET - top - 6, at(STEEL, 1));
-    canvas.fill(backX - 3, BACK_FEET - 8, 10, 8, at(CONCRETE, 1));
-    canvas.line(x + 3, FEET - 12, backX + 2, BACK_FEET - 6, at(STEEL, 1), 2);
-    canvas.line(x + 3, top + 12, backX + 2, top + 6, at(STEEL, 2), 2);
+    canvas.fill(backX, top + 6, 5, BACK_FEET - top - 6, at(STEEL, 1));
+    canvas.vline(backX + 4, top + 6, BACK_FEET - top - 6, at(STEEL, 2));
+    canvas.fill(backX - 3, BACK_FEET - 8, 11, 8, at(CONCRETE, 1));
+    canvas.line(x + 4, FEET - 12, backX + 2, BACK_FEET - 6, at(STEEL, 1), 2);
+    canvas.line(x + 4, top + 12, backX + 2, top + 6, at(STEEL, 2), 2);
   }
   posts.slice(0, -1).forEach((x, index) => {
     const next = posts[index + 1] ?? right;
-    beam(x + 3, top + 8, next + 3, FEET - 54);
-    beam(next + 3, top + 8, x + 3, FEET - 54);
+    const midY = Math.round((top + 8 + FEET - 54) / 2);
+    canvas.hline(x + 4, midY, next - x, at(STEEL, 2));
+    canvas.hline(x + 4, midY - 1, next - x, at(STEEL, 3));
+    beam(x + 4, top + 8, next + 4, midY);
+    beam(next + 4, top + 8, x + 4, midY);
+    beam(x + 4, midY, next + 4, FEET - 54);
+    beam(next + 4, midY, x + 4, FEET - 54);
   });
   for (const x of posts) {
     canvas.fill(x - 2, top, 2, FEET - top, at(STEEL, 0));
-    canvas.fill(x, top, 6, FEET - top, at(STEEL, 2));
-    canvas.vline(x + 5, top, FEET - top, at(STEEL, 4));
+    canvas.fill(x, top, 8, FEET - top, at(STEEL, 2));
+    canvas.vline(x, top, FEET - top, at(STEEL, 3));
+    canvas.vline(x + 7, top, FEET - top, at(STEEL, 4));
+    for (let ry = top + 16; ry < FEET - 16; ry += 14) {
+      canvas.fill(x + 2, ry, 2, 1, at(STEEL, 4));
+      canvas.fill(x + 5, ry, 2, 1, at(STEEL, 4));
+    }
     canvas.polygon(
       [
-        [x - 6, FEET - 12],
-        [x - 2, FEET - 16],
-        [x + 12, FEET - 16],
-        [x + 10, FEET - 12],
+        [x - 6, FEET - 14],
+        [x - 2, FEET - 18],
+        [x + 14, FEET - 18],
+        [x + 12, FEET - 14],
       ],
       at(CONCRETE, 4),
     );
-    canvas.fill(x - 6, FEET - 12, 16, 14, at(CONCRETE, 2));
-    canvas.hline(x - 6, FEET - 12, 16, at(CONCRETE, 5));
-    canvas.vline(x - 6, FEET - 12, 14, at(CONCRETE, 1));
-    canvas.fill(x - 2, FEET - 24, 4, 12, at(RUST, 1));
+    canvas.fill(x - 6, FEET - 14, 18, 16, at(CONCRETE, 2));
+    canvas.hline(x - 6, FEET - 14, 18, at(CONCRETE, 5));
+    canvas.vline(x - 6, FEET - 14, 16, at(CONCRETE, 1));
+    canvas.fill(x - 2, FEET - 24, 4, 10, at(RUST, 1));
   }
   for (const y of [top + 6, FEET - 54]) {
-    canvas.fill(left, y - 3, right - left, 6, at(STEEL, 2));
-    canvas.hline(left, y - 3, right - left, at(STEEL, 4));
-    canvas.hline(left, y + 2, right - left, at(STEEL, 0));
+    canvas.fill(left, y - 4, right - left, 8, at(STEEL, 2));
+    canvas.hline(left, y - 4, right - left, at(STEEL, 4));
+    canvas.hline(left, y + 3, right - left, at(STEEL, 0));
+    for (let rx = left + 8; rx < right - 8; rx += 16) {
+      canvas.fill(rx, y - 2, 2, 1, at(STEEL, 4));
+    }
   }
   canvas.polygon(
     [
       [left - 12, top - 2],
-      [left - 8, top - 7],
-      [right + 12, top - 7],
+      [left - 8, top - 8],
+      [right + 12, top - 8],
       [right + 8, top - 2],
     ],
     at(STEEL, 2),
   );
-  canvas.hline(left - 8, top - 7, right - left + 20, at(NEON_VIOLET, 2));
-  canvas.fill(left - 12, top - 2, right - left + 20, 4, at(STEEL, 1));
+  canvas.hline(left - 8, top - 8, right - left + 20, at(NEON_VIOLET, 2));
+  canvas.fill(left - 12, top - 2, right - left + 20, 5, at(STEEL, 1));
   canvas.hline(left - 12, top - 2, right - left + 20, at(NEON_VIOLET, 3));
-  canvas.hline(left - 10, top - 16, right - left + 20, at(STEEL, 4));
-  canvas.hline(left - 10, top - 10, right - left + 20, at(STEEL, 2));
+  canvas.hline(left - 10, top - 18, right - left + 20, at(STEEL, 4));
+  canvas.hline(left - 10, top - 11, right - left + 20, at(STEEL, 2));
   for (let x = left - 10; x < right + 10; x += 34) {
-    canvas.vline(x, top - 16, 12, at(STEEL, 3));
+    canvas.vline(x, top - 18, 14, at(STEEL, 3));
   }
   for (let fx = left + 36; fx < right - 20; fx += 96) {
-    canvas.fill(fx - 5, top + 2, 10, 5, at(STEEL, 3));
-    canvas.hline(fx - 4, top + 1, 8, at(NEON_VIOLET, 3));
+    canvas.fill(fx - 6, top + 2, 12, 5, at(STEEL, 3));
+    canvas.hline(fx - 5, top + 1, 10, at(NEON_VIOLET, 3));
   }
   canvas.vline(left - 18, top - 4, FEET - top + 4, at(STEEL, 3));
   canvas.vline(left - 8, top - 4, FEET - top + 4, at(STEEL, 3));
@@ -576,34 +680,34 @@ function drawTruss(canvas: Canvas, sparkFrame: number): void {
   const sub = SUBSTATION;
   canvas.polygon(
     [
-      [sub.x - 8, sub.y + 5],
+      [sub.x - 10, sub.y + 6],
       [sub.x, sub.y],
       [sub.x, sub.y + sub.height],
-      [sub.x - 8, sub.y + sub.height - 4],
+      [sub.x - 10, sub.y + sub.height - 4],
     ],
     at(STEEL, 0),
   );
-  canvas.line(sub.x - 8, sub.y + 5, sub.x, sub.y, at(STEEL, 3));
+  canvas.line(sub.x - 10, sub.y + 6, sub.x, sub.y, at(STEEL, 3));
   canvas.fill(sub.x, sub.y, sub.width, sub.height, at(STEEL, 2));
   canvas.hline(sub.x, sub.y, sub.width, at(STEEL, 4));
   canvas.vline(sub.x + sub.width - 1, sub.y, sub.height, at(STEEL, 4));
   for (let ry = sub.y + 8; ry < sub.y + sub.height - 10; ry += 4) {
-    canvas.hline(sub.x + 4, ry, 16, at(STEEL, 0));
-    canvas.hline(sub.x + 4, ry + 1, 16, at(STEEL, 3));
+    canvas.hline(sub.x + 4, ry, 18, at(STEEL, 0));
+    canvas.hline(sub.x + 4, ry + 1, 18, at(STEEL, 3));
   }
-  canvas.fill(sub.x + 24, sub.y + 8, 18, 14, at(STEEL, 0));
-  canvas.hline(sub.x + 26, sub.y + 11, 14, at(NEON_GREEN, 2));
-  canvas.hline(sub.x + 26, sub.y + 16, 10, at(NEON_YELLOW, 2));
+  canvas.fill(sub.x + 26, sub.y + 8, 20, 14, at(STEEL, 0));
+  canvas.hline(sub.x + 28, sub.y + 11, 16, at(NEON_GREEN, 2));
+  canvas.hline(sub.x + 28, sub.y + 16, 12, at(NEON_YELLOW, 2));
   spell('HV', 1, 1, (px, py) => {
-    canvas.set(sub.x + 27 + px, sub.y + 28 + py, at(NEON_YELLOW, 2));
+    canvas.set(sub.x + 29 + px, sub.y + 28 + py, at(NEON_YELLOW, 2));
   });
-  for (const ix of [sub.x + 8, sub.x + 22, sub.x + 36]) {
+  for (const ix of [sub.x + 8, sub.x + 24, sub.x + 38]) {
     canvas.fill(ix, sub.y - 8, 4, 8, at(CONCRETE, 4));
     canvas.hline(ix - 1, sub.y - 6, 6, at(CONCRETE, 5));
     canvas.hline(ix - 1, sub.y - 3, 6, at(CONCRETE, 5));
   }
   if (sparkFrame > 0) {
-    const sx = sub.x + (sparkFrame === 1 ? 10 : 24);
+    const sx = sub.x + (sparkFrame === 1 ? 10 : 26);
     const sy = sub.y - 9;
     canvas.line(sx - 4, sy, sx + 4, sy - 4, at(NEON_VIOLET, 4));
     canvas.line(sx + 3, sy, sx - 3, sy - 5, at(PALE, 1));
@@ -663,42 +767,42 @@ function drawTank(canvas: Canvas): void {
   canvas.paint(left, top, width, body, (x, y) => {
     const u = (x + 0.5 - cx) / (width / 2);
     const curve = Math.round(Math.sqrt(Math.max(0, 1 - u * u)) * 4);
-    const hoopRow = (y - top - curve + 260) % 26;
-    if (hoopRow === 0) return at(STEEL, 3);
+    const hoopRow = (y - top - curve + 260) % 22;
+    if (hoopRow === 0) return at(STEEL, 4);
     if (hoopRow === 1) return at(TANK, 0);
-    const step = u < -0.65 ? 0 : u < -0.2 ? 1 : u < 0.35 ? 2 : u < 0.78 ? 3 : 2;
-    return at(TANK, step);
+    const stave = (x - left) % 10 === 0 ? -0.45 : 0;
+    const round = 1.6 + u * 1.5 - u * u * 0.8 + stave;
+    return hdTone(TANK, round, x, y);
   });
   canvas.vline(left, top + 4, body - 8, at(NEON_VIOLET, 2));
   canvas.vline(left + 1, top + 4, body - 8, at(NEON_VIOLET, 1));
-  for (let row = 0; row < 18; row++) {
-    const half = Math.round((width / 2 + 4) * (row / 17));
-    canvas.hline(cx - half, top - 18 + row, half * 2, at(TANK, row < 5 ? 3 : 2));
-    if (half > 4) {
-      canvas.fill(
-        cx + Math.round(half * 0.35),
-        top - 18 + row,
-        Math.max(2, Math.round(half * 0.4)),
-        1,
-        at(TANK, 3),
-      );
+  canvas.vline(left + width - 12, top - 2, body + 4, at(STEEL, 3));
+  canvas.vline(left + width - 6, top - 2, body + 4, at(STEEL, 3));
+  for (let ly = top + 4; ly < foot; ly += 7) {
+    canvas.hline(left + width - 12, ly, 7, at(STEEL, 2));
+  }
+  for (let row = 0; row < 20; row++) {
+    const half = Math.round((width / 2 + 4) * (row / 19));
+    for (let px = cx - half; px < cx + half; px++) {
+      const u = (px - cx) / Math.max(1, half);
+      canvas.set(px, top - 20 + row, hdTone(TANK, 2.1 + u * 1.2, px, top - 20 + row));
     }
   }
   canvas.hline(left - 4, top - 1, width + 8, at(TANK, 4));
-  canvas.fill(cx - 6, top - 23, 12, 5, at(STEEL, 3));
-  canvas.hline(cx - 6, top - 23, 12, at(STEEL, 5));
+  canvas.fill(cx - 6, top - 25, 12, 5, at(STEEL, 3));
+  canvas.hline(cx - 6, top - 25, 12, at(STEEL, 5));
   for (const [rx, ry, rh] of [
-    [left + 18, top + 28, 12],
-    [left + 46, top + 54, 14],
-    [left + 78, top + 28, 10],
+    [left + 18, top + 24, 12],
+    [left + 46, top + 46, 14],
+    [left + 78, top + 24, 10],
   ] as const) {
     canvas.vline(rx, ry, rh, at(RUST, 1));
   }
-  canvas.fill(cx - 14, FEET - 24, 28, 22, at(STEEL, 2));
-  canvas.hline(cx - 14, FEET - 24, 28, at(STEEL, 4));
-  canvas.fill(cx - 10, FEET - 20, 20, 12, at(STEEL, 0));
-  canvas.set(cx - 6, FEET - 16, at(NEON_GREEN, 3));
-  canvas.set(cx - 2, FEET - 16, at(NEON_YELLOW, 3));
+  canvas.fill(cx - 16, FEET - 26, 32, 24, at(STEEL, 2));
+  canvas.hline(cx - 16, FEET - 26, 32, at(STEEL, 4));
+  canvas.fill(cx - 12, FEET - 22, 24, 14, at(STEEL, 0));
+  canvas.set(cx - 8, FEET - 18, at(NEON_GREEN, 3));
+  canvas.set(cx - 4, FEET - 18, at(NEON_YELLOW, 3));
 }
 
 function drawUnit(canvas: Canvas, x: number, width: number, turn: number): void {
@@ -728,8 +832,21 @@ function drawUnit(canvas: Canvas, x: number, width: number, turn: number): void 
       return ry % 4 === 0 ? at(STEEL, 0) : ry % 4 === 1 ? at(CONCRETE, 3) : at(CONCRETE, 2);
     }
     if (rx === width - 18 && ry > 4 && ry < height - 6) return at(CONCRETE, 0);
-    return at(CONCRETE, 3);
+    return hdTone(CONCRETE, 3.1 - ry * 0.015, px, py);
   });
+  const fcx = x + 26;
+  const fcy = top + Math.round((height - 4) * 0.52);
+  canvas.ellipse(fcx - 15, fcy - 15, 30, 30, at(STEEL, 0));
+  canvas.paint(fcx - 13, fcy - 13, 26, 26, (px, py) => {
+    const u = (px + 0.5 - fcx) / 13;
+    const v = (py + 0.5 - fcy) / 13;
+    if (u * u + v * v > 1) return undefined;
+    if (u * u + v * v > 0.78) return at(STEEL, 3);
+    const angle = Math.atan2(v, u) + (turn * Math.PI) / 4.5;
+    const blade = Math.cos(angle * 3) > 0.25;
+    return at(STEEL, blade ? 2 : 0);
+  });
+  canvas.fill(fcx - 2, fcy - 2, 4, 4, at(STEEL, 4));
   canvas.fill(x + width - 14, top + 10, 8, 6, at(NEON_YELLOW, 2));
   canvas.set(x + width - 12, top + 20, at(NEON_GREEN, 3));
   const cx = x + width / 2;
@@ -1011,7 +1128,7 @@ export const MID_ANIMATIONS: readonly Animation[] = [
   },
   ...UNITS.map(({ x, width }, index): Animation => ({
     name: `fan${index}`,
-    rect: { x: x + width / 2 - 22, y: UNIT.top - 9, width: 44, height: 50 },
+    rect: { x: x + 10, y: UNIT.top - 9, width: width - 20, height: UNIT.height },
     frames: 3,
     timeline: [
       [0, 6 + index],

@@ -9,19 +9,7 @@
 
 import { Canvas, at, tone } from '../kit/canvas.ts';
 import { noise } from '../kit/random.ts';
-import {
-  BARK,
-  CLOUD,
-  HAZE,
-  LEAF,
-  LEAF_BRIGHT,
-  LEAF_TEAL,
-  SKY,
-  SUNGLOW,
-  TREE_FAR,
-  TREE_MID,
-  TREE_NEAR,
-} from './palette.ts';
+import { CLOUD, HAZE, SKY, SUNGLOW, TREE_FAR, TREE_MID, TREE_NEAR } from './palette.ts';
 
 /** The horizon's row: the trees from here down. */
 export const HORIZON = 300;
@@ -129,68 +117,6 @@ function drawPlane(
   }
 }
 
-/**
- * A branch of the high canopy: a dark line, its lit upper edge, and a thinner end.
- */
-function drawBranch(
-  canvas: Canvas,
-  x0: number,
-  y0: number,
-  x1: number,
-  y1: number,
-  width: number,
-): void {
-  canvas.line(x0, y0, x1, y1, at(BARK, 0), width);
-  if (width > 3) canvas.line(x0, y0 - 1, x1, y1 - 1, at(BARK, 1), width - 2);
-}
-
-/**
- * A mass of the high canopy: a dark core, then small leaves around it, the lit ones catching the
- * sky behind; the near canopy's leaves hang over the clearing.
- */
-function drawCluster(
-  canvas: Canvas,
-  cx: number,
-  cy: number,
-  width: number,
-  seed: number,
-  lit: boolean,
-): void {
-  const height = width * 0.58;
-  canvas.ellipse(cx - width / 2, cy - height / 2, width, height, at(LEAF, 0));
-  const count = Math.max(8, Math.round(width / 4));
-  for (let leaf = 0; leaf < count; leaf++) {
-    const x = Math.round(cx - width / 2 + noise(seed, leaf, 0, width));
-    const y = Math.round(cy - height / 2 + noise(seed + 1, leaf, 0, height));
-    const w = 2 + Math.round(noise(seed + 2, leaf, 0, 3));
-    const h = 2 + Math.round(noise(seed + 3, leaf, 0, 2));
-    const ramp = lit && leaf % 3 === 0 ? LEAF_BRIGHT : leaf % 2 === 0 ? LEAF_TEAL : LEAF;
-    canvas.fill(x, y, w, h, at(ramp, leaf % 4 === 0 ? 1 : 0));
-    if (lit && leaf % 5 === 0) canvas.set(x, y, at(LEAF_BRIGHT, 1));
-  }
-}
-
-/**
- * The high canopy of the clearing: branches from the corners, then two layers of leaf masses
- * across the top. The sky is only seen in the gaps; the clearing sits under the leaves.
- */
-function drawCanopy(canvas: Canvas): void {
-  drawBranch(canvas, -10, 34, 250, 112, 14);
-  drawBranch(canvas, 250, 112, 420, 76, 8);
-  drawBranch(canvas, canvas.width + 10, 26, canvas.width - 230, 106, 13);
-  drawBranch(canvas, canvas.width - 230, 106, canvas.width - 380, 70, 7);
-  for (let x = -40; x < canvas.width + 40; x += 76) {
-    const y = 8 + noise(SEED + 20, x, 0, 62);
-    const width = 92 + noise(SEED + 21, x, 0, 52);
-    drawCluster(canvas, x, y, width, SEED + 22 + x, true);
-  }
-  for (let x = -20; x < canvas.width + 20; x += 96) {
-    const y = 58 + noise(SEED + 30, x, 0, 74);
-    const width = 106 + noise(SEED + 31, x, 0, 54);
-    drawCluster(canvas, x, y, width, SEED + 32 + x, false);
-  }
-}
-
 /** The far layer, `width` × `height` image pixels. */
 export function drawFar(width: number, height: number): Canvas {
   const canvas = new Canvas(width, height);
@@ -213,7 +139,5 @@ export function drawFar(width: number, height: number): Canvas {
   // The middle and the near planes, denser and darker.
   drawPlane(canvas, TREE_MID, TREE_MID, TREE_NEAR, SEED + 30, 104, 88, true);
   drawPlane(canvas, TREE_NEAR, TREE_NEAR, TREE_NEAR, SEED + 60, 76, 116, true);
-  // The high canopy, over the clearing; the sky stays in the gaps.
-  drawCanopy(canvas);
   return canvas;
 }
