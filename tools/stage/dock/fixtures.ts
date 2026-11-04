@@ -1,16 +1,17 @@
 /**
- * The dock's fixtures (docs/art/decor-dock.md §2.2), each drawn where it is told: the roll-up
- * shutters, the stage door and its chain, the lamps, the dumpster and its cat, the pallets, the
- * freight lift's gate, the alley's fence. The layout is mid.ts's.
+ * The dock's fixtures (docs/art/decor-dock.md §2.2), drawn in clean flat tones and 3D relief
+ * (docs/art/proprete.md): the roll-up shutters, the stage door and its chain, the lamps, the
+ * dumpster and its cat, the pallets, the freight lift's gate, the alley's fence.
  */
 
-import { Canvas, Mask, at, tone } from '../kit/canvas.ts';
+import { Canvas, Mask, at } from '../kit/canvas.ts';
 import { spell } from '../kit/font.ts';
 import { lightAt, type Light } from '../kit/light.ts';
 import { noise, type Random } from '../kit/random.ts';
 import type { Rect } from '../kit/stage.ts';
 import { drawHalo, drawTubes } from '../rue/signs.ts';
 import {
+  ASPHALT,
   BAG,
   CAT,
   DUMPSTER,
@@ -28,17 +29,13 @@ import {
   WOOD,
 } from './palette.ts';
 
-/** Height of a shutter's slat, image pixels. */
 const SLAT = 6;
-/** How high from its bottom a shutter rattles in its guides (`rattle`): its five lowest slats. */
 export const LOOSE = SLAT * 5;
 
-/**
- * A roll-up shutter in its bay, down to row `bottom` (the dock's floor when shut): its hood, its
- * guides, slats of plum paint gone grey with rust breaking through, a big stenciled bay number,
- * the bottom bar and its handle. `rattle` shifts the LOOSE slats a pixel and lifts the bar (the
- * bass, mid.ts).
- */
+function clampedStep(ramp: readonly number[], step: number): number {
+  return at(ramp, Math.max(0, Math.min(ramp.length - 1, Math.round(step))));
+}
+
 export function drawShutter(
   canvas: Canvas,
   rect: Rect,
@@ -49,73 +46,96 @@ export function drawShutter(
   rattle = 0,
 ): void {
   const { x, y, width } = rect;
-  const hood = 10;
-  // The guides, steel channels down each side.
-  for (const gx of [x - 6, x + width]) {
-    canvas.paint(gx, y, 6, rect.height, (px, py) =>
-      tone(STEEL, 1.4 + (px === gx ? 1 : 0) + lightAt(lights, px, py) * 0.5, px, py),
-    );
+  const hood = 12;
+  canvas.fill(x - 8, y + hood, 2, rect.height - hood, at(STEEL, 0));
+  for (const [gx, litSide] of [
+    [x - 6, true],
+    [x + width, false],
+  ] as const) {
+    canvas.fill(gx, y, 6, rect.height, at(STEEL, 2));
+    canvas.vline(gx + (litSide ? 0 : 5), y, rect.height, at(STEEL, 4));
+    canvas.vline(gx + (litSide ? 5 : 0), y, rect.height, at(STEEL, 0));
   }
   const top = y + hood;
   const loose = bottom - LOOSE;
   canvas.paint(x, top, width, bottom - top, (px, py) => {
     const shift = py >= loose ? rattle : 0;
     const row = (py - top + shift + SLAT * 10) % SLAT;
-    const groove = row === SLAT - 1 ? -1.3 : row === 0 ? 0.9 : 0;
-    const lit = lightAt(lights, px, py) * 0.85;
-    // Rust: runs down from the slats' edges, worse low where the rain splashes.
-    const low = (py - top) / (bottom - top);
-    const run = noise(seed, px, py * 0.25, 9) * 0.75 + noise(seed + 1, px, py, 3) * 0.25;
-    if (run > 0.8 - low * 0.14) return tone(RUST, 0.6 + lit * 0.5 + groove * 0.5, px, py);
-    return tone(SHUTTER, 1.7 + lit + groove + (noise(seed + 2, px, py, 30) - 0.5) * 0.6, px, py);
+    if (row === SLAT - 1) return at(SHUTTER, 0);
+    const edgeShade = px < x + 4 || px >= x + width - 4 ? -1 : 0;
+    const lit = lightAt(lights, px, py);
+    const band = lit > 1.05 ? 3 : lit > 0.55 ? 2 : 1;
+    const groove = row === 0 ? 1 : row === SLAT - 2 ? -1 : 0;
+    const low = (py - top) / Math.max(1, bottom - top);
+    const rustPatch =
+      low > 0.55 &&
+      noise(seed, Math.floor(px / 4), Math.floor(py / SLAT), 3) > 0.74 - (low - 0.55) * 0.28;
+    if (rustPatch) {
+      return clampedStep(RUST, 1 + (row === 0 ? 1 : 0));
+    }
+    return clampedStep(SHUTTER, band + groove + edgeShade);
   });
-  // The bay's number, stenciled big, a little worn; smaller on a shutter half up.
+  canvas.fill(x, top, width, 3, at(SHUTTER, 0));
   const scale = Math.min(5, Math.floor((bottom - top - 8) / 7));
   const textWidth = spell(label, scale, 1, () => undefined);
   const lx = x + Math.round((width - textWidth) / 2);
   const ly = top + Math.round((bottom - top - 7 * scale) * 0.4);
-  // A shutter rolled up has no room left for its number.
   spell(label, Math.max(scale, 1), 1, (px, py) => {
     const sx = lx + px;
     const sy = ly + py;
-    if (scale < 1 || sy >= bottom - 4 || noise(seed + 5, sx, sy, 4) < 0.16) return;
-    canvas.set(sx, sy, at(TAG.cream, (sy - top) % SLAT === SLAT - 1 ? 0 : 1));
+    if (scale < 1 || sy >= bottom - 6) return;
+    const row = (sy - top) % SLAT;
+    if (row === SLAT - 1) return;
+    canvas.set(sx, sy, at(TAG.cream, row === 0 ? 1 : 0));
   });
-  // The bottom bar, its rubber seal and handle.
   const barY = bottom - 5 - (rattle > 0 ? 2 : 0);
   canvas.fill(x, barY, width, 4, at(STEEL, 2));
   canvas.hline(x, barY, width, at(STEEL, 4));
   canvas.hline(x, barY + 4, width, at(RUBBER, 0));
-  canvas.fill(x + width / 2 - 8, barY - 6, 16, 3, at(STEEL, 3));
-  // The hood the shutter rolls into.
+  canvas.fill(x + width / 2 - 10, barY - 6, 20, 4, at(STEEL, 1));
+  canvas.hline(x + width / 2 - 10, barY - 6, 20, at(STEEL, 4));
+  canvas.fill(x + width / 2 - 6, barY - 4, 12, 2, at(STEEL, 0));
+  canvas.fill(x - 8, y - 3, width + 16, 3, at(STEEL, 3));
+  canvas.hline(x - 8, y - 3, width + 16, at(STEEL, 5));
   canvas.fill(x - 8, y, width + 16, hood, at(STEEL, 2));
   canvas.hline(x - 8, y, width + 16, at(STEEL, 4));
+  canvas.hline(x - 8, y + hood - 2, width + 16, at(STEEL, 1));
   canvas.hline(x - 8, y + hood - 1, width + 16, at(STEEL, 0));
+  for (const bx of [x - 8, x + width + 5]) {
+    canvas.fill(bx, y - 3, 3, hood + 3, at(STEEL, 3));
+    canvas.vline(bx, y - 3, hood + 3, at(STEEL, 5));
+  }
 }
 
-/**
- * The stage door: riveted steel in a steel frame, the light under it, a pull handle, and the chain
- * wrapped through the handle and the hasp, its padlock hanging (docs/art/histoire.md: the padlock
- * of a door that did not hold).
- */
 export function drawStageDoor(canvas: Canvas, rect: Rect, lights: readonly Light[]): void {
   const { x, y, width, height } = rect;
-  canvas.fill(x - 5, y - 5, width + 10, height + 5, at(STEEL, 1));
-  canvas.hline(x - 5, y - 5, width + 10, at(STEEL, 3));
+  canvas.fill(x - 6, y - 6, width + 12, height + 6, at(STEEL, 1));
+  canvas.hline(x - 6, y - 6, width + 12, at(STEEL, 4));
+  canvas.vline(x - 6, y - 6, height + 6, at(STEEL, 3));
+  canvas.fill(x - 2, y - 2, width + 4, height + 2, at(STEEL, 0));
   canvas.paint(x, y, width, height, (px, py) => {
-    const panel =
-      px - x === 3 || px - x === width - 4 || py - y === 4 || py - y === height - 5 ? -0.8 : 0;
-    const scuff = py > y + height - 18 && noise(13, px, py, 4) > 0.6 ? -0.6 : 0;
-    return tone(STEEL, 2 + lightAt(lights, px, py) * 0.9 + panel + scuff, px, py);
+    const lit = lightAt(lights, px, py) > 0.75 ? 3 : 2;
+    const border = px - x < 4 || px - x >= width - 4 || py - y < 5 || py - y >= height - 6;
+    if (border) return at(STEEL, lit);
+    const panelX = px - x >= 7 && px - x < width - 7;
+    const upperPanel = panelX && py - y >= 8 && py - y < 42;
+    const lowerPanel = panelX && py - y >= 50 && py - y < height - 10;
+    if (upperPanel || lowerPanel) {
+      const topOrLeft = py - y === 8 || py - y === 50 || px - x === 7;
+      const botOrRight = py - y === 41 || py - y === height - 11 || px - x === width - 8;
+      if (topOrLeft) return at(STEEL, 0);
+      if (botOrRight) return at(STEEL, 3);
+      return at(STEEL, 1);
+    }
+    return at(STEEL, lit);
   });
   for (let py = y + 8; py < y + height - 6; py += 14) {
-    canvas.set(x + 1, py, at(STEEL, 5));
-    canvas.set(x + width - 2, py, at(STEEL, 5));
+    canvas.set(x + 2, py, at(STEEL, 4));
+    canvas.set(x + width - 3, py, at(STEEL, 4));
   }
-  // The violet of the club under the door.
-  canvas.hline(x + 2, y + height - 1, width - 4, at(GLASS, 2));
-  // The handle, the hasp on the frame, the chain looped between them, the padlock.
-  const hy = y + 50;
+  canvas.hline(x + 2, y + height - 2, width - 4, at(GLASS, 3));
+  canvas.hline(x, y + height - 1, width, at(GLASS, 2));
+  const hy = y + 48;
   canvas.fill(x + width - 9, hy - 8, 3, 18, at(STEEL, 5));
   canvas.fill(x + width + 1, hy - 3, 5, 8, at(STEEL, 3));
   for (let i = 0; i < 9; i++) {
@@ -131,74 +151,99 @@ export function drawStageDoor(canvas: Canvas, rect: Rect, lights: readonly Light
   canvas.vline(x + width + 2, hy + 2, 4, at(STEEL, 4));
 }
 
-/** The EXIT box over the door: green letters lit from inside, its steel case. */
 export function drawExitSign(canvas: Canvas, x: number, y: number): void {
   const width = spell('EXIT', 1, 1, () => undefined) + 8;
-  canvas.fill(x, y, width, 12, at(STEEL, 1));
+  canvas.fill(x - 1, y - 1, width + 2, 14, at(STEEL, 0));
+  canvas.fill(x, y, width, 12, at(STEEL, 2));
+  canvas.hline(x, y, width, at(STEEL, 4));
   canvas.fill(x + 1, y + 1, width - 2, 10, at(EXIT, 0));
   const glow = new Mask(canvas.width, canvas.height);
   spell('EXIT', 1, 1, (px, py) => {
-    glow.add(x + 4 + px, y + 1 + py);
+    glow.add(x + 4 + px, y + 2 + py);
   });
   drawHalo(canvas, glow, EXIT, 1.5);
   spell('EXIT', 1, 1, (px, py) => {
-    canvas.set(x + 4 + px, y + 1 + py, at(EXIT, 3));
+    canvas.set(x + 4 + px, y + 2 + py, at(EXIT, 3));
   });
 }
 
-/** A caged bulb on the wall: a warm bulb behind its bars, a ring of light on the brick. */
 export function drawCagedLamp(canvas: Canvas, x: number, y: number): void {
   const bulb = new Mask(canvas.width, canvas.height);
   bulb.rect(x - 3, y, 7, 8);
   drawHalo(canvas, bulb, SODIUM, 7);
   canvas.fill(x - 6, y - 4, 13, 3, at(STEEL, 2));
+  canvas.hline(x - 6, y - 4, 13, at(STEEL, 4));
   canvas.fill(x - 3, y, 7, 8, at(SODIUM, 3));
   canvas.fill(x - 1, y + 2, 3, 4, at(SODIUM, 4));
   for (const px of [x - 4, x, x + 4]) canvas.vline(px, y - 1, 10, at(STEEL, 1));
   canvas.hline(x - 4, y + 9, 9, at(STEEL, 1));
 }
 
-/** A sodium wall pack under the canopy: a dark box, its lens glowing down. */
 export function drawWallPack(canvas: Canvas, cx: number, y: number): void {
-  canvas.fill(cx - 9, y, 18, 8, at(STEEL, 2));
+  canvas.fill(cx - 10, y - 1, 20, 9, at(STEEL, 1));
+  canvas.fill(cx - 9, y, 18, 7, at(STEEL, 2));
   canvas.hline(cx - 9, y, 18, at(STEEL, 4));
   const lens = new Mask(canvas.width, canvas.height);
-  lens.rect(cx - 7, y + 8, 14, 3);
+  lens.rect(cx - 7, y + 7, 14, 3);
   drawHalo(canvas, lens, SODIUM, 6);
   drawTubes(canvas, lens, SODIUM);
 }
 
-/** The dumpster: a dark green box, its lids, a wheel, its lit edges; foot on row `foot`. */
 export function drawDumpster(canvas: Canvas, x: number, foot: number, width: number): void {
   const height = 46;
   const top = foot - height;
-  canvas.paint(x, top, width, height - 4, (px, py) => {
-    const rib = (px - x) % 18 === 9 ? -0.9 : (px - x) % 18 === 10 ? 0.6 : 0;
-    const dent = noise(29, px, py, 7) > 0.78 ? -0.5 : 0;
-    const rust = noise(31, px, py * 2, 9) > 0.8 && py > top + 20;
-    if (rust) return at(RUST, 1);
-    return tone(DUMPSTER, 1.6 + rib + dent - (py - top) / height, px, py);
+  const sideW = 12;
+  canvas.fill(x - 4, foot - 2, width + 8, 4, at(ASPHALT, 0));
+  canvas.polygon(
+    [
+      [x, top],
+      [x + sideW, top - 6],
+      [x + sideW, foot - 8],
+      [x, foot - 4],
+    ],
+    at(DUMPSTER, 0),
+  );
+  const faceX = x + sideW;
+  const faceW = width - sideW;
+  canvas.paint(faceX, top - 6, faceW, height - 2, (px, py) => {
+    const rx = (px - faceX) % 16;
+    if (rx === 7) return at(DUMPSTER, 0);
+    if (rx === 8 || rx === 9) return at(DUMPSTER, 2);
+    if (py > top + 24 && rx > 11 && ((px + py) >> 2) % 5 === 0) return at(RUST, 1);
+    return at(DUMPSTER, py < top + 12 ? 2 : 1);
   });
-  canvas.vline(x + width - 1, top, height - 4, at(DUMPSTER, 3));
-  // The lids, slanted back, a gap where one is ajar.
-  canvas.fill(x - 2, top - 5, width + 4, 5, at(DUMPSTER, 2));
-  canvas.hline(x - 2, top - 5, width + 4, at(DUMPSTER, 3));
-  canvas.fill(x + width / 2 - 1, top - 5, 2, 5, at(DUMPSTER, 0));
-  for (const px of [x + 4, x + width - 12]) {
-    canvas.fill(px, foot - 4, 8, 4, at(RUBBER, 1));
+  canvas.hline(faceX, top + 10, faceW, at(DUMPSTER, 2));
+  canvas.hline(faceX, top + 11, faceW, at(DUMPSTER, 0));
+  canvas.vline(x + width - 1, top - 6, height - 2, at(DUMPSTER, 3));
+  canvas.polygon(
+    [
+      [x - 2, top - 4],
+      [x + sideW, top - 11],
+      [x + width + 2, top - 11],
+      [x + width - sideW + 2, top - 4],
+    ],
+    at(DUMPSTER, 2),
+  );
+  canvas.hline(x + sideW, top - 11, faceW + 2, at(DUMPSTER, 3));
+  canvas.hline(x - 2, top - 4, width - sideW + 4, at(DUMPSTER, 3));
+  canvas.line(
+    x + Math.round(width / 2) - 2,
+    top - 4,
+    x + Math.round(width / 2) + sideW - 2,
+    top - 11,
+    at(DUMPSTER, 0),
+    2,
+  );
+  for (const px of [x + 2, x + sideW + 4, x + width - 10]) {
+    canvas.fill(px, foot - 5, 7, 5, at(RUBBER, 1));
     canvas.set(px + 3, foot - 3, at(STEEL, 3));
   }
 }
 
-/**
- * The cat on the dumpster's lid (`foot`: the lid's row), frame 0 sitting, its tail curled; 1 its
- * tail flicking up; 2 startled by the bass, its back arched, its tail a bottle brush.
- */
 export function drawCat(canvas: Canvas, x: number, foot: number, frame: number): void {
   const body = at(CAT, 0);
   const rim = at(CAT, 1);
   if (frame === 2) {
-    // Arched: the back up in a hump, the legs straight, the tail up and thick.
     for (let dx = 0; dx < 16; dx++) {
       const hump = Math.round(Math.sin((dx / 15) * Math.PI) * 6);
       canvas.vline(x + dx, foot - 12 - hump, 6 + Math.round(hump / 2), body);
@@ -240,7 +285,6 @@ export function drawCat(canvas: Canvas, x: number, foot: number, frame: number):
   for (const [dx, dy] of tail) canvas.fill(x + dx, foot + dy, 2, 2, body);
 }
 
-/** Trash bags heaped by the dumpster: soft blobs, a gloss on each, a tied neck. */
 export function drawBags(
   canvas: Canvas,
   x: number,
@@ -249,17 +293,17 @@ export function drawBags(
   random: Random,
 ): void {
   for (let bag = 0; bag < count; bag++) {
-    const width = random.int(16, 24);
-    const height = random.int(14, 20);
+    const width = random.int(16, 22);
+    const height = random.int(14, 19);
     const bx = x + bag * 13 - random.int(0, 4);
-    const by = foot - height - (bag % 2) * random.int(4, 9);
+    const by = foot - height - (bag % 2) * random.int(4, 8);
     const mask = new Mask(canvas.width, canvas.height);
     mask.ellipse(bx, by, width, height);
     mask.ellipse(bx + width / 2 - 2, by - 4, 5, 6);
     for (let py = by - 5; py < by + height; py++) {
       for (let px = bx; px < bx + width; px++) {
         if (!mask.has(px, py)) continue;
-        const gloss = Math.hypot(px - bx - width * 0.32, py - by - height * 0.3) < 3 ? 2 : 0;
+        const gloss = Math.hypot(px - bx - width * 0.32, py - by - height * 0.3) < 3.2 ? 2 : 0;
         const edge = !mask.has(px, py - 1) ? 1 : !mask.has(px, py + 1) ? -1 : 0;
         canvas.set(px, py, at(BAG, 1 + gloss + edge));
       }
@@ -267,85 +311,79 @@ export function drawBags(
   }
 }
 
-/** Height of a pallet seen from its end: top deck, blocks, bottom boards. */
 const PALLET = 9;
 
-/** A pallet seen from its end: its top deck, three blocks, its bottom boards; foot on `foot`. */
-function drawPallet(canvas: Canvas, x: number, foot: number, width: number, seed: number): void {
+function drawPallet(canvas: Canvas, x: number, foot: number, width: number): void {
   const top = foot - PALLET;
-  canvas.paint(x, top, width, 3, (px, py) =>
-    tone(WOOD, 2.2 + (py === top ? 1 : 0) + (noise(seed, px, py, 6) - 0.5), px, py),
-  );
-  for (const bx of [x + 1, x + width / 2 - 4, x + width - 9]) {
+  canvas.fill(x - 5, top - 2, 5, 3, at(WOOD, 1));
+  canvas.hline(x - 5, top - 2, width, at(WOOD, 2));
+  canvas.fill(x, top, width, 3, at(WOOD, 2));
+  canvas.hline(x, top, width, at(WOOD, 3));
+  canvas.fill(x, top + 3, width, 4, at(STEEL, 0));
+  for (const bx of [x + 1, x + Math.floor(width / 2) - 4, x + width - 9]) {
     canvas.fill(bx, top + 3, 8, 4, at(WOOD, 1));
+    canvas.vline(bx + 7, top + 3, 4, at(WOOD, 2));
   }
   canvas.fill(x, foot - 2, width, 2, at(WOOD, 1));
 }
 
-/** A stack of pallets, each a little off the one under it. */
 export function drawPallets(canvas: Canvas, x: number, foot: number, count: number): void {
+  canvas.fill(x - 6, foot, 66, 2, at(ASPHALT, 0));
   for (let level = 0; level < count; level++) {
     const shift = [0, 2, -1, 3, 1, -2][level] ?? 0;
-    drawPallet(canvas, x + shift, foot - level * PALLET, 58, 40 + level);
+    drawPallet(canvas, x + shift, foot - level * PALLET, 58);
   }
 }
 
-/**
- * The freight lift's scissor gate in its opening: the dark shaft behind, a dim bulb, the gate's
- * lattice of flat bars crossing, pulled shut.
- */
 export function drawLiftGate(canvas: Canvas, rect: Rect): void {
   const { x, y, width, height } = rect;
   canvas.fill(x - 6, y - 6, width + 12, height + 6, at(STEEL, 2));
   canvas.hline(x - 6, y - 6, width + 12, at(STEEL, 4));
-  canvas.paint(x, y, width, height, (px, py) =>
-    tone(STEEL, 0.4 + Math.max(0, 1 - Math.hypot(px - x - width / 2, py - y - 12) / 50), px, py),
-  );
-  canvas.fill(x + width / 2 - 2, y + 6, 4, 4, at(SODIUM, 2));
-  const cell = 12;
+  canvas.vline(x - 6, y - 6, height + 6, at(STEEL, 3));
+  canvas.fill(x, y, width, height, at(STEEL, 0));
+  canvas.fill(x + 4, y + 4, width - 8, 18, at(STEEL, 1));
+  canvas.fill(x + width / 2 - 3, y + 6, 6, 4, at(SODIUM, 3));
+  canvas.fill(x + width / 2 - 1, y + 7, 2, 2, at(SODIUM, 4));
+  const cell = 14;
   canvas.paint(x, y, width, height, (px, py) => {
     const u = (px - x + py - y) % cell;
     const v = (px - x - (py - y) + cell * 40) % cell;
-    if ((px - x) % cell === 0) return at(STEEL, 4);
-    if (u === 0 || v === 0) return at(STEEL, 3);
+    if ((px - x) % cell === 0) return at(STEEL, 3);
+    if (u === 0 || u === 1 || v === 0 || v === 1) return at(STEEL, 2);
     return undefined;
   });
   canvas.fill(x, y, width, 3, at(STEEL, 4));
   canvas.fill(x, y + height - 3, width, 3, at(STEEL, 4));
 }
 
-/**
- * The chain-link gate across the alley: posts, a top rail, the mesh's diamonds wide and dim (fine
- * stripes would shimmer when the screen shakes, docs/flashs.md §3), barbed wire on top.
- */
 export function drawFence(canvas: Canvas, left: number, right: number, top: number, foot: number) {
-  const cell = 10;
+  const cell = 12;
   canvas.paint(left, top, right - left, foot - top, (px, py) => {
     const u = (px - left + py) % cell;
     const v = (px - left - py + cell * 60) % cell;
-    return u === 0 || v === 0 ? at(STEEL, 2) : undefined;
+    return u === 0 || v === 0 ? at(STEEL, 1) : undefined;
   });
   canvas.fill(left, top, right - left, 3, at(STEEL, 3));
   canvas.hline(left, top, right - left, at(STEEL, 4));
+  canvas.fill(left, foot - 2, right - left, 2, at(STEEL, 2));
   for (const px of [left, Math.round((left + right) / 2), right - 4]) {
-    canvas.fill(px, top - 14, 4, foot - top + 14, at(STEEL, 3));
+    canvas.fill(px, top - 14, 4, foot - top + 14, at(STEEL, 2));
     canvas.vline(px, top - 14, foot - top + 14, at(STEEL, 4));
   }
-  // The coil of barbed wire, loops along the top.
-  for (let px = left; px < right; px++) {
-    const a = ((px - left) / 9) * Math.PI * 2;
-    canvas.set(px, Math.round(top - 8 + Math.sin(a) * 5), at(STEEL, 3));
-    if ((px - left) % 9 === 4) canvas.set(px, top - 8 + Math.round(Math.cos(a) * 5), at(STEEL, 4));
+  for (let px = left + 4; px < right - 8; px += 10) {
+    canvas.ellipse(px, top - 11, 8, 8, at(STEEL, 2));
+    canvas.set(px + 4, top - 11, at(STEEL, 4));
   }
 }
 
-/** A sign plate: pale enamel, red words, two bolts. */
 export function drawPlate(canvas: Canvas, rect: Rect, lines: readonly string[]): void {
   const { x, y, width, height } = rect;
-  canvas.paint(x, y, width, height, (px, py) =>
-    tone(PAPER, 2.2 - (py - y) / height + (noise(x, px, py, 5) - 0.5) * 0.5, px, py),
-  );
-  canvas.hline(x, y + height, width, at(STEEL, 0));
+  canvas.fill(x - 1, y - 1, width + 2, height + 2, at(STEEL, 1));
+  canvas.fill(x, y, width, height, at(PAPER, 2));
+  canvas.hline(x, y, width, at(PAPER, 3));
+  canvas.hline(x, y + height - 1, width, at(PAPER, 1));
+  canvas.set(x + 2, y + 2, at(STEEL, 2));
+  canvas.set(x + width - 3, y + 2, at(STEEL, 2));
   lines.forEach((text, index) => {
     const textWidth = spell(text, 1, 1, () => undefined);
     spell(text, 1, 1, (px, py) => {
@@ -358,21 +396,15 @@ export function drawPlate(canvas: Canvas, rect: Rect, lines: readonly string[]):
   });
 }
 
-/** Rust bleeding down from a bolt or an edge: a thin streak, fading. */
 export function drawStreak(canvas: Canvas, x: number, y: number, length: number): void {
-  for (let i = 0; i < length; i++) {
-    if (noise(x, x, y + i, 3) < 0.25) continue;
-    canvas.set(
-      x + (i > length * 0.6 && i % 5 === 0 ? 1 : 0),
-      y + i,
-      at(RUST, i < length / 2 ? 1 : 0),
-    );
-  }
+  const h = Math.max(4, Math.round(length * 0.7));
+  canvas.vline(x, y, h, at(RUST, 1));
+  canvas.vline(x + 1, y, Math.max(2, Math.round(h * 0.6)), at(RUST, 0));
 }
 
-/** Concrete's tone for a dock face or a stair: form lines, stains, the lights. */
 export function concreteAt(x: number, y: number, base: number, lights: readonly Light[]): number {
-  const form = x % 64 === 0 ? -0.7 : 0;
-  const stain = (noise(23, x, y * 2, 26) - 0.5) * 0.55;
-  return base + form + stain + lightAt(lights, x, y) * 0.7;
+  const form = x % 64 === 0 ? -1 : x % 64 === 1 ? 0.5 : 0;
+  const lit = lightAt(lights, x, y);
+  const lift = lit > 1 ? 1 : lit > 0.45 ? 0.5 : 0;
+  return Math.round(base + form + lift);
 }
