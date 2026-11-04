@@ -1,4 +1,5 @@
 import { readdir, readFile } from 'node:fs/promises';
+import { KODA_CELLS } from '../../src/art/koda/cells';
 import { NAYO_CELLS } from '../../src/art/nayo/cells';
 import { RIFF_CELLS } from '../../src/art/riff/cells';
 import { SAPHIR_CELLS } from '../../src/art/saphir/cells';
@@ -7,13 +8,14 @@ import { ART_SCALE, type Atlas, type Cell } from '../../src/art/types';
 import { cellReader } from '../../tools/sprites/atlas';
 import { decodeIndexedPng, type IndexedImage } from '../../tools/sprites/png';
 
-export type FighterName = 'nayo' | 'riff' | 'saphir' | 'watt';
+export type FighterName = 'nayo' | 'riff' | 'saphir' | 'watt' | 'koda';
 
 const CELLS: Readonly<Record<FighterName, Readonly<Record<string, Cell>>>> = {
   nayo: NAYO_CELLS,
   riff: RIFF_CELLS,
   saphir: SAPHIR_CELLS,
   watt: WATT_CELLS,
+  koda: KODA_CELLS,
 };
 export type ColorwayName = 'main' | 'alt';
 

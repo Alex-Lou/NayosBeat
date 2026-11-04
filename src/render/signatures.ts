@@ -508,10 +508,20 @@ const WATT_SIGNATURE: Signature = {
   presence: { leds: { main: 0x7cf0a8, alt: 0xf0b8ff } },
 };
 
+/**
+ * Koda: his Diapason acoustic wave, Fente d'acier and Cymbale in his jade-turquoise energy, their
+ * Remixes and Octave in platine, and his silver pauldron resonator slits glowing between blows.
+ */
+const KODA_SIGNATURE: Signature = {
+  ...NAYO_SIGNATURE,
+  presence: { leds: { main: 0x5cd8b4, alt: 0xdc88f8 }, specks: 'diamond' },
+};
+
 const SIGNATURES: Partial<Readonly<Record<FighterId, Signature>>> = {
   nayo: NAYO_SIGNATURE,
   saphir: SAPHIR_SIGNATURE,
   watt: WATT_SIGNATURE,
+  koda: KODA_SIGNATURE,
 };
 
 /** A fighter's signature, null for one without. */

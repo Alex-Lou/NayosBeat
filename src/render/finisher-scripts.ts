@@ -259,11 +259,39 @@ export const WATT_SCRIPT: FinisherScript = {
   ],
 };
 
+/** Koda's « Accord Final »: three silver strikes on the floor, then the final chord rings out. */
+export const KODA_SCRIPT: FinisherScript = {
+  fighter: 'koda',
+  name: 'ACCORD FINAL',
+  count: ['UN', 'DEUX', 'TROIS'],
+  stretch: 14,
+  silence: 'flight',
+  zoomFrom: 'charge',
+  flats: { main: 0x0c382c, alt: 0x2e123c },
+  flatLeaves: 'cardEnd',
+  card: { text: 'ACCORD FINAL.', rival: null, style: 'neon' },
+  shake: 'x',
+  cone: true,
+  crowd: false,
+  needle: false,
+  shards: false,
+  powerCut: false,
+  hush: { from: 9, fade: 6, muffled: true },
+  cues: [
+    { moment: 'ko', at: 0, sound: 'heavyHit' },
+    { moment: 'release', at: 0, sound: 'fall' },
+    { moment: 'release', at: 0, sound: 'round' },
+    { moment: 'release', at: 15, sound: 'round' },
+    { moment: 'release', at: 30, sound: 'round' },
+  ],
+};
+
 const SCRIPTS: Readonly<Record<FighterId, FinisherScript>> = {
   nayo: NAYO_SCRIPT,
   riff: RIFF_SCRIPT,
   saphir: SAPHIR_SCRIPT,
   watt: WATT_SCRIPT,
+  koda: KODA_SCRIPT,
 };
 
 export function scriptOf(fighter: FighterId): FinisherScript {

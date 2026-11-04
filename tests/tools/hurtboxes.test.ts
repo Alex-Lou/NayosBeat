@@ -113,6 +113,7 @@ describe.each(DRAWN_FIGHTERS)("$name's hurtboxes", (fighter) => {
  */
 const PENDING: Readonly<Record<string, readonly MoveId[]>> = {
   Nayo: ['specialForward', 'specialForwardBoost'],
+  Koda: ['specialForward', 'specialForwardBoost'],
 };
 
 /** Calls `visit` on each ground tick of `id`, with the frame shown and the boxes in force. */
@@ -149,7 +150,10 @@ function strayTicks(fighter: DrawnFighter, id: MoveId): string[] {
  * Moves whose body goes down under its posture's box (docs/combos-v3.md §2.4): their own boxes
  * follow the drawing's top as well, to 1.5 px, or a blow would hit the air over the head.
  */
-const DESCENDING: Readonly<Record<string, readonly MoveId[]>> = { Nayo: ['chainHeavy', 'super'] };
+const DESCENDING: Readonly<Record<string, readonly MoveId[]>> = {
+  Nayo: ['chainHeavy', 'super'],
+  Koda: ['chainHeavy', 'super'],
+};
 
 /** The ground ticks of `id` whose boxes' top is off the drawing's, with both heights. */
 function topGaps(fighter: DrawnFighter, id: MoveId): string[] {

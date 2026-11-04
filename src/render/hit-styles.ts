@@ -50,6 +50,11 @@ const STYLES: Readonly<Record<FighterId, Readonly<Record<Colorway, HitStyle>>>> 
     main: { shape: 'claw', energy: 0x1ec85a, strike: 0xd8ffe6, core: 0xffffff },
     alt: { shape: 'claw', energy: 0xe070ff, strike: 0xd8ffe6, core: 0xffffff },
   },
+  // Koda: jade-turquoise acoustic slashes and gold starbursts; amethyst in his second outfit.
+  koda: {
+    main: { shape: 'slash', energy: 0x18d8a0, strike: 0xffa526, core: 0xf0fff8 },
+    alt: { shape: 'slash', energy: 0xd858ff, strike: 0xffa526, core: 0xf8f0ff },
+  },
 };
 
 export function hitStyleOf(fighter: FighterId, colorway: Colorway = 'main'): HitStyle {

@@ -235,6 +235,8 @@ describe('the live lights on the fighters (docs/flashs.md §5)', () => {
       ['saphir', 'alt'],
       ['watt', 'main'],
       ['watt', 'alt'],
+      ['koda', 'main'],
+      ['koda', 'alt'],
     ] as const satisfies readonly (readonly [FighterName, ColorwayName])[]) {
       const folder = new URL(`../../src/art/${fighter}/${colorway}/`, import.meta.url);
       const known = new Map<number, boolean>();

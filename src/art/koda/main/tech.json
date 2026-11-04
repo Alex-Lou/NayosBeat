@@ -1,0 +1,29 @@
+{
+  "frames": {
+    "0": {
+      "frame": { "x": 88, "y": 0, "w": 93, "h": 160 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 1, "y": 1, "w": 93, "h": 160 },
+      "sourceSize": { "w": 101, "h": 161 }
+    },
+    "1": {
+      "frame": { "x": 271, "y": 0, "w": 101, "h": 148 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 13, "w": 101, "h": 148 },
+      "sourceSize": { "w": 101, "h": 161 }
+    },
+    "2": {
+      "frame": { "x": 181, "y": 0, "w": 90, "h": 153 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 2, "y": 8, "w": 90, "h": 153 },
+      "sourceSize": { "w": 101, "h": 161 }
+    },
+    "3": {
+      "frame": { "x": 0, "y": 0, "w": 88, "h": 161 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 3, "y": 0, "w": 88, "h": 161 },
+      "sourceSize": { "w": 101, "h": 161 }
+    }
+  },
+  "meta": { "image": "tech.png", "size": { "w": 372, "h": 161 } }
+}

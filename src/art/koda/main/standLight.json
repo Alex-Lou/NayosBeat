@@ -1,0 +1,41 @@
+{
+  "frames": {
+    "0": {
+      "frame": { "x": 0, "y": 0, "w": 97, "h": 162 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 97, "h": 162 },
+      "sourceSize": { "w": 141, "h": 162 }
+    },
+    "1": {
+      "frame": { "x": 97, "y": 0, "w": 128, "h": 161 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 1, "w": 128, "h": 161 },
+      "sourceSize": { "w": 141, "h": 162 }
+    },
+    "2": {
+      "frame": { "x": 516, "y": 0, "w": 141, "h": 159 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 2, "w": 141, "h": 159 },
+      "sourceSize": { "w": 141, "h": 162 }
+    },
+    "3": {
+      "frame": { "x": 225, "y": 0, "w": 115, "h": 161 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 1, "w": 115, "h": 161 },
+      "sourceSize": { "w": 141, "h": 162 }
+    },
+    "4": {
+      "frame": { "x": 428, "y": 0, "w": 88, "h": 160 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 1, "w": 88, "h": 160 },
+      "sourceSize": { "w": 141, "h": 162 }
+    },
+    "5": {
+      "frame": { "x": 340, "y": 0, "w": 88, "h": 161 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 88, "h": 161 },
+      "sourceSize": { "w": 141, "h": 162 }
+    }
+  },
+  "meta": { "image": "standLight.png", "size": { "w": 657, "h": 162 } }
+}

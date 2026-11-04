@@ -1,0 +1,65 @@
+{
+  "frames": {
+    "0": {
+      "frame": { "x": 0, "y": 0, "w": 88, "h": 162 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 88, "h": 162 },
+      "sourceSize": { "w": 88, "h": 162 }
+    },
+    "1": {
+      "frame": { "x": 0, "y": 324, "w": 88, "h": 161 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 1, "w": 88, "h": 161 },
+      "sourceSize": { "w": 88, "h": 162 }
+    },
+    "2": {
+      "frame": { "x": 0, "y": 646, "w": 88, "h": 160 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 2, "w": 88, "h": 160 },
+      "sourceSize": { "w": 88, "h": 162 }
+    },
+    "3": {
+      "frame": { "x": 88, "y": 646, "w": 88, "h": 160 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 2, "w": 88, "h": 160 },
+      "sourceSize": { "w": 88, "h": 162 }
+    },
+    "4": {
+      "frame": { "x": 88, "y": 324, "w": 88, "h": 161 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 1, "w": 88, "h": 161 },
+      "sourceSize": { "w": 88, "h": 162 }
+    },
+    "5": {
+      "frame": { "x": 88, "y": 0, "w": 88, "h": 162 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 88, "h": 162 },
+      "sourceSize": { "w": 88, "h": 162 }
+    },
+    "6": {
+      "frame": { "x": 0, "y": 485, "w": 88, "h": 161 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 1, "w": 88, "h": 161 },
+      "sourceSize": { "w": 88, "h": 162 }
+    },
+    "7": {
+      "frame": { "x": 88, "y": 485, "w": 88, "h": 161 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 1, "w": 88, "h": 161 },
+      "sourceSize": { "w": 88, "h": 162 }
+    },
+    "8": {
+      "frame": { "x": 0, "y": 162, "w": 88, "h": 162 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 88, "h": 162 },
+      "sourceSize": { "w": 88, "h": 162 }
+    },
+    "9": {
+      "frame": { "x": 88, "y": 162, "w": 88, "h": 162 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 88, "h": 162 },
+      "sourceSize": { "w": 88, "h": 162 }
+    }
+  },
+  "meta": { "image": "idle.png", "size": { "w": 176, "h": 806 } }
+}

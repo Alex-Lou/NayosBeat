@@ -357,6 +357,7 @@ export const PLANS: Readonly<Record<string, readonly Plan[]>> = {
   Riff: RIFF_PLANS,
   Saphir: SAPHIR_PLANS,
   Watt: WATT_PLANS,
+  Koda: NAYO_PLANS,
 };
 
 /** What the CPU knows of its move, once it has connected and the game moves again. */
