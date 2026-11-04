@@ -302,7 +302,7 @@ export class App {
     this.card?.dispose();
     this.card = undefined;
     if (options.backdrop) {
-      this.backdrop?.setArt(MENU_ART[options.backdrop]);
+      this.backdrop?.setScene(options.backdrop, MENU_ART[options.backdrop]);
       this.backdrop?.setVisible(true);
     } else {
       this.backdrop?.setVisible(false);

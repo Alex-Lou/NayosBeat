@@ -151,23 +151,6 @@ function disc(canvas: Canvas, cx: number, cy: number, radius: number): void {
   canvas.fill(cx + 120, cy - 72, 8, 3, slot('yellow'));
 }
 
-function waves(canvas: Canvas, cx: number, cy: number, radius: number): void {
-  const rings: readonly (readonly [number, SlotName, number])[] = [
-    [radius + 40, 'cyan', 0.0],
-    [radius + 82, 'neonMagenta', 0.9],
-    [radius + 126, 'neonViolet', 1.8],
-  ];
-  for (const [r, color, phase] of rings) {
-    for (let step = 0; step < 720; step++) {
-      const angle = (step / 720) * Math.PI * 2 + phase;
-      if (Math.floor(step / 18) % 2 === 0) continue;
-      const x = Math.round(cx + Math.cos(angle) * r);
-      const y = Math.round(cy + Math.sin(angle) * r);
-      canvas.fill(x, y, 2, 2, slot(color));
-    }
-  }
-}
-
 function speakers(canvas: Canvas): void {
   const cabinets = [
     { x: -18, y: 176, width: 128, height: 84, cones: 2 },
@@ -193,18 +176,6 @@ function speakers(canvas: Canvas): void {
     }
     canvas.fill(cabinet.x + cabinet.width - 12, cabinet.y + 8, 4, 4, slot('neonCyan'));
   }
-}
-
-function equalizer(canvas: Canvas): void {
-  const random = new Random(7);
-  for (let bar = 0; bar < 30; bar++) {
-    const x = 116 + bar * 24;
-    const height = 8 + Math.floor(random.next() * 38);
-    const color = bar % 3 === 0 ? 'orangeMid' : bar % 3 === 1 ? 'cyanMid' : 'magentaDeep';
-    canvas.fill(x, 470 - height, 8, height, slot(color));
-    if (bar % 4 === 0) canvas.fill(x, 470 - height, 8, 2, slot(bar % 3 === 0 ? 'sodium' : 'cyan'));
-  }
-  canvas.fill(100, 470, 760, 2, slot('ink'));
 }
 
 function crowd(canvas: Canvas): void {
@@ -241,29 +212,6 @@ function dust(canvas: Canvas): void {
   }
 }
 
-function rings(
-  canvas: Canvas,
-  cx: number,
-  cy: number,
-  radii: readonly number[],
-  colors: readonly SlotName[],
-): void {
-  radii.forEach((radius, index) => {
-    const color = slot(colors[index % colors.length] ?? 'cyan');
-    for (let step = 0; step < 720; step++) {
-      if (Math.floor(step / 24) % 2 === 0) continue;
-      const angle = (step / 720) * Math.PI * 2;
-      canvas.fill(
-        Math.round(cx + Math.cos(angle) * radius),
-        Math.round(cy + Math.sin(angle) * radius),
-        2,
-        2,
-        color,
-      );
-    }
-  });
-}
-
 function columns(canvas: Canvas): void {
   const random = new Random(17);
   for (let index = 0; index < 18; index++) {
@@ -273,25 +221,6 @@ function columns(canvas: Canvas): void {
     canvas.fill(x, 390 - height, 14, height, slot(color));
     canvas.fill(x, 390 - height, 14, 3, slot('cream'));
   }
-}
-
-function horizon(canvas: Canvas): void {
-  const radii: readonly number[] = [140, 200, 270, 350, 440];
-  radii.forEach((radius, index) => {
-    const color = slot(index % 2 === 0 ? 'neonCyan' : 'neonMagenta');
-    for (let step = 0; step < 360; step++) {
-      if (Math.floor(step / 15) % 2 === 0) continue;
-      const angle = Math.PI + (step / 360) * Math.PI;
-      canvas.fill(
-        Math.round(480 + Math.cos(angle) * radius),
-        Math.round(540 + Math.sin(angle) * radius),
-        2,
-        2,
-        color,
-      );
-    }
-  });
-  for (let x = 0; x < WIDTH; x += 24) canvas.fill(x, 392, 12, 2, slot('orangeDeep'));
 }
 
 function waveform(canvas: Canvas): void {
@@ -315,9 +244,7 @@ function waveform(canvas: Canvas): void {
 function homeScene(canvas: Canvas): void {
   background(canvas);
   disc(canvas, 600, 276, 188);
-  waves(canvas, 600, 276, 188);
   speakers(canvas);
-  equalizer(canvas);
   crowd(canvas);
   dust(canvas);
 }
@@ -325,13 +252,11 @@ function homeScene(canvas: Canvas): void {
 function selectScene(canvas: Canvas): void {
   background(canvas);
   columns(canvas);
-  rings(canvas, 480, 290, [150, 220, 300], ['cyan', 'neonMagenta', 'neonViolet']);
   dust(canvas);
 }
 
 function stageScene(canvas: Canvas): void {
   background(canvas);
-  horizon(canvas);
   speakers(canvas);
   dust(canvas);
 }

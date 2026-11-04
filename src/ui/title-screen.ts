@@ -1,6 +1,6 @@
-import { connectedGamepads } from '../input/gamepad';
+import { connectedGamepads, isPressed, PadButton } from '../input/gamepad';
 import { isTouchDevice } from '../input/touch-controls';
-import { element } from './menu';
+import { element, MENU_KEYS } from './menu';
 import { titleLogo } from './title-logo';
 
 /**
@@ -12,19 +12,16 @@ export const SIMPLE_MODE_NOTICE =
   "Mode simplifié : ton navigateur n'offre pas l'accélération graphique.";
 
 /**
- * Title screen: any key, click, tap or gamepad button continues. `simplified`: the game is
- * drawn without WebGL, which it tells under the prompt. The key art is the MenuBackdrop behind
- * it (app.ts).
+ * Title screen: the player enters when they want, with the button, Enter / A, or a click on it.
+ * `simplified`: the game is drawn without WebGL, which it tells under the button. The key art
+ * is the MenuBackdrop behind it (app.ts).
  */
 export class TitleScreen {
   private readonly root: HTMLDivElement;
   private frameRequest = 0;
   private done = false;
-  /**
-   * A gamepad button already held when the screen appears (the "back" press that brought the
-   * player here) must be released first: only a new press continues.
-   */
-  private padHeld = anyPadButtonHeld();
+  /** A confirm button already held when the screen appears must be released first. */
+  private padHeld = confirmHeld();
 
   constructor(
     parent: HTMLElement,
@@ -34,7 +31,6 @@ export class TitleScreen {
     this.root = document.createElement('div');
     this.root.className = 'menu title-screen';
 
-    // The poster on the club's wall: the logo, its O a vinyl turning.
     const poster = element('div', 'title-poster');
     poster.append(
       element('p', 'title-kicker', 'Sound Clash'),
@@ -42,38 +38,44 @@ export class TitleScreen {
       element('p', 'title-tagline', 'Le tournoi clandestin'),
     );
 
-    // What to press, told in the player's language: a touch screen has no key.
-    const prompt = element('p', 'title-prompt');
-    const arrow = element('span', 'title-prompt-arrow', '▶');
+    const enter = element('button', 'title-enter');
+    enter.type = 'button';
+    enter.tabIndex = -1;
+    const arrow = element('span', 'title-enter-arrow', '▶');
     arrow.setAttribute('aria-hidden', 'true');
-    prompt.append(arrow, isTouchDevice() ? "Touche l'écran" : 'Appuie sur une touche');
+    const hint = element('span', 'title-enter-hint', isTouchDevice() ? 'Touche' : 'Entrée / A');
+    hint.setAttribute('aria-hidden', 'true');
+    enter.append(arrow, element('span', 'title-enter-label', 'Entrer'), hint);
+    enter.addEventListener('click', this.start);
+
     const bottom = element('div', 'title-bottom');
-    bottom.appendChild(prompt);
-    if (simplified) {
-      bottom.appendChild(element('p', 'title-notice', SIMPLE_MODE_NOTICE));
-    }
+    bottom.appendChild(enter);
+    if (simplified) bottom.appendChild(element('p', 'title-notice', SIMPLE_MODE_NOTICE));
 
     this.root.append(poster, bottom);
     parent.appendChild(this.root);
 
-    window.addEventListener('keydown', this.start);
-    // `click`, not `pointerdown`: the click that follows a press would otherwise land on the
-    // menu item appearing under the finger and select it.
-    this.root.addEventListener('click', this.start);
+    window.addEventListener('keydown', this.onKeyDown);
     this.frameRequest = requestAnimationFrame(this.pollGamepads);
   }
 
   dispose(): void {
     this.done = true;
-    window.removeEventListener('keydown', this.start);
+    window.removeEventListener('keydown', this.onKeyDown);
     cancelAnimationFrame(this.frameRequest);
     this.root.remove();
   }
 
-  private readonly start = (event?: Event): void => {
-    // A key held down (the one that came back here) repeats: only a new press continues.
-    if (this.done || (event instanceof KeyboardEvent && event.repeat)) return;
+  private readonly start = (): void => {
+    if (this.done) return;
+    this.done = true;
     this.onStart();
+  };
+
+  private readonly onKeyDown = (event: KeyboardEvent): void => {
+    if (event.repeat || MENU_KEYS[event.code] !== 'confirm') return;
+    event.preventDefault();
+    this.start();
   };
 
   /**
@@ -82,7 +84,7 @@ export class TitleScreen {
    */
   private readonly pollGamepads = (): void => {
     if (this.done) return;
-    const held = anyPadButtonHeld();
+    const held = confirmHeld();
     if (held && !this.padHeld) {
       this.start();
       return;
@@ -92,6 +94,9 @@ export class TitleScreen {
   };
 }
 
-function anyPadButtonHeld(): boolean {
-  return connectedGamepads().some((pad) => pad.buttons.some((button) => button.pressed));
+/** A gamepad's confirm button: South (A / Cross) or Start. */
+function confirmHeld(): boolean {
+  return connectedGamepads().some(
+    (pad) => isPressed(pad, PadButton.South) || isPressed(pad, PadButton.Start),
+  );
 }
