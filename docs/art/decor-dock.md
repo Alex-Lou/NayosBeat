@@ -21,7 +21,7 @@ Mêmes calques, mêmes tailles et même grain que la rue (×2).
 
 - Le ciel de la rue, ton pour ton (la même ville à la même heure), deux bancs de nuages.
 - Les tours de la ville, quelques fenêtres allumées ; une cheminée de brique et son panache ; deux réservoirs d'eau sur les toits voisins.
-- Par l'allée de gauche : la rue de derrière, des entrepôts bas à toits en dents de scie, la ligne aérienne sur ses poutres, un réverbère. Il est placé au-dessus de la plaque « NO PARKING », pour ne jamais tomber à côté du chat.
+- Par l'allée de gauche : la rue de derrière, des entrepôts bas à toits en dents de scie, la ligne aérienne sur ses poutres où passe le train aérien à chaque cycle, un réverbère. Il est placé au-dessus de la plaque « NO PARKING », pour ne jamais tomber à côté du chat.
 
 ### 2.2 `mid`, la cour (50 %)
 
@@ -61,8 +61,8 @@ Les deux bouts s'assombrissent sous l'ombre des murs. Rien n'y fait une bande tr
 `tools/stage/dock/palette.ts` est la première palette d'un lieu qui n'empile pas celle de la rue. Elle compte 156 couleurs, case 0 comprise. Les silhouettes, les tags et les enseignes viennent du code de la rue, qui prend désormais ses rampes en paramètre (`FigureRamps`, `SignRamps`, `SprayRamps`) : le Dock passe les siennes.
 
 - **Les matières** : brique suie, béton chaud, asphalte, acier bleu-gris, rideaux prune, rouille, jaune de danger éteint, caoutchouc.
-- **La lumière** : le sodium des appliques, le violet du club à travers le verre, quelques carreaux orange.
-- **Les vivants** : les corps, la peau, les liserés chauds des vigiles, les braises des cigarettes.
+- **La lumière** : le sodium des appliques, le violet du club à travers le verre et en nappes sur la brique et le béton (`BRICK_VIOLET`, `CONCRETE_VIOLET`), quelques carreaux orange.
+- **Les vivants** : les corps, la peau, les vêtements (`CLOTH`, `HAIR`), les liserés chauds des vigiles, les braises des cigarettes.
 - **Les signes** : « EXIT » en vert, les enseignes, les peintures des tags (rose, violet, ocre, crème, vert, toutes ternes).
 - **Les objets** : bois des palettes, vert de la benne, sacs, chat, vapeur, papier ; la camionnette et la berline (de grandes surfaces, gardées dans la bande et l'enveloppe des flashs), la couverture, le carton, les bouteilles.
 
