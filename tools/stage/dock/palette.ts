@@ -138,6 +138,51 @@ export const WET = ramp(
 /** The same for the asphalt's puddles: the asphalt's colors, dry. */
 export const WET_ASPHALT = ramp('#1d1c26', '#23212b', '#2a2732', '#33303a');
 export const POSTER_RED = ramp('#5e2a30', '#7a383a');
+/**
+ * The club's violet light spilling on the brick wall and the concrete dock/yard (kit/light.ts
+ * `spill`): each their twin, slot for slot, the hue of the light added to their own tones.
+ */
+export const BRICK_VIOLET = ramp(
+  '#221b2c',
+  '#281e30',
+  '#312438',
+  '#3c2b40',
+  '#493349',
+  '#583c52',
+  '#68475a',
+  '#785362',
+);
+export const CONCRETE_VIOLET = ramp(
+  '#242030',
+  '#2b2638',
+  '#342d41',
+  '#3d344b',
+  '#473c54',
+  '#52455e',
+  '#5f4e67',
+  '#6c586f',
+);
+/**
+ * The clothes of the dock's people (bouncers, DJ, crowd): shadow, base, lit, dim in the night.
+ * Small: none is a large color (docs/flashs.md §3).
+ */
+export const CLOTH = {
+  maroon: ramp('#3a1f26', '#52303a', '#6c414a'),
+  olive: ramp('#2b2f24', '#3e4332', '#555a42'),
+  denim: ramp('#212739', '#2d374e', '#3f4c66'),
+  beige: ramp('#463b36', '#5e5046', '#786958'),
+  leather: ramp('#1f1a20', '#2d252b', '#43363e'),
+  grey: ramp('#28282f', '#383842', '#4e4c58'),
+  mustard: ramp('#463620', '#614b28', '#7e6438'),
+  black: ramp('#19171e', '#23202a', '#312c38'),
+  khaki: ramp('#383226', '#4b4432', '#625942'),
+} as const;
+export const HAIR = {
+  black: ramp('#151218', '#1f1a22', '#2e2632'),
+  brown: ramp('#2b1e1e', '#402a24', '#56392e'),
+  blond: ramp('#54412e', '#72593c', '#8c714a'),
+  red: ramp('#45221f', '#5f3024', '#7c4232'),
+} as const;
 
 /** The dock's ramps for the shared drawing code (people.ts, signs.ts). */
 export const FIGURE_RAMPS: FigureRamps = { body: PERSON, skin: SKIN };

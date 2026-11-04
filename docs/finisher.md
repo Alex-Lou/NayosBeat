@@ -151,7 +151,7 @@ Le même prédicat nourrit le HUD, le bouton tactile, le halo, le son et l'IA. L
 - Un test vérifie que `.finisher` change le fond et la couleur par rapport à `.full`.
 
 **Halo au sol**
-- Une ellipse de 44 × 6 px du monde, sous les pieds du joueur armé, dans sa couleur d'énergie. Son alpha vient de `alphaForDelta` pour ΔL ≤ 0,08 (0,27 en cyan).
+- Une ellipse de 44 × 6 px du monde, sous les pieds du joueur armé, dans sa couleur d'énergie. Son alpha vient de `alphaForDelta` pour ΔL ≤ 0,08 (0,255 en cyan).
 - Elle respire une fois par mesure (120 tics), avec une variation de luminance de 0,05 au plus.
 - Elle est fixe en mouvement réduit. Aucune planche à dessiner.
 
@@ -845,7 +845,7 @@ Mesures faites sur le stage en boîte grise : ciel `#1B1B2F` (L = 0,012), sol `#
 
 | Couleur | ratio rouge | ΔL ≤ 0,08 (lueur, non comptée) | ΔL ≤ 0,22 (l'éclat, compté) |
 |---|---|---|---|
-| Cyan `#30E8FF` | 0,02 | 0,27 | 0,54 |
+| Cyan `#30E8FF` | 0,02 | 0,255 | 0,54 |
 | Magenta de Nayo, tenue 2, `#FF4FC8` | 0,60 | 0,47 | 0,85 |
 | Magenta de Riff `#FF3CA0` | 0,72 | 0,53 | 0,92 |
 | Or de Riff, tenue 2, `#FFC83A` | 0,62 | 0,28 | 0,56 |
@@ -1174,7 +1174,7 @@ Total : environ 4 à 5 jours-agent. C'est une estimation, pas une mesure.
 - **Le fondu de 6 tics** (`fadedWord`) : le même mot qui baisse va d'une opacité à l'autre sur les 6 tics ; le même mot qui monte (de `blocked` à `ready`) attend 3 tics, puis monte en 3, de 0,2 par tic ; un mot nouveau efface l'ancien en 3 tics, puis apparaît en 3. Ce qui s'allume s'allume donc sur la seconde moitié, à partir de `LIGHTS_AT = 4`, la première image où le mot se voit (un tiers). Jamais les deux à la fois, jamais plus d'un tiers d'opacité par tic.
 - **La plaque passe par le budget de flashs** : le changement part tout de suite, mais un mot qui s'allume demande au budget d'admettre `FINISH_PLATE_AREA = 380` px² de vue à `LIGHTS_AT`, pas à l'image où le signal change. La place que garde le budget couvre ainsi les images où le mot s'allume (les âges 4 à 6, dans `FLASH_MERGE`). Refusé, le mot attend là sans rien montrer (l'ancien déjà effacé, ou le même mot à son opacité d'avant) et redemande à chaque image (`admit` : la plaque ne prend jamais de créneau). Mesuré sur les lettres (Press Start 2P à 8 px, trait de 2) : 373 px² pour FINISH cerné, 139 pour BOOST, 92 pour MAX. De `ready` à `blocked`, le mot ne fait que baisser : rien à demander. `Hud.update(state, finisher)` passe à chaque jauge le signal de son perso.
 - **Le halo** (`finisher-halo.ts`, dans `SpriteFighterView` et dans `FighterView`, les boîtes grises) : une ellipse de 44 × 6 px du monde dans l'énergie du perso, sous son ombre.
-  - Son alpha vient d'`alphaOver(énergie, scène, VEIL_DELTA)` : 0,27 en cyan, 0,47 pour Nayo en tenue 2, 0,53 pour Riff, 0,28 pour Riff en tenue 2 (son or). Il n'allume rien à ΔL 0,10 : rien à demander au budget.
+  - Son alpha vient d'`alphaOver(énergie, scène, VEIL_DELTA)` : 0,255 en cyan, 0,47 pour Nayo en tenue 2, 0,53 pour Riff, 0,28 pour Riff en tenue 2 (son or). Il n'allume rien à ΔL 0,10 : rien à demander au budget.
   - Il respire sur 120 tics (un cosinus), de cet alpha au plus faible qui reste à ΔL 0,05 de lui sur chaque couleur de la scène.
   - Il est fixe, à son plus clair, avec les effets de flash réduits ou le tremblement à « aucun », donc aussi avec `prefers-reduced-motion`. Il apparaît et part en 6 tics.
 - **Le bouton tactile** : `showFinisher(signal, facing, action)` (`touch-controls.ts`) pose `.finisher` en `ready` seulement ; en `blocked`, il reste `.full`. `.touch-boost.finisher` (`styles.css`) : fond `color-mix(in srgb, var(--boost-energy) 35%, transparent)`, libellé `var(--boost-energy)`, rien qui pulse. Aucun bouton de plus.

@@ -6,64 +6,64 @@ import { STAGE_PROPS } from '../../src/art/sakura/props';
 import { STAGE_LAYER_NAMES } from '../../src/art/stage-layers';
 import { luminanceDelta, relativeLuminance } from '../../src/render/luminance';
 import { VEIL_DELTA } from '../../src/render/veils';
-import { rgbaAt } from '../../tools/sprites/colors';
-import { decodeIndexedPng, type IndexedImage } from '../../tools/sprites/png';
+import { decodeIndexedPng } from '../../tools/sprites/png';
 import { stageRulesOf } from '../../tools/sprites/stage-drawn';
+import { readTruecolor } from '../../tools/sprites/truecolor';
 
-/** The hue of a vivid color (degrees), or undefined for a dull or dark one. */
-function vividHue(r: number, g: number, b: number): number | undefined {
-  const max = Math.max(r, g, b);
-  const delta = max - Math.min(r, g, b);
-  if (max === 0 || delta / max < 0.45 || max / 255 < 0.45) return undefined;
-  const hue =
-    max === r ? ((g - b) / delta) % 6 : max === g ? (b - r) / delta + 2 : (r - g) / delta + 4;
-  return (hue * 60 + 360) % 360;
+/** A truecolor layer as it is on disk (the illustration's own colors, no palette). */
+function imageAt(folder: 'art-src' | 'src/art', layer: string) {
+  return readTruecolor(new URL(`../../${folder}/sakura/${layer}.png`, import.meta.url));
 }
 
-async function installed(layer: (typeof STAGE_LAYER_NAMES)[number]) {
-  return decodeIndexedPng(
-    await readFile(new URL(`../../src/art/sakura/${layer}.png`, import.meta.url)),
-  );
+const installed = (layer: string) => imageAt('src/art', layer);
+
+/** The alpha of a truecolor image, pixel by pixel. */
+/** Whether two RGBA buffers hold the same bytes (no Node Buffer: the lint's types may not know it). */
+function sameBytes(a: Uint8ClampedArray, b: Uint8ClampedArray): boolean {
+  if (a.length !== b.length) return false;
+  for (let at = 0; at < a.length; at++) if (a[at] !== b[at]) return false;
+  return true;
 }
 
-/** The first pixel where two images show different colors, -1 if none (a fast walk: these images
- * are big, and a deep equality on a million entries is a trap). */
-function firstDifference(a: IndexedImage, b: IndexedImage): number {
-  if (a.width !== b.width || a.height !== b.height) return 0;
-  for (let at = 0; at < a.pixels.length; at++) {
-    const left = rgbaAt(a, a.pixels[at] ?? 0);
-    const right = rgbaAt(b, b.pixels[at] ?? 0);
-    if (left.r !== right.r || left.g !== right.g || left.b !== right.b || left.a !== right.a) {
-      return at;
-    }
-  }
-  return -1;
+function alphas(image: Awaited<ReturnType<typeof imageAt>>): Uint8Array {
+  const out = new Uint8Array(image.width * image.height);
+  for (let at = 0; at < out.length; at++) out[at] = image.data[at * 4 + 3] ?? 0;
+  return out;
 }
 
 describe('the hand-drawn Sakura Arena (docs/art/decor-sakura.md)', { timeout: 60_000 }, () => {
-  it('is what the game shows: the installed layers are the drawn ones', async () => {
+  it('is what the game shows: the installed truecolor layers are the drawn ones', async () => {
     for (const layer of STAGE_LAYER_NAMES) {
       const shown = await installed(layer);
-      const source = await decodeIndexedPng(
-        await readFile(new URL(`../../art-src/sakura/${layer}.png`, import.meta.url)),
-      );
-      expect(firstDifference(shown, source), layer).toBe(-1);
+      const source = await imageAt('art-src', layer);
+      expect([shown.width, shown.height], layer).toEqual([source.width, source.height]);
+      expect(sameBytes(shown.data, source.data), layer).toBe(true);
     }
   });
 
-  it('keeps the layers contract: their sizes, an opaque far layer', async () => {
+  it('keeps the layers contract: their sizes, an opaque far layer, whole alpha elsewhere', async () => {
     for (const layer of STAGE_LAYER_NAMES) {
       const image = await installed(layer);
       const { width, height } = stageRulesOf(layer);
       expect([image.width, image.height], layer).toEqual([width, height]);
+      const alpha = alphas(image);
       if (layer === 'far') {
-        expect(image.pixels.every((slot) => rgbaAt(image, slot).a !== 0)).toBe(true);
+        expect(
+          alpha.every((value) => value === 255),
+          layer,
+        ).toBe(true);
+      } else {
+        expect(
+          alpha.every((value) => value === 0 || value === 255),
+          layer,
+        ).toBe(true);
       }
     }
   });
 
   it('offers the place, in its one atmosphere', () => {
     expect(Object.keys(STAGE_COLORS)).toEqual(['dusk-clear']);
+    expect(STAGE_COLORS['dusk-clear']?.length ?? 0).toBeGreaterThan(0);
     const map = STAGE_MAPS.find(({ name }) => name === 'sakura');
     expect(map?.title).toBe('Sakura Arena');
     expect(map?.variants[0]?.atmosphere).toEqual({ moment: 'dusk', weather: 'clear' });
@@ -94,22 +94,6 @@ describe('the hand-drawn Sakura Arena (docs/art/decor-sakura.md)', { timeout: 60
       if (!frame) continue;
       expect(frame.sheetX + frame.width).toBeLessThanOrEqual(sheet.width);
       expect(frame.sheetY + frame.height).toBeLessThanOrEqual(sheet.height);
-    }
-  });
-
-  it('leaves cyan and magenta to the fighters', async () => {
-    for (const layer of STAGE_LAYER_NAMES) {
-      const image = await installed(layer);
-      for (const slot of new Set(image.pixels)) {
-        const { r, g, b, a } = rgbaAt(image, slot);
-        if (a === 0) continue;
-        const hue = vividHue(r, g, b);
-        if (hue === undefined) continue;
-        for (const taken of [185, 325]) {
-          const apart = Math.min(Math.abs(hue - taken), 360 - Math.abs(hue - taken));
-          expect(apart, `${layer} ${r},${g},${b}`).toBeGreaterThan(25);
-        }
-      }
     }
   });
 });

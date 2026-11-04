@@ -1,19 +1,20 @@
 /**
  * The club seen through bay 3, its shutter rolled all the way up (docs/art/decor-dock.md §2.2):
  * the room in its violet haze, the DJ on the riser at the back playing live (casque on one ear,
- * cap, hoodie), the crowd in silhouettes in front of the opening: dancers in hoods and caps, a
- * couple kissing, someone pulling on a joint. Nobody stands outside: the party is in.
+ * cap, hoodie), the crowd in front of the opening: dancers in hoods and caps, a couple kissing,
+ * someone pulling on a joint. Clean pixel art and dressed figures (docs/art/proprete.md).
  */
 
-import { Canvas, Mask, at, tone } from '../kit/canvas.ts';
-import { noise } from '../kit/random.ts';
+import { Canvas, at } from '../kit/canvas.ts';
 import type { Rect } from '../kit/stage.ts';
-import { drawFigure, type Figure, type Pose } from '../rue/people.ts';
+import { drawFigure, type Figure, type Outfit, type Pose } from '../rue/people.ts';
 import {
+  CLOTH,
   EMBER,
   EXIT,
   FIGURE_RAMPS,
   GLASS,
+  HAIR,
   PAPER,
   RIM_VIOLET,
   RIM_WARM,
@@ -22,60 +23,99 @@ import {
   STEEL,
 } from './palette.ts';
 
-/**
- * The frames of the club, played by mid.ts on the beat: 0 at rest; 1 the DJ scratching, half the
- * dancers dipping, the joint drawn on; 2 the DJ on the crossfader, the other half dipping, the
- * smoke breathed out; 3 the bass, everyone up, arms in the air; 4 the DJ's hand to his casque.
- */
 export const CLUB_FRAMES = 5;
 
-/** The riser at the back, low: its top row, over the opening's floor line. */
 function riserOf(rect: Rect): { top: number; left: number; width: number } {
-  return { top: rect.y + rect.height - 14, left: rect.x + 46, width: 62 };
+  return { top: rect.y + rect.height - 14, left: rect.x + 44, width: 64 };
 }
 
-/** The booth's front panel rises from the riser to the DJ's hips: the decks at his hands. */
 const BOOTH = 34;
 
-/** The room behind the opening: dark up high, the stage lights' haze low, a few pin lights. */
-function drawRoom(canvas: Canvas, rect: Rect): void {
+function drawRoom(canvas: Canvas, rect: Rect, frame: number): void {
   const { x, y, width, height } = rect;
   canvas.paint(x, y, width, height, (px, py) => {
+    const wall = px < x + 10 || px >= x + width - 10;
+    if (wall) return at(STEEL, 0);
     const low = (py - y) / height;
-    const glow = 0.6 + low * 1.6 + (noise(78, px, py, 12) - 0.5) * 0.8;
-    return tone(GLASS, Math.min(glow, 2.3), px, py);
+    const step = low > 0.72 ? 2 : low > 0.36 ? 1 : 0;
+    return at(GLASS, step);
   });
-  // Pin lights in the ceiling, and a stack of speakers either side of the riser, far back.
-  for (let px = x + 8; px < x + width; px += 23)
-    canvas.set(px, y + 4 + ((px >> 2) % 3), at(GLASS, 3));
+  canvas.fill(x + 10, y + 6, width - 20, 3, at(STEEL, 1));
+  canvas.hline(x + 10, y + 6, width - 20, at(STEEL, 3));
+  for (let px = x + 18; px < x + width - 14; px += 22) {
+    canvas.fill(px, y + 9, 4, 2, at(GLASS, 3));
+    canvas.set(px + 1, y + 10, at(GLASS, 4));
+  }
   const riser = riserOf(rect);
-  for (const sx of [riser.left - 18, riser.left + riser.width + 4]) {
-    canvas.fill(sx, riser.top - 34, 14, 34, at(STEEL, 0));
-    canvas.ellipse(sx + 3, riser.top - 30, 8, 8, at(STEEL, 1));
-    canvas.ellipse(sx + 2, riser.top - 18, 10, 10, at(STEEL, 1));
+  const pulse = frame === 3 ? 1 : 0;
+  for (const [sx, side] of [
+    [riser.left - 22, 1],
+    [riser.left + riser.width + 4, -1],
+  ] as const) {
+    canvas.fill(sx + (side > 0 ? -3 : 14), riser.top - 36, 3, 36, at(STEEL, 1));
+    canvas.fill(sx, riser.top - 38, 14, 38, at(STEEL, 0));
+    canvas.hline(sx, riser.top - 38, 14, at(STEEL, 3));
+    canvas.hline(sx, riser.top - 22, 14, at(STEEL, 2));
+    canvas.ellipse(
+      sx + 3 - pulse,
+      riser.top - 34 - pulse,
+      8 + pulse * 2,
+      8 + pulse * 2,
+      at(STEEL, 2),
+    );
+    canvas.ellipse(sx + 5, riser.top - 32, 4, 4, at(GLASS, 2 + pulse));
+    canvas.ellipse(
+      sx + 2 - pulse,
+      riser.top - 19 - pulse,
+      10 + pulse * 2,
+      10 + pulse * 2,
+      at(STEEL, 2),
+    );
+    canvas.ellipse(sx + 5, riser.top - 16, 4, 4, at(GLASS, 2 + pulse));
   }
 }
 
-/** The riser, its fixed violet LED strip (nothing blinks, docs/flashs.md), the DJ's table. */
 function drawBooth(canvas: Canvas, rect: Rect): void {
   const riser = riserOf(rect);
+  canvas.polygon(
+    [
+      [riser.left + 4, riser.top - 4],
+      [riser.left + riser.width - 4, riser.top - 4],
+      [riser.left + riser.width, riser.top],
+      [riser.left, riser.top],
+    ],
+    at(STEEL, 2),
+  );
   canvas.fill(riser.left, riser.top, riser.width, 14, at(STEEL, 1));
   canvas.hline(riser.left, riser.top, riser.width, at(STEEL, 3));
   canvas.hline(riser.left + 2, riser.top + 5, riser.width - 4, at(GLASS, 4));
-  const table = { x: riser.left + 10, top: riser.top - BOOTH, width: 42 };
+  canvas.hline(riser.left + 2, riser.top + 6, riser.width - 4, at(GLASS, 3));
+  const table = { x: riser.left + 10, top: riser.top - BOOTH, width: 44 };
+  canvas.polygon(
+    [
+      [table.x + 2, table.top - 3],
+      [table.x + table.width - 2, table.top - 3],
+      [table.x + table.width, table.top],
+      [table.x, table.top],
+    ],
+    at(STEEL, 2),
+  );
   canvas.fill(table.x, table.top, table.width, BOOTH, at(STEEL, 0));
-  canvas.hline(table.x, table.top, table.width, at(STEEL, 3));
+  canvas.hline(table.x, table.top, table.width, at(STEEL, 4));
   canvas.vline(table.x, table.top, BOOTH, at(STEEL, 2));
+  canvas.vline(table.x + table.width - 1, table.top, BOOTH, at(STEEL, 2));
+  canvas.fill(table.x + 6, table.top + 6, table.width - 12, BOOTH - 12, at(STEEL, 1));
+  canvas.hline(table.x + 8, table.top + 10, table.width - 16, at(GLASS, 3));
   for (const deck of [table.x + 1, table.x + table.width - 15]) {
     canvas.fill(deck, table.top - 3, 14, 3, at(STEEL, 2));
-    canvas.hline(deck + 2, table.top - 4, 10, at(STEEL, 0));
+    canvas.hline(deck + 2, table.top - 4, 10, at(STEEL, 4));
+    canvas.fill(deck + 6, table.top - 5, 2, 1, at(SODIUM, 3));
   }
-  const mixer = table.x + table.width / 2 - 5;
+  const mixer = table.x + Math.floor(table.width / 2) - 5;
   canvas.fill(mixer, table.top - 4, 10, 4, at(STEEL, 1));
-  canvas.set(mixer + 2, table.top - 3, at(EXIT, 2));
-  canvas.set(mixer + 5, table.top - 3, at(SODIUM, 2));
-  canvas.set(mixer + 8, table.top - 3, at(EXIT, 2));
-  // The gooseneck lamp, its warm dot.
+  canvas.set(mixer + 2, table.top - 3, at(EXIT, 3));
+  canvas.set(mixer + 5, table.top - 3, at(SODIUM, 3));
+  canvas.set(mixer + 8, table.top - 3, at(EXIT, 3));
   canvas.line(
     table.x + table.width - 2,
     table.top - 3,
@@ -86,7 +126,6 @@ function drawBooth(canvas: Canvas, rect: Rect): void {
   canvas.fill(table.x + table.width - 11, table.top - 14, 4, 2, at(SODIUM, 3));
 }
 
-/** The DJ's arms, frame by frame: on the decks, scratching, on the crossfader, up, at the casque. */
 const DJ_ARMS: readonly Pose['arms'][] = [
   [
     { joint: [6, 9], end: [12, 15] },
@@ -110,12 +149,19 @@ const DJ_ARMS: readonly Pose['arms'][] = [
   ],
 ];
 
+const DJ_OUTFIT: Outfit = {
+  top: CLOTH.maroon,
+  legs: CLOTH.denim,
+  shoes: CLOTH.black,
+  hair: CLOTH.black,
+};
+
 function djOf(rect: Rect, frame: number): Figure {
   const riser = riserOf(rect);
   const arms = DJ_ARMS[frame] ?? DJ_ARMS[0];
   if (!arms) throw new Error('The DJ has no arms');
   return {
-    x: riser.left + 31,
+    x: riser.left + 32,
     y: riser.top,
     height: 74,
     shoulders: 24,
@@ -133,10 +179,10 @@ function djOf(rect: Rect, frame: number): Figure {
     },
     rim: { side: 0, above: true, ramp: RIM_WARM },
     face: true,
+    outfit: DJ_OUTFIT,
   };
 }
 
-/** The casque on one ear: its band over the cap, one cup on the ear, the other off on the neck. */
 function drawCasque(canvas: Canvas, dj: Figure): void {
   const head = Math.round(dj.height * 0.145);
   const top = dj.y - dj.height + dj.pose.dip;
@@ -146,7 +192,6 @@ function drawCasque(canvas: Canvas, dj: Figure): void {
   canvas.fill(cx + dj.facing * 2, top + head + 2, 3, 3, at(STEEL, 3));
 }
 
-/** Arms loose, the feet apart: a dancer at rest. */
 const LOOSE: Pose = {
   arms: [
     { joint: [5, 10], end: [8, 19] },
@@ -163,7 +208,6 @@ const UP: Pose['arms'] = [
   { joint: [6, -2], end: [8, -16] },
   { joint: [-6, -2], end: [-8, -16] },
 ];
-/** An arm around the other's neck, leaning in: the kiss. */
 const KISS: Pose = {
   arms: [
     { joint: [8, 2], end: [13, -4] },
@@ -176,7 +220,6 @@ const KISS: Pose = {
   lean: 3,
   dip: 0,
 };
-/** The joint: the hand at the lips, or down by the hip. */
 const DRAG: Pose['arms'] = [
   { joint: [6, 9], end: [5, -4] },
   { joint: [-2, 13], end: [-1, 24] },
@@ -186,12 +229,17 @@ const HOLD: Pose['arms'] = [
   { joint: [-2, 13], end: [-1, 24] },
 ];
 
-/** The crowd in front of the opening, frame by frame (CLUB_FRAMES). */
 function crowdOf(rect: Rect, frame: number): Figure[] {
   const floor = rect.y + rect.height;
   const up = frame === 3 ? 4 : 0;
   const rim = (side: -1 | 1) => ({ side, above: true, ramp: RIM_VIOLET }) as const;
-  const dancer = (x: number, facing: -1 | 1, head: Figure['head'], dips: boolean): Figure => ({
+  const dancer = (
+    x: number,
+    facing: -1 | 1,
+    head: Figure['head'],
+    dips: boolean,
+    outfit: Outfit,
+  ): Figure => ({
     x,
     y: floor - up,
     height: 78,
@@ -205,10 +253,16 @@ function crowdOf(rect: Rect, frame: number): Figure[] {
       dip: (frame === 1 && dips) || (frame === 2 && !dips) ? 3 : 0,
     },
     rim: rim(facing === 1 ? -1 : 1),
+    outfit,
   });
   const drawing = frame === 1;
   return [
-    dancer(rect.x + 11, 1, 'hood', true),
+    dancer(rect.x + 11, 1, 'hood', true, {
+      top: CLOTH.olive,
+      legs: CLOTH.black,
+      shoes: CLOTH.beige,
+      hair: CLOTH.olive,
+    }),
     {
       x: rect.x + 27,
       y: floor,
@@ -219,6 +273,12 @@ function crowdOf(rect: Rect, frame: number): Figure[] {
       coat: 'short',
       pose: KISS,
       rim: rim(-1),
+      outfit: {
+        top: CLOTH.mustard,
+        legs: CLOTH.denim,
+        shoes: CLOTH.black,
+        hair: HAIR.brown,
+      },
     },
     {
       x: rect.x + 38,
@@ -230,6 +290,12 @@ function crowdOf(rect: Rect, frame: number): Figure[] {
       coat: 'puffer',
       pose: { ...KISS, arms: [KISS.arms[1], KISS.arms[0]] },
       rim: rim(1),
+      outfit: {
+        top: CLOTH.leather,
+        legs: CLOTH.grey,
+        shoes: CLOTH.black,
+        hair: CLOTH.black,
+      },
     },
     {
       x: rect.x + 116,
@@ -241,12 +307,22 @@ function crowdOf(rect: Rect, frame: number): Figure[] {
       coat: 'short',
       pose: { ...LOOSE, arms: drawing ? DRAG : HOLD, lean: 1 },
       rim: rim(1),
+      outfit: {
+        top: CLOTH.denim,
+        legs: CLOTH.khaki,
+        shoes: CLOTH.black,
+        hair: CLOTH.maroon,
+      },
     },
-    dancer(rect.x + 137, -1, 'hood', false),
+    dancer(rect.x + 137, -1, 'hood', false, {
+      top: CLOTH.grey,
+      legs: CLOTH.black,
+      shoes: CLOTH.black,
+      hair: CLOTH.grey,
+    }),
   ];
 }
 
-/** Where the smoker's hand is (people.ts's geometry): the joint's end. */
 function handOf(figure: Figure): [number, number] {
   const { height: tall, shoulders, facing, pose } = figure;
   const k = tall / 80;
@@ -257,7 +333,6 @@ function handOf(figure: Figure): [number, number] {
   return [Math.round(figure.x + (sx + end[0] * k) * facing), Math.round(sy + end[1] * k)];
 }
 
-/** The joint's ember and its smoke: a curl rising in the stage light, thicker breathed out. */
 function drawJoint(canvas: Canvas, smoker: Figure, frame: number): void {
   const [hx, hy] = handOf(smoker);
   const tip = hx + smoker.facing * 3;
@@ -274,9 +349,8 @@ function drawJoint(canvas: Canvas, smoker: Figure, frame: number): void {
   }
 }
 
-/** The club through the opening `rect`, at `frame` (CLUB_FRAMES). */
 export function drawClub(canvas: Canvas, rect: Rect, frame: number): void {
-  drawRoom(canvas, rect);
+  drawRoom(canvas, rect, frame);
   const dj = djOf(rect, frame);
   drawFigure(canvas, dj, FIGURE_RAMPS);
   drawCasque(canvas, dj);
@@ -285,14 +359,13 @@ export function drawClub(canvas: Canvas, rect: Rect, frame: number): void {
   for (const figure of crowd) drawFigure(canvas, figure, FIGURE_RAMPS);
   const smoker = crowd[3];
   if (smoker) drawJoint(canvas, smoker, frame);
-  // Low smoke rolling along the floor, over the feet.
   const floor = rect.y + rect.height;
-  const smoke = new Mask(canvas.width, canvas.height);
-  for (let px = rect.x; px < rect.x + rect.width; px++) {
-    for (let py = floor - 8; py < floor; py++)
-      if (noise(77, px, py * 2, 16) > 0.7) smoke.add(px, py);
+  for (const [dx, w, h, step] of [
+    [6, 36, 5, 1],
+    [34, 44, 6, 2],
+    [72, 46, 5, 1],
+    [108, 36, 6, 2],
+  ] as const) {
+    canvas.ellipse(rect.x + dx, floor - h, w, h, at(STEAM, step));
   }
-  canvas.paint(rect.x, floor - 8, rect.width, 8, (px, py) =>
-    smoke.has(px, py) ? tone(STEAM, 0.8 + (py - floor + 8) / 8, px, py) : undefined,
-  );
 }
