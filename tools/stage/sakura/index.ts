@@ -1,9 +1,10 @@
 /**
  * Sakura Arena (docs/art/decor-sakura.md): the developer's illustration (issue #155), adapted to
- * the stage's three layers. All three are drawn by hand, in art-src/sakura/; `npm run stages`
- * installs them (tools/sprites/stage-drawn.ts). The code's layers are only a blank fallback: the
- * stage has no code drawing of its own, and its palette lives in its images. The code adds the
- * petals that fall across the sanctuary, laid over the hand-drawn scene.
+ * the stage's three layers. All three are truecolor PNGs drawn by hand, in art-src/sakura/;
+ * `npm run stages` copies them as they are (`rgba`, tools/sprites/stage-drawn.ts), so the
+ * illustration keeps every color. The code's layers are only a blank fallback: the stage has no
+ * code drawing of its own. The code adds the petals that fall across the sanctuary, laid over
+ * the hand-drawn scene.
  */
 
 import type { Rgba } from '../../sprites/png.ts';
@@ -118,4 +119,5 @@ export const SAKURA: CodeMap = {
   name: 'sakura',
   draw: drawSakura,
   atmospheres: [{ atmosphere: { moment: 'dusk', weather: 'clear' }, palette: [BLANK] }],
+  rgba: true,
 };

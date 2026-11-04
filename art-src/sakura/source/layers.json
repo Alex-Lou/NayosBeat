@@ -1,0 +1,70 @@
+{
+  "name": "Sakura Shrine Arena - provisional sliced layers",
+  "canvas": {
+    "width": 1717,
+    "height": 916
+  },
+  "warning": "These are horizontal cutouts from a flattened illustration, not true isolated depth layers. Use as a prototype; regenerate/paint occluded regions for production parallax.",
+  "layers": [
+    {
+      "file": "01_sky_canopy.png",
+      "y_start": 0,
+      "y_end": 220,
+      "parallax_factor": 0.08,
+      "animation": "subtle camera parallax"
+    },
+    {
+      "file": "02_mountains.png",
+      "y_start": 220,
+      "y_end": 380,
+      "parallax_factor": 0.18,
+      "animation": "subtle camera parallax"
+    },
+    {
+      "file": "03_shrines_waterfalls.png",
+      "y_start": 380,
+      "y_end": 495,
+      "parallax_factor": 0.35,
+      "animation": "subtle camera parallax"
+    },
+    {
+      "file": "04_spectators.png",
+      "y_start": 495,
+      "y_end": 625,
+      "parallax_factor": 0.55,
+      "animation": "subtle camera parallax"
+    },
+    {
+      "file": "05_fighting_floor.png",
+      "y_start": 625,
+      "y_end": 795,
+      "parallax_factor": 1.0,
+      "animation": "static"
+    },
+    {
+      "file": "06_front_floor.png",
+      "y_start": 795,
+      "y_end": 916,
+      "parallax_factor": 1.0,
+      "animation": "static"
+    }
+  ],
+  "suggested_fx": [
+    {
+      "name": "petals",
+      "render": "procedural particles",
+      "speed": "slow",
+      "layer": "above spectators"
+    },
+    {
+      "name": "lantern_flicker",
+      "render": "shader/light overlay",
+      "layer": "shrines"
+    },
+    {
+      "name": "fireflies",
+      "render": "procedural particles",
+      "layer": "midground"
+    }
+  ]
+}

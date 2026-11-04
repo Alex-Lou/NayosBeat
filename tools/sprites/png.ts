@@ -1,4 +1,4 @@
-/** Minimal PNG codec for palette images: no dependency, deflate from the platform. */
+/** Minimal PNG codec for palette and truecolor images: no dependency, deflate from the platform. */
 
 export interface Rgba {
   readonly r: number;
@@ -9,6 +9,7 @@ export interface Rgba {
 
 const SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
 const COLOR_TYPE_INDEXED = 3;
+const COLOR_TYPE_RGBA = 6;
 
 const CRC_TABLE = Array.from({ length: 256 }, (_, n) => {
   let c = n;
@@ -128,31 +129,81 @@ export async function decodeIndexedPng(png: Uint8Array): Promise<IndexedImage> {
   const pixels = new Uint8Array(width * height);
   for (let y = 0; y < height; y++) {
     const row = y * (width + 1);
-    unfilter(
+    unfilterLine(
       raw[row] ?? 0,
       raw.subarray(row + 1, row + 1 + width),
       pixels.subarray(y * width, (y + 1) * width),
       y > 0 ? pixels.subarray((y - 1) * width, y * width) : undefined,
+      1,
     );
   }
   return { width, height, pixels, alpha, colors };
 }
 
+/** A truecolor PNG as read back: RGBA bytes, row by row. */
+export interface TruecolorImage {
+  readonly width: number;
+  readonly height: number;
+  readonly data: Uint8ClampedArray;
+}
+
 /**
- * One row of one byte per pixel, its PNG filter undone: each byte was stored as the difference
+ * Decodes an 8-bit RGBA truecolor PNG (color type 6, no interlace), the kind a stage drawn with
+ * every color of its illustration is saved as. Rows are unfiltered with four bytes a pixel.
+ */
+export async function decodeTruecolorPng(png: Uint8Array): Promise<TruecolorImage> {
+  const view = new DataView(png.buffer, png.byteOffset, png.byteLength);
+  let width = 0;
+  let height = 0;
+  const data: Uint8Array[] = [];
+  for (let offset = SIGNATURE.length; offset < png.length;) {
+    const length = view.getUint32(offset);
+    const type = new TextDecoder().decode(png.subarray(offset + 4, offset + 8));
+    const body = png.subarray(offset + 8, offset + 8 + length);
+    if (type === 'IHDR') {
+      width = view.getUint32(offset + 8);
+      height = view.getUint32(offset + 12);
+      if (body[8] !== 8 || body[9] !== COLOR_TYPE_RGBA) {
+        throw new Error('Only 8-bit RGBA truecolor PNGs are supported');
+      }
+      if (body[12] !== 0) throw new Error('Interlaced PNGs are not supported');
+    } else if (type === 'IDAT') {
+      data.push(body);
+    }
+    offset += 12 + length;
+  }
+  const raw = await inflate(concat(data));
+  const stride = width * 4;
+  const pixels = new Uint8Array(stride * height);
+  for (let y = 0; y < height; y++) {
+    const row = y * (stride + 1);
+    unfilterLine(
+      raw[row] ?? 0,
+      raw.subarray(row + 1, row + 1 + stride),
+      pixels.subarray(y * stride, (y + 1) * stride),
+      y > 0 ? pixels.subarray((y - 1) * stride, y * stride) : undefined,
+      4,
+    );
+  }
+  return { width, height, data: new Uint8ClampedArray(pixels) };
+}
+
+/**
+ * One row of `bpp` bytes a pixel, its PNG filter undone: each byte was stored as the difference
  * with a guess made from its left, upper and upper-left neighbours (`above` undefined on the
  * first row, all zeros).
  */
-function unfilter(
+function unfilterLine(
   filter: number,
   line: Uint8Array,
   out: Uint8Array,
   above: Uint8Array | undefined,
+  bpp: number,
 ): void {
   for (let x = 0; x < line.length; x++) {
-    const left = x > 0 ? (out[x - 1] ?? 0) : 0;
+    const left = x >= bpp ? (out[x - bpp] ?? 0) : 0;
     const up = above?.[x] ?? 0;
-    const upLeft = x > 0 ? (above?.[x - 1] ?? 0) : 0;
+    const upLeft = x >= bpp ? (above?.[x - bpp] ?? 0) : 0;
     let guess: number;
     if (filter === 0) guess = 0;
     else if (filter === 1) guess = left;
