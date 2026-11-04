@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { MoveData } from '../../src/core/move-data';
 import { COUNTER_HITSTOP, EXTENDER_HITSTOP } from '../../src/core/rules';
+import { KODA } from '../../src/data/fighters/koda';
 import { NAYO } from '../../src/data/fighters/nayo';
 import { RIFF } from '../../src/data/fighters/riff';
 import { SAPHIR } from '../../src/data/fighters/saphir';
@@ -15,7 +16,7 @@ import { WATT } from '../../src/data/fighters/watt';
 /** Every move of every fighter, and each blow of a multi-hit one, named for the messages. */
 function blows(): { name: string; move: MoveData }[] {
   const all: { name: string; move: MoveData }[] = [];
-  for (const fighter of [NAYO, RIFF, SAPHIR, WATT]) {
+  for (const fighter of [NAYO, RIFF, SAPHIR, WATT, KODA]) {
     for (const [id, move] of Object.entries(fighter.moves)) {
       all.push({ name: `${fighter.name} ${id}`, move });
       move.pulses?.forEach((pulse, index) => {

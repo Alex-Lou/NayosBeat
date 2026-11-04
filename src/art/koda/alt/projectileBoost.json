@@ -1,0 +1,53 @@
+{
+  "frames": {
+    "0": {
+      "frame": { "x": 0, "y": 0, "w": 80, "h": 66 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 80, "h": 66 },
+      "sourceSize": { "w": 80, "h": 66 }
+    },
+    "1": {
+      "frame": { "x": 80, "y": 0, "w": 77, "h": 66 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 3, "y": 0, "w": 77, "h": 66 },
+      "sourceSize": { "w": 80, "h": 66 }
+    },
+    "2": {
+      "frame": { "x": 157, "y": 0, "w": 80, "h": 66 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 80, "h": 66 },
+      "sourceSize": { "w": 80, "h": 66 }
+    },
+    "3": {
+      "frame": { "x": 237, "y": 0, "w": 80, "h": 66 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 80, "h": 66 },
+      "sourceSize": { "w": 80, "h": 66 }
+    },
+    "4": {
+      "frame": { "x": 317, "y": 0, "w": 70, "h": 66 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 10, "y": 0, "w": 70, "h": 66 },
+      "sourceSize": { "w": 80, "h": 66 }
+    },
+    "5": {
+      "frame": { "x": 387, "y": 0, "w": 70, "h": 66 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 10, "y": 0, "w": 70, "h": 66 },
+      "sourceSize": { "w": 80, "h": 66 }
+    },
+    "6": {
+      "frame": { "x": 457, "y": 0, "w": 73, "h": 66 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 7, "y": 0, "w": 73, "h": 66 },
+      "sourceSize": { "w": 80, "h": 66 }
+    },
+    "7": {
+      "frame": { "x": 530, "y": 0, "w": 76, "h": 66 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 4, "y": 0, "w": 76, "h": 66 },
+      "sourceSize": { "w": 80, "h": 66 }
+    }
+  },
+  "meta": { "image": "projectileBoost.png", "size": { "w": 606, "h": 66 } }
+}

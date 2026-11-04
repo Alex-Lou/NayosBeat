@@ -1,10 +1,11 @@
 import type { FighterTemplate } from '../core/config';
+import { KODA } from './fighters/koda';
 import { NAYO } from './fighters/nayo';
 import { RIFF } from './fighters/riff';
 import { SAPHIR } from './fighters/saphir';
 import { WATT } from './fighters/watt';
 
-export type FighterId = 'nayo' | 'riff' | 'saphir' | 'watt';
+export type FighterId = 'nayo' | 'riff' | 'saphir' | 'watt' | 'koda';
 
 export interface RosterEntry {
   readonly id: FighterId;
@@ -45,6 +46,12 @@ export const ROSTER: readonly RosterEntry[] = [
     // In grey boxes until his art (docs/watt.md): the owner's call, to play him online now.
     description: "Roadie à tête d'ampoule · prise longue · Surcharge · Plein feu",
     finisher: 'Couvre-feu',
+  },
+  {
+    id: 'koda',
+    template: KODA,
+    description: "Accordeur d'acier · Diapason · Fente d'acier · Cymbale · Octave",
+    finisher: 'Accord Final',
   },
 ];
 

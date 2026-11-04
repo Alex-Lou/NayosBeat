@@ -737,6 +737,7 @@ export const OUTLINE_AREAS: Readonly<Record<FighterId, number>> = {
   riff: 300,
   saphir: 700,
   watt: 450,
+  koda: 300,
 };
 
 /**

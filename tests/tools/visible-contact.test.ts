@@ -88,6 +88,7 @@ describe('low blows', () => {
       ['crouchLight', 'crouchHeavy'],
       ['crouchLight', 'crouchHeavy', 'special', 'specialBoost'],
       ['crouchLight', 'crouchHeavy'],
+      ['crouchLight', 'crouchHeavy'],
     ]);
   });
 });

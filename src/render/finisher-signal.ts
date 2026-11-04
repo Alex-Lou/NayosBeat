@@ -29,6 +29,7 @@ const SIREN_ROOTS: Readonly<Record<FighterId, number>> = {
   riff: 330,
   saphir: 294,
   watt: 349,
+  koda: 311,
 };
 
 /** What `play` multiplies the siren's tones by for `fighter`: 1 for Nayo's own. */
