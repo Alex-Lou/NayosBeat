@@ -1,9 +1,10 @@
 /**
- * Dancing Forest's palette (docs/art/decor-forest-dance.md §3): its own. A clearing at dawn: the
- * sky from a cold blue-grey overhead to a warm glow behind the trees, the layered trunks, the dark
- * green canopies, the earth of the path, the dead leaves. Held inside the flash measures' band
- * (docs/flashs.md §3): a dawn, never a full day. Slot 0 is transparent, every other color opaque.
- * The fighters own cyan and magenta: the greens stay dark and dull, the dawn's pink stays unlit.
+ * Dancing Forest's palette (docs/art/decor-forest-dance.md §3): its own, drawn from the
+ * developer's reference (the pixel forest of the pin): a deep teal night-green forest, the warm
+ * glow of a glass-roofed hut, the pale dawn behind the trees. Held inside the flash measures' band
+ * (docs/flashs.md §3): the masses stay dark, the glow and the bright leaves are small touches.
+ * Slot 0 is transparent, every other color opaque. The fighters own cyan and magenta: the deep
+ * teals are dark enough to stay out, the bright greens sit far from cyan.
  */
 
 import type { Rgba } from '../../sprites/png.ts';
@@ -21,49 +22,53 @@ function ramp(...hexes: string[]): readonly number[] {
   });
 }
 
-/** The dawn sky, overhead to the trees: cold blue-grey, then the warm glow. */
+/** The dawn sky, overhead to the trees: a deep navy, then the pale cool light. */
 export const SKY = ramp(
-  '#222634',
-  '#262936',
-  '#2b2d38',
-  '#30323c',
-  '#38373f',
-  '#413d42',
-  '#4a4346',
-  '#50443e',
-  '#52443c',
+  '#12202e',
+  '#162636',
+  '#1a2c3c',
+  '#1f3242',
+  '#253847',
+  '#2c3e4b',
+  '#324450',
+  '#374850',
+  '#374244',
 );
-export const CLOUD = ramp('#2c2c3e', '#343448', '#3c3c50');
-/** The dawn's haze, a pale veil between the planes. */
-export const HAZE = ramp('#3a3c48', '#3f414c', '#42444c');
-/** The low sun's glow through the trunks. */
-export const SUNGLOW = ramp('#463c3e', '#4c423e', '#52423c');
+export const CLOUD = ramp('#243444', '#2c3c4a', '#344450');
+/** The pale light of the dawn behind the trees, and its veil of haze. */
+export const SUNGLOW = ramp('#2f3a42', '#354048', '#37434a');
+export const HAZE = ramp('#303c46', '#36424a');
 /** The far trees, three planes, the farthest off the light. */
-export const TREE_FAR = ramp('#2a2b34', '#30313c', '#363744');
-export const TREE_MID = ramp('#242530', '#2a2b36', '#30313c');
-export const TREE_NEAR = ramp('#1e1f2a', '#242530', '#2a2b36');
-/** The bark, dark and warm; the roots. */
-export const BARK = ramp('#2a2220', '#342a24', '#3e322a', '#4a3c2e');
-/** The canopies: dark greens, a sunlit tip for the touches under 1 % of the screen. */
-export const LEAF = ramp('#1c2c18', '#22341c', '#283c20', '#2e4424');
-export const LEAF_LIT = ramp('#425e2c', '#4e6e34');
-/** The dead leaves on the path, the moss. */
+export const TREE_FAR = ramp('#1f2c38', '#253440', '#2b3c48');
+export const TREE_MID = ramp('#1a2430', '#202c38', '#263440');
+export const TREE_NEAR = ramp('#141e28', '#1a2430', '#202c38');
+/** The bark, deep and warm; the roots. */
+export const BARK = ramp('#221e16', '#2a241a', '#322a1e', '#3a3020');
+/** The foliage: the deep greens and the deep teals, layered; the bright leaves, small touches. */
+export const LEAF = ramp('#12301c', '#163a22', '#1a4428');
+export const LEAF_TEAL = ramp('#14302c', '#183832', '#1c403a');
+export const LEAF_BRIGHT = ramp('#2a5a34', '#3a7a44', '#4e9656');
+/** The hut: its warm wood, its glass roof, its warm light inside. */
+export const WOOD_HUT = ramp('#2a2016', '#342818', '#3e301c', '#483822');
+export const GLASS = ramp('#2a3844', '#2e424e');
+export const GLOW = ramp('#7a5a30', '#b08844', '#e8c060', '#ffd878');
+/** The cats, warm and pale. */
+export const CAT_DARK = ramp('#2a241a', '#342c1e', '#3e3424');
+export const CAT_PALE = ramp('#3e382c', '#4a4234');
+/** The earth, the moss, the grass, the dead leaves. */
+export const EARTH = ramp('#1e241a', '#242a1e', '#2a3022', '#303628');
+export const MOSS = ramp('#1c2c1e', '#223620');
+export const GRASS = ramp('#2e5a2c', '#3a6e34');
 export const DEAD_LEAF = ramp('#3a301f', '#423823', '#4a4026');
-export const GRASS = ramp('#2e3a22', '#36441f');
-export const MOSS = ramp('#243022', '#2c3a26');
-/** The earth of the path, the stones. */
-export const EARTH = ramp('#2e2620', '#362c24', '#3e3228', '#46382c');
+/** The stones, the pale light the dawn lays on the path. */
 export const STONE = ramp('#242630', '#2c2e38');
-/** The dawn's pink, unlit, far from the fighters' magenta. */
-export const BLUSH = ramp('#4a3444', '#563c4c');
-/** The light the dawn lays on the path. */
-export const LIGHT_POOL = ramp('#3a3226', '#463c2a', '#52462e');
+export const LIGHT_POOL = ramp('#2e3a42', '#36444a');
 /** The bird, the figures. */
 export const BIRD = ramp('#2a2830', '#36343c', '#423e44');
 export const PERSON = ramp('#1a1824', '#201d2b', '#272333', '#2f2a3c', '#3a3446');
 export const SKIN = ramp('#5e3e38', '#86584a', '#a87660');
 export const RIM = ramp('#8a5a3a', '#c08452');
-export const SHADOW = ramp('#24202a', '#2a2530');
+export const SHADOW = ramp('#1c2026', '#222630');
 /** The mist, drawn only in the fog (kit/fog.ts). */
 export const MIST = ramp(...MIST_HEXES);
 
