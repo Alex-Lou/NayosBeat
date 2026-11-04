@@ -90,10 +90,12 @@ function launch(
     page.window.dispatchEvent(Object.assign(new KeyboardEvent('keydown'), { code, repeat: false }));
   };
   const screen = () => {
-    const [root] = page.body.children;
+    // The backdrop is the first child; the screen on show is the last.
+    const root = page.body.children.at(-1);
     if (!root) throw new Error('Nothing on screen');
     return {
       title: byClass(root, 'menu-title')[0]?.textContent,
+      logo: byClass(root, 'title-logo')[0]?.attributes['aria-label'],
       subtitle: byClass(root, 'menu-subtitle')[0]?.textContent,
       items: byClass(root, 'menu-item').map((item) => item.textContent),
       selected: byClass(root, 'menu-item').findIndex((item) => item.classList.contains('selected')),
@@ -102,19 +104,18 @@ function launch(
   };
   /** Clicks the item whose label starts with `label`: a menu's, or a tile's (« Lieu »). */
   const choose = (label: string) => {
-    const [root] = page.body.children;
+    const root = page.body.children.at(-1);
+    if (!root) throw new Error('Nothing on screen');
     const item =
-      byClass(root as FakeElement, 'menu-item').find((button) =>
-        button.textContent.startsWith(label),
-      ) ??
-      byClass(root as FakeElement, 'select-tile').find((tile) =>
+      byClass(root, 'menu-item').find((button) => button.textContent.startsWith(label)) ??
+      byClass(root, 'select-tile').find((tile) =>
         byClass(tile, 'select-tile-name')[0]?.textContent.startsWith(label),
       );
     if (!item) throw new Error(`No item ${label}`);
     item.dispatchEvent(new Event('click'));
     // A tile only selects now: the player then taps « Valider », as these choices mean.
     if (item.className.split(' ').includes('select-tile')) {
-      const confirm = byClass(root as FakeElement, 'select-confirm')[0];
+      const confirm = byClass(root, 'select-confirm')[0];
       if (!confirm) throw new Error(`No « Valider » after ${label}`);
       confirm.dispatchEvent(new Event('click'));
     }
@@ -139,11 +140,11 @@ describe('the options (docs/flashs.md §4)', () => {
     expect(first.screen().items).toEqual(['Jouer', 'Options']);
     vi.advanceTimersByTime(1000);
     first.choose('Jouer');
-    expect(first.screen().title).toBe('NAYOSBEAT');
+    expect(first.screen().logo).toBe('NAYOSBEAT');
     expect(first.kept.get('nayosbeat.notice')).toBe('seen');
     const again = launch({ 'nayosbeat.notice': 'seen' });
     again.press('Enter');
-    expect(again.screen().title).toBe('NAYOSBEAT');
+    expect(again.screen().logo).toBe('NAYOSBEAT');
   });
 
   it('keeps the notice through a title pressed twice, and back to the title unread', () => {
@@ -181,9 +182,10 @@ describe('the options (docs/flashs.md §4)', () => {
     press('Enter');
     choose('Options');
     choose('Touches');
-    const [root] = page.body.children;
+    const root = page.body.children.at(-1);
+    if (!root) throw new Error('No screen');
     expect(screen().title).toBe('Touches');
-    expect(byClass(root as FakeElement, 'bindings-tab').map((tab) => tab.textContent)).toEqual([
+    expect(byClass(root, 'bindings-tab').map((tab) => tab.textContent)).toEqual([
       'Clavier J1',
       'Clavier J2',
       'Manette J1',
@@ -207,15 +209,17 @@ describe('the options (docs/flashs.md §4)', () => {
     });
     choose('Touches');
     const tabs = () =>
-      byClass(page.body.children[0] as FakeElement, 'bindings-tab').map((tab) => tab.textContent);
+      byClass(page.body.children.at(-1) as FakeElement, 'bindings-tab').map(
+        (tab) => tab.textContent,
+      );
     expect(tabs()[0]).toBe('Tactile');
-    const disposition = byClass(page.body.children[0] as FakeElement, 'bindings-cell').find(
+    const disposition = byClass(page.body.children.at(-1) as FakeElement, 'bindings-cell').find(
       (cell) => cell.textContent === 'Disposition',
     );
     disposition?.dispatchEvent(new Event('click'));
     expect(screen().title).toBe('Disposition');
     // A touch screen goes back with its corner button.
-    byClass(page.body.children[0] as FakeElement, 'menu-back')[0]?.dispatchEvent(
+    byClass(page.body.children.at(-1) as FakeElement, 'menu-back')[0]?.dispatchEvent(
       new Event('click'),
     );
     expect(screen().title).toBe('Touches');
@@ -256,7 +260,7 @@ describe('the options (docs/flashs.md §4)', () => {
     phone.choose('Options');
     phone.press('Escape');
     expect(twoPlayers(phone.screen().items)).toBe(false);
-    expect(phone.screen().items.some((item) => item.startsWith("Contre l'ordinateur"))).toBe(true);
+    expect(phone.screen().items.some((item) => item.startsWith('Jouer'))).toBe(true);
   });
 
   it('moves the sound from the main menu into the options screen', () => {
@@ -301,7 +305,7 @@ describe('the options (docs/flashs.md §4)', () => {
     expect(root.classList.contains('still')).toBe(true);
     // Back to the main menu, on the options.
     choose('Retour');
-    expect(screen().title).toBe('NAYOSBEAT');
+    expect(screen().logo).toBe('NAYOSBEAT');
     expect(screen().items[screen().selected]).toBe('Options');
   });
 
@@ -571,9 +575,13 @@ describe('how a fight is watched (docs/art/animation-plan.md §2, V0)', () => {
     const cards = () => root.children.filter((child) => child.className.includes('fight-card'));
     choose('Immobile');
     choose('Aléatoire');
-    // The menu gone, the card up while the fight loads and builds.
-    expect(root.children.map((child) => child.className)).toEqual(['menu fight-card']);
-    expect(root.children[0]?.children[0]?.children[0]?.textContent).toBe('Nayo contre Riff');
+    // The menu gone, the card up while the fight loads and builds; the street sleeps behind.
+    expect(
+      root.children
+        .filter((child) => child.className !== 'home-backdrop')
+        .map((child) => child.className),
+    ).toEqual(['menu fight-card']);
+    expect(cards()[0]?.children[0]?.children[0]?.textContent).toBe('Nayo contre Riff');
     const shown = () => {
       (start.mock.lastCall?.[1] as { onShown?: () => void } | undefined)?.onShown?.();
     };
@@ -619,7 +627,7 @@ describe('how a fight is watched (docs/art/animation-plan.md §2, V0)', () => {
     // Out of training, to a match against the computer: its pause could not change them back.
     app.showPause();
     choose('Quitter');
-    choose("Contre l'ordinateur");
+    choose('Jouer');
     flow.afterFighterChosen(1);
     choose('Normal');
     choose('Aléatoire');

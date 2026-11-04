@@ -1,20 +1,32 @@
+import { connectedGamepads, isPressed, PadButton, STICK_PRESS, stickAxis } from '../input/gamepad';
+import { titleLogo } from './title-logo';
+
 export interface MenuItem {
   readonly label: string;
   /** Secondary line, e.g. a short description. */
   readonly hint?: string;
+  /** A main way to play: brighter than the secondary items of a home grid. */
+  readonly primary?: boolean;
+  /** « Installer le jeu »: a secondary action, not a game mode. */
+  readonly install?: boolean;
   readonly onSelect: () => void;
 }
 
 export interface MenuOptions {
-  readonly title: string;
+  /** None: the screen shows its logo instead (`logo`), or no title at all. */
+  readonly title?: string;
   readonly subtitle?: string;
   readonly items: readonly MenuItem[];
+  /** The game's logo at the top of the panel, instead of the title (the home menu). */
+  readonly logo?: boolean;
   /** Escape / B / back button. No back action when omitted. */
   readonly onBack?: () => void;
   /** Extra content shown between the title and the items. */
   readonly content?: HTMLElement;
   /** Shown over the fight (translucent) instead of on a plain background. */
   readonly overlay?: boolean;
+  /** The street behind it (styles.css, `.menu-backdrop`): the home and its notice. */
+  readonly backdrop?: boolean;
   /** Item selected when the menu opens. */
   readonly initialIndex?: number;
   /** Called on navigation, e.g. to play a sound. */
@@ -24,11 +36,20 @@ export interface MenuOptions {
    * says so (docs/polish/AUDIT-ET-PLAN.md, L23).
    */
   readonly row?: boolean;
+  /** Its items in a grid of this many columns: the arrows move by one cell. */
+  readonly columns?: number;
+  /**
+   * One description line under the grid, for the item selected, instead of a hint in each item
+   * (the hint stays in the button, hidden from sight, for screen readers).
+   */
+  readonly description?: boolean;
+  /** The keys it names at the bottom; the default follows `row`, `columns` and `onBack`. */
+  readonly help?: string;
+  /** A small line under the help, e.g. the build's date (the options). */
+  readonly note?: string;
 }
 
 export type MenuFeedback = 'move' | 'confirm' | 'back';
-
-import { connectedGamepads, isPressed, PadButton, STICK_PRESS, stickAxis } from '../input/gamepad';
 
 /** What a key or a gamepad button asks a screen of choices for. A list ignores left and right. */
 export type MenuAction = 'up' | 'down' | 'left' | 'right' | 'confirm' | 'back';
@@ -69,13 +90,15 @@ export const MENU_PAD_ACTIONS: readonly (readonly [number, MenuAction])[] = [
 ];
 
 /**
- * A vertical list of choices, driven by keyboard, gamepad, mouse or touch.
+ * A list of choices, vertical or in a grid, driven by keyboard, gamepad, mouse or touch.
  * Items are not focusable: the selection is managed here, so keyboard activation never
  * triggers twice and nothing leaks focus to the page.
  */
 export class Menu {
   private readonly root: HTMLDivElement;
   private readonly buttons: HTMLButtonElement[];
+  /** The line under the grid: the hint of the item selected (home). */
+  private readonly description?: HTMLParagraphElement;
   private selected = 0;
   private frameRequest = 0;
   /** Gamepad buttons held on the previous poll; starts with what is held right now. */
@@ -85,20 +108,33 @@ export class Menu {
     parent: HTMLElement,
     private readonly options: MenuOptions,
   ) {
-    this.root = element('div', options.overlay ? 'menu menu-overlay' : 'menu');
+    const classes = ['menu'];
+    if (options.overlay) classes.push('menu-overlay');
+    if (options.backdrop) classes.push('menu-backdrop');
+    this.root = element('div', classes.join(' '));
     const panel = element('div', 'menu-panel');
-    panel.appendChild(element('h1', 'menu-title', options.title));
+    if (options.logo) panel.appendChild(titleLogo('title-logo menu-logo'));
+    else if (options.title) panel.appendChild(element('h1', 'menu-title', options.title));
     if (options.subtitle) panel.appendChild(element('p', 'menu-subtitle', options.subtitle));
     if (options.content) panel.appendChild(options.content);
 
-    const list = element('div', 'menu-items');
+    const columns = options.columns ?? 0;
+    const list = element('div', columns > 1 ? 'menu-items menu-grid' : 'menu-items');
+    if (columns > 1) {
+      list.style.setProperty('--menu-columns', String(columns));
+      // An empty cell is filled by a decorative stamp (styles.css), never by a dead choice.
+      if (options.items.length % columns !== 0) list.classList.add('menu-grid-open');
+    }
     this.buttons = options.items.map((item, index) => {
-      const button = element('button', 'menu-item', item.label);
+      const itemClasses = ['menu-item'];
+      if (item.primary) itemClasses.push('primary');
+      if (item.install) itemClasses.push('menu-item-install');
+      const button = element('button', itemClasses.join(' '), item.label);
       button.type = 'button';
       button.tabIndex = -1;
       if (item.hint) button.appendChild(element('span', 'menu-hint', item.hint));
-      button.addEventListener('pointerenter', () => {
-        // Under the pointer already: the list does not scroll under it.
+      // `mousemove`, not `pointerenter`: a menu opening under a still pointer must not pick it.
+      button.addEventListener('mousemove', () => {
         this.select(index, false);
       });
       button.addEventListener('click', () => {
@@ -109,14 +145,15 @@ export class Menu {
       return button;
     });
     panel.appendChild(list);
+    if (options.description) {
+      this.description = element('p', 'menu-description');
+      // The hint stays in the button for screen readers: this line only shows it.
+      this.description.setAttribute('aria-hidden', 'true');
+      panel.appendChild(this.description);
+    }
     // "Echap" without accent: the pixel font has no capital É.
-    panel.appendChild(
-      helpLine(
-        // The pixel font has ↑ and ↓, no ← nor →.
-        `${options.row ? 'Flèches' : '↑↓'} choisir · Entrée / A valider · Echap / B retour`,
-        'Touche un choix',
-      ),
-    );
+    panel.appendChild(helpLine(options.help ?? defaultHelp(options), 'Touche un choix'));
+    if (options.note) panel.appendChild(element('p', 'menu-note', options.note));
     if (options.onBack) this.root.appendChild(backButton(options.onBack, options.feedback));
     this.root.appendChild(panel);
     parent.appendChild(this.root);
@@ -157,14 +194,21 @@ export class Menu {
 
   private handle(action: MenuAction): void {
     const count = this.buttons.length;
+    const columns = this.options.columns ?? 0;
     switch (action) {
       case 'up':
-        this.options.feedback?.('move');
-        this.select((this.selected - 1 + count) % count);
+        if (columns > 1) this.moveTo(this.selected - columns);
+        else {
+          this.options.feedback?.('move');
+          this.select((this.selected - 1 + count) % count);
+        }
         break;
       case 'down':
-        this.options.feedback?.('move');
-        this.select((this.selected + 1) % count);
+        if (columns > 1) this.moveTo(this.selected + columns);
+        else {
+          this.options.feedback?.('move');
+          this.select((this.selected + 1) % count);
+        }
         break;
       case 'confirm':
         this.options.feedback?.('confirm');
@@ -176,11 +220,26 @@ export class Menu {
         this.options.onBack();
         break;
       case 'left':
+        // A vertical list: nothing to the sides. A row (tabs): the item before. A grid: the
+        // cell before, staying on its row.
+        if (columns > 1) {
+          if (this.selected % columns > 0) this.moveTo(this.selected - 1);
+        } else if (this.options.row) this.handle('up');
+        break;
       case 'right':
-        // A vertical list: nothing to the sides. A row (tabs): the item before or after.
-        if (this.options.row) this.handle(action === 'left' ? 'up' : 'down');
+        if (columns > 1) {
+          const onRow = this.selected % columns < columns - 1;
+          if (onRow && this.selected + 1 < count) this.moveTo(this.selected + 1);
+        } else if (this.options.row) this.handle('down');
         break;
     }
+  }
+
+  /** Moves to `index` when it exists, with the move's sound; a grid's edge stays put. */
+  private moveTo(index: number): void {
+    if (index < 0 || index >= this.buttons.length || index === this.selected) return;
+    this.options.feedback?.('move');
+    this.select(index);
   }
 
   /**
@@ -192,12 +251,22 @@ export class Menu {
     this.selected = index;
     const button = this.buttons[index];
     button?.classList.add('selected');
+    if (this.description) {
+      this.description.textContent = this.options.items[index]?.hint ?? '';
+    }
     if (reveal) button?.scrollIntoView({ block: 'nearest' });
   }
 
   private activate(index: number): void {
     this.options.items[index]?.onSelect();
   }
+}
+
+/** The keys a menu names at the bottom, unless it says its own (`MenuOptions.help`). */
+function defaultHelp(options: MenuOptions): string {
+  // The pixel font has ↑ and ↓, no ← nor →.
+  const arrows = options.row || (options.columns ?? 0) > 1 ? 'Flèches' : '↑↓';
+  return `${arrows} choisir · Entrée / A valider · Echap / B retour`;
 }
 
 /**

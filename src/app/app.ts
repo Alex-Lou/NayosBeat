@@ -1,5 +1,6 @@
 import type Phaser from 'phaser';
 import type { CpuLevel } from '../ai/cpu';
+import { artOf } from '../art';
 import type { Sfx } from '../audio/sfx';
 import type { TrainingGauge, TrainingStart } from '../core/config';
 import { ROSTER, templateOf, type FighterId } from '../data/roster';
@@ -24,8 +25,10 @@ import { TouchLayoutEditor } from '../ui/touch-layout-editor';
 import { FightCard } from '../ui/fight-card';
 import { FighterSelect } from '../ui/fighter-select';
 import { StageSelect } from '../ui/stage-select';
+import { HomeBackdrop, type HomeFighter } from '../ui/home-backdrop';
 import { element, Menu, type MenuFeedback, type MenuItem, type MenuOptions } from '../ui/menu';
 import { TitleScreen } from '../ui/title-screen';
+import { buildDate } from './build';
 import {
   FLASH_LABELS,
   isCalm,
@@ -66,7 +69,7 @@ import {
   type GameMode,
   type MatchSetup,
 } from './match-setup';
-import { SELECT_COLUMNS, SELECT_SLOTS, selectFighters } from './select-fighters';
+import { lookOf, SELECT_COLUMNS, SELECT_SLOTS, selectFighters } from './select-fighters';
 import { selectStages, STAGE_COLUMNS } from './select-stages';
 import { animLabel, DEFAULT_VIEWING, nextSlowdown, SLOWDOWN_LABELS, type Viewing } from './viewing';
 
@@ -182,6 +185,8 @@ function placedAt(choice: StageChoice, map: string): StageChoice {
  */
 export class App {
   private screen: { dispose(): void } | undefined;
+  /** The street and its fighters behind the title and the home menu (src/ui/home-backdrop.ts). */
+  private backdrop: HomeBackdrop | undefined;
   /** Who fights whom, over the fight until its first frame (src/ui/fight-card.ts). */
   private card: FightCard | undefined;
   private setup: MatchSetup = DEFAULT_SETUP;
@@ -253,6 +258,7 @@ export class App {
       if (this.onMainMenu) this.showMainMenu();
     });
     this.applyComfortClasses();
+    this.backdrop = this.createBackdrop();
     // What the player did not choose follows the system's setting, even when it changes.
     watchReducedMotion(() => {
       this.comfort = { ...loadComfort(), ...this.chosen };
@@ -266,13 +272,30 @@ export class App {
     return this.onTitle || this.onMainMenu;
   }
 
-  private show(screen: { dispose(): void }): void {
+  /** The street in front of the club, with the two rivals standing in guard. */
+  private createBackdrop(): HomeBackdrop {
+    const variant = STAGE_MAPS.find(({ name }) => name === 'rue')?.variants[0];
+    const standing: readonly (readonly [FighterId, number, 1 | -1])[] = [
+      ['nayo', 120, 1],
+      ['riff', 360, -1],
+    ];
+    const fighters: HomeFighter[] = [];
+    for (const [id, x, facing] of standing) {
+      const look = lookOf(artOf(id));
+      if (look) fighters.push({ look, x, facing });
+    }
+    return new HomeBackdrop(this.root, variant, fighters, isStill(this.comfort));
+  }
+
+  /** `backdrop`: the street stays behind this screen (the title, its notice, the home menu). */
+  private show(screen: { dispose(): void }, options: { backdrop?: boolean } = {}): void {
     this.onMainMenu = false;
     this.onTitle = false;
     this.screen?.dispose();
     this.screen = screen;
     this.card?.dispose();
     this.card = undefined;
+    this.backdrop?.setVisible(options.backdrop === true);
   }
 
   private showTitle(): void {
@@ -289,6 +312,7 @@ export class App {
         },
         this.mode === 'simple',
       ),
+      { backdrop: true },
     );
     this.onTitle = true;
   }
@@ -310,6 +334,7 @@ export class App {
     };
     this.showMenu({
       title: NOTICE.title,
+      backdrop: true,
       content: element('p', 'menu-notice', NOTICE.text),
       items: [
         { label: 'Jouer', onSelect: then(toMenu) },
@@ -334,9 +359,10 @@ export class App {
       this.setup = { ...this.setup, mode };
       this.chooseFighter(0);
     };
+    const touch = isTouchDevice();
     const optionsItem: MenuItem = {
       label: 'Options',
-      hint: 'Son, effets de flash, tremblement',
+      hint: 'Son, effets de flash, tremblement, texte',
       onSelect: () => {
         this.showOptions(false, () => {
           this.showMainMenu('options');
@@ -344,13 +370,25 @@ export class App {
       },
     };
     const items: MenuItem[] = [
-      { label: "Contre l'ordinateur", hint: 'Un joueur', onSelect: choose('cpu') },
+      { label: 'Jouer', hint: "Contre l'ordinateur", primary: true, onSelect: choose('cpu') },
       // Two players on one device: a keyboard and pads share it, a touch screen does not (one
       // pair of thumbs on the controls); there, playing two is the online « Multi ».
-      ...(isTouchDevice()
+      ...(touch
         ? []
-        : [{ label: '2 joueurs', hint: 'Sur le même appareil', onSelect: choose('versus') }]),
-      { label: 'Entraînement', hint: 'Sans chrono, vie infinie', onSelect: choose('training') },
+        : [
+            {
+              label: '2 joueurs',
+              hint: 'Sur le même appareil',
+              primary: true,
+              onSelect: choose('versus'),
+            },
+          ]),
+      {
+        label: 'Entraînement',
+        hint: 'Sans chrono, vie infinie',
+        primary: true,
+        onSelect: choose('training'),
+      },
       ...(this.multi
         ? [
             {
@@ -364,6 +402,7 @@ export class App {
         : []),
       {
         label: 'Commandes',
+        hint: 'Clavier, manette, tactile',
         onSelect: () => {
           this.showControls(0, false);
         },
@@ -375,9 +414,10 @@ export class App {
       items.push({
         label: 'Installer le jeu',
         hint: 'Plein écran, hors ligne',
+        install: true,
         onSelect: () => {
           void promptInstall().then(() => {
-            this.showMainMenu();
+            if (this.onMainMenu) this.showMainMenu();
           });
         },
       });
@@ -385,15 +425,18 @@ export class App {
       items.push({
         label: 'Installer le jeu',
         hint: 'Partager, puis « Sur l’écran d’accueil »',
+        install: true,
         onSelect: () => undefined,
       });
     }
+    const columns = touch ? 2 : 3;
     this.showMenu({
-      title: 'NAYOSBEAT',
+      logo: true,
+      backdrop: true,
+      description: true,
+      columns,
+      help: 'Flèches choisir · Entrée / A valider',
       items,
-      onBack: () => {
-        this.showTitle();
-      },
       initialIndex: initial === 'options' ? items.indexOf(optionsItem) : initial,
     });
     this.onMainMenu = true;
@@ -621,7 +664,14 @@ export class App {
       label: 'Retour',
       onSelect: back,
     });
-    this.showMenu({ title: 'Options', overlay: paused, items, onBack: back, initialIndex });
+    this.showMenu({
+      title: 'Options',
+      overlay: paused,
+      note: `Version du ${buildDate()}`,
+      items,
+      onBack: back,
+      initialIndex,
+    });
   }
 
   /**
@@ -683,6 +733,7 @@ export class App {
     set('calm', isCalm(this.comfort));
     set('still', isStill(this.comfort));
     set('large-text', this.textSize === 'large');
+    this.backdrop?.setStill(isStill(this.comfort));
   }
 
   /**
@@ -1018,6 +1069,7 @@ export class App {
     }
     this.screen?.dispose();
     this.screen = undefined;
+    this.backdrop?.setVisible(false);
     // No black screen while the fight loads and builds (L16): the card, then the fight.
     this.card?.dispose();
     const [first, second] = this.setup.fighters;
@@ -1191,7 +1243,9 @@ export class App {
   }
 
   private showMenu(options: MenuOptions): void {
-    this.show(new Menu(this.root, { ...options, feedback: this.menuFeedback }));
+    this.show(new Menu(this.root, { ...options, feedback: this.menuFeedback }), {
+      backdrop: options.backdrop === true,
+    });
   }
 
   private readonly menuFeedback = (action: MenuFeedback): void => {

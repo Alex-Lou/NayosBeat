@@ -1,4 +1,7 @@
 import { connectedGamepads } from '../input/gamepad';
+import { isTouchDevice } from '../input/touch-controls';
+import { element } from './menu';
+import { titleLogo } from './title-logo';
 
 /**
  * Why some effects are missing, said on the title (the first screen of every launch), never
@@ -10,7 +13,8 @@ export const SIMPLE_MODE_NOTICE =
 
 /**
  * Title screen: any key, click, tap or gamepad button continues. `simplified`: the game is
- * drawn without WebGL, which it tells under the prompt.
+ * drawn without WebGL, which it tells under the prompt. The street and the fighters are the
+ * HomeBackdrop behind it (app.ts).
  */
 export class TitleScreen {
   private readonly root: HTMLDivElement;
@@ -30,26 +34,26 @@ export class TitleScreen {
     this.root = document.createElement('div');
     this.root.className = 'menu title-screen';
 
-    // The logo, its O a vinyl turning (Nayo's record, title-vinyl.png): read whole.
-    const title = document.createElement('h1');
-    title.className = 'title-logo';
-    title.setAttribute('aria-label', 'NAYOSBEAT');
-    const vinyl = document.createElement('span');
-    vinyl.className = 'title-vinyl';
-    title.append(logoPart('NAY'), vinyl, logoPart('SBEAT'));
-    const prompt = document.createElement('p');
-    prompt.className = 'title-prompt';
-    prompt.textContent = 'Appuie sur une touche';
-    const version = document.createElement('p');
-    version.className = 'title-version';
-    version.textContent = `Version du ${buildDate()}`;
-    this.root.append(title, prompt, version);
+    // The poster on the club's wall: the logo, its O a vinyl turning.
+    const poster = element('div', 'title-poster');
+    poster.append(
+      element('p', 'title-kicker', 'Sound Clash'),
+      titleLogo('title-logo'),
+      element('p', 'title-tagline', 'Le tournoi clandestin'),
+    );
+
+    // What to press, told in the player's language: a touch screen has no key.
+    const prompt = element('p', 'title-prompt');
+    const arrow = element('span', 'title-prompt-arrow', '▶');
+    arrow.setAttribute('aria-hidden', 'true');
+    prompt.append(arrow, isTouchDevice() ? "Touche l'écran" : 'Appuie sur une touche');
+    const bottom = element('div', 'title-bottom');
+    bottom.appendChild(prompt);
     if (simplified) {
-      const notice = document.createElement('p');
-      notice.className = 'title-notice';
-      notice.textContent = SIMPLE_MODE_NOTICE;
-      this.root.append(notice);
+      bottom.appendChild(element('p', 'title-notice', SIMPLE_MODE_NOTICE));
     }
+
+    this.root.append(poster, bottom);
     parent.appendChild(this.root);
 
     window.addEventListener('keydown', this.start);
@@ -90,18 +94,4 @@ export class TitleScreen {
 
 function anyPadButtonHeld(): boolean {
   return connectedGamepads().some((pad) => pad.buttons.some((button) => button.pressed));
-}
-
-/** The build's date and time, in the player's time zone ("26/10/2026 23:41"). */
-function buildDate(): string {
-  const date = new Date(__BUILD_DATE__);
-  return `${date.toLocaleDateString('fr-FR')} ${date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
-}
-
-/** Letters of the logo around its vinyl, hidden from screen readers (the title has its label). */
-function logoPart(text: string): HTMLSpanElement {
-  const part = document.createElement('span');
-  part.textContent = text;
-  part.setAttribute('aria-hidden', 'true');
-  return part;
 }
