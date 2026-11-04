@@ -49,7 +49,7 @@ const PUSH: Pose = {
   effects: [{ kind: 'dust', x: -16, size: 1.2, progress: 0.6 }],
 };
 
-// Frame 3: the rush, the ram out in front.
+// Frame 3: the rush, the ram out in front, the exoskeleton lit by its armor.
 const RUSH: Pose = {
   ...PUSH,
   hip: at(-1, 34),
@@ -61,6 +61,7 @@ const RUSH: Pose = {
   farFist: at(25, 49),
   bends: { ...GUARD.bends, nearElbow: 'back' },
   effects: [smear(3, [-2, 60], [4, 61], [10, 60])],
+  glows: [{ center: at(10, 56), reach: 26, power: 1.0, tone: 'sound' }],
 };
 
 // Frame 4 (active): the impact, the shoulder plate into the opponent's chest.
@@ -74,8 +75,10 @@ const IMPACT: Pose = {
   face: 'kiai',
   effects: [
     smear(3, [0, 61], [7, 62], [14, 61]),
+    { kind: 'flash', center: at(18, 58), radius: 4.5, tone: 'sound' },
     { kind: 'energy', center: at(16, 58), radius: 3 },
   ],
+  glows: [{ center: at(16, 58), reach: 30, power: 1.2, tone: 'sound' }],
 };
 
 // Frames 5-6: the follow-through, the weight still going.

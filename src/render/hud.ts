@@ -247,7 +247,16 @@ export class Hud {
       const breakage = breakageOf(this.finishes[player] ?? null);
       const still = breakage !== null && this.stills[player];
       this.bars[player]?.update(fighter.health / max, comboed, frame, breakage, still);
-      this.gauges[player]?.update(fighter.boost, breakage, frame, still, finisher[player]);
+      const maxTension = this.config.fighters[player]?.tension?.max ?? 0;
+      this.gauges[player]?.update(
+        fighter.boost,
+        breakage,
+        frame,
+        still,
+        finisher[player],
+        fighter.tension,
+        maxTension,
+      );
     });
     this.setPips(round);
     const seconds = Math.ceil(round.timer / TICK_RATE);

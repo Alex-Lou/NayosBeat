@@ -6,8 +6,8 @@
  * only the drawing waits.
  */
 
-import { WATT_SHEETS, type WattSheet } from '../../../../src/art/watt/sheets.ts';
-import { GUARD, type Pose } from './common.ts';
+import { type WattSheet } from '../../../../src/art/watt/sheets.ts';
+import { type Pose } from './common.ts';
 import { POSES as blockPoses } from './block.ts';
 import { POSES as crouchPoses } from './crouch.ts';
 import { POSES as dashBackPoses } from './dashBack.ts';
@@ -54,9 +54,19 @@ import { POSES as jumpLightPoses } from './jumpLight.ts';
 import { POSES as jumpHeavyPoses } from './jumpHeavy.ts';
 import { POSES as walkBackPoses } from './walkBack.ts';
 import { POSES as walkForwardPoses } from './walkForward.ts';
+import {
+  CHAIN_HIGH_POSES,
+  JUMP_SPECIAL_POSES,
+  SPECIAL_BACK_POSES,
+  SPECIAL_CLOSE_POSES,
+  THROW_CATCH_POSES,
+  THROW_CLOSE_POSES,
+  THROW_DIVE_POSES,
+} from './arsenal.ts';
+import { REMIXES } from './remixes.ts';
 
-/** The strips drawn so far, by their own files. */
-const DRAWN: Partial<Record<WattSheet, readonly Pose[]>> = {
+/** Every strip, by its own file. */
+export const WATT_POSES: Readonly<Record<WattSheet, readonly Pose[]>> = {
   idle: idlePoses,
   walkForward: walkForwardPoses,
   walkBack: walkBackPoses,
@@ -73,6 +83,7 @@ const DRAWN: Partial<Record<WattSheet, readonly Pose[]>> = {
   forwardLight: forwardLightPoses,
   standHeavy: standHeavyPoses,
   chainHeavy: chainHeavyPoses,
+  chainHigh: CHAIN_HIGH_POSES,
   forwardHeavy: forwardHeavyPoses,
   backHeavy: backHeavyPoses,
   chainLaunch: chainLaunchPoses,
@@ -91,23 +102,23 @@ const DRAWN: Partial<Record<WattSheet, readonly Pose[]>> = {
   ko: koPoses,
   tech: techPoses,
   special: specialPoses,
+  specialBack: SPECIAL_BACK_POSES,
+  specialClose: SPECIAL_CLOSE_POSES,
+  jumpSpecial: JUMP_SPECIAL_POSES,
   super: superPoses,
   hold: holdPoses,
   held: heldPoses,
   pummel: pummelPoses,
   throwForward: throwForwardPoses,
   throwBack: throwBackPoses,
+  throwClose: THROW_CLOSE_POSES,
+  throwDive: THROW_DIVE_POSES,
+  throwCatch: THROW_CATCH_POSES,
   thrownBack: thrownBackPoses,
   intro: introPoses,
   victory: victoryPoses,
   timeOver: timeOverPoses,
   specialForward: specialForwardPoses,
   specialAntiAir: specialAntiAirPoses,
+  ...REMIXES,
 };
-
-export const WATT_POSES = Object.fromEntries(
-  (Object.keys(WATT_SHEETS) as WattSheet[]).map((sheet) => [
-    sheet,
-    DRAWN[sheet] ?? Array.from({ length: WATT_SHEETS[sheet].frames }, () => GUARD),
-  ]),
-) as Readonly<Record<WattSheet, readonly Pose[]>>;

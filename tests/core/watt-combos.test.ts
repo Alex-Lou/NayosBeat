@@ -51,6 +51,12 @@ const ROUTES: readonly Route[] = [
     steps: [L, L, B | H, L, L, L],
     damages: [30, 34, 44, 21, 22, 27],
   },
+  {
+    notation: 'L, L, ←H ⇢ L, L, →H (Rebond) ⇢ L, L, L',
+    distance: 28,
+    steps: [L, L, B | H, L, L, F | H, L, L, L],
+    damages: [30, 34, 44, 21, 22, 30, 15, 19, 27],
+  },
   { notation: 'H → S', distance: 40, steps: [H, S], damages: [85, 81] },
 ];
 

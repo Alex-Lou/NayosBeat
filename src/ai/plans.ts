@@ -296,9 +296,15 @@ const WATT_PLANS: readonly Plan[] = [
   { after: 'standLight', when: HIT, steps: [L, H, S], weight: STRING },
   { after: 'standLight', when: HIT, steps: [L, H, F | S], weight: STRING },
   { after: 'standLight', when: HIT, steps: [L, F | H, S], weight: STRING },
-  // The Soulevé launches, then L, L, L on the body in the air: farther, it drops on some
-  // opponent. (The Plafonnier saisi takes a jumper, never a body he sent flying.)
+  // The Soulevé launches, then L, L, L on the body in the air, or the Coup de masse's Rebond
+  // to bounce it back up for another L, L, L: farther, it drops on some opponent.
   { after: 'standLight', when: within(40), steps: [L, B | H, L, L, L], weight: JUGGLE },
+  {
+    after: 'standLight',
+    when: within(36),
+    steps: [L, B | H, L, L, F | H, L, L, L],
+    weight: JUGGLE,
+  },
   { after: 'forwardLight', when: HIT, steps: [L, L], weight: EASY },
   // The Marteau: the Coup de jus, or its Double marteau, from closer than its tip.
   { after: 'standHeavy', when: within(54), steps: [S], weight: STRING },
@@ -320,6 +326,8 @@ const WATT_PLANS: readonly Plan[] = [
   { after: 'standLight', when: spending(31, BOOST_MAX), steps: [L, H, H, B | X], weight: SPEND },
   { after: 'standLight', when: spending(41, BOOST_MAX), steps: [L, H, B | X], weight: SPEND },
   { after: 'standHeavy', when: spending(37, BOOST_MAX), steps: [H, B | X], weight: SPEND },
+  { after: 'standHeavy', when: finishing(47), steps: [B | X], weight: SPEND },
+  { after: 'backHeavy', when: finishing(34), steps: [B | X], weight: SPEND },
 ];
 
 /** Each fighter's plans, by its name. */

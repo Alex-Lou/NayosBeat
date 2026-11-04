@@ -17,6 +17,8 @@
  */
 
 import { definePalette, type DetailColor, type MaterialTones } from '../palette.ts';
+import type { Tint } from '../raster.ts';
+import type { Tone } from '../skeleton.ts';
 import { STREET_SIGN } from '../street-light.ts';
 import type { EffectStyle } from '../vfx.ts';
 
@@ -113,7 +115,97 @@ const DETAILS = {
 
 export type DetailName = keyof typeof DETAILS;
 
-const PALETTE = definePalette(MATERIALS, DETAILS);
+/**
+ * The colors of the light his own effects shed on him: his energy's (VU green, UV on the second
+ * colorway), his strikes' (white-green), the Boost's (gold where it grazes, incandescent white
+ * where it hits square). Grazed, then squarely lit.
+ */
+const EFFECT_LIGHTS = {
+  sound: { kiss: { main: '#169a44', alt: '#b850d8' }, lit: { main: '#8cf0b0', alt: '#f0b8ff' } },
+  strike: { kiss: { main: '#b8e8c8' }, lit: { main: '#f0fff6' } },
+  platine: { kiss: { main: '#ffb21e' }, lit: { main: '#f2f6ff' } },
+} as const satisfies Record<Tone, Record<TintLevel, DetailColor>>;
+
+type TintLevel = 'kiss' | 'lit';
+type TintName = `${MaterialName}_${Tone}_${TintLevel}`;
+
+const TINT = {
+  kiss: { tone: 3, gain: 1.5, amount: 0.7 },
+  lit: { tone: 4, gain: 1.8, amount: 0.9 },
+} as const satisfies Record<TintLevel, { tone: number; gain: number; amount: number }>;
+
+const LIFT = {
+  sound: { kiss: 0.1, lit: 0.32 },
+  strike: { kiss: 0.26, lit: 0.4 },
+  platine: { kiss: 0.34, lit: 0.5 },
+} as const satisfies Record<Tone, Record<TintLevel, number>>;
+
+function tinted(surface: string, light: string, level: TintLevel, lift: number): string {
+  const { gain, amount } = TINT[level];
+  const s = rgbOf(surface);
+  const l = rgbOf(light);
+  const target = Math.min(1, luminance(s) * gain + lift);
+  const own = Math.max(luminance(l), 1e-3);
+  const hued =
+    target <= own
+      ? l.map((c) => c * (target / own))
+      : l.map((c) => c + (1 - c) * ((target - own) / (1 - own || 1)));
+  return hexOf(s.map((c, i) => c + ((hued[i] ?? 0) - c) * amount));
+}
+
+function rgbOf(hex: string): number[] {
+  const value = Number.parseInt(hex.slice(1, 7), 16);
+  return [(value >> 16) & 255, (value >> 8) & 255, value & 255].map((c) => c / 255);
+}
+
+function luminance([r = 0, g = 0, b = 0]: readonly number[]): number {
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+function hexOf(rgb: readonly number[]): string {
+  return `#${rgb
+    .map((c) =>
+      Math.round(Math.min(1, Math.max(0, c)) * 255)
+        .toString(16)
+        .padStart(2, '0'),
+    )
+    .join('')}`;
+}
+
+const TINTS = Object.fromEntries(
+  (Object.keys(MATERIALS) as MaterialName[]).flatMap((name) =>
+    (Object.keys(EFFECT_LIGHTS) as Tone[]).flatMap((tone) =>
+      (['kiss', 'lit'] as const).map((level) => {
+        const material: MaterialTones = MATERIALS[name];
+        const light: DetailColor = EFFECT_LIGHTS[tone][level];
+        const of = (colorway: 'main' | 'alt'): string => {
+          const ramp = colorway === 'alt' ? (material.alt ?? material.main) : material.main;
+          const color = colorway === 'alt' ? (light.alt ?? light.main) : light.main;
+          return tinted(ramp[TINT[level].tone], color, level, LIFT[tone][level]);
+        };
+        return [`${name}_${tone}_${level}`, { main: of('main'), alt: of('alt') }];
+      }),
+    ),
+  ),
+) as Record<TintName, DetailColor>;
+
+const PALETTE = definePalette(MATERIALS, { ...DETAILS, ...TINTS });
+
+export const EFFECT_TINTS: Readonly<Record<Tone, Readonly<Record<number, Tint>>>> =
+  Object.fromEntries(
+    (Object.keys(EFFECT_LIGHTS) as Tone[]).map((tone) => [
+      tone,
+      Object.fromEntries(
+        (Object.keys(MATERIALS) as MaterialName[]).map((name) => [
+          PALETTE.material[name].outline,
+          {
+            kiss: PALETTE.detail[`${name}_${tone}_kiss`],
+            lit: PALETTE.detail[`${name}_${tone}_lit`],
+          },
+        ]),
+      ),
+    ]),
+  ) as Record<Tone, Record<number, Tint>>;
 
 /** Palette slots of every material (slot 0 is transparent). */
 export const MATERIAL = PALETTE.material;

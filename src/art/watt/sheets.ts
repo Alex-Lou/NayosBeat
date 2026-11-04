@@ -44,6 +44,18 @@ export const WATT_SHEETS = {
   special: { frames: 8 },
   specialForward: { frames: 9 },
   specialAntiAir: { frames: 8 },
+  // The Remixes' own strips: their special's frames, in the Boost's light.
+  specialRemix: { frames: 8 },
+  specialForwardRemix: { frames: 9 },
+  specialAntiAirRemix: { frames: 8 },
+  // His own arsenal (docs/watt-arsenal.md §4, §7).
+  chainHigh: { frames: 6 },
+  specialBack: { frames: 8 },
+  specialClose: { frames: 6 },
+  throwClose: { frames: 7 },
+  jumpSpecial: { frames: 6 },
+  throwDive: { frames: 7 },
+  throwCatch: { frames: 7 },
   // The Hold.
   grab: { frames: 6 },
   hold: { frames: 2 },

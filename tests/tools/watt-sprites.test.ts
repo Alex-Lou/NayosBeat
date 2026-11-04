@@ -17,8 +17,8 @@ const SHEETS = Object.keys(WATT_SHEETS) as WattSheet[];
 
 /** docs/combat-v2.md §11.3: the 43 strips, and the 3 of combos v3, as Saphir has them. */
 describe('Watt strips: the set', () => {
-  it('has the 43 strips, and the 3 of combos v3', () => {
-    expect(SHEETS).toHaveLength(46);
+  it('has the 43 strips, the 3 of combos v3, his 3 Remixes and his 7 arsenal strips', () => {
+    expect(SHEETS).toHaveLength(56);
   });
 
   it.each(SHEETS)('%s: poses and ticks for every frame', (sheet) => {
@@ -161,6 +161,7 @@ describe('Watt strips: reach', () => {
     'forwardLight',
     'standHeavy',
     'chainHeavy',
+    'chainHigh',
     'forwardHeavy',
     'backHeavy',
     'chainLaunch',
@@ -168,10 +169,20 @@ describe('Watt strips: reach', () => {
     'crouchHeavy',
     'jumpLight',
     'jumpHeavy',
+    'jumpSpecial',
     'special',
+    'specialClose',
+    'specialRemix',
+    'specialForwardRemix',
+    'specialAntiAirRemix',
     'super',
   ] as const;
-  const ANTI_AIRS: ReadonlySet<string> = new Set(['specialAntiAir', 'backHeavy', 'chainLaunch']);
+  const ANTI_AIRS: ReadonlySet<string> = new Set([
+    'specialAntiAir',
+    'specialAntiAirRemix',
+    'backHeavy',
+    'chainLaunch',
+  ]);
   /**
    * His strikes on the strips drawn so far: the moves and their Remixes playing them. The
    * Câble's line is not drawn yet (porte 3): its box reaches 110 px where the clamp's strip
@@ -255,9 +266,15 @@ describe('Watt strips: reach', () => {
     }
   }
 
-  it('specialBack: the clamp stands in until its line is drawn (porte 3), the box stays the game', () => {
+  it('specialBack: the cable reaches the far edge of the cell on its active frames', () => {
     const cable = strikesOf(WATT_CLIPS, WATT_TEMPLATE).find(({ id }) => id === 'specialBack');
     expect(cable?.box).toEqual({ x: 30, y: 30, width: 80, height: 12 });
+    const body = drawStrip(WATT, 'specialBack');
+    const fx = drawStripEffects(WATT, 'specialBack');
+    for (const frame of cable?.frames ?? []) {
+      const drawn = reachOf(fx ? [body, fx] : [body], frame, { from: 30, to: 42 }, 'forward');
+      expect(drawn, `frame ${frame}`).toBeGreaterThanOrEqual(56);
+    }
   });
 
   for (const strike of STRIKES) {

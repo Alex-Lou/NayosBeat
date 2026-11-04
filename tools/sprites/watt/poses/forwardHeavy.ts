@@ -1,4 +1,4 @@
-import { onBall, planted, smear, type Pose } from './common.ts';
+import { at, onBall, planted, smear, type Pose } from './common.ts';
 import { keyPose } from './strike.ts';
 
 export const ANIMATED: boolean = true;
@@ -17,7 +17,14 @@ export const POSES: readonly Pose[] = [
   // 1-3: the fist up behind the bulb, held, the body leaning back under it.
   keyPose({ hip: [-10, 38], torso: 0, far: [-3, 82], face: 'effort' }),
   keyPose({ hip: [-10, 38.5], torso: -3, far: [-4, 87], face: 'effort' }),
-  keyPose({ hip: [-9, 38.5], torso: -1, far: [-1, 87], face: 'effort' }),
+  keyPose({
+    hip: [-9, 38.5],
+    torso: -1,
+    far: [-1, 87],
+    face: 'effort',
+    effects: [{ kind: 'energy', center: at(2, 87), radius: 2.8 }],
+    glows: [{ center: at(2, 87), reach: 24, power: 0.9, tone: 'sound' }],
+  }),
   // 4 (active): straight down over the guard, the lead boot stamping in.
   keyPose({
     hip: [-1, 35.5],
@@ -27,7 +34,11 @@ export const POSES: readonly Pose[] = [
     nearFoot: onBall(-15, -30),
     far: [34, 62],
     face: 'kiai',
-    effects: [smear(3.5, [8, 90], [26, 82], [35, 62])],
+    effects: [
+      smear(3.5, [8, 90], [26, 82], [35, 62]),
+      { kind: 'flash', center: at(37, 60), radius: 4.5, tone: 'strike' },
+    ],
+    glows: [{ center: at(35, 60), reach: 28, power: 1.1, tone: 'strike' }],
   }),
   // 5-6: sunk through, the fist low in front.
   keyPose({

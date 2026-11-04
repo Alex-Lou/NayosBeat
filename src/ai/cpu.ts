@@ -288,9 +288,11 @@ class Decider {
       // The invincible anti-air, or now and then the launcher, which opens a juggle (plans.ts).
       return this.chance(0.35) ? [this.away | Input.Heavy, 0] : [Input.Down | Input.Special, 0];
     }
-    // Over the projectile, toward the thrower: not into a Mégabasse's reach, it blocks then.
-    if (threat === 'projectile' && !this.keepsAway() && this.chance(0.25)) {
-      return repeat(Input.Up | this.toward, 5);
+    // Over or through the projectile, toward the thrower: not into a Mégabasse's reach, it blocks then.
+    if (threat === 'projectile' && !this.keepsAway()) {
+      const { moves } = this.config.fighters[this.cpu.player];
+      if (moves.dashForward.armor && this.chance(0.4)) return [Input.Dash, 0];
+      if (this.chance(0.25)) return repeat(Input.Up | this.toward, 5);
     }
     if (this.chance(this.menace ? this.profile.finisherBlock : this.profile.block)) {
       const move = upcomingMove(this.opponent, this.opponentTemplate());
@@ -437,6 +439,15 @@ class Decider {
       const forward = moves[remix ? 'specialForwardBoost' : 'specialForward'];
       if (this.mayThrow(forward, wary) && this.chance(0.15)) {
         return [toward | (remix ? Input.Boost : Input.Special), ...repeat(0, 10)];
+      }
+      if (
+        this.opponentTemplate().moves.special.projectile !== undefined &&
+        moves.specialBack &&
+        this.reaches(moves.specialBack) &&
+        this.mayThrow(moves.specialBack, wary) &&
+        this.chance(0.25)
+      ) {
+        return [away | Input.Special, ...repeat(0, 10)];
       }
       if (hasProjectile && this.mayThrow(moves.special, wary) && this.chance(0.2)) {
         return [Input.Special, ...repeat(0, 15)];
