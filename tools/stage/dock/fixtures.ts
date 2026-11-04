@@ -4,7 +4,7 @@
  * dumpster and its cat, the pallets, the freight lift's gate, the alley's fence.
  */
 
-import { Canvas, Mask, at } from '../kit/canvas.ts';
+import { Canvas, Mask, at, dithered } from '../kit/canvas.ts';
 import { spell } from '../kit/font.ts';
 import { lightAt, type Light } from '../kit/light.ts';
 import { noise, type Random } from '../kit/random.ts';
@@ -32,8 +32,13 @@ import {
 const SLAT = 6;
 export const LOOSE = SLAT * 5;
 
-function clampedStep(ramp: readonly number[], step: number): number {
-  return at(ramp, Math.max(0, Math.min(ramp.length - 1, Math.round(step))));
+function hdTone(ramp: readonly number[], level: number, x: number, y: number): number {
+  const top = ramp.length - 1;
+  const clamped = Math.min(Math.max(level, 0), top);
+  const base = Math.floor(clamped);
+  const fraction = clamped - base;
+  const step = dithered(fraction, x >> 1, y) ? 1 : 0;
+  return ramp[Math.min(base + step, top)] ?? 0;
 }
 
 export function drawShutter(
@@ -62,18 +67,17 @@ export function drawShutter(
     const shift = py >= loose ? rattle : 0;
     const row = (py - top + shift + SLAT * 10) % SLAT;
     if (row === SLAT - 1) return at(SHUTTER, 0);
-    const edgeShade = px < x + 4 || px >= x + width - 4 ? -1 : 0;
-    const lit = lightAt(lights, px, py);
-    const band = lit > 1.05 ? 3 : lit > 0.55 ? 2 : 1;
-    const groove = row === 0 ? 1 : row === SLAT - 2 ? -1 : 0;
+    const edgeShade = px < x + 4 || px >= x + width - 4 ? -0.8 : 0;
+    const lit = lightAt(lights, px, py) * 0.9;
+    const groove = row === 0 ? 0.9 : row === SLAT - 2 ? -0.7 : 0;
     const low = (py - top) / Math.max(1, bottom - top);
     const rustPatch =
-      low > 0.55 &&
-      noise(seed, Math.floor(px / 4), Math.floor(py / SLAT), 3) > 0.74 - (low - 0.55) * 0.28;
+      low > 0.52 &&
+      noise(seed, Math.floor(px / 4), Math.floor(py / SLAT), 3) > 0.73 - (low - 0.52) * 0.28;
     if (rustPatch) {
-      return clampedStep(RUST, 1 + (row === 0 ? 1 : 0));
+      return hdTone(RUST, 0.8 + lit * 0.5 + groove * 0.4, px, py);
     }
-    return clampedStep(SHUTTER, band + groove + edgeShade);
+    return hdTone(SHUTTER, 1.5 + lit + groove + edgeShade, px, py);
   });
   canvas.fill(x, top, width, 3, at(SHUTTER, 0));
   const scale = Math.min(5, Math.floor((bottom - top - 8) / 7));
@@ -403,8 +407,7 @@ export function drawStreak(canvas: Canvas, x: number, y: number, length: number)
 }
 
 export function concreteAt(x: number, y: number, base: number, lights: readonly Light[]): number {
-  const form = x % 64 === 0 ? -1 : x % 64 === 1 ? 0.5 : 0;
-  const lit = lightAt(lights, x, y);
-  const lift = lit > 1 ? 1 : lit > 0.45 ? 0.5 : 0;
-  return Math.round(base + form + lift);
+  const form = x % 64 === 0 ? -0.9 : x % 64 === 1 ? 0.5 : 0;
+  const stain = (noise(23, x >> 2, y >> 1, 10) - 0.5) * 0.5;
+  return base + form + stain + lightAt(lights, x, y) * 0.75;
 }

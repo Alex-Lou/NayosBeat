@@ -25,35 +25,35 @@ export const STAGE_PROPS: readonly StageProp[] = [
   {
     name: 'car0',
     layer: 'far',
-    frames: [null, { x: 598, y: 212, width: 24, height: 6, sheetX: 538, sheetY: 434 }],
+    frames: [null, { x: 598, y: 212, width: 24, height: 6, sheetX: 327, sheetY: 434 }],
     timeline: [[1, 620]],
     drift: { from: 640, to: -640, start: 0, steps: 620 },
   },
   {
     name: 'car1',
     layer: 'far',
-    frames: [null, { x: 594, y: 244, width: 24, height: 6, sheetX: 563, sheetY: 434 }],
+    frames: [null, { x: 594, y: 244, width: 24, height: 6, sheetX: 352, sheetY: 434 }],
     timeline: [[1, 780]],
     drift: { from: -640, to: 640, start: 0, steps: 780 },
   },
   {
     name: 'car2',
     layer: 'far',
-    frames: [null, { x: 598, y: 266, width: 24, height: 6, sheetX: 588, sheetY: 434 }],
+    frames: [null, { x: 598, y: 266, width: 24, height: 6, sheetX: 377, sheetY: 434 }],
     timeline: [[1, 940]],
     drift: { from: 640, to: -640, start: 0, steps: 940 },
   },
   {
     name: 'car3',
     layer: 'far',
-    frames: [null, { x: 594, y: 298, width: 24, height: 6, sheetX: 613, sheetY: 434 }],
+    frames: [null, { x: 594, y: 298, width: 24, height: 6, sheetX: 402, sheetY: 434 }],
     timeline: [[1, 1180]],
     drift: { from: -640, to: 640, start: 0, steps: 1180 },
   },
   {
     name: 'car4',
     layer: 'far',
-    frames: [null, { x: 598, y: 328, width: 24, height: 6, sheetX: 638, sheetY: 434 }],
+    frames: [null, { x: 598, y: 328, width: 24, height: 6, sheetX: 427, sheetY: 434 }],
     timeline: [[1, 1460]],
     drift: { from: 640, to: -640, start: 0, steps: 1460 },
   },
@@ -108,12 +108,12 @@ export const STAGE_PROPS: readonly StageProp[] = [
     name: 'mast',
     layer: 'mid',
     frames: [
-      { x: 1052, y: 217, width: 8, height: 43, sheetX: 583, sheetY: 380 },
-      { x: 1052, y: 217, width: 9, height: 43, sheetX: 592, sheetY: 380 },
-      { x: 1052, y: 217, width: 8, height: 43, sheetX: 602, sheetY: 380 },
-      { x: 1054, y: 220, width: 5, height: 40, sheetX: 611, sheetY: 380 },
-      { x: 1054, y: 220, width: 7, height: 40, sheetX: 617, sheetY: 380 },
-      { x: 1052, y: 220, width: 7, height: 40, sheetX: 625, sheetY: 380 },
+      { x: 1052, y: 217, width: 8, height: 43, sheetX: 427, sheetY: 380 },
+      { x: 1052, y: 217, width: 9, height: 43, sheetX: 436, sheetY: 380 },
+      { x: 1052, y: 217, width: 8, height: 43, sheetX: 446, sheetY: 380 },
+      { x: 1054, y: 220, width: 5, height: 40, sheetX: 455, sheetY: 380 },
+      { x: 1054, y: 220, width: 7, height: 40, sheetX: 461, sheetY: 380 },
+      { x: 1052, y: 220, width: 7, height: 40, sheetX: 469, sheetY: 380 },
     ],
     timeline: [
       [0, 60],
@@ -304,8 +304,8 @@ export const STAGE_PROPS: readonly StageProp[] = [
     layer: 'mid',
     frames: [
       null,
-      { x: 506, y: 382, width: 9, height: 6, sheetX: 663, sheetY: 434 },
-      { x: 520, y: 382, width: 9, height: 6, sheetX: 673, sheetY: 434 },
+      { x: 506, y: 378, width: 9, height: 6, sheetX: 452, sheetY: 434 },
+      { x: 522, y: 378, width: 9, height: 6, sheetX: 462, sheetY: 434 },
     ],
     timeline: [
       [0, 760],
@@ -376,9 +376,9 @@ export const STAGE_PROPS: readonly StageProp[] = [
     layer: 'mid',
     frames: [
       null,
-      { x: 387, y: 440, width: 72, height: 19, sheetX: 0, sheetY: 434 },
-      { x: 386, y: 441, width: 74, height: 17, sheetX: 128, sheetY: 434 },
-      { x: 397, y: 441, width: 54, height: 18, sheetX: 73, sheetY: 434 },
+      { x: 387, y: 440, width: 72, height: 19, sheetX: 812, sheetY: 380 },
+      { x: 386, y: 441, width: 74, height: 17, sheetX: 940, sheetY: 380 },
+      { x: 397, y: 441, width: 54, height: 18, sheetX: 885, sheetY: 380 },
     ],
     timeline: [
       [0, 756],
@@ -456,9 +456,9 @@ export const STAGE_PROPS: readonly StageProp[] = [
     layer: 'mid',
     frames: [
       null,
-      { x: 1103, y: 440, width: 57, height: 17, sheetX: 203, sheetY: 434 },
-      { x: 1104, y: 441, width: 56, height: 16, sheetX: 298, sheetY: 434 },
-      { x: 1105, y: 441, width: 54, height: 16, sheetX: 355, sheetY: 434 },
+      { x: 1103, y: 440, width: 57, height: 17, sheetX: 0, sheetY: 434 },
+      { x: 1104, y: 441, width: 56, height: 16, sheetX: 87, sheetY: 434 },
+      { x: 1105, y: 441, width: 54, height: 16, sheetX: 144, sheetY: 434 },
     ],
     timeline: [
       [0, 750],
@@ -535,10 +535,7 @@ export const STAGE_PROPS: readonly StageProp[] = [
   {
     name: 'watcher',
     layer: 'mid',
-    frames: [
-      { x: 1181, y: 367, width: 35, height: 71, sheetX: 516, sheetY: 301 },
-      { x: 1181, y: 366, width: 35, height: 72, sheetX: 480, sheetY: 301 },
-    ],
+    frames: [null, { x: 1181, y: 366, width: 35, height: 72, sheetX: 480, sheetY: 301 }],
     timeline: [
       [1, 40],
       [0, 80],
@@ -576,9 +573,9 @@ export const STAGE_PROPS: readonly StageProp[] = [
     name: 'turbine',
     layer: 'mid',
     frames: [
-      { x: 1360, y: 367, width: 17, height: 12, sheetX: 447, sheetY: 434 },
-      { x: 1360, y: 367, width: 17, height: 12, sheetX: 465, sheetY: 434 },
-      { x: 1360, y: 367, width: 17, height: 12, sheetX: 483, sheetY: 434 },
+      { x: 1360, y: 353, width: 17, height: 12, sheetX: 236, sheetY: 434 },
+      { x: 1360, y: 353, width: 17, height: 12, sheetX: 254, sheetY: 434 },
+      { x: 1360, y: 353, width: 17, height: 12, sheetX: 272, sheetY: 434 },
     ],
     timeline: [
       [0, 5],
@@ -589,7 +586,7 @@ export const STAGE_PROPS: readonly StageProp[] = [
   {
     name: 'smoker',
     layer: 'mid',
-    frames: [null, { x: 122, y: 374, width: 15, height: 37, sheetX: 633, sheetY: 380 }],
+    frames: [null, { x: 122, y: 374, width: 15, height: 37, sheetX: 477, sheetY: 380 }],
     timeline: [
       [1, 100],
       [0, 440],
@@ -607,10 +604,10 @@ export const STAGE_PROPS: readonly StageProp[] = [
     name: 'steam',
     layer: 'mid',
     frames: [
-      { x: 39, y: 159, width: 50, height: 61, sheetX: 552, sheetY: 301 },
-      { x: 39, y: 156, width: 47, height: 60, sheetX: 648, sheetY: 301 },
-      { x: 45, y: 159, width: 44, height: 61, sheetX: 603, sheetY: 301 },
-      { x: 39, y: 156, width: 51, height: 60, sheetX: 696, sheetY: 301 },
+      { x: 40, y: 151, width: 50, height: 61, sheetX: 516, sheetY: 301 },
+      { x: 40, y: 150, width: 47, height: 58, sheetX: 772, sheetY: 301 },
+      { x: 46, y: 151, width: 44, height: 61, sheetX: 567, sheetY: 301 },
+      { x: 40, y: 150, width: 51, height: 58, sheetX: 820, sheetY: 301 },
     ],
     timeline: [
       [0, 14],
@@ -624,8 +621,8 @@ export const STAGE_PROPS: readonly StageProp[] = [
     layer: 'mid',
     frames: [
       null,
-      { x: 894, y: 366, width: 38, height: 46, sheetX: 505, sheetY: 380 },
-      { x: 894, y: 366, width: 38, height: 47, sheetX: 427, sheetY: 380 },
+      { x: 893, y: 360, width: 39, height: 61, sheetX: 612, sheetY: 301 },
+      { x: 893, y: 360, width: 39, height: 61, sheetX: 652, sheetY: 301 },
     ],
     timeline: [
       [0, 6],
@@ -638,8 +635,8 @@ export const STAGE_PROPS: readonly StageProp[] = [
     layer: 'mid',
     frames: [
       null,
-      { x: 974, y: 366, width: 38, height: 46, sheetX: 544, sheetY: 380 },
-      { x: 974, y: 366, width: 38, height: 47, sheetX: 466, sheetY: 380 },
+      { x: 973, y: 360, width: 39, height: 61, sheetX: 692, sheetY: 301 },
+      { x: 973, y: 360, width: 39, height: 61, sheetX: 732, sheetY: 301 },
     ],
     timeline: [
       [0, 7],
@@ -651,9 +648,9 @@ export const STAGE_PROPS: readonly StageProp[] = [
     name: 'laundry',
     layer: 'mid',
     frames: [
-      { x: 1246, y: 336, width: 89, height: 31, sheetX: 699, sheetY: 380 },
-      { x: 1247, y: 336, width: 87, height: 31, sheetX: 789, sheetY: 380 },
-      { x: 1246, y: 336, width: 90, height: 31, sheetX: 877, sheetY: 380 },
+      { x: 1252, y: 336, width: 89, height: 31, sheetX: 543, sheetY: 380 },
+      { x: 1253, y: 336, width: 87, height: 31, sheetX: 633, sheetY: 380 },
+      { x: 1252, y: 336, width: 90, height: 31, sheetX: 721, sheetY: 380 },
     ],
     timeline: [
       [0, 50],
@@ -667,9 +664,9 @@ export const STAGE_PROPS: readonly StageProp[] = [
     layer: 'mid',
     frames: [
       null,
-      { x: 628, y: 420, width: 16, height: 33, sheetX: 649, sheetY: 380 },
-      { x: 628, y: 420, width: 15, height: 33, sheetX: 666, sheetY: 380 },
-      { x: 628, y: 420, width: 16, height: 33, sheetX: 682, sheetY: 380 },
+      { x: 628, y: 420, width: 16, height: 33, sheetX: 493, sheetY: 380 },
+      { x: 628, y: 420, width: 15, height: 33, sheetX: 510, sheetY: 380 },
+      { x: 628, y: 420, width: 16, height: 33, sheetX: 526, sheetY: 380 },
     ],
     timeline: [
       [0, 11],
@@ -682,9 +679,9 @@ export const STAGE_PROPS: readonly StageProp[] = [
     name: 'drone',
     layer: 'mid',
     frames: [
-      { x: 682, y: 294, width: 36, height: 11, sheetX: 501, sheetY: 434 },
-      { x: 682, y: 294, width: 36, height: 16, sheetX: 410, sheetY: 434 },
-      { x: 682, y: 294, width: 36, height: 17, sheetX: 261, sheetY: 434 },
+      { x: 682, y: 294, width: 36, height: 11, sheetX: 290, sheetY: 434 },
+      { x: 682, y: 294, width: 36, height: 16, sheetX: 199, sheetY: 434 },
+      { x: 688, y: 294, width: 28, height: 17, sheetX: 58, sheetY: 434 },
     ],
     timeline: [
       [0, 24],
