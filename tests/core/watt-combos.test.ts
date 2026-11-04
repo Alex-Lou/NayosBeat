@@ -41,13 +41,13 @@ const ROUTES: readonly Route[] = [
     notation: 'L, L, H, H → S (Coup de jus)',
     distance: 30,
     steps: [L, L, H, H, S],
-    damages: [30, 34, 68, 49, 54],
+    damages: [30, 34, 68, 38, 54],
   },
   {
     notation: 'L, ←L, L, H, H → S (6 hits)',
     distance: 28,
     steps: [L, B | L, L, H, H, S],
-    damages: [30, 18, 30, 59, 42, 45],
+    damages: [30, 18, 30, 59, 33, 45],
   },
   { notation: 'L, L, H → S', distance: 30, steps: [L, L, H, S], damages: [30, 34, 68, 63] },
   {
@@ -84,7 +84,7 @@ const ROUTES: readonly Route[] = [
     notation: '→H (Coup de pilon) → S (Coup de jus)',
     distance: 35,
     steps: [F | H, S],
-    damages: [75, 81],
+    damages: [65, 81],
   },
   { notation: 'H → S', distance: 40, steps: [H, S], damages: [85, 81] },
 ];
@@ -129,7 +129,7 @@ const BOOST_ROUTES: readonly (Route & { readonly boost: number })[] = [
     notation: 'L, L, H, H → ←BOOST (Plein feu)',
     distance: 30,
     steps: [L, L, H, H, B | X],
-    damages: [30, 34, 68, 49, 42, 40, 70],
+    damages: [30, 34, 68, 38, 42, 40, 70],
     boost: 3000,
   },
 ];

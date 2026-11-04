@@ -295,7 +295,12 @@ const WATT_PLANS: readonly Plan[] = [
   { after: 'standLight', when: within(43), steps: [L, H, H], weight: STRING },
   { after: 'standLight', when: within(35), steps: [L, H, H, S], weight: STRING },
   { after: 'standLight', when: within(35), steps: [L, H, H, F | S], weight: STRING },
-  { after: 'standLight', when: within(38), steps: [B | L, L, L], weight: STRING },
+  {
+    after: 'standLight',
+    when: within(44),
+    steps: [B | L, L, L],
+    weight: { ...STRING, hard: 3 },
+  },
   { after: 'standLight', when: HIT, steps: [L, H, S], weight: STRING },
   { after: 'standLight', when: HIT, steps: [L, H, F | S], weight: STRING },
   { after: 'standLight', when: HIT, steps: [L, F | H, S], weight: STRING },

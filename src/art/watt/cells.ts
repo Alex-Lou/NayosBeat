@@ -1099,7 +1099,7 @@ export const WATT_CELLS: Readonly<Record<string, Cell>> = {
     ],
   },
   'fx/super': {
-    width: 139,
+    width: 137,
     height: 177,
     anchor: { x: 30, y: 174 },
     frames: [
@@ -1107,7 +1107,7 @@ export const WATT_CELLS: Readonly<Record<string, Cell>> = {
       { x: 0, y: 0, width: 0, height: 0 },
       { x: 60, y: 46, width: 74, height: 36 },
       { x: 52, y: 46, width: 83, height: 39 },
-      { x: 46, y: 29, width: 91, height: 146 },
+      { x: 88, y: 139, width: 38, height: 36 },
       { x: 0, y: 0, width: 0, height: 0 },
       { x: 0, y: 0, width: 0, height: 0 },
       { x: 0, y: 0, width: 0, height: 0 },

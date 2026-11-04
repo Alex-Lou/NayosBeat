@@ -79,10 +79,6 @@ export const POSES: readonly Pose[] = [
     face: 'kiai',
     effects: [
       smear(3, [28, 50], [33, 32], [34, 14]),
-      { kind: 'column', base: at(36, 2), height: 86, width: 18, progress: 0.25, tone: 'platine' },
-      { kind: 'arc', from: at(18, 72), to: at(38, 8), spread: 5, tone: 'platine' },
-      { kind: 'flash', center: at(36, 12), radius: 5.5, tone: 'platine' },
-      { kind: 'ring', center: at(36, 8), radius: 14, progress: 0.2, squash: 0.3, tone: 'platine' },
       { kind: 'dust', x: 36, size: 1.6, progress: 0.3 },
       { kind: 'energy', center: at(38, 8), radius: 4, tone: 'platine' },
     ],

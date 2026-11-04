@@ -52,9 +52,9 @@ const WATT_PLAIN: FighterTemplate = {
     forwardHeavy: strike({
       name: 'Coup de pilon',
       frames: [22, 3, 16],
-      damage: 75,
+      damage: 65,
       stun: [20, 14],
-      hitstop: 12,
+      hitstop: 11,
       pushbackPx: 3,
       guard: 'overhead',
       hitbox: box(12, 36, 34, 40),

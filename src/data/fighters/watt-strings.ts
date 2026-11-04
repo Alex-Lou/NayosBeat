@@ -165,9 +165,9 @@ export const WATT_STRINGS: Pick<
   chainHeavy: strike({
     name: 'Double marteau',
     frames: [11, 3, 20],
-    damage: 70,
-    stun: [22, 14],
-    hitstop: 12,
+    damage: 55,
+    stun: [20, 14],
+    hitstop: 10,
     pushbackPx: 2.5,
     guard: 'mid',
     hitbox: box(12, 30, 36, 34),
