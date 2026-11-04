@@ -1,6 +1,5 @@
 import type Phaser from 'phaser';
 import type { CpuLevel } from '../ai/cpu';
-import { artOf } from '../art';
 import type { Sfx } from '../audio/sfx';
 import type { TrainingGauge, TrainingStart } from '../core/config';
 import { ROSTER, templateOf, type FighterId } from '../data/roster';
@@ -26,8 +25,18 @@ import { FightCard } from '../ui/fight-card';
 import { FighterSelect } from '../ui/fighter-select';
 import { StageSelect } from '../ui/stage-select';
 import homeBackground from '../ui/accueil-fond.png';
-import { HomeBackdrop, type HomeFighter } from '../ui/home-backdrop';
-import { element, Menu, type MenuFeedback, type MenuItem, type MenuOptions } from '../ui/menu';
+import selectBackground from '../ui/menu-select.png';
+import stageBackground from '../ui/menu-stage.png';
+import systemBackground from '../ui/menu-system.png';
+import { MenuBackdrop } from '../ui/menu-backdrop';
+import {
+  element,
+  Menu,
+  type MenuBackdropName,
+  type MenuFeedback,
+  type MenuItem,
+  type MenuOptions,
+} from '../ui/menu';
 import { TitleScreen } from '../ui/title-screen';
 import { buildDate } from './build';
 import {
@@ -70,11 +79,18 @@ import {
   type GameMode,
   type MatchSetup,
 } from './match-setup';
-import { lookOf, SELECT_COLUMNS, SELECT_SLOTS, selectFighters } from './select-fighters';
+import { SELECT_COLUMNS, SELECT_SLOTS, selectFighters } from './select-fighters';
 import { selectStages, STAGE_COLUMNS } from './select-stages';
 import { animLabel, DEFAULT_VIEWING, nextSlowdown, SLOWDOWN_LABELS, type Viewing } from './viewing';
 
 const FIGHT_SCENE = 'fight';
+
+const MENU_ART: Readonly<Record<MenuBackdropName, string>> = {
+  home: homeBackground,
+  select: selectBackground,
+  stage: stageBackground,
+  system: systemBackground,
+};
 
 /** How an online match ended, said on the « Multi » menu it goes back to (`{tick}`: the desync's). */
 const ONLINE_ENDS: Readonly<Record<OnlineEnd['kind'], string>> = {
@@ -186,8 +202,8 @@ function placedAt(choice: StageChoice, map: string): StageChoice {
  */
 export class App {
   private screen: { dispose(): void } | undefined;
-  /** The street and its fighters behind the title and the home menu (src/ui/home-backdrop.ts). */
-  private backdrop: HomeBackdrop | undefined;
+  /** The menus' key art (src/ui/menu-backdrop.ts). */
+  private backdrop: MenuBackdrop | undefined;
   /** Who fights whom, over the fight until its first frame (src/ui/fight-card.ts). */
   private card: FightCard | undefined;
   private setup: MatchSetup = DEFAULT_SETUP;
@@ -273,29 +289,24 @@ export class App {
     return this.onTitle || this.onMainMenu;
   }
 
-  /** The key art, with the two rivals standing in guard. */
-  private createBackdrop(): HomeBackdrop {
-    const standing: readonly (readonly [FighterId, number, 1 | -1])[] = [
-      ['nayo', 120, 1],
-      ['riff', 360, -1],
-    ];
-    const fighters: HomeFighter[] = [];
-    for (const [id, x, facing] of standing) {
-      const look = lookOf(artOf(id));
-      if (look) fighters.push({ look, x, facing });
-    }
-    return new HomeBackdrop(this.root, homeBackground, fighters, isStill(this.comfort));
+  private createBackdrop(): MenuBackdrop {
+    return new MenuBackdrop(this.root, homeBackground);
   }
 
-  /** `backdrop`: the street stays behind this screen (the title, its notice, the home menu). */
-  private show(screen: { dispose(): void }, options: { backdrop?: boolean } = {}): void {
+  /** `backdrop`: which key art stays behind this screen; none for a fight or its overlays. */
+  private show(screen: { dispose(): void }, options: { backdrop?: MenuBackdropName } = {}): void {
     this.onMainMenu = false;
     this.onTitle = false;
     this.screen?.dispose();
     this.screen = screen;
     this.card?.dispose();
     this.card = undefined;
-    this.backdrop?.setVisible(options.backdrop === true);
+    if (options.backdrop) {
+      this.backdrop?.setArt(MENU_ART[options.backdrop]);
+      this.backdrop?.setVisible(true);
+    } else {
+      this.backdrop?.setVisible(false);
+    }
   }
 
   private showTitle(): void {
@@ -312,7 +323,7 @@ export class App {
         },
         this.mode === 'simple',
       ),
-      { backdrop: true },
+      { backdrop: 'home' },
     );
     this.onTitle = true;
   }
@@ -334,7 +345,7 @@ export class App {
     };
     this.showMenu({
       title: NOTICE.title,
-      backdrop: true,
+      backdrop: 'home',
       content: element('p', 'menu-notice', NOTICE.text),
       items: [
         { label: 'Jouer', onSelect: then(toMenu) },
@@ -432,7 +443,7 @@ export class App {
     const columns = touch ? 2 : 3;
     this.showMenu({
       logo: true,
-      backdrop: true,
+      backdrop: 'home',
       description: true,
       columns,
       help: 'Flèches choisir · Entrée / A valider',
@@ -667,6 +678,7 @@ export class App {
     this.showMenu({
       title: 'Options',
       overlay: paused,
+      ...(paused ? {} : { backdrop: 'system' as const }),
       note: `Version du ${buildDate()}`,
       items,
       onBack: back,
@@ -689,6 +701,7 @@ export class App {
         tabs,
         ...(tab ? { initialTab: tab } : {}),
         overlay: paused,
+        ...(paused ? {} : { backdrop: 'system' as const }),
         onBack: back,
         onTouchLayout: () => {
           this.show(
@@ -703,6 +716,7 @@ export class App {
         },
         feedback: this.menuFeedback,
       }),
+      paused ? {} : { backdrop: 'system' },
     );
   }
 
@@ -733,7 +747,6 @@ export class App {
     set('calm', isCalm(this.comfort));
     set('still', isStill(this.comfort));
     set('large-text', this.textSize === 'large');
-    this.backdrop?.setStill(isStill(this.comfort));
   }
 
   /**
@@ -754,6 +767,7 @@ export class App {
       // Whose moves a fighter's page lists; the other pages' headings say what they are.
       ...(page.fighter ? { subtitle: page.title } : {}),
       overlay: paused,
+      ...(paused ? {} : { backdrop: 'system' as const }),
       row: true,
       content: controlsContent(page),
       items: [
@@ -815,7 +829,9 @@ export class App {
         },
         feedback: this.menuFeedback,
         still: isStill(this.comfort),
+        backdrop: 'select',
       }),
+      { backdrop: 'select' },
     );
   }
 
@@ -858,13 +874,16 @@ export class App {
         },
         onBack: back,
         feedback: this.menuFeedback,
+        backdrop: 'stage',
       }),
+      { backdrop: 'stage' },
     );
   }
 
   private chooseLevel(): void {
     this.showMenu({
       title: 'Difficulté',
+      backdrop: 'system',
       items: LEVELS.map(({ level, label, hint }) => ({
         label,
         hint,
@@ -1243,9 +1262,10 @@ export class App {
   }
 
   private showMenu(options: MenuOptions): void {
-    this.show(new Menu(this.root, { ...options, feedback: this.menuFeedback }), {
-      backdrop: options.backdrop === true,
-    });
+    this.show(
+      new Menu(this.root, { ...options, feedback: this.menuFeedback }),
+      options.backdrop ? { backdrop: options.backdrop } : {},
+    );
   }
 
   private readonly menuFeedback = (action: MenuFeedback): void => {

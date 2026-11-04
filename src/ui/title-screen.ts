@@ -13,8 +13,8 @@ export const SIMPLE_MODE_NOTICE =
 
 /**
  * Title screen: any key, click, tap or gamepad button continues. `simplified`: the game is
- * drawn without WebGL, which it tells under the prompt. The street and the fighters are the
- * HomeBackdrop behind it (app.ts).
+ * drawn without WebGL, which it tells under the prompt. The key art is the MenuBackdrop behind
+ * it (app.ts).
  */
 export class TitleScreen {
   private readonly root: HTMLDivElement;

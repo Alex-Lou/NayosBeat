@@ -258,12 +258,33 @@ body {
 .menu-overlay {
   background: rgba(10, 10, 25, 0.82);
 }
-/* The street behind it (src/ui/home-backdrop.ts): the title, the notice and the home menu. */
+/* A menu over the key art (src/ui/menu-backdrop.ts): its root lets the image show, its scrim
+   keeps the text readable, and its panel stays the dark plaque. */
 .menu-backdrop {
   background: transparent;
 }
-/* The stage's own layers, and the two fighters in guard, without Phaser: no render loop on the menus. */
-.home-backdrop {
+.menu-backdrop::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: rgba(8, 4, 16, 0.5);
+  pointer-events: none;
+}
+.menu-backdrop-home::before {
+  background: rgba(8, 4, 16, 0.18);
+}
+.menu-backdrop-select::before {
+  background: rgba(8, 4, 16, 0.68);
+}
+.menu-backdrop-stage::before {
+  background: rgba(8, 4, 16, 0.6);
+}
+.menu-backdrop-system::before {
+  background: rgba(8, 4, 16, 0.64);
+}
+/* The key art itself, without Phaser: no render loop on the menus. */
+.menu-keyart {
   position: fixed;
   inset: 0;
   z-index: 0;
@@ -271,24 +292,24 @@ body {
   background: #0c0614;
   pointer-events: none;
 }
-.home-backdrop.hidden {
+.menu-keyart.hidden {
   display: none;
 }
-.home-stage {
+.menu-keyart-stage {
   position: absolute;
   left: 50%;
   bottom: 0;
   width: 960px;
   height: 540px;
-  transform: translateX(-50%) scale(var(--home-scale, 1));
+  transform: translateX(-50%) scale(var(--menu-art-scale, 1));
   transform-origin: 50% 100%;
   opacity: 0;
   transition: opacity 240ms steps(4, end);
 }
-.home-backdrop.ready .home-stage {
+.menu-keyart.ready .menu-keyart-stage {
   opacity: 1;
 }
-.home-key-art {
+.menu-keyart-image {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -298,24 +319,8 @@ body {
   user-select: none;
   -webkit-user-drag: none;
 }
-.home-fighter {
-  position: absolute;
-}
-.home-fighter .select-cut {
-  image-rendering: pixelated;
-}
-.home-fighter-shadow {
-  position: absolute;
-  left: 50%;
-  bottom: -2px;
-  width: 62%;
-  height: 9px;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.42);
-  transform: translateX(-50%);
-}
-/* Three stepped bands, never a smooth gradient: the same grain as the stage. */
-.home-vignette {
+/* Three stepped bands, never a smooth gradient: the same grain as the art. */
+.menu-keyart-vignette {
   position: absolute;
   inset: 0;
   background:
@@ -1502,7 +1507,7 @@ body {
 .still .title-vinyl {
   animation: none;
 }
-.still .home-stage {
+.still .menu-keyart-stage {
   transition: none;
 }
 .rotate-hint {

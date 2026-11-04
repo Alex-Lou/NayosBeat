@@ -7,6 +7,7 @@ import {
   MENU_PAD_ACTIONS,
   readMenuPad,
   type MenuAction,
+  type MenuBackdropName,
   type MenuFeedback,
 } from './menu';
 import type { FighterLook } from './fighter-look';
@@ -45,6 +46,8 @@ export interface FighterSelectOptions<Id extends string> {
   readonly feedback?: (action: MenuFeedback) => void;
   /** The screen kept still (the player's « Tremblement », src/app/comfort.ts): no idle plays. */
   readonly still?: boolean;
+  /** The key art behind it, none over a fight. */
+  readonly backdrop?: MenuBackdropName;
 }
 
 /** What the panel says of a tile that holds no fighter. */
@@ -79,7 +82,12 @@ export class FighterSelect<Id extends string> {
   ) {
     const { fighters, slots, columns } = options;
     this.layout = { tiles: slots, columns, extra: options.onRandom !== undefined };
-    this.root = element('div', 'menu select');
+    this.root = element(
+      'div',
+      options.backdrop
+        ? `menu select menu-backdrop menu-backdrop-${options.backdrop}`
+        : 'menu select',
+    );
     const panel = element('div', 'select-panel');
     panel.appendChild(element('h1', 'menu-title', options.title));
     if (options.subtitle) panel.appendChild(element('p', 'menu-subtitle', options.subtitle));

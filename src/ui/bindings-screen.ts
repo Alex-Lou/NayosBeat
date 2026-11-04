@@ -40,6 +40,7 @@ import {
   MENU_PAD_ACTIONS,
   readMenuPad,
   type MenuAction,
+  type MenuBackdropName,
   type MenuFeedback,
 } from './menu';
 import { drawPad } from './pad-drawing';
@@ -88,6 +89,8 @@ export interface BindingsScreenOptions {
   readonly tabs: readonly BindingsTab[];
   readonly initialTab?: BindingsTab;
   readonly overlay?: boolean;
+  /** The key art behind it, none over a fight. */
+  readonly backdrop?: MenuBackdropName;
   readonly onBack: () => void;
   /** The touch tab's « Disposition ». */
   readonly onTouchLayout?: () => void;
@@ -150,7 +153,9 @@ export class BindingsScreen {
     this.tab = options.initialTab ?? options.tabs[0] ?? 'keys1';
     this.column = Math.max(0, options.tabs.indexOf(this.tab));
     this.status = idleText(TAB_DEVICES[this.tab].device);
-    this.root = element('div', options.overlay ? 'menu menu-overlay' : 'menu');
+    const classes = options.overlay ? ['menu', 'menu-overlay'] : ['menu'];
+    if (options.backdrop) classes.push('menu-backdrop', `menu-backdrop-${options.backdrop}`);
+    this.root = element('div', classes.join(' '));
     this.panel = element('div', 'menu-panel bindings-panel');
     this.root.appendChild(
       backButton(() => {
