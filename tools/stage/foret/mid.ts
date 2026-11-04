@@ -14,6 +14,7 @@ import {
   BIRD,
   DEAD_LEAF,
   EARTH,
+  GRASS,
   LEAF,
   LEAF_LIT,
   LIGHT_POOL,
@@ -78,31 +79,64 @@ function drawTree(
   sway: number,
 ): void {
   const { x, top, crown } = tree;
-  canvas.fill(x - 14, top + crown * 0.5, 28, BASE - top - crown * 0.5, at(BARK, 1));
-  canvas.vline(x - 12, top + crown * 0.5, BASE - top - crown * 0.5, at(BARK, 3));
-  for (const [dx, , len] of [
-    [-40, 2, 60],
-    [34, 6, 66],
-    [-18, 12, 44],
-  ] as const) {
-    canvas.line(x + dx, BASE - 2, x + dx + len, BASE - 2 - 8, at(BARK, 0), 6);
+  const trunkTop = top + crown * 0.42;
+  // The trunk: bark striations, a lit edge on the dawn side (the right).
+  canvas.fill(x - 15, trunkTop, 30, BASE - trunkTop, at(BARK, 1));
+  for (let striation = -11; striation <= 11; striation += 5) {
+    canvas.vline(
+      x + striation,
+      trunkTop + 2,
+      BASE - trunkTop - 2,
+      at(BARK, striation === 11 ? 3 : 0),
+    );
   }
-  // The crown: four masses of leaves, the lit tips on their edges.
+  canvas.vline(x + 13, trunkTop, BASE - trunkTop, at(BARK, 2));
+  // The roots, spreading over the moss.
+  for (const [dx, len, wide] of [
+    [-34, 62, 7],
+    [26, 70, 8],
+    [-14, 46, 6],
+  ] as const) {
+    canvas.line(x + dx, BASE - 2, x + dx + len, BASE - 2 - 8, at(BARK, 0), wide);
+    canvas.vline(x + dx + len, BASE - 8, 6, at(BARK, 1));
+  }
+  // The crown: layered masses, the lit ones toward the dawn, gaps between them.
+  const cy = trunkTop - crown * 0.55;
   const masses = [
-    { dx: -crown * 0.5, dy: 0, w: crown * 0.75 },
-    { dx: crown * 0.15, dy: -crown * 0.18, w: crown * 0.7 },
-    { dx: -crown * 0.1, dy: -crown * 0.42, w: crown * 0.62 },
-    { dx: crown * 0.4, dy: -crown * 0.35, w: crown * 0.55 },
+    { dx: -crown * 0.48, dy: 0.02, w: crown * 0.56, lit: false },
+    { dx: -crown * 0.12, dy: -crown * 0.2, w: crown * 0.62, lit: true },
+    { dx: crown * 0.3, dy: -crown * 0.1, w: crown * 0.52, lit: false },
+    { dx: crown * 0.04, dy: -crown * 0.46, w: crown * 0.55, lit: true },
+    { dx: crown * 0.46, dy: -crown * 0.38, w: crown * 0.42, lit: false },
+    { dx: -crown * 0.34, dy: -crown * 0.4, w: crown * 0.4, lit: false },
   ] as const;
   for (const [index, mass] of masses.entries()) {
-    const cx = x + mass.dx + sway * (3 + index);
-    const cy = top + mass.dy;
-    canvas.ellipse(cx - mass.w / 2, cy, mass.w, mass.w * 0.8, at(LEAF, 2 + (index % 2)));
-    canvas.ellipse(cx - mass.w / 4, cy + mass.w * 0.1, mass.w * 0.5, mass.w * 0.4, at(LEAF, 1));
-    for (let tip = 0; tip < 5; tip++) {
-      const tx = cx - mass.w * 0.35 + tip * mass.w * 0.2 + (tip % 2) * 3;
-      const ty = cy + 4 + (tip % 3) * 5;
-      canvas.fill(tx, ty, 3, 2, at(LEAF_LIT, tip % 2));
+    const cx = x + mass.dx + sway * (2 + index);
+    const top2 = cy + mass.dy;
+    canvas.ellipse(cx - mass.w / 2, top2, mass.w, mass.w * 0.72, at(LEAF, mass.lit ? 1 : 0));
+    if (mass.lit) {
+      canvas.ellipse(
+        cx - mass.w * 0.3,
+        top2 + mass.w * 0.08,
+        mass.w * 0.5,
+        mass.w * 0.34,
+        at(LEAF_LIT, 0),
+      );
+      canvas.ellipse(
+        cx - mass.w * 0.28,
+        top2 + mass.w * 0.14,
+        mass.w * 0.4,
+        mass.w * 0.24,
+        at(LEAF, 0),
+      );
+    } else {
+      canvas.ellipse(
+        cx - mass.w * 0.32,
+        top2 + mass.w * 0.12,
+        mass.w * 0.42,
+        mass.w * 0.26,
+        at(LEAF, 0),
+      );
     }
   }
 }
@@ -225,17 +259,47 @@ export function drawMid(
       bottom: Math.min(height, clip.y + clip.height),
     };
   }
-  // The earth of the clearing, the moss, the shade and the light the dawn lays.
+  // The earth of the clearing, the moss banks, the winding path and the dawn's light.
   canvas.fill(0, BASE, width, height - BASE, at(EARTH, 2));
   canvas.fill(0, BASE, width, 6, at(EARTH, 1));
   for (let x = 0; x < width; x += 128) canvas.vline(x, BASE, height - BASE, at(EARTH, 1));
   canvas.fill(0, BASE - 8, width, 8, at(MOSS, 0));
+  // The path, winding from the back to the front.
+  canvas.paint(0, BASE - 4, width, 32, (x, y) => {
+    const t = (y - (BASE - 4)) / 32;
+    const center = 720 + Math.sin(t * 2.4) * 120;
+    const half = 40 + t * 150;
+    if (Math.abs(x - center) > half) return undefined;
+    return at(EARTH, x % 24 < 2 ? 3 : 1);
+  });
+  // The long shadows of the trees, cast away from the dawn.
+  canvas.fill(LEFT_TREE.x - 30, BASE, 220, 4, at(SHADOW, 0));
+  canvas.fill(RIGHT_TREE.x - 200, BASE, 200, 4, at(SHADOW, 0));
+  // The light the dawn lays between the trees.
   for (const x of [300, 640, 980, 1180]) {
     canvas.ellipse(x - 56, BASE + 2, 112, 20, at(LIGHT_POOL, 1));
     canvas.ellipse(x - 32, BASE + 6, 64, 12, at(LIGHT_POOL, 2));
   }
-  canvas.fill(LEFT_TREE.x - 60, BASE, 120, 4, at(SHADOW, 0));
-  canvas.fill(RIGHT_TREE.x - 60, BASE, 120, 4, at(SHADOW, 0));
+  // A fallen log, its moss, at the back.
+  canvas.fill(180, BASE - 26, 150, 18, at(BARK, 1));
+  canvas.hline(180, BASE - 26, 150, at(BARK, 3));
+  canvas.fill(184, BASE - 22, 142, 5, at(BARK, 0));
+  canvas.fill(170, BASE - 12, 8, 6, at(MOSS, 0));
+  // Ferns and bushes at the edges.
+  for (const [fx, fy, tall] of [
+    [330, BASE - 2, 22],
+    [420, BASE - 4, 18],
+    [1040, BASE - 2, 24],
+    [1140, BASE - 4, 20],
+  ] as const) {
+    for (const [dx, dy, len] of [
+      [-6, 0, tall],
+      [0, -2, tall - 3],
+      [6, 0, tall - 5],
+    ] as const) {
+      canvas.line(fx + dx, fy, fx + dx + dx * 2, fy - len + dy, at(GRASS, dx === 0 ? 1 : 0), 3);
+    }
+  }
   drawTree(canvas, LEFT_TREE, (frameOf('canopy0') - 1) * 2);
   drawTree(canvas, RIGHT_TREE, (frameOf('canopy1') - 1) * 2);
   drawStump(canvas, frameOf('bird'));

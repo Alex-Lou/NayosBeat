@@ -34,6 +34,8 @@ export const SKY = ramp(
   '#52443c',
 );
 export const CLOUD = ramp('#2c2c3e', '#343448', '#3c3c50');
+/** The dawn's haze, a pale veil between the planes. */
+export const HAZE = ramp('#3a3c48', '#3f414c', '#42444c');
 /** The low sun's glow through the trunks. */
 export const SUNGLOW = ramp('#463c3e', '#4c423e', '#52423c');
 /** The far trees, three planes, the farthest off the light. */
@@ -47,6 +49,7 @@ export const LEAF = ramp('#1c2c18', '#22341c', '#283c20', '#2e4424');
 export const LEAF_LIT = ramp('#425e2c', '#4e6e34');
 /** The dead leaves on the path, the moss. */
 export const DEAD_LEAF = ramp('#3a301f', '#423823', '#4a4026');
+export const GRASS = ramp('#2e3a22', '#36441f');
 export const MOSS = ramp('#243022', '#2c3a26');
 /** The earth of the path, the stones. */
 export const EARTH = ramp('#2e2620', '#362c24', '#3e3228', '#46382c');

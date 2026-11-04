@@ -17,9 +17,9 @@ export const STAGE_PROPS: readonly StageProp[] = [
     name: 'canopy0',
     layer: 'mid',
     frames: [
-      { x: 0, y: 33, width: 185, height: 153, sheetX: 0, sheetY: 292 },
-      { x: 0, y: 33, width: 197, height: 153, sheetX: 186, sheetY: 292 },
-      { x: 0, y: 33, width: 209, height: 153, sheetX: 384, sheetY: 292 },
+      { x: 0, y: 8, width: 164, height: 129, sheetX: 762, sheetY: 0 },
+      { x: 0, y: 8, width: 196, height: 129, sheetX: 0, sheetY: 292 },
+      { x: 26, y: 8, width: 182, height: 129, sheetX: 197, sheetY: 292 },
     ],
     timeline: [
       [0, 60],
@@ -69,9 +69,9 @@ export const STAGE_PROPS: readonly StageProp[] = [
     name: 'canopy1',
     layer: 'mid',
     frames: [
-      { x: 1189, y: 15, width: 251, height: 173, sheetX: 149, sheetY: 0 },
-      { x: 1195, y: 15, width: 245, height: 173, sheetX: 401, sheetY: 0 },
-      { x: 1220, y: 15, width: 220, height: 173, sheetX: 647, sheetY: 0 },
+      { x: 1211, y: 0, width: 210, height: 132, sheetX: 149, sheetY: 0 },
+      { x: 1215, y: 0, width: 225, height: 132, sheetX: 360, sheetY: 0 },
+      { x: 1265, y: 0, width: 175, height: 132, sheetX: 586, sheetY: 0 },
     ],
     timeline: [
       [1, 60],
@@ -122,9 +122,9 @@ export const STAGE_PROPS: readonly StageProp[] = [
     name: 'leaves',
     layer: 'mid',
     frames: [
-      { x: 518, y: 130, width: 604, height: 84, sheetX: 0, sheetY: 446 },
-      { x: 518, y: 156, width: 604, height: 84, sheetX: 0, sheetY: 531 },
-      { x: 518, y: 182, width: 604, height: 64, sheetX: 0, sheetY: 616 },
+      { x: 518, y: 130, width: 604, height: 84, sheetX: 380, sheetY: 292 },
+      { x: 518, y: 156, width: 604, height: 84, sheetX: 0, sheetY: 422 },
+      { x: 518, y: 182, width: 604, height: 64, sheetX: 0, sheetY: 507 },
     ],
     timeline: [
       [0, 30],
@@ -182,8 +182,8 @@ export const STAGE_PROPS: readonly StageProp[] = [
     name: 'bird',
     layer: 'mid',
     frames: [
-      { x: 700, y: 380, width: 26, height: 18, sheetX: 713, sheetY: 720 },
-      { x: 700, y: 373, width: 26, height: 25, sheetX: 686, sheetY: 720 },
+      { x: 700, y: 380, width: 26, height: 18, sheetX: 713, sheetY: 611 },
+      { x: 700, y: 373, width: 26, height: 25, sheetX: 686, sheetY: 611 },
     ],
     timeline: [
       [1, 60],
@@ -205,7 +205,7 @@ export const STAGE_PROPS: readonly StageProp[] = [
   {
     name: 'mist0',
     layer: 'far',
-    frames: [null, { x: 314, y: 302, width: 542, height: 38, sheetX: 0, sheetY: 681 }],
+    frames: [null, { x: 314, y: 302, width: 542, height: 38, sheetX: 0, sheetY: 572 }],
     timeline: [[1, 3000]],
     drift: { from: -892, to: 892, start: 0, steps: 3000 },
     weather: 'fog',
@@ -213,7 +213,7 @@ export const STAGE_PROPS: readonly StageProp[] = [
   {
     name: 'mist1',
     layer: 'mid',
-    frames: [null, { x: 390, y: 390, width: 685, height: 33, sheetX: 0, sheetY: 720 }],
+    frames: [null, { x: 390, y: 390, width: 685, height: 33, sheetX: 0, sheetY: 611 }],
     timeline: [[1, 2400]],
     drift: { from: 1112, to: -1112, start: 0, steps: 2400 },
     weather: 'fog',
