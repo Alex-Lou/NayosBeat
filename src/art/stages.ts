@@ -125,7 +125,7 @@ export const STAGE_MAPS: readonly StageMap[] = (
     {
       name: 'foret',
       title: 'Dancing Forest',
-      description: 'La clairière au matin, entre les arbres qui dansent',
+      description: 'La hutte au cœur de la forêt de nuit, sous les feuilles qui dansent',
       sheltered: false,
       ground: 'hard',
       variants: FORET,

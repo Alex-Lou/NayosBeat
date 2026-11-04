@@ -57,6 +57,8 @@ export const GLOW = ramp('#7a5a30', '#b08844', '#e8c060', '#ffd878');
 /** The cats, warm and pale. */
 export const CAT_DARK = ramp('#2a241a', '#342c1e', '#3e3424');
 export const CAT_PALE = ramp('#3e382c', '#4a4234');
+/** The black cat of the reference, in the warm light of the hut. */
+export const CAT_BLACK = ramp('#0a0a0e', '#121218', '#1a1a22', '#24242e');
 /** The earth, the moss, the grass, the dead leaves. */
 export const EARTH = ramp('#1e241a', '#242a1e', '#2a3022', '#303628');
 export const MOSS = ramp('#1c2c1e', '#223620');
