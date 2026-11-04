@@ -47,11 +47,11 @@ import { drawSignBack, signLetters } from './signs.ts';
 export const BASE = 404;
 const PARAPET = 368;
 const FLOOR_END = 470;
-const BACK_FEET = 424;
-const FEET = 452;
-const HUT = { left: 48, right: 248, roof: 256, foot: 448 } as const;
-const DOOR: Rect = { x: 142, y: 338, width: 42, height: HUT.foot - 338 };
-const LAMP = { x: 163, y: 322 } as const;
+const BACK_FEET = 414;
+const FEET = 428;
+const HUT = { left: 48, right: 248, roof: 256, foot: 428 } as const;
+const DOOR: Rect = { x: 142, y: 330, width: 42, height: HUT.foot - 330 };
+const LAMP = { x: 163, y: 316 } as const;
 const NEON = { x: 318, y: 128, scale: 12 } as const;
 const TRUSS = { left: 312, right: 716, top: 254 } as const;
 const TANK_AT = { cx: 800, top: 192, body: 108, width: 110 } as const;
@@ -59,16 +59,16 @@ const UNITS = [
   { x: 878, width: 70 },
   { x: 958, width: 70 },
 ] as const;
-const UNIT = { top: 368, height: FEET - 368 } as const;
+const UNIT = { top: 356, height: FEET - 356 } as const;
 const MAST = { x: 1056, top: 236 } as const;
 const LUCK = { x: 1096, y: 116, scale: 9, spine: 1136 } as const;
-const LINE = { left: 1242, right: 1404, y: 326 } as const;
+const LINE = { left: 1242, right: 1404, y: 318 } as const;
 const DRONE = { x: 700, y: 296 } as const;
-const SUBSTATION = { x: 500, y: 392, width: 52, height: 62 } as const;
+const SUBSTATION = { x: 500, y: 372, width: 52, height: 56 } as const;
 const TURBINE = { x: 1368, y: 354 } as const;
-const PUDDLE_NEON = { x: 364, y: 442, width: 120, height: 18 } as const;
-const PUDDLE_LUCK = { x: 1084, y: 442, width: 96, height: 16 } as const;
-const DECK_VENT = { x: 638, y: 454 } as const;
+const PUDDLE_NEON = { x: 364, y: 430, width: 120, height: 14 } as const;
+const PUDDLE_LUCK = { x: 1084, y: 430, width: 96, height: 14 } as const;
+const DECK_VENT = { x: 638, y: 432 } as const;
 
 const LIGHTS: readonly Light[] = [
   { x: LAMP.x, y: LAMP.y + 8, radius: 135, strength: 1.9, squash: 1 },
@@ -79,14 +79,14 @@ const LIGHTS: readonly Light[] = [
 
 const ROOF_SPILLS: readonly Spill[] = [
   {
-    light: { x: 516, y: 436, radius: 230, strength: 1, squash: 0.28 },
+    light: { x: 516, y: 416, radius: 190, strength: 1, squash: 0.18 },
     twins: [
       [MEMBRANE, MEMBRANE_VIOLET],
       [CONCRETE, CONCRETE_VIOLET],
     ],
   },
   {
-    light: { x: LUCK.spine, y: 438, radius: 115, strength: 1, squash: 0.32 },
+    light: { x: LUCK.spine, y: 418, radius: 105, strength: 1, squash: 0.22 },
     twins: [[MEMBRANE, MEMBRANE_YELLOW]],
   },
 ];
@@ -170,26 +170,14 @@ interface Reflected {
 }
 
 function drawMembrane(canvas: Canvas, signs: readonly Reflected[]): void {
-  const center = canvas.width / 2;
   canvas.paint(0, BASE, canvas.width, FLOOR_END - BASE, (x, y) => {
-    const dy = y - BASE;
-    const perspX = x - Math.round(((x - center) * dy) / 360);
-    const along = ((perspX % 128) + 128) % 128;
-    const hCourse = y === BASE + 10 || y === BASE + 24 || y === BASE + 40 || y === BASE + 52;
-    const seam = along === 0 || along === 1 || hCourse ? -1.2 : along === 2 ? 0.9 : 0;
-    const tile = Math.floor(perspX / 128) % 2 === 0 ? 1.9 : 2.5;
-    const lit = lightAt(LIGHTS, x, y) * 0.85;
-    const wear = (noise(37, x >> 2, y >> 1, 8) - 0.5) * 0.5;
-    const level = tile + seam + lit + wear;
+    const fade = Math.max(0, 1 - (y - BASE) / 52);
+    const lit = lightAt(LIGHTS, x, y) * 0.85 * fade;
+    const wear = (noise(37, x >> 2, y >> 1, 8) - 0.5) * 0.45 * fade;
+    const level = 2 + lit + wear;
     const sign = signs.find(({ left, right }) => x >= left && x < right);
     const pooled = sign !== undefined && noise(45, Math.floor(x / 8), Math.floor(y / 4), 6) > 0.38;
     if (!wetAt(41, x, y) && !pooled) {
-      if (y >= 452) {
-        const paverJoint = along < 3 || (along >= 64 && along < 66) || y === 452;
-        if (paverJoint) return at(MEMBRANE, 0);
-        const pStep = Math.floor(perspX / 64) % 2 === 0 ? 3.1 : 2.4;
-        return hdTone(CONCRETE, pStep + (y === 453 ? 1 : 0) + wear, x, y);
-      }
       return hdTone(MEMBRANE, level, x, y);
     }
     if (sign && y % 3 !== 0) {
