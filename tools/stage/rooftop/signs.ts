@@ -1,16 +1,13 @@
 /**
- * The giant signs seen from behind (docs/art/decor-rooftop.md §2.2): channel letters on a steel
- * frame, their faces turned to the street below. From the roof, each letter is its dark back, its
- * panels and bolts, the lit edge of its face peeking out, and its light spilling around it into the
- * night: the words read mirrored, last letter first.
+ * The giant signs seen from behind (docs/art/decor-rooftop.md §2.2), in clean pixel art and 3D
+ * channel-letter depth (docs/art/proprete.md): 3D extruded steel letter cans on a frame, their
+ * faces turned to the street below, their neon light spilling around the front rims.
  */
 
-import { Canvas, Mask, at, tone } from '../kit/canvas.ts';
+import { Canvas, Mask, at } from '../kit/canvas.ts';
 import { HAN_SIZE, spellHan } from '../kit/font.ts';
-import { drawHalo } from '../rue/signs.ts';
 import { STEEL } from './palette.ts';
 
-/** A sign's letters as a mask: each font pixel a block, its diagonals filled as strokes. */
 export function signLetters(
   canvas: Canvas,
   text: string,
@@ -20,11 +17,9 @@ export function signLetters(
   vertical: boolean,
 ): Mask {
   const mask = new Mask(canvas.width, canvas.height);
-  // The font's pixels, letter by letter, mirrored: the sign is seen from behind.
   const chars = Array.from(text);
   const lit = new Set<string>();
   chars.forEach((char, index) => {
-    // Seen from behind, a row of letters reads from its last; a column keeps its order.
     const slot = vertical ? index : chars.length - 1 - index;
     spellHan(char, 1, 0, (px, py) => {
       const mirrored = HAN_SIZE - 1 - px;
@@ -37,7 +32,6 @@ export function signLetters(
   for (const key of lit) {
     const [gx = 0, gy = 0] = key.split(',').map(Number);
     mask.rect(x + gx * scale, y + gy * scale, scale, scale);
-    // A diagonal stroke: a limb between the two blocks' centers, as thick as a block.
     for (const dx of [-1, 1]) {
       if (!has(gx + dx, gy + 1) || has(gx + dx, gy) || has(gx, gy + 1)) continue;
       const cx = x + gx * scale + scale / 2;
@@ -48,12 +42,40 @@ export function signLetters(
   return mask;
 }
 
-/**
- * A giant sign's back at x, y (its letters' top left), `scale` pixels a font pixel: the glow
- * spilling around its letters (`glow`, two steps, over what is behind), each letter's dark back
- * with its panel seams and bolts, the lit rim of its face (`glow` step 2). Returns its letters'
- * mask.
- */
+function drawCleanHalo(
+  canvas: Canvas,
+  letters: Mask,
+  glow: readonly number[],
+  reach: number,
+): void {
+  const { width, height } = letters;
+  const distance = new Float32Array(width * height).fill(Infinity);
+  const radius = Math.ceil(reach);
+  const { left, top, right, bottom } = canvas.clip;
+  for (let y = Math.max(0, top - radius); y < Math.min(height, bottom + radius); y++) {
+    for (let x = Math.max(0, left - radius); x < Math.min(width, right + radius); x++) {
+      if (!letters.has(x, y)) continue;
+      for (let dy = -radius; dy <= radius; dy++) {
+        for (let dx = -radius; dx <= radius; dx++) {
+          const px = x + dx;
+          const py = y + dy;
+          if (px < 0 || py < 0 || px >= width || py >= height) continue;
+          const d = Math.hypot(dx, dy);
+          const index = py * width + px;
+          if (d < (distance[index] ?? Infinity)) distance[index] = d;
+        }
+      }
+    }
+  }
+  for (let y = top; y < bottom; y++) {
+    for (let x = left; x < right; x++) {
+      const d = distance[y * width + x] ?? Infinity;
+      if (d === 0 || d > reach) continue;
+      canvas.set(x, y, at(glow, d <= reach * 0.48 ? 1 : 0));
+    }
+  }
+}
+
 export function drawSignBack(
   canvas: Canvas,
   text: string,
@@ -64,8 +86,18 @@ export function drawSignBack(
   vertical = false,
 ): Mask {
   const letters = signLetters(canvas, text, x, y, scale, vertical);
-  drawHalo(canvas, letters, glow, scale * 1.1);
+  drawCleanHalo(canvas, letters, glow, scale * 1.15);
   const { left, top, right, bottom } = canvas.clip;
+  const extX = vertical ? -3 : 3;
+  const extY = 2;
+  for (let py = top; py < bottom; py++) {
+    for (let px = left; px < right; px++) {
+      if (letters.has(px, py)) continue;
+      if (letters.has(px - extX, py - extY) || letters.has(px - Math.sign(extX) * 2, py - 1)) {
+        canvas.set(px, py, at(STEEL, 0));
+      }
+    }
+  }
   for (let py = top; py < bottom; py++) {
     for (let px = left; px < right; px++) {
       if (!letters.has(px, py)) continue;
@@ -75,7 +107,8 @@ export function drawSignBack(
         !letters.has(px, py - 1) ||
         !letters.has(px, py + 1);
       if (rim) {
-        canvas.set(px, py, at(glow, 2));
+        const bright = !letters.has(px, py - 1) || !letters.has(px - 1, py);
+        canvas.set(px, py, at(glow, bright ? 3 : 2));
         continue;
       }
       const inner =
@@ -83,10 +116,19 @@ export function drawSignBack(
         !letters.has(px + 2, py) ||
         !letters.has(px, py - 2) ||
         !letters.has(px, py + 2);
+      if (inner) {
+        canvas.set(px, py, at(STEEL, 3));
+        continue;
+      }
       const seam = (px - x) % scale === 0 || (py - y) % scale === 0;
       const bolt = (px - x) % scale === 3 && (py - y) % scale === 3;
-      const level = inner ? 3 : bolt ? 3.4 : seam ? 0.6 : 1.6 + (py - y) / (scale * 30);
-      canvas.set(px, py, tone(STEEL, level, px, py));
+      if (bolt) {
+        canvas.set(px, py, at(STEEL, 4));
+      } else if (seam) {
+        canvas.set(px, py, at(STEEL, 0));
+      } else {
+        canvas.set(px, py, at(STEEL, (py - y) % (scale * 2) < scale ? 2 : 1));
+      }
     }
   }
   return letters;

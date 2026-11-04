@@ -93,12 +93,50 @@ export const EMBER = ramp('#7a2a1c', '#e0603a');
 export const RIM_WARM = ramp('#7a5246', '#a06a52', '#c48a62');
 /** An umbrella's dark canopy. */
 export const UMBRELLA = ramp('#1c2422', '#26322e', '#32403a');
-/** The laundry on its line: a few shirts, their colors gone dull in the night. */
+/** The laundry on its line and the crowd's clothes: colors gone dull in the night. */
 export const CLOTH = {
-  red: ramp('#3e2430', '#563040'),
-  blue: ramp('#252b42', '#323a56'),
-  cream: ramp('#48423e', '#625a50'),
+  red: ramp('#3e2430', '#563040', '#6e3e50'),
+  blue: ramp('#252b42', '#323a56', '#424c6e'),
+  cream: ramp('#48423e', '#625a50', '#7c7264'),
+  olive: ramp('#262c22', '#363e2e', '#4a543e'),
+  leather: ramp('#1e1920', '#2b242c', '#3e3440'),
+  black: ramp('#181720', '#22202c', '#302d3c'),
+  mustard: ramp('#44341e', '#5e4828', '#7a5e34'),
 } as const;
+export const HAIR = {
+  black: ramp('#15131c', '#201c28', '#2e2838'),
+  brown: ramp('#2a1e1e', '#3e2b26', '#543a30'),
+} as const;
+/**
+ * Colored light from the giant signs and the sodium lamp falling on the roof's membrane and
+ * concrete (kit/light.ts `spill`), even on a dry night.
+ */
+export const MEMBRANE_VIOLET = ramp(
+  '#201c2e',
+  '#262036',
+  '#2d253f',
+  '#352b48',
+  '#3e3252',
+  '#48395a',
+);
+export const MEMBRANE_YELLOW = ramp(
+  '#221e26',
+  '#29242a',
+  '#312a2e',
+  '#3a3132',
+  '#443936',
+  '#4e413a',
+);
+export const CONCRETE_VIOLET = ramp(
+  '#241f30',
+  '#2b2438',
+  '#332b42',
+  '#3c324b',
+  '#463a54',
+  '#50425d',
+  '#5c4c66',
+  '#68566e',
+);
 export const TAG = {
   outline: ramp('#17141c')[0] ?? 0,
   violet: ramp('#4e3a6e', '#664c8c'),
