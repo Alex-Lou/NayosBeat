@@ -25,8 +25,8 @@ export interface MenuOptions {
   readonly content?: HTMLElement;
   /** Shown over the fight (translucent) instead of on a plain background. */
   readonly overlay?: boolean;
-  /** The street behind it (styles.css, `.menu-backdrop`): the home and its notice. */
-  readonly backdrop?: boolean;
+  /** The key art behind it (styles.css, `.menu-backdrop-*`), varied by screen. */
+  readonly backdrop?: MenuBackdropName;
   /** Item selected when the menu opens. */
   readonly initialIndex?: number;
   /** Called on navigation, e.g. to play a sound. */
@@ -50,6 +50,9 @@ export interface MenuOptions {
 }
 
 export type MenuFeedback = 'move' | 'confirm' | 'back';
+
+/** The key art behind a menu (src/ui/menu-backdrop.ts), varied by screen. */
+export type MenuBackdropName = 'home' | 'select' | 'stage' | 'system';
 
 /** What a key or a gamepad button asks a screen of choices for. A list ignores left and right. */
 export type MenuAction = 'up' | 'down' | 'left' | 'right' | 'confirm' | 'back';
@@ -110,7 +113,7 @@ export class Menu {
   ) {
     const classes = ['menu'];
     if (options.overlay) classes.push('menu-overlay');
-    if (options.backdrop) classes.push('menu-backdrop');
+    if (options.backdrop) classes.push('menu-backdrop', `menu-backdrop-${options.backdrop}`);
     this.root = element('div', classes.join(' '));
     const panel = element('div', 'menu-panel');
     if (options.logo) panel.appendChild(titleLogo('title-logo menu-logo'));

@@ -7,6 +7,7 @@ import {
   MENU_PAD_ACTIONS,
   readMenuPad,
   type MenuAction,
+  type MenuBackdropName,
   type MenuFeedback,
 } from './menu';
 import { movedCursor, type GridCursor, type GridLayout } from './select-grid';
@@ -42,6 +43,8 @@ export interface StageSelectOptions<Id extends string> {
   readonly onBack: () => void;
   /** Called on navigation, e.g. to play a sound. */
   readonly feedback?: (action: MenuFeedback) => void;
+  /** The key art behind it. */
+  readonly backdrop?: MenuBackdropName;
 }
 
 const RANDOM = { name: 'Aléatoire', description: 'Un lieu au hasard' } as const;
@@ -71,7 +74,12 @@ export class StageSelect<Id extends string> {
   ) {
     const { places, columns } = options;
     this.layout = { tiles: places.length + 1, columns, extra: false };
-    this.root = element('div', 'menu select stage-select');
+    this.root = element(
+      'div',
+      options.backdrop
+        ? `menu select stage-select menu-backdrop menu-backdrop-${options.backdrop}`
+        : 'menu select stage-select',
+    );
     const panel = element('div', 'select-panel');
     panel.appendChild(element('h1', 'menu-title', 'Lieu'));
     panel.appendChild(element('p', 'menu-subtitle', 'Choisis où se battre'));

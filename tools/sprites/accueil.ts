@@ -10,7 +10,7 @@ import { encodeIndexedPng, type Rgba } from './png.ts';
 
 const WIDTH = 960;
 const HEIGHT = 540;
-const OUT = new URL('../../src/ui/accueil-fond.png', import.meta.url);
+const OUT = new URL('../../src/ui/', import.meta.url);
 
 const SLOTS = [
   ['clear', '#00000000'],
@@ -241,13 +241,119 @@ function dust(canvas: Canvas): void {
   }
 }
 
-const canvas = new Canvas(WIDTH, HEIGHT);
-background(canvas);
-disc(canvas, 600, 276, 188);
-waves(canvas, 600, 276, 188);
-speakers(canvas);
-equalizer(canvas);
-crowd(canvas);
-dust(canvas);
+function rings(
+  canvas: Canvas,
+  cx: number,
+  cy: number,
+  radii: readonly number[],
+  colors: readonly SlotName[],
+): void {
+  radii.forEach((radius, index) => {
+    const color = slot(colors[index % colors.length] ?? 'cyan');
+    for (let step = 0; step < 720; step++) {
+      if (Math.floor(step / 24) % 2 === 0) continue;
+      const angle = (step / 720) * Math.PI * 2;
+      canvas.fill(
+        Math.round(cx + Math.cos(angle) * radius),
+        Math.round(cy + Math.sin(angle) * radius),
+        2,
+        2,
+        color,
+      );
+    }
+  });
+}
 
-await writeFile(OUT, await encodeIndexedPng(WIDTH, HEIGHT, canvas.pixels, palette));
+function columns(canvas: Canvas): void {
+  const random = new Random(17);
+  for (let index = 0; index < 18; index++) {
+    const x = 72 + index * 48;
+    const height = 80 + Math.floor(random.next() * 230);
+    const color = index % 3 === 0 ? 'orange' : index % 3 === 1 ? 'cyan' : 'magenta';
+    canvas.fill(x, 390 - height, 14, height, slot(color));
+    canvas.fill(x, 390 - height, 14, 3, slot('cream'));
+  }
+}
+
+function horizon(canvas: Canvas): void {
+  const radii: readonly number[] = [140, 200, 270, 350, 440];
+  radii.forEach((radius, index) => {
+    const color = slot(index % 2 === 0 ? 'neonCyan' : 'neonMagenta');
+    for (let step = 0; step < 360; step++) {
+      if (Math.floor(step / 15) % 2 === 0) continue;
+      const angle = Math.PI + (step / 360) * Math.PI;
+      canvas.fill(
+        Math.round(480 + Math.cos(angle) * radius),
+        Math.round(540 + Math.sin(angle) * radius),
+        2,
+        2,
+        color,
+      );
+    }
+  });
+  for (let x = 0; x < WIDTH; x += 24) canvas.fill(x, 392, 12, 2, slot('orangeDeep'));
+}
+
+function waveform(canvas: Canvas): void {
+  for (let x = 0; x < WIDTH; x++) {
+    const y = Math.round(280 + Math.sin(x / 54) * 34 + Math.sin(x / 19) * 10);
+    canvas.fill(x, y, 2, 2, slot(x % 160 < 80 ? 'cyanMid' : 'magentaDeep'));
+    if (x % 16 === 0) canvas.fill(x, y - 18, 2, 2, slot('neonCyan'));
+  }
+  const random = new Random(23);
+  for (let led = 0; led < 48; led++) {
+    canvas.fill(
+      60 + random.int(0, 840),
+      430 + random.int(0, 60),
+      3,
+      3,
+      slot(led % 2 === 0 ? 'cyan' : 'orange'),
+    );
+  }
+}
+
+function homeScene(canvas: Canvas): void {
+  background(canvas);
+  disc(canvas, 600, 276, 188);
+  waves(canvas, 600, 276, 188);
+  speakers(canvas);
+  equalizer(canvas);
+  crowd(canvas);
+  dust(canvas);
+}
+
+function selectScene(canvas: Canvas): void {
+  background(canvas);
+  columns(canvas);
+  rings(canvas, 480, 290, [150, 220, 300], ['cyan', 'neonMagenta', 'neonViolet']);
+  dust(canvas);
+}
+
+function stageScene(canvas: Canvas): void {
+  background(canvas);
+  horizon(canvas);
+  speakers(canvas);
+  dust(canvas);
+}
+
+function systemScene(canvas: Canvas): void {
+  background(canvas);
+  waveform(canvas);
+  dust(canvas);
+}
+
+const SCENES: Readonly<Record<string, (canvas: Canvas) => void>> = {
+  'accueil-fond': homeScene,
+  'menu-select': selectScene,
+  'menu-stage': stageScene,
+  'menu-system': systemScene,
+};
+
+for (const [name, draw] of Object.entries(SCENES)) {
+  const canvas = new Canvas(WIDTH, HEIGHT);
+  draw(canvas);
+  await writeFile(
+    new URL(`${name}.png`, OUT),
+    await encodeIndexedPng(WIDTH, HEIGHT, canvas.pixels, palette),
+  );
+}

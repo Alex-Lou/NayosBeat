@@ -578,7 +578,7 @@ describe('how a fight is watched (docs/art/animation-plan.md §2, V0)', () => {
     // The menu gone, the card up while the fight loads and builds; the street sleeps behind.
     expect(
       root.children
-        .filter((child) => child.className !== 'home-backdrop')
+        .filter((child) => child.className !== 'menu-keyart')
         .map((child) => child.className),
     ).toEqual(['menu fight-card']);
     expect(cards()[0]?.children[0]?.children[0]?.textContent).toBe('Nayo contre Riff');
