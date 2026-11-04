@@ -12,15 +12,22 @@ import type { Rect } from '../kit/stage.ts';
 import {
   BARK,
   BIRD,
+  CAT_DARK,
+  CAT_PALE,
   DEAD_LEAF,
   EARTH,
+  GLASS,
+  GLOW,
   GRASS,
   LEAF,
-  LEAF_LIT,
+  LEAF_BRIGHT,
+  LEAF_TEAL,
   LIGHT_POOL,
   MOSS,
   SHADOW,
   STONE,
+  SUNGLOW,
+  WOOD_HUT,
 } from './palette.ts';
 
 /** Row where the trees' roots rest, and the fighters' ground. */
@@ -72,6 +79,16 @@ function birdAt(step: number): number {
   return step % 360 < 60 ? 1 : 0;
 }
 
+/** The hut's glow: a slow breath, each state held long. */
+function hutAt(step: number): number {
+  return Math.floor(step / 60) % 3;
+}
+
+/** The cat's tail: a slow flick. */
+function catAt(step: number): number {
+  return step % 240 < 24 ? 1 : 0;
+}
+
 /** A great tree: its trunk, its roots, its crown of leaf masses, swayed by `sway` (−1, 0, 1). */
 function drawTree(
   canvas: Canvas,
@@ -113,21 +130,22 @@ function drawTree(
   for (const [index, mass] of masses.entries()) {
     const cx = x + mass.dx + sway * (2 + index);
     const top2 = cy + mass.dy;
-    canvas.ellipse(cx - mass.w / 2, top2, mass.w, mass.w * 0.72, at(LEAF, mass.lit ? 1 : 0));
+    const green = index % 3 === 2 ? LEAF_TEAL : LEAF;
+    canvas.ellipse(cx - mass.w / 2, top2, mass.w, mass.w * 0.72, at(green, mass.lit ? 1 : 0));
     if (mass.lit) {
       canvas.ellipse(
         cx - mass.w * 0.3,
         top2 + mass.w * 0.08,
         mass.w * 0.5,
         mass.w * 0.34,
-        at(LEAF_LIT, 0),
+        at(LEAF_BRIGHT, 0),
       );
       canvas.ellipse(
         cx - mass.w * 0.28,
         top2 + mass.w * 0.14,
         mass.w * 0.4,
         mass.w * 0.24,
-        at(LEAF, 0),
+        at(green, 0),
       );
     } else {
       canvas.ellipse(
@@ -135,7 +153,16 @@ function drawTree(
         top2 + mass.w * 0.12,
         mass.w * 0.42,
         mass.w * 0.26,
-        at(LEAF, 0),
+        at(green, 0),
+      );
+    }
+    for (let leaf = 0; leaf < 3; leaf++) {
+      canvas.fill(
+        cx - mass.w * 0.3 + leaf * mass.w * 0.24,
+        top2 + mass.w * 0.2 + (leaf % 2) * 6,
+        3,
+        3,
+        at(LEAF_BRIGHT, leaf % 2),
       );
     }
   }
@@ -211,6 +238,102 @@ export function drawGust(canvas: Canvas, x: number): void {
   }
 }
 
+/**
+ * The forester's hut, like the developer's reference: warm wood, a glass roof in panes, the light
+ * inside breathing with `frame`, a door and a porch.
+ */
+function drawHut(canvas: Canvas, frame: number): void {
+  const left = 290;
+  const top = 268;
+  const width = 170;
+  const glow = [0, 1, 2][frame] ?? 0;
+  // The walls, and the warm light within.
+  canvas.fill(left, top + 66, width, BASE - top - 66, at(WOOD_HUT, 2));
+  canvas.hline(left, top + 66, width, at(WOOD_HUT, 3));
+  if (glow > 0) {
+    canvas.fill(left + 14, top + 76, width - 28, 44, at(GLOW, 1));
+    if (glow > 1) canvas.fill(left + 30, top + 84, width - 60, 24, at(GLOW, 2));
+  }
+  // The door, dark, and its warm slit under it.
+  canvas.fill(left + 66, top + 96, 36, BASE - top - 96, at(WOOD_HUT, 0));
+  canvas.hline(left + 66, top + 96, 36, at(WOOD_HUT, 1));
+  canvas.hline(left + 68, BASE - 2, 32, at(GLOW, 2));
+  // The porch, two posts, a step.
+  canvas.fill(left - 12, BASE - 12, width + 24, 12, at(WOOD_HUT, 1));
+  canvas.hline(left - 12, BASE - 12, width + 24, at(WOOD_HUT, 3));
+  // The glass roof, slanted, in panes, catching the dawn.
+  canvas.paint(left - 6, top - 4, width + 12, 66, (x, y) => {
+    const slant = (x - left) / width;
+    const edge = top + 2 + slant * 30;
+    if (y < edge) return undefined;
+    const pane = Math.floor((x - left) / 24) % 2;
+    const shine = y < edge + 8 ? 2 : pane === 0 ? 0 : 1;
+    return at(GLASS, shine);
+  });
+  canvas.line(left - 8, top, left + width + 8, top + 34, at(WOOD_HUT, 1), 3);
+}
+
+/** The cats: a dark one at the hut's door, a pale one by the path; their tails flick (`frame`). */
+function drawCats(canvas: Canvas, frame: number): void {
+  const sit = (x: number, y: number, body: readonly number[], tail: number): void => {
+    canvas.ellipse(x - 8, y - 12, 16, 13, at(body, 1));
+    canvas.ellipse(x - 5, y - 20, 11, 10, at(body, 0));
+    canvas.line(x - 4, y - 24, x - 3, y - 29, at(body, 0), 2);
+    canvas.line(x + 1, y - 24, x + 2, y - 29, at(body, 0), 2);
+    canvas.set(x - 2, y - 18, at(GLOW, 2));
+    canvas.set(x + 2, y - 18, at(GLOW, 2));
+    canvas.line(x + 7, y - 9, x + 14 + tail, y - 15 - tail, at(body, 0), 2);
+  };
+  sit(500, BASE - 4, CAT_DARK, frame === 1 ? 5 : 0);
+  sit(830, BASE - 2, CAT_PALE, 0);
+}
+
+/** The dawn's shafts through the canopy: pale slants of light on the clearing. */
+function drawShafts(canvas: Canvas): void {
+  for (const [x, w] of [
+    [420, 34],
+    [640, 26],
+    [880, 40],
+  ] as const) {
+    canvas.paint(x, 150, w, BASE - 150, (px, py) => {
+      const t = (px - x) / w;
+      if (py < 150 + t * 120) return undefined;
+      return at(SUNGLOW, (px - x) % 8 < 4 ? 0 : 1);
+    });
+  }
+}
+
+/** The ferns and the bushes, denser than before, along the edges and under the trees. */
+function drawUndergrowth(canvas: Canvas): void {
+  for (const [x, tall, ramp] of [
+    [240, 24, GRASS],
+    [340, 20, GRASS],
+    [620, 22, GRASS],
+    [760, 26, GRASS],
+    [1010, 24, GRASS],
+    [1150, 20, GRASS],
+  ] as const) {
+    for (const [dx, len] of [
+      [-7, tall],
+      [0, tall - 4],
+      [7, tall - 6],
+      [-3, tall - 2],
+      [4, tall - 3],
+    ] as const) {
+      canvas.line(x + dx, BASE, x + dx + dx * 1.4, BASE - len, at(ramp, dx === 0 ? 1 : 0), 3);
+    }
+  }
+  for (const [x, w, h] of [
+    [180, 60, 26],
+    [1120, 70, 30],
+    [1360, 54, 24],
+  ] as const) {
+    canvas.ellipse(x, BASE - h + 8, w, h, at(MOSS, 1));
+    canvas.ellipse(x + w * 0.2, BASE - h + 12, w * 0.5, h * 0.6, at(LEAF_TEAL, 2));
+    canvas.ellipse(x - w * 0.2, BASE - h + 14, w * 0.4, h * 0.5, at(LEAF, 2));
+  }
+}
+
 // --- The animations. ----------------------------------------------------------------------------
 
 export const MID_ANIMATIONS: readonly Animation[] = [
@@ -237,6 +360,18 @@ export const MID_ANIMATIONS: readonly Animation[] = [
     rect: { x: STUMP.x - 26, y: STUMP.y - 56, width: 52, height: 36 },
     frames: 2,
     timeline: timelineOf(birdAt),
+  },
+  {
+    name: 'hut',
+    rect: { x: 272, y: 258, width: 206, height: BASE - 258 + 4 },
+    frames: 3,
+    timeline: timelineOf(hutAt),
+  },
+  {
+    name: 'cat',
+    rect: { x: 482, y: BASE - 40, width: 40, height: 36 },
+    frames: 2,
+    timeline: timelineOf(catAt),
   },
 ];
 
@@ -300,9 +435,13 @@ export function drawMid(
       canvas.line(fx + dx, fy, fx + dx + dx * 2, fy - len + dy, at(GRASS, dx === 0 ? 1 : 0), 3);
     }
   }
+  drawShafts(canvas);
   drawTree(canvas, LEFT_TREE, (frameOf('canopy0') - 1) * 2);
   drawTree(canvas, RIGHT_TREE, (frameOf('canopy1') - 1) * 2);
+  drawHut(canvas, frameOf('hut'));
+  drawUndergrowth(canvas);
   drawStump(canvas, frameOf('bird'));
+  drawCats(canvas, frameOf('cat'));
   drawLeaves(canvas, frameOf('leaves'));
   // The stones at the edges.
   for (const [x, y, w, h] of [

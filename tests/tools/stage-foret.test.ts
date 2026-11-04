@@ -56,8 +56,8 @@ describe("the code's Dancing Forest (docs/art/decor-forest-dance.md)", { timeout
     }
   });
 
-  it('loops its leaves and its bird over the same cycle', () => {
-    for (const name of ['leaves', 'bird']) {
+  it('loops its leaves, its bird, its hut and its cat over the same cycle', () => {
+    for (const name of ['leaves', 'bird', 'hut', 'cat']) {
       expect(
         propNamed(name).timeline.reduce((sum, [, steps]) => sum + steps, 0),
         name,

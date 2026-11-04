@@ -17,6 +17,7 @@ import { NEON } from './neon/index.ts';
 import { PLAGE } from './plage/index.ts';
 import { ROOFTOP } from './rooftop/index.ts';
 import { RUE } from './rue/index.ts';
+import { SAKURA } from './sakura/index.ts';
 import { TEMPLE } from './temple/index.ts';
 
 export const CODE_MAPS: readonly CodeMap[] = [
@@ -34,4 +35,5 @@ export const CODE_MAPS: readonly CodeMap[] = [
   DUNES,
   LUCIOLES,
   DOJO,
+  SAKURA,
 ];

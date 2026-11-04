@@ -12,6 +12,7 @@ import { STAGE_VARIANTS as NEON } from './neon';
 import { STAGE_VARIANTS as PLAGE } from './plage';
 import { STAGE_VARIANTS as ROOFTOP } from './rooftop';
 import { STAGE_VARIANTS as RUE } from './rue';
+import { STAGE_VARIANTS as SAKURA } from './sakura';
 import { STAGE_VARIANTS as TEMPLE } from './temple';
 
 /** A floor: hard (asphalt, concrete, wood, stone) or sand (docs/art/decor-plage.md §6). */
@@ -152,6 +153,14 @@ export const STAGE_MAPS: readonly StageMap[] = (
       sheltered: true,
       ground: 'hard',
       variants: DOJO,
+    },
+    {
+      name: 'sakura',
+      title: 'Sakura Arena',
+      description: 'Le sanctuaire aux cerisiers, sous les lanternes',
+      sheltered: false,
+      ground: 'hard',
+      variants: SAKURA,
     },
   ] satisfies StageMap[]
 ).filter(({ variants }) => variants.length > 0);
