@@ -63,7 +63,7 @@ describe('Menu, for a touch screen (docs/polish/AUDIT-ET-PLAN.md, L21)', () => {
     expect(second.scrolledIntoView).toBe(1);
     page.window.dispatchEvent(Object.assign(new Event('keydown'), { code: 'ArrowUp' }));
     expect(first.scrolledIntoView).toBe(1);
-    second.dispatchEvent(new Event('pointerenter'));
+    second.dispatchEvent(new Event('mousemove'));
     expect(second.classList.contains('selected')).toBe(true);
     expect(second.scrolledIntoView).toBe(1);
   });
@@ -97,6 +97,67 @@ describe('Menu, for a touch screen (docs/polish/AUDIT-ET-PLAN.md, L21)', () => {
     expect(byClass(list.root, 'menu-help-keys')[0]?.textContent).toMatch(/^↑↓ choisir/);
     press(list.page, 'ArrowRight');
     expect(byClass(list.root, 'menu-item')[0]?.classList.contains('selected')).toBe(true);
+  });
+
+  it('moves through a grid by one cell, never over its edge', () => {
+    const press = (page: { window: EventTarget }, code: string) =>
+      page.window.dispatchEvent(Object.assign(new Event('keydown'), { code }));
+    const grid = setup({
+      columns: 3,
+      items: Array.from({ length: 5 }, (_, index) => ({
+        label: `Case ${index}`,
+        onSelect: vi.fn(),
+      })),
+    });
+    const selected = () =>
+      byClass(grid.root, 'menu-item').findIndex((item) => item.classList.contains('selected'));
+    // Right along the first row, then stops at its end instead of jumping to the second.
+    press(grid.page, 'ArrowRight');
+    expect(selected()).toBe(1);
+    press(grid.page, 'ArrowRight');
+    expect(selected()).toBe(2);
+    press(grid.page, 'ArrowRight');
+    expect(selected()).toBe(2);
+    // Down to the third cell of the second row, which does not exist: the cursor stays.
+    press(grid.page, 'ArrowDown');
+    expect(selected()).toBe(2);
+    press(grid.page, 'ArrowLeft');
+    expect(selected()).toBe(1);
+    press(grid.page, 'ArrowDown');
+    expect(selected()).toBe(4);
+    press(grid.page, 'ArrowDown');
+    expect(selected()).toBe(4);
+    press(grid.page, 'ArrowUp');
+    expect(selected()).toBe(1);
+    expect(byClass(grid.root, 'menu-help-keys')[0]?.textContent).toMatch(/^Flèches choisir/);
+    grid.menu.dispose();
+  });
+
+  it('shows one description line for the item selected, its hint kept in the button', () => {
+    const { page, root } = setup({
+      description: true,
+      items: [
+        { label: 'Jouer', hint: "Contre l'ordinateur", onSelect: vi.fn() },
+        { label: 'Options', hint: 'Son, flashs', onSelect: vi.fn() },
+      ],
+    });
+    const descriptions = () => byClass(root, 'menu-description');
+    expect(descriptions()).toHaveLength(1);
+    expect(descriptions()[0]?.textContent).toBe("Contre l'ordinateur");
+    page.window.dispatchEvent(Object.assign(new Event('keydown'), { code: 'ArrowDown' }));
+    expect(descriptions()[0]?.textContent).toBe('Son, flashs');
+    // The hint is still in the button, where a screen reader reads it.
+    expect(byClass(root, 'menu-hint').map((hint) => hint.textContent)).toEqual([
+      "Contre l'ordinateur",
+      'Son, flashs',
+    ]);
+  });
+
+  it('shows the game logo instead of a title when it asks for it', () => {
+    const { root } = setup({ title: '', logo: true });
+    const [logo] = byClass(root, 'title-logo');
+    expect(logo?.attributes['aria-label']).toBe('NAYOSBEAT');
+    expect(byClass(root, 'menu-title')).toHaveLength(0);
   });
 
   it('removes « Retour » with itself', () => {
