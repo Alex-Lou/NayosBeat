@@ -3,6 +3,8 @@
  * developer's reference (the pixel forest of the pin): a deep teal night-green forest, the warm
  * glow of a glass-roofed hut, the pale dawn behind the trees. Held inside the flash measures' band
  * (docs/flashs.md §3): the masses stay dark, the glow and the bright leaves are small touches.
+ * The sky's pale steps keep their green low, like the Dock's dawn ceiling: the Finisher's cyan
+ * halo takes its alpha over every stage's large colors (tests/render/finisher-halo.test.ts).
  * Slot 0 is transparent, every other color opaque. The fighters own cyan and magenta: the deep
  * teals are dark enough to stay out, the bright greens sit far from cyan.
  */
@@ -29,15 +31,15 @@ export const SKY = ramp(
   '#1a2c3c',
   '#1f3242',
   '#253847',
-  '#2c3e4b',
-  '#324450',
-  '#374850',
-  '#374244',
+  '#2c3a4b',
+  '#323b50',
+  '#373c50',
+  '#373c44',
 );
 export const CLOUD = ramp('#243444', '#2c3c4a', '#344450');
 /** The pale light of the dawn behind the trees, and its veil of haze. */
-export const SUNGLOW = ramp('#2f3a42', '#354048', '#37434a');
-export const HAZE = ramp('#303c46', '#36424a');
+export const SUNGLOW = ramp('#2f3a42', '#353b48', '#37434a');
+export const HAZE = ramp('#303c46', '#363c4a');
 /** The far trees, three planes, the farthest off the light. */
 export const TREE_FAR = ramp('#1f2c38', '#253440', '#2b3c48');
 export const TREE_MID = ramp('#1a2430', '#202c38', '#263440');
@@ -62,7 +64,7 @@ export const GRASS = ramp('#2e5a2c', '#3a6e34');
 export const DEAD_LEAF = ramp('#3a301f', '#423823', '#4a4026');
 /** The stones, the pale light the dawn lays on the path. */
 export const STONE = ramp('#242630', '#2c2e38');
-export const LIGHT_POOL = ramp('#2e3a42', '#36444a');
+export const LIGHT_POOL = ramp('#2e3a42', '#363b4a');
 /** The bird, the figures. */
 export const BIRD = ramp('#2a2830', '#36343c', '#423e44');
 export const PERSON = ramp('#1a1824', '#201d2b', '#272333', '#2f2a3c', '#3a3446');
