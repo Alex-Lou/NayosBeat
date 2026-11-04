@@ -4,7 +4,8 @@
  * through, cleared from the still layer, `liftedLayers`), packed in one sheet
  * (src/art/<stage>/props.png) and listed in a module (props.ts). A layer drawn by hand keeps a
  * prop only where it still draws what the code drew under it: elsewhere the prop would paint the
- * code's pixels over the drawing, so it is left out, and said so.
+ * code's pixels over the drawing, so it is left out, and said so. An `overlay` prop is the
+ * exception: its still frame is clear everywhere, and it lies over the layer, whatever it draws.
  */
 
 import { format, resolveConfig } from 'prettier';
@@ -98,6 +99,8 @@ export function liftedLayers(
 function keeps(layer: IndexedImage, prop: CodeProp, { moving }: Motion): boolean {
   const [still] = prop.frames;
   if (!still) return false;
+  // An overlay is drawn over the layer, not cut from it: a petal over a scene drawn by hand.
+  if (prop.overlay) return true;
   for (let at = 0; at < moving.length; at++) {
     if (moving[at] === 0) continue;
     const x = prop.rect.x + (at % still.width);

@@ -34,6 +34,12 @@ export interface CodeProp {
   readonly frames: readonly IndexedImage[];
   /** It glides along its layer (src/art/stage-layers.ts `StageDrift`). */
   readonly drift?: StageDrift;
+  /**
+   * It lies over its layer, whatever the layer draws: a petal over a scene drawn by hand, its
+   * still frame clear everywhere (the layer shows through). The usual props are cut from the
+   * code's layer and kept only where a hand-drawn layer still draws them (stage-props.ts).
+   */
+  readonly overlay?: boolean;
   /** It is there only in this weather (src/art/stage-layers.ts `StageProp`). */
   readonly weather?: Weather;
 }

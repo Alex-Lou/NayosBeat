@@ -5,4 +5,29 @@ import type { StageProp } from '../stage-layers';
  * The stage's animations (docs/art/decor-rue.md §6): each frame where it goes on its layer and
  * where it is in props.png, in image pixels; its timeline in steps of 1/60 s.
  */
-export const STAGE_PROPS: readonly StageProp[] = [];
+export const STAGE_PROPS: readonly StageProp[] = [
+  {
+    name: 'petals',
+    layer: 'mid',
+    frames: [
+      null,
+      { x: 601, y: 67, width: 240, height: 316, sheetX: 0, sheetY: 326 },
+      { x: 611, y: 66, width: 239, height: 323, sheetX: 249, sheetY: 0 },
+      { x: 595, y: 65, width: 248, height: 325, sheetX: 0, sheetY: 0 },
+      { x: 600, y: 66, width: 249, height: 321, sheetX: 489, sheetY: 0 },
+      { x: 597, y: 75, width: 251, height: 288, sheetX: 241, sheetY: 326 },
+      { x: 593, y: 71, width: 254, height: 317, sheetX: 739, sheetY: 0 },
+    ],
+    timeline: [
+      [0, 120],
+      [1, 20],
+      [2, 20],
+      [3, 20],
+      [4, 20],
+      [5, 20],
+      [6, 20],
+      [0, 120],
+    ],
+    drift: { from: -852, to: 852, start: 0, steps: 280 },
+  },
+];
