@@ -27,7 +27,7 @@ export interface HaloLook {
 
 /**
  * The opacities of a halo in `energy` over the stage's large colors: at its brightest, the most
- * that changes none of them by more than VEIL_DELTA (0.255 in Nayo's cyan, with Sakura's day colors); at its faintest, the
+ * that changes none of them by more than VEIL_DELTA (0.265 in Nayo's cyan, with Sakura's colors); at its faintest, the
  * least whose luminance stays within BREATH_DELTA of the brightest's over each of them.
  */
 export function haloLook(energy: number, stage: readonly number[]): HaloLook {
