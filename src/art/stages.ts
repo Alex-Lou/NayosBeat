@@ -2,6 +2,7 @@ import type { StageVariant } from './stage-layers';
 import { STAGE_VARIANTS as BAL } from './bal';
 import { STAGE_VARIANTS as CLUB } from './club';
 import { STAGE_VARIANTS as DOCK } from './dock';
+import { STAGE_VARIANTS as FORET } from './foret';
 import { STAGE_VARIANTS as GYM } from './gym';
 import { STAGE_VARIANTS as MARCHE } from './marche';
 import { STAGE_VARIANTS as NEON } from './neon';
@@ -116,6 +117,14 @@ export const STAGE_MAPS: readonly StageMap[] = (
       sheltered: false,
       ground: 'hard',
       variants: NEON,
+    },
+    {
+      name: 'foret',
+      title: 'Dancing Forest',
+      description: 'La clairière au matin, entre les arbres qui dansent',
+      sheltered: false,
+      ground: 'hard',
+      variants: FORET,
     },
   ] satisfies StageMap[]
 ).filter(({ variants }) => variants.length > 0);

@@ -7,6 +7,7 @@ import type { CodeMap } from './kit/stage.ts';
 import { BAL } from './bal/index.ts';
 import { CLUB } from './club/index.ts';
 import { DOCK } from './dock/index.ts';
+import { FORET } from './foret/index.ts';
 import { GYM } from './gym/index.ts';
 import { MARCHE } from './marche/index.ts';
 import { NEON } from './neon/index.ts';
@@ -26,4 +27,5 @@ export const CODE_MAPS: readonly CodeMap[] = [
   PLAGE,
   MARCHE,
   NEON,
+  FORET,
 ];
