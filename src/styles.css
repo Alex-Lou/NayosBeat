@@ -319,6 +319,69 @@ body {
   user-select: none;
   -webkit-user-drag: none;
 }
+/* The music: dotted waves around the scene, and an equalizer that breathes (CSS only). */
+.menu-wave {
+  position: absolute;
+  left: var(--wave-x, 50%);
+  top: var(--wave-y, 50%);
+  width: 5px;
+  height: 5px;
+  margin: -2.5px;
+  pointer-events: none;
+}
+.menu-wave-1 {
+  color: #30e8ff;
+  animation: menu-wave 9s linear infinite;
+}
+.menu-wave-2 {
+  color: #ff3ca0;
+  animation: menu-wave 12s linear infinite reverse;
+}
+.menu-wave-3 {
+  color: #5b3a86;
+  animation: menu-wave 15s linear infinite;
+}
+@keyframes menu-wave {
+  0% {
+    opacity: 0.35;
+    transform: rotate(0deg) scale(0.94);
+  }
+  50% {
+    opacity: 0.9;
+    transform: rotate(180deg) scale(1.05);
+  }
+  100% {
+    opacity: 0.35;
+    transform: rotate(360deg) scale(0.94);
+  }
+}
+.menu-eq {
+  position: absolute;
+  left: 50%;
+  bottom: 86px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 6px;
+  width: 480px;
+  height: 80px;
+  transform: translateX(-50%);
+  opacity: 0.8;
+  pointer-events: none;
+}
+.menu-eq-bar {
+  width: 6px;
+  transform-origin: bottom;
+  animation: menu-eq 1.2s steps(4, end) infinite alternate;
+}
+@keyframes menu-eq {
+  from {
+    transform: scaleY(0.35);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
 /* Three stepped bands, never a smooth gradient: the same grain as the art. */
 .menu-keyart-vignette {
   position: absolute;
@@ -594,7 +657,6 @@ body {
   overflow: hidden;
   padding: 0;
   background: transparent;
-  cursor: pointer;
 }
 /* The logo on a gig poster taped to the club's wall: the title screen's one piece of paper. */
 .title-poster {
@@ -734,25 +796,47 @@ body {
 .boot-repair[hidden] {
   display: none;
 }
-/* The prompt stays readable: its arrow alone blinks, and stands still when motion is reduced. */
-.title-prompt {
+/* « Entrer »: the title is watched as long as the player wants, then this button opens it. */
+.title-enter {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   margin: 0;
-  padding: 10px 16px;
-  font-size: var(--text-item);
-  line-height: 1.4;
-  color: #fff;
-  white-space: nowrap;
-  background: rgba(12, 6, 20, 0.84);
-  border: 1px solid #3a3a5c;
+  padding: 12px 20px;
+  font:
+    var(--text-item) / 1.4 'Press Start 2P',
+    monospace;
+  color: #11111f;
+  appearance: none;
+  background: #f0c94a;
+  border: 2px solid #fff;
   border-radius: 4px;
-  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.45);
+  box-shadow:
+    inset 0 -3px 0 #c4561c,
+    0 0 0 2px #000,
+    0 0 18px rgba(240, 201, 74, 0.3);
+  cursor: pointer;
+  animation: title-enter-glow 2.4s steps(2, end) infinite;
 }
-.title-prompt-arrow {
-  color: #f0c94a;
+.title-enter-label {
+  font-size: var(--text-item);
+}
+.title-enter-arrow {
+  color: #c4561c;
   animation: title-cue 1.4s steps(2, end) infinite;
+}
+.title-enter-hint {
+  font-size: var(--text-tiny);
+  color: #4a2a08;
+  opacity: 0.8;
+}
+@keyframes title-enter-glow {
+  50% {
+    box-shadow:
+      inset 0 -3px 0 #c4561c,
+      0 0 0 2px #000,
+      0 0 26px rgba(240, 201, 74, 0.55);
+  }
 }
 /* The simplified mode, told under the prompt (title-screen.ts): still and muted, never blinking. */
 .title-notice {
@@ -819,9 +903,12 @@ body {
     bottom: 12px;
     gap: 6px;
   }
-  .title-prompt {
-    padding: 6px 10px;
+  .title-enter {
+    padding: 8px 14px;
     font-size: 10px;
+  }
+  .title-enter-hint {
+    font-size: 6px;
   }
   .title-notice {
     padding: 4px 8px;
@@ -1500,7 +1587,8 @@ body {
 /* The player's comfort options on the menus' root (src/app/comfort.ts, docs/flashs.md §4), the
    system's « reduce motion » choosing them until the player does: calm, nothing blinks or glows on
    and off; still, nothing turns. */
-.calm .title-prompt-arrow,
+.calm .title-enter,
+.calm .title-enter-arrow,
 .calm .select-tile.selected {
   animation: none;
 }
@@ -1509,6 +1597,10 @@ body {
 }
 .still .menu-keyart-stage {
   transition: none;
+}
+.still .menu-wave,
+.still .menu-eq-bar {
+  animation: none;
 }
 .rotate-hint {
   display: none;
