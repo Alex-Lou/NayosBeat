@@ -65,6 +65,35 @@ export async function encodeIndexedPng(
   ]);
 }
 
+/**
+ * Encodes `data` (RGBA bytes, row by row) as an 8-bit truecolor PNG (color type 6), unfiltered:
+ * the format a stage that keeps every color of its illustration uses (Sakura).
+ */
+export async function encodeTruecolorPng(
+  width: number,
+  height: number,
+  data: Uint8ClampedArray | Uint8Array,
+): Promise<Uint8Array> {
+  if (data.length !== width * height * 4) throw new RangeError('data must be width * height * 4');
+  const raw = new Uint8Array((width * 4 + 1) * height);
+  for (let y = 0; y < height; y++) {
+    const row = y * (width * 4 + 1);
+    raw[row] = 0; // filter: none
+    raw.set(data.subarray(y * width * 4, (y + 1) * width * 4), row + 1);
+  }
+  const header = new Uint8Array(13);
+  const view = new DataView(header.buffer);
+  view.setUint32(0, width);
+  view.setUint32(4, height);
+  header.set([8, COLOR_TYPE_RGBA, 0, 0, 0], 8);
+  return concat([
+    new Uint8Array(SIGNATURE),
+    chunk('IHDR', header),
+    chunk('IDAT', await deflate(raw)),
+    chunk('IEND', new Uint8Array(0)),
+  ]);
+}
+
 function chunk(type: string, data: Uint8Array): Uint8Array {
   const typeAndData = concat([new TextEncoder().encode(type), data]);
   const out = new Uint8Array(12 + data.length);

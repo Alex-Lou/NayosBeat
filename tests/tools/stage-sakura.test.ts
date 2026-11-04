@@ -41,7 +41,7 @@ describe('the hand-drawn Sakura Arena (docs/art/decor-sakura.md)', { timeout: 60
     }
   });
 
-  it('keeps the layers contract: their sizes, an opaque far layer, whole alpha elsewhere', async () => {
+  it('keeps the layers contract: their sizes, an opaque far, a clear mid, a faded floor top', async () => {
     for (const layer of STAGE_LAYER_NAMES) {
       const image = await installed(layer);
       const { width, height } = stageRulesOf(layer);
@@ -52,11 +52,22 @@ describe('the hand-drawn Sakura Arena (docs/art/decor-sakura.md)', { timeout: 60
           alpha.every((value) => value === 255),
           layer,
         ).toBe(true);
-      } else {
+      } else if (layer === 'mid') {
+        // The middle band is gone; the layer stays only for the petals.
         expect(
-          alpha.every((value) => value === 0 || value === 255),
+          alpha.every((value) => value === 0),
           layer,
         ).toBe(true);
+      } else {
+        // The floor's top fades into the far layer; below the feather it is opaque.
+        const { width, height } = image;
+        for (let x = 0; x < width; x++) {
+          expect(alpha[x], `${layer} top`).toBe(0);
+          expect(alpha[12 * width + x], `${layer} below feather`).toBe(255);
+          for (let y = 12; y < height; y++) {
+            expect(alpha[y * width + x], `${layer} ${y}`).toBe(255);
+          }
+        }
       }
     }
   });
