@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { describe, expect, it } from 'vitest';
 import { STAGE_MAPS } from '../../src/art/stages';
 import { STAGE_COLORS } from '../../src/art/sakura/colors';
+import { STAGE_PROPS } from '../../src/art/sakura/props';
 import { STAGE_LAYER_NAMES } from '../../src/art/stage-layers';
 import { luminanceDelta, relativeLuminance } from '../../src/render/luminance';
 import { VEIL_DELTA } from '../../src/render/veils';
@@ -77,6 +78,22 @@ describe('the hand-drawn Sakura Arena (docs/art/decor-sakura.md)', { timeout: 60
         ).toBeLessThanOrEqual(VEIL_DELTA);
         expect(relativeLuminance(color)).toBeGreaterThanOrEqual(relativeLuminance(0x1b1b2f));
       }
+    }
+  });
+
+  it('animates the petals over the sanctuary', async () => {
+    const petals = STAGE_PROPS.find(({ name }) => name === 'petals');
+    expect(petals?.layer).toBe('mid');
+    expect(petals?.frames.filter((frame) => frame !== null).length).toBeGreaterThan(0);
+    expect(petals?.timeline.length).toBeGreaterThan(1);
+    const sheet = await decodeIndexedPng(
+      await readFile(new URL('../../src/art/sakura/props.png', import.meta.url)),
+    );
+    expect(sheet.width).toBeGreaterThan(0);
+    for (const frame of petals?.frames ?? []) {
+      if (!frame) continue;
+      expect(frame.sheetX + frame.width).toBeLessThanOrEqual(sheet.width);
+      expect(frame.sheetY + frame.height).toBeLessThanOrEqual(sheet.height);
     }
   });
 
