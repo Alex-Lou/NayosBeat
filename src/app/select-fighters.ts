@@ -2,7 +2,8 @@ import { artOf } from '../art';
 import { cellOf, type Atlas, type FighterArt } from '../art/types';
 import { TICK_RATE } from '../core/constants';
 import { ROSTER, type FighterId } from '../data/roster';
-import type { FighterLook, FrameCut, SelectFighter } from '../ui/fighter-select';
+import type { FighterLook, FrameCut } from '../ui/fighter-look';
+import type { SelectFighter } from '../ui/fighter-select';
 
 /** Tiles of the character select screen: two rows of five, room for the roster to come. */
 export const SELECT_SLOTS = 10;
