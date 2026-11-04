@@ -2,6 +2,7 @@ import type { StageVariant } from './stage-layers';
 import { STAGE_VARIANTS as BAL } from './bal';
 import { STAGE_VARIANTS as CLUB } from './club';
 import { STAGE_VARIANTS as DOCK } from './dock';
+import { STAGE_VARIANTS as DOJO } from './dojo';
 import { STAGE_VARIANTS as DUNES } from './dunes';
 import { STAGE_VARIANTS as FORET } from './foret';
 import { STAGE_VARIANTS as GYM } from './gym';
@@ -143,6 +144,14 @@ export const STAGE_MAPS: readonly StageMap[] = (
       sheltered: false,
       ground: 'hard',
       variants: LUCIOLES,
+    },
+    {
+      name: 'dojo',
+      title: 'The Dojo',
+      description: "La salle d'entraînement, sous les lanternes",
+      sheltered: true,
+      ground: 'hard',
+      variants: DOJO,
     },
   ] satisfies StageMap[]
 ).filter(({ variants }) => variants.length > 0);
