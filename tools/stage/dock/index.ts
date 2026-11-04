@@ -71,11 +71,12 @@ export function drawDock(): CodeStage {
   const far = sizeOf('far');
   const mid = sizeOf('mid');
   const floor = sizeOf('floor');
-  const props = MID_ANIMATIONS.map(({ name, rect, frames, timeline }): CodeProp => ({
+  const props = MID_ANIMATIONS.map(({ name, rect, frames, timeline, drift }): CodeProp => ({
     name,
     layer: 'mid',
     rect,
     timeline,
+    ...(drift && { drift }),
     frames: Array.from({ length: frames }, (_, frame) => {
       const canvas = drawMid(mid.width, mid.height, (other) => (other === name ? frame : 0), rect);
       return imageOf(canvas.crop(rect.x, rect.y, rect.width, rect.height), PALETTE);

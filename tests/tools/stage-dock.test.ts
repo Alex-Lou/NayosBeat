@@ -16,6 +16,8 @@ const SHAKEN = [
   'shutter0',
   'shutter1',
   'ripple',
+  'puddle3',
+  'can',
   'rust',
   'bouncer0',
   'bouncer1',
