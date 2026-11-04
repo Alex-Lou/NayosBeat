@@ -1,6 +1,6 @@
 /**
  * The forest's atmospheres (docs/art/decor-forest-dance.md §4): the same clearing, each in its own
- * palette, slot for slot with its night's (palette.ts). Under the open sky: the rain falls on it
+ * palette, slot for slot with its dawn's (palette.ts). Under the open sky: the rain falls on it
  * all (src/render/stage-rain.ts); its fog has two banks drifting (index.ts).
  */
 
@@ -14,7 +14,7 @@ import { CLOUD, PALETTE, SKY, SUNGLOW, TREE_FAR, TREE_MID, TREE_NEAR } from './p
 const LIT: ReadonlySet<number> = new Set([...SUNGLOW]);
 
 /**
- * A fine rain at night: the sky a grey lid, the earth dark and wet, the leaves shining; the glow
+ * A fine rain at dawn: the sky a grey lid, the earth dark and wet, the leaves shining; the glow
  * of the sunrise dimmer behind the trees.
  */
 function rain(): Rgba[] {
@@ -33,13 +33,13 @@ function rain(): Rgba[] {
     '#463e42',
     '#484244',
   ]);
-  repaint(palette, CLOUD, ['#22303e', '#293846', '#30404c']);
+  repaint(palette, CLOUD, ['#2a2a3c', '#323244', '#3a3a4a']);
   repaint(palette, SUNGLOW, ['#3a3840', '#444046', '#4c4646']);
   return palette;
 }
 
 /**
- * The night mist (docs/art/brume.md): the far trees gone, the clearing a little greyer, the
+ * The morning mist (docs/art/brume.md): the far trees gone, the clearing a little greyer, the
  * dawn's glow pale in it. Banks drift between the trunks and low along the path (index.ts).
  */
 function fog(): Rgba[] {
@@ -54,7 +54,7 @@ function fog(): Rgba[] {
 
 /** The atmospheres the forest offers, the base one first: the dawn (palette.ts as it is). */
 export const FORET_ATMOSPHERES: readonly StageAtmosphere[] = [
-  { atmosphere: { moment: 'midnight', weather: 'clear' }, palette: PALETTE },
-  { atmosphere: { moment: 'midnight', weather: 'rain' }, palette: rain() },
-  { atmosphere: { moment: 'midnight', weather: 'fog' }, palette: fog() },
+  { atmosphere: { moment: 'dawn', weather: 'clear' }, palette: PALETTE },
+  { atmosphere: { moment: 'dawn', weather: 'rain' }, palette: rain() },
+  { atmosphere: { moment: 'dawn', weather: 'fog' }, palette: fog() },
 ];
