@@ -60,6 +60,12 @@ export interface CodeMap {
   readonly name: string;
   readonly draw: () => CodeStage;
   readonly atmospheres: readonly StageAtmosphere[];
+  /**
+   * Its layers are truecolor PNGs under art-src/<name>/ (not an indexed palette): the stage keeps
+   * every color of the illustration, and `npm run stages` copies them as they are; its large
+   * colors are measured on a coarse palette (tools/sprites/stage-drawn.ts `writeRgbaStage`).
+   */
+  readonly rgba?: boolean;
 }
 
 /** A canvas as an image in `palette`. */

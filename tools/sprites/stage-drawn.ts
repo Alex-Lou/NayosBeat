@@ -7,6 +7,8 @@
  * them, and the flash measures taken over the darkest (docs/flashs.md §3). A stage's other
  * atmospheres (the same stage, another palette) go in a folder each, src/art/<stage>/<moment>-
  * <weather>/, the code's layers recolored: a layer drawn by hand is the base atmosphere's only.
+ * A stage marked `rgba` keeps truecolor PNGs under art-src/<stage>/: `writeRgbaStage` copies them
+ * as they are (Sakura), so the illustration's colors are not quantized.
  */
 
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
@@ -27,6 +29,8 @@ import { checkDrawn, DRAWN_ROOT, DrawingProblems, listFolder, type DrawnRules } 
 import { decodeIndexedPng, encodeIndexedPng, type IndexedImage, type Rgba } from './png.ts';
 import { format, resolveConfig } from 'prettier';
 import { liftedLayers, packProps, propsModule } from './stage-props.ts';
+import { quantizeRgba } from './quantize.ts';
+import { readTruecolor } from './truecolor.ts';
 
 /** Where the game finds a stage's images: src/art/<stage>/. */
 function artOf(name: string): URL {
@@ -218,11 +222,59 @@ export async function writeStage(map: CodeMap, drawn: DrawnStage = {}): Promise<
 }
 
 /**
+ * Installs a stage whose layers are truecolor PNGs (art-src/<name>/): copies them as they are, so
+ * the game keeps every color of the illustration, lays the code's overlay props over them, and
+ * writes its large colors from a coarse palette (the flash measures' regions).
+ */
+async function writeRgbaStage(map: CodeMap): Promise<StageWritten> {
+  const folder = new URL(`../../art-src/${map.name}/`, import.meta.url);
+  const art = artOf(map.name);
+  const code = map.draw();
+  await mkdir(art, { recursive: true });
+  for (const layer of STAGE_LAYER_NAMES) {
+    await writeFile(new URL(`${layer}.png`, art), await readFile(new URL(`${layer}.png`, folder)));
+  }
+  const packed = packProps(code.props, code.layers);
+  if (packed.sheet) await writeImage(new URL('props.png', art), packed.sheet);
+  else await rm(new URL('props.png', art), { recursive: true, force: true });
+  const module = new URL('props.ts', art);
+  await writeFile(module, await propsModule(packed.props, module));
+  const layers: IndexedImage[] = [];
+  for (const layer of STAGE_LAYER_NAMES) {
+    const image = await readTruecolor(new URL(`${layer}.png`, folder));
+    const { palette, slots } = quantizeRgba(image.data, 64);
+    layers.push({
+      width: image.width,
+      height: image.height,
+      pixels: slots,
+      colors: palette.map(({ r, g, b }) => (r << 16) | (g << 8) | b),
+      alpha: palette.map(({ a }) => a),
+    });
+  }
+  const base = atmosphereName(map.atmospheres[0]?.atmosphere ?? BASE_ATMOSPHERE);
+  const large = { [base]: largeColorsOf(layers) };
+  const colors = new URL('colors.ts', art);
+  await writeFile(colors, await colorsModule(large, colors));
+  return {
+    drawn: STAGE_LAYER_NAMES,
+    props: packed.props.length,
+    dropped: packed.dropped,
+  };
+}
+
+/**
  * Writes every stage of `maps` (`writeStage`), the street (STAGE_NAME) with its layers `drawn` by
  * hand, and says on the console what each holds.
  */
 export async function writeStages(maps: readonly CodeMap[], drawn: DrawnStage): Promise<void> {
   for (const map of maps) {
+    // A truecolor stage (Sakura) keeps its PNGs as they are; the others are indexed.
+    if (map.rgba) {
+      const written = await writeRgbaStage(map);
+      console.log(`stage ${map.name}: drawn by hand (rgba), ${written.props} props`);
+      for (const line of written.dropped) console.warn(`stage ${map.name}, prop left out: ${line}`);
+      continue;
+    }
     // The street's layers are passed in (checked once); any other stage may have its own, under
     // art-src/<its name>/.
     const handDrawn = map.name === STAGE_NAME ? drawn : await loadStageDrawnFrom(map.name);

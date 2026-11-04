@@ -137,7 +137,7 @@ Un seul budget par combat, pour les deux joueurs. `FightScene` le crée, le fait
 | Compteur « xN » (pop / calme, par chiffre en plus du « x ») | léger 36 / 31, lourd 57 / 36, KO 110 / 42 | idem |
 | Tampon le plus large (« DÉGAGEMENT ! ») : frappé à ×1,6 / calme | 1 792 / 410 | idem |
 | CONTRE, PUNITION (comptés comme le plus large) : arrivée à ×1,09 au pic / calme ; leur cadre | 830 / 410 ; 0 | idem |
-| Effets signature (`signature-fx.ts`, à taille 1, × taille²) : anneau du Vinyle, ondes du disque (énergie / platine), Pied fendu, anneau au sol, montée de l'Uppercut | 325, 31 / 66, 210, 450, 140 | — |
+| Effets signature (`signature-fx.ts`, à taille 1, × taille²) : anneau du Vinyle, ondes du disque (énergie / platine), Pied fendu, anneau au sol, montée de l'Uppercut | 326, 31 / 66, 210, 452, 140 | — |
 | Effets signature : montée et drop de la Mégabasse, éclat du Boost, dash, arc d'un coup lourd ; calmes ou refusés | 70, 430, 820, 44, 95 ; 0 | — |
 | Flaques de lumière, ombres, lueur sur l'adversaire, rémanences des spéciaux (sous ΔL 0,08, calmes 0,05) | 0 | — |
 | Lumière vivante sur les deux combattants (§5), par tenue, demandée à l'allumage | 400 (2ᵉ tenue 1 130) | 490 (2ᵉ tenue 715) |

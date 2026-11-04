@@ -1,76 +1,70 @@
 /**
- * The floor (docs/art/decor-dock.md §2.3): the yard where the trucks back in, in bands that read
- * at a glance. The asphalt lot the fighters stand on, dark and gritty, its faded yellow bay lines
- * one every 64 world pixels (they measure the distances, as the street's slabs do), tar seams over
- * its cracks, a manhole cover, oil, tire marks; then, nearest, the concrete curb and a strip of
- * sidewalk. Both ends darken under the walls' shade. Flat tones, no band of dithering the whole
- * width (it would shimmer when the screen shakes). Image pixels (STAGE_SCALE).
+ * The floor (docs/art/decor-dock.md §2.3): the yard where the trucks back in, in clean bands and
+ * perspective markings (docs/art/proprete.md). Flat tones, no dithering or single-pixel grain.
  */
 
-import { Canvas, at, tone } from '../kit/canvas.ts';
+import { Canvas, at } from '../kit/canvas.ts';
 import { noise, streamOf, type Random } from '../kit/random.ts';
-import { ASPHALT, CONCRETE, HAZARD, STEEL, WET, WET_ASPHALT } from './palette.ts';
+import { ASPHALT, CONCRETE, CONCRETE_VIOLET, HAZARD, STEEL, WET, WET_ASPHALT } from './palette.ts';
 
 const SCALE = 2;
-/** A bay's width: a yellow line between two, about the reach of a close fight. */
 const BAY = 64 * SCALE;
-/** How far from each end the ground darkens (24 world pixels). */
 const CORNER = 24 * SCALE;
-/** The lot's rows, then the gap under the curb's lip, the curb's top, the sidewalk. */
 const ROWS = { lot: 62, curb: 64, sidewalk: 68 } as const;
-/** The lane's edge line, a little in front of the far edge. */
 const LINE = { y: 6, height: 3 } as const;
 
-function cornerOf(width: number, x: number): number {
+function cornerStep(width: number, x: number): number {
   const end = Math.min(x, width - 1 - x);
-  return end < CORNER ? -1.6 * (1 - end / CORNER) ** 1.5 : 0;
+  return end < CORNER / 2 ? -1 : 0;
 }
 
-/**
- * Where the rain pools: long shallow puddles in the dips. Drawn in WET and WET_ASPHALT, which only
- * the rain's palette shows (palette.ts): dry, they are the ground itself.
- */
 export function wetAt(seed: number, x: number, y: number): boolean {
-  return noise(seed + 9, x, y * 3, 90) > 0.64;
+  return noise(seed + 9, Math.floor(x / 8), Math.floor(y / 4), 12) > 0.63;
 }
 
-/** The asphalt lot: its grain, its oil, its grit catching the lamps. */
 function drawLot(canvas: Canvas, seed: number): void {
   const { width } = canvas;
   canvas.paint(0, 0, width, ROWS.lot, (x, y) => {
-    if (noise(seed + 3, x, y, 2) > 0.86) return at(ASPHALT, 3);
-    const grain = (noise(seed, x, y * 2, 30) - 0.5) * 0.6;
-    const oil = noise(seed + 2, x, y * 3, 70) > 0.72 ? -0.7 : 0;
-    const level = 1.7 + grain + oil + cornerOf(width, x) - (y / ROWS.lot) * 0.4;
-    return tone(wetAt(seed, x, y) ? WET_ASPHALT : ASPHALT, level, x, y);
+    const corner = cornerStep(width, x);
+    const oil = noise(seed + 2, Math.floor(x / 10), Math.floor(y / 5), 8) > 0.75 ? -1 : 0;
+    const base = y < 18 ? 2 : y < 46 ? 1 : 1;
+    const step = Math.max(0, Math.min(ASPHALT.length - 1, base + oil + corner));
+    const ramp = wetAt(seed, x, y) ? WET_ASPHALT : ASPHALT;
+    return at(ramp, step);
   });
 }
 
-/** Paint worn through where the wheels go: a mask of what is left. */
 function paintLeft(seed: number, x: number, y: number): boolean {
-  return noise(seed, x, y, 14) * 0.8 + noise(seed + 1, x, y, 3) * 0.2 > 0.4;
+  return noise(seed, Math.floor(x / 6), Math.floor(y / 4), 4) > 0.34;
 }
 
-/** The yellow lines: the lane's edge along the yard, a bay line every BAY across it. */
 function drawLines(canvas: Canvas, seed: number): void {
+  const center = canvas.width / 2;
   canvas.paint(0, LINE.y, canvas.width, LINE.height, (x, y) =>
     paintLeft(seed, x, y) ? at(HAZARD, y === LINE.y ? 1 : 0) : undefined,
   );
   for (let x0 = BAY / 2; x0 < canvas.width; x0 += BAY) {
-    canvas.paint(x0 - 1, LINE.y + LINE.height, 3, ROWS.lot - LINE.y - LINE.height - 2, (x, y) =>
-      paintLeft(seed + 4, x, y) ? at(HAZARD, x === x0 - 1 ? 1 : 0) : undefined,
-    );
+    const startY = LINE.y + LINE.height;
+    const endY = ROWS.lot - 3;
+    for (let y = startY; y < endY; y++) {
+      if (!paintLeft(seed + 4, x0, y)) continue;
+      const dy = y - startY;
+      const slant = Math.round(((x0 - center) * dy) / 1400);
+      const lx = x0 + slant;
+      canvas.set(lx - 1, y, at(HAZARD, 1));
+      canvas.set(lx, y, at(HAZARD, 0));
+      canvas.set(lx + 1, y, at(HAZARD, 0));
+    }
   }
 }
 
-/** The tar poured over the cracks: thin black snakes. */
 function drawSeams(canvas: Canvas, random: Random): void {
-  for (let seam = 0; seam < 14; seam++) {
-    let x = random.int(8, canvas.width - 8);
-    let y = random.int(10, ROWS.lot - 6);
-    for (let step = 0; step < random.int(6, 12); step++) {
-      const nx = x + random.int(3, 8) * (random.chance(0.5) ? 1 : -1);
-      const ny = Math.max(10, Math.min(y + random.int(-2, 3), ROWS.lot - 4));
+  for (let seam = 0; seam < 10; seam++) {
+    let x = random.int(16, canvas.width - 16);
+    let y = random.int(12, ROWS.lot - 8);
+    for (let step = 0; step < random.int(4, 8); step++) {
+      const nx = x + random.int(6, 14) * (random.chance(0.5) ? 1 : -1);
+      const ny = Math.max(10, Math.min(y + random.int(-2, 4), ROWS.lot - 4));
       canvas.line(x, y, nx, ny, at(ASPHALT, 0), 2);
       x = nx;
       y = ny;
@@ -78,66 +72,80 @@ function drawSeams(canvas: Canvas, random: Random): void {
   }
 }
 
-/** A manhole cover: its rim catching the lamps, its cast grid. */
 function drawManhole(canvas: Canvas, cx: number, cy: number): void {
-  canvas.paint(cx - 20, cy - 7, 40, 14, (x, y) => {
-    const d = Math.hypot((x + 0.5 - cx) / 20, (y + 0.5 - cy) / 7);
-    if (d > 1) return undefined;
-    if (d > 0.82) return at(STEEL, y < cy ? 3 : 1);
-    return at(STEEL, (x + y * 3) % 6 < 2 ? 0 : 2);
-  });
+  canvas.ellipse(cx - 21, cy - 7, 42, 15, at(ASPHALT, 0));
+  canvas.ellipse(cx - 20, cy - 7, 40, 14, at(STEEL, 2));
+  canvas.ellipse(cx - 17, cy - 5, 34, 10, at(STEEL, 1));
+  canvas.hline(cx - 14, cy - 6, 28, at(STEEL, 4));
+  for (let row = -2; row <= 2; row += 2) {
+    canvas.hline(cx - 12, cy + row, 24, at(STEEL, 2));
+  }
 }
 
-/**
- * The curb nearest the camera and the strip of sidewalk past it: the gap under the curb's lip in
- * shadow, its top lit, then slabs with their joints.
- */
 function drawCurb(canvas: Canvas, seed: number): void {
   const { width, height } = canvas;
+  const center = width / 2;
   canvas.paint(0, ROWS.lot, width, height - ROWS.lot, (x, y) => {
-    const corner = cornerOf(width, x);
+    const corner = cornerStep(width, x);
     if (y < ROWS.curb) return at(ASPHALT, 0);
-    if (y === ROWS.curb) return at(CONCRETE, 5);
+    if (y === ROWS.curb) return at(CONCRETE, Math.max(2, 5 + corner));
+    const dy = y - ROWS.curb;
+    const perspX = x - Math.round(((x - center) * dy) / 900);
+    const along = ((perspX % BAY) + BAY) % BAY;
     if (y < ROWS.sidewalk) {
-      const block = x % BAY === 0 ? -1.4 : 0;
-      return tone(CONCRETE, 3.6 + block + corner, x, y);
+      const joint = along < 2 ? -2 : along === 2 ? 1 : 0;
+      const step = Math.max(1, Math.min(CONCRETE.length - 1, 3 + joint + corner));
+      return at(CONCRETE, step);
     }
     if (y === ROWS.sidewalk) return at(CONCRETE, 1);
-    const along = x % BAY;
-    const joint = along === 0 || along === 1 ? -2 : along === 2 ? 0.8 : 0;
-    const level = 2.2 + joint + corner + (noise(seed, x, y, 20) - 0.5) * 0.5;
-    return tone(wetAt(seed, x, y) ? WET : CONCRETE, level, x, y);
+    const joint = along < 2 ? -1 : along === 2 ? 1 : 0;
+    const slab = Math.floor(perspX / BAY) % 2 === 0 ? 2 : 3;
+    const step = Math.max(1, Math.min(CONCRETE.length - 1, slab + joint + corner));
+    return at(wetAt(seed, x, y) ? WET : CONCRETE, step);
   });
 }
 
-/** The drain grate by the curb: a steel frame, its slots dark. */
-function drawGrate(canvas: Canvas, x: number, y: number): void {
-  canvas.fill(x, y, 40, 10, at(STEEL, 2));
-  canvas.hline(x, y, 40, at(STEEL, 4));
-  for (let px = x + 3; px < x + 38; px += 4) canvas.fill(px, y + 3, 2, 5, at(ASPHALT, 0));
-}
-
-/** Tire marks curving in from the gate, the rubber darker on the asphalt. */
-function drawTireMarks(canvas: Canvas): void {
-  for (const [from, to, y0] of [
-    [120, 700, 22],
-    [1300, 1820, 30],
-  ] as const) {
-    for (let x = from; x < to; x++) {
-      const t = (x - from) / (to - from);
-      const y = Math.round(y0 + Math.sin(t * Math.PI) * 8);
-      if (noise(x, x, y, 6) > 0.35) canvas.set(x, y, at(ASPHALT, 0));
-      if (noise(x + 3, x, y, 6) > 0.45) canvas.set(x, y + 14, at(ASPHALT, 0));
+function drawReflections(canvas: Canvas): void {
+  for (const x0 of [460, 1095, 1560]) {
+    for (let y = 10; y < 34; y += 3) {
+      const half = Math.round(12 - (y - 10) * 0.35);
+      if (half < 2) continue;
+      canvas.hline(x0 - half, y, half * 2, at(CONCRETE_VIOLET, y < 18 ? 2 : 1));
     }
   }
 }
 
-/** The floor, `width` × `height` image pixels, from the dock's seed. */
+function drawGrate(canvas: Canvas, x: number, y: number): void {
+  canvas.fill(x - 1, y - 1, 42, 11, at(ASPHALT, 0));
+  canvas.fill(x, y, 40, 10, at(STEEL, 2));
+  canvas.hline(x, y, 40, at(STEEL, 4));
+  for (let px = x + 3; px < x + 38; px += 5) {
+    canvas.fill(px, y + 3, 3, 5, at(ASPHALT, 0));
+  }
+}
+
+function drawTireMarks(canvas: Canvas): void {
+  for (const [from, to, y0] of [
+    [140, 680, 22],
+    [1300, 1800, 30],
+  ] as const) {
+    for (let x = from; x < to; x++) {
+      const t = (x - from) / (to - from);
+      const y = Math.round(y0 + Math.sin(t * Math.PI) * 8);
+      if (Math.floor(x / 10) % 5 !== 0) {
+        canvas.fill(x, y, 1, 2, at(ASPHALT, 0));
+        canvas.fill(x, y + 14, 1, 2, at(ASPHALT, 0));
+      }
+    }
+  }
+}
+
 export function drawFloor(width: number, height: number, seed: number): Canvas {
   const canvas = new Canvas(width, height);
   drawLot(canvas, seed + 51);
   drawTireMarks(canvas);
   drawSeams(canvas, streamOf(seed, 'floor'));
+  drawReflections(canvas);
   drawLines(canvas, seed + 53);
   drawManhole(canvas, width / 2 + 210, 34);
   drawCurb(canvas, seed + 57);

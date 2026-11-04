@@ -117,6 +117,31 @@ export class Canvas {
     });
   }
 
+  /** A filled polygon (even-odd), its points in order. */
+  polygon(points: readonly (readonly [number, number])[], slot: number): void {
+    const xs = points.map(([x]) => x);
+    const ys = points.map(([, y]) => y);
+    const left = Math.max(this.clip.left, Math.floor(Math.min(...xs)));
+    const right = Math.min(this.clip.right, Math.ceil(Math.max(...xs)) + 1);
+    const top = Math.max(this.clip.top, Math.floor(Math.min(...ys)));
+    const bottom = Math.min(this.clip.bottom, Math.ceil(Math.max(...ys)) + 1);
+    for (let py = top; py < bottom; py++) {
+      const cy = py + 0.5;
+      const crossings: number[] = [];
+      points.forEach(([ax, ay], index) => {
+        const [bx, by] = points[(index + 1) % points.length] ?? [ax, ay];
+        if (ay <= cy === by <= cy) return;
+        crossings.push(ax + ((cy - ay) / (by - ay)) * (bx - ax));
+      });
+      crossings.sort((a, b) => a - b);
+      for (let i = 0; i + 1 < crossings.length; i += 2) {
+        const from = Math.max(left, Math.round(crossings[i] ?? 0));
+        const to = Math.min(right, Math.round(crossings[i + 1] ?? 0));
+        for (let px = from; px < to; px++) this.pixels[py * this.width + px] = slot;
+      }
+    }
+  }
+
   /** Copies the opaque pixels of `other` with its top left corner at x, y. */
   draw(other: Canvas, x: number, y: number): void {
     for (let py = 0; py < other.height; py++) {
