@@ -1,12 +1,21 @@
 /**
- * The giant signs seen from behind (docs/art/decor-rooftop.md §2.2), in clean pixel art and 3D
- * channel-letter depth (docs/art/proprete.md): 3D extruded steel letter cans on a frame, their
- * faces turned to the street below, their neon light spilling around the front rims.
+ * The giant signs seen from behind (docs/art/decor-rooftop.md §2.2), in high-detail pixel art and
+ * 3D channel-letter depth (docs/art/proprete.md): deep extruded steel letter cans on a frame,
+ * horizontal mounting rails, transformer boots, and multi-step neon halos.
  */
 
-import { Canvas, Mask, at } from '../kit/canvas.ts';
+import { Canvas, Mask, at, dithered } from '../kit/canvas.ts';
 import { HAN_SIZE, spellHan } from '../kit/font.ts';
 import { STEEL } from './palette.ts';
+
+function hdTone(ramp: readonly number[], level: number, x: number, y: number): number {
+  const top = ramp.length - 1;
+  const clamped = Math.min(Math.max(level, 0), top);
+  const base = Math.floor(clamped);
+  const fraction = clamped - base;
+  const step = dithered(fraction, x >> 1, y) ? 1 : 0;
+  return ramp[Math.min(base + step, top)] ?? 0;
+}
 
 export function signLetters(
   canvas: Canvas,
@@ -71,7 +80,8 @@ function drawCleanHalo(
     for (let x = left; x < right; x++) {
       const d = distance[y * width + x] ?? Infinity;
       if (d === 0 || d > reach) continue;
-      canvas.set(x, y, at(glow, d <= reach * 0.48 ? 1 : 0));
+      const t = 1 - d / reach;
+      canvas.set(x, y, hdTone(glow, t * 1.45, x, y));
     }
   }
 }
@@ -86,15 +96,20 @@ export function drawSignBack(
   vertical = false,
 ): Mask {
   const letters = signLetters(canvas, text, x, y, scale, vertical);
-  drawCleanHalo(canvas, letters, glow, scale * 1.15);
+  drawCleanHalo(canvas, letters, glow, scale * 1.25);
   const { left, top, right, bottom } = canvas.clip;
-  const extX = vertical ? -3 : 3;
-  const extY = 2;
+  const extX = vertical ? -5 : 5;
+  const extY = 3;
   for (let py = top; py < bottom; py++) {
     for (let px = left; px < right; px++) {
       if (letters.has(px, py)) continue;
-      if (letters.has(px - extX, py - extY) || letters.has(px - Math.sign(extX) * 2, py - 1)) {
-        canvas.set(px, py, at(STEEL, 0));
+      for (let step = 1; step <= Math.abs(extX); step++) {
+        const sx = px - Math.sign(extX) * step;
+        const sy = py - Math.round((step / Math.abs(extX)) * extY);
+        if (letters.has(sx, sy)) {
+          canvas.set(px, py, at(STEEL, step === Math.abs(extX) ? 2 : py % 6 === 0 ? 2 : 0));
+          break;
+        }
       }
     }
   }
@@ -108,26 +123,36 @@ export function drawSignBack(
         !letters.has(px, py + 1);
       if (rim) {
         const bright = !letters.has(px, py - 1) || !letters.has(px - 1, py);
-        canvas.set(px, py, at(glow, bright ? 3 : 2));
+        canvas.set(px, py, at(glow, bright ? 4 : 3));
         continue;
       }
-      const inner =
+      const rim2 =
         !letters.has(px - 2, py) ||
         !letters.has(px + 2, py) ||
         !letters.has(px, py - 2) ||
         !letters.has(px, py + 2);
+      if (rim2) {
+        canvas.set(px, py, at(glow, 2));
+        continue;
+      }
+      const inner =
+        !letters.has(px - 3, py) ||
+        !letters.has(px + 3, py) ||
+        !letters.has(px, py - 3) ||
+        !letters.has(px, py + 3);
       if (inner) {
-        canvas.set(px, py, at(STEEL, 3));
+        canvas.set(px, py, at(STEEL, 4));
         continue;
       }
       const seam = (px - x) % scale === 0 || (py - y) % scale === 0;
-      const bolt = (px - x) % scale === 3 && (py - y) % scale === 3;
+      const bolt = (px - x) % scale >= 3 && (px - x) % scale <= 4 && (py - y) % scale === 3;
       if (bolt) {
-        canvas.set(px, py, at(STEEL, 4));
+        canvas.set(px, py, at(STEEL, 5));
       } else if (seam) {
         canvas.set(px, py, at(STEEL, 0));
       } else {
-        canvas.set(px, py, at(STEEL, (py - y) % (scale * 2) < scale ? 2 : 1));
+        const grad = 1.4 + ((py - y) % (scale * 2)) / (scale * 1.4);
+        canvas.set(px, py, hdTone(STEEL, grad, px, py));
       }
     }
   }

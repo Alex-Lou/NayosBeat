@@ -1,10 +1,9 @@
 /**
  * The floor (docs/art/decor-dock.md §2.3): the yard where the trucks back in, blending seamlessly
- * into the middle layer's apron and asphalt (docs/art/proprete.md). Flat tones, organic top transition,
- * perspective bay markings and curb.
+ * into the middle layer's apron and asphalt in high-detail pixel art (docs/art/proprete.md).
  */
 
-import { Canvas, at } from '../kit/canvas.ts';
+import { Canvas, at, dithered } from '../kit/canvas.ts';
 import { noise, streamOf, type Random } from '../kit/random.ts';
 import {
   ASPHALT,
@@ -25,9 +24,18 @@ const CORNER = 24 * SCALE;
 const ROWS = { lot: 62, curb: 64, sidewalk: 68 } as const;
 const BAY_TOP = 12;
 
-function cornerStep(width: number, x: number): number {
+function hdTone(ramp: readonly number[], level: number, x: number, y: number): number {
+  const top = ramp.length - 1;
+  const clamped = Math.min(Math.max(level, 0), top);
+  const base = Math.floor(clamped);
+  const fraction = clamped - base;
+  const step = dithered(fraction, x >> 1, y) ? 1 : 0;
+  return ramp[Math.min(base + step, top)] ?? 0;
+}
+
+function cornerOf(width: number, x: number): number {
   const end = Math.min(x, width - 1 - x);
-  return end < CORNER / 2 ? -1 : 0;
+  return end < CORNER ? -1.4 * (1 - end / CORNER) ** 1.4 : 0;
 }
 
 export function wetAt(seed: number, x: number, y: number): boolean {
@@ -43,13 +51,13 @@ function drawLot(canvas: Canvas, seed: number): void {
   const { width } = canvas;
   canvas.paint(0, 0, width, ROWS.lot, (x, y) => {
     if (y < topEdgeAt(seed, x)) return 0;
-    const corner = cornerStep(width, x);
-    const oil = y > 10 && noise(seed + 2, Math.floor(x / 12), Math.floor(y / 6), 8) > 0.76 ? -1 : 0;
-    const patch =
-      y > 6 && y < 38 && noise(seed + 5, Math.floor(x / 18), Math.floor(y / 8), 6) > 0.78 ? 1 : 0;
-    const step = Math.max(0, Math.min(ASPHALT.length - 1, 1 + oil + patch + corner));
+    const corner = cornerOf(width, x);
+    const oil =
+      y > 10 && noise(seed + 2, Math.floor(x / 12), Math.floor(y / 6), 8) > 0.75 ? -0.7 : 0;
+    const grain = (noise(seed + 5, x >> 2, y >> 1, 10) - 0.5) * 0.55;
+    const level = 1.35 + grain + oil + corner - (y / ROWS.lot) * 0.35;
     const ramp = wetAt(seed, x, y) ? WET_ASPHALT : ASPHALT;
-    return at(ramp, step);
+    return hdTone(ramp, level, x, y);
   });
 }
 
@@ -108,22 +116,21 @@ function drawCurb(canvas: Canvas, seed: number): void {
   const { width, height } = canvas;
   const center = width / 2;
   canvas.paint(0, ROWS.lot, width, height - ROWS.lot, (x, y) => {
-    const corner = cornerStep(width, x);
+    const corner = cornerOf(width, x);
     if (y < ROWS.curb) return at(ASPHALT, 0);
-    if (y === ROWS.curb) return at(CONCRETE, Math.max(2, 5 + corner));
+    if (y === ROWS.curb) return at(CONCRETE, 6);
     const dy = y - ROWS.curb;
     const perspX = x - Math.round(((x - center) * dy) / 900);
     const along = ((perspX % BAY) + BAY) % BAY;
+    const wear = (noise(seed, x >> 2, y >> 1, 8) - 0.5) * 0.5;
     if (y < ROWS.sidewalk) {
-      const joint = along < 2 ? -2 : along === 2 ? 1 : 0;
-      const step = Math.max(1, Math.min(CONCRETE.length - 1, 3 + joint + corner));
-      return at(CONCRETE, step);
+      const joint = along < 2 ? -1.8 : along === 2 ? 0.9 : 0;
+      return hdTone(CONCRETE, 3.6 + joint + wear + corner, x, y);
     }
     if (y === ROWS.sidewalk) return at(CONCRETE, 1);
-    const joint = along < 2 ? -1 : along === 2 ? 1 : 0;
-    const slab = Math.floor(perspX / BAY) % 2 === 0 ? 2 : 3;
-    const step = Math.max(1, Math.min(CONCRETE.length - 1, slab + joint + corner));
-    return at(wetAt(seed, x, y) ? WET : CONCRETE, step);
+    const joint = along < 2 ? -1.6 : along === 2 ? 0.8 : 0;
+    const slab = Math.floor(perspX / BAY) % 2 === 0 ? 2.3 : 2.9;
+    return hdTone(wetAt(seed, x, y) ? WET : CONCRETE, slab + joint + wear + corner, x, y);
   });
 }
 
