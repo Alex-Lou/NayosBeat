@@ -393,8 +393,8 @@ export function drawPalletJack(canvas: Canvas, x: number, foot: number): void {
   canvas.line(x + 3, foot - 16, x - 3, foot - 36, at(STEEL, 3), 2);
   canvas.fill(x - 6, foot - 38, 7, 3, at(RUBBER, 1));
   const c1 = { x: x + 6, y: foot - 28, w: 38, h: 22 };
-  canvas.fill(c1.x - 4, c1.y + 2, 4, c1.h - 2, at(RUBBER, 0));
-  canvas.fill(c1.x, c1.y, c1.w, c1.h, at(RUBBER, 1));
+  canvas.fill(c1.x - 4, c1.y + 2, 4, c1.h - 2, at(STEEL, 0));
+  canvas.fill(c1.x, c1.y, c1.w, c1.h, at(STEEL, 1));
   canvas.hline(c1.x, c1.y, c1.w, at(STEEL, 3));
   canvas.vline(c1.x, c1.y, c1.h, at(STEEL, 3));
   canvas.vline(c1.x + c1.w - 1, c1.y, c1.h, at(STEEL, 2));
@@ -408,7 +408,7 @@ export function drawPalletJack(canvas: Canvas, x: number, foot: number): void {
     canvas.fill(cx, cy, 3, 3, at(STEEL, 4));
   }
   const c2 = { x: x + 10, y: c1.y - 16, w: 28, h: 16 };
-  canvas.fill(c2.x - 3, c2.y + 2, 3, c2.h - 2, at(RUBBER, 0));
+  canvas.fill(c2.x - 3, c2.y + 2, 3, c2.h - 2, at(STEEL, 0));
   canvas.fill(c2.x, c2.y, c2.w, c2.h, at(RUBBER, 2));
   canvas.hline(c2.x, c2.y, c2.w, at(STEEL, 4));
   canvas.fill(c2.x + 10, c2.y + 5, 8, 4, at(HAZARD, 1));
@@ -457,7 +457,7 @@ export function drawFlightCases(canvas: Canvas, x: number, foot: number): void {
     ],
     at(RUBBER, 0),
   );
-  canvas.fill(big.x, big.y, big.w, big.h, at(RUBBER, 1));
+  canvas.fill(big.x, big.y, big.w, big.h, at(STEEL, 1));
   canvas.hline(big.x, big.y, big.w, at(STEEL, 4));
   canvas.vline(big.x, big.y, big.h, at(STEEL, 3));
   canvas.vline(big.x + big.w - 1, big.y, big.h, at(STEEL, 2));
