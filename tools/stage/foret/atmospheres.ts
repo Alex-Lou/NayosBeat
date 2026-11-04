@@ -33,7 +33,7 @@ function rain(): Rgba[] {
     '#463e42',
     '#484244',
   ]);
-  repaint(palette, CLOUD, ['#2a2a3c', '#323244', '#3a3a4a']);
+  repaint(palette, CLOUD, ['#22303e', '#293846', '#30404c']);
   repaint(palette, SUNGLOW, ['#3a3840', '#444046', '#4c4646']);
   return palette;
 }

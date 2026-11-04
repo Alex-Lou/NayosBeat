@@ -68,13 +68,24 @@ export function stageRulesOf(layer: StageLayer): DrawnRules {
  * other files there (the Aseprite ones) are left alone.
  */
 export async function loadStageDrawn(root: URL = DRAWN_ROOT): Promise<DrawnStage> {
-  const folder = new URL(`${STAGE_NAME}/`, root);
+  return loadStageDrawnFrom(STAGE_NAME, root);
+}
+
+/**
+ * The layers of stage `stage` drawn by hand under `root` (art-src/<stage>/), checked. A stage with
+ * no folder there has none: its code's layers are used.
+ */
+export async function loadStageDrawnFrom(
+  stage: string,
+  root: URL = DRAWN_ROOT,
+): Promise<DrawnStage> {
+  const folder = new URL(`${stage}/`, root);
   const problems: string[] = [];
   const drawn: DrawnStage = {};
   const files = (await listFolder(folder)).filter((file) => file.endsWith('.png')).sort();
   for (const file of files) {
     const name = file.slice(0, -'.png'.length);
-    const label = `art-src/${STAGE_NAME}/${file}`;
+    const label = `art-src/${stage}/${file}`;
     if (!isStageLayer(name)) {
       problems.push(`${label}: no such layer (${STAGE_LAYER_NAMES.join(', ')})`);
       continue;
@@ -212,7 +223,10 @@ export async function writeStage(map: CodeMap, drawn: DrawnStage = {}): Promise<
  */
 export async function writeStages(maps: readonly CodeMap[], drawn: DrawnStage): Promise<void> {
   for (const map of maps) {
-    const written = await writeStage(map, map.name === STAGE_NAME ? drawn : {});
+    // The street's layers are passed in (checked once); any other stage may have its own, under
+    // art-src/<its name>/.
+    const handDrawn = map.name === STAGE_NAME ? drawn : await loadStageDrawnFrom(map.name);
+    const written = await writeStage(map, handDrawn);
     const by =
       written.drawn.length > 0
         ? `drawn by hand (${written.drawn.join(', ')}), the code's elsewhere`
