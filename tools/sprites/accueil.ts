@@ -178,27 +178,152 @@ function speakers(canvas: Canvas): void {
   }
 }
 
-function crowd(canvas: Canvas): void {
-  const people = new Canvas(WIDTH, HEIGHT);
+const CROWD_HEIGHT = 120;
+const CROWD_FRAMES = 8;
+const DJ_WIDTH = 160;
+const DJ_HEIGHT = 180;
+const DJ_FRAMES = 8;
+
+interface Dancer {
+  readonly x: number;
+  readonly y: number;
+  readonly radius: number;
+  readonly phase: number;
+  readonly style: number;
+  readonly phone: boolean;
+}
+
+function dancers(): Dancer[] {
   const random = new Random(41);
-  for (let person = 0; person < 30; person++) {
-    const cx = random.int(24, WIDTH - 24);
-    const headY = random.int(468, 502);
-    const radius = random.int(7, 12);
-    people.ellipse(cx - radius, headY - radius, radius * 2, radius * 2, slot('ink'));
-    people.ellipse(cx - radius - 6, headY + radius, radius * 2 + 12, 22, slot('ink'));
-    if (random.chance(0.3)) {
-      const armX = cx + (random.chance(0.5) ? -1 : 1) * (radius + 2);
-      people.fill(armX, headY - 26, 4, 26, slot('ink'));
-      people.fill(armX - 2, headY - 30, 8, 6, slot('ink'));
+  return Array.from({ length: 76 }, () => ({
+    x: random.int(6, WIDTH - 6),
+    y: random.int(10, 105),
+    radius: random.int(5, 11),
+    phase: random.next() * Math.PI * 2,
+    style: random.int(0, 2),
+    phone: random.chance(0.22),
+  }));
+}
+
+function crowdFrame(people: readonly Dancer[], frame: number): Canvas {
+  const canvas = new Canvas(WIDTH, CROWD_HEIGHT);
+  const time = (frame / CROWD_FRAMES) * Math.PI * 2;
+  for (const person of people) {
+    const bob = Math.round(Math.sin(person.phase + time) * 4);
+    const sway = Math.round(Math.cos(person.phase * 0.7 + time) * 3);
+    const cx = person.x + sway;
+    const cy = person.y + bob;
+    const { radius } = person;
+    canvas.ellipse(cx - radius, cy - radius, radius * 2, radius * 2, slot('ink'));
+    canvas.ellipse(cx - radius - 5, cy + radius, radius * 2 + 10, 32, slot('ink'));
+    const shoulder = cy + radius;
+    const lift = Math.round((Math.sin(person.phase + time * 1.6) + 1) * 9);
+    if (person.style === 0) {
+      canvas.fill(cx - radius - 4, shoulder, 4, 16, slot('ink'));
+      canvas.fill(cx + radius, shoulder, 4, 16, slot('ink'));
+    } else if (person.style === 1) {
+      canvas.line(
+        cx - radius + 2,
+        shoulder,
+        cx - radius - 10,
+        shoulder - 18 - lift,
+        slot('ink'),
+        4,
+      );
+      canvas.fill(cx - radius - 15, shoulder - 22 - lift, 6, 6, slot('ink'));
+      if (person.phone) canvas.fill(cx - radius - 14, shoulder - 26 - lift, 3, 4, slot('neonCyan'));
+    } else {
+      const left = shoulder - 20 - lift;
+      const right = shoulder - 16 - Math.round(lift * 0.7);
+      canvas.line(cx - radius + 2, shoulder, cx - radius - 9, left, slot('ink'), 4);
+      canvas.line(cx + radius - 2, shoulder, cx + radius + 9, right, slot('ink'), 4);
+      canvas.fill(cx - radius - 14, left - 4, 6, 6, slot('ink'));
+      canvas.fill(cx + radius + 5, right - 4, 6, 6, slot('ink'));
+      if (person.phone) canvas.fill(cx + radius + 6, right - 8, 3, 4, slot('neonCyan'));
     }
   }
-  // A rim light on the crowd's top edges only.
-  people.paint(0, 0, WIDTH, HEIGHT, (x, y) => {
-    if (people.get(x, y) !== slot('ink') || people.get(x, y - 1) !== 0) return undefined;
-    return slot(x > 760 ? 'neonCyan' : y > 470 ? 'sodium' : 'orange');
+  // A rim light on the crowd's top edges: warm on the left, cyan on the right.
+  canvas.paint(0, 0, WIDTH, CROWD_HEIGHT, (x, y) => {
+    if (canvas.get(x, y) !== slot('ink') || canvas.get(x, y - 1) !== 0) return undefined;
+    return slot(x > 700 ? 'neonCyan' : x < 170 ? 'orange' : 'sodium');
   });
-  canvas.draw(people, 0, 0);
+  return canvas;
+}
+
+function crowdSheet(): Canvas {
+  const people = dancers();
+  const sheet = new Canvas(WIDTH * CROWD_FRAMES, CROWD_HEIGHT);
+  for (let frame = 0; frame < CROWD_FRAMES; frame++) {
+    sheet.draw(crowdFrame(people, frame), frame * WIDTH, 0);
+  }
+  return sheet;
+}
+
+function djFrame(frame: number): Canvas {
+  const canvas = new Canvas(DJ_WIDTH, DJ_HEIGHT);
+  const time = (frame / DJ_FRAMES) * Math.PI * 2;
+  const bob = Math.round(Math.sin(time) * 2);
+  // The booth, its decks and its LEDs.
+  canvas.fill(6, 118, 148, 56, slot('speaker'));
+  canvas.fill(6, 118, 148, 4, slot('speakerEdge'));
+  canvas.fill(10, 126, 140, 2, slot('deep'));
+  for (const [deck, offset] of [
+    [26, 0],
+    [100, 1.2],
+  ] as const) {
+    const cx = deck + 16;
+    const cy = 136;
+    canvas.fill(deck, 126, 32, 20, slot('speakerEdge'));
+    canvas.ellipse(cx - 12, cy - 12, 24, 24, slot('ink'));
+    ring(canvas, cx, cy, 11, 2, slot('violetGlow'));
+    const angle = time + offset;
+    canvas.fill(
+      cx + Math.round(Math.cos(angle) * 6) - 1,
+      cy + Math.round(Math.sin(angle) * 6) - 1,
+      2,
+      2,
+      slot('orange'),
+    );
+  }
+  canvas.fill(66, 128, 28, 18, slot('speakerEdge'));
+  for (let fader = 0; fader < 3; fader++) {
+    canvas.fill(70 + fader * 8, 132, 3, 10, slot(fader === 1 ? 'cyan' : 'cream'));
+  }
+  for (let led = 0; led < 11; led++) {
+    const color = (led + frame) % 3 === 0 ? 'orange' : (led + frame) % 3 === 1 ? 'cyan' : 'magenta';
+    canvas.fill(12 + led * 13, 160, 4, 4, slot(color));
+  }
+  // The DJ: silhouette, headphones and one hand in the air.
+  const headX = 80;
+  const headY = 38 + bob;
+  canvas.ellipse(50, 52 + bob, 60, 66, slot('ink'));
+  canvas.ellipse(headX - 15, headY - 15, 30, 30, slot('ink'));
+  canvas.fill(headX - 18, headY + 1, 36, 3, slot('neonCyan'));
+  canvas.fill(headX - 20, headY - 9, 5, 10, slot('ink'));
+  canvas.fill(headX + 15, headY - 9, 5, 10, slot('ink'));
+  canvas.line(56, 70 + bob, 38, 120 + bob, slot('ink'), 7);
+  canvas.fill(34, 116 + bob, 8, 8, slot('ink'));
+  const raised = Math.sin(time) > 0;
+  if (raised) {
+    canvas.line(104, 70 + bob, 122, 32 + bob, slot('ink'), 7);
+    canvas.fill(118, 26 + bob, 8, 8, slot('ink'));
+  } else {
+    canvas.line(104, 70 + bob, 112, 116 + bob, slot('ink'), 7);
+    canvas.fill(108, 112 + bob, 8, 8, slot('ink'));
+  }
+  canvas.paint(0, 0, DJ_WIDTH, 118, (x, y) => {
+    if (canvas.get(x, y) !== slot('ink') || canvas.get(x, y - 1) !== 0) return undefined;
+    return slot(x < 70 ? 'orange' : 'neonCyan');
+  });
+  return canvas;
+}
+
+function djSheet(): Canvas {
+  const sheet = new Canvas(DJ_WIDTH * DJ_FRAMES, DJ_HEIGHT);
+  for (let frame = 0; frame < DJ_FRAMES; frame++) {
+    sheet.draw(djFrame(frame), frame * DJ_WIDTH, 0);
+  }
+  return sheet;
 }
 
 function dust(canvas: Canvas): void {
@@ -245,7 +370,6 @@ function homeScene(canvas: Canvas): void {
   background(canvas);
   disc(canvas, 600, 276, 188);
   speakers(canvas);
-  crowd(canvas);
   dust(canvas);
 }
 
@@ -282,3 +406,14 @@ for (const [name, draw] of Object.entries(SCENES)) {
     await encodeIndexedPng(WIDTH, HEIGHT, canvas.pixels, palette),
   );
 }
+
+const crowd = crowdSheet();
+await writeFile(
+  new URL('menu-crowd.png', OUT),
+  await encodeIndexedPng(crowd.width, crowd.height, crowd.pixels, palette),
+);
+const dj = djSheet();
+await writeFile(
+  new URL('menu-dj.png', OUT),
+  await encodeIndexedPng(dj.width, dj.height, dj.pixels, palette),
+);

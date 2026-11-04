@@ -319,6 +319,47 @@ body {
   user-select: none;
   -webkit-user-drag: none;
 }
+/* The home scene's crowd and DJ, two sprite sheets played by CSS: no render loop. */
+.menu-dj,
+.menu-crowd {
+  display: none;
+  position: absolute;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+  pointer-events: none;
+}
+.menu-keyart.is-home .menu-dj,
+.menu-keyart.is-home .menu-crowd {
+  display: block;
+}
+.menu-dj {
+  left: 200px;
+  bottom: 120px;
+  width: 160px;
+  height: 180px;
+  background-image: url('./ui/menu-dj.png');
+  background-size: 1280px 180px;
+  animation: menu-dj 1.1s steps(8) infinite;
+}
+.menu-crowd {
+  left: 0;
+  bottom: 0;
+  width: 960px;
+  height: 120px;
+  background-image: url('./ui/menu-crowd.png');
+  background-size: 7680px 120px;
+  animation: menu-crowd 0.9s steps(8) infinite;
+}
+@keyframes menu-dj {
+  to {
+    background-position: -1280px 0;
+  }
+}
+@keyframes menu-crowd {
+  to {
+    background-position: -7680px 0;
+  }
+}
 /* The music: dotted waves around the scene, and an equalizer that breathes (CSS only). */
 .menu-wave {
   position: absolute;
@@ -357,13 +398,13 @@ body {
 }
 .menu-eq {
   position: absolute;
-  left: 50%;
+  left: var(--eq-x, 50%);
   bottom: 86px;
   display: flex;
   align-items: flex-end;
   justify-content: center;
   gap: 6px;
-  width: 480px;
+  width: 340px;
   height: 80px;
   transform: translateX(-50%);
   opacity: 0.8;
@@ -1599,7 +1640,9 @@ body {
   transition: none;
 }
 .still .menu-wave,
-.still .menu-eq-bar {
+.still .menu-eq-bar,
+.still .menu-dj,
+.still .menu-crowd {
   animation: none;
 }
 .rotate-hint {

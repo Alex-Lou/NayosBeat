@@ -5,11 +5,13 @@ import { element, type MenuBackdropName } from './menu';
 const VIEW = { width: 480, height: 270 };
 
 /** Where the animated waves sit on each key art, and the radii of the three rings (image px). */
-const SCENES: Readonly<Record<MenuBackdropName, { readonly x: string; readonly y: string }>> = {
-  home: { x: '62.5%', y: '51%' },
-  select: { x: '50%', y: '54%' },
-  stage: { x: '50%', y: '102%' },
-  system: { x: '50%', y: '48%' },
+const SCENES: Readonly<
+  Record<MenuBackdropName, { readonly x: string; readonly y: string; readonly eq: string }>
+> = {
+  home: { x: '62.5%', y: '51%', eq: '60%' },
+  select: { x: '50%', y: '54%', eq: '50%' },
+  stage: { x: '50%', y: '102%', eq: '50%' },
+  system: { x: '50%', y: '48%', eq: '50%' },
 };
 const WAVE_RADII = [230, 290, 350] as const;
 
@@ -43,6 +45,7 @@ export class MenuBackdrop {
     this.image.addEventListener('load', this.onLoad);
     this.image.addEventListener('error', this.onLoad);
     this.stage.appendChild(this.image);
+    this.stage.append(element('div', 'menu-dj'), element('div', 'menu-crowd'));
     for (const [index, radius] of WAVE_RADII.entries()) {
       const wave = element('div', `menu-wave menu-wave-${index + 1}`);
       wave.style.boxShadow = dotRing(radius, 72);
@@ -70,6 +73,9 @@ export class MenuBackdrop {
     const scene = SCENES[name];
     this.stage.style.setProperty('--wave-x', scene.x);
     this.stage.style.setProperty('--wave-y', scene.y);
+    this.stage.style.setProperty('--eq-x', scene.eq);
+    if (name === 'home') this.root.classList.add('is-home');
+    else this.root.classList.remove('is-home');
     this.setArt(art);
   }
 
