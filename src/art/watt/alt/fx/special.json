@@ -4,50 +4,50 @@
       "frame": { "x": 0, "y": 47, "w": 1, "h": 1 },
       "trimmed": true,
       "spriteSourceSize": { "x": 0, "y": 0, "w": 1, "h": 1 },
-      "sourceSize": { "w": 44, "h": 47 }
+      "sourceSize": { "w": 69, "h": 47 }
     },
     "1": {
       "frame": { "x": 1, "y": 47, "w": 1, "h": 1 },
       "trimmed": true,
       "spriteSourceSize": { "x": 0, "y": 0, "w": 1, "h": 1 },
-      "sourceSize": { "w": 44, "h": 47 }
+      "sourceSize": { "w": 69, "h": 47 }
     },
     "2": {
       "frame": { "x": 2, "y": 47, "w": 1, "h": 1 },
       "trimmed": true,
       "spriteSourceSize": { "x": 0, "y": 0, "w": 1, "h": 1 },
-      "sourceSize": { "w": 44, "h": 47 }
+      "sourceSize": { "w": 69, "h": 47 }
     },
     "3": {
       "frame": { "x": 3, "y": 47, "w": 1, "h": 1 },
       "trimmed": true,
       "spriteSourceSize": { "x": 0, "y": 0, "w": 1, "h": 1 },
-      "sourceSize": { "w": 44, "h": 47 }
+      "sourceSize": { "w": 69, "h": 47 }
     },
     "4": {
-      "frame": { "x": 0, "y": 0, "w": 44, "h": 47 },
+      "frame": { "x": 0, "y": 0, "w": 69, "h": 47 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 0, "w": 44, "h": 47 },
-      "sourceSize": { "w": 44, "h": 47 }
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 69, "h": 47 },
+      "sourceSize": { "w": 69, "h": 47 }
     },
     "5": {
       "frame": { "x": 4, "y": 47, "w": 1, "h": 1 },
       "trimmed": true,
       "spriteSourceSize": { "x": 0, "y": 0, "w": 1, "h": 1 },
-      "sourceSize": { "w": 44, "h": 47 }
+      "sourceSize": { "w": 69, "h": 47 }
     },
     "6": {
       "frame": { "x": 5, "y": 47, "w": 1, "h": 1 },
       "trimmed": true,
       "spriteSourceSize": { "x": 0, "y": 0, "w": 1, "h": 1 },
-      "sourceSize": { "w": 44, "h": 47 }
+      "sourceSize": { "w": 69, "h": 47 }
     },
     "7": {
       "frame": { "x": 6, "y": 47, "w": 1, "h": 1 },
       "trimmed": true,
       "spriteSourceSize": { "x": 0, "y": 0, "w": 1, "h": 1 },
-      "sourceSize": { "w": 44, "h": 47 }
+      "sourceSize": { "w": 69, "h": 47 }
     }
   },
-  "meta": { "image": "special.png", "size": { "w": 44, "h": 48 } }
+  "meta": { "image": "special.png", "size": { "w": 69, "h": 48 } }
 }

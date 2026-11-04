@@ -11,6 +11,7 @@ import { advance, box, HEAVY_CANCELS, kd, LIGHT_CANCELS, strike } from './shared
 export const WATT_STRINGS: Pick<
   FighterMoves,
   | 'standLight'
+  | 'jabRepeat'
   | 'chainLight'
   | 'chainHigh'
   | 'chainLaunch'
@@ -31,8 +32,29 @@ export const WATT_STRINGS: Pick<
     hitbox: box(8, 40, 24, 14),
     cancelInto: LIGHT_CANCELS,
     branches: [
-      { button: 'light', dirs: ['neutral', 'forward', 'back'], move: 'chainLight' },
+      { button: 'light', dirs: ['neutral', 'forward'], move: 'chainLight' },
+      { button: 'light', dirs: ['back'], move: 'jabRepeat' },
       { button: 'light', dirs: ['down'], move: 'crouchLight' },
+    ],
+  }),
+  // L, ← + L: the lead clamp snaps back out with a short electric jolt (+2 on block), opening
+  // every string.
+  jabRepeat: strike({
+    name: 'Secousse',
+    frames: [3, 2, 7],
+    damage: 20,
+    stun: [13, 10],
+    hitstop: 7,
+    pushbackPx: 1.5,
+    guard: 'mid',
+    hitbox: box(8, 40, 26, 14),
+    cancelInto: HEAVY_CANCELS,
+    branches: [
+      { button: 'light', dirs: ['neutral', 'forward', 'back'], move: 'chainLight' },
+      { button: 'heavy', dirs: ['neutral'], move: 'standHeavy' },
+      { button: 'heavy', dirs: ['forward'], move: 'chainHigh' },
+      { button: 'heavy', dirs: ['down'], move: 'crouchHeavy' },
+      { button: 'heavy', dirs: ['back'], move: 'chainLaunch' },
     ],
   }),
   // L, L: a short hook of the rear clamp, an 8 px step; then the end of the phrase.
@@ -138,18 +160,19 @@ export const WATT_STRINGS: Pick<
       { button: 'heavy', dirs: ['back'], move: 'backHeavy' },
     ],
   }),
-  // H, H: both fists together, 8 px forward; it floors.
+  // H, H: both fists together, 12 px forward; holds the opponent standing so any special or
+  // the Câble follows up.
   chainHeavy: strike({
     name: 'Double marteau',
     frames: [11, 3, 20],
-    damage: 70,
-    stun: [0, 14],
-    hitstop: 12,
-    pushbackPx: 3,
+    damage: 55,
+    stun: [20, 14],
+    hitstop: 10,
+    pushbackPx: 2.5,
     guard: 'mid',
     hitbox: box(12, 30, 36, 34),
-    motion: advance(34, { from: 0, to: 8, distancePx: 8 }),
-    knockdown: kd(3, 3),
+    motion: advance(34, { from: 0, to: 8, distancePx: 12 }),
     cancelInto: HEAVY_CANCELS,
+    juggleCost: 2,
   }),
 };

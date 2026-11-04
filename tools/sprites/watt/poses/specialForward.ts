@@ -75,6 +75,7 @@ const IMPACT: Pose = {
   face: 'kiai',
   effects: [
     smear(3, [0, 61], [7, 62], [14, 61]),
+    { kind: 'arc', from: at(-4, 62), to: at(24, 56), spread: 4 },
     { kind: 'flash', center: at(18, 58), radius: 4.5, tone: 'sound' },
     { kind: 'energy', center: at(16, 58), radius: 3 },
   ],

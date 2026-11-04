@@ -455,8 +455,46 @@ const WATT_SIGNATURE: Signature = {
       light: { from: 3, to: 14, tone: 'energy', strength: 0.6, ...BODY },
     },
     dashBack: { cues: [cue(1, 'dash', 'energy', FEET)] },
-    // The Coup de pilon's armor, the exoskeleton lit as the fist falls.
-    forwardHeavy: { light: { from: 8, to: 21, tone: 'energy', strength: 0.6, ...BODY } },
+    // The Coup de pilon's armor, the exoskeleton lit as the fist falls, a floor ring on impact.
+    forwardHeavy: {
+      light: { from: 8, to: 25, tone: 'energy', strength: 0.7, ...BODY },
+      cues: [cue(22, 'groundRing', 'energy', FLOOR, 0.9)],
+    },
+    standHeavy: {
+      light: { from: 9, to: 16, tone: 'energy', strength: 0.65, ...CLAMPS },
+      cues: [cue(12, 'groundRing', 'energy', FLOOR, 0.85)],
+    },
+    chainHeavy: {
+      light: { from: 8, to: 15, tone: 'energy', strength: 0.7, ...CLAMPS },
+      cues: [cue(11, 'groundRing', 'energy', FLOOR, 0.95)],
+    },
+    chainHigh: {
+      light: { from: 10, to: 18, tone: 'energy', strength: 0.65, ...CLAMPS },
+      cues: [cue(15, 'groundRing', 'energy', FLOOR, 0.9)],
+    },
+    backHeavy: {
+      light: { from: 4, to: 14, tone: 'energy', strength: 0.75, ...CEILING },
+      cues: [cue(8, 'rise', 'energy', CEILING, 0.85)],
+    },
+    chainLaunch: {
+      light: { from: 4, to: 14, tone: 'energy', strength: 0.75, ...CEILING },
+      cues: [cue(8, 'rise', 'energy', CEILING, 0.85)],
+    },
+    crouchHeavy: {
+      cues: [cue(11, 'groundRing', 'energy', FLOOR, 0.85)],
+    },
+    lightFinisher: {
+      cues: [cue(9, 'kick', 'energy', CLAMPS, 0.85)],
+    },
+    jabRepeat: {
+      light: { from: 2, to: 6, tone: 'energy', strength: 0.55, ...CLAMPS },
+    },
+    throwForward: {
+      cues: [cue(12, 'groundRing', 'energy', FLOOR, 1.0)],
+    },
+    throwBack: {
+      cues: [cue(14, 'groundRing', 'energy', { height: 0, reach: -30 }, 1.0)],
+    },
     // Rallumage: the heavy step, relit.
     boostCancel: {
       light: { from: 0, to: 8, tone: 'platine', strength: 0.8, ...BODY },

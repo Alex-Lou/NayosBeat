@@ -68,6 +68,7 @@ export const WATT_CLIPS: FighterClips<WattClip> = {
   tech: play('tech', [3, 3, 4, 4]),
 
   standLight: play('standLight', [1, 3, 2, 4, 5]), // active: frame 2
+  jabRepeat: play('jabRepeat', [3, 2, 2, 3, 2]), // active: frame 1
   chainLight: play('chainLight', [3, 3, 3, 4, 4, 4]), // active: frame 2
   lightFinisher: play('lightFinisher', [3, 3, 3, 3, 5, 6, 7]), // active: frame 3
   forwardLight: play('forwardLight', [3, 3, 3, 2, 5, 6]), // active: frame 3

@@ -9,6 +9,7 @@ import { isActiveFrame, isInvincible, isThrowInvincible, moveOf } from './moves'
 import { signed } from './numbers';
 import { BODY_PERCENT, reactionOf } from './reaction';
 import {
+  COMBO_LIMIT,
   COUNTER_HITSTUN,
   DECAY_FROM,
   DECAY_STEP,
@@ -379,7 +380,10 @@ export function canBeGrabbed(
   template: FighterTemplate,
   catches?: 'air',
 ): boolean {
-  if (catches === 'air') return JUMPING_ACTIONS.has(fighter.action) && fighter.y > 0;
+  if (catches === 'air') {
+    const juggled = isJuggled(fighter, 1) && fighter.comboCount + 1 < COMBO_LIMIT;
+    return (JUMPING_ACTIONS.has(fighter.action) || juggled) && fighter.y > 0;
+  }
   if (fighter.y !== 0 || fighter.throwImmuneFrames > 0) return false;
   if (GRAB_IMMUNE_ACTIONS.has(fighter.action)) return false;
   return !(fighter.move && isThrowInvincible(moveOf(template, fighter.move), fighter.actionFrame));

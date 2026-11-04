@@ -147,6 +147,14 @@ export type Effect =
       readonly count: number;
       readonly progress: number;
       readonly tone?: Tone;
+    }
+  /** A jagged high-voltage electric arc between `from` and `to`, with forked branches. */
+  | {
+      readonly kind: 'arc';
+      readonly from: Point;
+      readonly to: Point;
+      readonly spread?: number;
+      readonly tone?: Tone;
     };
 
 export interface Pose {

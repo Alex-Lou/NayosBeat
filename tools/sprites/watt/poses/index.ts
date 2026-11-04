@@ -56,6 +56,7 @@ import { POSES as walkBackPoses } from './walkBack.ts';
 import { POSES as walkForwardPoses } from './walkForward.ts';
 import {
   CHAIN_HIGH_POSES,
+  JAB_REPEAT_POSES,
   JUMP_SPECIAL_POSES,
   SPECIAL_BACK_POSES,
   SPECIAL_CLOSE_POSES,
@@ -78,6 +79,7 @@ export const WATT_POSES: Readonly<Record<WattSheet, readonly Pose[]>> = {
   dashBack: dashBackPoses,
   grab: grabPoses,
   standLight: standLightPoses,
+  jabRepeat: JAB_REPEAT_POSES,
   chainLight: chainLightPoses,
   lightFinisher: lightFinisherPoses,
   forwardLight: forwardLightPoses,

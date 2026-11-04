@@ -1,10 +1,12 @@
 import type { Effect, Foot, Pose } from '../../skeleton.ts';
 import { at, GUARD, onBall, planted, smear, springAnkle } from './common.ts';
 import { POSES as COUP_DE_PILON } from './forwardHeavy.ts';
+import { POSES as PAUME } from './standLight.ts';
 import { keyPose } from './strike.ts';
 
 /**
  * Watt's own arsenal strips (docs/watt-arsenal.md §4, §7):
+ * - jabRepeat (Secousse): the 29th move, an electric snap of the lead clamp;
  * - chainHigh (Coup de masse): the overhead in the string that bounces a juggled body (Rebond);
  * - specialBack (Câble): the cable shot out from the lead gauntlet, reeling the opponent in;
  * - specialClose & throwClose (Branchement): the point-blank command grab, lifted, spun a full
@@ -26,6 +28,40 @@ function withEffects(
 
 const strikeTone = (effect: Effect): Effect =>
   effect.kind === 'smear' ? { ...effect, tone: 'strike' } : effect;
+
+// --- jabRepeat (Secousse, 5 frames: [2, 1, 2, 3, 4], active frame 1) ----------------------------
+
+export const JAB_REPEAT_POSES: readonly Pose[] = [
+  // 0: drawn halfway back from the Paume, the clamp crackling with a green arc.
+  keyPose({
+    hip: [-6, 37],
+    torso: 13,
+    reach: { far: 2 },
+    far: [18, 48],
+    farHand: 'open',
+    face: 'effort',
+    effects: [{ kind: 'arc', from: at(10, 50), to: at(22, 48), spread: 2.5 }],
+  }),
+  // 1 (active): snapped out to x = 30 (hitbox 8..34 / 40..54), a forked lightning bolt off the palm.
+  keyPose({
+    hip: [-4.5, 36.6],
+    torso: 18,
+    reach: { far: 4 },
+    far: [29.5, 47.5],
+    farHand: 'open',
+    face: 'kiai',
+    effects: [
+      smear(2.5, [14, 49], [22, 48], [29.5, 47.5]),
+      { kind: 'arc', from: at(16, 50), to: at(34, 47), spread: 3.5 },
+      { kind: 'flash', center: at(32, 47.5), radius: 3.8, tone: 'sound' },
+    ],
+    glows: [{ center: at(30, 48), reach: 24, power: 1.0, tone: 'sound' }],
+  }),
+  // 2-4: electric afterglow, then back to guard.
+  withEffects(PAUME[3] ?? GUARD, [{ kind: 'arc', from: at(12, 50), to: at(24, 48), spread: 2 }]),
+  PAUME[4] ?? GUARD,
+  GUARD,
+];
 
 // --- chainHigh (Coup de masse, 6 frames: [7, 8, 3, 5, 5, 6], active frame 2) --------------------
 
@@ -142,6 +178,7 @@ export const SPECIAL_BACK_POSES: readonly Pose[] = [
     effects: [
       smear(3, [30, 36], [44, 36], [56, 36]),
       { kind: 'speed', center: at(55, 36), length: 24, spread: 5, direction: 0, tone: 'sound' },
+      { kind: 'arc', from: at(28, 37), to: at(58, 36), spread: 4.5 },
       { kind: 'energy', center: at(54, 36), radius: 3.8 },
       { kind: 'flash', center: at(38, 36), radius: 4, tone: 'sound' },
     ],
@@ -160,6 +197,7 @@ export const SPECIAL_BACK_POSES: readonly Pose[] = [
     effects: [
       smear(3, [56, 36], [42, 36], [30, 36]),
       { kind: 'speed', center: at(34, 36), length: 22, spread: 5, direction: 180, tone: 'sound' },
+      { kind: 'arc', from: at(57, 36), to: at(26, 37), spread: 4 },
       { kind: 'energy', center: at(46, 36), radius: 3.2 },
     ],
     glows: [{ center: at(34, 36), reach: 28, power: 1.0, tone: 'sound' }],
@@ -332,6 +370,8 @@ export const THROW_CLOSE_POSES: readonly Pose[] = [
     face: 'kiai',
     effects: [
       smear(4.5, [22, 70], [30, 44], [32, 16]),
+      { kind: 'column', base: at(34, 2), height: 74, width: 16, progress: 0.25 },
+      { kind: 'arc', from: at(22, 62), to: at(36, 8), spread: 5 },
       { kind: 'flash', center: at(34, 14), radius: 5.5, tone: 'sound' },
       { kind: 'shards', center: at(34, 14), radius: 11, progress: 0.2, tone: 'strike' },
       { kind: 'ring', center: at(34, 8), radius: 14, progress: 0.2, squash: 0.3, tone: 'sound' },
@@ -481,6 +521,8 @@ export const THROW_DIVE_POSES: readonly Pose[] = [
     face: 'kiai',
     effects: [
       smear(4, [24, 44], [28, 28], [30, 14]),
+      { kind: 'column', base: at(32, 2), height: 60, width: 14, progress: 0.3 },
+      { kind: 'arc', from: at(18, 46), to: at(34, 8), spread: 4.5 },
       { kind: 'flash', center: at(32, 12), radius: 5, tone: 'sound' },
       { kind: 'ring', center: at(32, 8), radius: 12, progress: 0.2, squash: 0.3, tone: 'sound' },
       { kind: 'dust', x: 32, size: 1.5, progress: 0.3 },
@@ -553,6 +595,8 @@ export const THROW_CATCH_POSES: readonly Pose[] = [
     face: 'kiai',
     effects: [
       smear(4.5, [26, 40], [30, 26], [32, 16]),
+      { kind: 'column', base: at(34, 2), height: 68, width: 15, progress: 0.28 },
+      { kind: 'arc', from: at(16, 68), to: at(36, 10), spread: 5 },
       { kind: 'flash', center: at(34, 14), radius: 5, tone: 'sound' },
       { kind: 'shards', center: at(34, 14), radius: 9, progress: 0.25, tone: 'strike' },
       { kind: 'dust', x: 34, size: 1.6, progress: 0.25 },

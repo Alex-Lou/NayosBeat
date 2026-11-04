@@ -71,7 +71,11 @@ export const WATT_TEXTS: FighterTexts = {
     },
     standLight: {
       input: 'L',
-      text: 'La pince avant pousse, paume à plat : son coup le plus rapide, de près. Si elle touche (ou si elle est parée) : L encore, même avec avant ou arrière, donne le Crochet court.',
+      text: 'La pince avant pousse, paume à plat : son coup le plus rapide, de près. Si elle touche (ou si elle est parée) : L donne le Crochet court, arrière + L la Secousse, bas + L la Paume basse.',
+    },
+    jabRepeat: {
+      input: 'L, arrière + L',
+      text: "La pince avant repart aussitôt d'un coup sec électrifié : +2 en garde, et ouvre toutes ses cordes (L, H, avant + H, bas + H, arrière + H).",
     },
     chainLight: {
       input: CHAIN,
@@ -91,7 +95,7 @@ export const WATT_TEXTS: FighterTexts = {
     },
     chainHeavy: {
       input: CHAIN_HEAVY,
-      text: 'Les deux poings ensemble, un petit pas : il met au sol.',
+      text: "Les deux poings ensemble, un pas en avant : il laisse désormais l'adversaire debout pour enchaîner le Coup de jus, la Surcharge, le Câble ou Plein feu.",
     },
     chainHigh: {
       input: CHAIN_HIGH,

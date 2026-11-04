@@ -30,6 +30,7 @@ export const WATT_SHEETS = {
   tech: { frames: 4 },
   // Normals.
   standLight: { frames: 5 },
+  jabRepeat: { frames: 5 },
   chainLight: { frames: 6 },
   lightFinisher: { frames: 7 },
   forwardLight: { frames: 6 },
