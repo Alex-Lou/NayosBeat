@@ -288,9 +288,11 @@ class Decider {
       // The invincible anti-air, or now and then the launcher, which opens a juggle (plans.ts).
       return this.chance(0.35) ? [this.away | Input.Heavy, 0] : [Input.Down | Input.Special, 0];
     }
-    // Over the projectile, toward the thrower: not into a Mégabasse's reach, it blocks then.
-    if (threat === 'projectile' && !this.keepsAway() && this.chance(0.25)) {
-      return repeat(Input.Up | this.toward, 5);
+    // Over or through the projectile, toward the thrower: not into a Mégabasse's reach, it blocks then.
+    if (threat === 'projectile' && !this.keepsAway()) {
+      const { moves } = this.config.fighters[this.cpu.player];
+      if (moves.dashForward.armor && this.chance(0.4)) return [Input.Dash, 0];
+      if (this.chance(0.25)) return repeat(Input.Up | this.toward, 5);
     }
     if (this.chance(this.menace ? this.profile.finisherBlock : this.profile.block)) {
       const move = upcomingMove(this.opponent, this.opponentTemplate());
@@ -438,6 +440,14 @@ class Decider {
       if (this.mayThrow(forward, wary) && this.chance(0.15)) {
         return [toward | (remix ? Input.Boost : Input.Special), ...repeat(0, 10)];
       }
+      if (
+        moves.specialBack &&
+        this.reaches(moves.specialBack) &&
+        this.mayThrow(moves.specialBack, wary) &&
+        this.chance(0.22)
+      ) {
+        return [away | Input.Special, ...repeat(0, 10)];
+      }
       if (hasProjectile && this.mayThrow(moves.special, wary) && this.chance(0.2)) {
         return [Input.Special, ...repeat(0, 15)];
       }
@@ -449,6 +459,14 @@ class Decider {
     // it steps in, as its aggression says.
     const fits = (id: MoveId) => this.reaches(moves[id]);
     if (!fits('standLight') && this.chance(aggression)) return repeat(toward, this.between(4, 8));
+    if (
+      moves.specialClose &&
+      this.distance <= toPx(moves.specialClose.closeRange ?? 0) &&
+      fits('specialClose') &&
+      this.chance(this.profile.throw * 0.6)
+    ) {
+      return [Input.Special, 0];
+    }
     if (fits('grab') && this.chance(this.profile.throw)) return [Input.Grab, 0];
     if (fits('backHeavy') && this.chance(0.1)) return [away | Input.Heavy, 0];
     if (fits('standLight') && this.chance(0.35)) return [Input.Light, 0, 0, 0];
@@ -523,7 +541,9 @@ class Decider {
   }
 
   private jumpIn(): InputBits[] {
-    return [...repeat(Input.Up | this.toward, 5), ...repeat(0, 9), Input.Heavy, ...repeat(0, 20)];
+    const { moves } = this.config.fighters[this.cpu.player];
+    const airBlow = moves.jumpSpecial && this.chance(0.35) ? Input.Special : Input.Heavy;
+    return [...repeat(Input.Up | this.toward, 5), ...repeat(0, 9), airBlow, ...repeat(0, 20)];
   }
 
   private opponentTemplate() {

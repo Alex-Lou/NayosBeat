@@ -9,7 +9,7 @@
 
 import { anatomyIssues } from '../../anatomy.ts';
 import type { Point } from '../../raster.ts';
-import type { Bends, Effect, Face, Foot, Hand } from '../../skeleton.ts';
+import type { Bends, Effect, Face, Foot, Glow, Hand } from '../../skeleton.ts';
 import { WATT_BODY } from '../body.ts';
 import { at, fistsOnShoulders, GUARD, springAnkle, type Pose } from './common.ts';
 
@@ -36,6 +36,7 @@ export interface Key {
   readonly bends?: Bends;
   readonly face?: Face;
   readonly effects?: readonly Effect[];
+  readonly glows?: readonly Glow[];
 }
 
 const HEAD = GUARD.torso + GUARD.head;
@@ -66,6 +67,7 @@ export function keyPose(k: Key): Pose {
     ...(k.farHand ? { farHand: k.farHand } : {}),
     ...(k.face ? { face: k.face } : {}),
     ...(k.effects ? { effects: k.effects } : {}),
+    ...(k.glows ? { glows: k.glows } : {}),
   };
   const held = fistsOnShoulders(base, point(k.nearOff), point(k.farOff));
   return springAnkle({

@@ -51,9 +51,11 @@ export const POSES: readonly Pose[] = [
     face: 'kiai',
     effects: [
       smear(3, [18, 47], [28, 46], [35, 45]),
+      { kind: 'flash', center: at(39, 46), radius: 4.5, tone: 'sound' },
       { kind: 'energy', center: at(41, 46), radius: 4 },
       { kind: 'energy', center: at(36, 52), radius: 2.5 },
     ],
+    glows: [{ center: at(38, 46), reach: 30, power: 1.2, tone: 'sound' }],
   }),
   // 5-7: held a beat, then back into the guard.
   keyPose({

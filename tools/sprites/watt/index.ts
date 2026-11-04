@@ -9,8 +9,13 @@ import type { Lighting, Material } from '../raster.ts';
 import { FLOOR_OCCLUSION, STREET_SIGN } from '../street-light.ts';
 import { WATT_BODY } from './body.ts';
 import { drawWatt } from './look.ts';
-import { DETAIL, EFFECTS, MATERIAL, paletteOf } from './palette.ts';
+import { DETAIL, EFFECT_TINTS, EFFECTS, MATERIAL, paletteOf } from './palette.ts';
 import { WATT_POSES } from './poses/index.ts';
+
+function tonesOf(material: Material): number[] {
+  const { outline, deep, shadow, base, light, gloss = light } = material;
+  return [outline, deep, shadow, base, light, gloss];
+}
 
 /**
  * The tones of a stamped head's exact pixels (head.ts) under the back light, found by their
@@ -18,10 +23,12 @@ import { WATT_POSES } from './poses/index.ts';
  */
 function exactRims(materials: readonly Material[]): Lighting['rim']['exact'] {
   return Object.fromEntries(
-    materials.flatMap((material) => {
-      const { outline, deep, shadow, base, light, gloss = light, rim = light } = material;
-      return [outline, deep, shadow, base, light, gloss].map((slot) => [slot, { rim, light }]);
-    }),
+    materials.flatMap((material) =>
+      tonesOf(material).map((slot) => [
+        slot,
+        { rim: material.rim ?? material.light, light: material.light },
+      ]),
+    ),
   );
 }
 
@@ -42,6 +49,22 @@ export const WATT_LIGHTING: Lighting = {
   },
   occlusion: { height: 64, depth: FLOOR_OCCLUSION },
   glow: { [DETAIL.ledCore]: DETAIL.ledHalo },
+  fx: {
+    tints: EFFECT_TINTS,
+    exact: Object.fromEntries(
+      [MATERIAL.glass, MATERIAL.brass].flatMap((material) => {
+        const tones = tonesOf(material);
+        return tones.map((slot, i) => [
+          slot,
+          { material: material.outline, darker: tones[Math.max(1, i - 1)] ?? slot },
+        ]);
+      }),
+    ),
+    levels: { kiss: 0.3, lit: 0.58 },
+    drama: 0.22,
+    shadow: 0.55,
+    floor: 4,
+  },
 };
 
 const isSheet = (sheet: string): sheet is WattSheet => sheet in WATT_SHEETS;

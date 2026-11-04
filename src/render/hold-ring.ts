@@ -37,7 +37,7 @@ export function pendingHold(state: GameState): HoldState | null {
   const { hold } = state;
   if (!hold) return null;
   const { move } = state.fighters[hold.holder];
-  return move === 'throwForward' || move === 'throwBack' ? null : hold;
+  return move === null || move === 'pummel' ? hold : null;
 }
 
 /**

@@ -445,4 +445,13 @@ describe('the FINISH plate (docs/finisher.md §1.2, §5.8 test 12)', () => {
     gauge.update(BOOST_MAX, null, (frame += 2), false, 'ready');
     expect(word.alpha).toBe(1);
   });
+
+  it('draws the 10-LED tension VU-meter under the Boost tube for a fighter that has one', () => {
+    const base = gaugeSpans(freshBoost(0, 0), LEFT, 0);
+    const half = gaugeSpans(freshBoost(0, 0), LEFT, 0, 50, 100);
+    const full = gaugeSpans(freshBoost(0, 0), LEFT, 0, 100, 100);
+    expect(half.length).toBe(base.length + 20);
+    expect(half.filter((span) => span.y === 12 && span.color === ENERGY)).toHaveLength(5);
+    expect(full.filter((span) => span.y === 12 && span.color === 0xf2f6ff)).toHaveLength(10);
+  });
 });

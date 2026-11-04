@@ -62,7 +62,8 @@ const THROW: Pose = held({
   effects: [{ kind: 'dust', x: -22, size: 1, progress: 0.4 }],
 });
 
-// 2: skimming the floor, both boots off it a frame, the rear one coming through.
+// 2: skimming the floor, both boots off it a frame, the rear one coming through, the exoskeleton
+// lit by the Pas blindé's armor.
 const SKIM: Pose = held({
   ...GUARD,
   hip: at(-7, 37),
@@ -73,6 +74,8 @@ const SKIM: Pose = held({
   nearFist: at(0.5, 0.5),
   farFist: at(1, 0.5),
   bends: { ...GUARD.bends, farKnee: 'front' },
+  effects: [{ kind: 'energy', center: at(8, 54), radius: 2.8 }],
+  glows: [{ center: at(8, 54), reach: 26, power: 1.0, tone: 'sound' }],
 });
 
 // 3: down heavy on the lead boot, dust, the rear boot dragging.

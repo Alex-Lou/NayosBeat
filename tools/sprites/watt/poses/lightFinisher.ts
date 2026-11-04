@@ -1,4 +1,4 @@
-import { smear, type Pose } from './common.ts';
+import { at, smear, type Pose } from './common.ts';
 import { keyPose } from './strike.ts';
 
 export const ANIMATED: boolean = true;
@@ -33,7 +33,11 @@ export const POSES: readonly Pose[] = [
     nearHand: 'open',
     farHand: 'open',
     face: 'kiai',
-    effects: [smear(3, [14, 49], [24, 48.5], [33, 48])],
+    effects: [
+      smear(3, [14, 49], [24, 48.5], [33, 48]),
+      { kind: 'flash', center: at(35, 48), radius: 4, tone: 'strike' },
+    ],
+    glows: [{ center: at(33, 48), reach: 24, power: 0.9, tone: 'strike' }],
   }),
   // 4-6: the follow-through, then back into the guard.
   keyPose({

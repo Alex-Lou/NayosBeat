@@ -126,6 +126,11 @@ const SPARK_TICKS = 18;
 const GRAVITY = 0.07;
 /** Ticks the gauge shakes as it blows up. */
 const BLAST_SHAKE_TICKS = 12;
+/** The tension VU-meter under the Boost tube (docs/watt-arsenal.md §3.2): 10 LEDs along it. */
+const TENSION_LEDS = 10;
+const TENSION_STEP = 10;
+const TENSION_LED_WIDTH = 8;
+const TENSION_Y = CAPSULE.height + 1;
 
 const OUTLINE = 0x0c0612;
 const BROKEN = 0x3a3448;
@@ -272,9 +277,17 @@ function sweepOf(motion: BoostMotion, look: GaugeLook, frame: number): number {
 }
 
 /** What the gauge shows: it is repainted only when this changes. */
-export function gaugePaintKey(motion: BoostMotion, look: GaugeLook, frame: number): string {
+export function gaugePaintKey(
+  motion: BoostMotion,
+  look: GaugeLook,
+  frame: number,
+  tension = 0,
+  maxTension = 0,
+): string {
   const lasts = motion.breakage === 'crack' ? CRACK_TICKS : BREAK_TICKS;
   const broken = motion.broken < 0 ? -1 : look.motion ? motion.broken : lasts;
+  const leds =
+    maxTension > 0 ? Math.min(TENSION_LEDS, Math.floor((tension * TENSION_LEDS) / maxTension)) : -1;
   return [
     look.flashes,
     look.motion,
@@ -284,7 +297,43 @@ export function gaugePaintKey(motion: BoostMotion, look: GaugeLook, frame: numbe
     sweepOf(motion, look, frame),
     motion.breakage,
     broken,
+    leds,
   ].join(' ');
+}
+
+/** The 10-LED VU-meter bar under the Boost tube for a fighter with a tension gauge. */
+function tensionSpans(
+  tension: number,
+  maxTension: number,
+  energy: number,
+  broken: boolean,
+): Span[] {
+  if (maxTension <= 0) return [];
+  const lit = broken
+    ? 0
+    : Math.min(TENSION_LEDS, Math.floor((tension * TENSION_LEDS) / maxTension));
+  const full = !broken && tension >= maxTension;
+  const activeColor = full ? PLATINE[2] : energy;
+  const spans: Span[] = [];
+  for (let i = 0; i < TENSION_LEDS; i++) {
+    const x = TUBE_X + i * TENSION_STEP;
+    const on = i < lit;
+    spans.push({
+      x,
+      y: TENSION_Y,
+      width: TENSION_LED_WIDTH,
+      height: 3,
+      color: broken ? BROKEN : on ? mix(activeColor, OUTLINE, 0.5) : OUTLINE,
+    });
+    spans.push({
+      x: x + 1,
+      y: TENSION_Y + 1,
+      width: TENSION_LED_WIDTH - 2,
+      height: 1,
+      color: on ? activeColor : EMPTY[1],
+    });
+  }
+  return spans;
 }
 
 /** The color of row `row` of the tube at `along` pixels from its outer end. */
@@ -300,7 +349,13 @@ function inkAt(motion: BoostMotion, energy: number, row: number, along: number):
  * The gauge's spans at tick `frame`, from its outer end: the capsule, then the tube (the number
  * and the word are texts, see BoostGauge). Drawn for the left player, mirrored for the right one.
  */
-export function gaugeSpans(motion: BoostMotion, look: GaugeLook, frame: number): Span[] {
+export function gaugeSpans(
+  motion: BoostMotion,
+  look: GaugeLook,
+  frame: number,
+  tension = 0,
+  maxTension = 0,
+): Span[] {
   const bars = barsOf(motion.shown);
   const broken = isShattered(motion);
   const rim = broken ? BROKEN : levelColor(look.energy, bars);
@@ -354,6 +409,7 @@ export function gaugeSpans(motion: BoostMotion, look: GaugeLook, frame: number):
   if (broken && look.motion) tube.push(...shards(motion, look));
   if (isCracked(motion)) tube.push(...cracks(motion, look));
   spans.push(...moved(tube, TUBE_X, TUBE_Y));
+  spans.push(...tensionSpans(tension, maxTension, look.energy, broken));
   return look.side === 0 ? spans : spans.map((span) => mirrored(span, GAUGE_WIDTH));
 }
 
@@ -528,15 +584,17 @@ export class BoostGauge {
     frame: number,
     still = false,
     finisher: FinisherState = 'off',
+    tension = 0,
+    maxTension = 0,
   ): void {
     this.motion = stepBoost(this.motion, boost, breakage, frame);
     const motion = this.motion;
     const look = still ? this.still : this.look;
     this.graphics.x = this.left + blastShake(motion, look);
-    const key = gaugePaintKey(motion, look, frame);
+    const key = gaugePaintKey(motion, look, frame, tension, maxTension);
     if (key !== this.painted) {
       this.painted = key;
-      paintSpans(this.graphics, gaugeSpans(motion, look, frame));
+      paintSpans(this.graphics, gaugeSpans(motion, look, frame, tension, maxTension));
     }
     const bars = barsOf(motion.shown);
     const broken = isShattered(motion);

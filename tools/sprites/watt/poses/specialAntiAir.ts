@@ -49,7 +49,12 @@ const CATCH: Pose = {
   nearFist: at(9, 77.5),
   farFist: at(15.5, 80),
   face: 'kiai',
-  effects: [smear(2, [6, 68], [7.5, 73], [9, 77.5]), smear(2, [11, 69], [13, 75], [15.5, 80])],
+  effects: [
+    smear(2, [6, 68], [7.5, 73], [9, 77.5]),
+    smear(2, [11, 69], [13, 75], [15.5, 80]),
+    { kind: 'energy', center: at(13, 80), radius: 3.2 },
+  ],
+  glows: [{ center: at(13, 80), reach: 28, power: 1.1, tone: 'sound' }],
 };
 
 const SHUT: Pose = { ...CATCH, nearHand: 'fist', farHand: 'fist', effects: [] };

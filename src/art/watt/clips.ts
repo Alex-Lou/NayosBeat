@@ -75,8 +75,8 @@ export const WATT_CLIPS: FighterClips<WattClip> = {
   standHeavy: play('standHeavy', [3, 3, 3, 3, 3, 9, 11]), // active: frame 4
   chainHeavy: play('chainHeavy', [2, 3, 3, 3, 3, 9, 11]), // active: frame 4
   forwardHeavy: play('forwardHeavy', [4, 6, 6, 6, 3, 5, 5, 6]), // active: frame 4
-  // Coup de masse: the Coup de pilon from its fist already high (frames 2-7), the blow on 4.
-  chainHigh: { sheet: 'forwardHeavy', frames: [2, 3, 4, 5, 6, 7], ticks: [7, 8, 3, 5, 5, 6] },
+  // Coup de masse: the Coup de pilon from its fist already high, heated up, the blow on frame 2.
+  chainHigh: play('chainHigh', [7, 8, 3, 5, 5, 6]), // active: frame 2
   backHeavy: play('backHeavy', [2, 3, 3, 4, 5, 6, 7]), // active: frame 3
   chainLaunch: play('chainLaunch', [2, 3, 3, 4, 5, 6, 7]), // active: frame 3
   crouchLight: play('crouchLight', [2, 3, 2, 4, 5]), // active: frame 2
@@ -87,30 +87,18 @@ export const WATT_CLIPS: FighterClips<WattClip> = {
   specialForward: SURCHARGE,
   specialAntiAir: PLAFONNIER,
   // Branchement: the clamps out on frame 1, the catch on 2, held high until the plant.
-  specialClose: { sheet: 'grab', frames: [0, 1, 2, 3, 4, 5], ticks: [3, 2, 6, 8, 14, 14] }, // active: frames 1-2
+  specialClose: play('specialClose', [3, 2, 6, 8, 14, 14]), // active: frames 1-2
   // The throw it plays on the catch: lifted, spun, planted (the release: frame 3).
-  throwClose: {
-    sheet: 'throwForward',
-    frames: [0, 1, 2, 3, 4, 5, 6],
-    ticks: [4, 4, 2, 1, 8, 8, 8],
-  },
-  // Câble: the clamps out, the line across, the reel in (the discharge on frame 3).
-  specialBack: {
-    sheet: 'special',
-    frames: [0, 1, 2, 3, 4, 5, 6, 7],
-    ticks: [4, 4, 6, 6, 6, 6, 7, 7],
-  }, // active: frames 3-4
-  // Plongeon: the fall from the air, the catch in the Plaquage's dive (frame 2).
-  jumpSpecial: { sheet: 'jumpHeavy', frames: [0, 1, 2, 3, 4, 5], ticks: [4, 4, 4, 6, 8, 8] }, // active: frame 2
-  throwDive: { sheet: 'throwForward', frames: [0, 1, 2, 3, 4, 5, 6], ticks: [4, 4, 2, 1, 8, 7, 7] },
-  throwCatch: {
-    sheet: 'throwForward',
-    frames: [0, 1, 2, 3, 4, 5, 6],
-    ticks: [4, 4, 2, 1, 6, 7, 7],
-  },
-  specialBoost: { ...COUP_DE_JUS, fx: 'specialBoost' },
-  specialForwardBoost: { ...SURCHARGE, fx: 'specialForwardBoost' },
-  specialAntiAirBoost: { ...PLAFONNIER, fx: 'specialAntiAirBoost' },
+  throwClose: play('throwClose', [4, 4, 2, 1, 8, 8, 8]),
+  // Câble: the clamps out, the line across, the reel in (the discharge on frames 3-4).
+  specialBack: play('specialBack', [4, 4, 6, 6, 6, 6, 7, 7]), // active: frames 3-4
+  // Plongeon: the fall from the air, the catch in the dive (frame 2).
+  jumpSpecial: play('jumpSpecial', [4, 4, 4, 6, 8, 8]), // active: frame 2
+  throwDive: play('throwDive', [4, 4, 2, 1, 8, 7, 7]),
+  throwCatch: play('throwCatch', [4, 4, 2, 1, 6, 7, 7]),
+  specialBoost: { ...COUP_DE_JUS, sheet: 'specialRemix', fx: 'specialBoost' },
+  specialForwardBoost: { ...SURCHARGE, sheet: 'specialForwardRemix', fx: 'specialForwardBoost' },
+  specialAntiAirBoost: { ...PLAFONNIER, sheet: 'specialAntiAirRemix', fx: 'specialAntiAirBoost' },
   // Plein feu: invincible from the first frame (the flash on tick 1); a blow a frame: the left
   // hook on frame 2 (tick 3), the right on 3 (tick 9), both fists down on 4 (tick 16), which
   // floors; then back into his guard.

@@ -1,4 +1,4 @@
-import { onBall, planted, smear, type Pose } from './common.ts';
+import { at, onBall, planted, smear, type Pose } from './common.ts';
 import { keyPose } from './strike.ts';
 
 export const ANIMATED: boolean = true;
@@ -34,7 +34,11 @@ export const POSES: readonly Pose[] = [
     nearFoot: onBall(-14, -32),
     far: [44, 50],
     face: 'kiai',
-    effects: [smear(3.5, [28, 74], [38, 64], [44, 50])],
+    effects: [
+      smear(3.5, [28, 74], [38, 64], [44, 50]),
+      { kind: 'flash', center: at(46, 50), radius: 4.5, tone: 'strike' },
+    ],
+    glows: [{ center: at(44, 50), reach: 28, power: 1.0, tone: 'strike' }],
   }),
   // 5: the follow-through, the fist sunk low.
   keyPose({

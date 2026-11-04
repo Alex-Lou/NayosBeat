@@ -181,6 +181,13 @@ describe('the hold ring (docs/combat-v2.md §4.5)', () => {
     expect(throwing.fighters[0].move).toBe('throwBack');
     expect(throwing.hold).not.toBeNull();
     expect(pendingHold(throwing)).toBeNull();
+    // A command grab's throw (Branchement, Plongeon, Plafonnier saisi) is already chosen too.
+    expect(
+      pendingHold({
+        ...throwing,
+        fighters: [{ ...throwing.fighters[0], move: 'throwClose' }, throwing.fighters[1]],
+      }),
+    ).toBeNull();
 
     const { ring, arcs } = ringOn();
     ring.update(at12);
