@@ -9,6 +9,10 @@ export interface MenuItem {
   readonly primary?: boolean;
   /** « Installer le jeu »: a secondary action, not a game mode. */
   readonly install?: boolean;
+  /** A rank or mark in the corner of a grid card (the difficulty's I, II, III). */
+  readonly badge?: string;
+  /** The card's accent, in the same tones as the key art. */
+  readonly tone?: 'cyan' | 'orange' | 'magenta';
   readonly onSelect: () => void;
 }
 
@@ -132,10 +136,17 @@ export class Menu {
       const itemClasses = ['menu-item'];
       if (item.primary) itemClasses.push('primary');
       if (item.install) itemClasses.push('menu-item-install');
+      if (item.tone) itemClasses.push(`tone-${item.tone}`);
+      if (item.badge) itemClasses.push('has-badge');
       const button = element('button', itemClasses.join(' '), item.label);
       button.type = 'button';
       button.tabIndex = -1;
       if (item.hint) button.appendChild(element('span', 'menu-hint', item.hint));
+      if (item.badge) {
+        const badge = element('span', 'menu-badge', item.badge);
+        badge.setAttribute('aria-hidden', 'true');
+        button.appendChild(badge);
+      }
       // `mousemove`, not `pointerenter`: a menu opening under a still pointer must not pick it.
       button.addEventListener('mousemove', () => {
         this.select(index, false);

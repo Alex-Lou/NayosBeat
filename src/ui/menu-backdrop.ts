@@ -52,6 +52,8 @@ export class MenuBackdrop {
       element('div', 'menu-dj'),
       element('div', 'menu-crowd-front'),
       element('div', 'menu-vinyl-sheen'),
+      element('div', 'menu-bolt menu-bolt-a'),
+      element('div', 'menu-bolt menu-bolt-b'),
     );
     for (const [index, radius] of WAVE_RADII.entries()) {
       const wave = element('div', `menu-wave menu-wave-${index + 1}`);

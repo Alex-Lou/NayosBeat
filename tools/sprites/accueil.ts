@@ -57,6 +57,11 @@ const SLOTS = [
   ['jacketEdge', '#4a4a5e'],
   ['shirt', '#c8c8d8'],
   ['shirtShade', '#8a8a9e'],
+  ['boltGlow', '#2f6cff44'],
+  ['boltDeep', '#0b2a7a'],
+  ['boltBlue', '#2f6cff'],
+  ['boltCyan', '#7ce8ff'],
+  ['boltCore', '#e8fbff'],
 ] as const;
 
 type SlotName = (typeof SLOTS)[number][0];
@@ -476,184 +481,218 @@ function djFrame(frame: number): Canvas {
   polygon(
     human,
     [
-      [64, 82],
-      [156, 82],
-      [144, 154],
-      [76, 154],
+      [70, 82],
+      [150, 82],
+      [141, 154],
+      [79, 154],
     ],
     slot('jacket'),
   );
   polygon(
     human,
     [
-      [96, 84],
-      [124, 84],
-      [120, 130],
-      [100, 130],
+      [96, 82],
+      [124, 82],
+      [120, 132],
+      [100, 132],
     ],
     slot('shirt'),
   );
   polygon(
     human,
     [
-      [64, 82],
-      [98, 84],
-      [96, 130],
-      [76, 154],
-      [64, 118],
+      [70, 82],
+      [99, 84],
+      [96, 132],
+      [79, 154],
+      [70, 118],
     ],
     slot('jacket'),
   );
   polygon(
     human,
     [
-      [156, 82],
-      [122, 84],
-      [120, 130],
-      [144, 154],
-      [156, 118],
+      [150, 82],
+      [121, 84],
+      [120, 132],
+      [141, 154],
+      [150, 118],
     ],
     slot('jacket'),
   );
   polygon(
     human,
     [
-      [64, 82],
-      [76, 84],
-      [72, 120],
-      [64, 112],
+      [70, 82],
+      [82, 84],
+      [78, 120],
+      [70, 112],
     ],
     slot('jacketLight'),
   );
   polygon(
     human,
     [
-      [156, 82],
-      [146, 86],
-      [144, 120],
-      [156, 132],
+      [150, 82],
+      [140, 86],
+      [138, 120],
+      [150, 132],
     ],
     slot('jacketEdge'),
   );
   polygon(
     human,
     [
-      [88, 78],
-      [102, 84],
-      [98, 92],
-      [84, 86],
+      [82, 80],
+      [100, 86],
+      [94, 118],
+      [84, 104],
     ],
     slot('jacketEdge'),
   );
   polygon(
     human,
     [
-      [132, 78],
-      [118, 84],
-      [122, 92],
-      [136, 86],
+      [138, 80],
+      [120, 86],
+      [126, 118],
+      [136, 104],
+    ],
+    slot('jacketEdge'),
+  );
+  polygon(
+    human,
+    [
+      [86, 78],
+      [100, 84],
+      [97, 90],
+      [84, 84],
+    ],
+    slot('jacketEdge'),
+  );
+  polygon(
+    human,
+    [
+      [134, 78],
+      [120, 84],
+      [123, 90],
+      [136, 84],
     ],
     slot('jacketEdge'),
   );
   human.fill(109, 84, 2, 46, slot('jacketEdge'));
+  human.line(70, 100, 84, 106, slot('jacketLight'), 2);
+  human.line(150, 100, 136, 106, slot('jacketEdge'), 2);
   human.line(94, 62, 104, 96, slot('cyanDeep'), 2);
   human.line(104, 96, 110, 124, slot('cyanDeep'), 2);
-  human.fill(103, 64, 14, 20, slot('skinDeep'));
-  human.fill(105, 64, 10, 18, slot('skin'));
+  human.line(104, 86, 110, 101, slot('sodium'), 1);
+  human.line(110, 101, 116, 86, slot('sodium'), 1);
+  human.fill(102, 62, 16, 22, slot('skinDeep'));
+  human.fill(104, 62, 12, 20, slot('skin'));
 
-  // The head, in three-quarter view, with hair, headphones and a face.
-  human.ellipse(92, 28, 37, 40, slot('skin'));
-  human.ellipse(96, 32, 19, 17, slot('skinLight'));
-  human.fill(99, 40, 4, 3, slot('skinPale'));
-  human.ellipse(118, 50, 11, 15, slot('skinDeep'));
+  // The head, larger and in three-quarter view: hair, face, headphones and a mic.
+  human.ellipse(89, 22, 42, 46, slot('skin'));
+  human.ellipse(95, 28, 21, 20, slot('skinLight'));
+  human.fill(98, 37, 5, 4, slot('skinPale'));
+  human.ellipse(119, 48, 12, 17, slot('skinDeep'));
   polygon(
     human,
     [
-      [90, 32],
-      [96, 24],
-      [106, 22],
-      [118, 22],
-      [128, 26],
-      [132, 34],
-      [128, 30],
-      [124, 36],
-      [118, 28],
-      [112, 34],
-      [104, 28],
-      [98, 36],
-      [94, 30],
+      [87, 32],
+      [92, 22],
+      [104, 18],
+      [118, 18],
+      [130, 23],
+      [135, 33],
+      [130, 29],
+      [126, 37],
+      [119, 27],
+      [112, 35],
+      [103, 27],
+      [97, 37],
+      [91, 30],
     ],
     slot('hair'),
   );
   polygon(
     human,
     [
-      [108, 24],
-      [118, 22],
-      [128, 26],
-      [124, 30],
-      [116, 26],
+      [106, 20],
+      [118, 18],
+      [130, 23],
+      [126, 28],
+      [115, 23],
     ],
     slot('hairLight'),
   );
-  human.fill(90, 48, 6, 10, slot('skinDeep'));
-  human.fill(91, 48, 4, 8, slot('skinLight'));
-  human.fill(112, 46, 5, 3, slot('hair'));
-  human.set(116, 47, slot('neonCyan'));
-  human.fill(110, 42, 8, 2, slot('hair'));
-  human.fill(122, 49, 3, 5, slot('skinLight'));
-  human.set(122, 54, slot('skinDeep'));
-  human.fill(113, 58, 6, 2, slot('skinDeep'));
-  human.fill(116, 62, 8, 2, slot('skinLight'));
-  for (let angle = -160; angle <= -20; angle += 8) {
+  human.fill(87, 42, 7, 13, slot('skinDeep'));
+  human.fill(88, 43, 5, 10, slot('skinLight'));
+  human.fill(88, 38, 4, 12, slot('hair'));
+  human.fill(128, 36, 4, 11, slot('hair'));
+  human.fill(112, 41, 6, 3, slot('hair'));
+  human.set(117, 42, slot('neonCyan'));
+  human.fill(110, 37, 9, 2, slot('hair'));
+  human.fill(123, 45, 3, 6, slot('skinLight'));
+  human.set(123, 51, slot('skinDeep'));
+  human.fill(114, 55, 8, 2, slot('skinDeep'));
+  human.fill(117, 59, 8, 2, slot('skinLight'));
+  human.fill(88, 57, 2, 2, slot('cream'));
+
+  // Headphones, over the ears, with a small mic boom.
+  for (let angle = -158; angle <= -22; angle += 8) {
     const rad = (angle * Math.PI) / 180;
     human.fill(
-      Math.round(110 + Math.cos(rad) * 23),
-      Math.round(48 + Math.sin(rad) * 23),
+      Math.round(110 + Math.cos(rad) * 25),
+      Math.round(45 + Math.sin(rad) * 25),
       3,
       3,
       slot('jacketEdge'),
     );
   }
-  human.fill(84, 42, 12, 16, slot('jacket'));
-  human.fill(86, 44, 8, 12, slot('jacketEdge'));
-  human.fill(88, 46, 4, 4, slot('neonCyan'));
-  human.fill(124, 42, 12, 16, slot('jacket'));
-  human.fill(126, 44, 7, 12, slot('jacketEdge'));
-  human.fill(128, 46, 3, 4, slot('neonCyan'));
+  human.fill(81, 38, 14, 18, slot('jacket'));
+  human.fill(84, 41, 9, 13, slot('jacketEdge'));
+  human.fill(86, 44, 4, 5, slot('neonCyan'));
+  human.fill(126, 38, 14, 18, slot('jacket'));
+  human.fill(128, 41, 8, 13, slot('jacketEdge'));
+  human.fill(130, 44, 4, 5, slot('neonCyan'));
+  human.line(94, 52, 108, 59, slot('jacketEdge'), 2);
+  human.fill(106, 57, 4, 4, slot('neonCyan'));
 
   // Left arm, hand scratching the deck.
-  segment(human, 70, 92, 52, 124, 18, 14, slot('jacket'));
-  segment(human, 52, 124, 58, 158, 14, 10, slot('jacket'));
-  human.ellipse(46, 118, 14, 14, slot('jacketLight'));
-  human.fill(52 + scratch, 158, 12, 12, slot('skin'));
-  human.fill(52 + scratch, 158, 12, 3, slot('skinLight'));
-  human.fill(54 + scratch, 161, 2, 6, slot('skinDeep'));
-  human.fill(59 + scratch, 161, 2, 6, slot('skinDeep'));
+  segment(human, 76, 92, 54, 124, 17, 13, slot('jacket'));
+  segment(human, 54, 124, 64, 156, 13, 9, slot('jacket'));
+  human.ellipse(52, 120, 13, 13, slot('jacketLight'));
+  human.fill(58, 152, 14, 5, slot('jacketEdge'));
+  human.fill(58 + scratch, 156, 12, 12, slot('skin'));
+  human.fill(58 + scratch, 156, 12, 3, slot('skinLight'));
+  human.fill(60 + scratch, 159, 2, 6, slot('skinDeep'));
+  human.fill(65 + scratch, 159, 2, 6, slot('skinDeep'));
 
   // Right arm: raised with a record, or down on the other deck.
-  segment(human, 150, 92, 170, 108, 18, 14, slot('jacket'));
-  human.ellipse(170, 106, 14, 14, slot('jacketLight'));
+  segment(human, 144, 92, 168, 108, 17, 13, slot('jacket'));
+  human.ellipse(168, 106, 13, 13, slot('jacketLight'));
   if (raised) {
-    segment(human, 170, 108, 178, 44, 14, 10, slot('jacket'));
-    human.ellipse(180, 30, 34, 34, slot('ink'));
-    ring(human, 180, 30, 16, 2, slot('sodium'));
-    human.ellipse(172, 22, 16, 16, slot('violet'));
-    ring(human, 180, 30, 8, 1, slot('neonCyan'));
-    human.fill(178, 28, 4, 4, slot('yellow'));
-    human.fill(173, 36, 12, 12, slot('skin'));
-    human.fill(173, 36, 12, 3, slot('skinLight'));
-    human.fill(176, 39, 2, 7, slot('skinDeep'));
-    human.fill(181, 39, 2, 7, slot('skinDeep'));
+    segment(human, 168, 108, 178, 44, 13, 9, slot('jacket'));
+    human.fill(172, 40, 12, 5, slot('jacketEdge'));
+    human.ellipse(180, 28, 36, 36, slot('ink'));
+    ring(human, 180, 28, 17, 2, slot('sodium'));
+    human.ellipse(171, 19, 18, 18, slot('violet'));
+    ring(human, 180, 28, 9, 1, slot('neonCyan'));
+    human.fill(178, 26, 4, 4, slot('yellow'));
+    human.fill(173, 34, 12, 12, slot('skin'));
+    human.fill(173, 34, 12, 3, slot('skinLight'));
+    human.fill(176, 37, 2, 7, slot('skinDeep'));
+    human.fill(181, 37, 2, 7, slot('skinDeep'));
   } else {
-    segment(human, 170, 108, 162, 158, 14, 10, slot('jacket'));
-    human.fill(156, 158, 12, 12, slot('skin'));
-    human.fill(156, 158, 12, 3, slot('skinLight'));
-    human.fill(158, 161, 2, 6, slot('skinDeep'));
-    human.fill(163, 161, 2, 6, slot('skinDeep'));
+    segment(human, 168, 108, 162, 156, 13, 9, slot('jacket'));
+    human.fill(154, 152, 14, 5, slot('jacketEdge'));
+    human.fill(156, 156, 12, 12, slot('skin'));
+    human.fill(156, 156, 12, 3, slot('skinLight'));
+    human.fill(158, 159, 2, 6, slot('skinDeep'));
+    human.fill(163, 159, 2, 6, slot('skinDeep'));
   }
-  human.line(72, 92, 54, 122, slot('cyan'), 2);
-  human.line(150, 92, 168, 108, slot('cyan'), 2);
+  human.line(78, 92, 56, 122, slot('cyan'), 2);
+  human.line(144, 92, 166, 108, slot('cyan'), 2);
 
   // A rim light on the figure alone, warm from the spotlight and cyan from the back.
   const rim = new Canvas(DJ_WIDTH, DJ_HEIGHT);
@@ -668,6 +707,85 @@ function djFrame(frame: number): Canvas {
   human.draw(rim, 0, 0);
   canvas.draw(human, 0, 0);
   return canvas;
+}
+
+function boltPath(): readonly (readonly [number, number])[] {
+  const random = new Random(91);
+  const points: (readonly [number, number])[] = [[240, 0]];
+  let x = 240;
+  let y = 0;
+  while (y < 268) {
+    y += random.int(20, 34);
+    x = Math.min(400, Math.max(80, x + random.int(-22, 22)));
+    points.push([x, Math.min(268, y)]);
+  }
+  return points;
+}
+
+const BOLT_PATH = boltPath();
+
+function boltFrame(frame: number): Canvas {
+  const canvas = new Canvas(480, 360);
+  const strength = [0, 0.35, 1, 1, 0.7, 0.3, 0, 0][frame] ?? 0;
+  if (strength === 0) return canvas;
+  const core = strength > 0.8;
+  const drawPath = (size: number, color: SlotName): void => {
+    for (let at = 1; at < BOLT_PATH.length; at++) {
+      const [x0, y0] = BOLT_PATH[at - 1] ?? [240, 0];
+      const [x1, y1] = BOLT_PATH[at] ?? [240, 268];
+      canvas.line(x0, y0, x1, y1, slot(color), size);
+    }
+  };
+  drawPath(core ? 9 : 7, 'boltDeep');
+  drawPath(core ? 4 : 3, 'boltBlue');
+  drawPath(core ? 2 : 1, 'boltCyan');
+  if (core) drawPath(1, 'boltCore');
+
+  // Branches, fixed to the path and shorter as the bolt fades.
+  for (let at = 2; at < BOLT_PATH.length - 1; at += 2) {
+    const [x, y] = BOLT_PATH[at] ?? [240, 0];
+    const dir = at % 4 === 0 ? 1 : -1;
+    const length = Math.round((18 + ((at * 7) % 22)) * strength);
+    canvas.line(x, y, x + dir * length, y + Math.round(length * 0.7), slot('boltBlue'), 2);
+    canvas.line(
+      x,
+      y,
+      x + dir * Math.round(length * 0.6),
+      y + Math.round(length * 0.4),
+      slot('boltCyan'),
+      1,
+    );
+  }
+
+  // The impact: a blue star, a ring and sparks.
+  const radius = Math.round(12 + strength * 18);
+  ring(canvas, 240, 272, radius, 2, slot('boltCyan'));
+  ring(canvas, 240, 272, radius + 8, 1, slot('boltBlue'));
+  for (let ray = 0; ray < 18; ray++) {
+    const angle = (ray / 18) * Math.PI * 2;
+    const length = Math.round((20 + ((ray * 13) % 46)) * strength);
+    canvas.line(
+      240 + Math.round(Math.cos(angle) * 10),
+      272 + Math.round(Math.sin(angle) * 10),
+      240 + Math.round(Math.cos(angle) * (10 + length)),
+      272 + Math.round(Math.sin(angle) * (10 + length)),
+      slot(ray % 3 === 0 ? 'boltCore' : ray % 2 === 0 ? 'boltCyan' : 'boltBlue'),
+      1,
+    );
+  }
+  if (core) {
+    canvas.ellipse(232, 264, 16, 16, slot('boltBlue'));
+    canvas.ellipse(236, 268, 8, 8, slot('boltCore'));
+  }
+  return canvas;
+}
+
+function boltSheet(): Canvas {
+  const sheet = new Canvas(480 * 8, 360);
+  for (let frame = 0; frame < 8; frame++) {
+    sheet.draw(boltFrame(frame), frame * 480, 0);
+  }
+  return sheet;
 }
 
 function djSheet(): Canvas {
@@ -775,3 +893,4 @@ await writeFile(
   new URL('menu-spot.png', OUT),
   await encodeIndexedPng(320, 360, spotImage().pixels, palette),
 );
+await writeSheet('menu-bolt', boltSheet());
