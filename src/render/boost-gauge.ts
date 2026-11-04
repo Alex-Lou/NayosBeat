@@ -126,11 +126,12 @@ const SPARK_TICKS = 18;
 const GRAVITY = 0.07;
 /** Ticks the gauge shakes as it blows up. */
 const BLAST_SHAKE_TICKS = 12;
-/** The tension VU-meter under the Boost tube (docs/watt-arsenal.md §3.2): 10 LEDs along it. */
+/** The tension VU-meter under the Boost tube (docs/watt-arsenal.md §3.2): 10 bevelled LED blocks. */
 const TENSION_LEDS = 10;
 const TENSION_STEP = 10;
-const TENSION_LED_WIDTH = 8;
+const TENSION_LED_WIDTH = 9;
 const TENSION_Y = CAPSULE.height + 1;
+const TENSION_HEIGHT = 6;
 
 const OUTLINE = 0x0c0612;
 const BROKEN = 0x3a3448;
@@ -314,23 +315,63 @@ function tensionSpans(
     : Math.min(TENSION_LEDS, Math.floor((tension * TENSION_LEDS) / maxTension));
   const full = !broken && tension >= maxTension;
   const activeColor = full ? PLATINE[2] : energy;
-  const spans: Span[] = [];
+  const spans: Span[] = [
+    // Left bolt capsule under the bar count capsule.
+    {
+      x: 0,
+      y: TENSION_Y,
+      width: CAPSULE.width,
+      height: TENSION_HEIGHT,
+      color: broken ? BROKEN : full ? PLATINE[0] : lit > 0 ? energy : 0x6a6080,
+    },
+    {
+      x: 1,
+      y: TENSION_Y + 1,
+      width: CAPSULE.width - 2,
+      height: TENSION_HEIGHT - 2,
+      color: OUTLINE,
+    },
+    {
+      x: 3,
+      y: TENSION_Y + 2,
+      width: 6,
+      height: 2,
+      color: broken ? BROKEN : full ? PLATINE[0] : lit > 0 ? energy : 0x6a6080,
+    },
+  ];
   for (let i = 0; i < TENSION_LEDS; i++) {
     const x = TUBE_X + i * TENSION_STEP;
     const on = i < lit;
+    const topColor = on ? mix(activeColor, 0xffffff, 0.55) : EMPTY[0];
+    const coreColor = on ? activeColor : EMPTY[1];
+    const shadeColor = on ? mix(activeColor, 0x000000, 0.35) : EMPTY[4];
     spans.push({
       x,
       y: TENSION_Y,
       width: TENSION_LED_WIDTH,
-      height: 3,
-      color: broken ? BROKEN : on ? mix(activeColor, OUTLINE, 0.5) : OUTLINE,
+      height: TENSION_HEIGHT,
+      color: broken ? BROKEN : on ? mix(activeColor, OUTLINE, 0.35) : OUTLINE,
     });
     spans.push({
       x: x + 1,
       y: TENSION_Y + 1,
       width: TENSION_LED_WIDTH - 2,
       height: 1,
-      color: on ? activeColor : EMPTY[1],
+      color: topColor,
+    });
+    spans.push({
+      x: x + 1,
+      y: TENSION_Y + 2,
+      width: TENSION_LED_WIDTH - 2,
+      height: 2,
+      color: coreColor,
+    });
+    spans.push({
+      x: x + 1,
+      y: TENSION_Y + 4,
+      width: TENSION_LED_WIDTH - 2,
+      height: 1,
+      color: shadeColor,
     });
   }
   return spans;

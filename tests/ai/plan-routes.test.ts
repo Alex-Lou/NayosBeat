@@ -35,6 +35,7 @@ const OPENINGS: Readonly<Partial<Record<MoveId, InputBits>>> = {
   forwardLight: F | L,
   crouchLight: D | L,
   standHeavy: H,
+  forwardHeavy: F | H,
   backHeavy: B | H,
   specialAntiAir: D | S,
 };

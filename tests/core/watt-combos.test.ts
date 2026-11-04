@@ -57,6 +57,18 @@ const ROUTES: readonly Route[] = [
     steps: [L, L, B | H, L, L, F | H, L, L, L],
     damages: [30, 34, 44, 21, 22, 30, 15, 19, 27],
   },
+  {
+    notation: '↓L, L, H → S (Paume basse chain)',
+    distance: 30,
+    steps: [D | L, L, H, S],
+    damages: [24, 34, 68, 63],
+  },
+  {
+    notation: '→H (Coup de pilon) → S (Coup de jus)',
+    distance: 35,
+    steps: [F | H, S],
+    damages: [75, 81],
+  },
   { notation: 'H → S', distance: 40, steps: [H, S], damages: [85, 81] },
 ];
 
@@ -128,9 +140,19 @@ describe('his own kit (docs/watt-arsenal.md §4)', () => {
     expect(far.hits.map((hit) => hit.damage)).toEqual([90]);
   });
 
-  it('the cable reels the opponent in to 34 px, +4 for him: the Branchement follows', () => {
+  it('the cable reels the opponent in to 34 px, +4 for him: combos from L, L, H and the Branchement follows', () => {
     const result = playCombo(facingOff(80, WATT_VS_NAYO), WATT_VS_NAYO, [B | S, S]);
     expect(result.hits.map((hit) => hit.damage)).toEqual([40, 0, 140]);
+    expect(floored(result)).toBe(true);
+    const stringPull = playCombo(facingOff(35, WATT_VS_NAYO), WATT_VS_NAYO, [L, L, H, B | S]);
+    expect(stringPull.hits.map((hit) => hit.damage)).toEqual([30, 34, 68, 28]);
+    expect(unbroken(stringPull)).toBe(true);
+  });
+
+  it('the Pas blindé cancels from frame 10 into a combo', () => {
+    const result = playCombo(facingOff(65, WATT_VS_NAYO), WATT_VS_NAYO, [Dash, L, L, H, S]);
+    expect(result.hits.map((hit) => hit.damage)).toEqual([30, 34, 68, 63]);
+    expect(unbroken(result)).toBe(true);
     expect(floored(result)).toBe(true);
   });
 

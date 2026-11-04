@@ -30,7 +30,10 @@ export const WATT_STRINGS: Pick<
     guard: 'mid',
     hitbox: box(8, 40, 24, 14),
     cancelInto: LIGHT_CANCELS,
-    branches: [{ button: 'light', dirs: ['neutral', 'forward', 'back'], move: 'chainLight' }],
+    branches: [
+      { button: 'light', dirs: ['neutral', 'forward', 'back'], move: 'chainLight' },
+      { button: 'light', dirs: ['down'], move: 'crouchLight' },
+    ],
   }),
   // L, L: a short hook of the rear clamp, an 8 px step; then the end of the phrase.
   chainLight: strike({
@@ -95,7 +98,7 @@ export const WATT_STRINGS: Pick<
     motion: advance(30, { from: 0, to: 9, distancePx: 10 }),
     knockdown: kd(3, 4),
   }),
-  // → + L: a heavy 14 px step, then the Paume.
+  // → + L: a heavy 14 px step, then the Paume; chains into Crochet court, Marteau or Coup de masse.
   forwardLight: strike({
     name: 'Pas lourd',
     frames: [9, 2, 11],
@@ -106,8 +109,12 @@ export const WATT_STRINGS: Pick<
     guard: 'mid',
     hitbox: box(8, 40, 26, 14),
     motion: advance(22, { from: 0, to: 9, distancePx: 14 }),
-    cancelInto: HEAVY_CANCELS,
-    branches: [{ button: 'light', dirs: ['neutral', 'forward', 'back'], move: 'chainLight' }],
+    cancelInto: LIGHT_CANCELS,
+    branches: [
+      { button: 'light', dirs: ['neutral', 'forward', 'back'], move: 'chainLight' },
+      { button: 'heavy', dirs: ['neutral'], move: 'standHeavy' },
+      { button: 'heavy', dirs: ['forward'], move: 'chainHigh' },
+    ],
   }),
   // H: the front fist falls from high, at the chest (67.5 px, under Saphir's Chassé). Its
   // CONTRE folds the opponent on the spot: who presses up close gets flattened.
@@ -125,7 +132,8 @@ export const WATT_STRINGS: Pick<
     juggleCost: 2,
     counter: { hitstun: 20, pushback: px(0.5) },
     branches: [
-      { button: 'heavy', dirs: ['neutral', 'forward'], move: 'chainHeavy' },
+      { button: 'heavy', dirs: ['neutral'], move: 'chainHeavy' },
+      { button: 'heavy', dirs: ['forward'], move: 'chainHigh' },
       { button: 'heavy', dirs: ['down'], move: 'crouchHeavy' },
       { button: 'heavy', dirs: ['back'], move: 'backHeavy' },
     ],

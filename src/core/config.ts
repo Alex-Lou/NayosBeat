@@ -38,6 +38,8 @@ export interface TensionRules {
     readonly armor: number;
     /** It takes a blow. */
     readonly hit: number;
+    /** It lands a strike or a throw of its own. */
+    readonly strike?: number;
   };
   readonly decayEvery: number;
 }

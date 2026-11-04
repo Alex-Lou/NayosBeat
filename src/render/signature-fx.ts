@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import type { MatchConfig } from '../core/config';
 import { toPx } from '../core/constants';
 import { moveOf } from '../core/moves';
-import type { GameState } from '../core/state';
+import { FLAG_CHARGED, type GameState } from '../core/state';
 import { aimOf, isHeavy } from './fight-events';
 import { DEPTH } from './depth';
 import type { FlashBudget } from './flash-budget';
@@ -318,6 +318,10 @@ export class SignatureFx {
       const x = toPx(fighter.x);
       const feet = this.look.groundY - toPx(fighter.y);
       const toward = fighter.facing;
+      if ((fighter.flags & FLAG_CHARGED) !== 0 && frame === 0) {
+        this.cue('burst', x, feet - 44, toward, PLATINE, energy, 0.85);
+        this.cue('drop', x, feet, toward, energy, energy, 0.9);
+      }
       for (const cue of signature.moves[move]?.cues ?? []) {
         if (cue.frame !== frame) continue;
         const color = toneColor(cue.tone, energy);

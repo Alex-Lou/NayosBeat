@@ -1,12 +1,21 @@
 import type { FighterTemplate, MatchConfig, TensionRules } from './config';
-import type { Contact, FighterState } from './state';
+import { FLAG_CHARGED, type Contact, type FighterAction, type FighterState } from './state';
 
 /**
  * A fighter's own gauge, the tension (docs/watt-arsenal.md §3.2): only for a fighter whose
  * template has `tension` rules. It fills as the fighter catches (a grab that holds, a pummel),
- * absorbs a blow with its armor or takes one, and loses a point every `decayEvery` ticks. A
- * round starts it empty. Pure: the same contacts on the same frame give the same gauge.
+ * lands a blow or a throw, absorbs a blow with its armor or takes one, and loses a point every
+ * `decayEvery` ticks in neutral while under `max`. Once full (`max`), it stays locked in
+ * SURTENSION until the next plain special spends it.
  */
+
+const DECAY_ACTIONS: ReadonlySet<FighterAction> = new Set([
+  'idle',
+  'walkForward',
+  'walkBack',
+  'crouch',
+  'guard',
+]);
 
 /** The gauge after this tick's `contacts`, on frame `frame`, for both fighters. */
 export function tensioned(
@@ -35,18 +44,29 @@ function withTension(
 ): FighterState {
   const rules = template.tension;
   if (!rules) return fighter;
+  const spending = (fighter.flags & FLAG_CHARGED) !== 0;
   let gain = 0;
-  for (const contact of contacts) gain += gainOf(contact, contact.by === index, rules);
-  const decay = gain === 0 && fighter.tension > 0 && frame % rules.decayEvery === 0 ? 1 : 0;
+  for (const contact of contacts) {
+    gain += gainOf(contact, contact.by === index, spending, rules);
+  }
+  const canDecay =
+    gain === 0 &&
+    fighter.tension > 0 &&
+    fighter.tension < rules.max &&
+    DECAY_ACTIONS.has(fighter.action);
+  const decay = canDecay && frame % rules.decayEvery === 0 ? 1 : 0;
   const tension = Math.min(rules.max, Math.max(0, fighter.tension + gain - decay));
   return tension === fighter.tension ? fighter : { ...fighter, tension };
 }
 
-/** What a contact gives the fighter: as the one who caught (`own`), or the one touched. */
-function gainOf(contact: Contact, own: boolean, rules: TensionRules): number {
+/** What a contact gives the fighter: as the one who caught or struck (`own`), or the one touched. */
+function gainOf(contact: Contact, own: boolean, spending: boolean, rules: TensionRules): number {
   if (own) {
+    if (spending) return 0;
     if (contact.kind === 'grab') return rules.gains.grab;
-    return contact.kind === 'pummel' ? rules.gains.pummel : 0;
+    if (contact.kind === 'pummel') return rules.gains.pummel;
+    if (contact.kind === 'hit' || contact.kind === 'throw') return rules.gains.strike ?? 0;
+    return 0;
   }
   if (contact.kind === 'armor') return rules.gains.armor;
   return contact.kind === 'hit' ? rules.gains.hit : 0;

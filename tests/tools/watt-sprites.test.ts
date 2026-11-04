@@ -268,11 +268,11 @@ describe('Watt strips: reach', () => {
 
   it('specialBack: the cable reaches the far edge of the cell on its active frames', () => {
     const cable = strikesOf(WATT_CLIPS, WATT_TEMPLATE).find(({ id }) => id === 'specialBack');
-    expect(cable?.box).toEqual({ x: 30, y: 30, width: 80, height: 12 });
+    expect(cable?.box).toEqual({ x: 16, y: 28, width: 94, height: 16 });
     const body = drawStrip(WATT, 'specialBack');
     const fx = drawStripEffects(WATT, 'specialBack');
     for (const frame of cable?.frames ?? []) {
-      const drawn = reachOf(fx ? [body, fx] : [body], frame, { from: 30, to: 42 }, 'forward');
+      const drawn = reachOf(fx ? [body, fx] : [body], frame, { from: 28, to: 44 }, 'forward');
       expect(drawn, `frame ${frame}`).toBeGreaterThanOrEqual(56);
     }
   });

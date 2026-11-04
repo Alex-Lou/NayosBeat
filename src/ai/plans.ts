@@ -306,9 +306,19 @@ const WATT_PLANS: readonly Plan[] = [
     weight: JUGGLE,
   },
   { after: 'forwardLight', when: HIT, steps: [L, L], weight: EASY },
+  { after: 'crouchLight', when: within(38), steps: [L, H, S], weight: STRING },
+  {
+    after: 'crouchLight',
+    when: { ...within(41), crouching: true },
+    steps: [D | H],
+    weight: MIX,
+  },
   // The Marteau: the Coup de jus, or its Double marteau, from closer than its tip.
   { after: 'standHeavy', when: within(54), steps: [S], weight: STRING },
   { after: 'standHeavy', when: within(49), steps: [H], weight: STRING },
+  // The Coup de pilon (armored overhead): cancels into the Coup de jus or the Câble.
+  { after: 'forwardHeavy', when: within(42), steps: [S], weight: EASY },
+  { after: 'forwardHeavy', when: HIT, steps: [B | S], weight: STRING },
   // The Arraché from an anti-air: L, L, L on the body it sent up.
   { after: 'backHeavy', when: within(30), steps: [L, L, L], weight: EASY },
   // With the gauge (docs/watt.md §7): the Coup de jus or the Surcharge survoltés to end the
@@ -325,8 +335,11 @@ const WATT_PLANS: readonly Plan[] = [
   },
   { after: 'standLight', when: spending(31, BOOST_MAX), steps: [L, H, H, B | X], weight: SPEND },
   { after: 'standLight', when: spending(41, BOOST_MAX), steps: [L, H, B | X], weight: SPEND },
+  { after: 'forwardLight', when: finishing(45), steps: [L, B | X], weight: SPEND },
+  { after: 'crouchLight', when: finishing(41), steps: [B | X], weight: SPEND },
   { after: 'standHeavy', when: spending(37, BOOST_MAX), steps: [H, B | X], weight: SPEND },
   { after: 'standHeavy', when: finishing(47), steps: [B | X], weight: SPEND },
+  { after: 'forwardHeavy', when: finishing(42), steps: [B | X], weight: SPEND },
   { after: 'backHeavy', when: finishing(34), steps: [B | X], weight: SPEND },
 ];
 

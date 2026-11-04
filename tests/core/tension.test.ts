@@ -38,8 +38,9 @@ describe('the tension (watt-arsenal §3.2)', () => {
     expect(after([contact(0, 'hit'), contact(1, 'block'), contact(0, 'throw')])).toBe(0);
   });
 
-  it('stops at its max, loses a point every 8 ticks without a gain, never below 0', () => {
+  it('stops at its max, holds SURTENSION once full, loses a point every 8 ticks below max, never below 0', () => {
     expect(after([contact(0, 'grab')], 90)).toBe(100);
+    expect(after([], 100, 8)).toBe(100);
     expect(after([], 40, 8)).toBe(39);
     expect(after([], 40, 9)).toBe(40);
     expect(after([contact(1, 'hit')], 40, 8)).toBe(50);
