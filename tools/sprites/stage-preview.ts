@@ -76,6 +76,11 @@ async function main(): Promise<void> {
   const maps = names.length > 0 ? CODE_MAPS.filter(({ name }) => names.includes(name)) : CODE_MAPS;
   await mkdir(OUT, { recursive: true });
   for (const map of maps) {
+    // A truecolor stage (Sakura) has no indexed layers to compose: its PNGs are the game's own.
+    if (map.rgba) {
+      console.warn(`stage ${map.name}: truecolor layers, no preview from the code`);
+      continue;
+    }
     for (const camera of ends ? [0, 0.5, 1] : [0.5]) {
       const pixels = composite(map, camera);
       for (const { atmosphere, palette } of map.atmospheres) {

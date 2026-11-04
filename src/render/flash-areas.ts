@@ -62,9 +62,9 @@ export type SignatureCue = CueKind | 'swing' | 'wave' | 'waveBoost';
  * never reach ΔL 0.1 (light-rig.ts, move-echo.ts): no area.
  */
 export const SIGNATURE_AREAS: Readonly<Record<SignatureCue, number>> = {
-  throwRing: 325,
+  throwRing: 326,
   kick: 210,
-  groundRing: 450,
+  groundRing: 452,
   rise: 140,
   charge: 70,
   drop: 430,
