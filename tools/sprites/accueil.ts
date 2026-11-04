@@ -46,6 +46,17 @@ const SLOTS = [
   ['spotOrange', '#e07a2255'],
   ['sheenCyan', '#c8fcffaa'],
   ['sheenWarm', '#f0c94a88'],
+  ['skinDeep', '#6a2a24'],
+  ['skin', '#b85a3e'],
+  ['skinLight', '#e88a5a'],
+  ['skinPale', '#ffc08a'],
+  ['hair', '#0b0b10'],
+  ['hairLight', '#26262f'],
+  ['jacket', '#18181f'],
+  ['jacketLight', '#2e2e3a'],
+  ['jacketEdge', '#4a4a5e'],
+  ['shirt', '#c8c8d8'],
+  ['shirtShade', '#8a8a9e'],
 ] as const;
 
 type SlotName = (typeof SLOTS)[number][0];
@@ -386,11 +397,47 @@ function sheenSheet(): Canvas {
   return sheet;
 }
 
+function polygon(
+  canvas: Canvas,
+  points: readonly (readonly [number, number])[],
+  color: number,
+): void {
+  const mask = new Mask(canvas.width, canvas.height);
+  mask.polygon(points);
+  canvas.paint(0, 0, canvas.width, canvas.height, (x, y) => (mask.has(x, y) ? color : undefined));
+}
+
+function segment(
+  canvas: Canvas,
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+  w0: number,
+  w1: number,
+  color: number,
+): void {
+  const angle = Math.atan2(y1 - y0, x1 - x0);
+  const nx = -Math.sin(angle);
+  const ny = Math.cos(angle);
+  polygon(
+    canvas,
+    [
+      [x0 + nx * (w0 / 2), y0 + ny * (w0 / 2)],
+      [x1 + nx * (w1 / 2), y1 + ny * (w1 / 2)],
+      [x1 - nx * (w1 / 2), y1 - ny * (w1 / 2)],
+      [x0 - nx * (w0 / 2), y0 - ny * (w0 / 2)],
+    ],
+    color,
+  );
+}
+
 function djFrame(frame: number): Canvas {
   const canvas = new Canvas(DJ_WIDTH, DJ_HEIGHT);
   const time = (frame / DJ_FRAMES) * Math.PI * 2;
-  const bob = Math.round(Math.sin(time) * 2);
-  // Riser, booth, decks and LEDs.
+  const scratch = Math.round(Math.sin(time * 2) * 3);
+  const raised = Math.sin(time) > 0;
+  // Riser, booth, decks and LEDs, behind the DJ.
   canvas.fill(4, 204, 212, 26, slot('speaker'));
   canvas.fill(4, 204, 212, 3, slot('orangeMid'));
   canvas.fill(8, 207, 204, 2, slot('deep'));
@@ -423,32 +470,203 @@ function djFrame(frame: number): Canvas {
     const color = (led + frame) % 3 === 0 ? 'orange' : (led + frame) % 3 === 1 ? 'cyan' : 'magenta';
     canvas.fill(20 + led * 13, 198, 4, 4, slot(color));
   }
-  // The DJ: head, headphones, one hand on the deck, one holding a record.
-  const headX = 110;
-  const headY = 48 + bob;
-  canvas.ellipse(68, 62 + bob, 84, 90, slot('ink'));
-  canvas.ellipse(headX - 18, headY - 18, 36, 36, slot('ink'));
-  canvas.fill(headX - 23, headY - 19, 46, 4, slot('neonCyan'));
-  canvas.fill(headX - 24, headY - 10, 7, 14, slot('ink'));
-  canvas.fill(headX + 17, headY - 10, 7, 14, slot('ink'));
-  canvas.fill(headX - 10, headY - 2, 20, 3, slot('neonCyan'));
-  canvas.line(78, 84 + bob, 52, 166 + bob, slot('ink'), 9);
-  canvas.fill(46, 160 + bob, 10, 10, slot('ink'));
-  const raised = Math.sin(time) > 0;
-  if (raised) {
-    canvas.line(142, 84 + bob, 176, 36 + bob, slot('ink'), 9);
-    canvas.fill(170, 30 + bob, 10, 10, slot('ink'));
-    canvas.ellipse(168, 22 + bob, 28, 28, slot('ink'));
-    ring(canvas, 182, 36 + bob, 14, 2, slot('orange'));
-    canvas.fill(180, 34 + bob, 4, 4, slot('yellow'));
-  } else {
-    canvas.line(142, 84 + bob, 160, 160 + bob, slot('ink'), 9);
-    canvas.fill(154, 154 + bob, 10, 10, slot('ink'));
+
+  // The DJ, on his own layer: a face, a jacket and articulated arms.
+  const human = new Canvas(DJ_WIDTH, DJ_HEIGHT);
+  polygon(
+    human,
+    [
+      [64, 82],
+      [156, 82],
+      [144, 154],
+      [76, 154],
+    ],
+    slot('jacket'),
+  );
+  polygon(
+    human,
+    [
+      [96, 84],
+      [124, 84],
+      [120, 130],
+      [100, 130],
+    ],
+    slot('shirt'),
+  );
+  polygon(
+    human,
+    [
+      [64, 82],
+      [98, 84],
+      [96, 130],
+      [76, 154],
+      [64, 118],
+    ],
+    slot('jacket'),
+  );
+  polygon(
+    human,
+    [
+      [156, 82],
+      [122, 84],
+      [120, 130],
+      [144, 154],
+      [156, 118],
+    ],
+    slot('jacket'),
+  );
+  polygon(
+    human,
+    [
+      [64, 82],
+      [76, 84],
+      [72, 120],
+      [64, 112],
+    ],
+    slot('jacketLight'),
+  );
+  polygon(
+    human,
+    [
+      [156, 82],
+      [146, 86],
+      [144, 120],
+      [156, 132],
+    ],
+    slot('jacketEdge'),
+  );
+  polygon(
+    human,
+    [
+      [88, 78],
+      [102, 84],
+      [98, 92],
+      [84, 86],
+    ],
+    slot('jacketEdge'),
+  );
+  polygon(
+    human,
+    [
+      [132, 78],
+      [118, 84],
+      [122, 92],
+      [136, 86],
+    ],
+    slot('jacketEdge'),
+  );
+  human.fill(109, 84, 2, 46, slot('jacketEdge'));
+  human.line(94, 62, 104, 96, slot('cyanDeep'), 2);
+  human.line(104, 96, 110, 124, slot('cyanDeep'), 2);
+  human.fill(103, 64, 14, 20, slot('skinDeep'));
+  human.fill(105, 64, 10, 18, slot('skin'));
+
+  // The head, in three-quarter view, with hair, headphones and a face.
+  human.ellipse(92, 28, 37, 40, slot('skin'));
+  human.ellipse(96, 32, 19, 17, slot('skinLight'));
+  human.fill(99, 40, 4, 3, slot('skinPale'));
+  human.ellipse(118, 50, 11, 15, slot('skinDeep'));
+  polygon(
+    human,
+    [
+      [90, 32],
+      [96, 24],
+      [106, 22],
+      [118, 22],
+      [128, 26],
+      [132, 34],
+      [128, 30],
+      [124, 36],
+      [118, 28],
+      [112, 34],
+      [104, 28],
+      [98, 36],
+      [94, 30],
+    ],
+    slot('hair'),
+  );
+  polygon(
+    human,
+    [
+      [108, 24],
+      [118, 22],
+      [128, 26],
+      [124, 30],
+      [116, 26],
+    ],
+    slot('hairLight'),
+  );
+  human.fill(90, 48, 6, 10, slot('skinDeep'));
+  human.fill(91, 48, 4, 8, slot('skinLight'));
+  human.fill(112, 46, 5, 3, slot('hair'));
+  human.set(116, 47, slot('neonCyan'));
+  human.fill(110, 42, 8, 2, slot('hair'));
+  human.fill(122, 49, 3, 5, slot('skinLight'));
+  human.set(122, 54, slot('skinDeep'));
+  human.fill(113, 58, 6, 2, slot('skinDeep'));
+  human.fill(116, 62, 8, 2, slot('skinLight'));
+  for (let angle = -160; angle <= -20; angle += 8) {
+    const rad = (angle * Math.PI) / 180;
+    human.fill(
+      Math.round(110 + Math.cos(rad) * 23),
+      Math.round(48 + Math.sin(rad) * 23),
+      3,
+      3,
+      slot('jacketEdge'),
+    );
   }
-  canvas.paint(0, 0, DJ_WIDTH, 154, (x, y) => {
-    if (canvas.get(x, y) !== slot('ink') || canvas.get(x, y - 1) !== 0) return undefined;
-    return slot(x < 90 ? 'sodium' : 'neonCyan');
+  human.fill(84, 42, 12, 16, slot('jacket'));
+  human.fill(86, 44, 8, 12, slot('jacketEdge'));
+  human.fill(88, 46, 4, 4, slot('neonCyan'));
+  human.fill(124, 42, 12, 16, slot('jacket'));
+  human.fill(126, 44, 7, 12, slot('jacketEdge'));
+  human.fill(128, 46, 3, 4, slot('neonCyan'));
+
+  // Left arm, hand scratching the deck.
+  segment(human, 70, 92, 52, 124, 18, 14, slot('jacket'));
+  segment(human, 52, 124, 58, 158, 14, 10, slot('jacket'));
+  human.ellipse(46, 118, 14, 14, slot('jacketLight'));
+  human.fill(52 + scratch, 158, 12, 12, slot('skin'));
+  human.fill(52 + scratch, 158, 12, 3, slot('skinLight'));
+  human.fill(54 + scratch, 161, 2, 6, slot('skinDeep'));
+  human.fill(59 + scratch, 161, 2, 6, slot('skinDeep'));
+
+  // Right arm: raised with a record, or down on the other deck.
+  segment(human, 150, 92, 170, 108, 18, 14, slot('jacket'));
+  human.ellipse(170, 106, 14, 14, slot('jacketLight'));
+  if (raised) {
+    segment(human, 170, 108, 178, 44, 14, 10, slot('jacket'));
+    human.ellipse(180, 30, 34, 34, slot('ink'));
+    ring(human, 180, 30, 16, 2, slot('sodium'));
+    human.ellipse(172, 22, 16, 16, slot('violet'));
+    ring(human, 180, 30, 8, 1, slot('neonCyan'));
+    human.fill(178, 28, 4, 4, slot('yellow'));
+    human.fill(173, 36, 12, 12, slot('skin'));
+    human.fill(173, 36, 12, 3, slot('skinLight'));
+    human.fill(176, 39, 2, 7, slot('skinDeep'));
+    human.fill(181, 39, 2, 7, slot('skinDeep'));
+  } else {
+    segment(human, 170, 108, 162, 158, 14, 10, slot('jacket'));
+    human.fill(156, 158, 12, 12, slot('skin'));
+    human.fill(156, 158, 12, 3, slot('skinLight'));
+    human.fill(158, 161, 2, 6, slot('skinDeep'));
+    human.fill(163, 161, 2, 6, slot('skinDeep'));
+  }
+  human.line(72, 92, 54, 122, slot('cyan'), 2);
+  human.line(150, 92, 168, 108, slot('cyan'), 2);
+
+  // A rim light on the figure alone, warm from the spotlight and cyan from the back.
+  const rim = new Canvas(DJ_WIDTH, DJ_HEIGHT);
+  rim.paint(0, 0, DJ_WIDTH, DJ_HEIGHT, (x, y) => {
+    if (human.get(x, y) === 0) return undefined;
+    const left = human.get(x - 1, y) === 0;
+    const right = human.get(x + 1, y) === 0;
+    const above = human.get(x, y - 1) === 0;
+    if (!left && !right && !above) return undefined;
+    return left ? slot('sodium') : right ? slot('neonCyan') : slot('skinPale');
   });
+  human.draw(rim, 0, 0);
+  canvas.draw(human, 0, 0);
   return canvas;
 }
 
