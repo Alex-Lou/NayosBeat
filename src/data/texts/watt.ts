@@ -31,11 +31,11 @@ export const WATT_TEXTS: FighterTexts = {
   moves: {
     special: {
       input: SPECIAL,
-      text: "Les deux pinces en avant, un pas, et l'exosquelette décharge au contact : il met au sol. Paré, il se punit.",
+      text: "Les deux pinces en avant, un pas, et l'exosquelette décharge au contact : il met au sol. VU-mètre plein (SURTENSION, 10 LED blanches sous le Boost), il frappe à 113 et devient presque sûr en garde.",
     },
     specialForward: {
       input: 'Avant + S',
-      text: "La charge, l'épaule d'abord, sur une longue distance : il punit un coup raté de loin et met au sol. Un projectile l'arrête en route.",
+      text: "La charge blindée, l'épaule d'abord : elle encaisse un coup et punit de loin. VU-mètre plein, elle est blindée dès la 1re image sur toute sa course.",
     },
     specialAntiAir: {
       input: ANTI_AIR,
@@ -43,11 +43,11 @@ export const WATT_TEXTS: FighterTexts = {
     },
     specialClose: {
       input: 'S, tout près',
-      text: "S à 40 px ou moins : il saisit des deux pinces, soulève, tourne et plante. Son coup le plus lourd, 140, impossible à dégager. Raté, il s'ouvre longtemps.",
+      text: 'S à 40 px ou moins : il saisit des deux pinces, soulève, tourne à 360° et plante. Son coup le plus lourd : 140 (175 avec le VU-mètre plein), impossible à dégager.',
     },
     specialBack: {
       input: 'Arrière + S',
-      text: "Le câble part droit devant lui, de 30 à 110 px, et ramène l'adversaire à 34 px. Il garde l'avantage : prise, Branchement ou Marteau. Un projectile l'arrête au démarrage.",
+      text: "Le câble part droit devant lui jusqu'à 110 px, s'enchaîne après ses coups lourds et ramène l'adversaire à 34 px (+4, à portée du Branchement). VU-mètre plein, l'adversaire ramené est électrocuté assez longtemps pour tout un combo gratuit.",
     },
     jumpSpecial: {
       input: "En l'air, S",
@@ -99,11 +99,11 @@ export const WATT_TEXTS: FighterTexts = {
     },
     forwardHeavy: {
       input: FORWARD_HEAVY,
-      text: "Le poing monte derrière l'ampoule, puis tombe tout droit. Un coup d'en haut, lent, à parer debout.",
+      text: "Le poing monte derrière l'ampoule, blindé en descendant, puis tombe tout droit. Un coup d'en haut à parer debout, qui s'annule désormais en spécial (Coup de jus, Câble ou Surcharge).",
     },
     backHeavy: {
       input: BACK_HEAVY,
-      text: "Les deux bras arrachent vers le ciel, contre les sauts. Il fait décoller : enchaîne le Plafonnier (bas + S). Il passe au-dessus d'un adversaire accroupi.",
+      text: "Les deux bras arrachent vers le ciel, contre les sauts. Il fait décoller pour enchaîner L, L, L en l'air. Il passe au-dessus d'un adversaire accroupi.",
     },
     chainLaunch: {
       input: CHAIN_LAUNCH,
@@ -111,7 +111,7 @@ export const WATT_TEXTS: FighterTexts = {
     },
     crouchLight: {
       input: 'Bas + L',
-      text: 'La pince à plat, au ras du sol. Se pare accroupi.',
+      text: 'La pince à plat, au ras du sol. Se pare accroupi, et enchaîne désormais sur L (Crochet court) ou bas + H (Ratissage).',
     },
     crouchHeavy: {
       input: 'Bas + H',
@@ -155,7 +155,7 @@ export const WATT_TEXTS: FighterTexts = {
     },
     dashForward: {
       input: DASH,
-      text: "Le Pas blindé, les épaules d'abord : il encaisse un coup au passage, même un projectile, à moitié de dégâts, et continue. Une prise le bat.",
+      text: "Le Pas blindé, les épaules d'abord : il encaisse un coup ou un projectile à moitié de dégâts, remplit son VU-mètre de tension et s'annule dès la mi-course en coup ou en prise.",
     },
     boostCancel: {
       input: REWIND,
@@ -171,20 +171,20 @@ export const WATT_TEXTS: FighterTexts = {
   combos: [
     { input: 'L, L, L', text: 'Paume, Crochet court, Jeté : partout où la Paume touche.' },
     {
-      input: 'L, L, H, avant + S',
-      text: "Le combo de base : la Surcharge emporte l'adversaire.",
+      input: 'Bas + L, L, H, puis S',
+      text: 'Ouverture basse qui enchaîne toute la corde jusqu’au Coup de jus.',
     },
     {
-      input: 'S, tout près',
-      text: "Le Branchement : 140 d'un geste, si tu es à 40 px.",
+      input: 'L, L, H, arrière + S, puis S',
+      text: "Le Câble en fin de combo ramène l'adversaire à 34 px, pile dans le Branchement (140).",
     },
     {
-      input: 'Arrière + S, puis S',
-      text: "Le câble ramène l'adversaire, puis le Branchement enchaîne.",
+      input: 'L, L, arrière + H, puis L, L, avant + H, puis L, L, L',
+      text: 'Soulevé, jongle, Rebond du Coup de masse au sol et reprise en l’air.',
     },
     {
-      input: "En l'air, S",
-      text: "Le Plongeon écrase celui qui reste au sol, où qu'il garde.",
+      input: 'Arrière + S (VU-mètre plein), puis L, L, H, S',
+      text: 'En SURTENSION (10 LED blanches), le Câble électrocute assez longtemps pour un combo complet gratuit.',
     },
     { input: SUPER_COMBO, text: 'Le combo lourd qui finit sur Plein feu.' },
     {

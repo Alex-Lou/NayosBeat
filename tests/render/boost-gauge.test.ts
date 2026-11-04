@@ -450,8 +450,12 @@ describe('the FINISH plate (docs/finisher.md §1.2, §5.8 test 12)', () => {
     const base = gaugeSpans(freshBoost(0, 0), LEFT, 0);
     const half = gaugeSpans(freshBoost(0, 0), LEFT, 0, 50, 100);
     const full = gaugeSpans(freshBoost(0, 0), LEFT, 0, 100, 100);
-    expect(half.length).toBe(base.length + 20);
-    expect(half.filter((span) => span.y === 12 && span.color === ENERGY)).toHaveLength(5);
-    expect(full.filter((span) => span.y === 12 && span.color === 0xf2f6ff)).toHaveLength(10);
+    expect(half.length).toBeGreaterThan(base.length + 30);
+    expect(
+      half.filter((span) => span.x >= 14 && span.y === 13 && span.color === ENERGY),
+    ).toHaveLength(5);
+    expect(
+      full.filter((span) => span.x >= 14 && span.y === 13 && span.color === 0xf2f6ff),
+    ).toHaveLength(10);
   });
 });

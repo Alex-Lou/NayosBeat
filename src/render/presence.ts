@@ -76,6 +76,8 @@ export class Presence {
   calm = false;
   /** The screen kept still: the aura holds its breath, the particles stay home. */
   still = false;
+  /** Its tension gauge is full (SURTENSION): the aura holds at its widest reach. */
+  charged = false;
   private tier: LightTier = 'off';
   private readonly aura: AnchoredSprite;
   private readonly leds: AnchoredSprite;
@@ -195,7 +197,11 @@ export class Presence {
     this.clock += frames;
     const calm = this.calm ? 1 : 0;
     if (this.auraGlow) {
-      const breath = this.still ? 0.5 : 0.5 - 0.5 * Math.cos((2 * Math.PI * this.clock) / BREATH);
+      const breath = this.charged
+        ? 1
+        : this.still
+          ? 0.5
+          : 0.5 - 0.5 * Math.cos((2 * Math.PI * this.clock) / BREATH);
       this.auraGlow.outerStrength = AURA_REACH.low + (AURA_REACH.high - AURA_REACH.low) * breath;
       this.auraGlow.color = this.tones[calm];
     }

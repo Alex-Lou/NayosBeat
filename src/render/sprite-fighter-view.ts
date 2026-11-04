@@ -4,7 +4,8 @@ import type { FighterTemplate, MatchConfig } from '../core/config';
 import { toPx } from '../core/constants';
 import type { FinisherState } from '../core/finisher';
 import { isActiveFrame, moveOf, tierOf } from '../core/moves';
-import type { FighterState, GameState } from '../core/state';
+import { isCharged } from '../core/tension';
+import { FLAG_CHARGED, type FighterState, type GameState } from '../core/state';
 import { AnchoredSprite } from './anchored-sprite';
 import { clipFrameAt, SHOW_NOW, showFighter, type ShowContext, type Shown } from './animation';
 import { BoostEcho } from './boost-echo';
@@ -290,6 +291,7 @@ export class SpriteFighterView {
     this.body.show(clip.sheet, frame, x + trembling, y, flip);
     this.body.shade(staged.silhouette);
     // Its presence follows the body, gone as the Finisher's silhouette comes.
+    if (this.presence) this.presence.charged = isCharged(fighter, template);
     this.presence?.follow(clip.sheet, frame, x + trembling, y, flip, staged.silhouette <= 0);
     this.presence?.update(frames);
     this.showOutline(staged, clip.sheet, frame, x + trembling, y, flip);
@@ -423,9 +425,12 @@ export class SpriteFighterView {
   }
 }
 
-/** Playing a move that spends the Boost gauge (a Remix, the Rewind, the super). */
+/** Playing a move that spends the Boost gauge or a full tension charge (SURTENSION). */
 function isBoosting(fighter: FighterState, template: FighterTemplate): boolean {
-  return fighter.move !== null && (moveOf(template, fighter.move).boostCost ?? 0) > 0;
+  if (fighter.move === null) return false;
+  return (
+    (moveOf(template, fighter.move).boostCost ?? 0) > 0 || (fighter.flags & FLAG_CHARGED) !== 0
+  );
 }
 
 /** On a frame of a dash that moves the fighter (the "active" frames of a movement). */

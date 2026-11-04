@@ -28,9 +28,13 @@ const WATT_PLAIN: FighterTemplate = {
   preJumpFrames: 5,
   landingFrames: 4,
   knockdownFrames: 40,
-  // His own gauge (docs/watt-arsenal.md §3.2): catching, absorbing and taking blows fill it,
-  // staying out of contact empties it; full, his next special is electrified.
-  tension: { max: 100, gains: { grab: 30, pummel: 5, armor: 20, hit: 10 }, decayEvery: 8 },
+  // His own gauge (docs/watt-arsenal.md §3.2): catching, striking, absorbing and taking blows
+  // fill it; full (100), it stays locked in SURTENSION until his next special discharges it.
+  tension: {
+    max: 100,
+    gains: { grab: 35, pummel: 10, armor: 30, hit: 12 },
+    decayEvery: 12,
+  },
   // 28 px wide, the ceiling of the hold test (docs/art/perso-3.md §4.3.4): his mass is drawn.
   standingPushbox: { width: px(28), height: px(84) },
   crouchingPushbox: { width: px(32), height: px(54) },
@@ -55,6 +59,7 @@ const WATT_PLAIN: FighterTemplate = {
       guard: 'overhead',
       hitbox: box(12, 36, 34, 40),
       motion: advance(41, { from: 6, to: 18, distancePx: 12 }),
+      cancelInto: HEAVY_CANCELS,
       // The armor of the descending fist (docs/watt-arsenal.md §3.1): one blow absorbed on f8-21.
       armor: { from: 8, to: 21 },
     }),
@@ -82,6 +87,10 @@ const WATT_PLAIN: FighterTemplate = {
       guard: 'low',
       hitbox: box(8, 2, 28, 12),
       cancelInto: LIGHT_CANCELS,
+      branches: [
+        { button: 'light', dirs: ['neutral', 'forward', 'back'], move: 'chainLight' },
+        { button: 'heavy', dirs: ['down'], move: 'crouchHeavy' },
+      ],
       crouching: true,
     }),
     // Crouched, the arm rakes the floor: it sweeps.
@@ -209,8 +218,9 @@ const WATT_PLAIN: FighterTemplate = {
       knockdown: kd(4, 3),
       charged: { damage: 175 },
     }),
-    // ← + S: the cable, from 30 to 110 px, reeling the opponent in to 34 px on hit, +4 for him
-    // (docs/watt-arsenal.md §4.2). Electrified: stunned long enough for a guaranteed combo.
+    // ← + S: the cable, from 16 to 110 px, reeling the opponent in to 34 px on hit, +4 for him
+    // (docs/watt-arsenal.md §4.2): combos from his heavies and pulls the victim back into
+    // Branchement range. Electrified: stunned long enough for a guaranteed restand combo.
     specialBack: strike({
       name: 'Câble',
       kind: 'special',
@@ -220,7 +230,7 @@ const WATT_PLAIN: FighterTemplate = {
       hitstop: 9,
       pushbackPx: 2,
       guard: 'mid',
-      hitbox: box(30, 30, 80, 12),
+      hitbox: box(16, 28, 94, 16),
       pull: px(34),
       charged: { damage: 50, hitstun: 36 },
     }),
@@ -289,9 +299,16 @@ const WATT_PLAIN: FighterTemplate = {
       sideSwitchFrame: 6,
     }),
     // A heavy step, shoulders first, 36 px, that absorbs one blow on f3-14 (docs/watt-arsenal.md
-    // §5): through the Vinyle, then the grab.
+    // §5) and cancels from f10 into any normal or special: through the Vinyle, then the blow or
+    // the grab.
     dashForward: {
-      ...dash({ name: 'Pas blindé', duration: 20, frames: 14, distancePx: 36 }),
+      ...dash({
+        name: 'Pas blindé',
+        duration: 20,
+        frames: 14,
+        distancePx: 36,
+        freeCancelFrom: 10,
+      }),
       armor: { from: 3, to: 14 },
     },
     // 32 px back, and nothing against a grab: he gets out badly.
