@@ -326,6 +326,8 @@ const WATT_PLANS: readonly Plan[] = [
   { after: 'standLight', when: spending(31, BOOST_MAX), steps: [L, H, H, B | X], weight: SPEND },
   { after: 'standLight', when: spending(41, BOOST_MAX), steps: [L, H, B | X], weight: SPEND },
   { after: 'standHeavy', when: spending(37, BOOST_MAX), steps: [H, B | X], weight: SPEND },
+  { after: 'standHeavy', when: finishing(47), steps: [B | X], weight: SPEND },
+  { after: 'backHeavy', when: finishing(34), steps: [B | X], weight: SPEND },
 ];
 
 /** Each fighter's plans, by its name. */
