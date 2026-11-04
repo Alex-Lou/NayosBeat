@@ -45,7 +45,14 @@ export class MenuBackdrop {
     this.image.addEventListener('load', this.onLoad);
     this.image.addEventListener('error', this.onLoad);
     this.stage.appendChild(this.image);
-    this.stage.append(element('div', 'menu-dj'), element('div', 'menu-crowd'));
+    this.stage.append(
+      element('div', 'menu-crowd-back'),
+      element('div', 'menu-smoke'),
+      element('div', 'menu-spot'),
+      element('div', 'menu-dj'),
+      element('div', 'menu-crowd-front'),
+      element('div', 'menu-vinyl-sheen'),
+    );
     for (const [index, radius] of WAVE_RADII.entries()) {
       const wave = element('div', `menu-wave menu-wave-${index + 1}`);
       wave.style.boxShadow = dotRing(radius, 72);
