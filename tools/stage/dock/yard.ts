@@ -18,6 +18,7 @@ import {
   CLOTH,
   DUMPSTER,
   GLASS,
+  HAZARD,
   PAPER,
   POSTER_RED,
   RUBBER,
@@ -339,5 +340,197 @@ export function drawSleeper(canvas: Canvas, x: number, foot: number, frame: numb
   for (const wx of [cart + 2, cart + 21]) {
     canvas.fill(wx, foot - 4, 4, 4, at(RUBBER, 1));
     canvas.set(wx + 1, foot - 3, at(STEEL, 3));
+  }
+}
+
+export function drawCone(canvas: Canvas, x: number, foot: number): void {
+  canvas.fill(x - 6, foot - 1, 13, 2, at(ASPHALT, 0));
+  canvas.fill(x - 5, foot - 3, 11, 2, at(RUBBER, 1));
+  canvas.hline(x - 4, foot - 3, 9, at(RUST, 2));
+  canvas.polygon(
+    [
+      [x - 4, foot - 3],
+      [x - 1, foot - 16],
+      [x + 2, foot - 16],
+      [x + 5, foot - 3],
+    ],
+    at(RUST, 3),
+  );
+  canvas.line(x + 1, foot - 16, x + 4, foot - 3, at(RUST, 4));
+  canvas.hline(x - 2, foot - 11, 5, at(PAPER, 3));
+  canvas.hline(x - 2, foot - 10, 5, at(PAPER, 2));
+}
+
+export function drawSawhorse(canvas: Canvas, x: number, foot: number): void {
+  canvas.fill(x - 2, foot - 1, 42, 2, at(ASPHALT, 0));
+  canvas.line(x + 2, foot, x + 7, foot - 24, at(WOOD, 1), 2);
+  canvas.line(x + 12, foot - 2, x + 7, foot - 24, at(WOOD, 2), 2);
+  canvas.line(x + 28, foot, x + 33, foot - 24, at(WOOD, 1), 2);
+  canvas.line(x + 38, foot - 2, x + 33, foot - 24, at(WOOD, 2), 2);
+  canvas.hline(x + 4, foot - 10, 31, at(WOOD, 1));
+  canvas.fill(x, foot - 26, 40, 7, at(STEEL, 1));
+  canvas.hline(x, foot - 26, 40, at(HAZARD, 2));
+  for (let px = x; px < x + 40; px++) {
+    for (let py = foot - 25; py < foot - 19; py++) {
+      const stripe = Math.floor((px + py) / 6) % 2 === 0;
+      canvas.set(px, py, stripe ? at(HAZARD, 1) : at(STEEL, 0));
+    }
+  }
+}
+
+export function drawPalletJack(canvas: Canvas, x: number, foot: number): void {
+  canvas.fill(x - 4, foot - 2, 58, 4, at(ASPHALT, 0));
+  canvas.fill(x + 4, foot - 6, 44, 4, at(WOOD, 1));
+  canvas.hline(x + 4, foot - 6, 44, at(WOOD, 3));
+  for (const fx of [x + 8, x + 32]) {
+    canvas.fill(fx, foot - 4, 10, 3, at(HAZARD, 1));
+    canvas.hline(fx, foot - 4, 10, at(HAZARD, 2));
+    canvas.fill(fx + 2, foot - 2, 4, 2, at(RUBBER, 0));
+  }
+  canvas.fill(x, foot - 16, 8, 12, at(HAZARD, 1));
+  canvas.vline(x + 7, foot - 16, 12, at(HAZARD, 2));
+  canvas.fill(x + 1, foot - 4, 6, 4, at(RUBBER, 0));
+  canvas.line(x + 3, foot - 16, x - 3, foot - 36, at(STEEL, 3), 2);
+  canvas.fill(x - 6, foot - 38, 7, 3, at(RUBBER, 1));
+  const c1 = { x: x + 6, y: foot - 28, w: 38, h: 22 };
+  canvas.fill(c1.x - 4, c1.y + 2, 4, c1.h - 2, at(STEEL, 0));
+  canvas.fill(c1.x, c1.y, c1.w, c1.h, at(STEEL, 1));
+  canvas.hline(c1.x, c1.y, c1.w, at(STEEL, 3));
+  canvas.vline(c1.x, c1.y, c1.h, at(STEEL, 3));
+  canvas.vline(c1.x + c1.w - 1, c1.y, c1.h, at(STEEL, 2));
+  canvas.hline(c1.x, c1.y + 10, c1.w, at(STEEL, 2));
+  for (const [cx, cy] of [
+    [c1.x, c1.y],
+    [c1.x + c1.w - 3, c1.y],
+    [c1.x, c1.y + c1.h - 3],
+    [c1.x + c1.w - 3, c1.y + c1.h - 3],
+  ] as const) {
+    canvas.fill(cx, cy, 3, 3, at(STEEL, 4));
+  }
+  const c2 = { x: x + 10, y: c1.y - 16, w: 28, h: 16 };
+  canvas.fill(c2.x - 3, c2.y + 2, 3, c2.h - 2, at(STEEL, 0));
+  canvas.fill(c2.x, c2.y, c2.w, c2.h, at(RUBBER, 2));
+  canvas.hline(c2.x, c2.y, c2.w, at(STEEL, 4));
+  canvas.fill(c2.x + 10, c2.y + 5, 8, 4, at(HAZARD, 1));
+}
+
+export function drawDrums(canvas: Canvas, x: number, foot: number, hop = 0): void {
+  canvas.ellipse(x - 6, foot - 4, 68, 7, at(ASPHALT, 0));
+  canvas.fill(x - 2, foot - 5, 56, 4, at(WOOD, 1));
+  canvas.hline(x - 2, foot - 5, 56, at(WOOD, 3));
+  const d1 = { x: x + 2, top: foot - 43, w: 24, h: 38 };
+  canvas.paint(d1.x, d1.top, d1.w, d1.h, (px, py) => {
+    const col = px - d1.x;
+    const rib = py === d1.top + 12 || py === d1.top + 25;
+    if (rib) return at(STEEL, col < 6 ? 4 : 3);
+    const band = py > d1.top + 13 && py < d1.top + 24;
+    if (band) return at(HAZARD, col < 7 ? 2 : col > 18 ? 0 : 1);
+    return at(STEEL, col < 5 ? 3 : col < 15 ? 2 : col > 20 ? 0 : 1);
+  });
+  canvas.ellipse(d1.x, d1.top - 3, d1.w, 6, at(STEEL, 3));
+  canvas.ellipse(d1.x + 2, d1.top - 2, d1.w - 4, 4, at(STEEL, 1));
+  const d2 = { x: x + 28, top: foot - 39, w: 22, h: 34 };
+  canvas.paint(d2.x, d2.top, d2.w, d2.h, (px, py) => {
+    const col = px - d2.x;
+    const rib = py === d2.top + 11 || py === d2.top + 22;
+    if (rib) return at(RUST, 2);
+    if (py > d2.top + 22 && col > 8 && col < 16) return at(RUST, 1);
+    return at(DUMPSTER, col < 5 ? 3 : col < 14 ? 2 : 0);
+  });
+  canvas.ellipse(d2.x, d2.top - 3, d2.w, 5, at(DUMPSTER, 3));
+  const canX = x + 56 + (hop === 1 ? 1 : hop === 2 ? -1 : 0);
+  const canY = foot - 3 - (hop > 0 ? 2 : 0);
+  canvas.fill(canX, canY, 5, 3, at(POSTER_RED, 1));
+  canvas.set(canX + 4, canY, at(STEEL, 4));
+  drawCone(canvas, x - 12, foot + 2);
+}
+
+export function drawFlightCases(canvas: Canvas, x: number, foot: number): void {
+  canvas.ellipse(x - 6, foot - 4, 72, 7, at(ASPHALT, 0));
+  const big = { x, y: foot - 38, w: 40, h: 34 };
+  canvas.polygon(
+    [
+      [big.x - 6, big.y + 4],
+      [big.x, big.y],
+      [big.x, big.y + big.h],
+      [big.x - 6, big.y + big.h - 3],
+    ],
+    at(RUBBER, 0),
+  );
+  canvas.fill(big.x, big.y, big.w, big.h, at(STEEL, 1));
+  canvas.hline(big.x, big.y, big.w, at(STEEL, 4));
+  canvas.vline(big.x, big.y, big.h, at(STEEL, 3));
+  canvas.vline(big.x + big.w - 1, big.y, big.h, at(STEEL, 2));
+  canvas.hline(big.x, big.y + 16, big.w, at(STEEL, 2));
+  canvas.fill(big.x + 15, big.y + 14, 10, 5, at(STEEL, 3));
+  canvas.fill(big.x + 8, big.y + 5, 16, 5, at(TAG.cream, 0));
+  for (const wx of [big.x + 4, big.x + big.w - 8]) {
+    canvas.fill(wx, foot - 4, 4, 4, at(RUBBER, 0));
+    canvas.set(wx + 1, foot - 3, at(STEEL, 3));
+  }
+  const side = { x: big.x + big.w + 3, y: foot - 24, w: 22, h: 22 };
+  canvas.fill(side.x, side.y, side.w, side.h, at(RUBBER, 2));
+  canvas.hline(side.x, side.y, side.w, at(STEEL, 4));
+  canvas.hline(side.x, side.y + 10, side.w, at(STEEL, 2));
+  canvas.fill(side.x + 6, side.y + 3, 10, 4, at(POSTER_RED, 1));
+}
+
+export function drawCables(canvas: Canvas, bayX: number, dockTop: number, foot: number): void {
+  const startX = bayX + 12;
+  for (let y = dockTop - 4; y < foot; y++) {
+    const t = (y - (dockTop - 4)) / (foot - (dockTop - 4));
+    const sway = Math.round(Math.sin(t * Math.PI * 2) * 10 - t * 24);
+    const cx = startX + sway;
+    canvas.fill(cx, y, 3, 1, at(RUBBER, 0));
+    canvas.set(cx + 1, y, at(STEEL, 2));
+    canvas.fill(cx + 5, y, 2, 1, at(RUST, 3));
+  }
+}
+
+export function drawSpoolAndKegs(canvas: Canvas, x: number, foot: number): void {
+  canvas.ellipse(x - 8, foot - 4, 88, 7, at(ASPHALT, 0));
+  const sx = x + 16;
+  const sy = foot - 20;
+  canvas.ellipse(sx - 18, sy - 16, 32, 32, at(WOOD, 1));
+  canvas.ellipse(sx - 14, sy - 16, 32, 32, at(WOOD, 2));
+  canvas.ellipse(sx - 13, sy - 15, 30, 30, at(WOOD, 3));
+  canvas.ellipse(sx - 11, sy - 13, 26, 26, at(WOOD, 1));
+  canvas.ellipse(sx - 3, sy - 5, 10, 10, at(STEEL, 0));
+  canvas.ellipse(sx - 1, sy - 3, 6, 6, at(STEEL, 3));
+  for (const [kx, ky] of [
+    [x + 42, foot - 28],
+    [x + 60, foot - 26],
+  ] as const) {
+    canvas.fill(kx, ky, 15, 24, at(STEEL, 2));
+    canvas.vline(kx + 2, ky, 24, at(STEEL, 4));
+    canvas.vline(kx + 13, ky, 24, at(STEEL, 0));
+    canvas.hline(kx, ky + 7, 15, at(STEEL, 4));
+    canvas.hline(kx, ky + 15, 15, at(STEEL, 4));
+    canvas.ellipse(kx, ky - 2, 15, 4, at(STEEL, 4));
+  }
+  const signX = x - 10;
+  canvas.line(signX, foot, signX + 5, foot - 18, at(HAZARD, 1), 2);
+  canvas.line(signX + 11, foot, signX + 6, foot - 18, at(HAZARD, 2), 2);
+  canvas.fill(signX + 3, foot - 14, 6, 8, at(HAZARD, 2));
+  canvas.set(signX + 5, foot - 11, at(STEEL, 0));
+}
+
+export function drawDrainPlates(canvas: Canvas, xs: readonly number[], drainY: number): void {
+  for (const cx of xs) {
+    canvas.polygon(
+      [
+        [cx - 34, drainY - 2],
+        [cx + 34, drainY - 2],
+        [cx + 38, drainY + 6],
+        [cx - 38, drainY + 6],
+      ],
+      at(STEEL, 2),
+    );
+    canvas.hline(cx - 34, drainY - 2, 68, at(STEEL, 4));
+    canvas.hline(cx - 38, drainY + 5, 76, at(STEEL, 0));
+    for (let px = cx - 28; px < cx + 28; px += 8) {
+      canvas.set(px, drainY + 1, at(STEEL, 4));
+      canvas.set(px + 4, drainY + 3, at(STEEL, 4));
+    }
   }
 }

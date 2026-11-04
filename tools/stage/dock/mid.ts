@@ -4,6 +4,7 @@
  * BASS_CYCLE, the bass hitting at BASS_AT.
  */
 
+import type { StageDrift } from '../../../src/art/stage-layers.ts';
 import { Canvas, Mask, at } from '../kit/canvas.ts';
 import { spell, spellHan } from '../kit/font.ts';
 import { lightAt, spill, type Light, type Spill } from '../kit/light.ts';
@@ -30,7 +31,22 @@ import {
 } from './fixtures.ts';
 import { CLUB_FRAMES, drawClub } from './club.ts';
 import { wetAt } from './floor.ts';
-import { drawBin, drawCrates, drawLitter, drawSedan, drawSleeper, drawVan } from './yard.ts';
+import {
+  drawBin,
+  drawCables,
+  drawCone,
+  drawCrates,
+  drawDrainPlates,
+  drawDrums,
+  drawFlightCases,
+  drawLitter,
+  drawPalletJack,
+  drawSawhorse,
+  drawSedan,
+  drawSleeper,
+  drawSpoolAndKegs,
+  drawVan,
+} from './yard.ts';
 import {
   ASPHALT,
   BRICK,
@@ -100,6 +116,10 @@ const DUMPSTER = { x: 140, width: 84, foot: BASE + 4 } as const;
 const CAT_X = 176;
 const LID = DUMPSTER.foot - 51;
 const PUDDLE = { x: 818, y: 436, width: 96, height: 16 } as const;
+const PUDDLE_BAY3 = { x: 1044, y: 436, width: 102, height: 16 } as const;
+const DRAIN_STEAM = { x: 906, y: 428 } as const;
+const DRUMS_X = 724;
+const NEWSPAPER = { x: 1410, y: 444, width: 22, height: 14 } as const;
 const APRON = { drain: BASE + 16, asphalt: BASE + 20 } as const;
 const VENT = { x: 1396, top: 168 } as const;
 
@@ -150,6 +170,7 @@ export interface Animation {
   readonly rect: Rect;
   readonly frames: number;
   readonly timeline: readonly (readonly [number, number])[];
+  readonly drift?: StageDrift;
 }
 
 function bassBeat(step: number): number | undefined {
@@ -593,6 +614,81 @@ function drawPuddle(canvas: Canvas, frame: number): void {
   });
 }
 
+function drawPuddle3(canvas: Canvas, frame: number): void {
+  const { x, y, width, height } = PUDDLE_BAY3;
+  const water = new Mask(canvas.width, canvas.height);
+  water.ellipse(x, y, width, height);
+  water.ellipse(x + 14, y - 3, width * 0.6, height * 0.65);
+  const cx = x + width * 0.5;
+  const cy = y + height * 0.5;
+  canvas.paint(x, y - 4, width, height + 4, (px, py) => {
+    if (!water.has(px, py)) return undefined;
+    if (!water.has(px, py - 1)) return at(CONCRETE_VIOLET, 5);
+    if (!water.has(px, py + 1)) return at(CONCRETE_VIOLET, 3);
+    if (frame > 0) {
+      const r = Math.hypot((px + 0.5 - cx) / 2.8, py + 0.5 - cy);
+      const ring = 1.6 + frame * 2.5;
+      if (Math.abs(r - ring) < 0.6) return at(GLASS, 3);
+    }
+    if (py % 3 === 0 && Math.abs(px - cx) < 28 - (py - y) * 1.1) {
+      return at(GLASS, 2);
+    }
+    const near = (py - y) / height;
+    return at(CONCRETE_VIOLET, near > 0.5 ? 2 : 1);
+  });
+}
+
+function drawDrainSteam(canvas: Canvas, frame: number): void {
+  const cloud = new Mask(canvas.width, canvas.height);
+  for (let i = 0; i < 6; i++) {
+    const rise = ((i * 5 + frame * 3) % 28) + 2;
+    const cx = Math.round(DRAIN_STEAM.x + Math.sin((rise + i) / 3.5) * 2.5 - rise * 0.1);
+    const cy = Math.round(DRAIN_STEAM.y - rise);
+    const rx = Math.round(3 + rise / 7);
+    const ry = Math.max(3, Math.round(rx * 0.85));
+    cloud.ellipse(cx - rx, cy - ry, rx * 2, ry * 2);
+  }
+  canvas.paint(DRAIN_STEAM.x - 10, DRAIN_STEAM.y - 34, 22, 36, (px, py) => {
+    if (!cloud.has(px, py)) return undefined;
+    const rise = DRAIN_STEAM.y - py;
+    const lit = !cloud.has(px, py - 1) || !cloud.has(px - 1, py);
+    const step = rise > 22 ? 0 : rise > 10 ? (lit ? 2 : 1) : lit ? 2 : 1;
+    return at(STEAM, step);
+  });
+}
+
+function drawNewspaper(canvas: Canvas, frame: number): void {
+  if (frame === 0) return;
+  const { x, y } = NEWSPAPER;
+  const shapes: readonly (readonly [number, number])[][] = [
+    [
+      [x + 2, y + 10],
+      [x + 18, y + 6],
+      [x + 20, y + 12],
+      [x + 4, y + 13],
+    ],
+    [
+      [x + 6, y + 2],
+      [x + 16, y + 4],
+      [x + 14, y + 13],
+      [x + 4, y + 11],
+    ],
+    [
+      [x + 1, y + 6],
+      [x + 12, y + 1],
+      [x + 21, y + 8],
+      [x + 9, y + 12],
+    ],
+  ];
+  const sheet = new Mask(canvas.width, canvas.height);
+  sheet.polygon(shapes[frame - 1] ?? []);
+  canvas.paint(x, y, 22, 14, (px, py) => {
+    if (!sheet.has(px, py)) return undefined;
+    if (!sheet.has(px, py - 1)) return at(PAPER, 3);
+    return at(PAPER, py === y + 6 ? 0 : 1);
+  });
+}
+
 const RUST_FALL = {
   x: BAYS[0].x,
   y: CANOPY.y + CANOPY.height + 4,
@@ -828,6 +924,52 @@ export const MID_ANIMATIONS: readonly Animation[] = [
     }),
   },
   {
+    name: 'puddle3',
+    rect: {
+      x: PUDDLE_BAY3.x,
+      y: PUDDLE_BAY3.y - 4,
+      width: PUDDLE_BAY3.width,
+      height: PUDDLE_BAY3.height + 4,
+    },
+    frames: 4,
+    timeline: timelineOf((step) => {
+      if (bassBeat(step) === undefined) return 0;
+      const into = (step - BASS_AT) % BEAT;
+      return into < 8 ? 1 : into < 16 ? 2 : into < 24 ? 3 : 0;
+    }),
+  },
+  {
+    name: 'can',
+    rect: { x: DRUMS_X + 52, y: BASE + 30, width: 12, height: 14 },
+    frames: 3,
+    timeline: timelineOf((step) => {
+      const beat = bassBeat(step);
+      if (beat === undefined || beat > 3) return 0;
+      return Math.floor((step - BASS_AT) / 8) % 2 === 0 ? 1 : 2;
+    }),
+  },
+  {
+    name: 'drainSteam',
+    rect: { x: DRAIN_STEAM.x - 10, y: DRAIN_STEAM.y - 34, width: 22, height: 36 },
+    frames: 4,
+    timeline: [
+      [0, 10],
+      [1, 10],
+      [2, 10],
+      [3, 10],
+    ],
+  },
+  {
+    name: 'newspaper',
+    rect: NEWSPAPER,
+    frames: 4,
+    timeline: Array.from({ length: BASS_CYCLE / 10 }, (_, step): [number, number] => [
+      1 + (step % 3),
+      10,
+    ]),
+    drift: { from: 40, to: -1440, start: 300, steps: 900 },
+  },
+  {
     name: 'rust',
     rect: RUST_FALL,
     frames: 4,
@@ -915,6 +1057,7 @@ export function drawMid(
   drawAnnex(canvas);
   drawAlley(canvas);
   drawYard(canvas);
+  drawDrainPlates(canvas, PACKS, APRON.drain);
   drawDockFace(canvas);
   drawSpills(canvas);
   drawStairs(canvas);
@@ -951,11 +1094,18 @@ export function drawMid(
   BOUNCERS.forEach((bouncer, index) => {
     drawBouncer(canvas, bouncer, frameOf(`bouncer${index}`));
   });
+  drawSawhorse(canvas, 10, BASE + 44);
   drawLitter(canvas, 448, BASE + 10, streamOf(5, 'litter'));
   drawBin(canvas, 452, BASE + 8, false);
   drawBin(canvas, 484, BASE + 10, true);
+  drawPalletJack(canvas, 518, BASE + 40);
   drawCrates(canvas, BAYS[0].x + BAY.width - 26, DOCK_TOP - 2);
   drawVan(canvas, BAYS[0].x + BAY.width / 2, VAN_FOOT, LIGHTS);
+  drawCone(canvas, 696, BASE + 46);
+  drawDrums(canvas, DRUMS_X, BASE + 40, frameOf('can'));
+  drawCables(canvas, BAYS[2].x, DOCK_TOP, BASE + 38);
+  drawFlightCases(canvas, 944, BASE + 42);
+  drawSpoolAndKegs(canvas, 1194, BASE + 42);
   drawSedan(canvas, 240, SEDAN_FOOT, LIGHTS);
   drawPallets(canvas, 1300, BASE + 8, 5);
   drawDumpster(canvas, DUMPSTER.x, DUMPSTER.foot, DUMPSTER.width);
@@ -963,6 +1113,9 @@ export function drawMid(
   drawBags(canvas, 92, BASE + 6, 4, streamOf(5, 'bags'));
   drawSleeper(canvas, SLEEPER.x, SLEEPER.foot, frameOf('sleeper'));
   drawPuddle(canvas, frameOf('ripple'));
+  drawPuddle3(canvas, frameOf('puddle3'));
+  drawDrainSteam(canvas, frameOf('drainSteam'));
+  drawNewspaper(canvas, frameOf('newspaper'));
   drawRustFall(canvas, frameOf('rust'));
   drawSteam(canvas, frameOf('vent'));
   canvas.paint(0, FLOOR_END, width, height - FLOOR_END, () => 0);

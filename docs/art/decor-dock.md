@@ -86,10 +86,11 @@ Toutes les animations jouent dans le rendu seul (D17), image par image (D23).
 | `bouncer0`, `bouncer1` | le premier vigile tire sur sa cigarette (braise vive, fumée) | une bouffée toutes les 10 s |
 | `cat` | la queue du chat qui fouette | toutes les 5 s |
 | `moths` | trois papillons autour de la lampe grillagée | 5 tics par image |
-| `vent` | la vapeur du conduit de l'annexe | 12 tics par image |
+| `vent`, `drainSteam` | la vapeur du conduit de l'annexe et la buée qui monte de la rigole | 10 à 12 tics par image |
+| `newspaper` | une feuille que le vent pousse au ras de l'asphalte (`StageDrift`) | toutes les 40 s |
 | `club` | le DJ en live (platines, scratch, crossfader, main au casque) et la foule : les danseurs plongent tour à tour, le fumeur tire sur son bédo et souffle la fumée, le couple s'embrasse | 120 BPM, deux images par temps |
 | `sleeper` | le clodo qui se retourne sous sa couverture | toutes les 13 s |
-| `shutter0`, `shutter1`, `ripple`, `rust` | voir la basse, plus bas | |
+| `shutter0`, `shutter1`, `ripple`, `puddle3`, `can`, `rust` | voir la basse, plus bas | |
 
 **La basse du club**, le moment fort. Toutes les 40 s (un cycle de 2 400 tics, `BASS_CYCLE`), le club monte le son pendant huit temps, à partir de `BASS_AT`. À chaque temps de la basse :
 - la foule saute, bras en l'air, dans les fenêtres et dans la salle, et le DJ lève sa main libre ; le couple, lui, continue de s'embrasser ;
