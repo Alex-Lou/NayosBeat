@@ -102,9 +102,9 @@ const OPENING: Rect = {
   width: BAY.width,
   height: DOCK_DECK - OPEN_BOTTOM,
 };
-const VAN_FOOT = 456;
-const SEDAN_FOOT = 458;
-const SLEEPER = { x: 70, foot: 454 } as const;
+const VAN_FOOT = 424;
+const SEDAN_FOOT = 426;
+const SLEEPER = { x: 70, foot: 424 } as const;
 const RATTLING = LOOSE + 14;
 const DOOR: Rect = { x: 384, y: 250, width: 44, height: DOCK_DECK - 250 };
 const WINDOW = { y: 136, width: 56, height: 60 } as const;
@@ -115,12 +115,12 @@ const GATE = { left: 56, right: 232, top: 296 } as const;
 const DUMPSTER = { x: 140, width: 84, foot: BASE + 4 } as const;
 const CAT_X = 176;
 const LID = DUMPSTER.foot - 51;
-const PUDDLE = { x: 818, y: 436, width: 96, height: 16 } as const;
-const PUDDLE_BAY3 = { x: 1044, y: 436, width: 102, height: 16 } as const;
-const DRAIN_STEAM = { x: 906, y: 428 } as const;
+const PUDDLE = { x: 818, y: 428, width: 96, height: 14 } as const;
+const PUDDLE_BAY3 = { x: 1044, y: 428, width: 102, height: 14 } as const;
+const DRAIN_STEAM = { x: 906, y: 420 } as const;
 const DRUMS_X = 724;
-const NEWSPAPER = { x: 1410, y: 444, width: 22, height: 14 } as const;
-const APRON = { drain: BASE + 16, asphalt: BASE + 20 } as const;
+const NEWSPAPER = { x: 1410, y: 432, width: 22, height: 14 } as const;
+const APRON = { drain: BASE + 10, asphalt: BASE + 13 } as const;
 const VENT = { x: 1396, top: 168 } as const;
 
 const PACKS = BAYS.map(({ x }) => x + BAY.width / 2);
@@ -573,12 +573,9 @@ function drawYard(canvas: Canvas): void {
   canvas.paint(0, BASE, canvas.width, FLOOR_END - BASE, (x, y) => {
     const wet = wetAt(83, x, y * 2);
     if (y < APRON.drain) {
-      const dy = y - BASE;
-      const perspX = x - Math.round(((x - 720) * dy) / 48);
-      const joint = perspX % 128 === 0 && y > BASE + 2;
       const shade = y < BASE + 3 ? -1 : 0;
       const ramp = y > BASE + 3 && wet ? WET : CONCRETE;
-      const step = concreteAt(x, y, 2.2, LIGHTS) + shade - (joint ? 1.1 : 0);
+      const step = concreteAt(x, y, 2.2, LIGHTS) + shade;
       return hdTone(ramp, step, x, y);
     }
     if (y < APRON.asphalt) {
@@ -586,10 +583,11 @@ function drawYard(canvas: Canvas): void {
       if (y === APRON.asphalt - 1) return at(STEEL, 2);
       return at(STEEL, x % 8 < 5 ? 0 : 2);
     }
-    const lit = lightAt(LIGHTS, x, y) * 0.9;
-    const grain = (noise(88, x >> 2, y >> 1, 10) - 0.5) * 0.5;
+    const fade = Math.max(0, 1 - (y - APRON.asphalt) / 28);
+    const lit = lightAt(LIGHTS, x, y) * 0.85 * fade;
+    const grain = (noise(88, x >> 2, y >> 1, 10) - 0.5) * 0.45 * fade;
     const ramp = wet ? WET_ASPHALT : ASPHALT;
-    return hdTone(ramp, 1.3 + grain + lit, x, y);
+    return hdTone(ramp, 1.2 + grain + lit, x, y);
   });
   canvas.hline(DOCK_LEFT, BASE, canvas.width - DOCK_LEFT, at(CONCRETE, 0));
 }
@@ -946,7 +944,7 @@ export const MID_ANIMATIONS: readonly Animation[] = [
   },
   {
     name: 'can',
-    rect: { x: DRUMS_X + 52, y: BASE + 30, width: 12, height: 14 },
+    rect: { x: DRUMS_X + 52, y: BASE + 4, width: 12, height: 14 },
     frames: 3,
     timeline: timelineOf((step) => {
       const beat = bassBeat(step);
@@ -1100,18 +1098,18 @@ export function drawMid(
   BOUNCERS.forEach((bouncer, index) => {
     drawBouncer(canvas, bouncer, frameOf(`bouncer${index}`));
   });
-  drawSawhorse(canvas, 10, BASE + 44);
+  drawSawhorse(canvas, 10, BASE + 12);
   drawLitter(canvas, 448, BASE + 10, streamOf(5, 'litter'));
   drawBin(canvas, 452, BASE + 8, false);
   drawBin(canvas, 484, BASE + 10, true);
-  drawPalletJack(canvas, 518, BASE + 40);
+  drawPalletJack(canvas, 518, BASE + 12);
   drawCrates(canvas, BAYS[0].x + BAY.width - 26, DOCK_TOP - 2);
   drawVan(canvas, BAYS[0].x + BAY.width / 2, VAN_FOOT, LIGHTS);
-  drawCone(canvas, 696, BASE + 46);
-  drawDrums(canvas, DRUMS_X, BASE + 40, frameOf('can'));
-  drawCables(canvas, BAYS[2].x, DOCK_TOP, BASE + 38);
-  drawFlightCases(canvas, 944, BASE + 42);
-  drawSpoolAndKegs(canvas, 1194, BASE + 42);
+  drawCone(canvas, 692, BASE + 14);
+  drawDrums(canvas, DRUMS_X, BASE + 14, frameOf('can'));
+  drawCables(canvas, BAYS[2].x, DOCK_TOP, BASE + 14);
+  drawFlightCases(canvas, 944, BASE + 14);
+  drawSpoolAndKegs(canvas, 1194, BASE + 14);
   drawSedan(canvas, 240, SEDAN_FOOT, LIGHTS);
   drawPallets(canvas, 1300, BASE + 8, 5);
   drawDumpster(canvas, DUMPSTER.x, DUMPSTER.foot, DUMPSTER.width);
