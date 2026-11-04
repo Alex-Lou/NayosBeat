@@ -2,6 +2,7 @@ import type { StageVariant } from './stage-layers';
 import { STAGE_VARIANTS as BAL } from './bal';
 import { STAGE_VARIANTS as CLUB } from './club';
 import { STAGE_VARIANTS as DOCK } from './dock';
+import { STAGE_VARIANTS as DUNES } from './dunes';
 import { STAGE_VARIANTS as FORET } from './foret';
 import { STAGE_VARIANTS as GYM } from './gym';
 import { STAGE_VARIANTS as MARCHE } from './marche';
@@ -125,6 +126,14 @@ export const STAGE_MAPS: readonly StageMap[] = (
       sheltered: false,
       ground: 'hard',
       variants: FORET,
+    },
+    {
+      name: 'dunes',
+      title: 'Dune Dusk',
+      description: 'Le désert au crépuscule, entre les dunes et le vent',
+      sheltered: false,
+      ground: 'sand',
+      variants: DUNES,
     },
   ] satisfies StageMap[]
 ).filter(({ variants }) => variants.length > 0);
