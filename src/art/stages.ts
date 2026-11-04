@@ -5,6 +5,7 @@ import { STAGE_VARIANTS as DOCK } from './dock';
 import { STAGE_VARIANTS as DUNES } from './dunes';
 import { STAGE_VARIANTS as FORET } from './foret';
 import { STAGE_VARIANTS as GYM } from './gym';
+import { STAGE_VARIANTS as LUCIOLES } from './lucioles';
 import { STAGE_VARIANTS as MARCHE } from './marche';
 import { STAGE_VARIANTS as NEON } from './neon';
 import { STAGE_VARIANTS as PLAGE } from './plage';
@@ -134,6 +135,14 @@ export const STAGE_MAPS: readonly StageMap[] = (
       sheltered: false,
       ground: 'sand',
       variants: DUNES,
+    },
+    {
+      name: 'lucioles',
+      title: 'Firefly Forest',
+      description: 'La forêt enchantée, entre les lucioles et la mare',
+      sheltered: false,
+      ground: 'hard',
+      variants: LUCIOLES,
     },
   ] satisfies StageMap[]
 ).filter(({ variants }) => variants.length > 0);
