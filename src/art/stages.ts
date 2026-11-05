@@ -6,6 +6,7 @@ import { STAGE_VARIANTS as DOJO } from './dojo';
 import { STAGE_VARIANTS as DUNES } from './dunes';
 import { STAGE_VARIANTS as FORET } from './foret';
 import { STAGE_VARIANTS as GYM } from './gym';
+import { STAGE_VARIANTS as JUNGLE } from './jungle';
 import { STAGE_VARIANTS as LUCIOLES } from './lucioles';
 import { STAGE_VARIANTS as MARCHE } from './marche';
 import { STAGE_VARIANTS as NEON } from './neon';
@@ -129,6 +130,14 @@ export const STAGE_MAPS: readonly StageMap[] = (
       sheltered: false,
       ground: 'hard',
       variants: FORET,
+    },
+    {
+      name: 'jungle',
+      title: 'Jungle',
+      description: 'Les ruines de la jungle, entre les cascades et les lianes',
+      sheltered: false,
+      ground: 'hard',
+      variants: JUNGLE,
     },
     {
       name: 'dunes',
