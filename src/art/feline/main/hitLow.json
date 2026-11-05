@@ -1,35 +1,35 @@
 {
   "frames": {
     "0": {
-      "frame": { "x": 358, "y": 0, "w": 88, "h": 149 },
+      "frame": { "x": 358, "y": 0, "w": 89, "h": 152 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 6, "y": 10, "w": 88, "h": 149 },
-      "sourceSize": { "w": 94, "h": 160 }
+      "spriteSourceSize": { "x": 5, "y": 10, "w": 89, "h": 152 },
+      "sourceSize": { "w": 94, "h": 163 }
     },
     "1": {
-      "frame": { "x": 268, "y": 0, "w": 90, "h": 152 },
+      "frame": { "x": 268, "y": 0, "w": 90, "h": 156 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 3, "y": 4, "w": 90, "h": 152 },
-      "sourceSize": { "w": 94, "h": 160 }
+      "spriteSourceSize": { "x": 3, "y": 3, "w": 90, "h": 156 },
+      "sourceSize": { "w": 94, "h": 163 }
     },
     "2": {
-      "frame": { "x": 174, "y": 0, "w": 94, "h": 154 },
+      "frame": { "x": 174, "y": 0, "w": 94, "h": 157 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 0, "w": 94, "h": 154 },
-      "sourceSize": { "w": 94, "h": 160 }
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 94, "h": 157 },
+      "sourceSize": { "w": 94, "h": 163 }
     },
     "3": {
-      "frame": { "x": 87, "y": 0, "w": 87, "h": 158 },
+      "frame": { "x": 87, "y": 0, "w": 87, "h": 160 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 5, "y": 2, "w": 87, "h": 158 },
-      "sourceSize": { "w": 94, "h": 160 }
+      "spriteSourceSize": { "x": 5, "y": 3, "w": 87, "h": 160 },
+      "sourceSize": { "w": 94, "h": 163 }
     },
     "4": {
-      "frame": { "x": 0, "y": 0, "w": 87, "h": 159 },
+      "frame": { "x": 0, "y": 0, "w": 87, "h": 161 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 5, "y": 0, "w": 87, "h": 159 },
-      "sourceSize": { "w": 94, "h": 160 }
+      "spriteSourceSize": { "x": 5, "y": 1, "w": 87, "h": 161 },
+      "sourceSize": { "w": 94, "h": 163 }
     }
   },
-  "meta": { "image": "hitLow.png", "size": { "w": 446, "h": 159 } }
+  "meta": { "image": "hitLow.png", "size": { "w": 447, "h": 161 } }
 }

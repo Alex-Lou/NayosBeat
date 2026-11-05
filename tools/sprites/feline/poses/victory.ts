@@ -6,10 +6,9 @@ import { at, energy, GUARD, lifted, planted, smear, type Effect, type Pose } fro
  * victory: 8 frames, 6,6,6,6 then 8x4 looping from frame 4.
  * Based on `Pack_Feline_Poses_Et_Degats/02_victoire/victoire_01_bras_ouverts.png` and
  * `victoire_02_pose_triomphante.png`:
- * Feline steps out of her stance, summons a shimmering vertical silver-white astral portal behind
- * her (`squash: 2.1`), and strikes her triumphant cat-fighter pose — one hand resting on her hip
- * (`near: [-14, 42]`), the other extended out in a graceful claw salute (`far: [76, 30]`) — while
- * star fragments and orbital portal rings pulse around her.
+ * Feline steps out of her stance, summons a shimmering vertical silver-white dimensional portal
+ * (`kind: 'portal'`), and strikes her triumphant cat-fighter pose while orbital blades and 8-point
+ * star sparkles pulse around her.
  */
 
 type Body = Omit<Pose, 'nearFist' | 'farFist'>;
@@ -51,15 +50,6 @@ function posed(body: Body, near: readonly [number, number], far: readonly [numbe
     bends: { ...body.bends, nearElbow: lead.bend, farElbow: rear.bend },
   };
 }
-
-const portalRing = (progress: number): Effect => ({
-  kind: 'ring',
-  center: at(0, 48),
-  radius: 17,
-  progress,
-  tone: 'sound',
-  squash: 2.0,
-});
 
 const floorRing = (progress: number): Effect => ({
   kind: 'ring',
@@ -107,7 +97,7 @@ const CHANNEL: Pose = {
   glows: [{ center: at(10, 53), reach: 26, power: 1.2, tone: 'sound' }],
 };
 
-// Frame 2: `victoire_01_bras_ouverts.png` — arms opening wide as a vertical silver portal erupts!
+// Frame 2: `victoire_01_bras_ouverts.png` — arms opening wide as an orbital star burst erupts!
 const OPEN_ARMS = posed(
   { ...TRIUMPH_BASE, hip: at(-2.2, 40.5), torso: -4, head: 6, face: 'kiai' },
   [-18, 32],
@@ -117,7 +107,7 @@ const UNLEASH: Pose = {
   ...OPEN_ARMS,
   effects: [
     smear(3.5, [10.5, 53.5], [16, 52], [OPEN_ARMS.farFist.x, OPEN_ARMS.farFist.y]),
-    { kind: 'flash', center: at(12, 54), radius: 5.5, tone: 'sound' },
+    { kind: 'star', center: at(12, 54), radius: 6.0, rings: true, tone: 'sound' },
     { kind: 'shards', center: at(12, 54), radius: 16, progress: 0.25, tone: 'sound' },
     floorRing(0.2),
   ],
@@ -125,14 +115,14 @@ const UNLEASH: Pose = {
 };
 
 const PULSE = [
-  { dip: 0.0, wave: 0, ring: 0.25, floor: 0.35 },
-  { dip: 0.5, wave: 3, ring: 0.48, floor: 0.58 },
-  { dip: 1.0, wave: 5, ring: 0.72, floor: 0.8 },
-  { dip: 0.5, wave: 2, ring: 0.92, floor: 0.95 },
+  { dip: 0.0, wave: 0, rx: 6.5, floor: 0.35 },
+  { dip: 0.5, wave: 3, rx: 7.5, floor: 0.58 },
+  { dip: 1.0, wave: 5, rx: 8.0, floor: 0.8 },
+  { dip: 0.5, wave: 2, rx: 7.0, floor: 0.95 },
 ] as const;
 
 function loopFrame(phase: 0 | 1 | 2 | 3): Pose {
-  const { dip, wave, ring, floor } = PULSE[phase];
+  const { dip, wave, rx, floor } = PULSE[phase];
   const body: Body = {
     ...TRIUMPH_BASE,
     hip: at(TRIUMPH_BASE.hip.x, TRIUMPH_BASE.hip.y - dip),
@@ -140,7 +130,11 @@ function loopFrame(phase: 0 | 1 | 2 | 3): Pose {
   const p = posed(body, [-16, 36], [72 + wave, 28]);
   return {
     ...p,
-    effects: [portalRing(ring), floorRing(floor), energy(p.farFist.x, p.farFist.y, 2.2)],
+    effects: [
+      { kind: 'portal', center: at(-4, 46), rx, ry: 20, tone: 'sound' },
+      floorRing(floor),
+      { kind: 'star', center: p.farFist, radius: 3.2, tone: 'sound' },
+    ],
     glows: [{ center: p.farFist, reach: 22, power: 0.8, tone: 'sound' }],
   };
 }
@@ -152,7 +146,7 @@ export const POSES: readonly Pose[] = [
   {
     ...loopFrame(0),
     effects: [
-      { kind: 'shards', center: at(12, 54), radius: 20, progress: 0.65, tone: 'sound' },
+      { kind: 'blade', center: at(4, 50), rx: 16, ry: 6, tilt: -20, twin: true, tone: 'sound' },
       floorRing(0.6),
     ],
   },

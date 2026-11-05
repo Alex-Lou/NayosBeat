@@ -1,23 +1,15 @@
 import type { Point } from '../../raster.ts';
 import { add, BODY, scale, solve, sub, type Bend } from '../../skeleton.ts';
-import {
-  at,
-  energy,
-  GUARD,
-  lifted,
-  planted,
-  smear,
-  type Effect,
-  type Foot,
-  type Pose,
-} from './common.ts';
+import { at, GUARD, lifted, planted, smear, type Effect, type Foot, type Pose } from './common.ts';
+import { hung } from './jump.ts';
 
 /**
- * lightFinisher (Frappe du manteau / Twin-Gauntlet Cross Slash): 7 frames, 2, 3, 3, [3], 5, 6, 7
- * ticks (29), active frame 3 (ticks 8-10), hitbox x 10..48 / y 44..62.
- * Instead of Nayo's overhand punch, Koda steps in out of Revers d'acier, crosses both silver
- * tuning-blade gauntlets at his chest with a jade spark, and slashes both open knife-hands across
- * in a wide X-shaped acoustic wave that knocks the opponent down.
+ * lightFinisher (Fouet lunaire, L, L, L, `03_Coups_de_Pied/05_chambre_du_coup.png` ->
+ * `07_coup_de_pied_haut_tendu.png` -> `08_repli_haut.png`):
+ * 7 frames, 2, 3, 3, [3], 5, 6, 7 ticks (29), active frame 3 (ticks 8-10), hitbox x 10..48 / y 44..62.
+ * Feline steps in out of `Direct félin`, chambers her knee high (`05_chambre_du_coup.png`), and
+ * whips a full high roundhouse kick (`07_coup_de_pied_haut_tendu.png`) with an orbital crescent
+ * blade (`kind: 'blade'`) and 8-point star burst (`kind: 'star'`) that floors the opponent!
  */
 
 type Body = Omit<Pose, 'nearFist' | 'farFist'>;
@@ -60,6 +52,15 @@ function posed(body: Body, near: readonly [number, number], far: readonly [numbe
   };
 }
 
+function withKick(body: Body, foot: Point, ankle = 90): Body {
+  const withFoot: Body = {
+    ...body,
+    nearFoot: { x: foot.x, y: foot.y, angle: 0 },
+    bends: { ...body.bends, nearKnee: 'up' },
+  };
+  return { ...withFoot, nearFoot: hung(withFoot, 'near', ankle) };
+}
+
 const REAR_TOE = solve(GUARD).far.toe.x;
 
 function onToes(toe: number, angle: number): Foot {
@@ -77,114 +78,106 @@ const dust = (x: number, size: number, progress: number): Effect => ({
   progress,
 });
 
-// Frame 0 (2 ticks): Stepping in out of chainLight, drawing both silver gauntlets inward toward
-// the chest.
+// Frame 0 (2 ticks): Stepping onto the rear foot out of chainLight.
 const STEP_BODY: Body = {
   ...GUARD,
-  hip: at(-5.5, 34.5),
-  torso: 16,
-  head: 0,
+  hip: at(-4.5, 35.8),
+  torso: 12,
+  head: 2,
   shrug: 1.6,
-  twist: 0.2,
+  twist: 0.25,
   nearFoot: lifted(planted(8.5, 2), 1.4),
-  farFoot: onToes(REAR_TOE - 2, -22),
+  farFoot: onToes(REAR_TOE + 2, -18),
 };
-const STEP: Pose = posed(STEP_BODY, [24, 96], [38, 92]);
+const STEP: Pose = posed(STEP_BODY, [28, 94], [42, 90]);
 
-// Frame 1 (3 ticks): Deep coil with both silver gauntlets crossed in an X in front of his sternum,
-// charging with jade acoustic energy.
-const CROSS_BODY: Body = {
+// Frame 1 (`05_chambre_du_coup.png`, 3 ticks): High chambered knee in front of the chest, both
+// gloved fists held tight in guard.
+const CHAMBER_RAW: Body = {
   ...GUARD,
-  hip: at(-6.2, 33.2),
-  torso: 18,
-  head: -2,
-  shrug: 2.2,
+  hip: at(-0.5, 37.5),
+  torso: 4,
+  head: 6,
+  shrug: 1.8,
   twist: 0.35,
-  nearFoot: planted(9.5, 0),
-  farFoot: onToes(REAR_TOE - 3, -26),
+  nearFoot: at(12, 30),
+  farFoot: planted(-9.0, -8),
   face: 'focus',
 };
 const CROSS: Pose = {
-  ...posed(CROSS_BODY, [28, 104], [42, 98]),
-  effects: [energy(10, 48, 3.0), dust(10, 2.5, 0.2)],
-  glows: [{ center: at(10, 48), reach: 22, power: 0.9, tone: 'sound' }],
+  ...posed(withKick(CHAMBER_RAW, at(12, 30), 95), [32, 96], [46, 92]),
+  effects: [dust(-9, 2.5, 0.2)],
 };
 
-// Frame 2 (3 ticks): Uncoiling from the hips, both silver tuning-blades whipping forward and
-// upward toward the target.
-const WHIP_BODY: Body = {
+// Frame 2 (`06_coup_de_pied_horizontal.png`, 3 ticks): The leg whips outward toward head height.
+const WHIP_RAW: Body = {
   ...GUARD,
-  hip: at(-2.5, 34.0),
-  torso: 21,
-  head: -4,
-  shrug: 2.8,
-  reach: { near: 2.0, far: 1.5 },
-  twist: -0.25,
-  nearFoot: planted(11.0, 0),
-  farFoot: onToes(REAR_TOE - 2, -30),
+  hip: at(3.5, 38.5),
+  torso: -4,
+  head: 10,
+  shrug: 2.0,
+  twist: -0.2,
+  nearFoot: at(26, 46),
+  farFoot: planted(-5.5, -8),
   face: 'effort',
 };
 const WHIP: Pose = {
-  ...posed(WHIP_BODY, [76, 36], [64, 48]),
-  effects: [smear(4.0, [10, 48], [20, 52], [30, 53]), dust(10, 2.5, 0.55)],
+  ...posed(withKick(WHIP_RAW, at(26, 46), 90), [34, 96], [48, 94]),
+  effects: [smear(4.0, [12, 32], [20, 40], [28, 46]), dust(-5, 2.5, 0.55)],
 };
 
-// Frame 3 (3 ticks, active): Twin-Gauntlet X-Slash! The lead knife-hand and silver tuning-blade
-// slice out to x = 44 (with the blade arc + flash + ring reaching x = 48..50 across y 44..62),
-// while the rear palm slashes across in tandem.
-const IMPACT_BODY: Body = {
+// Frame 3 (`07_coup_de_pied_haut_tendu.png`, 3 ticks, active): Full high roundhouse whip kick!
+// Leg extended to x = 35.5, y = 51.0 with orbital crescent blade (`blade`) and 8-point star burst
+// (`star`) reaching x = 48 (hitbox 10..48, y 44..62).
+const IMPACT_RAW: Body = {
   ...GUARD,
-  hip: at(0.5, 33.5),
-  torso: 25,
-  head: -8,
-  shrug: 3.2,
-  reach: { near: 3.8, far: 2.2 },
-  twist: -0.45,
-  nearFoot: planted(11.5, -3),
-  farFoot: onToes(REAR_TOE, -34),
+  hip: at(6.0, 39.0),
+  torso: -8,
+  head: 12,
+  shrug: 2.2,
+  twist: -0.35,
+  nearFoot: at(35.0, 50.5),
+  farFoot: planted(-4.5, -8),
   face: 'kiai',
 };
 const IMPACT: Pose = {
-  ...IMPACT_BODY,
-  nearFist: at(39.8, 51.5),
-  farFist: at(28.5, 47.0),
-  bends: { nearElbow: 'down', farElbow: 'down' },
+  ...posed(withKick(IMPACT_RAW, at(35.0, 50.5), 88), [36, 98], [50, 96]),
   effects: [
-    smear(5.0, [16, 56], [28, 54], [43.5, 51.5]),
-    smear(3.8, [14, 44], [26, 48], [38.0, 53.0]),
-    { kind: 'flash', center: at(45.5, 51.5), radius: 5.2, tone: 'strike' },
-    { kind: 'ring', center: at(42.0, 51.5), radius: 9, progress: 0.35, tone: 'sound', squash: 1.5 },
-    { kind: 'shards', center: at(43.5, 51.5), radius: 10, progress: 0.3, tone: 'sound' },
+    smear(5.0, [16, 40], [27, 46], [40.5, 51.0]),
+    { kind: 'blade', center: at(30, 50), rx: 14, ry: 6, tilt: -18, twin: true, tone: 'sound' },
+    { kind: 'star', center: at(43.5, 51.5), radius: 4.5, tone: 'strike' },
+    { kind: 'shards', center: at(41.5, 51.5), radius: 9, progress: 0.3, tone: 'sound' },
   ],
-  glows: [{ center: at(42, 51.5), reach: 28, power: 1.2, tone: 'sound' }],
+  glows: [{ center: at(40, 51.5), reach: 28, power: 1.2, tone: 'sound' }],
 };
 
-// Frame 4 (5 ticks): Follow-through of the twin-blade slash as the jade ring expands.
-const THROUGH: Pose = {
-  ...IMPACT,
-  hip: at(-1.0, 34.0),
-  torso: 23,
-  head: -6,
-  nearFist: at(36.0, 50.0),
-  farFist: at(24.0, 46.5),
+// Frame 4 (`08_repli_haut.png`, 5 ticks): Re-chambering the high kick as the orbital blade fades.
+const THROUGH_RAW: Body = {
+  ...IMPACT_RAW,
+  hip: at(3.5, 38.0),
+  torso: -3,
+  head: 8,
+  nearFoot: at(26.0, 42.0),
+  farFoot: planted(-6.5, -8),
   face: 'effort',
-  effects: [
-    { kind: 'ring', center: at(44.0, 51.5), radius: 13, progress: 0.7, tone: 'sound', squash: 1.5 },
-  ],
-  glows: [{ center: at(40, 51), reach: 22, power: 0.7, tone: 'sound' }],
+};
+const THROUGH: Pose = {
+  ...posed(withKick(THROUGH_RAW, at(26.0, 42.0), 92), [32, 96], [46, 92]),
+  effects: [{ kind: 'blade', center: at(33, 51), rx: 12, ry: 5, tilt: -14, tone: 'sound' }],
+  glows: [{ center: at(36, 51), reach: 22, power: 0.7, tone: 'sound' }],
 };
 
-// Frame 5 (6 ticks): Drawing the silver gauntlets back into the martial stance.
+// Frame 5 (`09_recul_en_garde.png`, 6 ticks): Setting the kicking leg back down.
 const RETRACT_BODY: Body = {
   ...GUARD,
-  hip: at(-4.5, 35.4),
-  torso: 17,
-  head: -1,
-  shrug: 1.8,
+  hip: at(-4.2, 35.8),
+  torso: 14,
+  head: 1,
+  shrug: 1.6,
   nearFoot: lifted(planted(8.5, 0), 0.8),
   farFoot: onToes(REAR_TOE, -20),
 };
-const RETRACT: Pose = posed(RETRACT_BODY, [28, 78], [40, 88]);
+const RETRACT: Pose = posed(RETRACT_BODY, [30, 86], [42, 90]);
 
 // Frame 6 (7 ticks): Back in GUARD.
 export const POSES: readonly Pose[] = [STEP, CROSS, WHIP, IMPACT, THROUGH, RETRACT, GUARD];

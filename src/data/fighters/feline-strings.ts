@@ -157,6 +157,7 @@ export const FELINE_STRINGS: Pick<
       { frames: { from: 3, to: 6 }, boxes: [box(-30.5, 0, 44, 66.5)] },
       { frames: { from: 6, to: 17 }, boxes: [box(-31, 0, 44.5, 64)] },
       { frames: { from: 17, to: 23 }, boxes: [box(-28.5, 0, 42, 73.5)] },
+      { frames: { from: 23, to: 28 }, boxes: [box(-27, 0, 41.5, 78)] },
     ],
     cancelInto: HEAVY_CANCELS,
     juggleCost: 2,

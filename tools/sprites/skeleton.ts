@@ -162,6 +162,36 @@ export type Effect =
       readonly center: Point;
       readonly radius: number;
       readonly tone?: Tone;
+    }
+  /** Feline's elliptical dimensional portal rift (`01_Portail_Vertical`, `02_Portail_Horizontal`). */
+  | {
+      readonly kind: 'portal';
+      readonly center: Point;
+      readonly rx: number;
+      readonly ry: number;
+      readonly tilt?: number;
+      readonly beams?: boolean;
+      readonly tone?: Tone;
+    }
+  /** Feline's sweeping orbital crescent blade (`05_Lame_de_Portail`, `hit_04_slash_courbe`). */
+  | {
+      readonly kind: 'blade';
+      readonly center: Point;
+      readonly rx: number;
+      readonly ry: number;
+      readonly tilt?: number;
+      readonly from?: number;
+      readonly to?: number;
+      readonly twin?: boolean;
+      readonly tone?: Tone;
+    }
+  /** Feline's 8-point silver-white star burst (`hit_01_eclat_etoile`, `fx_16_explosion_orbitale`). */
+  | {
+      readonly kind: 'star';
+      readonly center: Point;
+      readonly radius: number;
+      readonly rings?: boolean;
+      readonly tone?: Tone;
     };
 
 export interface Pose {

@@ -216,6 +216,15 @@ export function drawEffect(ink: Ink, effect: Effect): void {
     case 'plasma':
       drawPlasmaSphere(ink, effect.center, effect.radius, tonesOf(ink.fx)[effect.tone ?? 'sound']);
       return;
+    case 'portal':
+      drawPortal(ink, effect, tonesOf(ink.fx)[effect.tone ?? 'sound']);
+      return;
+    case 'blade':
+      drawBlade(ink, effect, tonesOf(ink.fx)[effect.tone ?? 'sound']);
+      return;
+    case 'star':
+      drawStarBurst(ink, effect, tonesOf(ink.fx)[effect.tone ?? 'strike']);
+      return;
   }
 }
 
@@ -1762,4 +1771,207 @@ function drawPlasmaSphere(ink: Ink, center: Point, radius: number, tones: Tones)
   layer.halo();
   cross(layer, c.x, c.y, 2, CORE);
   layer.draw();
+}
+
+/**
+ * Feline's dimensional portal rift (`01_Portail_Vertical`, `02_Portail_Horizontal`, `03_Dash_Portail`):
+ * an elliptical dimensional gate with a dark void heart, a central singularity star, an incandescent
+ * double silver-white rim, secondary orbital arcs, 4-point star flares at the poles, and optional
+ * horizontal speed-beams (`03_traversee.png`, `04_portail_sortie.png`).
+ */
+function drawPortal(ink: Ink, effect: Extract<Effect, { kind: 'portal' }>, tones: Tones): void {
+  const layer = new Layer(ink, tones);
+  const c = pixelCenter(ink.at(effect.center));
+  const rx = Math.max(3, effect.rx * S);
+  const ry = Math.max(3, effect.ry * S);
+  const tilt = ((effect.tilt ?? 0) * Math.PI) / 180;
+  const cos = Math.cos(tilt);
+  const sin = Math.sin(tilt);
+  const span = Math.max(rx, ry) * 1.45 + 4;
+  const random = randomFrom(effect.center.x, effect.center.y, effect.rx, effect.ry);
+
+  layer.fill(squareAround(c, span), (x, y) => {
+    const dx = x - c.x;
+    const dy = y - c.y;
+    const u = (dx * cos + dy * sin) / rx;
+    const v = (-dx * sin + dy * cos) / ry;
+    const rho = Math.hypot(u, v);
+    // Central singularity star mote inside the void (`02_portail_entree.png`).
+    if (rho < 0.14) return CORE;
+    // Dark dimensional rift interior with subtle inner rim shading.
+    if (rho < 0.72) {
+      return rho > 0.62 && (Math.floor(x) + Math.floor(y)) % 2 === 0 ? DEEP : SMOKE;
+    }
+    // Incandescent main portal ring.
+    if (rho <= 1.08) {
+      if (rho >= 0.82 && rho <= 0.96) return CORE;
+      if (rho >= 0.75 && rho <= 1.02) return LIGHT;
+      return BASE;
+    }
+    // Secondary outer orbital arc (`02_portail_entree.png` & `05_vortex.png`).
+    const angle = Math.atan2(v, u);
+    if (rho >= 1.2 && rho <= 1.32 && Math.cos(angle * 2 + 0.8) > -0.15) {
+      return rho <= 1.26 ? LIGHT : DEEP;
+    }
+    return NONE;
+  });
+
+  // 4-point star flares at the portal's poles and in front (`02_portail_entree.png`).
+  const poleA = { x: c.x - sin * ry * 0.92, y: c.y + cos * ry * 0.92 };
+  const poleB = { x: c.x + sin * ry * 0.92, y: c.y - cos * ry * 0.92 };
+  const frontStar = { x: c.x + cos * (rx + 4), y: c.y + sin * (rx + 4) };
+  cardinalStar(layer, poleA, 3, CORE);
+  cardinalStar(layer, poleB, 3, CORE);
+  cardinalStar(layer, frontStar, 4, CORE);
+
+  // Horizontal speed-beams streaming through the portal (`03_traversee.png`, `04_portail_sortie.png`).
+  if (effect.beams) {
+    for (const frac of [-0.65, -0.35, -0.1, 0.18, 0.45, 0.7]) {
+      const y = c.y + frac * ry * 0.82;
+      const len = rx * (2.2 + (1 - Math.abs(frac)) * 1.4);
+      trace(
+        layer,
+        [
+          { x: c.x - len, y },
+          { x: c.x + rx * 0.6, y },
+        ],
+        (t) => (t > 0.65 ? CORE : t > 0.3 ? LIGHT : BASE),
+        true,
+      );
+    }
+  }
+
+  for (let i = 0; i < 8; i++) {
+    const a = random() * 2 * Math.PI;
+    const d = 1.15 + random() * 0.45;
+    const px = c.x + (Math.cos(a) * rx * cos - Math.sin(a) * ry * sin) * d;
+    const py = c.y + (Math.cos(a) * rx * sin + Math.sin(a) * ry * cos) * d;
+    if (i % 3 === 0) cardinalStar(layer, { x: px, y: py }, 2, LIGHT);
+    else layer.plot(px, py, pick(random, [CORE, LIGHT, BASE]));
+  }
+  layer.halo();
+  layer.draw();
+}
+
+/**
+ * Feline's sweeping orbital crescent blade (`05_Lame_de_Portail`, `06_Combo_Enchainement_Portails`,
+ * `Pack_05/01_Hits_Impacts/hit_04_slash_courbe.png`, `hit_10_double_lame.png`, `fx_02_arc_orbital.png`).
+ */
+function drawBlade(ink: Ink, effect: Extract<Effect, { kind: 'blade' }>, tones: Tones): void {
+  const layer = new Layer(ink, tones);
+  const c = pixelCenter(ink.at(effect.center));
+  const rx = Math.max(4, effect.rx * S);
+  const ry = Math.max(3, effect.ry * S);
+  const fromDeg = effect.from ?? -115;
+  const toDeg = effect.to ?? 115;
+  const tilts = effect.twin ? [effect.tilt ?? -18, -(effect.tilt ?? -18) + 28] : [effect.tilt ?? 0];
+  const random = randomFrom(effect.center.x, effect.center.y, effect.rx, effect.ry);
+
+  for (const [idx, deg] of tilts.entries()) {
+    const tilt = (deg * Math.PI) / 180;
+    const cos = Math.cos(tilt);
+    const sin = Math.sin(tilt);
+    const scale = idx === 0 ? 1 : 0.86;
+    const arx = rx * scale;
+    const ary = ry * scale;
+    const span = Math.max(arx, ary) + 6;
+    layer.fill(squareAround(c, span), (x, y) => {
+      const dx = x - c.x;
+      const dy = c.y - y;
+      const u = (dx * cos + dy * sin) / arx;
+      const v = (-dx * sin + dy * cos) / ary;
+      const rho = Math.hypot(u, v);
+      const angle = (Math.atan2(v, u) * 180) / Math.PI;
+      if (angle < fromDeg || angle > toDeg) return NONE;
+      const mid = (fromDeg + toDeg) / 2;
+      const half = Math.max(1, (toDeg - fromDeg) / 2);
+      const k = Math.min(1, Math.abs(angle - mid) / half);
+      // Thickest at the apex (k = 0), tapering to razor tips at k = 1.
+      const thick = (1 - k * k) * 0.34 + 0.05;
+      if (rho > 1.04 || rho < 1.0 - thick) return NONE;
+      const s = (1.04 - rho) / (thick + 0.04);
+      if (k < 0.55 && s > 0.18 && s < 0.58) return CORE;
+      if (s < 0.72) return LIGHT;
+      return k < 0.75 ? BASE : DEEP;
+    });
+    // Leading star flare at the apex of the primary orbital blade (`05_lame_projetee.png`).
+    if (idx === 0) {
+      const midRad = (((fromDeg + toDeg) / 2) * Math.PI) / 180;
+      const ux = Math.cos(midRad) * arx;
+      const uy = Math.sin(midRad) * ary;
+      const apex = {
+        x: c.x + ux * cos - uy * sin,
+        y: c.y - (ux * sin + uy * cos),
+      };
+      cardinalStar(layer, apex, 4, CORE);
+    }
+  }
+
+  for (let i = 0; i < 7; i++) {
+    const a = ((fromDeg + random() * (toDeg - fromDeg)) * Math.PI) / 180;
+    const r = 0.85 + random() * 0.35;
+    const px = c.x + Math.cos(a) * rx * r;
+    const py = c.y - Math.sin(a) * ry * r;
+    if (i % 2 === 0) cardinalStar(layer, { x: px, y: py }, 2, LIGHT);
+    else layer.plot(px, py, pick(random, [CORE, LIGHT, BASE]));
+  }
+  layer.halo();
+  layer.draw();
+}
+
+/**
+ * Feline's 8-point silver-white star burst (`hit_01_eclat_etoile.png`, `fx_01_etoile_scintillante.png`,
+ * `fx_16_explosion_orbitale.png`): four long cardinal needle rays, four 45-degree diagonal rays, a
+ * pure white heart, and optional intersecting orbital rings (`rings: true`).
+ */
+function drawStarBurst(ink: Ink, effect: Extract<Effect, { kind: 'star' }>, tones: Tones): void {
+  const layer = new Layer(ink, tones);
+  const c = pixelCenter(ink.at(effect.center));
+  const r = Math.max(4, effect.radius * S);
+  const spikes: Spike[] = Array.from({ length: 8 }, (_, i) => {
+    const cardinal = i % 2 === 0;
+    return {
+      angle: (i * Math.PI) / 4,
+      length: r * (cardinal ? 1.65 : 0.95),
+      width: cardinal ? 0.22 : 0.18,
+    };
+  });
+  starburst(layer, c, r * 0.38, spikes, [0.35, 0.68, 0.88]);
+  whiteHeart(layer, c, r * 0.32, spikes);
+
+  if (effect.rings) {
+    for (const deg of [-32, 32]) {
+      const tilt = (deg * Math.PI) / 180;
+      const cos = Math.cos(tilt);
+      const sin = Math.sin(tilt);
+      const rx = r * 1.45;
+      const ry = r * 0.52;
+      layer.fill(squareAround(c, rx + 2), (x, y) => {
+        const dx = x - c.x;
+        const dy = y - c.y;
+        const u = (dx * cos + dy * sin) / rx;
+        const v = (-dx * sin + dy * cos) / ry;
+        const rho = Math.hypot(u, v);
+        if (rho < 0.84 || rho > 1.04) return NONE;
+        return rho > 0.9 && rho < 0.98 ? CORE : LIGHT;
+      });
+    }
+  }
+  layer.halo();
+  debris(layer, c, r * 0.85, randomFrom(effect.center.x, effect.center.y, effect.radius), 4);
+  layer.draw();
+}
+
+/** 4-point needle star flare (`+` with bright center) used on Feline's portals and blades. */
+function cardinalStar(layer: Layer, c: Point, arm: number, rank: Rank): void {
+  const x = Math.floor(c.x);
+  const y = Math.floor(c.y);
+  layer.plot(x, y, CORE);
+  for (let i = 1; i <= arm; i++) {
+    const r = i === 1 ? CORE : i < arm ? rank : lower(rank);
+    layer.plot(x + i, y, r);
+    layer.plot(x - i, y, r);
+    layer.plot(x, y + i, r);
+    layer.plot(x, y - i, r);
+  }
 }

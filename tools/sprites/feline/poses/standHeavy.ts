@@ -100,51 +100,52 @@ const CHAMBER_RAW: Body = {
 };
 const CHAMBER: Pose = posed(withKick(CHAMBER_RAW, at(10, 28), 95), [18, 96], [46, 92]);
 
-// Frame 2 (2 ticks): The hip snaps over and the silver-greaved leg whips outward toward chest
-// height, trailing a jade crescent arc.
+// Frame 2 (2 ticks): The hip snaps over and the leg whips outward toward chest height (`pied_05_extension_1`),
+// both gloved fists held tight in guard in front of her chest (`pied_06_extension_2.png`).
 const WHIP_RAW: Body = {
   ...GUARD,
   hip: at(3.5, 38.5),
   torso: -4,
   head: 10,
   shrug: 2.0,
-  twist: -0.25,
+  twist: -0.2,
   nearFoot: at(27, 45),
   farFoot: planted(-5.5, -8),
   face: 'effort',
 };
 const WHIP: Pose = {
-  ...posed(withKick(WHIP_RAW, at(27, 45), 90), [-12, 28], [48, 94]),
+  ...posed(withKick(WHIP_RAW, at(27, 45), 90), [34, 96], [48, 94]),
   effects: [smear(4.0, [10, 32], [19, 40], [29, 46])],
 };
 
-// Frame 3 (4 ticks, active): Full high side-thrust kick! The lead leg is extended at y ~ 50,
-// torso counter-balanced back, lead arm swept down-back and rear palm guarding the temple; the
-// jade blade arc, impact flash and diamond shards reach x = 52 (hitbox 10..52, y 44..62).
+// Frame 3 (`pied_06_extension_2.png`, 4 ticks, active): Full high side-kick! Both gloved fists are
+// held tight in front of her chest (`[36, 98]` and `[52, 96]`), her leg extended high at y ~ 50,
+// unleashing an orbital silver-white crescent blade (`blade`) and 8-point star burst (`star`) across
+// x 10..52, y 44..62.
 const IMPACT_RAW: Body = {
   ...GUARD,
   hip: at(7.5, 39.0),
   torso: -8,
   head: 12,
   shrug: 2.2,
-  twist: -0.4,
+  twist: -0.35,
   nearFoot: at(38.0, 49.5),
   farFoot: planted(-4.0, -8),
   face: 'kiai',
 };
 const IMPACT: Pose = {
-  ...posed(withKick(IMPACT_RAW, at(38.0, 49.5), 88), [-18, 24], [52, 96]),
+  ...posed(withKick(IMPACT_RAW, at(38.0, 49.5), 88), [36, 98], [52, 96]),
   effects: [
     smear(5.5, [16, 40], [28, 46], [42, 50]),
-    { kind: 'flash', center: at(46.5, 51), radius: 5.5, tone: 'strike' },
+    { kind: 'blade', center: at(32, 49), rx: 14, ry: 6, tilt: -16, tone: 'sound' },
+    { kind: 'star', center: at(46.0, 51), radius: 4.8, tone: 'strike' },
     { kind: 'shards', center: at(43.5, 51), radius: 8.5, progress: 0.3, tone: 'sound' },
     { kind: 'dust', x: -4, size: 2.8, progress: 0.25 },
   ],
   glows: [{ center: at(42, 50), reach: 26, power: 1.1, tone: 'sound' }],
 };
 
-// Frame 4 (3 ticks): Follow-through at the end of the kick as a standing jade ring ripples where
-// the silver shin-greave struck.
+// Frame 4 (`pied_07_repli.png`, 3 ticks): Follow-through at the end of the high kick.
 const THROUGH_RAW: Body = {
   ...IMPACT_RAW,
   hip: at(5.5, 38.5),
@@ -155,9 +156,9 @@ const THROUGH_RAW: Body = {
   face: 'effort',
 };
 const THROUGH: Pose = {
-  ...posed(withKick(THROUGH_RAW, at(32.0, 46.0), 90), [-12, 28], [48, 94]),
+  ...posed(withKick(THROUGH_RAW, at(32.0, 46.0), 90), [32, 96], [48, 94]),
   effects: [
-    { kind: 'ring', center: at(44, 51), radius: 9, progress: 0.5, tone: 'sound', squash: 1.6 },
+    { kind: 'blade', center: at(35, 50), rx: 12, ry: 5, tilt: -12, tone: 'sound' },
     { kind: 'dust', x: -4, size: 2.8, progress: 0.65 },
   ],
 };

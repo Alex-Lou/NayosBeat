@@ -3,17 +3,17 @@ import { add, BODY, scale, solve, sub, type Bend } from '../../skeleton.ts';
 import { at, GUARD, planted, smear, type Effect, type Foot, type Pose } from './common.ts';
 import { hung } from './jump.ts';
 
-/** Where the crouched silver gauntlets gather energy at the bottom of the dip (used by remixes.ts). */
+/** Where the crouched fists gather portal energy at the bottom of the dip (used by remixes.ts). */
 export const DIP_FIST = at(-6, 30);
 
 /**
- * specialAntiAir (Cymbale / Ascension de Lune, ↓ + S): 10 frames, ticks 3,[3],[5],4,4,4,4,4,4,4
- * (active: frames 1-2, hitbox x 4..24 / y 30..100).
- * Completely distinct from Nayo's boxing uppercut: Koda crouches low with his arms swept back like
- * wings, then leaps and throws his torso backward while whipping his silver-greaved lead leg
- * straight up to the sky in a vertical Crescent Moon / Flash Kick (`nearFoot` rising to y = 78
- * with a huge crescent jade blade trail and column up to y = 100), his arms counter-balancing low
- * and wide before he lands gracefully back into his open-chest kung-fu stance.
+ * specialAntiAir (Portail ascendant, ↓ + S, `02_Portail_Horizontal_Sortie` +
+ * `09_Coups_Speciaux_Annexes/01_uppercut_portail.png` & `05_vortex.png`):
+ * 10 frames, ticks 3,[3],[5],4,4,4,4,4,4,4 (active: frames 1-2, hitbox x 4..24 / y 30..100).
+ * A horizontal multi-ring dimensional vortex portal (`kind: 'portal'`) opens on the floor under
+ * Feline; she erupts skyward out of the floor portal in a rising uppercut / high-knee ascension
+ * (`01_uppercut_portail.png`) wrapped in a column of silver-white portal light (`column`), orbital
+ * blades (`kind: 'blade'`), and an 8-point star burst at y = 96..100!
  */
 
 type Body = Omit<Pose, 'nearFist' | 'farFist'>;
@@ -76,17 +76,13 @@ function onToes(toe: number, angle: number): Foot {
   );
 }
 
-const ring = (x: number, y: number, radius: number, progress: number, squash?: number): Effect => ({
-  kind: 'ring',
-  center: at(x, y),
-  radius,
-  progress,
+const floorPortal = (rx: number, ry = 4.5, y = 5.5): Effect => ({
+  kind: 'portal',
+  center: at(-1, y),
+  rx,
+  ry,
   tone: 'sound',
-  ...(squash === undefined ? {} : { squash }),
 });
-
-const floorRing = (progress: number, radius = 28, lift = 0): Effect =>
-  ring(-2, 1.5 + lift, radius, progress, 0.3);
 
 const dust = (x: number, size: number, progress: number): Effect => ({
   kind: 'dust',
@@ -103,8 +99,7 @@ const column = (bottom: number, top: number, width: number, progress: number): E
   progress,
 });
 
-// 0 - The dip (3 ticks): Deep martial crouch, both arms swept back like crane wings as jade
-// energy coils around his silver shin-greaves.
+// 0 - The dip (`01_ouverture_au_sol.png`, 3 ticks): Deep crouch into the horizontal floor portal!
 const DIP_BODY: Body = {
   ...GUARD,
   hip: at(-6.6, 28.8),
@@ -117,9 +112,8 @@ const DIP_BODY: Body = {
 };
 const DIP: Pose = posed(DIP_BODY, [-26, 24], [36, 88]);
 
-// 1 - The launch (3 ticks, active): Koda throws his torso back (`torso: -18`) and whips his
-// silver-greaved lead leg high into the air (`nearFoot` at `16, 70`), while his arms sweep wide
-// for balance and a vertical crescent jade blade arc + column shoots up to y = 97!
+// 1 - The launch (`02_emergence.png` / `01_uppercut_portail.png`, 3 ticks, active): Erupting
+// upward out of the horizontal floor vortex!
 const LAUNCH_RAW: Body = {
   ...GUARD,
   hip: at(-6.5, 44.0),
@@ -137,9 +131,7 @@ const LAUNCH: Pose = posed(
   [-12, 28],
 );
 
-// 2 - The peak (5 ticks, active): Airborne Crescent Moon Flash Kick! His torso leans back
-// (`torso: -26`), his silver-greaved lead leg slashes to the apex (`nearFoot` at `13.0, 74.0`,
-// toes and crescent blade smear reaching `x = 22..25, y = 96..100`), rear leg tucked underneath!
+// 2 - The peak (`01_uppercut_portail.png`, 5 ticks, active): Apex of the rising portal vortex!
 const PEAK_RAW: Body = {
   ...GUARD,
   hip: at(-6.0, 48.0),
@@ -157,8 +149,7 @@ const PEAK: Pose = posed(
   [-14, 26],
 );
 
-// 3 - The apex hang (4 ticks): The high kicking leg begins to fold back from the zenith as Koda
-// rights his torso in mid-air.
+// 3 - The apex hang (4 ticks): Folding back from the zenith inside the silver-white column.
 const HANG_RAW: Body = {
   ...GUARD,
   hip: at(-1.0, 48.5),
@@ -175,8 +166,7 @@ const HANG: Pose = posed(
   [48, 68],
 );
 
-// 4 - Descending (4 ticks): The lead leg sweeps down in front of the hip, arms opening into the
-// kung-fu stance.
+// 4 - Descending (4 ticks).
 const TOPPLE_RAW: Body = {
   ...GUARD,
   hip: at(-2.5, 44.5),
@@ -193,7 +183,7 @@ const TOPPLE: Pose = posed(
   [56, 62],
 );
 
-// 5 - Reaching for the floor: the back toe touches down first as the lead foot descends.
+// 5 - Reaching for the floor.
 const FALL_BODY: Body = {
   ...GUARD,
   hip: at(-4.0, 39.5),
@@ -206,8 +196,7 @@ const FALL_BODY: Body = {
 };
 const FALL: Pose = posed(FALL_BODY, [-14, 34], [62, 58]);
 
-// 6 - Heavy martial landing: knees absorbing the drop, lead hand chambered at the hip, rear palm
-// poised in front.
+// 6 - Agile feline landing (`04_appui.png`).
 const LAND: Pose = {
   ...GUARD,
   hip: at(-6.4, 29.5),
@@ -230,33 +219,33 @@ const LOW: Pose = {
   farFist: at(11.0, 56.0),
 };
 
-// 8 - Rising back into the open-chest kung-fu guard.
+// 8 - Rising back into the feline guard (`05_redressement.png`).
 const RISE: Pose = {
   ...GUARD,
   hip: at(-6.6, 35.0),
   torso: 14,
   head: 1,
   shrug: 1.2,
-  nearFist: at(9.8, 51.5),
-  farFist: at(10.2, 59.0),
+  nearFist: at(9.4, 51.5),
+  farFist: at(9.6, 57.5),
   farFoot: onToes(REAR_TOE, -17),
 };
 
-// 9 - Hand-off to idle.
+// 9 - Hand-off to idle (`06_retour_garde.png`).
 const IDLE_HANG: Pose = {
   ...GUARD,
   hip: at(-6.5, 36.6),
-  torso: 12,
+  torso: 13,
   shrug: 1.2,
-  nearFist: at(9.2, 52.9),
-  farFist: at(9.7, 60.4),
+  nearFist: at(9.0, 52.8),
+  farFist: at(9.6, 57.4),
 };
 
 export const POSES: readonly Pose[] = [
   {
     ...DIP,
     effects: [
-      floorRing(0.1),
+      floorPortal(16, 4.5, 5.5),
       dust(5, 3.6, 0.15),
       dust(-18, 3.2, 0.2),
       { kind: 'energy', center: at(-2, 29), radius: 2.8 },
@@ -267,7 +256,8 @@ export const POSES: readonly Pose[] = [
     effects: [
       smear(4.0, [7, 50], [12, 66], [14, 79], [14, 88]),
       column(0, 82, 10, 0.2),
-      floorRing(0.45),
+      floorPortal(18, 5.0, 5.5),
+      { kind: 'blade', center: at(10, 58), rx: 10, ry: 4.5, tilt: 24, twin: true, tone: 'sound' },
       dust(6, 3.6, 0.5),
       dust(-18.5, 3.2, 0.55),
       { kind: 'flash', center: at(16, 96.5), radius: 4.5, tone: 'strike' },
@@ -278,7 +268,8 @@ export const POSES: readonly Pose[] = [
     effects: [
       smear(4.0, [8, 56], [11, 70], [12, 84], [11.5, 92]),
       column(0, 98, 11, 0.45),
-      floorRing(0.7, 22, 2),
+      floorPortal(15, 4.0, 5.0),
+      { kind: 'blade', center: at(11, 72), rx: 10, ry: 4.5, tilt: -22, twin: true, tone: 'sound' },
       dust(7, 3.6, 0.85),
       dust(-19, 3.2, 0.9),
       { kind: 'flash', center: at(13.5, 100.5), radius: 6, tone: 'strike' },

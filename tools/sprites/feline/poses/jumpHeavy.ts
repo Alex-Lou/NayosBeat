@@ -75,11 +75,11 @@ const DIVE: Pose = {
 
 const STRIKE: Pose = {
   ...DIVE,
+  nearFist: at(10, 42),
   effects: [
     // The heel's path, bowed slightly under the leg line: the diagonal of the dive.
     smear(5, [9, 27], [14, 20], [20, 13.5], [25, 8.5], [30, 5.5]),
-    // Streaming back from the top of the boot alongside the shin, just clear of its top edge
-    // (the lines are drawn on the front layer: on the shin they would read as painted stripes).
+    { kind: 'blade', center: at(22, 12), rx: 12, ry: 5, tilt: -26, tone: 'sound' },
     {
       kind: 'speed',
       center: at(30.9, 16.1),

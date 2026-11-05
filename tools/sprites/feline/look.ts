@@ -1,11 +1,17 @@
 /**
- * Feline (issue #155 comment 6660565057: Pack_01..Pack_05):
- * Agile dimensional cat-fighter with upright white cat ears, a huge flowing silver-white mane
- * (`drawMane`), and a sinuous S-curved white feline tail (`drawTail`); a black techwear crop-top
- * with a high collar over a toned bare midriff; bare shoulders with a black shoulder pad bearing a
- * glowing cyan triangle (`▼`, `drawShoulderTriangle`); black fingerless gauntlets with cyan wrist
- * trim; baggy black techwear cargo trousers with thigh straps, cyan-piped cargo pockets and a
- * silver hip chain; and high-laced black combat boots with cyan LED accents.
+ * Feline (issue #155 comment 6660565057: Pack_01..Pack_05, `poing_01_garde.png`):
+ * - Two tall pointed white cat ears with vivid coral-pink inner triangles (stamped in `head.ts`),
+ *   a black scrunchie behind them, and a voluminous multi-plume silver-white ponytail (`drawMane`);
+ * - A long, plush white feline tail (`drawTail`) curving out behind her waist into a wide C-hook
+ *   loop on standing, crouching, dashing, kicking and airborne poses;
+ * - Sleeveless black techwear crop-top with a high collar (cyan LED dash) over a toned bare midriff;
+ * - Bare shoulders with a glowing cyan downward triangle (`▼`, `drawShoulderTriangle`) directly on
+ *   her deltoid, a black bicep strap with a silver buckle, a wrist bracer with a cyan diagonal LED,
+ *   and fingerless combat gloves;
+ * - Baggy black techwear cargo trousers with a 3D hip pouch (vertical cyan LED), a thick silver
+ *   chain looping from a hip O-ring to a thigh buckle, two diagonal cyan LED dashes (`//`) on the
+ *   front thigh, and high-cut black combat boots with two buckled shin straps, a cyan ankle LED,
+ *   and a silver-grey lugged sole and toe cap.
  */
 
 import { ANCHOR, ART_SCALE } from '../../../src/art/types.ts';
@@ -24,8 +30,20 @@ const S = ART_SCALE;
 const M = MATERIAL;
 const SKIN = noGloss(M.skin);
 const SKIN_FAR = farLit(SKIN);
-const HAIR: Material = { ...M.hair, glossCut: 0.78 };
-const HAIR_FAR = farLit(HAIR);
+const HAIR: Material = noGloss({
+  ...M.hair,
+  deep: M.hair.shadow,
+  shadow: M.hair.base,
+  base: M.hair.light,
+  light: M.hair.gloss ?? M.hair.light,
+});
+const HAIR_FAR: Material = noGloss({
+  ...M.hair,
+  deep: M.hair.deep,
+  shadow: M.hair.shadow,
+  base: M.hair.base,
+  light: M.hair.light,
+});
 const TOP: Material = { ...M.jacket, glossCut: 0.88 };
 const TOP_FAR = farLit(TOP);
 const LEATHER: Material = { ...M.leather, glossCut: 0.88 };
@@ -37,7 +55,6 @@ const BOOT: Material = { ...M.boot, glossCut: 0.86 };
 const BOOT_FAR = farLit(BOOT);
 const SOLE = matteOf(M.sole);
 const METAL: Material = { ...M.metal, glossCut: 0.68 };
-const PLASTIC: Material = { ...M.plastic, glossCut: 0.84 };
 
 function farLit(material: Material): Material {
   const far = farOf(material);
@@ -99,88 +116,145 @@ function neonLine(ctx: Ink, a: Point, b: Point, glowing = false): void {
 }
 
 // ---------------------------------------------------------------------------------------------
-// Feline signature silhouette: voluminous silver-white mane & S-curved feline tail
+// Feline signature silhouette: high ponytail mane behind the scrunchie & long C-hook feline tail
 
 /**
- * Voluminous silver-white feline mane flowing behind her head and shoulders (as in
- * Apercu_Pack_02_Feline_CORRIGE.png). Tucks in when crouched or lying down so it stays inside the
- * hurtbox envelope.
+ * Voluminous silver-white ponytail bursting backward from the black scrunchie behind her cat ears
+ * (`poing_01_garde.png`). Anchored well behind `s.head` (`-6.2` along `s.front`) so the space
+ * above and between her two cat ears stays completely clear.
  */
 function drawMane(ctx: Ctx): void {
   const { canvas, at, s, swing } = ctx;
-  if (s.head.y < 18) return;
-  const standing = clamp((s.hip.y - 22) / 12, 0.35, 1);
-  const root = add(s.head, add(scale(s.front, -3.2), scale(s.up, 2.2)));
+  if (s.head.y < 16) return;
+  const standing = clamp((s.hip.y - 18) / 14, 0.38, 1);
+  const crouch = s.hip.y < 26;
+  const minX = crouch ? -16.0 : -24.5;
+  const clampP = (p: Point): Point => ({ x: Math.max(minX, p.x), y: Math.max(18, p.y) });
+
+  // Root sits right at the black scrunchie at the back of the head, clear of the cat ears.
+  const root = clampP(add(s.head, add(scale(s.front, -5.8), scale(s.up, 1.4))));
   const sx = swing.x * standing;
   const sy = swing.y * standing;
 
-  // Multi-plume fluffy silver-white mane fanning out behind her head and shoulders, with spiky tips.
-  const crown = add(root, { x: (-3.8 + sx * 0.4) * standing, y: 2.2 + sy * 0.3 });
-  const upperTip = add(crown, { x: (-4.2 + sx * 0.6) * standing, y: 0.6 + sy * 0.3 });
-  const mid = add(root, { x: (-5.8 + sx * 0.6) * standing, y: -1.8 + sy * 0.4 });
-  const midTip = add(mid, { x: (-3.6 + sx * 0.8) * standing, y: -1.6 + sy * 0.4 });
-  const lower = add(root, { x: (-5.0 + sx * 0.5) * standing, y: -5.2 * standing + sy * 0.5 });
-  const lowerTip = add(lower, { x: (-3.2 + sx * 0.7) * standing, y: -3.2 * standing + sy * 0.5 });
+  // High-arching multi-plume ponytail (`poing_01_garde.png`): rises from the scrunchie, then sweeps
+  // back and down in four feathery locks.
+  const crownArch = clampP(
+    add(root, { x: (-3.6 + sx * 0.3) * standing, y: 3.4 * standing + sy * 0.2 }),
+  );
+  const topMid = clampP(add(crownArch, { x: (-4.2 + sx * 0.5) * standing, y: -0.6 + sy * 0.3 }));
+  const topTip = clampP(add(topMid, { x: (-3.2 + sx * 0.6) * standing, y: -1.4 + sy * 0.3 }));
 
-  canvas.capsule(at(root), at(crown), 4.0 * S, 3.6 * S, HAIR_FAR, {
+  const upperMid = clampP(
+    add(crownArch, { x: (-4.8 + sx * 0.5) * standing, y: -3.2 * standing + sy * 0.3 }),
+  );
+  const upperTip = clampP(
+    add(upperMid, { x: (-3.8 + sx * 0.7) * standing, y: -2.0 * standing + sy * 0.4 }),
+  );
+
+  const midLock = clampP(
+    add(root, { x: (-5.4 + sx * 0.6) * standing, y: -3.8 * standing + sy * 0.4 }),
+  );
+  const midTip = clampP(
+    add(midLock, { x: (-4.0 + sx * 0.8) * standing, y: -2.8 * standing + sy * 0.4 }),
+  );
+
+  const lowLock = clampP(
+    add(midLock, { x: (-2.4 + sx * 0.5) * standing, y: -4.4 * standing + sy * 0.5 }),
+  );
+  const lowTip = clampP(
+    add(lowLock, { x: (-2.4 + sx * 0.6) * standing, y: -2.6 * standing + sy * 0.5 }),
+  );
+
+  canvas.capsule(at(root), at(crownArch), 3.8 * S, 3.8 * S, HAIR_FAR, {
     group: 'maneFar',
     bevel: 1.4 * S,
   });
-  canvas.capsule(at(crown), at(upperTip), 3.4 * S, 1.4 * S, HAIR_FAR, {
+  canvas.capsule(at(crownArch), at(topMid), 3.6 * S, 2.8 * S, HAIR_FAR, {
     group: 'maneFar',
-    bevel: 1.2 * S,
-  });
-  canvas.capsule(at(root), at(mid), 4.8 * S, 4.4 * S, HAIR, {
-    group: 'mane',
-    bevel: 1.6 * S,
-  });
-  canvas.capsule(at(mid), at(midTip), 4.0 * S, 1.5 * S, HAIR, {
-    group: 'mane',
     bevel: 1.3 * S,
   });
-  canvas.capsule(at(mid), at(lower), 4.2 * S, 3.4 * S, HAIR, {
+  canvas.capsule(at(topMid), at(topTip), 2.6 * S, 1.0 * S, HAIR_FAR, {
+    group: 'maneFar',
+    bevel: 1.0 * S,
+  });
+  canvas.capsule(at(crownArch), at(upperMid), 4.2 * S, 3.4 * S, HAIR, {
     group: 'mane',
     bevel: 1.5 * S,
   });
-  canvas.capsule(at(lower), at(lowerTip), 3.2 * S, 1.3 * S, HAIR, {
+  canvas.capsule(at(upperMid), at(upperTip), 3.2 * S, 1.1 * S, HAIR, {
     group: 'mane',
     bevel: 1.2 * S,
+  });
+  canvas.capsule(at(root), at(midLock), 4.2 * S, 3.6 * S, HAIR, {
+    group: 'mane',
+    bevel: 1.5 * S,
+  });
+  canvas.capsule(at(midLock), at(midTip), 3.2 * S, 1.1 * S, HAIR, {
+    group: 'mane',
+    bevel: 1.2 * S,
+  });
+  canvas.capsule(at(midLock), at(lowLock), 3.4 * S, 2.5 * S, HAIR, {
+    group: 'mane',
+    bevel: 1.3 * S,
+  });
+  canvas.capsule(at(lowLock), at(lowTip), 2.3 * S, 1.0 * S, HAIR, {
+    group: 'mane',
+    bevel: 1.0 * S,
   });
 }
 
 /**
- * Smooth S-curved white feline tail attached at the small of her back (`torso(2.5, -4.2)`),
- * arching gracefully out and curling up at the tip like Apercu_Pack_02_Feline_CORRIGE.png.
+ * Long, plush, smooth C-hook white feline tail (`poing_01_garde.png`, `pied_06_extension_2.png`,
+ * `02_balayage_tendu.png`, `07_coup_de_pied_volant.png`):
+ * Sampled along a smooth 8-point elliptical C-arc behind her waist so the curve is completely round
+ * and fluid with a plush rounded tip.
  */
 function drawTail(ctx: Ctx): void {
   const { canvas, at, torso, s, swing } = ctx;
-  if (s.hip.y < 20) return;
-  const standing = clamp((s.hip.y - 20) / 14, 0.35, 1);
-  const p0 = torso(3.0, -4.2);
-  const p1 = add(p0, {
-    x: (-3.2 + swing.x * 0.3) * standing,
-    y: 1.8 * standing + swing.y * 0.2,
-  });
-  const p2 = add(p1, {
-    x: (-3.6 + swing.x * 0.5) * standing,
-    y: -1.4 * standing + swing.y * 0.3,
-  });
-  const p3 = add(p2, {
-    x: (-1.8 + swing.x * 0.6) * standing,
-    y: -3.2 * standing + swing.y * 0.4,
-  });
-  const p4 = add(p3, {
-    x: (2.0 + swing.x * 0.5) * standing,
-    y: -1.6 * standing,
-  });
-  canvas.capsule(at(p0), at(p1), 1.8 * S, 2.0 * S, HAIR_FAR, { group: 'tail', bevel: 1.1 * S });
-  canvas.capsule(at(p1), at(p2), 2.0 * S, 2.1 * S, HAIR, { group: 'tail', bevel: 1.2 * S });
-  canvas.capsule(at(p2), at(p3), 2.1 * S, 2.0 * S, HAIR, { group: 'tail', bevel: 1.2 * S });
-  canvas.capsule(at(p3), at(p4), 2.0 * S, 1.5 * S, HAIR, { group: 'tail', bevel: 1.1 * S });
+  // Only hide when lying flat on the ground (ko / knockdown).
+  if (s.hip.y < 12) return;
+  const crouch = s.hip.y < 26;
+  const reach = crouch ? 0.52 : clamp((s.hip.y - 20) / 14, 0.8, 1.0);
+  const minX = crouch ? -16.2 : -24.6;
+  const minY = 14.0;
+  const clampT = (p: Point): Point => ({ x: Math.max(minX, p.x), y: Math.max(minY, p.y) });
+
+  const root = torso(0.8, -3.8);
+  const sx = swing.x * 0.35 * reach;
+  const sy = swing.y * 0.3 * reach;
+  // Wide, long C-hook curve matching `poing_01_garde.png`: sweeps down-back from her waist,
+  // arches far out behind her (-14 px from root), rises high, and curls its rounded tip inward.
+  const offsets: readonly (readonly [number, number])[] = [
+    [0, 0],
+    [-4.2, -2.2],
+    [-8.8, -2.6],
+    [-12.6, -0.4],
+    [-14.2, 3.6],
+    [-13.4, 8.0],
+    [-10.4, 11.0],
+    [-6.8, 10.6],
+    [-5.4, 8.4],
+  ];
+  const pts = offsets.map(([dx, dy], idx) =>
+    clampT({
+      x: root.x + (dx + (idx > 1 ? sx : 0)) * reach,
+      y: root.y + (dy + (idx > 1 ? sy : 0)) * reach,
+    }),
+  );
+
+  for (let i = 0; i < pts.length - 1; i++) {
+    const a = pts[i];
+    const b = pts[i + 1];
+    if (!a || !b) continue;
+    const mat = i === 0 ? HAIR_FAR : HAIR;
+    const rA = (i === 0 ? 1.8 : i >= pts.length - 2 ? 2.1 : 2.0) * S;
+    const rB = (i >= pts.length - 2 ? 1.9 : 2.0) * S;
+    canvas.capsule(at(a), at(b), rA, rB, mat, { group: 'tail', bevel: 0.9 * S });
+  }
 }
 
 // ---------------------------------------------------------------------------------------------
-// Arms: bare shoulders, black shoulder pad with glowing cyan triangle (`▼`), fingerless gauntlets
+// Arms: bare shoulders with glowing cyan `▼` triangle on the skin, bicep buckle strap, wrist bracer
 
 function drawArm(ctx: Ctx, side: Side, which: 'near' | 'far'): void {
   const { canvas, at } = ctx;
@@ -189,51 +263,42 @@ function drawArm(ctx: Ctx, side: Side, which: 'near' | 'far'): void {
   const leather = near ? LEATHER : LEATHER_FAR;
   const top = near ? TOP : TOP_FAR;
   const group = `${which}Arm`;
-  const gauntletStart = add(side.elbow, scale(side.forearm, 1.2));
-  const cuffStart = sub(side.wrist, scale(side.forearm, 1.8));
+  const bracerStart = sub(side.wrist, scale(side.forearm, 3.8));
 
-  // Bare upper arm & elbow.
+  // Bare shoulder & deltoid, plus white/porcelain forearm down to the black wrist bracer.
   canvas.capsule(at(side.shoulder), at(side.elbow), 3.1 * S, 2.7 * S, skin, { group });
-  canvas.capsule(at(side.elbow), at(gauntletStart), 2.7 * S, 2.6 * S, skin, { group });
+  canvas.capsule(at(side.elbow), at(bracerStart), 2.7 * S, 2.5 * S, skin, { group });
 
-  // Black tactical shoulder pad + bicep strap.
-  const u = unit(sub(side.elbow, side.shoulder));
-  const v = { x: -u.y, y: u.x };
-  const sp = (du: number, dv: number): Point =>
-    at(add(side.shoulder, add(scale(u, du), scale(v, dv))));
-  canvas.polygon([sp(-2.2, -3.2), sp(-1.0, 3.4), sp(4.2, 3.2), sp(5.0, 0.2), sp(3.8, -3.2)], top, {
-    group: `${group}Pad`,
-    bevel: 1.3 * S,
-  });
-  stripeAcross(ctx, side.shoulder, side.elbow, [0.46], leather, 3.1, group);
-
-  // Fingerless forearm gauntlet with cyan LED wrist trim.
-  canvas.capsule(at(gauntletStart), at(cuffStart), 2.8 * S, 2.5 * S, leather, { group });
-  canvas.capsule(at(cuffStart), at(side.wrist), 2.5 * S, 2.3 * S, top, { group });
+  // Black bicep strap with silver buckle just below the deltoid (`poing_01_garde.png`).
+  stripeAcross(ctx, side.shoulder, side.elbow, [0.58], leather, 3.0, group);
   if (near) {
     drawShoulderTriangle(ctx, side);
+    const buckle = at(add(side.shoulder, scale(sub(side.elbow, side.shoulder), 0.58)));
+    canvas.dot(Math.round(buckle.x), Math.round(buckle.y), METAL.light);
+    canvas.dot(Math.round(buckle.x) + 1, Math.round(buckle.y), METAL.shadow);
+  }
+
+  // Black tactical wrist bracer with glowing cyan diagonal LED stripe (`poing_01_garde.png`).
+  canvas.capsule(at(bracerStart), at(side.wrist), 2.8 * S, 2.5 * S, top, { group });
+  if (near) {
     const fAlong = unit(sub(side.wrist, side.elbow));
     const fAcross = { x: -fAlong.y, y: fAlong.x };
-    const wristA = add(cuffStart, scale(fAcross, -2.0));
-    const wristB = add(cuffStart, scale(fAcross, 2.0));
-    neonLine(ctx, wristA, wristB, true);
+    const ledA = add(bracerStart, add(scale(fAlong, 0.6), scale(fAcross, -1.6)));
+    const ledB = add(side.wrist, add(scale(fAlong, -0.5), scale(fAcross, 1.6)));
+    neonLine(ctx, ledA, ledB, true);
   }
   drawHand(ctx, side, near);
 }
 
-/** Glowing cyan downward triangle (`▼`) on Feline's lead shoulder pad (Apercu_Pack_02). */
+/** Glowing cyan downward triangle (`▼`) directly on Feline's bare deltoid (`poing_01_garde.png`). */
 function drawShoulderTriangle(ctx: Ctx, side: Side): void {
-  const { canvas, at } = ctx;
   const along = unit(sub(side.elbow, side.shoulder));
   const across = { x: -along.y, y: along.x };
   const center = add(side.shoulder, scale(sub(side.elbow, side.shoulder), 0.24));
   const pt = (u: number, v: number): Point => add(center, add(scale(along, u), scale(across, v)));
-  canvas.polygon([at(pt(-1.0, -1.8)), at(pt(-1.0, 1.8)), at(pt(2.0, 0.0))], PLASTIC, {
-    group: 'nearArmPadTri',
-  });
-  neonLine(ctx, pt(-0.7, -1.3), pt(-0.7, 1.3), true);
-  neonLine(ctx, pt(-0.7, -1.3), pt(1.5, 0.0), true);
-  neonLine(ctx, pt(-0.7, 1.3), pt(1.5, 0.0), true);
+  neonLine(ctx, pt(-0.9, -1.5), pt(-0.9, 1.5), true);
+  neonLine(ctx, pt(-0.9, -1.5), pt(1.6, 0.0), true);
+  neonLine(ctx, pt(-0.9, 1.5), pt(1.6, 0.0), true);
 }
 
 function drawHand(ctx: Ctx, side: Side, near: boolean): void {
@@ -266,7 +331,7 @@ function drawHand(ctx: Ctx, side: Side, near: boolean): void {
     });
     return;
   }
-  // Fingerless gloved fist with bare knuckles and cyan stud.
+  // Fingerless gloved fist with bare knuckles peeking out at the front (`poing_01_garde.png`).
   canvas.polygon(
     [
       p(0.2, -2.2),
@@ -281,13 +346,12 @@ function drawHand(ctx: Ctx, side: Side, near: boolean): void {
     glove,
     { group, bevel: 1.5 * S },
   );
-  // Bare fingers at the front of the fingerless glove.
   canvas.decal([p(3.4, -2.2), p(5.0, -1.5), p(5.1, 1.0), p(3.4, 1.6)], skin, group);
   canvas.capsule(p(2.0, 1.8), p(3.8, 1.4), 0.85 * S, 0.75 * S, glove, { group: `${group}Thumb` });
 }
 
 // ---------------------------------------------------------------------------------------------
-// Legs: baggy black techwear cargo trousers, silver hip chain, thigh straps, cyan-LED boots
+// Legs: baggy black techwear cargo trousers, 3D hip pouch, silver chain, double cyan thigh dashes
 
 function drawLeg(ctx: Ctx, side: Side, which: 'near' | 'far'): void {
   const { canvas, at } = ctx;
@@ -295,12 +359,11 @@ function drawLeg(ctx: Ctx, side: Side, which: 'near' | 'far'): void {
   const pants = near ? PANTS : PANTS_FAR;
   const leather = near ? LEATHER : LEATHER_FAR;
   const group = `${which}Leg`;
-  // Baggy techwear cargo thighs and calves.
   canvas.capsule(at(side.hip), at(side.knee), 4.8 * S, 4.0 * S, pants, { group });
   const shin = sub(side.ankle, side.knee);
   const top = add(side.knee, scale(shin, 0.58));
   canvas.capsule(at(side.knee), at(top), 4.0 * S, 3.5 * S, pants, { group });
-  stripeAcross(ctx, side.hip, side.knee, [0.38], leather, 4.7, group);
+  stripeAcross(ctx, side.hip, side.knee, [0.52], leather, 4.6, group);
   if (near) drawCargoPocketAndChain(ctx, side, group);
   creases(ctx, side.hip, side.knee, side.ankle, pants, group);
   drawTechBoot(ctx, side, near);
@@ -322,26 +385,40 @@ function drawCargoPocketAndChain(ctx: Ctx, side: Side, group: string): void {
   const v = { x: -u.y, y: u.x };
   const world = (t: number, w: number): Point => add(side.hip, add(scale(along, t), scale(v, w)));
   const point = (t: number, w: number): Point => at(world(t, w));
-  // Cargo pocket with cyan LED piping on the thigh.
-  canvas.decal(
-    [point(0.32, -1.6), point(0.32, 2.2), point(0.78, 2.0), point(0.78, -1.4)],
+
+  // 3D black hip pouch on the outer hip with a vertical cyan LED bar (`poing_01_garde.png`).
+  canvas.polygon(
+    [point(0.05, -4.4), point(0.05, -0.6), point(0.42, -0.8), point(0.42, -4.2)],
     POCKET,
-    group,
+    { group: `${group}Pouch`, bevel: 1.1 * S },
   );
-  neonLine(ctx, world(0.36, 1.8), world(0.74, 1.6), true);
-  // Silver hip chain looping down the outer thigh.
-  const c0 = at(world(0.1, -2.2));
-  const c1 = at(world(0.32, -3.0));
-  const c2 = at(world(0.52, -1.8));
-  for (const p of [c0, c1, c2]) {
+  neonLine(ctx, world(0.16, -2.0), world(0.36, -2.1), true);
+
+  // Two parallel diagonal cyan LED dashes (`//`) on the front of the thigh (`poing_01_garde.png`).
+  neonLine(ctx, world(0.36, 1.2), world(0.48, 2.6), true);
+  neonLine(ctx, world(0.48, 0.8), world(0.6, 2.2), true);
+
+  // Thick silver chain/strap looping from the hip O-ring down to a silver buckle on the thigh.
+  const ring = at(world(0.04, 0.4));
+  canvas.dot(Math.round(ring.x), Math.round(ring.y), METAL.gloss ?? METAL.light);
+  canvas.dot(Math.round(ring.x) + 1, Math.round(ring.y), METAL.light);
+  for (const [t, w] of [
+    [0.14, 0.2],
+    [0.24, -0.3],
+    [0.34, -1.0],
+    [0.44, -1.8],
+    [0.52, -2.4],
+  ] as const) {
+    const p = at(world(t, w));
     canvas.dot(Math.round(p.x), Math.round(p.y), METAL.light);
-    canvas.dot(Math.round(p.x) + 1, Math.round(p.y), METAL.shadow);
+    canvas.dot(Math.round(p.x) + 1, Math.round(p.y), METAL.base);
   }
 }
 
 function drawTechBoot(ctx: Ctx, side: Side, near: boolean): void {
   const { canvas, at } = ctx;
   const boot = near ? BOOT : BOOT_FAR;
+  const leather = near ? LEATHER : LEATHER_FAR;
   const group = near ? 'nearBoot' : 'farBoot';
   const toe = sub(side.toe, side.heel);
   const length = Math.hypot(toe.x, toe.y) || 1;
@@ -354,6 +431,8 @@ function drawTechBoot(ctx: Ctx, side: Side, near: boolean): void {
   const shin = sub(side.ankle, side.knee);
   const top = add(side.knee, scale(shin, 0.6));
   canvas.capsule(at(top), at(side.ankle), 3.4 * S, 3.0 * S, boot, { group });
+  // Two horizontal leather boot straps with silver buckles around the shin (`poing_01_garde.png`).
+  stripeAcross(ctx, top, side.ankle, [0.28, 0.68], leather, 3.3, group);
   canvas.polygon(
     [
       p(-3.4, 0.6),
@@ -368,19 +447,27 @@ function drawTechBoot(ctx: Ctx, side: Side, near: boolean): void {
     boot,
     { group, bevel: 2.0 * S },
   );
-  canvas.polygon([p(-3.6, -0.1), p(8.0, -0.1), p(8.1, 1.1), p(-3.7, 1.1)], SOLE, {
+  // Light silver-grey lugged sole & toe cap (`poing_01_garde.png`).
+  canvas.polygon([p(-3.6, -0.1), p(8.0, -0.1), p(8.1, 1.1), p(-3.7, 1.1)], METAL, {
     group: `${group}Sole`,
     flat: true,
   });
+  canvas.polygon([p(5.6, 0.8), p(7.9, 0.8), p(7.8, 2.3), p(5.8, 2.3)], SOLE, {
+    group: `${group}Toe`,
+    flat: true,
+  });
   if (near) {
-    // Cyan LED accents on the ankle collar and instep of the combat boot.
-    neonLine(ctx, world(1.2, 4.6), world(3.6, 3.8), true);
-    neonLine(ctx, world(4.4, 1.6), world(6.8, 1.6), true);
+    for (const frac of [0.28, 0.68]) {
+      const b = at(add(top, scale(sub(side.ankle, top), frac)));
+      canvas.dot(Math.round(b.x) + 2, Math.round(b.y), METAL.light);
+    }
+    // Diagonal cyan LED slash (`\`) on the outer ankle of the boot (`poing_01_garde.png`).
+    neonLine(ctx, world(-1.4, 2.8), world(1.2, 1.4), true);
   }
 }
 
 // ---------------------------------------------------------------------------------------------
-// Torso: toned bare midriff, black techwear crop-top with high collar & silver belt buckle
+// Torso: toned bare midriff, sleeveless black techwear crop-top with high collar & silver belt
 
 function drawTorso(ctx: Ctx): void {
   const { canvas, at, torso, s } = ctx;
@@ -390,7 +477,7 @@ function drawTorso(ctx: Ctx): void {
   const back = -1.2 * s.twist;
   const lift = s.shrug * 0.7;
 
-  // Bare toned midriff between the belt and the crop-top (distance 2.5 to 12.5).
+  // Bare toned midriff between the belt and the crop-top (distance 2.0 to 12.8).
   canvas.polygon(
     [t(2.0, -5.2 + back), t(2.0, 6.2 + open), t(13.0, 6.8 + open), t(13.0, -5.6 + back)],
     SKIN,
@@ -398,32 +485,30 @@ function drawTorso(ctx: Ctx): void {
   );
   const skinShade = noGloss({ ...SKIN, base: SKIN.shadow, light: SKIN.base });
   canvas.decal(
-    [t(5.0, 3.2 + open), t(5.0, 4.2 + open), t(11.0, 4.4 + open), t(11.0, 3.4 + open)],
+    [t(4.8, 3.4 + open), t(4.8, 4.4 + open), t(11.0, 4.6 + open), t(11.0, 3.6 + open)],
     skinShade,
     'midriff',
   );
 
-  // Tactical belt with silver buckle and cyan indicator LED.
+  // Tactical belt with silver rectangular buckle (`poing_01_garde.png`).
   canvas.polygon(
     [t(0.0, -5.8 + back), t(0.0, 6.8 + open), t(2.8, 7.0 + open), t(2.8, -6.0 + back)],
     LEATHER,
     { group: 'belt', axis },
   );
   canvas.polygon(
-    [t(0.3, 3.8 + open), t(0.3, 6.4 + open), t(2.5, 6.4 + open), t(2.5, 3.8 + open)],
+    [t(0.3, 3.6 + open), t(0.3, 6.4 + open), t(2.5, 6.4 + open), t(2.5, 3.6 + open)],
     METAL,
     { group: 'buckle', bevel: 0.9 * S },
   );
-  const beltLed = t(1.4, 1.2 + open);
-  canvas.dot(Math.round(beltLed.x), Math.round(beltLed.y), DETAIL.neonLight);
 
-  // Black techwear crop-top (distance 11.5 to 24.5) with a high collar and cross-chest strap.
+  // Sleeveless black techwear crop-top (distance 11.8 to 24.8) with under-bust strap.
   canvas.polygon(
     [
       t(11.8, -6.2 + back),
-      t(18.0, -7.2 + back),
-      t(22.5 + lift, -6.0 + back),
-      t(25.2 + lift, -3.2),
+      t(18.0, -7.0 + back),
+      t(22.5 + lift, -5.8 + back),
+      t(25.2 + lift, -3.0),
       t(25.6, 2.2 + open),
       t(22.4, 7.6 + open),
       t(15.5, 8.2 + open),
@@ -432,19 +517,19 @@ function drawTorso(ctx: Ctx): void {
     TOP,
     { group: 'cropTop', axis, tilt: { x: 0.15, y: 0.12 } },
   );
-  // High techwear collar framing the neck.
-  canvas.polygon([t(22.8, -4.6), t(27.8, -3.6), t(28.2, 2.2), t(23.2, 3.2)], TOP, {
+  // High techwear collar with cyan LED dash at the collar rim (`poing_01_garde.png`).
+  canvas.polygon([t(22.8, -4.6), t(27.8, -3.6), t(28.2, 2.4), t(23.2, 3.4)], TOP, {
     group: 'collar',
     axis,
     bevel: 1.0 * S,
   });
-  // Diagonal harness strap across the crop-top + cyan trim line under the bust.
+  neonLine(ctx, torso(25.8, -1.8), torso(26.2, 1.4), true);
+  // Under-bust tactical strap.
   canvas.decal(
-    [t(11.6, -5.8 + back), t(11.6, 6.8 + open), t(13.0, 7.0 + open), t(13.0, -6.0 + back)],
+    [t(11.6, -5.8 + back), t(11.6, 6.8 + open), t(13.2, 7.0 + open), t(13.2, -6.0 + back)],
     LEATHER,
     'cropTop',
   );
-  neonLine(ctx, torso(12.4, -1.0 + open * 0.4), torso(12.4, 5.8 + open), true);
 }
 
 // ---------------------------------------------------------------------------------------------

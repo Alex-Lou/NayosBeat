@@ -1,35 +1,35 @@
 {
   "frames": {
     "0": {
-      "frame": { "x": 0, "y": 0, "w": 88, "h": 164 },
+      "frame": { "x": 0, "y": 0, "w": 91, "h": 167 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 0, "w": 88, "h": 164 },
-      "sourceSize": { "w": 88, "h": 164 }
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 91, "h": 167 },
+      "sourceSize": { "w": 91, "h": 167 }
     },
     "1": {
-      "frame": { "x": 0, "y": 164, "w": 88, "h": 160 },
+      "frame": { "x": 0, "y": 167, "w": 88, "h": 163 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 4, "w": 88, "h": 160 },
-      "sourceSize": { "w": 88, "h": 164 }
+      "spriteSourceSize": { "x": 3, "y": 4, "w": 88, "h": 163 },
+      "sourceSize": { "w": 91, "h": 167 }
     },
     "2": {
-      "frame": { "x": 0, "y": 642, "w": 88, "h": 154 },
+      "frame": { "x": 0, "y": 652, "w": 88, "h": 157 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 9, "w": 88, "h": 154 },
-      "sourceSize": { "w": 88, "h": 164 }
+      "spriteSourceSize": { "x": 3, "y": 9, "w": 88, "h": 157 },
+      "sourceSize": { "w": 91, "h": 167 }
     },
     "3": {
-      "frame": { "x": 0, "y": 324, "w": 88, "h": 159 },
+      "frame": { "x": 0, "y": 330, "w": 88, "h": 161 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 5, "w": 88, "h": 159 },
-      "sourceSize": { "w": 88, "h": 164 }
+      "spriteSourceSize": { "x": 3, "y": 6, "w": 88, "h": 161 },
+      "sourceSize": { "w": 91, "h": 167 }
     },
     "4": {
-      "frame": { "x": 0, "y": 483, "w": 88, "h": 159 },
+      "frame": { "x": 0, "y": 491, "w": 88, "h": 161 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 4, "w": 88, "h": 159 },
-      "sourceSize": { "w": 88, "h": 164 }
+      "spriteSourceSize": { "x": 3, "y": 5, "w": 88, "h": 161 },
+      "sourceSize": { "w": 91, "h": 167 }
     }
   },
-  "meta": { "image": "hitHigh.png", "size": { "w": 88, "h": 796 } }
+  "meta": { "image": "hitHigh.png", "size": { "w": 91, "h": 809 } }
 }

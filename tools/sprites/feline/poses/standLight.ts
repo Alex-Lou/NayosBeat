@@ -116,7 +116,7 @@ const STRIKE: Pose = {
   ...STRIKE_ARM,
   effects: [
     smear(4, [20, 50], [28, 51], [37.5, 52.0]),
-    { kind: 'flash', center: at(39.8, 52.0), radius: 3.5, tone: 'strike' },
+    { kind: 'star', center: at(38.5, 52.0), radius: 3.2, tone: 'strike' },
   ],
 };
 

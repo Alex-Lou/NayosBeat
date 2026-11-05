@@ -67,6 +67,12 @@ export function glowsOfEffect(effect: Effect): Glow[] {
     }
     case 'plasma':
       return [glow(effect.center, effect.radius * 2.4 + 10, 1.15, effect.tone)];
+    case 'portal':
+      return [glow(effect.center, Math.max(effect.rx, effect.ry) * 1.6 + 8, 1.15, effect.tone)];
+    case 'blade':
+      return [glow(effect.center, Math.max(effect.rx, effect.ry) * 1.4 + 8, 1.05, effect.tone)];
+    case 'star':
+      return [glow(effect.center, effect.radius * 2.6 + 8, 1.3, effect.tone)];
     case 'shield':
     case 'dust':
     case 'notes':

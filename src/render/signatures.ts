@@ -609,8 +609,107 @@ const KODA_SIGNATURE: Signature = {
   presence: { leds: { main: 0x5cd8b4, alt: 0xdc88f8 }, specks: 'diamond' },
 };
 
+/**
+ * Feline: her Lame de portail orbital slash (frame 10), Rush dimensionnel portal-to-portal dash
+ * (frames 2-14), Portail ascendant floor vortex eruption (frame 3), and Déchirure dimensional rift
+ * explosions (frames 2, 8, 14), with her cyan triangle shoulder emblem and boot LEDs glowing.
+ */
 const FELINE_SIGNATURE: Signature = {
-  ...KODA_SIGNATURE,
+  moves: {
+    // Lame de portail: vertical portal opens on frame 3, orbital blade projects on frame 10.
+    special: {
+      light: { from: 3, to: 19, tone: 'energy', strength: 0.9, ...HAND },
+      echo: { from: 2, to: 10, every: 2, life: 8, tone: 'energy' },
+      cues: [cue(3, 'burst', 'energy', BODY, 0.8), cue(10, 'throwRing', 'energy', HAND, 1.15)],
+      bold: [bold(10, 'shock', 'energy', HAND, 1.1)],
+    },
+    specialBoost: {
+      light: { from: 2, to: 20, tone: 'platine', strength: 1, ...HAND },
+      cues: [
+        cue(1, 'burst', 'platine', BODY, 0.9),
+        cue(10, 'throwRing', 'platine', HAND, 1.35),
+        cue(10, 'groundRing', 'energy', FEET, 0.9),
+      ],
+      bold: [bold(10, 'shock', 'platine', HAND, 1.35)],
+    },
+    // Rush dimensionnel: entry portal on frame 2, exit portal & twin orbital slash on frame 12.
+    specialForward: {
+      light: { from: 2, to: 18, tone: 'energy', strength: 0.9, ...LUNGE },
+      echo: { from: 2, to: 14, every: 2, life: 10, tone: 'energy' },
+      cues: [
+        cue(2, 'burst', 'energy', BODY, 0.85),
+        cue(6, 'dash', 'energy', FEET),
+        cue(12, 'throwRing', 'energy', LUNGE, 1.15),
+      ],
+      bold: [bold(12, 'shock', 'energy', LUNGE)],
+    },
+    specialForwardBoost: {
+      light: { from: 2, to: 20, tone: 'platine', strength: 1, ...LUNGE },
+      echo: { from: 2, to: 14, every: 2, life: 10, tone: 'platine' },
+      cues: [
+        cue(1, 'burst', 'platine', BODY, 0.9),
+        cue(12, 'throwRing', 'platine', LUNGE, 1.3),
+        cue(12, 'groundRing', 'energy', LUNGE, 0.9),
+      ],
+      bold: [bold(12, 'shock', 'platine', LUNGE, 1.3)],
+    },
+    // Portail ascendant: horizontal floor portal opens on frame 1, vortex erupts on frame 3.
+    specialAntiAir: {
+      light: { from: 1, to: 15, tone: 'energy', strength: 1, height: 30, reach: 10, toHeight: 92 },
+      echo: { from: 1, to: 10, every: 2, life: 9, tone: 'energy' },
+      cues: [
+        cue(1, 'groundRing', 'energy', FEET, 1.15),
+        cue(3, 'rise', 'energy', BODY, 1.15),
+        cue(5, 'throwRing', 'energy', BODY, 0.85),
+      ],
+    },
+    specialAntiAirBoost: {
+      light: {
+        from: 0,
+        to: 16,
+        tone: 'platine',
+        strength: 1,
+        height: 30,
+        reach: 10,
+        toHeight: 110,
+      },
+      cues: [
+        cue(0, 'burst', 'platine', BODY, 0.9),
+        cue(1, 'groundRing', 'platine', FEET, 1.35),
+        cue(3, 'rise', 'platine', BODY, 1.35),
+      ],
+    },
+    // Déchirure: three dimensional portals entangle and detonate on frames 2, 8 and 14.
+    super: {
+      light: { from: 0, to: 22, tone: 'platine', strength: 1, height: 6, reach: 26, radius: 200 },
+      cues: [
+        cue(0, 'charge', 'platine', BODY, 1.25),
+        cue(2, 'throwRing', 'energy', FIST, 1.1),
+        cue(8, 'throwRing', 'energy', FIST, 1.2),
+        cue(14, 'drop', 'platine', FIST, 1.35),
+      ],
+      bold: [
+        bold(2, 'shock', 'energy', FIST),
+        bold(8, 'shock', 'energy', FIST, 1.15),
+        bold(14, 'quake', 'platine', FIST, 1.35),
+      ],
+    },
+    dashForward: {
+      echo: { from: 1, to: 10, every: 3, life: 7, tone: 'energy' },
+      cues: [cue(1, 'dash', 'energy', FEET), cue(2, 'burst', 'energy', BODY, 0.65)],
+    },
+    dashBack: {
+      echo: { from: 1, to: 10, every: 3, life: 7, tone: 'energy' },
+      cues: [cue(1, 'dash', 'energy', FEET)],
+    },
+    boostCancel: {
+      light: { from: 0, to: 8, tone: 'platine', strength: 0.85, ...BODY },
+      cues: [cue(0, 'burst', 'platine', BODY, 0.8)],
+    },
+  },
+  discs: {},
+  heavySwing: true,
+  flares: true,
   presence: { leds: { main: 0x88fff8, alt: 0xffb8e6 }, specks: 'diamond' },
 };
 

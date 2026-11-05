@@ -38,22 +38,23 @@ export function tween(
 }
 
 /**
- * Feline's guard (matching `01_garde_depart.png` of Apercu_Pack_02_Feline_CORRIGE.png):
- * Agile cat-fighter stance with springy knees, lead fingerless-gloved claw-hand raised at chest/chin
- * height (`x = 9.0, y = 52.5`), rear hand poised high by her cheek (`x = 9.6, y = 60.5`), her
- * white mane and S-curved tail framing her silhouette.
+ * Feline's guard (matching `poing_01_garde.png` of Pack_01 & `01_garde_depart.png` of Pack_02):
+ * Agile cat-fighter boxer-kickboxer guard: near gloved fist poised at chin/collar height (`x = 9.2,
+ * y = 52.5`) with elbow down so her bare deltoid and cyan `▼` triangle are in full view; far gloved
+ * fist raised forward at `x = 12.2, y = 57.5`; long C-hook white tail and high ponytail framing her
+ * silhouette.
  */
 export const GUARD: Pose = {
   hip: at(-6.6, 36.5),
-  torso: 14,
+  torso: 13,
   head: 2,
-  shrug: 1.2,
+  shrug: 1.0,
   twist: 0.25,
   nearFoot: planted(6.35, -2),
   farFoot: planted(-22, -15),
-  nearFist: at(9.0, 52.5),
-  farFist: at(9.6, 60.5),
-  nearHand: 'open',
+  nearFist: at(8.8, 52.5),
+  farFist: at(9.5, 57.5),
+  nearHand: 'fist',
   farHand: 'fist',
   bends: { nearElbow: 'down', farElbow: 'down' },
 };
@@ -66,7 +67,7 @@ export const CROUCH: Pose = {
   nearFoot: planted(9),
   farFoot: planted(-11, -14),
   nearFist: at(12.2, 35.5),
-  farFist: at(8.5, 46.5),
-  nearHand: 'open',
-  farHand: 'open',
+  farFist: at(10.5, 44.5),
+  nearHand: 'fist',
+  farHand: 'fist',
 };

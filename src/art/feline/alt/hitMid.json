@@ -1,35 +1,35 @@
 {
   "frames": {
     "0": {
-      "frame": { "x": 0, "y": 609, "w": 92, "h": 141 },
+      "frame": { "x": 0, "y": 624, "w": 88, "h": 147 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 17, "w": 92, "h": 141 },
-      "sourceSize": { "w": 92, "h": 158 }
+      "spriteSourceSize": { "x": 0, "y": 13, "w": 88, "h": 147 },
+      "sourceSize": { "w": 88, "h": 160 }
     },
     "1": {
-      "frame": { "x": 0, "y": 313, "w": 88, "h": 149 },
+      "frame": { "x": 0, "y": 318, "w": 88, "h": 154 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 4, "y": 9, "w": 88, "h": 149 },
-      "sourceSize": { "w": 92, "h": 158 }
+      "spriteSourceSize": { "x": 0, "y": 6, "w": 88, "h": 154 },
+      "sourceSize": { "w": 88, "h": 160 }
     },
     "2": {
-      "frame": { "x": 0, "y": 462, "w": 88, "h": 147 },
+      "frame": { "x": 0, "y": 472, "w": 88, "h": 152 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 4, "y": 11, "w": 88, "h": 147 },
-      "sourceSize": { "w": 92, "h": 158 }
+      "spriteSourceSize": { "x": 0, "y": 8, "w": 88, "h": 152 },
+      "sourceSize": { "w": 88, "h": 160 }
     },
     "3": {
-      "frame": { "x": 0, "y": 158, "w": 88, "h": 155 },
+      "frame": { "x": 0, "y": 160, "w": 88, "h": 158 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 4, "y": 3, "w": 88, "h": 155 },
-      "sourceSize": { "w": 92, "h": 158 }
+      "spriteSourceSize": { "x": 0, "y": 2, "w": 88, "h": 158 },
+      "sourceSize": { "w": 88, "h": 160 }
     },
     "4": {
-      "frame": { "x": 0, "y": 0, "w": 88, "h": 158 },
+      "frame": { "x": 0, "y": 0, "w": 88, "h": 160 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 4, "y": 0, "w": 88, "h": 158 },
-      "sourceSize": { "w": 92, "h": 158 }
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 88, "h": 160 },
+      "sourceSize": { "w": 88, "h": 160 }
     }
   },
-  "meta": { "image": "hitMid.png", "size": { "w": 92, "h": 750 } }
+  "meta": { "image": "hitMid.png", "size": { "w": 88, "h": 771 } }
 }
