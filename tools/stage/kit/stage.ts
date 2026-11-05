@@ -10,6 +10,7 @@ import {
   type Atmosphere,
   type StageDrift,
   type StageLayer,
+  type StageProp,
   type Weather,
 } from '../../../src/art/stage-layers.ts';
 import type { IndexedImage, Rgba } from '../../sprites/png.ts';
@@ -68,6 +69,15 @@ export interface CodeMap {
   readonly rgba?: boolean;
   /** No middle layer: the stage has only its far and floor, saving its texture. */
   readonly noMid?: boolean;
+  /**
+   * Animations already cut from a hand-drawn source (a GIF's frames), with their truecolor sheet
+   * under art-src/<name>/: `npm run stages` copies the sheet and lists the props as they are.
+   */
+  readonly animations?: {
+    /** The sheet's file name under art-src/<name>/. */
+    readonly sheet: string;
+    readonly props: readonly StageProp[];
+  };
 }
 
 /** A canvas as an image in `palette`. */

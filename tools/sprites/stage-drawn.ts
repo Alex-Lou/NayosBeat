@@ -244,11 +244,19 @@ async function writeRgbaStage(map: CodeMap): Promise<StageWritten> {
     }
     await writeFile(new URL(`${layer}.png`, art), await readFile(new URL(`${layer}.png`, folder)));
   }
-  const packed = packProps(code.props, code.layers);
-  if (packed.sheet) await writeImage(new URL('props.png', art), packed.sheet);
-  else await rm(new URL('props.png', art), { recursive: true, force: true });
   const module = new URL('props.ts', art);
-  await writeFile(module, await propsModule(packed.props, module));
+  if (map.animations) {
+    await writeFile(
+      new URL('props.png', art),
+      await readFile(new URL(map.animations.sheet, folder)),
+    );
+    await writeFile(module, await propsModule(map.animations.props, module));
+  } else {
+    const packed = packProps(code.props, code.layers);
+    if (packed.sheet) await writeImage(new URL('props.png', art), packed.sheet);
+    else await rm(new URL('props.png', art), { recursive: true, force: true });
+    await writeFile(module, await propsModule(packed.props, module));
+  }
   const layers: IndexedImage[] = [];
   for (const layer of shown) {
     const image = await readTruecolor(new URL(`${layer}.png`, folder));
@@ -267,8 +275,8 @@ async function writeRgbaStage(map: CodeMap): Promise<StageWritten> {
   await writeFile(colors, await colorsModule(large, colors));
   return {
     drawn: STAGE_LAYER_NAMES,
-    props: packed.props.length,
-    dropped: packed.dropped,
+    props: map.animations?.props.length ?? 0,
+    dropped: [],
   };
 }
 
