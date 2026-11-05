@@ -138,10 +138,10 @@ function holdsToTheNext(move: MoveData): boolean {
   return true;
 }
 
-/** Rule 10: the pulses follow each other within the active frames, on the super only. */
+/** Rule 10: the pulses follow each other within the active frames, on the super or a multi-hit normal. */
 function pulseProblems(id: MoveId, move: MoveData): string[] {
   const problems: string[] = [];
-  if (move.tier !== 3) problems.push(`${id}: only the super has pulses`);
+  if (move.tier !== 3 && move.kind !== 'normal') problems.push(`${id}: only the super has pulses`);
   let previous = move.startup;
   for (const { frame, hit } of move.pulses ?? []) {
     if (!(isInteger(frame, previous + 1) && frame < move.startup + move.active)) {

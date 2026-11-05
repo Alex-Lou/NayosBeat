@@ -457,20 +457,28 @@ const WATT_SIGNATURE: Signature = {
     dashBack: { cues: [cue(1, 'dash', 'energy', FEET)] },
     // The Coup de pilon's armor, the exoskeleton lit as the fist falls, a floor ring on impact.
     forwardHeavy: {
-      light: { from: 8, to: 25, tone: 'energy', strength: 0.7, ...BODY },
-      cues: [cue(22, 'groundRing', 'energy', FLOOR, 0.9)],
+      light: { from: 5, to: 21, tone: 'energy', strength: 0.7, ...BODY },
+      cues: [cue(18, 'groundRing', 'energy', FLOOR, 0.9)],
+    },
+    downForwardHeavy: {
+      light: { from: 4, to: 14, tone: 'energy', strength: 0.8, ...CEILING },
+      cues: [cue(9, 'rise', 'energy', CEILING, 0.9)],
     },
     standHeavy: {
       light: { from: 9, to: 16, tone: 'energy', strength: 0.65, ...CLAMPS },
       cues: [cue(12, 'groundRing', 'energy', FLOOR, 0.85)],
     },
     chainHeavy: {
-      light: { from: 8, to: 15, tone: 'energy', strength: 0.7, ...CLAMPS },
-      cues: [cue(11, 'groundRing', 'energy', FLOOR, 0.95)],
+      light: { from: 8, to: 16, tone: 'energy', strength: 0.75, ...CLAMPS },
+      cues: [cue(11, 'kick', 'energy', CLAMPS, 0.8), cue(13, 'groundRing', 'energy', FLOOR, 0.95)],
     },
     chainHigh: {
-      light: { from: 10, to: 18, tone: 'energy', strength: 0.65, ...CLAMPS },
-      cues: [cue(15, 'groundRing', 'energy', FLOOR, 0.9)],
+      light: { from: 9, to: 16, tone: 'energy', strength: 0.65, ...CLAMPS },
+      cues: [cue(13, 'groundRing', 'energy', FLOOR, 0.9)],
+    },
+    chainLow: {
+      light: { from: 5, to: 12, tone: 'energy', strength: 0.6, ...FLOOR },
+      cues: [cue(8, 'groundRing', 'energy', FLOOR, 0.85)],
     },
     backHeavy: {
       light: { from: 4, to: 14, tone: 'energy', strength: 0.75, ...CEILING },
@@ -486,8 +494,14 @@ const WATT_SIGNATURE: Signature = {
     lightFinisher: {
       cues: [cue(9, 'kick', 'energy', CLAMPS, 0.85)],
     },
+    backLight: {
+      light: { from: 2, to: 7, tone: 'energy', strength: 0.55, ...CLAMPS },
+    },
     jabRepeat: {
       light: { from: 2, to: 6, tone: 'energy', strength: 0.55, ...CLAMPS },
+    },
+    jumpDownHeavy: {
+      light: { from: 4, to: 13, tone: 'energy', strength: 0.75, ...FLOOR },
     },
     throwForward: {
       cues: [cue(12, 'groundRing', 'energy', FLOOR, 1.0)],

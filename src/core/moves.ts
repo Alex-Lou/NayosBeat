@@ -72,12 +72,16 @@ export function groundMove(
 
   if (command === 'special') return ownSpecial(input, facing, moves, distance);
   const light = command === 'light';
+  if (!light && has(input, Input.Down) && has(input, forwardOf(facing)) && moves.downForwardHeavy) {
+    return 'downForwardHeavy';
+  }
   if (has(input, Input.Down)) return light ? 'crouchLight' : 'crouchHeavy';
-  // Back + L stays the jab: the quickest reversal out of a guard.
-  if (light)
-    return has(input, forwardOf(facing))
-      ? ownOr(moves, 'forwardLight', 'standLight')
-      : 'standLight';
+  // Back + L stays the jab unless the fighter has its own backLight.
+  if (light) {
+    if (has(input, forwardOf(facing))) return ownOr(moves, 'forwardLight', 'standLight');
+    if (has(input, backOf(facing))) return ownOr(moves, 'backLight', 'standLight');
+    return 'standLight';
+  }
   if (has(input, forwardOf(facing))) return ownOr(moves, 'forwardHeavy', 'standHeavy');
   if (has(input, backOf(facing))) return ownOr(moves, 'backHeavy', 'standHeavy');
   return 'standHeavy';
@@ -103,9 +107,15 @@ export function isHoldChoice(command: Command | null): boolean {
  * Air move for a command: S only for a fighter that has an air special (docs/watt-arsenal.md
  * §4.3); there are no air grabs nor air dashes.
  */
-export function airMove(command: Command, moves: FighterMoves): MoveId | null {
+export function airMove(
+  command: Command,
+  moves: FighterMoves,
+  input: InputBits = 0,
+): MoveId | null {
   if (command === 'light') return 'jumpLight';
-  if (command === 'heavy') return 'jumpHeavy';
+  if (command === 'heavy') {
+    return has(input, Input.Down) && moves.jumpDownHeavy ? 'jumpDownHeavy' : 'jumpHeavy';
+  }
   if (command === 'special' && moves.jumpSpecial) return 'jumpSpecial';
   return null;
 }

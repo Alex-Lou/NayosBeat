@@ -485,62 +485,62 @@ function djFrame(frame: number): Canvas {
   polygon(
     human,
     [
-      [70, 82],
-      [150, 82],
-      [141, 154],
-      [79, 154],
+      [74, 82],
+      [146, 82],
+      [138, 154],
+      [82, 154],
     ],
     slot('hood'),
   );
   polygon(
     human,
     [
-      [96, 82],
-      [124, 82],
-      [120, 132],
-      [100, 132],
+      [99, 82],
+      [121, 82],
+      [118, 132],
+      [102, 132],
     ],
     slot('hood'),
   );
   polygon(
     human,
     [
-      [70, 82],
+      [74, 82],
       [99, 84],
       [96, 132],
-      [79, 154],
-      [70, 118],
+      [82, 154],
+      [74, 118],
     ],
     slot('hood'),
   );
   polygon(
     human,
     [
-      [150, 82],
+      [146, 82],
       [121, 84],
       [120, 132],
-      [141, 154],
-      [150, 118],
+      [138, 154],
+      [146, 118],
     ],
     slot('hood'),
   );
   polygon(
     human,
     [
-      [70, 82],
-      [82, 84],
-      [78, 120],
-      [70, 112],
+      [74, 82],
+      [85, 84],
+      [81, 120],
+      [74, 112],
     ],
     slot('hoodLight'),
   );
   polygon(
     human,
     [
-      [150, 82],
-      [140, 86],
-      [138, 120],
-      [150, 132],
+      [146, 82],
+      [138, 86],
+      [136, 120],
+      [146, 132],
     ],
     slot('hoodEdge'),
   );
@@ -600,8 +600,8 @@ function djFrame(frame: number): Canvas {
   human.hline(92, 132, 36, slot('hoodEdge'));
   human.line(92, 132, 84, 148, slot('hoodEdge'), 2);
   human.line(128, 132, 136, 148, slot('hoodEdge'), 2);
-  human.line(70, 100, 84, 106, slot('hoodLight'), 2);
-  human.line(150, 100, 136, 106, slot('hoodEdge'), 2);
+  human.line(74, 100, 86, 106, slot('hoodLight'), 2);
+  human.line(146, 100, 134, 106, slot('hoodEdge'), 2);
   human.line(94, 62, 104, 96, slot('cyanDeep'), 2);
   human.line(104, 96, 110, 124, slot('cyanDeep'), 2);
   human.line(104, 84, 100, 116, slot('cream'), 2);
@@ -737,41 +737,41 @@ function djFrame(frame: number): Canvas {
   human.fill(106, 57, 4, 4, slot('neonCyan'));
 
   // Left arm, hand scratching the deck.
-  segment(human, 76, 92, 54, 124, 17, 13, slot('hood'));
-  segment(human, 54, 124, 64, 156, 13, 9, slot('hood'));
-  human.ellipse(52, 120, 13, 13, slot('hoodLight'));
+  segment(human, 80, 96, 66, 124, 20, 15, slot('hood'));
+  segment(human, 66, 124, 72, 150, 15, 11, slot('hood'));
+  human.ellipse(65, 120, 15, 15, slot('hoodLight'));
   human.fill(58, 152, 14, 5, slot('hoodEdge'));
-  human.fill(56 + scratch, 152, 16, 4, slot('hoodEdge'));
-  human.fill(58 + scratch, 156, 12, 12, slot('skin'));
-  human.fill(58 + scratch, 156, 12, 3, slot('skinLight'));
-  human.fill(60 + scratch, 159, 2, 6, slot('skinDeep'));
-  human.fill(65 + scratch, 159, 2, 6, slot('skinDeep'));
+  human.fill(66 + scratch, 146, 14, 4, slot('hoodEdge'));
+  human.fill(66 + scratch, 150, 12, 12, slot('skin'));
+  human.fill(66 + scratch, 150, 12, 3, slot('skinLight'));
+  human.fill(68 + scratch, 153, 2, 6, slot('skinDeep'));
+  human.fill(73 + scratch, 153, 2, 6, slot('skinDeep'));
 
   // Right arm: raised with a record, or down on the other deck.
-  segment(human, 144, 92, 168, 108, 17, 13, slot('hood'));
-  human.ellipse(168, 106, 13, 13, slot('hoodLight'));
+  segment(human, 138, 96, 156, 110, 20, 15, slot('hood'));
+  human.ellipse(155, 108, 15, 15, slot('hoodLight'));
   if (raised) {
-    segment(human, 168, 108, 178, 44, 13, 9, slot('hood'));
+    segment(human, 156, 110, 166, 58, 15, 11, slot('hood'));
     human.fill(172, 40, 12, 5, slot('hoodEdge'));
-    human.ellipse(180, 28, 36, 36, slot('ink'));
-    ring(human, 180, 28, 17, 2, slot('sodium'));
-    human.ellipse(171, 19, 18, 18, slot('violet'));
-    ring(human, 180, 28, 9, 1, slot('neonCyan'));
-    human.fill(178, 26, 4, 4, slot('yellow'));
-    human.fill(173, 34, 12, 12, slot('skin'));
-    human.fill(173, 34, 12, 3, slot('skinLight'));
-    human.fill(176, 37, 2, 7, slot('skinDeep'));
-    human.fill(181, 37, 2, 7, slot('skinDeep'));
+    human.ellipse(166, 42, 36, 36, slot('ink'));
+    ring(human, 166, 42, 17, 2, slot('sodium'));
+    human.ellipse(157, 33, 18, 18, slot('violet'));
+    ring(human, 166, 42, 9, 1, slot('neonCyan'));
+    human.fill(164, 40, 4, 4, slot('yellow'));
+    human.fill(160, 46, 12, 12, slot('skin'));
+    human.fill(160, 46, 12, 3, slot('skinLight'));
+    human.fill(163, 49, 2, 7, slot('skinDeep'));
+    human.fill(168, 49, 2, 7, slot('skinDeep'));
   } else {
-    segment(human, 168, 108, 162, 156, 13, 9, slot('hood'));
-    human.fill(154, 152, 14, 5, slot('hoodEdge'));
-    human.fill(156, 156, 12, 12, slot('skin'));
-    human.fill(156, 156, 12, 3, slot('skinLight'));
-    human.fill(158, 159, 2, 6, slot('skinDeep'));
-    human.fill(163, 159, 2, 6, slot('skinDeep'));
+    segment(human, 156, 110, 150, 150, 15, 11, slot('hood'));
+    human.fill(144, 146, 14, 4, slot('hoodEdge'));
+    human.fill(144, 150, 12, 12, slot('skin'));
+    human.fill(144, 150, 12, 3, slot('skinLight'));
+    human.fill(146, 153, 2, 6, slot('skinDeep'));
+    human.fill(151, 153, 2, 6, slot('skinDeep'));
   }
-  human.line(78, 92, 56, 122, slot('cyan'), 2);
-  human.line(144, 92, 166, 108, slot('cyan'), 2);
+  human.line(82, 96, 68, 122, slot('cyan'), 2);
+  human.line(138, 96, 154, 110, slot('cyan'), 2);
 
   // A rim light on the figure alone, warm from the spotlight and cyan from the back.
   const rim = new Canvas(DJ_WIDTH, DJ_HEIGHT);

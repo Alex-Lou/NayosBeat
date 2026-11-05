@@ -49,6 +49,8 @@ const SOLE = matteOf(M.rubber);
 /** The exoskeleton: brushed metal, a sharp shine on the bevels that face the lamps. */
 const METAL: Material = { ...M.metal, glossCut: 0.8 };
 const METAL_FAR = farLit(METAL);
+const BRASS: Material = { ...M.brass, glossCut: 0.78 };
+const BRASS_FAR = farLit(BRASS);
 /** A diode: an exact pixel that glows (index.ts's lighting gives it its halo). */
 const LED = DETAIL.ledCore;
 
@@ -125,7 +127,7 @@ function drawArm(ctx: Ctx, side: Side, which: 'near' | 'far'): void {
   // The elbow's joint: a round hub on the outside of the bend.
   canvas.circle(at(side.elbow), 3.0 * S, metal, { group: `${group}Joint`, bevel: 1 * S });
   const hub = at(side.elbow);
-  canvas.dot(Math.round(hub.x), Math.round(hub.y), near ? M.metal.deep : M.metal.outline);
+  canvas.dot(Math.round(hub.x), Math.round(hub.y), near ? M.brass.light : M.brass.base);
   // The shoulder's plate: a curved pauldron over the top of the puff, its rim bevelled.
   const along = unit(sub(side.elbow, shoulder));
   const out = upSide(shoulder, side.elbow);
@@ -136,7 +138,7 @@ function drawArm(ctx: Ctx, side: Side, which: 'near' | 'far'): void {
     { group: `${group}Plate`, bevel: 1.4 * S },
   );
   if (near) {
-    // The diodes: two on the pauldron, a VU column of three down the gauntlet.
+    // The diodes: two on the pauldron, a 4-LED VU column down the gauntlet.
     for (const [t, w] of [
       [0.4, 5.0],
       [3.0, 4.6],
@@ -145,11 +147,19 @@ function drawArm(ctx: Ctx, side: Side, which: 'near' | 'far'): void {
       canvas.dot(Math.round(led.x), Math.round(led.y), LED);
     }
     const lit = upSide(gauntletFrom, gauntletTo);
-    for (const t of [0.22, 0.4, 0.58]) {
+    for (const t of [0.18, 0.34, 0.5, 0.66]) {
       const led = at(
         add(add(gauntletFrom, scale(sub(gauntletTo, gauntletFrom), t)), scale(lit, 2.4)),
       );
       canvas.dot(Math.round(led.x), Math.round(led.y), LED);
+    }
+  } else {
+    const lit = upSide(gauntletFrom, gauntletTo);
+    for (const t of [0.28, 0.54]) {
+      const led = at(
+        add(add(gauntletFrom, scale(sub(gauntletTo, gauntletFrom), t)), scale(lit, 2.2)),
+      );
+      canvas.dot(Math.round(led.x), Math.round(led.y), DETAIL.sound);
     }
   }
   drawClamp(ctx, side, near);
@@ -175,6 +185,7 @@ function puffSheen(ctx: Ctx, from: Point, to: Point, group: string): void {
 function drawClamp(ctx: Ctx, side: Side, near: boolean): void {
   const { canvas, at } = ctx;
   const metal = near ? METAL : METAL_FAR;
+  const brass = near ? BRASS : BRASS_FAR;
   const group = near ? 'nearHand' : 'farHand';
   const f = side.forearm;
   // Hand axes: u along the forearm from the wrist, v toward the thumb.
@@ -183,7 +194,7 @@ function drawClamp(ctx: Ctx, side: Side, near: boolean): void {
   const p = (du: number, dv: number): Point =>
     at(add(side.wrist, add(scale(f, du * k), scale(v, dv * k))));
   if (side.hand === 'open') {
-    // The upper jaw and the lower one, a gap between them: it grabs.
+    // The upper jaw and the lower one, a gap between them: it grabs, brass electrodes inside.
     canvas.polygon([p(0, -2.6), p(4.4, -2.8), p(5.6, -1.6), p(4.8, -0.6), p(0.4, -0.4)], metal, {
       group,
       bevel: 1.1 * S,
@@ -192,6 +203,8 @@ function drawClamp(ctx: Ctx, side: Side, near: boolean): void {
       group: `${group}Jaw`,
       bevel: 1.1 * S,
     });
+    const spark = p(2.6, 0.2);
+    canvas.dot(Math.round(spark.x), Math.round(spark.y), near ? LED : DETAIL.sound);
     return;
   }
   canvas.polygon(
@@ -207,6 +220,10 @@ function drawClamp(ctx: Ctx, side: Side, near: boolean): void {
     metal,
     { group, bevel: 1.5 * S },
   );
+  // Brass high-voltage contact bar across the knuckles.
+  canvas.decal([p(4.2, -2.0), p(5.5, -1.6), p(5.5, 1.8), p(4.2, 2.0)], brass, group, {
+    flat: true,
+  });
   for (const dv of [-1.0, 0.8]) {
     canvas.decal(
       [p(3.8, dv - 0.16), p(5.7, dv - 0.16), p(5.7, dv + 0.16), p(3.8, dv + 0.16)],
@@ -360,10 +377,21 @@ function drawTorso(ctx: Ctx): void {
     COTTON,
     { group: 'tee', axis, tilt: { x: 0.3, y: 0.2 } },
   );
-  // The chest's shape under the tee: the line under the pecs, a tone down.
+  // The chest's shape under the tee: the line under the pecs, a tone down, and the exoskeleton's
+  // sternum power-core harness with its glowing diode.
   canvas.decal([t(18.4, 1.4), t(18.0, 6.6), t(17.4, 6.6), t(17.8, 1.4)], shade(COTTON), 'tee', {
     flat: true,
   });
+  canvas.polygon([t(16.0, 2.2), t(21.4, 2.0), t(21.2, 5.8), t(15.8, 5.6)], METAL, {
+    group: 'chestCore',
+    bevel: 0.8 * S,
+  });
+  const core = t(18.6, 4.0);
+  canvas.dot(Math.round(core.x), Math.round(core.y), LED);
+  if (s.face === 'effort' || s.face === 'kiai') {
+    canvas.dot(Math.round(core.x) + 1, Math.round(core.y), DETAIL.sound);
+    canvas.dot(Math.round(core.x), Math.round(core.y) - 1, DETAIL.sound);
+  }
   // The belt: a wide black strap, its buckle a square of metal.
   canvas.polygon([t(2.4, -6.8), t(5.2, -7.0), t(5.4, 6.8), t(2.6, 6.8)], RUBBER, {
     group: 'belt',
@@ -373,6 +401,8 @@ function drawTorso(ctx: Ctx): void {
     group: 'buckle',
     bevel: 0.8 * S,
   });
+  const beltLed = t(3.8, 4.6);
+  canvas.dot(Math.round(beltLed.x), Math.round(beltLed.y), DETAIL.sound);
 }
 
 function drawJacket(ctx: Ctx): void {

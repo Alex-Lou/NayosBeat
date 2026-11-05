@@ -68,22 +68,26 @@ export const WATT_CLIPS: FighterClips<WattClip> = {
   tech: play('tech', [3, 3, 4, 4]),
 
   standLight: play('standLight', [1, 3, 2, 4, 5]), // active: frame 2
+  backLight: play('backLight', [1, 3, 2, 3, 4]), // active: frame 2
   jabRepeat: play('jabRepeat', [3, 2, 2, 3, 2]), // active: frame 1
   chainLight: play('chainLight', [3, 3, 3, 4, 4, 4]), // active: frame 2
+  chainLow: play('chainLow', [3, 3, 2, 3, 6, 7]), // active: frame 3
   lightFinisher: play('lightFinisher', [3, 3, 3, 3, 5, 6, 7]), // active: frame 3
-  forwardLight: play('forwardLight', [3, 3, 3, 2, 5, 6]), // active: frame 3
+  forwardLight: play('forwardLight', [2, 2, 3, 3, 5, 5]), // active: frame 3
   // Marteau: the fist raised high on frames 0-3, the fall on frame 4.
   standHeavy: play('standHeavy', [3, 3, 3, 3, 3, 9, 11]), // active: frame 4
-  chainHeavy: play('chainHeavy', [2, 3, 3, 3, 3, 9, 11]), // active: frame 4
-  forwardHeavy: play('forwardHeavy', [4, 6, 6, 6, 3, 5, 5, 6]), // active: frame 4
+  chainHeavy: play('chainHeavy', [2, 3, 3, 3, 2, 2, 9, 10]), // active: frames 4-5 (2 hits)
+  forwardHeavy: play('forwardHeavy', [3, 5, 5, 5, 3, 5, 5, 5]), // active: frame 4
+  downForwardHeavy: play('downForwardHeavy', [3, 3, 3, 3, 5, 6, 6]), // active: frame 3
   // Coup de masse: the Coup de pilon from its fist already high, heated up, the blow on frame 2.
-  chainHigh: play('chainHigh', [7, 8, 3, 5, 5, 6]), // active: frame 2
+  chainHigh: play('chainHigh', [6, 7, 3, 5, 5, 6]), // active: frame 2
   backHeavy: play('backHeavy', [2, 3, 3, 4, 5, 6, 7]), // active: frame 3
   chainLaunch: play('chainLaunch', [2, 3, 3, 4, 5, 6, 7]), // active: frame 3
   crouchLight: play('crouchLight', [2, 3, 2, 4, 5]), // active: frame 2
   crouchHeavy: play('crouchHeavy', [3, 4, 4, 3, 5, 5, 6, 6]), // active: frame 3
   jumpLight: play('jumpLight', [2, 3, 6, 4, 4]), // active: frame 2
   jumpHeavy: play('jumpHeavy', [4, 4, 6, 4, 4, 4]), // active: frame 2
+  jumpDownHeavy: play('jumpDownHeavy', [3, 3, 7, 3, 3, 3]), // active: frame 2
   special: COUP_DE_JUS,
   specialForward: SURCHARGE,
   specialAntiAir: PLAFONNIER,
@@ -92,7 +96,7 @@ export const WATT_CLIPS: FighterClips<WattClip> = {
   // The throw it plays on the catch: lifted, spun, planted (the release: frame 3).
   throwClose: play('throwClose', [4, 4, 2, 1, 8, 8, 8]),
   // Câble: the clamps out, the line across, the reel in (the discharge on frames 3-4).
-  specialBack: play('specialBack', [4, 4, 6, 6, 6, 6, 7, 7]), // active: frames 3-4
+  specialBack: play('specialBack', [4, 4, 4, 2, 2, 8, 8, 8]), // active: frames 3-4
   // Plongeon: the fall from the air, the catch in the dive (frame 2).
   jumpSpecial: play('jumpSpecial', [4, 4, 4, 6, 8, 8]), // active: frame 2
   throwDive: play('throwDive', [4, 4, 2, 1, 8, 7, 7]),
@@ -109,8 +113,8 @@ export const WATT_CLIPS: FighterClips<WattClip> = {
   throwForward: play('throwForward', [4, 4, 4, 1, 7, 8, 9]), // the release: frame 3
   throwBack: play('throwBack', [3, 3, 4, 4, 1, 8, 9, 9]), // the release: frame 4
   // Pas blindé and Recul: the game moves him, the poses ride the floor.
-  dashForward: play('dashForward', [2, 3, 4, 4, 4, 3]),
-  dashBack: play('dashBack', [2, 4, 4, 5, 5, 4]),
+  dashForward: play('dashForward', [2, 2, 3, 4, 4, 3]),
+  dashBack: play('dashBack', [2, 3, 4, 4, 4, 3]),
   // Rallumage, his Rewind: the Pas blindé cut short, a heavy step of 24 px in 14 ticks.
   boostCancel: { sheet: 'dashForward', frames: [0, 1, 2, 4, 5], ticks: [1, 3, 3, 4, 3] },
 
