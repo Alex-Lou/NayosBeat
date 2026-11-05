@@ -1,7 +1,9 @@
 /**
- * Koda's head: anime-fighter / Guilty Gear / BlazBlue style high-resolution pixel art. Long,
- * dramatic emerald-green spikes swept back and upward in layered locks, a dark martial headband
- * across the brow with a glowing jade gem, sculpted three-quarter face, piercing cyan-ice eyes.
+ * Koda's head: BlazBlue / Guilty Gear / Street Fighter inspired anime martial-artist.
+ * Swept-back and forward-framing emerald-green hair spikes with a long temple lock hanging past
+ * the cheek; a dark martial headband with a glowing jade gem; piercing golden-amber eyes (`C`);
+ * and a sleek dark-steel & leather lower face mask / acoustic respirator (`P`, `R`, `A`) with a
+ * glowing jade resonator slit (`J`) across the cheek and jaw. Zero shared face pixels with Nayo.
  */
 
 import type { PixelCanvas, Point } from '../raster.ts';
@@ -11,38 +13,38 @@ import { expressionOf } from './face.ts';
 import { DETAIL, MATERIAL } from './palette.ts';
 
 export const HEAD: readonly string[] = [
-  '..kk.....kddk.....kddk.........',
-  '..dbk...ksllsk...ksgglk........',
-  '..sblk.kdblglbk.ksbgglbk.......',
-  '..kdblbksblgglbksbbggllbk......',
-  '..ksbllbbllggllbbllgglbsk......',
-  '..kdsbllbbllggllbblllbbsdk.....',
-  '..kdsbblllbllgllbblllbbsdk.....',
-  '..kdsbbbblllbllgllbbllbbsdk....',
-  '..dbllllbbllbbgllbblllbblllbbsk',
-  '..kddssbllbllbblllblllgbbbssdk.',
-  '..dssbbllblbbllbbllbllbbssdk...',
-  '..sbsssbbllbbllgllbbllbbssdd...',
-  '..dssbssbbbllbbllbblllbbssddk..',
-  '..kddssbbbbllbbllbbllbbbsddk...',
-  '...kddssdbbbllbllbbllbbssdk....',
-  '..kddddsddRRRRRRRRRRRRJJkssk...',
-  '..ddddsdddRRRRRRRRRRRRJJkdsddk.',
-  '..dddddddddkdkdsdkdSBBBBkdkk...',
-  '..kdddddddkkkdddddDkkkSBBDdk...',
-  '..kkddddddkBSkdkkdBBSDkkSDkk...',
-  '..kkdddddkBDOSkkSBBkkkKSBDk....',
-  '...kdddddkSDOBkkBBBJCKBBBBO....',
-  '...dkddddkSDSBSkBLLBCSBBBBO....',
-  '....kkdddkdSOBBLBBBBBBBBBSO....',
-  '....skkdkkkDBBBBBBBBBBBBDO.....',
-  '.....kkkkdkkOSBBBBBBBBBBBO.....',
-  '...skkkkkkkDDDBBBBBBBBBBO......',
-  '............DDDBBBBBDDDBO......',
-  '.............DODBBBBLLBO.......',
-  '..............DODSBBBBDO.......',
-  '................OODBBBDO.......',
-  '..................OSDO.........',
+  '....kk....kddk.....kddk.........',
+  '...dbk..ksllsk...ksgglk.........',
+  '..sblk.kdblglbk.ksbgglbk..kdk...',
+  '..kdblbksblgglbksbbggllbkksblk..',
+  '..ksbllbbllggllbbllgglbskdbllbk.',
+  '..kdsbllbbllggllbblllbbsdkbgglbk',
+  '..kdsbblllbllgllbblllbbsdkblgglk',
+  '..kdsbbbblllbllgllbbllbbsdkbllbk',
+  '..dbllllbbllbbgllbblllbblllbbsk.',
+  '..kddssbllbllbblllblllgbbbssdk..',
+  '..dssbbllblbbllbbllbllbbssdk....',
+  '..sbsssbbllbbllgllbbllbbssddk...',
+  '..dssbssbbbllbbllbblllbbssddk...',
+  '..kddssbbbbllbbllbbllbbbsddk....',
+  '...kddssdbbbllbllbbllbbssdk.....',
+  '..kddddsddRRRRRRRRRRRRJJkssk....',
+  '..ddddsdddRRRRRRRRRRRRJJkdsddk..',
+  '..dddddddddkblbsdkdSBBBBkdbbk...',
+  '..kdddddddkbllldDkkkkSBBDdbk....',
+  '..kkddddddkbllkdkkdBBSDkkSDk....',
+  '..kkdddddkbslbSkkSBBkkkKSBDk....',
+  '...kdddddkdblkBkkBBBWCKBBBBO....',
+  '...dkddddksbkSBSkBLLBCSBBBBO....',
+  '....kkdddkdkOBBLBBBBAAAAAPPO....',
+  '....skkdkkkOPPPPPPPPAPPPPPPO....',
+  '.....kkkkdkkOPPRRRRRJJRRRPPO....',
+  '...skkkkkkkDDPPRRRRRJJRRRPPO....',
+  '............DDPPPRRRRRRRPPO.....',
+  '.............DOPPPAAPPPPPO......',
+  '..............DODPPPPPPPO.......',
+  '................OOPPPPPO........',
+  '..................OPPO..........',
 ];
 
 /** Pixel of the stamp on the skeleton's head point (the middle of the skull). */
@@ -54,6 +56,8 @@ const LOOSE_HAIR_ROWS = 12;
 const SKIN = MATERIAL.skin;
 const HAIR = MATERIAL.hair;
 const BAND = MATERIAL.leather;
+const MASK = MATERIAL.plastic;
+const SILVER = MATERIAL.metal;
 
 /** Palette slot of each stamp character; '.' (or any other) is empty. */
 const LEGEND: Legend = {
@@ -71,12 +75,14 @@ const LEGEND: Legend = {
   b: HAIR.base,
   l: HAIR.light,
   g: HAIR.gloss,
-  // Headband across the brow.
+  // Headband and armored acoustic half-mask.
   R: BAND.base,
-  // Eye, mouth and headband gem.
+  P: MASK.base,
+  A: SILVER.light,
+  // Eye and glowing jade resonator gem/slit.
   K: DETAIL.ink,
   W: DETAIL.eyeWhite,
-  C: DETAIL.iris,
+  C: DETAIL.irisLight,
   J: DETAIL.neonLight,
   M: DETAIL.mouth,
   T: DETAIL.teeth,

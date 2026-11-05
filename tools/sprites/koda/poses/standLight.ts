@@ -1,24 +1,60 @@
 import type { Point } from '../../raster.ts';
-import { solve } from '../../skeleton.ts';
+import { add, BODY, scale, solve, sub, type Bend } from '../../skeleton.ts';
 import { at, ease, GUARD, planted, smear, tween, type Foot, type Pose } from './common.ts';
 
 /**
- * standLight (Direct): Tazz's jab out of the high guard. Ticks 2,2,[3],2,2,3 (active: frame 2).
- *
- * The lead glove leaves from under the chin and goes straight down the centre line, the elbow
- * behind it; it never drops or loops. The hips push a couple of pixels in off the ball of the
- * rear foot, the lead shoulder rolls up behind the chin as the arm extends, the rear glove stays
- * glued to the cheek (it rides the head). Back along the same line, a pixel of overshoot as the
- * shoulder rolls home, and the guard.
+ * standLight (Paume vive / Knife-Hand Whip): 6 frames, ticks 2, 2, [3], 2, 2, 3 (active: frame 2,
+ * hitbox x 10..40 / y 46..58).
+ * From his open-chest kung-fu guard (lead hand chambered at the hip, rear palm extended), Koda
+ * whips his lead knife-hand up from his hip in a fast horizontal chop while drawing his rear hand
+ * back toward his solar plexus, then returns to his open-chest stance.
  */
 
-/** Where the toe tip of a foot touches the floor (a foot on the ball pivots around it). */
+type Body = Omit<Pose, 'nearFist' | 'farFist'>;
+
+function arm(
+  body: Body,
+  which: 'near' | 'far',
+  shoulder: number,
+  elbow: number,
+): { fist: Point; bend: Bend } {
+  const s = solve({ ...body, nearFist: GUARD.nearFist, farFist: GUARD.farFist });
+  const root = s[which].shoulder;
+  const turn = (v: Point, degrees: number): Point => {
+    const a = (degrees * Math.PI) / 180;
+    return { x: v.x * Math.cos(a) - v.y * Math.sin(a), y: v.x * Math.sin(a) + v.y * Math.cos(a) };
+  };
+  const upper = turn({ x: -s.up.x, y: -s.up.y }, shoulder);
+  const joint = add(root, scale(upper, BODY.upperArm));
+  const fist = add(joint, scale(turn(upper, elbow), BODY.forearm));
+  const line = sub(fist, root);
+  const axis = scale(line, 1 / (Math.hypot(line.x, line.y) || 1));
+  const offset = sub(joint, root);
+  const along = offset.x * axis.x + offset.y * axis.y;
+  const mirror = add(root, sub(scale(axis, 2 * along), offset));
+  const dx = joint.x - mirror.x;
+  const dy = joint.y - mirror.y;
+  const bend: Bend =
+    Math.abs(dy) >= Math.abs(dx) ? (dy < 0 ? 'down' : 'up') : dx > 0 ? 'front' : 'back';
+  return { fist: at(fist.x, fist.y), bend };
+}
+
+function posed(body: Body, near: readonly [number, number], far: readonly [number, number]): Pose {
+  const lead = arm(body, 'near', near[0], near[1]);
+  const rear = arm(body, 'far', far[0], far[1]);
+  return {
+    ...body,
+    nearFist: lead.fist,
+    farFist: rear.fist,
+    bends: { ...body.bends, nearElbow: lead.bend, farElbow: rear.bend },
+  };
+}
+
 function toeOf(foot: Foot): number {
   const a = ((foot.angle ?? 0) * Math.PI) / 180;
   return foot.x + 2.3 * Math.sin(a) + 7 * Math.cos(a);
 }
 
-/** A foot on the floor turned to `angle` around its toe tip at `toe`: the toe never slides. */
 function onToes(toe: number, angle: number): Foot {
   const a = (angle * Math.PI) / 180;
   return planted(toe - 2.3 * Math.sin(a) - 7 * Math.cos(a), angle);
@@ -27,139 +63,92 @@ function onToes(toe: number, angle: number): Foot {
 const LEAD_TOE = toeOf(GUARD.nearFoot);
 const REAR_TOE = toeOf(GUARD.farFoot);
 
-/** The rear glove's place in the guard, from the head's centre: it rides the head. */
-const CHEEK = ((): Point => {
-  const { head } = solve(GUARD);
-  return at(GUARD.farFist.x - head.x, GUARD.farFist.y - head.y);
-})();
-
-type Body = Omit<Pose, 'nearFist' | 'farFist'>;
-
-/** The rear glove at the cheek (plus `dx`, `dy`), whatever the head does. */
-function atCheek(body: Body, dx = 0, dy = 0): Point {
-  const { head } = solve({ ...body, nearFist: GUARD.nearFist, farFist: GUARD.farFist });
-  return at(head.x + CHEEK.x + dx, head.y + CHEEK.y + dy);
-}
-
-/** The lead wrist `length` px from the lead shoulder, `angle` degrees above horizontal. */
-function lead(body: Body, length: number, angle: number): Point {
-  const shoulder = solve({ ...body, nearFist: GUARD.nearFist, farFist: GUARD.farFist }).near
-    .shoulder;
-  const a = (angle * Math.PI) / 180;
-  return at(shoulder.x + Math.cos(a) * length, shoulder.y + Math.sin(a) * length);
-}
-
-/** The front of the lead glove's knuckles, as drawn (past the wrist along the forearm). */
-function knucklesOf(arm: Pose): Point {
-  const { wrist, forearm } = solve(arm).near;
-  return at(wrist.x + forearm.x * 5.4, wrist.y + forearm.y * 5.4);
-}
-
-/** A body with its gloves: the lead one placed from the shoulder, the rear one at the cheek. */
-function pose(body: Body, length: number, angle: number, cheek: Point = at(0, 0)): Pose {
-  return { ...body, nearFist: lead(body, length, angle), farFist: atCheek(body, cheek.x, cheek.y) };
-}
-
-/**
- * As the jab goes out the shoulders turn (the rear one back, `reach.far` < 0) and the rear glove
- * tucks in from the cheek to the chin: its elbow folds down onto the ribs, behind the chest,
- * instead of hanging in front of it as a lump under the extended lead arm.
- */
-const TUCK = at(-1.4, -1.6);
-const TUCK_HALF = at(-1.1, -1.2);
-
-// Frame 0 (2 ticks): the glove leaves the chin. The hips start in off the rear foot (its heel
-// rising), the lead shoulder starts to roll; the glove already a third of the way out.
-const START: Pose = {
+// Frame 0 (2 ticks): The hip-chambered lead hand uncoils upward as the rear hand draws back toward
+// the chest.
+const START_BODY: Body = {
   ...GUARD,
-  hip: at(-6, 36.3),
-  torso: 16,
-  head: 1,
-  shrug: 1.8,
+  hip: at(-6.0, 36.2),
+  torso: 14,
+  head: 2,
+  shrug: 1.4,
   reach: { near: 0.8 },
-  twist: -0.12,
+  twist: 0.1,
   nearFoot: onToes(LEAD_TOE, -1),
   farFoot: onToes(REAR_TOE, -18),
-  nearFist: at(14.5, 55),
-  farFist: atCheek({ ...GUARD, hip: at(-6, 36.3), torso: 16, head: 1 }),
 };
+const START: Pose = posed(START_BODY, [28, 86], [34, 92]);
 
-// Frame 1 (2 ticks): three quarters out, straight down the line, the elbow behind the glove.
+// Frame 1 (2 ticks): Three-quarters out: the lead silver gauntlet and open knife-hand whip forward
+// at chest height while the rear hand chambers at the sternum.
 const SNAP_BODY: Body = {
   ...GUARD,
-  hip: at(-4.9, 36.2),
-  torso: 17.5,
+  hip: at(-4.9, 36.0),
+  torso: 17,
   head: 0,
-  shrug: 2.5,
-  reach: { near: 2, far: -2.2 },
-  twist: -0.28,
+  shrug: 2.2,
+  reach: { near: 2.0, far: -1.5 },
+  twist: -0.25,
   nearFoot: onToes(LEAD_TOE, 0),
   farFoot: onToes(REAR_TOE, -21),
 };
-const SNAP_ARM = pose(SNAP_BODY, 21.5, -4, TUCK_HALF);
-const SNAP_KNUCKLES = knucklesOf(SNAP_ARM);
+const SNAP_ARM = posed(SNAP_BODY, [66, 36], [22, 98]);
 const SNAP: Pose = {
   ...SNAP_ARM,
-  nearHand: 'open',
-  // Along the path of the knuckles, ending in the palm.
-  effects: [smear(3, [19.5, 59.5], [25, 59.2], [SNAP_KNUCKLES.x - 2.1, SNAP_KNUCKLES.y])],
+  effects: [smear(3, [12, 46], [22, 50], [SNAP_ARM.nearFist.x + 2, SNAP_ARM.nearFist.y])],
 };
 
-// Frame 2 (3 ticks, active): full extension, the arm long but not locked, the lead shoulder up
-// behind the chin, the rear glove tucked at the chin. A thin trail down the line into the knuckles,
-// a small flash on them.
+// Frame 2 (3 ticks, active): Full extension of the knife-hand chop (hitbox x 10..40, y 46..58)!
+// The lead open palm reaches x ~ 36 (with the fingers and blade smear reaching x ~ 41), while the
+// rear hand stays chambered low at the ribs.
 const STRIKE_BODY: Body = {
   ...GUARD,
-  hip: at(-4, 36.1),
-  torso: 19,
-  head: -1,
-  shrug: 3,
-  reach: { near: 3, far: -2.2 },
+  hip: at(-3.5, 35.8),
+  torso: 20,
+  head: -2,
+  shrug: 2.8,
+  reach: { near: 3.4, far: -2.0 },
   twist: -0.4,
   nearFoot: onToes(LEAD_TOE, 0),
   farFoot: onToes(REAR_TOE, -24),
 };
-const STRIKE_ARM = pose(STRIKE_BODY, 24.6, -6, TUCK);
-const KNUCKLES = knucklesOf(STRIKE_ARM);
+const STRIKE_ARM = posed(STRIKE_BODY, [96, 8], [18, 96]);
 const STRIKE: Pose = {
   ...STRIKE_ARM,
-  nearHand: 'open',
   effects: [
-    // One clean streak just under the forearm's bracer, rising into the bottom of the palm.
-    smear(4, [22, 51.2], [29, 51.6], [KNUCKLES.x - 2.6, KNUCKLES.y - 3]),
-    // Just ahead of the palm: it frames it, never hides it.
-    { kind: 'flash', center: at(KNUCKLES.x + 2.6, KNUCKLES.y), radius: 3.5, tone: 'strike' },
+    smear(4, [20, 50], [28, 51], [37.5, 52.0]),
+    { kind: 'flash', center: at(39.8, 52.0), radius: 3.5, tone: 'strike' },
   ],
 };
 
-// Frame 3 (2 ticks): snapped back along the same line, faster than it went.
+// Frame 3 (2 ticks): Drawing the lead hand back down toward the hip as the rear palm extends
+// forward again.
 const RETRACT_BODY: Body = {
   ...GUARD,
-  hip: at(-5.2, 36.2),
-  torso: 17.5,
-  head: 0.5,
-  shrug: 2.6,
-  reach: { near: 1.6, far: -1.2 },
-  twist: -0.25,
+  hip: at(-5.2, 36.0),
+  torso: 16,
+  head: 1,
+  shrug: 2.0,
+  reach: { near: 1.2, far: -0.8 },
+  twist: -0.1,
   nearFoot: onToes(LEAD_TOE, -0.5),
   farFoot: onToes(REAR_TOE, -20),
 };
-const RETRACT = pose(RETRACT_BODY, 17.5, -9, at(-0.4, -0.6));
+const RETRACT: Pose = posed(RETRACT_BODY, [42, 68], [46, 82]);
 
-// Frame 4 (2 ticks): home a hair past the guard: the glove tucked in under the chin, the
-// shoulder still rolled up, the hips sinking back a pixel.
+// Frame 4 (2 ticks): Dropping the lead hand back to the waist while the rear open palm takes its
+// forward guard post.
 const HOME: Pose = {
   ...GUARD,
-  hip: at(-6.8, 36),
-  torso: 15.5,
-  head: 1.5,
-  shrug: 1.9,
-  twist: -0.08,
-  nearFist: at(8.4, 55),
-  farFist: at(GUARD.farFist.x - 0.2, GUARD.farFist.y - 0.4),
+  hip: at(-6.8, 36.0),
+  torso: 13,
+  head: 2,
+  shrug: 1.3,
+  twist: 0.25,
+  nearFist: at(-6.8, 40.8),
+  farFist: at(10.2, 55.4),
 };
 
-// Frame 5 (3 ticks): settled into the guard, ready for the next one.
+// Frame 5 (3 ticks): Settled into GUARD.
 const SETTLE: Pose = tween(HOME, GUARD, 0.75, ease.out);
 
 export const POSES: readonly Pose[] = [START, SNAP, STRIKE, RETRACT, HOME, SETTLE];

@@ -64,7 +64,7 @@ const REST: Pose = guarded({
   farFoot: onToes(REAR_X, REAR_HEEL),
   nearFist: GUARD.nearFist,
   farFist: GUARD.farFist,
-  bends: { ...GUARD.bends },
+  bends: { nearElbow: 'down', farElbow: 'down' },
 });
 
 // ---------------------------------------------------------------------------------------------

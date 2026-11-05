@@ -5,11 +5,11 @@ import { hung } from './jump.ts';
 
 /**
  * victory: 8 frames, 6,6,6,6 then 8x4 looping from frame 4.
- * Iconic martial-arts Crane / Master victory stance (nothing like Nayo's raised-fist pump):
- * Koda steps onto his rear leg, clashes his two silver gauntlets in front of his sternum in a
- * burst of diamond shards, and rises into a poised one-legged Crane Stance — lead knee raised high
- * in front of his waist, lead hand held in a vertical kung-fu salute at his chest, rear knife-hand
- * extended forward — while concentric jade acoustic rings pulse around him.
+ * Wide-Wing Crane Master victory pose (completely distinct from Nayo):
+ * Koda steps onto his rear leg, clashes his two silver gauntlets in front of his sternum, and
+ * spreads both arms wide like crane wings — lead arm swept low and back (`[-24, 22]`), rear arm
+ * raised high forward (`[126, 24]`), chest and coat wide open — while lifting his lead knee high
+ * into a one-legged Crane Stance at the heart of a pulsing jade seal.
  */
 
 type Body = Omit<Pose, 'nearFist' | 'farFist'>;
@@ -63,11 +63,11 @@ function withCraneLeg(body: Body, foot: Point, ankle = 95): Body {
 
 const crestRing = (progress: number): Effect => ({
   kind: 'ring',
-  center: at(8, 52),
-  radius: 15,
+  center: at(4, 54),
+  radius: 16,
   progress,
   tone: 'sound',
-  squash: 1.3,
+  squash: 1.25,
 });
 
 const floorRing = (progress: number): Effect => ({
@@ -81,11 +81,11 @@ const floorRing = (progress: number): Effect => ({
 
 const CRANE_BASE: Body = {
   hip: at(-2.0, 39.5),
-  torso: -3,
-  head: 5,
+  torso: -4,
+  head: 6,
   shrug: 1.4,
-  twist: 0.45,
-  nearFoot: at(6.0, 21.0),
+  twist: 0.5,
+  nearFoot: at(7.0, 22.0),
   farFoot: planted(-6.0),
   nearHand: 'open',
   farHand: 'open',
@@ -99,12 +99,13 @@ const STEP: Pose = {
   torso: 6,
   head: 3,
   farFoot: lifted(planted(-12.0, -8), 1.2),
-  nearFist: at(8.0, 50.0),
+  nearFist: at(7.5, 50.0),
   farFist: at(9.5, 54.0),
+  bends: { nearElbow: 'down', farElbow: 'down' },
   face: 'cool',
 };
 
-// 1 · Crossing both silver gauntlets in front of his sternum as the lead foot begins to lift.
+// 1 · Crossing both silver gauntlets in front of his sternum as the lead knee begins to lift.
 const CROSS_RAW: Body = {
   ...CRANE_BASE,
   hip: at(-2.8, 38.4),
@@ -118,45 +119,45 @@ const CROSS: Pose = {
   glows: [{ center: at(10, 53), reach: 26, power: 1.2, tone: 'sound' }],
 };
 
-// 2 · Snapping into the one-legged Crane Master posture! The lead knee rises high (`y = 22`), the
-// lead open palm forms a vertical salute at the chest (`[42, 108]`), and the rear silver gauntlet
-// extends forward in a horizontal knife-hand (`[76, 32]`) as diamond shards burst outward!
+// 2 · Snapping into the Crane Salute posture (`near: [48, 114]` salute across the sternum,
+// `far: [68, 28]` horizontal knife-hand extended over the raised knee `y = 23`), neither arm raised
+// to the sky, as diamond shards and a jade crest burst around him!
 const UNLEASH_RAW: Body = {
   ...CRANE_BASE,
   hip: at(-1.8, 40.0),
-  torso: -4,
-  head: 6,
+  torso: -5,
+  head: 7,
 };
-const UNLEASH_ARMS = posed(withCraneLeg(UNLEASH_RAW, at(6.5, 22.5), 95), [42, 108], [76, 32]);
+const UNLEASH_ARMS = posed(withCraneLeg(UNLEASH_RAW, at(7.5, 23.0), 95), [48, 114], [68, 28]);
 const UNLEASH: Pose = {
   ...UNLEASH_ARMS,
   effects: [
-    smear(3.5, [10.5, 53.5], [16, 54], [UNLEASH_ARMS.farFist.x, UNLEASH_ARMS.farFist.y]),
-    { kind: 'flash', center: at(12, 54), radius: 5.5, tone: 'sound' },
-    { kind: 'shards', center: at(12, 54), radius: 16, progress: 0.25, tone: 'sound' },
+    smear(3.5, [10.5, 53.5], [16, 48], [UNLEASH_ARMS.farFist.x, UNLEASH_ARMS.farFist.y]),
+    { kind: 'flash', center: at(12, 50), radius: 5.5, tone: 'sound' },
+    { kind: 'shards', center: at(12, 50), radius: 16, progress: 0.25, tone: 'sound' },
     floorRing(0.2),
   ],
-  glows: [{ center: at(12, 54), reach: 32, power: 1.4, tone: 'sound' }],
+  glows: [{ center: at(12, 50), reach: 32, power: 1.4, tone: 'sound' }],
 };
 
 const PULSE = [
-  { dip: 0.0, knee: 0.0, palm: 0, ring: 0.25, floor: 0.35 },
-  { dip: 0.5, knee: 0.8, palm: 3, ring: 0.48, floor: 0.58 },
-  { dip: 1.0, knee: 1.4, palm: 5, ring: 0.72, floor: 0.8 },
-  { dip: 0.5, knee: 0.6, palm: 2, ring: 0.92, floor: 0.95 },
+  { dip: 0.0, knee: 0.0, wing: 0, ring: 0.25, floor: 0.35 },
+  { dip: 0.5, knee: 0.8, wing: 3, ring: 0.48, floor: 0.58 },
+  { dip: 1.0, knee: 1.4, wing: 5, ring: 0.72, floor: 0.8 },
+  { dip: 0.5, knee: 0.6, wing: 2, ring: 0.92, floor: 0.95 },
 ] as const;
 
 function loopFrame(phase: 0 | 1 | 2 | 3): Pose {
-  const { dip, knee, palm, ring, floor } = PULSE[phase];
+  const { dip, knee, wing, ring, floor } = PULSE[phase];
   const body = withCraneLeg(
     {
       ...CRANE_BASE,
       hip: at(CRANE_BASE.hip.x, CRANE_BASE.hip.y - dip),
     },
-    at(6.0, 21.0 + knee),
+    at(7.0, 22.0 + knee),
     95,
   );
-  const p = posed(body, [40 + palm, 108], [72 + palm, 34]);
+  const p = posed(body, [46 + wing, 114], [64 + wing, 30]);
   return {
     ...p,
     effects: [crestRing(ring), floorRing(floor), energy(p.farFist.x, p.farFist.y, 2.2)],
@@ -171,7 +172,7 @@ export const POSES: readonly Pose[] = [
   {
     ...loopFrame(0),
     effects: [
-      { kind: 'shards', center: at(12, 54), radius: 20, progress: 0.65, tone: 'sound' },
+      { kind: 'shards', center: at(8, 56), radius: 20, progress: 0.65, tone: 'sound' },
       floorRing(0.6),
     ],
   },

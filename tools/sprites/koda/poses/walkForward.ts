@@ -1,6 +1,6 @@
-import { NAYO_CLIPS } from '../../../../src/art/nayo/clips.ts';
+import { KODA_CLIPS } from '../../../../src/art/koda/clips.ts';
 import { toPx } from '../../../../src/core/constants.ts';
-import { NAYO as TEMPLATE } from '../../../../src/data/fighters/nayo.ts';
+import { KODA as TEMPLATE } from '../../../../src/data/fighters/koda.ts';
 import { solve } from '../../skeleton.ts';
 import { at, GUARD, type Foot, type Pose } from './common.ts';
 
@@ -28,7 +28,7 @@ const FRAMES = 12;
 const HALF = 6;
 /** The game's walking speed (px per tick) and how long it shows each frame (ticks). */
 const SPEED = toPx(TEMPLATE.walkForwardSpeed);
-const TICKS = NAYO_CLIPS.walkForward.ticks;
+const TICKS = KODA_CLIPS.walkForward.ticks;
 
 const radians = (degrees: number): number => (degrees * Math.PI) / 180;
 

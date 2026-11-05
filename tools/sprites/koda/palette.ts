@@ -27,8 +27,8 @@ function lit(ramp: Ramp, rim: string = RIM): MaterialTones {
 
 /** Materials in slot order; each one owns 7 consecutive palette slots. */
 const MATERIALS = {
-  /** Warm light skin (the open coat shows his chest and bare hands/feet). */
-  skin: lit(['#4e1624', '#a4423a', '#e8844c', '#fca86a', '#ffc286', '#ffdcb0'], '#e0a6b4'),
+  /** Cool pale ivory/alabaster anime complexion (contrasting with his dark storm-teal coat). */
+  skin: lit(['#281620', '#643e4c', '#a26e7a', '#d8a8a8', '#f2ceca', '#fff0ee'], '#e8b4c4'),
   /** Spiky emerald-green hair (120 spiked__green_.png); platinum-silver on the second colorway. */
   hair: {
     main: ['#04140a', '#0a2e16', '#125428', '#1c863c', '#30c058', '#7ef098', RIM],
@@ -80,8 +80,8 @@ export type MaterialName = keyof typeof MATERIALS;
 const DETAILS = {
   ink: { main: '#0a0608' },
   eyeWhite: { main: '#f2f7f8' },
-  iris: { main: '#2a6890' },
-  irisLight: { main: '#57cee4' },
+  iris: { main: '#b87408', alt: '#c83878' },
+  irisLight: { main: '#ffe048', alt: '#ff90c8' },
   lip: { main: '#a8502e' },
   lipLight: { main: '#d88058' },
   teeth: { main: '#e8dcd0' },
