@@ -1,6 +1,7 @@
 import type { Point } from '../../raster.ts';
 import { add, BODY, scale, solve, sub, type Bend } from '../../skeleton.ts';
 import { at, energy, GUARD, lifted, planted, smear, type Foot, type Pose } from './common.ts';
+import { hung } from './jump.ts';
 
 type Body = Omit<Pose, 'nearFist' | 'farFist'>;
 
@@ -42,7 +43,15 @@ function posed(body: Body, near: readonly [number, number], far: readonly [numbe
   };
 }
 
-const LEAD_TOE = solve(GUARD).near.toe.x;
+function withKick(body: Body, foot: Point, ankle = 90): Body {
+  const withFoot: Body = {
+    ...body,
+    nearFoot: { x: foot.x, y: foot.y, angle: 0 },
+    bends: { ...body.bends, nearKnee: 'up' },
+  };
+  return { ...withFoot, nearFoot: hung(withFoot, 'near', ankle) };
+}
+
 const REAR_TOE = solve(GUARD).far.toe.x;
 
 function onToes(toe: number, angle: number): Foot {
@@ -56,35 +65,32 @@ function onToes(toe: number, angle: number): Foot {
 /** Where the silver bracers clash in front of the chest on frame 2. */
 export const BRACER_CLASH = at(14, 46);
 
-// Frame 0 (3 ticks): Koda opens both arms wide from his martial stance, his frock coat parting
-// across his bare chest as the silver vambraces begin to hum.
+// Frame 0 (3 ticks): Koda opens his frock coat wide and shifts weight onto his rear leg.
 const OPEN_BODY: Body = {
   ...GUARD,
-  hip: at(-7.6, 35.4),
+  hip: at(-6.5, 35.8),
   torso: 10,
   head: 5,
   shrug: 2.0,
-  twist: -0.45,
-  nearHand: 'open',
-  farHand: 'open',
-  nearFoot: onToes(LEAD_TOE, -4),
-  farFoot: onToes(REAR_TOE, -16),
+  twist: 0.35,
+  nearFoot: planted(6.35, 2),
+  farFoot: onToes(REAR_TOE + 2, -16),
 };
 const OPEN: Pose = posed(OPEN_BODY, [18, 96], [42, 88]);
 
-// Frame 1 (3 ticks): Deep coil on the rear leg, both silver bracers raised and glowing with jade
-// acoustic energy before the clash.
-const COIL_BODY: Body = {
-  ...OPEN_BODY,
-  hip: at(-9.0, 33.8),
-  torso: 8,
-  head: 7,
-  shrug: 2.6,
-  twist: -0.7,
-  nearFoot: onToes(LEAD_TOE, -8),
-  farFoot: onToes(REAR_TOE, -24),
+// Frame 1 (3 ticks): Chambering the lead knee and crossing both silver gauntlets in front of his
+// chest as jade resonance gathers.
+const COIL_RAW: Body = {
+  ...GUARD,
+  hip: at(-2.0, 37.0),
+  torso: 4,
+  head: 6,
+  shrug: 2.4,
+  twist: 0.4,
+  nearFoot: at(8, 22),
+  farFoot: planted(-10.0, -6),
 };
-const COIL_ARMS = posed(COIL_BODY, [-12, 92], [50, 98]);
+const COIL_ARMS = posed(withKick(COIL_RAW, at(8, 22), 95), [28, 98], [44, 92]);
 const COIL: Pose = {
   ...COIL_ARMS,
   effects: [
@@ -94,126 +100,100 @@ const COIL: Pose = {
   glows: [{ center: at(10, 48), reach: 24, power: 0.9, tone: 'sound' }],
 };
 
-// Frame 2 (4 ticks): Koda steps forward and clashes his two silver forearm bracers together in
-// front of his chest, sparks and a tuning ring igniting at the point of impact.
-const CLASH_BODY: Body = {
+// Frame 2 (4 ticks): Clashing the silver gauntlets as the silver-greaved lead leg whips up toward
+// waist height!
+const CLASH_RAW: Body = {
   ...GUARD,
-  hip: at(-6.2, 33.2),
-  torso: 16,
-  head: 2,
+  hip: at(2.0, 38.0),
+  torso: -2,
+  head: 8,
   shrug: 2.8,
-  twist: 0.1,
-  nearHand: 'open',
-  farHand: 'open',
-  nearFoot: planted(9.0),
-  farFoot: onToes(REAR_TOE, -28),
+  twist: -0.2,
+  nearFoot: at(22, 38),
+  farFoot: planted(-6.0, -8),
   face: 'effort',
 };
-const CLASH_ARMS = posed(CLASH_BODY, [34, 98], [38, 94]);
 const CLASH: Pose = {
-  ...CLASH_ARMS,
+  ...posed(withKick(CLASH_RAW, at(22, 38), 90), [36, 98], [40, 94]),
   effects: [
-    smear(
-      3,
-      [COIL_ARMS.nearFist.x, COIL_ARMS.nearFist.y],
-      [8, 44],
-      [BRACER_CLASH.x, BRACER_CLASH.y],
-    ),
+    smear(3.8, [8, 22], [15, 30], [23, 38]),
     energy(BRACER_CLASH.x, BRACER_CLASH.y, 3.8),
     { kind: 'ring', center: BRACER_CLASH, radius: 9, progress: 0.2, tone: 'sound', squash: 1.5 },
   ],
   glows: [{ center: BRACER_CLASH, reach: 28, power: 1.3, tone: 'sound' }],
 };
 
-// Frame 3 (4 ticks, active ticks 10-13): From the clashed silver bracers, Koda thrusts his lead
-// open palm and rear forearm out in a twin acoustic push, sending concentric jade shockwave rings
-// and diamond shards across the hitbox (x 8..42, y 30..56).
-const RELEASE_BODY: Body = {
+// Frame 3 (4 ticks, active): Crescent Roundhouse + Twin-Blade Wave! Koda's silver-greaved leg
+// whips across at y ~ 43 (`nearFoot` at `32.5, 42.5`), while his rear open knife-hand slashes
+// forward to `x = 35, y = 46`, unleashing a wide crescent jade wave, twin concentric rings, and
+// diamond shards across the hitbox (x 8..45, y 30..56).
+const RELEASE_RAW: Body = {
   ...GUARD,
-  hip: at(-2.5, 33.5),
-  torso: 22,
-  head: -3,
-  shrug: 2.2,
-  reach: { near: 3.6, far: 1.8 },
+  hip: at(5.0, 38.5),
+  torso: -6,
+  head: 10,
+  shrug: 2.4,
   twist: -0.35,
-  nearHand: 'open',
-  farHand: 'open',
-  nearFoot: planted(11.5),
-  farFoot: onToes(REAR_TOE, -32),
+  nearFoot: at(30.5, 42.5),
+  farFoot: planted(-4.5, -8),
   face: 'kiai',
 };
 const RELEASE: Pose = {
-  ...RELEASE_BODY,
-  nearFist: at(35.0, 44.5),
-  farFist: at(24.0, 41.0),
-  bends: { nearElbow: 'down', farElbow: 'down' },
+  ...posed(withKick(RELEASE_RAW, at(30.5, 42.5), 88), [-16, 26], [68, 36]),
   effects: [
-    smear(4.5, [14, 46], [26, 45], [38.5, 44.5]),
+    smear(5.0, [16, 36], [27, 41], [39.5, 43.5]),
     { kind: 'ring', center: at(36, 44), radius: 14, progress: 0.25, tone: 'sound', squash: 1.6 },
     { kind: 'ring', center: at(28, 44), radius: 10, progress: 0.45, tone: 'sound', squash: 1.6 },
     { kind: 'shards', center: at(38, 44), radius: 12, progress: 0.25, tone: 'strike' },
-    { kind: 'flash', center: at(40, 44.5), radius: 4.5, tone: 'strike' },
-    { kind: 'dust', x: 12, size: 2.8, progress: 0.2 },
+    { kind: 'flash', center: at(41, 44.0), radius: 5.0, tone: 'strike' },
+    { kind: 'dust', x: -4, size: 2.8, progress: 0.2 },
   ],
   glows: [{ center: at(34, 44), reach: 32, power: 1.4, tone: 'sound' }],
 };
 
-// Frame 4 (5 ticks): Follow-through as the acoustic rings expand and fade in the air ahead of his
-// open palm.
-const ECHO: Pose = {
-  ...RELEASE,
-  hip: at(-3.2, 34.0),
-  torso: 20,
-  head: -1,
-  nearFist: at(32.5, 45.0),
-  farFist: at(20.5, 43.0),
+// Frame 4 (5 ticks): Follow-through of the crescent kick as the jade rings expand in the air.
+const ECHO_RAW: Body = {
+  ...RELEASE_RAW,
+  hip: at(3.5, 38.0),
+  torso: -2,
+  head: 6,
+  nearFoot: at(25.0, 36.0),
+  farFoot: planted(-7.0, -8),
   face: 'effort',
+};
+const ECHO: Pose = {
+  ...posed(withKick(ECHO_RAW, at(25.0, 36.0), 92), [-10, 30], [58, 52]),
   effects: [
     { kind: 'ring', center: at(39, 44), radius: 18, progress: 0.65, tone: 'sound', squash: 1.6 },
     { kind: 'speed', center: at(28, 44), length: 8, spread: 4, direction: 0, tone: 'sound' },
-    { kind: 'dust', x: 12, size: 2.8, progress: 0.6 },
+    { kind: 'dust', x: -4, size: 2.8, progress: 0.6 },
   ],
   glows: [{ center: at(36, 44), reach: 26, power: 0.8, tone: 'sound' }],
 };
 
-// Frame 5 (5 ticks): Drawing the silver bracers back toward the chest as the front foot steps home.
-const RETRACT: Pose = {
+// Frame 5 (5 ticks): Setting the kicking leg back down toward the front mark.
+const RETRACT_BODY: Body = {
   ...GUARD,
-  hip: at(-5.2, 35.2),
-  torso: 16,
-  head: 1,
+  hip: at(-3.5, 36.2),
+  torso: 11,
+  head: 2,
   shrug: 1.6,
-  reach: { near: 1.0, far: 0.5 },
-  twist: -0.15,
-  nearFist: at(18.0, 48.5),
-  farFist: at(13.5, 55.0),
-  nearFoot: lifted(planted(8.0, -3), 1),
+  nearFoot: lifted(planted(8.0, 0), 1.2),
   farFoot: onToes(REAR_TOE, -18),
-  effects: [{ kind: 'dust', x: 12, size: 2.8, progress: 0.9 }],
+  effects: [{ kind: 'dust', x: -4, size: 2.8, progress: 0.9 }],
 };
+const RETRACT: Pose = posed(RETRACT_BODY, [22, 86], [38, 92]);
 
 // Frame 6 (5 ticks): Settling back into the open-palm stance.
 const SETTLE: Pose = {
   ...GUARD,
-  hip: at(-6.8, 36.8),
+  hip: at(-6.8, 36.0),
   torso: 14,
-  head: 3,
-  shrug: 1.9,
-  nearFist: at(8.8, 52.6),
-  farFist: at(10.0, 61.0),
+  head: 2,
+  shrug: 1.8,
+  nearFist: at(8.6, 47.4),
+  farFist: at(9.6, 61.8),
 };
 
-// Frame 7 (5 ticks): The idle's last frame, flowing seamlessly into the idle loop.
-const IDLE_END: Pose = {
-  ...GUARD,
-  shrug: 1.68,
-  nearFist: at(8.7, 52.4),
-  farFist: at(9.9, 61.5),
-};
-
-/**
- * special (Diapason): Koda parts his frock coat, clashes his two silver forearm bracers together,
- * and thrusts both open palms forward to project a wide jade acoustic shockwave. 8 frames, ticks
- * 3, 3, 4, [4], 5, 5, 5, 5 (34 ticks: 10/4/20).
- */
-export const POSES: readonly Pose[] = [OPEN, COIL, CLASH, RELEASE, ECHO, RETRACT, SETTLE, IDLE_END];
+// Frame 7 (5 ticks): Back in GUARD.
+export const POSES: readonly Pose[] = [OPEN, COIL, CLASH, RELEASE, ECHO, RETRACT, SETTLE, GUARD];

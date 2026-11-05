@@ -48,25 +48,26 @@ export function tween(
 // Reference poses
 
 /**
- * Koda's guard: a martial-arts open-palm acoustic stance. The lead hand is open at chest height to
- * feel the vibration, the silver forearm vambrace angled forward; the rear hand is open and
- * chambered higher near the collar/cheek, ready to clash the two silver bracers together.
+ * Koda's guard: an anime-fighter / kung-fu open-hand resonance stance (distinct from Nayo's high
+ * boxing guard). The lead arm is extended lower at rib/solar-plexus height (`y = 46.5`) with an
+ * open knife-hand showing the silver gauntlet's tuning blade; the rear hand is poised high and
+ * back near the temple/collar (`x = 5.5, y = 62.5`), open palm ready to clash the two gauntlets.
  */
 export const GUARD: Pose = {
   hip: at(-6.6, 36.5),
-  torso: 15,
+  torso: 14,
   head: 2,
-  shrug: 1,
+  shrug: 1.2,
   nearFoot: planted(6.35, -2),
   farFoot: planted(-22, -15),
-  nearFist: at(8.6, 52.0),
+  nearFist: at(9.0, 48.0),
   farFist: at(9.8, 61.5),
   nearHand: 'open',
   farHand: 'open',
   bends: { nearElbow: 'down', farElbow: 'down' },
 };
 
-/** Crouching guard: low martial stance, open palms and silver vambraces raised in front. */
+/** Crouching guard: low martial stance, open knife-hands and silver gauntlets poised. */
 export const CROUCH: Pose = {
   hip: at(-2, 21),
   torso: 36,
@@ -74,8 +75,8 @@ export const CROUCH: Pose = {
   shrug: 2,
   nearFoot: planted(9),
   farFoot: planted(-11, -14),
-  nearFist: at(12.2, 37.5),
-  farFist: at(10.5, 45.5),
+  nearFist: at(12.2, 35.5),
+  farFist: at(8.5, 46.5),
   nearHand: 'open',
   farHand: 'open',
 };

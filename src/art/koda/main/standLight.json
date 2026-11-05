@@ -3,38 +3,38 @@
     "0": {
       "frame": { "x": 0, "y": 0, "w": 97, "h": 162 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 0, "w": 97, "h": 162 },
-      "sourceSize": { "w": 141, "h": 162 }
+      "spriteSourceSize": { "x": 0, "y": 1, "w": 97, "h": 162 },
+      "sourceSize": { "w": 141, "h": 163 }
     },
     "1": {
-      "frame": { "x": 97, "y": 0, "w": 128, "h": 161 },
+      "frame": { "x": 185, "y": 0, "w": 128, "h": 161 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 1, "w": 128, "h": 161 },
-      "sourceSize": { "w": 141, "h": 162 }
+      "spriteSourceSize": { "x": 0, "y": 2, "w": 128, "h": 161 },
+      "sourceSize": { "w": 141, "h": 163 }
     },
     "2": {
       "frame": { "x": 515, "y": 0, "w": 141, "h": 159 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 2, "w": 141, "h": 159 },
-      "sourceSize": { "w": 141, "h": 162 }
+      "spriteSourceSize": { "x": 0, "y": 3, "w": 141, "h": 159 },
+      "sourceSize": { "w": 141, "h": 163 }
     },
     "3": {
-      "frame": { "x": 225, "y": 0, "w": 114, "h": 161 },
+      "frame": { "x": 313, "y": 0, "w": 114, "h": 161 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 1, "w": 114, "h": 161 },
-      "sourceSize": { "w": 141, "h": 162 }
+      "spriteSourceSize": { "x": 0, "y": 2, "w": 114, "h": 161 },
+      "sourceSize": { "w": 141, "h": 163 }
     },
     "4": {
       "frame": { "x": 427, "y": 0, "w": 88, "h": 160 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 1, "w": 88, "h": 160 },
-      "sourceSize": { "w": 141, "h": 162 }
+      "spriteSourceSize": { "x": 0, "y": 2, "w": 88, "h": 160 },
+      "sourceSize": { "w": 141, "h": 163 }
     },
     "5": {
-      "frame": { "x": 339, "y": 0, "w": 88, "h": 161 },
+      "frame": { "x": 97, "y": 0, "w": 88, "h": 162 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 0, "w": 88, "h": 161 },
-      "sourceSize": { "w": 141, "h": 162 }
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 88, "h": 162 },
+      "sourceSize": { "w": 141, "h": 163 }
     }
   },
   "meta": { "image": "standLight.png", "size": { "w": 656, "h": 162 } }
