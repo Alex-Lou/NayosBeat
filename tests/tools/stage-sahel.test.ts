@@ -11,6 +11,19 @@ import { stageRulesOf } from '../../tools/sprites/stage-drawn';
 const installed = async (layer: string) =>
   decodeIndexedPng(await readFile(new URL(`../../src/art/sahel/${layer}.png`, import.meta.url)));
 
+/** Whether every 2 × 2 block of `image` is one colour: the stage's pixel-art grain. */
+function solidBlocks(image: Awaited<ReturnType<typeof installed>>): boolean {
+  for (let y = 0; y < image.height; y += 2) {
+    for (let x = 0; x < image.width; x += 2) {
+      const slot = image.pixels[y * image.width + x];
+      if (image.pixels[y * image.width + x + 1] !== slot) return false;
+      if (image.pixels[(y + 1) * image.width + x] !== slot) return false;
+      if (image.pixels[(y + 1) * image.width + x + 1] !== slot) return false;
+    }
+  }
+  return true;
+}
+
 describe('Sahel Sunset (docs/art/decor-sahel.md)', { timeout: 60_000 }, () => {
   it('reads the illustration as an RGB source', async () => {
     const source = await readTruecolor(
@@ -35,6 +48,11 @@ describe('Sahel Sunset (docs/art/decor-sahel.md)', { timeout: 60_000 }, () => {
     await expect(installed('mid')).rejects.toThrow();
   });
 
+  it('snaps the illustration to the 2 × 2 pixel grain of Chinatown', async () => {
+    expect(solidBlocks(await installed('far'))).toBe(true);
+    expect(solidBlocks(await installed('floor'))).toBe(true);
+  });
+
   it('offers the place, in its clear dusk', () => {
     expect(Object.keys(STAGE_COLORS)).toEqual(['dusk-clear']);
     expect(STAGE_COLORS['dusk-clear']?.length ?? 0).toBeGreaterThan(0);
@@ -47,15 +65,20 @@ describe('Sahel Sunset (docs/art/decor-sahel.md)', { timeout: 60_000 }, () => {
     expect(map?.variants[0]?.art.layers.map(({ name }) => name)).toEqual(['far', 'floor']);
   });
 
-  it('animates the lamps, the laundry, the birds and the road dust', async () => {
+  it('animates the sun, the lights, the smoke, the crowd, the laundry, the birds and the dust', async () => {
     const names = STAGE_PROPS.map(({ name }) => name);
     expect(names).toEqual([
+      'sun-glow',
+      'string-lights',
+      'smoke-left',
+      'smoke-right',
+      'crowd',
+      'laundry',
+      'birds',
       'lamp-awning',
       'lamp-street',
       'lamp-lane',
       'lamp-high',
-      'laundry',
-      'birds',
       'dust',
     ]);
     const sheet = await decodeIndexedPng(
