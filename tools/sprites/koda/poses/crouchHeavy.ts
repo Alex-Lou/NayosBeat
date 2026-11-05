@@ -151,11 +151,9 @@ const SWEEP: Pose = leadGuard({
   bends: { nearKnee: 'up', farKnee: 'down', farElbow: 'back' },
   face: 'effort',
   effects: [
-    // Short, thin and riding just over the floor, led by the sole (just ahead of the ankle): a
-    // long trail flares so wide that drawSmear lifts the whole band off the floor, up to the
-    // chest, where it reads as the lead glove's trail.
     smear(4, [22, 6.5], [33, 5.6], [45, 5]),
     { kind: 'flash', center: at(49.3, 5.5), radius: 4.5, tone: 'strike' },
+    { kind: 'ring', center: at(36, 2), radius: 14, progress: 0.35, tone: 'sound', squash: 0.3 },
     dust(44.5, 4, 0.15),
     dust(PALM.x, 3, 0.4),
     dust(-35, 3, 0.4),

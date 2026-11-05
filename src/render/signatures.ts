@@ -523,11 +523,89 @@ const WATT_SIGNATURE: Signature = {
 };
 
 /**
- * Koda: his Diapason acoustic wave, Fente d'acier and Cymbale in his jade-turquoise energy, their
- * Remixes and Octave in platine, and his silver pauldron resonator slits glowing between blows.
+ * Koda: his Diapason silver-bracer clash (frame 10), Fente d'acier spear-palm lunge (frame 12) and
+ * Cymbale (frame 3) in his jade-turquoise energy, their Remixes and Octave in platine, and his
+ * silver pauldron resonator slits glowing between blows.
  */
 const KODA_SIGNATURE: Signature = {
-  ...NAYO_SIGNATURE,
+  moves: {
+    // Diapason: the silver bracers clash on frame 6, the acoustic shockwave bursts on frame 10.
+    special: {
+      light: { from: 4, to: 18, tone: 'energy', strength: 0.85, ...HAND },
+      echo: { from: 2, to: 10, every: 2, life: 8, tone: 'energy' },
+      cues: [cue(6, 'charge', 'energy', BODY, 0.7), cue(10, 'throwRing', 'energy', HAND)],
+      bold: [bold(10, 'shock', 'energy', HAND)],
+    },
+    specialBoost: {
+      light: { from: 2, to: 20, tone: 'platine', strength: 1, ...HAND },
+      cues: [
+        cue(1, 'burst', 'platine', BODY, 0.8),
+        cue(10, 'throwRing', 'platine', HAND, 1.3),
+        cue(10, 'groundRing', 'energy', FEET, 0.8),
+      ],
+      bold: [bold(10, 'shock', 'platine', HAND, 1.3)],
+    },
+    // Fente d'acier: the 42 px grounded lunge (frames 2 to 14), the spear-palm out on frame 12.
+    specialForward: {
+      light: { from: 6, to: 18, tone: 'energy', strength: 0.8, ...LUNGE },
+      echo: { from: 2, to: 14, every: 3, life: 9, tone: 'energy' },
+      cues: [cue(2, 'dash', 'energy', FEET), cue(12, 'kick', 'energy', LUNGE)],
+    },
+    specialForwardBoost: {
+      light: { from: 3, to: 20, tone: 'platine', strength: 1, ...LUNGE },
+      cues: [
+        cue(1, 'burst', 'platine', BODY, 0.8),
+        cue(12, 'kick', 'platine', LUNGE, 1.25),
+        cue(12, 'groundRing', 'energy', LUNGE, 0.8),
+      ],
+    },
+    // Cymbale: out on frame 3, up to frame 10.
+    specialAntiAir: {
+      light: { from: 1, to: 14, tone: 'energy', strength: 1, height: 30, reach: 10, toHeight: 90 },
+      echo: { from: 2, to: 10, every: 2, life: 8, tone: 'energy' },
+      cues: [cue(2, 'groundRing', 'energy', FEET), cue(3, 'rise', 'energy', BODY)],
+    },
+    specialAntiAirBoost: {
+      light: {
+        from: 0,
+        to: 16,
+        tone: 'platine',
+        strength: 1,
+        height: 30,
+        reach: 10,
+        toHeight: 110,
+      },
+      cues: [
+        cue(0, 'burst', 'platine', BODY, 0.8),
+        cue(2, 'groundRing', 'platine', FEET, 1.3),
+        cue(3, 'rise', 'platine', BODY, 1.3),
+      ],
+    },
+    // Octave: the cue and the freeze on frame 0, then three silver-bracer drops on 2, 8 and 14.
+    super: {
+      light: { from: 0, to: 22, tone: 'platine', strength: 1, height: 6, reach: 26, radius: 200 },
+      cues: [
+        cue(0, 'charge', 'platine', BODY, 1.2),
+        cue(2, 'drop', 'energy', FIST),
+        cue(8, 'drop', 'energy', FIST, 1.15),
+        cue(14, 'drop', 'platine', FIST, 1.3),
+      ],
+      bold: [
+        bold(2, 'quake', 'energy', FIST),
+        bold(8, 'quake', 'energy', FIST, 1.1),
+        bold(14, 'quake', 'platine', FIST, 1.3),
+      ],
+    },
+    dashForward: { cues: [cue(1, 'dash', 'energy', FEET)] },
+    dashBack: { cues: [cue(1, 'dash', 'energy', FEET)] },
+    boostCancel: {
+      light: { from: 0, to: 8, tone: 'platine', strength: 0.8, ...BODY },
+      cues: [cue(0, 'burst', 'platine', BODY, 0.7)],
+    },
+  },
+  discs: {},
+  heavySwing: true,
+  flares: true,
   presence: { leds: { main: 0x5cd8b4, alt: 0xdc88f8 }, specks: 'diamond' },
 };
 

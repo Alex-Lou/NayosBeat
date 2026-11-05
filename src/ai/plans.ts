@@ -354,13 +354,93 @@ const WATT_PLANS: readonly Plan[] = [
   { after: 'backHeavy', when: finishing(34), steps: [B | X], weight: SPEND },
 ];
 
+/** Koda's plans: his open-palm strings into the Diapason clash or the Fente d'acier lunge. */
+const KODA_PLANS: readonly Plan[] = [
+  { after: 'standLight', when: HIT, steps: [L, L], weight: EASY },
+  { after: 'standLight', when: HIT, steps: [L, S], weight: EASY },
+  { after: 'standLight', when: within(52), steps: [L, H, S], weight: STRING },
+  { after: 'standLight', when: HIT, steps: [L, H, F | S], weight: STRING },
+  {
+    after: 'standLight',
+    when: within(51),
+    steps: [L, H, H, S],
+    weight: { ...STRING, hard: 3 },
+  },
+  {
+    after: 'standLight',
+    when: within(51),
+    steps: [L, H, H, F | S],
+    weight: { ...STRING, hard: 3 },
+  },
+  { after: 'standLight', when: within(44), steps: [B | L, B | L, B | L], weight: STRING },
+  { after: 'standLight', when: BLOCKED, steps: [L, F | H], weight: MIX },
+  { after: 'standLight', when: BLOCKED, steps: [L, D | H], weight: MIX },
+  { after: 'standLight', when: within(46), steps: [L, B | H, L, L, L], weight: JUGGLE },
+  {
+    after: 'standLight',
+    when: within(46),
+    steps: [L, B | H, L, L, F | H, L, L, L],
+    weight: JUGGLE,
+  },
+  { after: 'forwardLight', when: HIT, steps: [L, L], weight: EASY },
+  { after: 'crouchLight', when: within(37), steps: [D | L, H, F | S], weight: STRING },
+  {
+    after: 'crouchLight',
+    when: { ...within(41), crouching: true },
+    steps: [D | L, D | H],
+    weight: MIX,
+  },
+  { after: 'standHeavy', when: within(58), steps: [H, F | S], weight: STRING },
+  { after: 'standHeavy', when: within(55), steps: [H, S], weight: STRING },
+  {
+    after: 'standHeavy',
+    when: { ...within(50), counter: true },
+    steps: [L, L, H, H, F | S],
+    weight: { easy: 0, normal: 2, hard: 4 },
+  },
+  { after: 'standHeavy', when: { ...within(45), hit: false }, steps: [S], weight: MIX },
+  {
+    after: 'standHeavy',
+    when: within(34),
+    steps: [B | H, L, L, L],
+    weight: JUGGLE,
+  },
+  { after: 'backHeavy', when: within(39), steps: [D | S], weight: EASY },
+  { after: 'backHeavy', when: HIT, steps: [L, L, L], weight: STRING },
+  { after: 'backHeavy', when: HIT, steps: [L, L, F | H, L, L, L], weight: JUGGLE },
+  // With the gauge: Diapason platine, Fente platine juggle, Tempo Rewind, and Octave super.
+  { after: 'standLight', when: spending(51, BOOST_BAR), steps: [L, H, H, X], weight: REMIX },
+  { after: 'standHeavy', when: spending(58, BOOST_BAR), steps: [H, F | X], weight: REMIX },
+  {
+    after: 'standHeavy',
+    when: spending(55, BOOST_BAR),
+    steps: [H, F | X, L, D | S],
+    weight: SPEND,
+  },
+  {
+    after: 'standLight',
+    when: spending(48, BOOST_BAR),
+    steps: [L, H, H, F | X, L, D | S],
+    weight: SPEND,
+  },
+  {
+    after: 'standLight',
+    when: spending(46, BOOST_BAR),
+    steps: [L, H, R, L, L, H, H, F | S],
+    weight: SPEND,
+  },
+  { after: 'standLight', when: spending(51, BOOST_MAX), steps: [L, H, H, B | X], weight: SPEND },
+  { after: 'standHeavy', when: spending(58, BOOST_MAX), steps: [H, B | X], weight: SPEND },
+  { after: 'specialAntiAir', when: finishing(38), steps: [B | X], weight: SPEND },
+];
+
 /** Each fighter's plans, by its name. */
 export const PLANS: Readonly<Record<string, readonly Plan[]>> = {
   Nayo: NAYO_PLANS,
   Riff: RIFF_PLANS,
   Saphir: SAPHIR_PLANS,
   Watt: WATT_PLANS,
-  Koda: NAYO_PLANS,
+  Koda: KODA_PLANS,
 };
 
 /** What the CPU knows of its move, once it has connected and the game moves again. */

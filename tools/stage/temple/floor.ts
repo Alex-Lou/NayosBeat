@@ -1,63 +1,78 @@
 /**
- * The floor (docs/art/decor-temple.md §2.3): the courtyard the fighters stand on, in bands that read
- * at a glance. Great flagstones in two courses, their joints every 64 world pixels (they measure the
- * distances), moss in them; a band of raked gravel; the kerb's lit edge; the moss at the front.
- * Flat tones (docs/art/proprete.md). The snow settles on the flagstones and the moss in hidden ramps,
- * which only the snow shows (palette.ts). Image pixels (STAGE_SCALE).
+ * The floor (docs/art/decor-temple.md §2.3): the courtyard the fighters stand on, 100 % opaque
+ * from row 0 and matching the middle layer's stone ground tone-for-tone at y = 460 so parallax
+ * glides cleanly without shearing or a visible horizontal cut. Two courses of sculpted flagstones,
+ * raked Zen gravel, beveled stone kerb, and lush foreground moss.
  */
 
-import { Canvas, at } from '../kit/canvas.ts';
+import { Canvas, at, dithered } from '../kit/canvas.ts';
 import { noise } from '../kit/random.ts';
 import { MOSS, SNOW_MOSS, SNOW_STONE, STONE } from './palette.ts';
 
 const SCALE = 2;
-/** A flagstone's length: 64 world pixels. */
 const SLAB = 64 * SCALE;
-/** How far from each end the courtyard darkens (24 world pixels). */
 const CORNER = 24 * SCALE;
-/** The bands, top to bottom: the two courses of flagstones, the gravel, the kerb, the moss. */
-const ROWS = { course: 22, gravel: 44, kerb: 60, moss: 66 } as const;
+const ROWS = { top: 8, course: 26, gravel: 46, kerb: 60, moss: 66 } as const;
+
+function hdTone(ramp: readonly number[], level: number, x: number, y: number): number {
+  const top = ramp.length - 1;
+  const clamped = Math.min(Math.max(level, 0), top);
+  const base = Math.floor(clamped);
+  const fraction = clamped - base;
+  const step = dithered(fraction, x >> 1, y) ? 1 : 0;
+  return ramp[Math.min(base + step, top)] ?? 0;
+}
 
 function cornerOf(width: number, x: number): number {
   const end = Math.min(x, width - 1 - x);
-  return end < CORNER ? -1 : 0;
+  return end < CORNER ? -1.2 * (1 - end / CORNER) ** 1.4 : 0;
 }
 
-/** Where the snow settles: everywhere but a ragged edge here and there (flat, never speckled). */
 export function snowAt(seed: number, x: number, y: number): boolean {
   return noise(seed, x, y * 2, 90) > 0.12;
 }
 
-/** The floor, `width` × `height` image pixels, from the temple's seed. */
 export function drawFloor(width: number, height: number, seed: number): Canvas {
   const canvas = new Canvas(width, height);
   canvas.paint(0, 0, width, height, (x, y) => {
     const corner = cornerOf(width, x);
+    if (y < ROWS.top) {
+      const ramp = snowAt(seed + 3, x, y) ? SNOW_STONE : STONE;
+      return hdTone(ramp, 2.8 + corner, x, y);
+    }
     if (y < ROWS.gravel) {
-      // Two courses, the second offset by half a slab; their joints dark, moss in some.
       const second = y >= ROWS.course;
       const along = (x + (second ? SLAB / 2 : 0)) % SLAB;
-      const row = second ? y - ROWS.course : y;
-      const joint = along < 3 || row < 2;
-      if (joint) return at(noise(seed + 1, x, y, 12) > 0.6 ? MOSS : STONE, row < 2 ? 1 : 0);
-      // A slab: its lit top edge, a worn one now and then, flat.
-      const worn =
-        noise(seed + 2, Math.floor((x + (second ? SLAB / 2 : 0)) / SLAB), second ? 1 : 0, 1) > 0.6;
-      const level = (row === 2 ? 5 : worn ? 3 : 4) + corner;
-      return at(snowAt(seed + 3, x, y) ? SNOW_STONE : STONE, level);
+      const row = second ? y - ROWS.course : y - ROWS.top;
+      const courseH = second ? ROWS.gravel - ROWS.course : ROWS.course - ROWS.top;
+      const joint = along < 3 || row === 0;
+      if (joint) {
+        const mossy = noise(seed + 1, x >> 2, y >> 1, 8) > 0.58;
+        return at(mossy ? MOSS : STONE, row === 0 ? 1 : 0);
+      }
+      const lit = row === 1 ? 1.1 : along === 3 ? 0.6 : 0;
+      const shade = row === courseH - 1 ? -0.9 : 0;
+      const slabIndex = Math.floor((x + (second ? SLAB / 2 : 0)) / SLAB);
+      const baseTone = (slabIndex + (second ? 1 : 0)) % 3 === 0 ? 3.3 : 3.9;
+      const wear = (noise(seed + 2, x >> 2, y >> 1, 9) - 0.5) * 0.45;
+      const ramp = snowAt(seed + 3, x, y) ? SNOW_STONE : STONE;
+      const level = Math.min(5, baseTone + lit + shade + wear + corner);
+      return hdTone(ramp, level, x, y);
     }
     if (y < ROWS.kerb) {
-      // The raked gravel: long flat lines, a ripple around nothing.
-      const line = Math.floor((y - ROWS.gravel) / 3) % 2 === 0;
-      return at(STONE, (line ? 3 : 2) + corner);
+      const groove = (y - ROWS.gravel) % 4;
+      const level = (groove === 0 ? 3.4 : groove === 2 ? 2.1 : 2.7) + corner;
+      return hdTone(STONE, level, x, y);
     }
     if (y < ROWS.moss) {
       if (y === ROWS.kerb) return at(STONE, 6);
-      const joint = x % SLAB === 0;
-      return at(STONE, (joint ? 2 : 4) + corner);
+      const along = x % SLAB;
+      const joint = along < 2 ? -1.8 : along === 2 ? 0.8 : 0;
+      return hdTone(STONE, 4.2 + joint + corner - (y - ROWS.kerb) * 0.2, x, y);
     }
-    const tuft = noise(seed + 4, x, y, 10) > 0.62;
-    return at(snowAt(seed + 5, x, y) ? SNOW_MOSS : MOSS, (tuft ? 2 : 1) + (corner < 0 ? -1 : 0));
+    const tuft = (noise(seed + 4, x >> 2, y >> 1, 6) - 0.5) * 1.2;
+    const ramp = snowAt(seed + 5, x, y) ? SNOW_MOSS : MOSS;
+    return hdTone(ramp, 1.5 + tuft + corner * 0.6, x, y);
   });
   return canvas;
 }

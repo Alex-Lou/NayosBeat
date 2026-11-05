@@ -240,6 +240,7 @@ const IMPACT_ARM = arms(IMPACT_BODY, 24.4, -4, TEMPLE);
 const IMPACT_KNUCKLES = knucklesOf(IMPACT_ARM);
 const IMPACT: Pose = {
   ...IMPACT_ARM,
+  nearHand: 'open',
   effects: [
     overArc(IMPACT_ARM, 17, 12, 6, -1, 125),
     {
@@ -247,6 +248,14 @@ const IMPACT: Pose = {
       center: at(IMPACT_KNUCKLES.x + 4.2, IMPACT_KNUCKLES.y + 0.4),
       radius: 5.2,
       tone: 'strike',
+    },
+    {
+      kind: 'ring',
+      center: at(IMPACT_KNUCKLES.x + 2, IMPACT_KNUCKLES.y),
+      radius: 9,
+      progress: 0.35,
+      tone: 'sound',
+      squash: 1.5,
     },
   ],
 };

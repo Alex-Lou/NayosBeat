@@ -72,7 +72,7 @@ function frameAt(name: string, step: number): number {
 }
 
 /** What the gust shakes (docs/art/decor-temple.md §5). */
-const GUSTED = ['string', 'hall', 'shide', 'chime', 'petals0', 'petals1', 'petals2'];
+const GUSTED = ['string', 'hall', 'shide', 'chime', 'incense', 'petals0', 'petals1', 'petals2'];
 
 describe("the code's Temple Courtyard (docs/art/decor-temple.md)", { timeout: 60_000 }, () => {
   const { layers, props } = drawTemple();

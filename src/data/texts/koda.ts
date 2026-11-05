@@ -27,32 +27,31 @@ import {
 
 /** Koda's help page, listing every move and his 7 core combos. */
 export const KODA_TEXTS: FighterTexts = {
-  title:
-    "L'accordeur d'acier : il fait vibrer ses brassards, frappe à paume ouverte et brise le tempo",
+  title: "L'accordeur d'acier : il glisse, entrechoque ses brassards et frappe à paume ouverte",
   moves: {
     special: {
       input: SPECIAL,
-      text: "Le Diapason : Koda entrechoque ses brassards d'argent et projette un anneau acoustique vert jade qui file droit devant, à hauteur de poitrine.",
+      text: "Le Diapason : Koda avance d'un pas et entrechoque ses deux brassards d'argent pour libérer une onde acoustique de courte portée qui laisse l'adversaire debout sous pression.",
     },
     specialForward: {
       input: 'Avant + S',
-      text: "La Fente d'acier : un grand pas fendu qui balaie l'espace et met au sol, idéal pour conclure tes enchaînements. S'il touche, arrière + BOOST lance l'Octave.",
+      text: "La Fente d'acier : une longue fente martiale au sol, paume en lance, qui traverse l'espace et couche la cible. S'il touche, arrière + BOOST lance l'Octave.",
     },
     specialAntiAir: {
       input: ANTI_AIR,
-      text: "La Cymbale : il jaillit vers le ciel, brassard d'argent levé. Invincible au départ contre les sauts et les pressions au réveil, mais punissable si paré.",
+      text: 'La Cymbale : il jaillit vers le ciel, brassards levés. Invincible contre les attaques aériennes dès le départ pour cueillir les sauts.',
     },
     specialBoost: {
       input: REMIX,
-      text: 'Le Diapason platine : un anneau blanc deux fois plus rapide qui met directement au sol.',
+      text: 'Le Diapason platine : ses brassards absorbent un coup en chemin et son onde blanche projette au sol.',
     },
     specialForwardBoost: {
       input: FORWARD_REMIX,
-      text: "La Fente platine : l'adversaire s'envole très haut au lieu de tomber, prêt à être repris avec L puis bas + S.",
+      text: "La Fente platine : invincible en cours de fente pour traverser les projectiles, elle fait décoller l'adversaire très haut.",
     },
     specialAntiAirBoost: {
       input: ANTI_AIR_REMIX,
-      text: 'La Cymbale platine : plus puissante et invincible plus longtemps, dans une colonne de lumière blanche.',
+      text: 'La Cymbale platine : devient totalement invincible dès la première image, un vrai réveil qui ne pardonne pas.',
     },
     super: {
       input: SUPER,
@@ -60,11 +59,11 @@ export const KODA_TEXTS: FighterTexts = {
     },
     standLight: {
       input: 'L',
-      text: "La Paume vive : son attaque rapide d'ouverture. Enchaîne L pour le Revers d'acier, arrière + L pour la Double paume, ou bas + L pour la Pointe basse.",
+      text: "La Paume vive : son attaque rapide à main ouverte. Enchaîne L pour le Revers d'acier, arrière + L pour la Double paume, ou bas + L pour la Pointe basse.",
     },
     jabRepeat: {
       input: 'L, puis arrière + L',
-      text: "La Double paume : la main repart aussitôt et garde l'avantage même sur une garde. Enchaîne L pour le Revers d'acier.",
+      text: "La Double paume : la main ouverte repart aussitôt et garde l'avantage même sur une garde. Enchaîne L pour le Revers d'acier.",
     },
     chainLight: {
       input: CHAIN,
@@ -72,7 +71,7 @@ export const KODA_TEXTS: FighterTexts = {
     },
     lightFinisher: {
       input: LIGHT_FINISHER,
-      text: 'La Frappe du manteau : un large revers circulaire qui couche la cible au sol.',
+      text: "La Frappe du manteau : un large revers circulaire à paume ouverte qui couche la cible dans un anneau d'émeraude.",
     },
     forwardLight: {
       input: FORWARD_LIGHT,
@@ -84,7 +83,7 @@ export const KODA_TEXTS: FighterTexts = {
     },
     chainHeavy: {
       input: CHAIN_HEAVY,
-      text: 'La Percussion basse : genoux fléchis, le poing plonge sous les côtes et touche même accroupi.',
+      text: 'La Percussion basse : genoux fléchis, le brassard plonge sous les côtes et touche même accroupi.',
     },
     chainHigh: {
       input: CHAIN_HIGH,
@@ -136,7 +135,7 @@ export const KODA_TEXTS: FighterTexts = {
     },
     dashForward: {
       input: DASH,
-      text: "Le Pas glissé : un bond rapide vers l'avant, manteau ouvert.",
+      text: "Le Pas glissé : un bond rapide vers l'avant, annulable dès le dixième tic par un coup.",
     },
     boostCancel: {
       input: REWIND,
@@ -149,11 +148,11 @@ export const KODA_TEXTS: FighterTexts = {
   },
   combos: [
     { input: 'L, L, L', text: 'La corde de base, partout où la Paume vive touche.' },
+    { input: 'L, L, H, S', text: 'La corde qui finit sur le choc de brassards du Diapason.' },
     {
-      input: 'L, L, H, avant + S',
-      text: "La corde qui finit sur la Manchette puis la Fente d'acier.",
+      input: 'L, L, H, H, avant + S',
+      text: "Le combo complet sans jauge, conclu par la Fente d'acier.",
     },
-    { input: 'L, L, H, H, avant + S', text: 'Le combo complet sans jauge, conclu au sol.' },
     {
       input: 'Arrière + H, puis L, L, L',
       text: 'Le jongle après le Sursaut : attends la reprise et enchaîne en plein vol.',

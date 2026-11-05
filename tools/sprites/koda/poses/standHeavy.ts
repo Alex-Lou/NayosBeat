@@ -188,15 +188,25 @@ const IMPACT_ARM = arms(IMPACT_BODY, 23.5, 5, TEMPLE);
 const IMPACT_KNUCKLES = glove(IMPACT_ARM).knuckles;
 const IMPACT: Pose = {
   ...IMPACT_ARM,
+  nearHand: 'open',
   effects: [
     hookArc(IMPACT_ARM, 25, 9, 6),
-    // At the contact point just ahead of the glove: it frames the knuckles, never hides them.
     {
       kind: 'flash',
       center: at(IMPACT_KNUCKLES.x + 3.5, IMPACT_KNUCKLES.y),
       radius: 5,
       tone: 'strike',
     },
+    {
+      kind: 'shards',
+      center: at(IMPACT_KNUCKLES.x + 2, IMPACT_KNUCKLES.y),
+      radius: 10,
+      progress: 0.3,
+      tone: 'sound',
+    },
+  ],
+  glows: [
+    { center: at(IMPACT_KNUCKLES.x, IMPACT_KNUCKLES.y), reach: 22, power: 0.9, tone: 'sound' },
   ],
 };
 

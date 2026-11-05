@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { KODA_CLIPS, KODA_PROJECTILES } from '../../src/art/koda/clips';
+import { KODA_CLIPS } from '../../src/art/koda/clips';
 import { KODA_SHEETS } from '../../src/art/koda/sheets';
 import { ART_SCALE, CELL_SIZE } from '../../src/art/types';
 import { toPx } from '../../src/core/constants';
@@ -7,6 +7,7 @@ import { KODA } from '../../src/data/fighters/koda';
 import { CELL_MARGIN, GROUND_ROW, GROUNDED_STRIPS, LOWEST_ROW } from '../../tools/sprites/cell';
 import { strikesOf } from '../../tools/sprites/clips';
 import { KODA as KODA_GENERATOR } from '../../tools/sprites/koda/index';
+import { GUARD } from '../../tools/sprites/koda/poses/common';
 import { isV2Sheet, KODA_POSES, type PosedSheet } from '../../tools/sprites/koda/poses/index';
 import { drawStrip } from '../../tools/sprites/sheet';
 import { reachCheck } from './fighters';
@@ -28,6 +29,13 @@ describe('Koda strips', () => {
     eachPixelOf(sheetCanvas(sheet), frame, visit);
   };
   const extent = (sheet: PosedSheet, frame: number) => extentOf(sheetCanvas(sheet), frame);
+
+  it('starts the 8-frame idle loop on his open-palm GUARD pose', () => {
+    expect(KODA_SHEETS.idle.frames).toBe(8);
+    expect(KODA_POSES.idle[0]).toBe(GUARD);
+    expect(GUARD.nearHand).toBe('open');
+    expect(GUARD.farHand).toBe('open');
+  });
 
   it.each(sheets)('%s: every frame stays inside its cell, away from the edges', (sheet) => {
     for (let frame = 0; frame < KODA_SHEETS[sheet].frames; frame++) {
@@ -107,35 +115,4 @@ describe('Koda strips', () => {
       }
     });
   }
-
-  it.each(['special', 'specialBoost'] as const)(
-    '%s: Diapason projectile covers its hitbox on every frame',
-    (id) => {
-      const spec = KODA.moves[id]?.projectile;
-      const clip = KODA_PROJECTILES[id];
-      if (!spec || !clip) throw new Error(`${id} must be a projectile`);
-      const [x = 0, y = 0, width = 0, height = 0] = [
-        spec.hitbox.x,
-        spec.hitbox.y,
-        spec.hitbox.width,
-        spec.hitbox.height,
-      ].map(toPx);
-      const sheet = clip.sheet as 'projectile' | 'projectileBoost';
-      const canvas = drawStrip(KODA_GENERATOR, sheet);
-      for (let frame = 0; frame < KODA_SHEETS[sheet].frames; frame++) {
-        let [left, right, bottom, top] = [Infinity, -Infinity, Infinity, -Infinity];
-        eachPixelOf(canvas, frame, (px, py) => {
-          left = Math.min(left, px - 1 / ART_SCALE);
-          right = Math.max(right, px);
-          bottom = Math.min(bottom, py - 1 / ART_SCALE);
-          top = Math.max(top, py);
-        });
-        expect(left).toBeLessThanOrEqual(x);
-        expect(bottom).toBeLessThanOrEqual(y);
-        expect(top).toBeGreaterThanOrEqual(y + height);
-        expect(right).toBeGreaterThanOrEqual(x + width);
-        expect(right).toBeLessThanOrEqual(x + width + 4);
-      }
-    },
-  );
 });

@@ -7,29 +7,29 @@
       "sourceSize": { "w": 141, "h": 162 }
     },
     "1": {
-      "frame": { "x": 419, "y": 0, "w": 141, "h": 159 },
+      "frame": { "x": 418, "y": 0, "w": 141, "h": 159 },
       "trimmed": true,
       "spriteSourceSize": { "x": 0, "y": 2, "w": 141, "h": 159 },
       "sourceSize": { "w": 141, "h": 162 }
     },
     "2": {
-      "frame": { "x": 128, "y": 0, "w": 115, "h": 161 },
+      "frame": { "x": 128, "y": 0, "w": 114, "h": 161 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 1, "w": 115, "h": 161 },
+      "spriteSourceSize": { "x": 0, "y": 1, "w": 114, "h": 161 },
       "sourceSize": { "w": 141, "h": 162 }
     },
     "3": {
-      "frame": { "x": 331, "y": 0, "w": 88, "h": 160 },
+      "frame": { "x": 330, "y": 0, "w": 88, "h": 160 },
       "trimmed": true,
       "spriteSourceSize": { "x": 0, "y": 1, "w": 88, "h": 160 },
       "sourceSize": { "w": 141, "h": 162 }
     },
     "4": {
-      "frame": { "x": 243, "y": 0, "w": 88, "h": 161 },
+      "frame": { "x": 242, "y": 0, "w": 88, "h": 161 },
       "trimmed": true,
       "spriteSourceSize": { "x": 0, "y": 0, "w": 88, "h": 161 },
       "sourceSize": { "w": 141, "h": 162 }
     }
   },
-  "meta": { "image": "jabRepeat.png", "size": { "w": 560, "h": 161 } }
+  "meta": { "image": "jabRepeat.png", "size": { "w": 559, "h": 161 } }
 }

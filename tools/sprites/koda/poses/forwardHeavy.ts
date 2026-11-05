@@ -232,8 +232,6 @@ const IMPACT_KNUCKLES = rearAlong(IMPACT_ARM, KNUCKLES);
 const IMPACT: Pose = {
   ...IMPACT_ARM,
   effects: [
-    // Into the forearm, short of the wrist: the bow wave and the spray ahead of a stroke this
-    // long would burst well past the knuckles, and the fist itself is what lands at the edge.
     arc(
       IMPACT_ARM,
       5,
@@ -252,7 +250,18 @@ const IMPACT: Pose = {
       radius: 5.5,
       tone: 'strike',
     },
+    {
+      kind: 'ring',
+      center: at(IMPACT_KNUCKLES.x + 1, IMPACT_KNUCKLES.y - 0.5),
+      radius: 9,
+      progress: 0.3,
+      tone: 'sound',
+      squash: 1.4,
+    },
     dust(LEAD_TOE + STEP - 2, 2.6, 0.15),
+  ],
+  glows: [
+    { center: at(IMPACT_KNUCKLES.x, IMPACT_KNUCKLES.y), reach: 24, power: 1.0, tone: 'sound' },
   ],
 };
 

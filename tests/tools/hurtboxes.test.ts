@@ -113,7 +113,6 @@ describe.each(DRAWN_FIGHTERS)("$name's hurtboxes", (fighter) => {
  */
 const PENDING: Readonly<Record<string, readonly MoveId[]>> = {
   Nayo: ['specialForward', 'specialForwardBoost'],
-  Koda: ['specialForward', 'specialForwardBoost'],
 };
 
 /** Calls `visit` on each ground tick of `id`, with the frame shown and the boxes in force. */

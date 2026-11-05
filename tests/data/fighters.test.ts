@@ -54,6 +54,21 @@ describe('fighter templates', () => {
     expect(validateTemplate(KODA)).toEqual([]);
   });
 
+  // Koda, the acoustic martial-arts pressure fighter: faster walk than Nayo, a cancellable forward
+  // dash (Pas glissé, freeCancelFrom 10), a standing Diapason shockwave instead of a projectile,
+  // an armored Diapason platine Remix, and a meter-bought reversal on Cymbale platine.
+  it('play differently: Koda glides in, clashes his silver bracers, and buys armor or reversal with Boost', () => {
+    expect(KODA.walkForwardSpeed).toBeGreaterThan(NAYO.walkForwardSpeed);
+    expect(KODA.walkBackSpeed).toBeGreaterThan(NAYO.walkBackSpeed);
+    expect(KODA.moves.dashForward.freeCancelFrom).toBe(10);
+    expect(KODA.moves.special.projectile).toBeUndefined();
+    expect(KODA.moves.special.hitstun).toBeGreaterThan(0);
+    expect(KODA.moves.specialBoost?.armor).toEqual({ from: 2, to: 10 });
+    expect(KODA.moves.specialForwardBoost?.invincible).toEqual({ from: 3, to: 13 });
+    expect(KODA.moves.specialAntiAir.invincible?.against).toBe('air');
+    expect(KODA.moves.specialAntiAirBoost?.invincible).toEqual({ from: 0, to: 11 });
+  });
+
   it('play differently: rushdown is faster but frailer and shorter-ranged', () => {
     expect(RIFF.walkForwardSpeed).toBeGreaterThan(NAYO.walkForwardSpeed);
     expect(RIFF.maxHealth).toBeLessThan(NAYO.maxHealth);
