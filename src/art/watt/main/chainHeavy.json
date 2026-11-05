@@ -7,9 +7,9 @@
       "sourceSize": { "w": 162, "h": 194 }
     },
     "1": {
-      "frame": { "x": 126, "y": 0, "w": 107, "h": 182 },
+      "frame": { "x": 126, "y": 0, "w": 107, "h": 181 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 12, "w": 107, "h": 182 },
+      "spriteSourceSize": { "x": 0, "y": 13, "w": 107, "h": 181 },
       "sourceSize": { "w": 162, "h": 194 }
     },
     "2": {

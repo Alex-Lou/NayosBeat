@@ -1,9 +1,9 @@
 {
   "frames": {
     "0": {
-      "frame": { "x": 0, "y": 642, "w": 97, "h": 133 },
+      "frame": { "x": 0, "y": 642, "w": 96, "h": 133 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 8, "y": 35, "w": 97, "h": 133 },
+      "spriteSourceSize": { "x": 8, "y": 35, "w": 96, "h": 133 },
       "sourceSize": { "w": 105, "h": 168 }
     },
     "1": {

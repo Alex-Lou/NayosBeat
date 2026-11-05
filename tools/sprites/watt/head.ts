@@ -1,13 +1,10 @@
 /**
- * Watt's head is a light bulb (docs/watt.md §10), drawn from scratch: a globe of smoked glass,
- * the club's violet sign catching its top and back edge, the sodium lamps' warm glint on its
- * front; inside, the filament coiled across on two wires, lit in his energy, a halo of light in
- * the smoke around it; under the globe, the brass cap screwed into his collar, its threads in
- * warm lines. Seen three-quarters, turned toward the opponent like the others' faces: the coil
- * foreshortened and slanted, pushed forward with its glow (it is where he looks), the far wire
- * behind the near one, the cap's threads running round its cylinder. One character per pixel
- * (legend below). The bulb is rigid: it turns with the head, upright under 20 degrees, by
- * RotSprite beyond. Its expressions are the filament's states (face.ts).
+ * Watt's head is a high-wattage industrial light bulb (docs/watt.md §10): a globe of smoked glass
+ * catching the violet street sign on its back rim and the warm sodium lamps on its front dome;
+ * inside, a bold, expressive twin-coil Tesla filament (`F`, `f`) mounted on two heavy electrode
+ * posts (`w`) that forms his "eyes and grin of current", surrounded by a two-step internal glow
+ * (`h`, `H`); at the base, a heavy riveted brass screw cap (`O..G`) seated in his collar socket.
+ * Its expressions are the filament's shapes and states (face.ts).
  */
 
 import type { PixelCanvas, Point } from '../raster.ts';
@@ -25,27 +22,27 @@ export const HEAD: readonly string[] = [
   '....rslbbbbbbbbbblllllgddd',
   '....rslgbbbbbbbbbblllllddd',
   '...rslbbbbbbbbbbbbbllllgddd',
-  '...rslbbbbbbbbbbbbbbblllldd',
-  '..rsslgsbbbbbbbbbbbbbblllddd',
-  '..rsslsssbbbbbbbHHHHbbbllddd',
-  '..osslssssbbbbHHHHHHHHbbbldd',
-  '..osslgsssssssHHhhhhhHbbbbdd',
-  '..osslsssssssHHhhhhhhhHbbbdd',
-  '..ossssssssssHHfFhhhhhHbbbdd',
-  '..ossssssssssHHFfFfFhhHbbbdo',
-  '..ossssssssssHHhhfFfFhHbbsso',
-  '..ossssssssssHHwhhhhfhHbbsso',
-  '...osssssssssHHwhhhhwhHbbso',
-  '...ossssssssssHwhhhhwHbbsso',
-  '....osssssssssHwHHHwHHbsso',
-  '....osssssssssswHHHwssssso',
-  '.....ossssssssswssswsssso',
+  '...rslbbbbbbbHHHHbbbblllldd',
+  '..rsslgsbbbbHHHHHHHHbblllddd',
+  '..rsslsssbbHHhhhhhhHHbbllddd',
+  '..osslssssHHhfFFhFFfhHbbbldd',
+  '..osslgsssHHfFFhhFFfhhHbbbdd',
+  '..osslssssHHfFhhhhFfhhHbbbdd',
+  '..osssssssHHhhhhhhhhhhHbbbdd',
+  '..osssssssHHfFhhhhFfhhHbbbdo',
+  '..osssssssHHhfFFFFfhhhHbbsso',
+  '..ossssssssHHwhfFfwhhHbbsso',
+  '...ossssssssHHwhhhwhhHbbso',
+  '...osssssssssHwhhhwhHbbsso',
+  '....ossssssssswHHHwHHbsso',
+  '....osssssssssswHHwssssso',
+  '.....ossssssssswsswsssso',
   '......osssssssswsswsssso',
   '.......ossssssswsswssso',
   '.......osssssssswswssso',
   '........ossssssswwssso',
   '........ossssssswwssso',
-  '.........osssssswwsso',
+  '.........OGGBBLLBBGGO',
   '.........OSSBBLBBLLSO',
   '.........ODDSSBSSBBDO',
   '.........ODDDDSLLGGBO',

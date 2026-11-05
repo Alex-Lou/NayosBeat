@@ -2,7 +2,7 @@ import type { Point } from '../../raster.ts';
 import { anatomyIssues } from '../../anatomy.ts';
 import { solve, type Foot } from '../../skeleton.ts';
 import { WATT_BODY } from '../body.ts';
-import { at, GUARD, onBall, planted, smear, springAnkle, type Pose } from './common.ts';
+import { at, GUARD, inReach, onBall, planted, smear, springAnkle, type Pose } from './common.ts';
 import { POSES as GRAB } from './grab.ts';
 
 /**
@@ -33,7 +33,7 @@ function gripping(body: Omit<Pose, 'nearFist' | 'farFist'>, near: Point, far: Po
       farFist: at(far.x - f.forearm.x * HAND, far.y - f.forearm.y * HAND),
     };
   }
-  return pose;
+  return inReach(pose);
 }
 
 /**
@@ -445,8 +445,8 @@ export const THROWN_BACK_POSES: readonly Pose[] = [
       ...HAULED,
       torso: -40,
       head: 10,
-      nearFoot: air(13, 10, -30),
-      farFoot: air(6, 8, -30),
+      nearFoot: air(13, 10, -15),
+      farFoot: air(6, 8, -15),
       nearFist: at(-18, 62),
       farFist: at(-12, 64),
     },

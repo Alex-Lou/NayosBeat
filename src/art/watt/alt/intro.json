@@ -49,17 +49,17 @@
       "sourceSize": { "w": 102, "h": 171 }
     },
     "8": {
-      "frame": { "x": 776, "y": 0, "w": 100, "h": 170 },
+      "frame": { "x": 878, "y": 0, "w": 98, "h": 165 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 2, "y": 1, "w": 100, "h": 170 },
+      "spriteSourceSize": { "x": 2, "y": 6, "w": 98, "h": 165 },
       "sourceSize": { "w": 102, "h": 171 }
     },
     "9": {
-      "frame": { "x": 876, "y": 0, "w": 102, "h": 168 },
+      "frame": { "x": 776, "y": 0, "w": 102, "h": 168 },
       "trimmed": true,
       "spriteSourceSize": { "x": 0, "y": 3, "w": 102, "h": 168 },
       "sourceSize": { "w": 102, "h": 171 }
     }
   },
-  "meta": { "image": "intro.png", "size": { "w": 978, "h": 171 } }
+  "meta": { "image": "intro.png", "size": { "w": 976, "h": 171 } }
 }

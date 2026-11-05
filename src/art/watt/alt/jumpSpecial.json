@@ -7,19 +7,19 @@
       "sourceSize": { "w": 127, "h": 171 }
     },
     "1": {
-      "frame": { "x": 259, "y": 0, "w": 103, "h": 142 },
+      "frame": { "x": 259, "y": 0, "w": 104, "h": 142 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 10, "y": 27, "w": 103, "h": 142 },
+      "spriteSourceSize": { "x": 10, "y": 27, "w": 104, "h": 142 },
       "sourceSize": { "w": 127, "h": 171 }
     },
     "2": {
-      "frame": { "x": 458, "y": 0, "w": 117, "h": 114 },
+      "frame": { "x": 459, "y": 0, "w": 117, "h": 114 },
       "trimmed": true,
       "spriteSourceSize": { "x": 10, "y": 55, "w": 117, "h": 114 },
       "sourceSize": { "w": 127, "h": 171 }
     },
     "3": {
-      "frame": { "x": 362, "y": 0, "w": 96, "h": 140 },
+      "frame": { "x": 363, "y": 0, "w": 96, "h": 140 },
       "trimmed": true,
       "spriteSourceSize": { "x": 10, "y": 29, "w": 96, "h": 140 },
       "sourceSize": { "w": 127, "h": 171 }
@@ -37,5 +37,5 @@
       "sourceSize": { "w": 127, "h": 171 }
     }
   },
-  "meta": { "image": "jumpSpecial.png", "size": { "w": 575, "h": 171 } }
+  "meta": { "image": "jumpSpecial.png", "size": { "w": 576, "h": 171 } }
 }

@@ -25,9 +25,9 @@
       "sourceSize": { "w": 158, "h": 149 }
     },
     "4": {
-      "frame": { "x": 100, "y": 0, "w": 97, "h": 133 },
+      "frame": { "x": 100, "y": 0, "w": 96, "h": 133 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 28, "y": 14, "w": 97, "h": 133 },
+      "spriteSourceSize": { "x": 28, "y": 14, "w": 96, "h": 133 },
       "sourceSize": { "w": 158, "h": 149 }
     },
     "5": {
@@ -37,5 +37,5 @@
       "sourceSize": { "w": 158, "h": 149 }
     }
   },
-  "meta": { "image": "knockdown.png", "size": { "w": 197, "h": 428 } }
+  "meta": { "image": "knockdown.png", "size": { "w": 196, "h": 428 } }
 }
