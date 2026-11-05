@@ -38,16 +38,52 @@ const ROUTES: readonly Route[] = [
   },
   { notation: 'L, H → S (Coup de jus)', distance: 30, steps: [L, H, S], damages: [30, 76, 72] },
   {
-    notation: 'L, L, H, H → S (Coup de jus)',
+    notation: 'L, L, H, H → S (Coup de jus, 6 hits)',
     distance: 30,
     steps: [L, L, H, H, S],
-    damages: [30, 34, 68, 38, 54],
+    damages: [30, 34, 68, 14, 18, 45],
   },
   {
-    notation: 'L, ←L, L, H, H → S (6 hits)',
+    notation: 'L, ←L, L, H, H → S (7 hits)',
     distance: 28,
     steps: [L, B | L, L, H, H, S],
-    damages: [30, 18, 30, 59, 33, 45],
+    damages: [30, 18, 30, 59, 12, 15, 45],
+  },
+  {
+    notation: '←L (Court-circuit), L, H → S',
+    distance: 30,
+    steps: [B | L, L, H, S],
+    damages: [26, 34, 68, 63],
+  },
+  {
+    notation: 'L, L, ↓L (Prise de terre) → S',
+    distance: 30,
+    steps: [L, L, D | L, S],
+    damages: [30, 34, 32, 63],
+  },
+  {
+    notation: 'H, ↓L (Prise de terre) → →S (Surcharge)',
+    distance: 35,
+    steps: [H, D | L, F | S],
+    damages: [85, 36, 68],
+  },
+  {
+    notation: '↘H (Disjoncteur) ⇢ L, L, L',
+    distance: 28,
+    steps: [D | F | H, L, L, L],
+    damages: [58, 27, 30, 38],
+  },
+  {
+    notation: 'L, →H (Disjoncteur) ⇢ L, L, L',
+    distance: 28,
+    steps: [L, F | H, L, L, L],
+    damages: [30, 52, 24, 26, 33],
+  },
+  {
+    notation: '↓L, →H (Disjoncteur) ⇢ L, L, L',
+    distance: 28,
+    steps: [D | L, F | H, L, L, L],
+    damages: [24, 52, 24, 26, 33],
   },
   { notation: 'L, L, H → S', distance: 30, steps: [L, L, H, S], damages: [30, 34, 68, 63] },
   {
@@ -60,7 +96,7 @@ const ROUTES: readonly Route[] = [
     notation: 'L, L, →H (Coup de masse) → S',
     distance: 30,
     steps: [L, L, F | H, S],
-    damages: [30, 34, 48, 63],
+    damages: [30, 34, 44, 63],
   },
   {
     notation: 'L, L, ←H ⇢ L, L, L',
@@ -72,7 +108,7 @@ const ROUTES: readonly Route[] = [
     notation: 'L, L, ←H ⇢ L, L, →H (Rebond) ⇢ L, L, L',
     distance: 28,
     steps: [L, L, B | H, L, L, F | H, L, L, L],
-    damages: [30, 34, 44, 21, 22, 30, 15, 19, 27],
+    damages: [30, 34, 44, 21, 22, 28, 15, 19, 27],
   },
   {
     notation: '↓L, L, H → S (Paume basse chain)',
@@ -129,7 +165,7 @@ const BOOST_ROUTES: readonly (Route & { readonly boost: number })[] = [
     notation: 'L, L, H, H → ←BOOST (Plein feu)',
     distance: 30,
     steps: [L, L, H, H, B | X],
-    damages: [30, 34, 68, 38, 42, 40, 70],
+    damages: [30, 34, 68, 14, 18, 35, 40, 70],
     boost: 3000,
   },
 ];
@@ -164,6 +200,10 @@ describe('his own kit (docs/watt-arsenal.md §4)', () => {
     const stringPull = playCombo(facingOff(35, WATT_VS_NAYO), WATT_VS_NAYO, [L, L, H, B | S]);
     expect(stringPull.hits.map((hit) => hit.damage)).toEqual([30, 34, 68, 28]);
     expect(unbroken(stringPull)).toBe(true);
+    // Once per combo: a second Câble in the same combo floors instead of pulling again (no infinite).
+    const start = facingOff(80, WATT_VS_NAYO, [{ tension: 100 }, {}]);
+    const secondPull = playCombo(start, WATT_VS_NAYO, [B | S, L, L, H, B | S]);
+    expect(floored(secondPull)).toBe(true);
   });
 
   it('the Pas blindé cancels from frame 10 into a combo', () => {
@@ -225,7 +265,7 @@ describe('his own kit (docs/watt-arsenal.md §4)', () => {
     expect(floored(fromSouleve)).toBe(true);
   });
 
-  it('the Plongeon falls on the grounded opponent, 100 on the catch', () => {
+  it('the Plongeon falls on the grounded opponent, 100 on the catch, and Enclume (↓ + H) hits deep in the air', () => {
     let state = facingOff(30, WATT_VS_NAYO);
     const ticks: readonly InputBits[] = [Input.Jump, S, S, S, S, S, 0];
     for (let tick = 0; tick < 160 && !state.contacts.some((c) => c.move === 'throwDive'); tick++) {
@@ -234,6 +274,17 @@ describe('his own kit (docs/watt-arsenal.md §4)', () => {
     }
     const caught = state.contacts.find((c) => c.move === 'throwDive');
     expect(caught?.damage).toBe(100);
+    let airState = facingOff(24, WATT_VS_NAYO);
+    const anvilTicks: readonly InputBits[] = [Input.Jump, 0, D | H, D | H, 0];
+    for (
+      let tick = 0;
+      tick < 60 && !airState.contacts.some((c) => c.move === 'jumpDownHeavy');
+      tick++
+    ) {
+      airState = step(airState, [anvilTicks[tick] ?? 0, 0], WATT_VS_NAYO);
+    }
+    const anvil = airState.contacts.find((c) => c.move === 'jumpDownHeavy');
+    expect(anvil?.damage).toBe(68);
   });
 
   it('the Pas blindé absorbs one blow through its dash', () => {

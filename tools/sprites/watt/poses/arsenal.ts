@@ -1,12 +1,17 @@
 import type { Effect, Foot, Pose } from '../../skeleton.ts';
-import { at, GUARD, onBall, planted, smear, springAnkle } from './common.ts';
+import { at, CROUCHED, GUARD, onBall, planted, smear, springAnkle } from './common.ts';
 import { POSES as COUP_DE_PILON } from './forwardHeavy.ts';
+import { POSES as PLAQUAGE } from './jumpHeavy.ts';
 import { POSES as PAUME } from './standLight.ts';
 import { keyPose } from './strike.ts';
 
 /**
  * Watt's own arsenal strips (docs/watt-arsenal.md §4, §7):
- * - jabRepeat (Secousse): the 29th move, an electric snap of the lead clamp;
+ * - backLight (Court-circuit): the 4f electric backhand snap of the lead clamp;
+ * - jabRepeat (Secousse): an electric snap of the lead clamp in strings;
+ * - chainLow (Prise de terre): the low boot-and-clamp stomp that keeps the victim standing;
+ * - downForwardHeavy (Disjoncteur): the 9f rising piston gut-uppercut launcher;
+ * - jumpDownHeavy (Enclume): the air downward twin-clamp anvil slam;
  * - chainHigh (Coup de masse): the overhead in the string that bounces a juggled body (Rebond);
  * - specialBack (Câble): the cable shot out from the lead gauntlet, reeling the opponent in;
  * - specialClose & throwClose (Branchement): the point-blank command grab, lifted, spun a full
@@ -28,6 +33,236 @@ function withEffects(
 
 const strikeTone = (effect: Effect): Effect =>
   effect.kind === 'smear' ? { ...effect, tone: 'strike' } : effect;
+
+// --- backLight (Court-circuit, 5 frames: [1, 3, 2, 3, 4], active frame 2) -----------------------
+
+export const BACK_LIGHT_POSES: readonly Pose[] = [
+  // 0-1: the lead clamp coils across the chest, charging a green spark.
+  keyPose({
+    hip: [-8, 37],
+    torso: 10,
+    far: [10, 48],
+    face: 'effort',
+    effects: [{ kind: 'energy', center: at(12, 48), radius: 2.2 }],
+  }),
+  keyPose({
+    hip: [-6, 36.8],
+    torso: 14,
+    reach: { far: 2 },
+    far: [20, 48],
+    face: 'effort',
+    effects: [{ kind: 'arc', from: at(10, 49), to: at(24, 48), spread: 2.5 }],
+  }),
+  // 2 (active): backhand whip to x = 38 (hitbox 8..38 / 42..56), forked lightning off the knuckles.
+  keyPose({
+    hip: [-4, 36.5],
+    torso: 20,
+    reach: { far: 5 },
+    farFoot: planted(11),
+    far: [32, 48],
+    farHand: 'open',
+    face: 'kiai',
+    effects: [
+      smear(3, [14, 49], [24, 48.5], [32, 48]),
+      { kind: 'arc', from: at(16, 50), to: at(37, 48), spread: 3.5 },
+      { kind: 'flash', center: at(35, 48), radius: 4, tone: 'sound' },
+    ],
+    glows: [{ center: at(33, 48), reach: 24, power: 1.0, tone: 'sound' }],
+  }),
+  // 3-4: recoil into the guard.
+  withEffects(PAUME[3] ?? GUARD, [{ kind: 'arc', from: at(14, 49), to: at(26, 48), spread: 2 }]),
+  GUARD,
+];
+
+// --- chainLow (Prise de terre, 6 frames: [3, 3, 2, 3, 6, 7], active frame 3) --------------------
+
+export const CHAIN_LOW_POSES: readonly Pose[] = [
+  // 0-2: dropping low on the rear knee, the lead clamp and boot loading for the floor stomp.
+  keyPose({ ...CROUCHED, torso: 14, far: [10, 30], face: 'effort' }),
+  keyPose({
+    ...CROUCHED,
+    hip: [-8, 24],
+    torso: 34,
+    reach: { far: 2 },
+    farFoot: planted(13),
+    nearFoot: onBall(-15, -45),
+    far: [20, 16],
+    face: 'effort',
+  }),
+  keyPose({
+    ...CROUCHED,
+    hip: [-6, 22.5],
+    torso: 44,
+    reach: { far: 4 },
+    farFoot: planted(15),
+    nearFoot: onBall(-10, -50),
+    far: [28, 10],
+    farHand: 'open',
+    face: 'effort',
+  }),
+  // 3 (active): the low clamp-and-boot stomp at x = 40 (hitbox 10..40 / 2..14), electric floor arc.
+  keyPose({
+    ...CROUCHED,
+    hip: [-5, 22],
+    torso: 48,
+    reach: { far: 5 },
+    farFoot: planted(16),
+    nearFoot: onBall(-8, -54),
+    near: [18, 20],
+    far: [33, 7],
+    farHand: 'open',
+    face: 'kiai',
+    effects: [
+      smear(3, [20, 14], [28, 9], [33, 7]),
+      { kind: 'arc', from: at(14, 12), to: at(39, 6), spread: 3 },
+      { kind: 'ring', center: at(34, 4), radius: 10, progress: 0.25, squash: 0.3, tone: 'sound' },
+      { kind: 'flash', center: at(35, 7), radius: 3.8, tone: 'sound' },
+    ],
+    glows: [{ center: at(33, 7), reach: 24, power: 1.0, tone: 'sound' }],
+  }),
+  // 4-5: rising back to guard.
+  keyPose({
+    ...CROUCHED,
+    hip: [-8, 24],
+    torso: 32,
+    farFoot: planted(13),
+    nearFoot: onBall(-15, -45),
+    far: [20, 14],
+  }),
+  keyPose({ hip: [-7, 32], torso: 16, farFoot: planted(11), far: [12, 36] }),
+];
+
+// --- downForwardHeavy (Disjoncteur, 7 frames: [3, 3, 3, 3, 5, 6, 6], active frame 3) ------------
+
+export const DOWN_FORWARD_HEAVY_POSES: readonly Pose[] = [
+  // 0-2: dipping low, coiling the lead piston at hip height, then lunging forward.
+  keyPose({
+    hip: [-7, 31],
+    torso: 24,
+    farFoot: planted(11),
+    near: [4, 44],
+    far: [12, 32],
+    face: 'effort',
+    effects: [{ kind: 'energy', center: at(14, 32), radius: 2.5 }],
+  }),
+  keyPose({
+    hip: [-4, 30],
+    torso: 28,
+    reach: { far: 2 },
+    farFoot: planted(13),
+    nearFoot: onBall(-15, -36),
+    near: [8, 42],
+    far: [20, 34],
+    face: 'effort',
+    effects: [{ kind: 'arc', from: at(12, 30), to: at(24, 36), spread: 2.5 }],
+  }),
+  keyPose({
+    hip: [-1, 33],
+    torso: 20,
+    reach: { far: 3 },
+    farFoot: planted(14),
+    nearFoot: onBall(-14, -32),
+    near: [14, 46],
+    far: [28, 46],
+    face: 'effort',
+    effects: [smear(3, [14, 32], [22, 38], [28, 46])],
+  }),
+  // 3 (active): rising piston gut-uppercut to x = 40, y = 24..72 (hitbox 10..40 / 24..72).
+  keyPose({
+    hip: [1, 36],
+    torso: 14,
+    reach: { near: 3, far: 5 },
+    farFoot: planted(15),
+    nearFoot: onBall(-13, -34),
+    near: [22, 48],
+    far: [33.5, 58],
+    face: 'kiai',
+    effects: [
+      smear(4, [20, 34], [28, 46], [33.5, 58]),
+      { kind: 'column', base: at(34, 18), height: 54, width: 12, progress: 0.25 },
+      { kind: 'arc', from: at(18, 30), to: at(38, 66), spread: 4 },
+      { kind: 'flash', center: at(36, 58), radius: 4.5, tone: 'sound' },
+      { kind: 'shards', center: at(36, 58), radius: 8, progress: 0.25, tone: 'strike' },
+    ],
+    glows: [{ center: at(35, 56), reach: 28, power: 1.15, tone: 'sound' }],
+  }),
+  // 4-6: follow-through high, then settling back into guard.
+  keyPose({
+    hip: [0, 37],
+    torso: 10,
+    reach: { far: 3 },
+    farFoot: planted(14),
+    near: [16, 52],
+    far: [28, 64],
+    face: 'effort',
+  }),
+  keyPose({ hip: [-5, 37], torso: 12, farFoot: planted(11), near: [8, 50], far: [18, 54] }),
+  GUARD,
+];
+
+// --- jumpDownHeavy (Enclume, 7 frames: [2, 2, 2, 7, 3, 3, 3], active frame 3) -------------------
+
+const ANVIL_BENDS = { farKnee: 'front' } as const;
+const ANVIL_TUCK = { nearFoot: air(-12, 12, -52), farFoot: air(6, 13, -14) } as const;
+
+export const JUMP_DOWN_HEAVY_POSES: readonly Pose[] = [
+  // 0-2: tucking the knees high in mid-air, raising both clamps overhead to fire straight down.
+  keyPose({
+    nearFoot: air(-16, 18, -36),
+    farFoot: air(2, 20, -14),
+    hip: [-8, 38],
+    torso: 8,
+    near: [2, 64],
+    far: [14, 66],
+    bends: ANVIL_BENDS,
+    face: 'effort',
+  }),
+  keyPose({
+    ...ANVIL_TUCK,
+    hip: [-6, 35],
+    torso: 20,
+    near: [8, 56],
+    far: [18, 56],
+    bends: ANVIL_BENDS,
+    face: 'effort',
+    effects: [{ kind: 'energy', center: at(18, 56), radius: 2.8, tone: 'strike' }],
+  }),
+  keyPose({
+    ...ANVIL_TUCK,
+    hip: [-4.5, 30],
+    torso: 36,
+    near: [14, 36],
+    far: [22, 34],
+    bends: ANVIL_BENDS,
+    face: 'effort',
+    effects: [{ kind: 'arc', from: at(10, 50), to: at(22, 34), spread: 3, tone: 'strike' }],
+  }),
+  // 3 (active): both clamps fired downward below the boots (hitbox -6..34 / -8..18).
+  keyPose({
+    ...ANVIL_TUCK,
+    hip: [-3, 26],
+    torso: 50,
+    reach: { near: 3, far: 3 },
+    near: [18, 18],
+    far: [26, 16],
+    nearHand: 'open',
+    farHand: 'open',
+    bends: ANVIL_BENDS,
+    face: 'kiai',
+    effects: [
+      smear(4, [22, 36], [26, 22], [28, 10]),
+      { kind: 'plasma', center: at(26, 12), radius: 5.5, tone: 'sound' },
+      { kind: 'arc', from: at(14, 38), to: at(30, 8), spread: 4 },
+      { kind: 'flash', center: at(28, 12), radius: 4.5, tone: 'sound' },
+      { kind: 'shards', center: at(28, 12), radius: 8, progress: 0.25, tone: 'strike' },
+    ],
+    glows: [{ center: at(26, 14), reach: 28, power: 1.15, tone: 'sound' }],
+  }),
+  // 4-6: recovery in the air.
+  PLAQUAGE[3] ?? GUARD,
+  PLAQUAGE[4] ?? GUARD,
+  PLAQUAGE[5] ?? GUARD,
+];
 
 // --- jabRepeat (Secousse, 5 frames: [2, 1, 2, 3, 4], active frame 1) ----------------------------
 
@@ -63,13 +298,21 @@ export const JAB_REPEAT_POSES: readonly Pose[] = [
   GUARD,
 ];
 
-// --- chainHigh (Coup de masse, 6 frames: [7, 8, 3, 5, 5, 6], active frame 2) --------------------
+// --- chainHigh (Coup de masse, 7 frames: [4, 4, 5, 3, 5, 5, 6], active frame 3) ----------------
 
 const HIGH_LOAD = COUP_DE_PILON[2] ?? GUARD;
 const HIGH_TOP = COUP_DE_PILON[3] ?? GUARD;
 const HIGH_IMPACT = COUP_DE_PILON[4] ?? GUARD;
 
 export const CHAIN_HIGH_POSES: readonly Pose[] = [
+  keyPose({
+    hip: [-8, 37.5],
+    torso: 4,
+    near: [2, 66],
+    far: [12, 70],
+    face: 'effort',
+    effects: [{ kind: 'energy', center: at(12, 70), radius: 2.2, tone: 'strike' }],
+  }),
   {
     ...withEffects(
       HIGH_LOAD,
@@ -102,6 +345,7 @@ export const CHAIN_HIGH_POSES: readonly Pose[] = [
           radius: 3.2,
           tone: 'strike',
         },
+        { kind: 'arc', from: at(6, 78), to: at(22, 84), spread: 3, tone: 'strike' },
       ],
       strikeTone,
     ),
@@ -113,6 +357,7 @@ export const CHAIN_HIGH_POSES: readonly Pose[] = [
     ...withEffects(
       HIGH_IMPACT,
       [
+        { kind: 'plasma', center: at(36, 60), radius: 5.5, tone: 'strike' },
         { kind: 'flash', center: at(36, 60), radius: 4.5, tone: 'strike' },
         { kind: 'shards', center: at(36, 58), radius: 10, progress: 0.25, tone: 'strike' },
       ],
@@ -123,7 +368,7 @@ export const CHAIN_HIGH_POSES: readonly Pose[] = [
   ...COUP_DE_PILON.slice(5),
 ];
 
-// --- specialBack (Câble, 8 frames: [4, 4, 6, 6, 6, 6, 7, 7], active frames 3-4) -----------------
+// --- specialBack (Câble, 10 frames: [3, 3, 3, 3, 2, 2, 6, 6, 6, 6], active frames 4-5) ---------
 
 export const SPECIAL_BACK_POSES: readonly Pose[] = [
   // 0-1: bracing on the rear leg, aiming the lead gauntlet out at chest height.
@@ -147,7 +392,23 @@ export const SPECIAL_BACK_POSES: readonly Pose[] = [
     effects: [{ kind: 'energy', center: at(28, 38), radius: 3 }],
     glows: [{ center: at(28, 38), reach: 24, power: 0.9, tone: 'sound' }],
   }),
-  // 2: the gauntlet fires, the clamp opening as the cable shoots out.
+  // 2-3: the gauntlet fires, the clamp opening as the magnetic cable shoots out.
+  keyPose({
+    hip: [-6.5, 35.2],
+    torso: 15,
+    reach: { far: 2 },
+    farFoot: planted(12),
+    nearFoot: onBall(-17, -31),
+    near: [2, 47.5],
+    far: [30, 38],
+    farHand: 'open',
+    face: 'effort',
+    effects: [
+      smear(2.5, [20, 40], [28, 38], [38, 37]),
+      { kind: 'arc', from: at(24, 39), to: at(40, 37), spread: 2.5 },
+    ],
+    glows: [{ center: at(32, 38), reach: 26, power: 1.0, tone: 'sound' }],
+  }),
   keyPose({
     hip: [-5, 35],
     torso: 18,
@@ -161,10 +422,11 @@ export const SPECIAL_BACK_POSES: readonly Pose[] = [
     effects: [
       smear(2.5, [22, 39], [34, 37], [46, 36]),
       { kind: 'ring', center: at(36, 37), radius: 6, progress: 0.2, tone: 'sound' },
+      { kind: 'arc', from: at(26, 38), to: at(48, 36), spread: 3.5 },
     ],
     glows: [{ center: at(36, 37), reach: 28, power: 1.1, tone: 'sound' }],
   }),
-  // 3-4 (active): the cable taut across the cell at y = 36, electric arcs running along it.
+  // 4-5 (active): the cable taut across the cell at y = 36, magnetic Tesla sphere at the tip.
   keyPose({
     hip: [-2, 35],
     torso: 24,
@@ -177,12 +439,12 @@ export const SPECIAL_BACK_POSES: readonly Pose[] = [
     face: 'kiai',
     effects: [
       smear(3, [30, 36], [44, 36], [56, 36]),
+      { kind: 'plasma', center: at(53, 36), radius: 5, tone: 'sound' },
       { kind: 'speed', center: at(55, 36), length: 24, spread: 5, direction: 0, tone: 'sound' },
       { kind: 'arc', from: at(28, 37), to: at(58, 36), spread: 4.5 },
-      { kind: 'energy', center: at(54, 36), radius: 3.8 },
       { kind: 'flash', center: at(38, 36), radius: 4, tone: 'sound' },
     ],
-    glows: [{ center: at(38, 36), reach: 32, power: 1.2, tone: 'sound' }],
+    glows: [{ center: at(38, 36), reach: 32, power: 1.25, tone: 'sound' }],
   }),
   keyPose({
     hip: [-3, 35],
@@ -196,13 +458,13 @@ export const SPECIAL_BACK_POSES: readonly Pose[] = [
     face: 'kiai',
     effects: [
       smear(3, [56, 36], [42, 36], [30, 36]),
+      { kind: 'plasma', center: at(46, 36), radius: 4.5, tone: 'sound' },
       { kind: 'speed', center: at(34, 36), length: 22, spread: 5, direction: 180, tone: 'sound' },
       { kind: 'arc', from: at(57, 36), to: at(26, 37), spread: 4 },
-      { kind: 'energy', center: at(46, 36), radius: 3.2 },
     ],
-    glows: [{ center: at(34, 36), reach: 28, power: 1.0, tone: 'sound' }],
+    glows: [{ center: at(34, 36), reach: 28, power: 1.1, tone: 'sound' }],
   }),
-  // 5-6: the yank back, hauling the line in with both shoulders, dust under the braced boot.
+  // 6-8: the yank back, hauling the line in with both shoulders, dust under the braced boot.
   keyPose({
     hip: [-9, 34.5],
     torso: -4,
@@ -214,8 +476,17 @@ export const SPECIAL_BACK_POSES: readonly Pose[] = [
     face: 'effort',
     effects: [
       smear(3, [32, 37], [22, 40], [16, 42]),
+      { kind: 'arc', from: at(30, 37), to: at(16, 42), spread: 2.5 },
       { kind: 'dust', x: 14, size: 1.1, progress: 0.35 },
     ],
+  }),
+  keyPose({
+    hip: [-9.2, 35.2],
+    torso: 0,
+    shrug: 3.2,
+    farFoot: planted(11),
+    near: [2, 47.5],
+    far: [14, 45],
   }),
   keyPose({
     hip: [-9.5, 36],
@@ -224,7 +495,7 @@ export const SPECIAL_BACK_POSES: readonly Pose[] = [
     near: [2, 49],
     far: [12, 48],
   }),
-  // 7: back to the guard.
+  // 9: back to the guard.
   GUARD,
 ];
 

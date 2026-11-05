@@ -47,21 +47,38 @@ const WATT_PLAIN: FighterTemplate = {
   airHurtboxes: [box(-22, 4, 44, 42), box(-14, 46, 30, 42)],
   moves: {
     ...WATT_STRINGS,
-    // → + H: the fist rises high behind the bulb, then falls straight down. An overhead, 22
-    // ticks, well telegraphed.
+    // → + H: the fist rises high behind the bulb, then falls straight down. An overhead, 18
+    // ticks, armored from f5.
     forwardHeavy: strike({
       name: 'Coup de pilon',
-      frames: [22, 3, 16],
+      frames: [18, 3, 15],
       damage: 65,
       stun: [20, 14],
       hitstop: 11,
       pushbackPx: 3,
       guard: 'overhead',
       hitbox: box(12, 36, 34, 40),
-      motion: advance(41, { from: 6, to: 18, distancePx: 12 }),
+      motion: advance(36, { from: 4, to: 16, distancePx: 14 }),
       cancelInto: HEAVY_CANCELS,
-      // The armor of the descending fist (docs/watt-arsenal.md §3.1): one blow absorbed on f8-21.
-      armor: { from: 8, to: 21 },
+      // The armor of the descending fist (docs/watt-arsenal.md §3.1): one blow absorbed on f5-18.
+      armor: { from: 5, to: 18 },
+    }),
+    // ↘ + H (or L, → + H / ↓ + L, → + H): Tekken/BlazBlue style rising piston gut-uppercut (9
+    // ticks, 14 px step) that hits crouching and standing opponents alike and launches (4 juggle
+    // points, 5 on CONTRE).
+    downForwardHeavy: strike({
+      name: 'Disjoncteur',
+      frames: [9, 3, 17],
+      damage: 58,
+      stun: [0, 13],
+      hitstop: 10,
+      pushbackPx: 2.5,
+      guard: 'mid',
+      hitbox: box(10, 24, 30, 48),
+      motion: advance(29, { from: 0, to: 8, distancePx: 14 }),
+      knockdown: kd(8, 0.5, { juggle: 4 }),
+      counter: { knockdown: kd(8, 0.5, { juggle: 5 }) },
+      cancelInto: HEAVY_CANCELS,
     }),
     // ← + H: both arms snatch upward. An anti-air without invincibility, and the launcher (4
     // juggle points); its box starts above a crouching body: it whiffs on it.
@@ -89,6 +106,7 @@ const WATT_PLAIN: FighterTemplate = {
       cancelInto: LIGHT_CANCELS,
       branches: [
         { button: 'light', dirs: ['neutral', 'forward', 'back'], move: 'chainLight' },
+        { button: 'heavy', dirs: ['forward'], move: 'downForwardHeavy' },
         { button: 'heavy', dirs: ['down'], move: 'crouchHeavy' },
       ],
       crouching: true,
@@ -126,6 +144,18 @@ const WATT_PLAIN: FighterTemplate = {
       pushbackPx: 3,
       guard: 'overhead',
       hitbox: box(0, -4, 34, 24),
+    }),
+    // ↓ + H in the air: both hydraulic clamps fired straight down under his boots like a falling
+    // anvil (6 ticks startup, hits deep below and cross-up behind).
+    jumpDownHeavy: strike({
+      name: 'Enclume',
+      frames: [6, 7, 9],
+      damage: 68,
+      stun: [21, 14],
+      hitstop: 12,
+      pushbackPx: 2.5,
+      guard: 'overhead',
+      hitbox: box(-6, -8, 40, 26),
     }),
     // S: both clamps forward on a 16 px step; on contact, the exoskeleton discharges. It floors
     // (−12 once blocked).
@@ -224,15 +254,15 @@ const WATT_PLAIN: FighterTemplate = {
     specialBack: strike({
       name: 'Câble',
       kind: 'special',
-      frames: [14, 4, 28],
+      frames: [12, 4, 24],
       damage: 40,
-      stun: [32, 10],
+      stun: [28, 10],
       hitstop: 9,
       pushbackPx: 2,
       guard: 'mid',
       hitbox: box(16, 28, 94, 16),
       pull: px(34),
-      charged: { damage: 50, hitstun: 36 },
+      charged: { damage: 50, hitstun: 32 },
     }),
     // S in the air: the whole weight down on the opponent on the ground, caught and crushed
     // (docs/watt-arsenal.md §4.3): a grab from above, played at once on the catch.
@@ -298,21 +328,28 @@ const WATT_PLAIN: FighterTemplate = {
       knockdown: kd(3.5, 3),
       sideSwitchFrame: 6,
     }),
-    // A heavy step, shoulders first, 36 px, that absorbs one blow on f3-14 (docs/watt-arsenal.md
-    // §5) and cancels from f10 into any normal or special: through the Vinyle, then the blow or
+    // A heavy step, shoulders first, 42 px, that absorbs one blow on f2-14 (docs/watt-arsenal.md
+    // §5) and cancels from f8 into any normal or special: through the Vinyle, then the blow or
     // the grab.
     dashForward: {
       ...dash({
         name: 'Pas blindé',
-        duration: 20,
-        frames: 14,
-        distancePx: 36,
-        freeCancelFrom: 10,
+        duration: 18,
+        frames: 13,
+        distancePx: 42,
+        freeCancelFrom: 8,
       }),
-      armor: { from: 3, to: 14 },
+      armor: { from: 2, to: 14 },
     },
-    // 32 px back, and nothing against a grab: he gets out badly.
-    dashBack: dash({ name: 'Recul', duration: 24, frames: 16, distancePx: 32, back: true }),
+    // 36 px back in 20 ticks, grab-proof on frames 0-9.
+    dashBack: dash({
+      name: 'Recul',
+      duration: 20,
+      frames: 14,
+      distancePx: 36,
+      back: true,
+      throwInvincible: { from: 0, to: 10 },
+    }),
   },
 };
 

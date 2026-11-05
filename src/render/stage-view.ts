@@ -16,17 +16,17 @@ import { StagePropsView } from './stage-props';
  * The large colors of the night stages the fights may show, in every atmosphere they may take
  * (each once, the first stage's base first): the drawn ones', else the grey box's. The flash veils
  * are set on them, and the flash measures taken over the darkest (docs/flashs.md §3), whatever the
- * fight draws. Sakura is the day stage and Chinatown the dusk one: their bright colors are outside
- * the midnight envelope, and the effects stay measured over the midnight stages (docs/art/decor-
- * sakura.md §3, docs/art/decor-chinatown.md §5).
+ * fight draws. Sakura, Dancing Forest and Chinatown are outside the midnight envelope: their bright
+ * colors are measured apart, and the effects stay measured over the midnight stages
+ * (docs/art/decor-sakura.md §3, docs/art/decor-forest-dance.md §3, docs/art/decor-chinatown.md §5).
  */
 export const FIGHT_STAGE_COLORS: readonly number[] =
   STAGE_MAPS.length > 0
     ? [
         ...new Set(
-          STAGE_MAPS.filter(({ name }) => name !== 'sakura' && name !== 'chinatown').flatMap(
-            ({ variants }) => variants.flatMap(({ art }) => art.colors),
-          ),
+          STAGE_MAPS.filter(
+            ({ name }) => !new Set(['sakura', 'foret', 'chinatown']).has(name),
+          ).flatMap(({ variants }) => variants.flatMap(({ art }) => art.colors)),
         ),
       ]
     : GREYBOX_COLORS;

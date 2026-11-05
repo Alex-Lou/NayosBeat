@@ -10,7 +10,7 @@
  * up whenever the game's data change too, since two builds that play differently would desync,
  * and whenever the state or its hash changes (5: the tension, docs/watt-arsenal.md §3.2).
  */
-export const PROTOCOL_VERSION = 7;
+export const PROTOCOL_VERSION = 9;
 
 /** The longest text accepted, checked before parsing it. */
 export const MAX_MESSAGE_LENGTH = 128;

@@ -32,10 +32,12 @@ const { Light: L, Heavy: H, Special: S, Down: D, Left: B, Right: F } = Input;
 /** The input of each move a plan starts after, facing right. */
 const OPENINGS: Readonly<Partial<Record<MoveId, InputBits>>> = {
   standLight: L,
+  backLight: B | L,
   forwardLight: F | L,
   crouchLight: D | L,
   standHeavy: H,
   forwardHeavy: F | H,
+  downForwardHeavy: D | F | H,
   backHeavy: B | H,
   specialAntiAir: D | S,
 };

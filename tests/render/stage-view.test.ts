@@ -257,12 +257,12 @@ describe('the stage view', () => {
   });
 
   it("gives the flashes the night stages' large colors in every atmosphere, each once: else the grey box's", () => {
-    // Sakura is the day stage and Chinatown the dusk one: their bright colors are outside the
-    // flash envelope (stage-view.ts FIGHT_STAGE_COLORS, docs/art/decor-sakura.md §3,
-    // docs/art/decor-chinatown.md §5).
-    const variants = STAGE_MAPS.filter(
-      ({ name }) => name !== 'sakura' && name !== 'chinatown',
-    ).flatMap(({ variants }) => variants);
+    // Sakura, Dancing Forest and Chinatown are outside the midnight flash envelope
+    // (stage-view.ts FIGHT_STAGE_COLORS, the hand-drawn stages' docs §3).
+    const day = new Set(['sakura', 'foret', 'chinatown']);
+    const variants = STAGE_MAPS.filter(({ name }) => !day.has(name)).flatMap(
+      ({ variants }) => variants,
+    );
     if (variants.length === 0) {
       expect(FIGHT_STAGE_COLORS).toEqual(GREYBOX_COLORS);
       return;

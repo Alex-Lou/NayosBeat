@@ -27,7 +27,7 @@ import {
 } from './projectiles';
 import { impactPercent } from './reaction';
 import { updateRound } from './round';
-import { COUNTER_HITSTOP, EXTENDER_HITSTOP } from './rules';
+import { COMBO_LIMIT_LIFT, COUNTER_HITSTOP, EXTENDER_HITSTOP } from './rules';
 import { tensioned } from './tension';
 import { isThreatened } from './threat';
 import { applyTrainingRules } from './training';
@@ -36,6 +36,7 @@ import {
   FLAG_EXTENDED,
   FLAG_FINISHER,
   FLAG_MOVE_HIT,
+  FLAG_PULLED,
   type Contact,
   type FighterState,
   type GameState,
@@ -326,10 +327,24 @@ function struck(
   const hit = applyHit(defender, landed.fromX, landed.data, minHealth, detail);
   const blocked = hit.action === 'blockstun';
   const pull = landed.data.pull;
-  // The cable reels the opponent in, in front of the attacker (validated: strikes only).
+  // The cable reels the opponent in once per combo; a second pull in the same combo floors
+  // instead so it can never loop infinitely.
+  const alreadyPulled = (defender.flags & FLAG_PULLED) !== 0;
   const fighter =
     pull !== undefined && !blocked
-      ? { ...hit, x: landed.fromX + landed.striker.facing * pull, vx: 0 }
+      ? alreadyPulled
+        ? {
+            ...hit,
+            action: 'airHit' as const,
+            stunFrames: 0,
+            vy: Math.max(hit.vy, COMBO_LIMIT_LIFT),
+          }
+        : {
+            ...hit,
+            x: landed.fromX + landed.striker.facing * pull,
+            vx: 0,
+            flags: hit.flags | FLAG_PULLED,
+          }
       : hit;
   const counter = blocked ? null : detail.counter;
   const damage = defender.health - fighter.health;

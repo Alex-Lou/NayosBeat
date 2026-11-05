@@ -143,6 +143,7 @@ function cancelMove(
   }
   const free = move.freeCancelFrom !== undefined && fighter.actionFrame + 1 >= move.freeCancelFrom;
   if (!(fighter.moveConnected || free)) return null;
+  if (move.pulses?.some((p) => p.frame > fighter.actionFrame)) return null;
   // Left in the buffer when the gauge cannot pay: a plain dash once the move is over.
   if (command === 'boostDash') return canRewind(fighter, move, template) ? 'boostCancel' : null;
 

@@ -37,12 +37,40 @@ export const INTRO_POSES: readonly Pose[] = [
   keyPose({ ...EASE, face: 'out' }),
   keyPose({ ...EASE, near: [-2, 56], face: 'out' }),
   keyPose(screwing(0, 'out')),
+  keyPose({
+    ...screwing(1.5, 'out'),
+    effects: [{ kind: 'energy', center: at(-2, 74), radius: 2.2 }],
+  }),
+  keyPose({
+    ...screwing(0, 'tired'),
+    effects: [{ kind: 'arc', from: at(2, 68), to: at(-4, 78), spread: 2.5 }],
+  }),
   keyPose(screwing(1.5, 'out')),
-  keyPose(screwing(0, 'tired')),
-  keyPose(screwing(1.5, 'out')),
-  keyPose(screwing(0, 'effort')),
-  keyPose(screwing(1, 'kiai')),
-  keyPose({ ...EASE, hip: [-8.5, 38], torso: 6, near: [-3, 50], far: [10, 46] }),
+  keyPose({
+    ...screwing(0, 'effort'),
+    effects: [
+      { kind: 'arc', from: at(-6, 42), to: at(4, 74), spread: 3.5 },
+      { kind: 'energy', center: at(-2, 76), radius: 3.2 },
+    ],
+    glows: [{ center: at(-2, 76), reach: 26, power: 1.0, tone: 'sound' }],
+  }),
+  keyPose({
+    ...screwing(1, 'kiai'),
+    effects: [
+      { kind: 'plasma', center: at(-2, 76), radius: 5.5, tone: 'sound' },
+      { kind: 'arc', from: at(-10, 44), to: at(6, 78), spread: 4 },
+      { kind: 'ring', center: at(-2, 76), radius: 12, progress: 0.25, tone: 'sound' },
+    ],
+    glows: [{ center: at(-2, 76), reach: 34, power: 1.3, tone: 'sound' }],
+  }),
+  keyPose({
+    ...EASE,
+    hip: [-8.5, 38],
+    torso: 6,
+    near: [-3, 50],
+    far: [10, 46],
+    effects: [{ kind: 'ring', center: at(-2, 76), radius: 18, progress: 0.65, tone: 'sound' }],
+  }),
   GUARD,
 ];
 
@@ -57,7 +85,11 @@ const FLEX: Key = {
   near: [2, 56],
   far: [12, 83],
   face: 'kiai',
-  effects: [{ kind: 'energy', center: at(-4, 77), radius: 4 }],
+  effects: [
+    { kind: 'plasma', center: at(12, 84), radius: 4.5, tone: 'sound' },
+    { kind: 'arc', from: at(2, 56), to: at(12, 83), spread: 3 },
+  ],
+  glows: [{ center: at(12, 83), reach: 28, power: 1.1, tone: 'sound' }],
 };
 
 /**
@@ -89,10 +121,18 @@ const SLUMP: Key = {
   face: 'tired',
 };
 
-/** timeOver: 4 frames of 10 ticks, looping: slumped, breathing hard. */
+/** timeOver: 4 frames of 10 ticks, looping: slumped, breathing hard, a dying spark off the collar. */
 export const TIME_OVER_POSES: readonly Pose[] = [
-  keyPose(SLUMP),
+  keyPose({
+    ...SLUMP,
+    effects: [{ kind: 'energy', center: at(-2, 66), radius: 1.8 }],
+  }),
   keyPose({ ...SLUMP, hip: [-8, 37.6], torso: 10, near: [-4, 40], far: [9, 40] }),
-  keyPose({ ...SLUMP, hip: [-8, 37.8], torso: 9 }),
+  keyPose({
+    ...SLUMP,
+    hip: [-8, 37.8],
+    torso: 9,
+    effects: [{ kind: 'energy', center: at(9, 40), radius: 1.6 }],
+  }),
   keyPose({ ...SLUMP, hip: [-8, 37.2], torso: 11 }),
 ];

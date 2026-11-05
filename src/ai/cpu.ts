@@ -461,7 +461,10 @@ class Decider {
     const fits = (id: MoveId) => this.reaches(moves[id]);
     if (!fits('standLight') && this.chance(aggression)) return repeat(toward, this.between(4, 8));
     if (fits('grab') && this.chance(this.profile.throw)) return [Input.Grab, 0];
+    if (fits('downForwardHeavy') && this.chance(0.12))
+      return [Input.Down | toward | Input.Heavy, 0];
     if (fits('backHeavy') && this.chance(0.1)) return [away | Input.Heavy, 0];
+    if (fits('backLight') && this.chance(0.18)) return [away | Input.Light, 0, 0, 0];
     if (fits('standLight') && this.chance(0.35)) return [Input.Light, 0, 0, 0];
     if (fits('crouchLight') && this.chance(0.25)) return [Input.Down | Input.Light, Input.Down, 0];
     if (fits('standHeavy') && this.chance(0.2)) return [Input.Heavy, 0];

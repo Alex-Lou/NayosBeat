@@ -11,8 +11,10 @@ import { advance, box, HEAVY_CANCELS, kd, LIGHT_CANCELS, strike } from './shared
 export const WATT_STRINGS: Pick<
   FighterMoves,
   | 'standLight'
+  | 'backLight'
   | 'jabRepeat'
   | 'chainLight'
+  | 'chainLow'
   | 'chainHigh'
   | 'chainLaunch'
   | 'lightFinisher'
@@ -35,6 +37,29 @@ export const WATT_STRINGS: Pick<
       { button: 'light', dirs: ['neutral', 'forward'], move: 'chainLight' },
       { button: 'light', dirs: ['back'], move: 'jabRepeat' },
       { button: 'light', dirs: ['down'], move: 'crouchLight' },
+      { button: 'heavy', dirs: ['forward'], move: 'downForwardHeavy' },
+    ],
+  }),
+  // ← + L: a quick electric backhand snap of the lead clamp (+2 on block), advancing 6 px and
+  // opening his strings and launchers.
+  backLight: strike({
+    name: 'Court-circuit',
+    frames: [4, 2, 7],
+    damage: 26,
+    stun: [14, 9],
+    hitstop: 7,
+    pushbackPx: 1.5,
+    guard: 'mid',
+    hitbox: box(8, 42, 30, 14),
+    motion: advance(13, { from: 0, to: 4, distancePx: 6 }),
+    cancelInto: LIGHT_CANCELS,
+    branches: [
+      { button: 'light', dirs: ['neutral', 'forward'], move: 'chainLight' },
+      { button: 'light', dirs: ['back'], move: 'jabRepeat' },
+      { button: 'light', dirs: ['down'], move: 'crouchLight' },
+      { button: 'heavy', dirs: ['neutral'], move: 'standHeavy' },
+      { button: 'heavy', dirs: ['forward'], move: 'chainHigh' },
+      { button: 'heavy', dirs: ['back'], move: 'chainLaunch' },
     ],
   }),
   // L, ← + L: the lead clamp snaps back out with a short electric jolt (+2 on block), opening
@@ -51,6 +76,7 @@ export const WATT_STRINGS: Pick<
     cancelInto: HEAVY_CANCELS,
     branches: [
       { button: 'light', dirs: ['neutral', 'forward', 'back'], move: 'chainLight' },
+      { button: 'light', dirs: ['down'], move: 'chainLow' },
       { button: 'heavy', dirs: ['neutral'], move: 'standHeavy' },
       { button: 'heavy', dirs: ['forward'], move: 'chainHigh' },
       { button: 'heavy', dirs: ['down'], move: 'crouchHeavy' },
@@ -70,25 +96,40 @@ export const WATT_STRINGS: Pick<
     motion: advance(21, { from: 0, to: 6, distancePx: 8 }),
     cancelInto: HEAVY_CANCELS,
     branches: [
-      { button: 'light', move: 'lightFinisher' },
+      { button: 'light', dirs: ['neutral', 'forward', 'back'], move: 'lightFinisher' },
+      { button: 'light', dirs: ['down'], move: 'chainLow' },
       { button: 'heavy', dirs: ['neutral'], move: 'standHeavy' },
       { button: 'heavy', dirs: ['forward'], move: 'chainHigh' },
       { button: 'heavy', dirs: ['down'], move: 'crouchHeavy' },
       { button: 'heavy', dirs: ['back'], move: 'chainLaunch' },
     ],
   }),
+  // L, L, ↓ + L (or H, ↓ + L): a heavy low boot-and-clamp stomp that keeps the opponent standing
+  // so any special, Remix, Rallumage or Plein feu connects off a low mixup.
+  chainLow: strike({
+    name: 'Prise de terre',
+    frames: [8, 3, 13],
+    damage: 40,
+    stun: [19, 11],
+    hitstop: 9,
+    pushbackPx: 2,
+    guard: 'low',
+    hitbox: box(10, 2, 30, 12),
+    motion: advance(24, { from: 0, to: 7, distancePx: 10 }),
+    cancelInto: HEAVY_CANCELS,
+  }),
   // L, L, → + H: the fist over the guard, in the string. On a juggled body it slams it down to
   // bounce back up (the Rebond, once a combo).
   chainHigh: strike({
     name: 'Coup de masse',
-    frames: [15, 3, 16],
-    damage: 60,
+    frames: [13, 3, 16],
+    damage: 56,
     stun: [19, 12],
-    hitstop: 11,
+    hitstop: 10,
     pushbackPx: 3,
     guard: 'overhead',
     hitbox: box(10, 36, 32, 40),
-    motion: advance(34, { from: 0, to: 8, distancePx: 10 }),
+    motion: advance(32, { from: 0, to: 8, distancePx: 12 }),
     cancelInto: HEAVY_CANCELS,
     extender: 'rebond',
   }),
@@ -120,17 +161,18 @@ export const WATT_STRINGS: Pick<
     motion: advance(30, { from: 0, to: 9, distancePx: 10 }),
     knockdown: kd(3, 4),
   }),
-  // → + L: a heavy 14 px step, then the Paume; chains into Crochet court, Marteau or Coup de masse.
+  // → + L: a quick 16 px step (7 ticks startup), then the Paume; chains into Crochet court,
+  // Marteau or Coup de masse.
   forwardLight: strike({
     name: 'Pas lourd',
-    frames: [9, 2, 11],
+    frames: [7, 3, 10],
     damage: 32,
     stun: [15, 11],
     hitstop: 8,
     pushbackPx: 2,
     guard: 'mid',
     hitbox: box(8, 40, 26, 14),
-    motion: advance(22, { from: 0, to: 9, distancePx: 14 }),
+    motion: advance(20, { from: 0, to: 7, distancePx: 16 }),
     cancelInto: LIGHT_CANCELS,
     branches: [
       { button: 'light', dirs: ['neutral', 'forward', 'back'], move: 'chainLight' },
@@ -154,25 +196,44 @@ export const WATT_STRINGS: Pick<
     juggleCost: 2,
     counter: { hitstun: 20, pushback: px(0.5) },
     branches: [
+      { button: 'light', dirs: ['down'], move: 'chainLow' },
       { button: 'heavy', dirs: ['neutral'], move: 'chainHeavy' },
       { button: 'heavy', dirs: ['forward'], move: 'chainHigh' },
       { button: 'heavy', dirs: ['down'], move: 'crouchHeavy' },
       { button: 'heavy', dirs: ['back'], move: 'backHeavy' },
     ],
   }),
-  // H, H: both fists together, 12 px forward; holds the opponent standing so any special or
-  // the Câble follows up.
-  chainHeavy: strike({
-    name: 'Double marteau',
-    frames: [11, 3, 20],
-    damage: 55,
-    stun: [20, 14],
-    hitstop: 10,
-    pushbackPx: 2.5,
-    guard: 'mid',
-    hitbox: box(12, 30, 36, 34),
-    motion: advance(34, { from: 0, to: 8, distancePx: 12 }),
-    cancelInto: HEAVY_CANCELS,
-    juggleCost: 2,
-  }),
+  // H, H: a two-hit piston combination (left upper-smash on f11, twin-clamp shockwave on f13),
+  // advancing 14 px and holding the opponent standing so any special, Câble or Plein feu connects.
+  chainHeavy: {
+    ...strike({
+      name: 'Double marteau',
+      frames: [11, 4, 19],
+      damage: 20,
+      stun: [16, 12],
+      hitstop: 7,
+      pushbackPx: 0.5,
+      guard: 'mid',
+      hitbox: box(12, 30, 36, 34),
+      motion: advance(34, { from: 0, to: 10, distancePx: 14 }),
+      cancelInto: HEAVY_CANCELS,
+      juggleCost: 1,
+    }),
+    pulses: [
+      {
+        frame: 13,
+        hit: strike({
+          name: 'Double marteau',
+          frames: [11, 4, 19],
+          damage: 30,
+          stun: [20, 14],
+          hitstop: 8,
+          pushbackPx: 2,
+          guard: 'mid',
+          hitbox: box(12, 30, 36, 34),
+          juggleCost: 1,
+        }),
+      },
+    ],
+  },
 };

@@ -1,0 +1,41 @@
+{
+  "frames": {
+    "0": {
+      "frame": { "x": 0, "y": 155, "w": 102, "h": 141 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 14, "w": 102, "h": 141 },
+      "sourceSize": { "w": 143, "h": 155 }
+    },
+    "1": {
+      "frame": { "x": 0, "y": 427, "w": 109, "h": 130 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 10, "y": 25, "w": 109, "h": 130 },
+      "sourceSize": { "w": 143, "h": 155 }
+    },
+    "2": {
+      "frame": { "x": 0, "y": 557, "w": 114, "h": 119 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 20, "y": 36, "w": 114, "h": 119 },
+      "sourceSize": { "w": 143, "h": 155 }
+    },
+    "3": {
+      "frame": { "x": 0, "y": 676, "w": 119, "h": 114 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 24, "y": 41, "w": 119, "h": 114 },
+      "sourceSize": { "w": 143, "h": 155 }
+    },
+    "4": {
+      "frame": { "x": 0, "y": 296, "w": 104, "h": 131 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 10, "y": 24, "w": 104, "h": 131 },
+      "sourceSize": { "w": 143, "h": 155 }
+    },
+    "5": {
+      "frame": { "x": 0, "y": 0, "w": 107, "h": 155 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 107, "h": 155 },
+      "sourceSize": { "w": 143, "h": 155 }
+    }
+  },
+  "meta": { "image": "chainLow.png", "size": { "w": 119, "h": 790 } }
+}

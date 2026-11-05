@@ -1,0 +1,47 @@
+{
+  "frames": {
+    "0": {
+      "frame": { "x": 0, "y": 81, "w": 1, "h": 1 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 1, "h": 1 },
+      "sourceSize": { "w": 54, "h": 85 }
+    },
+    "1": {
+      "frame": { "x": 0, "y": 56, "w": 26, "h": 25 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 2, "y": 0, "w": 26, "h": 25 },
+      "sourceSize": { "w": 54, "h": 85 }
+    },
+    "2": {
+      "frame": { "x": 0, "y": 0, "w": 54, "h": 56 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 29, "w": 54, "h": 56 },
+      "sourceSize": { "w": 54, "h": 85 }
+    },
+    "3": {
+      "frame": { "x": 26, "y": 56, "w": 30, "h": 22 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 49, "w": 30, "h": 22 },
+      "sourceSize": { "w": 54, "h": 85 }
+    },
+    "4": {
+      "frame": { "x": 1, "y": 81, "w": 1, "h": 1 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 1, "h": 1 },
+      "sourceSize": { "w": 54, "h": 85 }
+    },
+    "5": {
+      "frame": { "x": 2, "y": 81, "w": 1, "h": 1 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 1, "h": 1 },
+      "sourceSize": { "w": 54, "h": 85 }
+    },
+    "6": {
+      "frame": { "x": 3, "y": 81, "w": 1, "h": 1 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 1, "h": 1 },
+      "sourceSize": { "w": 54, "h": 85 }
+    }
+  },
+  "meta": { "image": "jumpHeavy.png", "size": { "w": 56, "h": 82 } }
+}
