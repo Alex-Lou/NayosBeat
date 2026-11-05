@@ -236,7 +236,12 @@ async function writeRgbaStage(map: CodeMap): Promise<StageWritten> {
   const art = artOf(map.name);
   const code = map.draw();
   await mkdir(art, { recursive: true });
+  const shown = STAGE_LAYER_NAMES.filter((layer) => !(map.noMid === true && layer === 'mid'));
   for (const layer of STAGE_LAYER_NAMES) {
+    if (!shown.includes(layer)) {
+      await rm(new URL(`${layer}.png`, art), { recursive: true, force: true });
+      continue;
+    }
     await writeFile(new URL(`${layer}.png`, art), await readFile(new URL(`${layer}.png`, folder)));
   }
   const packed = packProps(code.props, code.layers);
@@ -245,7 +250,7 @@ async function writeRgbaStage(map: CodeMap): Promise<StageWritten> {
   const module = new URL('props.ts', art);
   await writeFile(module, await propsModule(packed.props, module));
   const layers: IndexedImage[] = [];
-  for (const layer of STAGE_LAYER_NAMES) {
+  for (const layer of shown) {
     const image = await readTruecolor(new URL(`${layer}.png`, folder));
     const { palette, slots } = quantizeRgba(image.data, 64);
     layers.push({

@@ -8,5 +8,5 @@ const IMAGES = import.meta.glob<string>('./**/*.png', {
   import: 'default',
 });
 
-/** Rust Carnival in its stormy midnight. */
+/** Lomé Carnival in its stormy midnight. */
 export const STAGE_VARIANTS = stageVariantsOf('carnival', IMAGES, STAGE_COLORS, STAGE_PROPS);
