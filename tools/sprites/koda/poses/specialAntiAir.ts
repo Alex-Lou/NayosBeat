@@ -108,9 +108,6 @@ const column = (bottom: number, top: number, width: number, progress: number): E
   progress,
 });
 
-// 0 - The dip (3 ticks): low on both legs in the wide stance, curled over the lead knee, the
-// lead shoulder dropped and the lead fist sunk to the hip (elbow behind), the chest opened
-// toward us. Rear fist in front of the chin, eyes up on the target.
 const DIP: Pose = {
   hip: at(-6.6, 28.8),
   torso: 31,
@@ -121,13 +118,11 @@ const DIP: Pose = {
   farFoot: onToes(REAR_TOE, -40),
   nearFist: DIP_FIST,
   farFist: at(16, 49),
+  nearHand: 'open',
+  farHand: 'open',
   bends: { nearElbow: 'back', farElbow: 'down' },
 };
 
-// 1 - The launch (3 ticks, active): uncoiled in one line from the back toe (still pivoting on
-// the floor) to the fist above the head; the lead knee starts driving up, the chin tucked behind
-// the rising lead shoulder, the rear arm flung down and back behind the hip, long, the elbow
-// pointing back (never the forearm folded back the wrong way out of the hip).
 const LAUNCH_BODY: Pose = {
   hip: at(-4.6, 44),
   torso: 13,
@@ -135,17 +130,17 @@ const LAUNCH_BODY: Pose = {
   shrug: 4.4,
   reach: { near: 3 },
   twist: -0.35,
-  nearFoot: { x: 8.5, y: 15, angle: -40 },
+  nearFoot: { x: 11.5, y: 20, angle: -36 },
   farFoot: onToes(REAR_TOE, -60),
   nearFist: at(15.2, 91.6),
   farFist: at(-13, 45),
+  nearHand: 'open',
+  farHand: 'open',
   bends: { nearElbow: 'front', farElbow: 'down' },
   face: 'effort',
 };
 const LAUNCH = withArm(LAUNCH_BODY, 'far', -30, 25);
 
-// 2 - The peak (5 ticks, active): off the floor, lead knee high, toes pointed, the body arched
-// a touch back under the fist, chin up on what he hit. The shout.
 const PEAK_BODY: Pose = {
   hip: at(-1.6, 47.5),
   torso: -4,
@@ -153,10 +148,12 @@ const PEAK_BODY: Pose = {
   shrug: 3.5,
   reach: { near: 3 },
   twist: -0.5,
-  nearFoot: { x: 6.5, y: 24, angle: -35 },
+  nearFoot: { x: 10.5, y: 28, angle: -30 },
   farFoot: { x: -12.5, y: 13, angle: -50 },
   nearFist: at(11.5, 95),
   farFist: at(-12.5, 47.5),
+  nearHand: 'open',
+  farHand: 'open',
   bends: { nearElbow: 'front', farElbow: 'down' },
   face: 'kiai',
 };
@@ -296,6 +293,7 @@ export const POSES: readonly Pose[] = [
       dust(7, 3.6, 0.85),
       dust(-19, 3.2, 0.9),
       { kind: 'flash', center: at(12.5, 100.5), radius: 6, tone: 'strike' },
+      { kind: 'shards', center: at(14, 88), radius: 12, progress: 0.3, tone: 'sound' },
     ],
   },
   { ...HANG, effects: [column(0, 100, 10, 0.6)] },

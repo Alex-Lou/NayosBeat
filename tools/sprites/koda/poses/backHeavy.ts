@@ -1,268 +1,190 @@
 import type { Point } from '../../raster.ts';
-import { solve } from '../../skeleton.ts';
-import { at, GUARD, planted, smear, type Effect, type Foot, type Pose } from './common.ts';
+import { add, BODY, scale, solve, sub, type Bend } from '../../skeleton.ts';
+import { at, GUARD, lifted, planted, smear, type Foot, type Pose } from './common.ts';
+import { hung } from './jump.ts';
 
 /**
- * backHeavy (Remontant, docs/combat-v2.md §5.2, §10.1, §11.2): 7 frames, 2, 2, 3, [4], 5, 6, 6
- * ticks (28), active frame 3 (ticks 7-10), hitbox x 4..30 / y 56..104, reached upward and
- * forward (an anti-air, §9.5: its front effects count toward the reach). A launcher that
- * misses crouchers.
- *
- * The short lead uppercut, on the spot: no jump, no wind-up to speak of (7 ticks). He drops an
- * inch into the knees, the lead glove sinking to the chest, then the legs and the hips drive
- * up through the lead shoulder, the rear heel spinning up: the fist rips up almost straight,
- * elbow bent under it, the chin buried behind the rolled shoulder, the rear glove glued to the
- * cheek. A rising arc sweeps up ahead of the fist through the airborne opponent. He holds the
- * top a beat (it launches), lets the arm fold and settles back down into the guard.
- *
- * The Uppercut special is the other one: it jumps, the arm straight overhead, the rear arm
- * flung back, a shout and a sound column; this one stays grounded, compact, jaw set.
+ * backHeavy (Sursaut / Rising Flash Kick Launcher): 7 frames, 2, 2, 3, [4], 5, 6, 6 ticks (28),
+ * active frame 3 (ticks 7-10), hitbox x 4..30 / y 58..104, a launcher that misses crouchers.
+ * Instead of Nayo's short uppercut punch, Koda pivots on his rear leg, leans his torso back, and
+ * lashes his silver-greaved lead leg skyward in a high crescent flash kick while his rear silver
+ * gauntlet slashes upward in tandem, projecting a vertical jade blade column to y = 104.
  */
-
-/** Where the toe tip of a foot touches the floor (a foot on the ball pivots around it). */
-function toeOf(foot: Foot): number {
-  const a = ((foot.angle ?? 0) * Math.PI) / 180;
-  return foot.x + 2.3 * Math.sin(a) + 7 * Math.cos(a);
-}
-
-/** A foot on the floor turned to `angle` around its toe tip at `toe`: the toe never slides. */
-function onToes(toe: number, angle: number): Foot {
-  const a = (angle * Math.PI) / 180;
-  return planted(toe - 2.3 * Math.sin(a) - 7 * Math.cos(a), angle);
-}
-
-const LEAD_TOE = toeOf(GUARD.nearFoot);
-const REAR_TOE = toeOf(GUARD.farFoot);
 
 type Body = Omit<Pose, 'nearFist' | 'farFist'>;
-const sketch = (body: Body): Pose => ({
-  ...body,
-  nearFist: GUARD.nearFist,
-  farFist: GUARD.farFist,
-});
 
-/** The rear glove's place in the guard, from the head's centre: it rides the head. */
-const CHEEK = ((): Point => {
-  const { head } = solve(GUARD);
-  return at(GUARD.farFist.x - head.x, GUARD.farFist.y - head.y);
-})();
-
-/** The rear glove at the cheek (plus `dx`, `dy`), whatever the head does. */
-function atCheek(body: Body, dx = 0, dy = 0): Point {
-  const { head } = solve(sketch(body));
-  return at(head.x + CHEEK.x + dx, head.y + CHEEK.y + dy);
+function arm(
+  body: Body,
+  which: 'near' | 'far',
+  shoulder: number,
+  elbow: number,
+): { fist: Point; bend: Bend } {
+  const s = solve({ ...body, nearFist: GUARD.nearFist, farFist: GUARD.farFist });
+  const root = s[which].shoulder;
+  const turn = (v: Point, degrees: number): Point => {
+    const a = (degrees * Math.PI) / 180;
+    return { x: v.x * Math.cos(a) - v.y * Math.sin(a), y: v.x * Math.sin(a) + v.y * Math.cos(a) };
+  };
+  const upper = turn({ x: -s.up.x, y: -s.up.y }, shoulder);
+  const joint = add(root, scale(upper, BODY.upperArm));
+  const fist = add(joint, scale(turn(upper, elbow), BODY.forearm));
+  const line = sub(fist, root);
+  const axis = scale(line, 1 / (Math.hypot(line.x, line.y) || 1));
+  const offset = sub(joint, root);
+  const along = offset.x * axis.x + offset.y * axis.y;
+  const mirror = add(root, sub(scale(axis, 2 * along), offset));
+  const dx = joint.x - mirror.x;
+  const dy = joint.y - mirror.y;
+  const bend: Bend =
+    Math.abs(dy) >= Math.abs(dx) ? (dy < 0 ? 'down' : 'up') : dx > 0 ? 'front' : 'back';
+  return { fist: at(fist.x, fist.y), bend };
 }
 
-/** The lead wrist `length` px from the lead shoulder, `angle` degrees above horizontal. */
-function lead(body: Body, length: number, angle: number): Point {
-  const { shoulder } = solve(sketch(body)).near;
+function posed(body: Body, near: readonly [number, number], far: readonly [number, number]): Pose {
+  const lead = arm(body, 'near', near[0], near[1]);
+  const rear = arm(body, 'far', far[0], far[1]);
+  return {
+    ...body,
+    nearFist: lead.fist,
+    farFist: rear.fist,
+    bends: { ...body.bends, nearElbow: lead.bend, farElbow: rear.bend },
+  };
+}
+
+function withSkyKick(body: Body, foot: Point, ankle = 88): Body {
+  const withFoot: Body = {
+    ...body,
+    nearFoot: { x: foot.x, y: foot.y, angle: 0 },
+    bends: { ...body.bends, nearKnee: 'up' },
+  };
+  return { ...withFoot, nearFoot: hung(withFoot, 'near', ankle) };
+}
+
+const REAR_TOE = solve(GUARD).far.toe.x;
+
+function onToes(toe: number, angle: number): Foot {
   const a = (angle * Math.PI) / 180;
-  return at(shoulder.x + Math.cos(a) * length, shoulder.y + Math.sin(a) * length);
+  return planted(
+    toe - (BODY.ankle - BODY.footRadius) * Math.sin(a) - BODY.foot * Math.cos(a),
+    angle,
+  );
 }
 
-/** The lead glove as drawn: its middle and the top of its knuckles, past the wrist. */
-function glove(pose: Pose): { middle: Point; knuckles: Point } {
-  const { wrist, forearm } = solve(pose).near;
-  const along = (distance: number): Point =>
-    at(wrist.x + forearm.x * distance, wrist.y + forearm.y * distance);
-  return { middle: along(2.6), knuckles: along(5.4) };
-}
-
-/** The uppercut's trail: from `tail` up the fist's path into the middle of the lead glove. */
-function trail(pose: Pose, width: number, ...tail: readonly (readonly [number, number])[]) {
-  const { middle } = glove(pose);
-  return smear(width, ...tail, [middle.x, middle.y]);
-}
-
-const dust = (x: number, size: number, progress: number): Effect => ({
-  kind: 'dust',
-  x,
-  size,
-  progress,
-});
-
-const UPPER = { nearElbow: 'front', farElbow: 'down' } as const;
-
-// Frame 0 (2 ticks): the dip. Down an inch into both knees, curled over the lead knee, the lead
-// shoulder dropped and the glove sunk to the chest, elbow in; the rear glove stays at the cheek.
-// The rear heel rises off the guard's as its knee sinks over it (the ball loaded to drive).
+// Frame 0 (2 ticks): Quick dip into the knees, coiling the torso and crossing the silver gauntlets.
 const DIP_BODY: Body = {
   ...GUARD,
-  hip: at(-7, 33.8),
-  torso: 20,
+  hip: at(-6.2, 33.8),
+  torso: 18,
   head: -2,
-  shrug: 0.2,
-  twist: -0.2,
-  farFoot: onToes(REAR_TOE, -22),
+  shrug: 1.0,
+  twist: 0.25,
+  nearFoot: planted(6.35),
+  farFoot: onToes(REAR_TOE, -24),
 };
-const DIP: Pose = {
-  ...DIP_BODY,
-  nearFist: at(8, 47),
-  farFist: atCheek(DIP_BODY),
-};
+const DIP: Pose = posed(DIP_BODY, [22, 92], [38, 88]);
 
-// Frame 1 (2 ticks): the drive. The rear heel spins up, the knees push, the hips rise and turn
-// in, the lead shoulder starts up; the glove still low and tight, about to go.
-const DRIVE_BODY: Body = {
+// Frame 1 (2 ticks): Weight shifts onto the rear foot as the lead knee chambers up toward the
+// chest.
+const CHAMBER_RAW: Body = {
   ...GUARD,
-  hip: at(-6.2, 35.4),
-  torso: 17,
-  head: 0,
-  shrug: 1.2,
-  twist: 0.1,
-  farFoot: onToes(REAR_TOE, -27),
-};
-const DRIVE: Pose = {
-  ...DRIVE_BODY,
-  nearFist: at(10, 49),
-  farFist: atCheek(DRIVE_BODY),
-};
-
-// Frame 2 (3 ticks): the rip. Legs and hips extending, the lead shoulder rolling up, the fist
-// going up past the chin a little ahead of the face, the elbow low and in, right under it.
-const RIP_BODY: Body = {
-  ...GUARD,
-  hip: at(-5.6, 38.6),
-  torso: 13,
+  hip: at(-2.5, 36.8),
+  torso: 6,
   head: 4,
-  shrug: 3,
-  reach: { near: 1.5 },
-  twist: -0.3,
-  farFoot: onToes(REAR_TOE, -36),
-  bends: UPPER,
+  shrug: 1.6,
+  twist: 0.15,
+  nearFoot: at(10, 26),
+  farFoot: planted(-10.0, -8),
+  face: 'focus',
 };
-const RIP_ARM: Pose = {
-  ...RIP_BODY,
-  nearFist: at(16, 64.5),
-  farFist: atCheek(RIP_BODY),
-};
+const CHAMBER: Pose = posed(withSkyKick(CHAMBER_RAW, at(10, 26), 94), [28, 96], [52, 88]);
 
-// Frame 3 (4 ticks, active): the top. Up on both balls of the feet, one line from the rear toe
-// through the hips and the lead shoulder to the fist above the head, the elbow still bent under
-// it; the chin buried behind the shoulder, the jaw set.
-const TOP_BODY: Body = {
+// Frame 2 (3 ticks): The silver-greaved leg whips upward in front of the chest while the lead
+// silver gauntlet slashes up alongside it.
+const RISE_RAW: Body = {
   ...GUARD,
-  hip: at(-4, 42.4),
-  torso: 11,
-  head: 7,
-  shrug: 4.2,
-  reach: { near: 3 },
-  twist: -0.6,
-  nearFoot: onToes(LEAD_TOE, -24),
-  farFoot: onToes(REAR_TOE, -48),
-  bends: UPPER,
+  hip: at(0.5, 38.5),
+  torso: -12,
+  head: 12,
+  shrug: 2.8,
+  twist: -0.25,
+  nearFoot: at(24, 50),
+  farFoot: planted(-7.0, -10),
   face: 'effort',
 };
-const TOP_ARM: Pose = {
-  ...TOP_BODY,
-  nearFist: lead(TOP_BODY, 23.5, 71),
-  farFist: atCheek(TOP_BODY, 0.4, -0.6),
+const RISE: Pose = {
+  ...posed(withSkyKick(RISE_RAW, at(24, 50), 90), [118, 36], [-18, 26]),
+  effects: [smear(4.0, [10, 32], [18, 42], [25, 52])],
 };
-/** Where the fist meets the jumping opponent: just above the knuckles. */
-const CONTACT = ((): Point => {
-  const { knuckles } = glove(TOP_ARM);
-  return at(knuckles.x + 1, knuckles.y + 7);
-})();
 
-// Frame 4 (5 ticks): the launch held. The fist hangs at the top, a hair past the contact as the
-// arm opens, the body still up on the toes; the chin comes up out of the shoulder to watch the
-// opponent go up.
-const HOLD_BODY: Body = {
+// Frame 3 (4 ticks, active): Peak of the rising flash kick + skyward gauntlet slash! The lead leg
+// is lashed high (`nearFoot` at `24, 60`), the lead silver gauntlet extends overhead (`[148, 18]`),
+// and a vertical jade speed cone + flash reaches y = 104 (hitbox 4..30, y 58..104).
+const TOP_RAW: Body = {
   ...GUARD,
-  hip: at(-4.3, 42),
-  torso: 10.5,
-  head: 2,
-  shrug: 3.8,
-  reach: { near: 2.8 },
-  twist: -0.55,
-  nearFoot: onToes(LEAD_TOE, -20),
-  farFoot: onToes(REAR_TOE, -44),
-  bends: UPPER,
+  hip: at(2.0, 39.5),
+  torso: -14,
+  head: 14,
+  shrug: 3.4,
+  reach: { near: 2.5 },
+  twist: -0.4,
+  nearFoot: at(24, 60),
+  farFoot: planted(-5.5, -12),
+  face: 'kiai',
+};
+const TOP_POSE = posed(withSkyKick(TOP_RAW, at(24, 60), 88), [148, 18], [-22, 24]);
+const CONTACT = at(19, 89.5);
+const TOP: Pose = {
+  ...TOP_POSE,
+  effects: [
+    smear(4.8, [16, 52], [20, 68], [18, 82]),
+    {
+      kind: 'speed',
+      center: at(21, 99),
+      length: 24,
+      spread: 6,
+      direction: 90,
+      tone: 'sound',
+    },
+    {
+      kind: 'flash',
+      center: CONTACT,
+      radius: 6,
+      tone: 'strike',
+    },
+  ],
+  glows: [{ center: CONTACT, reach: 26, power: 1.1, tone: 'sound' }],
+};
+
+// Frame 4 (5 ticks): Re-chambering the high kick on the way down while a jade ring lingers high.
+const FOLD_RAW: Body = {
+  ...GUARD,
+  hip: at(-0.5, 38.2),
+  torso: -2,
+  head: 6,
+  shrug: 2.4,
+  twist: -0.25,
+  nearFoot: at(14, 42),
+  farFoot: planted(-9.0, -10),
   face: 'effort',
-};
-const HOLD: Pose = {
-  ...HOLD_BODY,
-  nearFist: lead(HOLD_BODY, 24, 72),
-  farFist: atCheek(HOLD_BODY, 0.3, -0.4),
-};
-
-// Frame 5 (6 ticks): the arm folds straight back down the way it went up, the elbow dropping in
-// front of the ribs and the glove down to the chin, under the eye; he sinks back a touch into
-// his knees, the chin tucked again.
-const FOLD_BODY: Body = {
-  ...GUARD,
-  hip: at(-6.4, 35.6),
-  torso: 16,
-  head: 1,
-  shrug: 2,
-  twist: -0.1,
-  farFoot: onToes(REAR_TOE, -20),
 };
 const FOLD: Pose = {
-  ...FOLD_BODY,
-  nearFist: at(12, 62),
-  farFist: atCheek(FOLD_BODY),
+  ...posed(withSkyKick(FOLD_RAW, at(14, 42), 92), [112, 48], [-12, 32]),
+  effects: [
+    { kind: 'ring', center: at(19, 86), radius: 10, progress: 0.55, tone: 'sound', squash: 0.5 },
+  ],
 };
 
-/**
- * The idle's last frame (the lead shoulder up on the breath): the idle's own 9 -> 0 beat
- * carries him on into the loop, no frozen copy of the guard at the hand-off.
- */
-const IDLE_HANG: Pose = {
+// Frame 5 (6 ticks): Setting the lead foot back down toward its guard mark.
+const SETTLE_BODY: Body = {
   ...GUARD,
-  shrug: 1.68,
-  nearFist: at(8.82, 54.97),
-  farFist: at(10.3, 62.3),
+  hip: at(-4.8, 36.2),
+  torso: 11,
+  head: 2,
+  shrug: 1.6,
+  nearFoot: lifted(planted(7.5, 0), 1.0),
+  farFoot: onToes(REAR_TOE, -18),
 };
+const SETTLE: Pose = posed(SETTLE_BODY, [24, 88], [38, 92]);
 
-export const POSES: readonly Pose[] = [
-  DIP,
-  { ...DRIVE, effects: [dust(REAR_TOE - 2, 2.2, 0.2)] },
-  {
-    ...RIP_ARM,
-    effects: [trail(RIP_ARM, 4, [9, 46], [13, 55], [15.5, 61]), dust(REAR_TOE - 2, 2.2, 0.5)],
-  },
-  {
-    ...TOP_ARM,
-    nearHand: 'open',
-    effects: [
-      trail(TOP_ARM, 4.5, [11, 54], [14.5, 64], [15.5, 74], [14.5, 82]),
-      {
-        kind: 'speed',
-        center: at(21, 99),
-        length: 24,
-        spread: 6,
-        direction: 90,
-        tone: 'sound',
-      },
-      {
-        kind: 'flash',
-        center: CONTACT,
-        radius: 6,
-        tone: 'strike',
-      },
-    ],
-    glows: [{ center: CONTACT, reach: 26, power: 1.1, tone: 'sound' }],
-  },
-  {
-    ...HOLD,
-    effects: [
-      {
-        kind: 'ring',
-        center: CONTACT,
-        radius: 12,
-        progress: 0.65,
-        tone: 'sound',
-      },
-      {
-        kind: 'shards',
-        center: CONTACT,
-        radius: 15,
-        progress: 0.5,
-        tone: 'strike',
-      },
-    ],
-  },
-  FOLD,
-  IDLE_HANG,
-];
+// Frame 6 (6 ticks): Back in GUARD.
+export const POSES: readonly Pose[] = [DIP, CHAMBER, RISE, TOP, FOLD, SETTLE, GUARD];

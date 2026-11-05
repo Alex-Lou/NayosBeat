@@ -207,39 +207,35 @@ const CRACK: readonly Effect[] = [
 // and a thin pulse over the collar (never over the face), and the floor lights up under him:
 // the Boost.
 const CUE_HIP = at(-5.6, 38.4);
-/** The pulse rings ride the body: placed for the intro's hips, moved onto the cue's. */
-const ride = (p: { x: number; y: number }): Point =>
-  at(p.x + CUE_HIP.x + 4.4, p.y + CUE_HIP.y - 39.2);
 const CUE: Pose = {
   ...armed(
     {
-      // The intro's frame 5 body (intro.ts), its own copy: the cue must not move when the intro
-      // is retouched.
       hip: CUE_HIP,
       torso: 6,
       head: 12,
-      shrug: 0.4,
+      shrug: 1.2,
+      twist: 0.35,
       nearFoot: GUARD.nearFoot,
       farFoot: GUARD.farFoot,
       nearFist: GUARD.nearFist,
       farFist: GUARD.farFist,
       face: 'cool',
-      nearHand: 'fist',
+      nearHand: 'open',
       farHand: 'open',
     },
-    // The lead fingers up at the cup, the elbow down in front; the rear hand at the pocket.
-    [46, 148],
-    [-6, 34],
+    // Both silver gauntlets crossed in an X in front of his sternum (instead of Nayo's headphones cue!).
+    [28, 102],
+    [42, 96],
   ),
   effects: [
-    { kind: 'flash', center: ride(at(-6, 66)), radius: 2.5, tone: 'platine' },
+    { kind: 'flash', center: at(10, 52), radius: 3.5, tone: 'platine' },
     {
       kind: 'ring',
-      center: ride(at(-4, 64.5)),
-      radius: 13,
-      progress: 0.85,
+      center: at(10, 52),
+      radius: 14,
+      progress: 0.45,
       tone: 'platine',
-      squash: 0.4,
+      squash: 1.2,
     },
     {
       kind: 'ring',
@@ -294,6 +290,8 @@ const POUND_BODY: Pose = {
   farFoot: onToes(REAR_TOE, -72),
   nearFist: at(22, 7.5),
   farFist: at(-14, 28),
+  nearHand: 'open',
+  farHand: 'open',
   bends: { nearElbow: 'up', farElbow: 'down' },
   face: 'effort',
 };
@@ -364,18 +362,26 @@ const SALUTE: Pose = armed(
     hip: at(-6.4, 39),
     torso: 2,
     head: 2,
-    twist: 0.4,
+    twist: 0.45,
+    nearHand: 'open',
+    farHand: 'open',
     face: 'cool',
   },
-  [16, 131],
-  [150, 6],
+  [-18, 28],
+  [148, 8],
 );
 
-// s7 (7 ticks) · The fold: the Remontant's settle (its hips, lean and rear heel, a touch down
-// into the knees), but the arm coming down is the rear one, the salute's: folding down on its arc
-// in front of the face, clear of it, the elbow dropping to shoulder height and the glove on its
-// way back to the cheek; the lead glove stays at the chin.
-const FOLD: Pose = armed(borrowed(REMONTANT, 5), [24, 146], [134, 40]);
+const FOLD: Pose = armed(
+  {
+    ...GUARD,
+    hip: at(-6.5, 36.2),
+    torso: 12,
+    head: 2,
+    shrug: 1.6,
+  },
+  [24, 92],
+  [128, 42],
+);
 
 export const POSES: readonly Pose[] = [
   CUE,

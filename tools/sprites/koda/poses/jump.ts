@@ -58,19 +58,16 @@ export function hanging<T extends Body>(body: T, ankles: { near?: number; far?: 
   };
 }
 
-const GUARD_HEAD = headOf(GUARD);
+const AIR_LEAD = at(6.8, -12.3);
+const AIR_REAR = at(8.2, -3.8);
 
-/**
- * The guard's gloves around the face of `body`, moved by `near` / `far` (world pixels): the
- * face is drawn upright under 20 degrees whatever the lean, so gloves kept at the same offsets
- * from the head sit exactly where the guard holds them, the far one in front of the cheek, the
- * near one under the chin, whatever the chest does.
- */
 export function guarded(body: Body, near: Point = at(0, 0), far: Point = at(0, 0)): Pose {
   const head = headOf(body);
-  const glove = (fist: Point, shift: Point): Point =>
-    at(head.x + fist.x - GUARD_HEAD.x + shift.x, head.y + fist.y - GUARD_HEAD.y + shift.y);
-  return { ...body, nearFist: glove(GUARD.nearFist, near), farFist: glove(GUARD.farFist, far) };
+  return {
+    ...body,
+    nearFist: at(head.x + AIR_LEAD.x + near.x, head.y + AIR_LEAD.y + near.y),
+    farFist: at(head.x + AIR_REAR.x + far.x, head.y + AIR_REAR.y + far.y),
+  };
 }
 
 /** From the ankle to the ball of the foot, along the ground, for a foot `angle` degrees up. */
