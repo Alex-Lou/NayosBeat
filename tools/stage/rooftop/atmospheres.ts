@@ -1,12 +1,10 @@
 /**
  * The rooftop's atmospheres (docs/art/decor-rooftop.md §4): the same roof, each in its own palette,
- * slot for slot with its night's (palette.ts), graded (kit/grade.ts). Its rain falls by itself
- * (src/render/stage-rain.ts): a palette is all the rain asks of a stage (docs/art/pluie.md).
+ * slot for slot with its night's (palette.ts), graded while preserving full contrast.
  */
 
 import type { Rgba } from '../../sprites/png.ts';
-import { fogged } from '../kit/fog.ts';
-import { ceiled, grade, repaint, rgba, type Grade } from '../kit/grade.ts';
+import { mix, repaint, rgba, type Grade } from '../kit/grade.ts';
 import type { StageAtmosphere } from '../kit/stage.ts';
 import {
   AVIATION,
@@ -15,6 +13,7 @@ import {
   CLOUD,
   EMBER,
   HAZE,
+  MIST,
   NEON_GREEN,
   NEON_ORANGE,
   NEON_VIOLET,
@@ -31,7 +30,6 @@ import {
   WINDOW,
 } from './palette.ts';
 
-/** What gives light: as bright under the rain as on a dry night, which makes it stand out. */
 const LIT: ReadonlySet<number> = new Set([
   ...NEON_VIOLET,
   ...NEON_YELLOW,
@@ -46,110 +44,100 @@ const LIT: ReadonlySet<number> = new Set([
   ...BEAM_DROP,
 ]);
 
-/**
- * The rain's common ground: graded toward `light`, the lights restored, the masses brought back
- * under the flash measures' ceiling; the puddles turned to water, the signs' streaks lit in them,
- * the rain caught in the searchlight's beam.
- */
-function soaked(light: Omit<Grade, 'lit'>): Rgba[] {
-  const palette = [...PALETTE];
-  grade(palette, { ...light, lit: LIT });
-  for (const slot of LIT) palette[slot] = PALETTE[slot] ?? palette[slot] ?? rgba('#000000');
-  ceiled(palette, PALETTE, LIT);
-  repaint(palette, WET, ['#1c1c29', '#20202e', '#252434', '#2b283a', '#322d41', '#3a3248']);
-  repaint(palette, WET_PAVER, [
-    '#1e1d2b',
-    '#232130',
-    '#292636',
-    '#302b3d',
-    '#373144',
-    '#40384c',
-    '#4a3f53',
-    '#544657',
-  ]);
-  repaint(palette, REFLECT_VIOLET, [
-    '#3a2a50',
-    '#422e54',
-    '#4a3256',
-    '#523657',
-    '#5a3957',
-    '#623c57',
-  ]);
-  repaint(palette, REFLECT_YELLOW, [
-    '#3e2e2a',
-    '#48322a',
-    '#523628',
-    '#5c3a28',
-    '#663c2a',
-    '#6c3c2c',
-  ]);
-  repaint(palette, BEAM_DROP, ['#565a80', '#8084aa', '#b4b8d8']);
-  return palette;
-}
-
-/**
- * The rain at midnight, a downpour: the roof and the city darker and colder, soaked; the signs, the
- * lamp and the windows as bright as on a dry night, their light running in the puddles; the sky a
- * low lid, the far towers half gone.
- */
-function midnightRain(): Rgba[] {
-  const palette = soaked({ glow: rgba('#2e3450'), shadow: rgba('#1c1d31') });
-  repaint(palette, SKY, [
-    '#1b1b2f',
-    '#1c1c32',
-    '#1e1e35',
-    '#202038',
-    '#24223b',
-    '#28243e',
-    '#2d2741',
-    '#322943',
-    '#372b44',
-  ]);
-  repaint(palette, CLOUD, ['#232239', '#29263f', '#302a45', '#382f4a']);
-  repaint(palette, HAZE, ['#1f1d36', '#211f39', '#24223b', '#28243e']);
-  return palette;
-}
-
-/**
- * A storm at dusk: the last of the day low behind the towers, a dull amber under a lid of blue;
- * the clouds' bellies rose; the roof in the evening's shade, wet; the signs just lit, as bright as
- * at night. Every large color stays under the flashes' band and the flash measures' ceiling
- * (kit/grade.ts BACKDROP_CEILING), nowhere near the fighters' cyan or magenta.
- */
-function duskRain(): Rgba[] {
-  const palette = soaked({ glow: rgba('#4a3c52'), shadow: rgba('#20223c') });
-  repaint(palette, SKY, [
-    '#1d2140',
-    '#212443',
-    '#262745',
-    '#2e2a47',
-    '#382e48',
-    '#443247',
-    '#503545',
-    '#5c3843',
-    '#663a40',
-  ]);
-  repaint(palette, CLOUD, ['#2e2a46', '#3a304c', '#48364e', '#58394c']);
-  repaint(palette, HAZE, ['#262441', '#2a2744', '#302a46', '#372d47']);
-  return palette;
-}
-
-/**
- * A fog at midnight (docs/art/brume.md): the megacity sunk in it, its towers ghosts, the signs'
- * violet and yellow glowing out of the murk; the roof a little greyer. Banks of mist drift over the
- * distance (index.ts); the blimp's beam cuts through them.
- */
-function fog(): Rgba[] {
-  return fogged(PALETTE, {
-    color: rgba('#2a2a44'),
-    far: [SKY, CLOUD, HAZE, TOWER, WINDOW],
-    lit: LIT,
-    depth: 0.72,
-    near: 0.24,
+function gradeFull(palette: Rgba[], { glow, shadow, lit }: Grade): void {
+  palette.forEach((color, slot) => {
+    if (slot === 0) return;
+    const light = (color.r + color.g + color.b) / 3;
+    palette[slot] = lit.has(slot)
+      ? mix(color, glow, 0.25)
+      : light < 56
+        ? mix(color, shadow, 0.28)
+        : mix(color, glow, 0.2);
   });
 }
 
-/** The atmospheres the rooftop offers, the base one first (BASE_ATMOSPHERE: palette.ts as it is). */
+function soaked(light: Omit<Grade, 'lit'>): Rgba[] {
+  const palette = [...PALETTE];
+  gradeFull(palette, { ...light, lit: LIT });
+  for (const slot of LIT) palette[slot] = PALETTE[slot] ?? palette[slot] ?? rgba('#000000');
+  repaint(palette, WET, ['#1a1c2e', '#24283e', '#323650', '#424666', '#54587c', '#6a6e94']);
+  repaint(palette, WET_PAVER, [
+    '#202032',
+    '#2e2e44',
+    '#3e3e58',
+    '#50506e',
+    '#646484',
+    '#7a7a9c',
+    '#9494b6',
+    '#b0b0d0',
+  ]);
+  repaint(palette, REFLECT_VIOLET, [
+    '#3c2a58',
+    '#4e3670',
+    '#624488',
+    '#7854a0',
+    '#9066b8',
+    '#aa7cd0',
+  ]);
+  repaint(palette, REFLECT_YELLOW, [
+    '#463428',
+    '#5c422c',
+    '#745230',
+    '#8e6436',
+    '#aa783e',
+    '#c68e48',
+  ]);
+  repaint(palette, BEAM_DROP, ['#5c6290', '#8890be', '#c0c8ea']);
+  return palette;
+}
+
+function midnightRain(): Rgba[] {
+  const palette = soaked({ glow: rgba('#424c78'), shadow: rgba('#1c1e36') });
+  repaint(palette, SKY, [
+    '#1b1d34',
+    '#20223e',
+    '#272848',
+    '#303052',
+    '#3a385c',
+    '#444066',
+    '#504a70',
+    '#5c5478',
+    '#6a5e80',
+  ]);
+  repaint(palette, CLOUD, ['#2a2848', '#38345a', '#48426c', '#5a527e']);
+  repaint(palette, HAZE, ['#242242', '#2e2c50', '#3a3860', '#484670']);
+  return palette;
+}
+
+function duskRain(): Rgba[] {
+  const palette = soaked({ glow: rgba('#785c74'), shadow: rgba('#242644') });
+  repaint(palette, SKY, [
+    '#202444',
+    '#2a2a4e',
+    '#363056',
+    '#44365e',
+    '#543e64',
+    '#664668',
+    '#7a506a',
+    '#8e5a6a',
+    '#a46668',
+  ]);
+  repaint(palette, CLOUD, ['#3a2e50', '#4e385a', '#644462', '#7c5268']);
+  repaint(palette, HAZE, ['#2c2648', '#382e52', '#46385c', '#564266']);
+  repaint(palette, TOWER, ['#1e1c36', '#282442', '#342e50', '#423a60', '#524872']);
+  return palette;
+}
+
+function fog(): Rgba[] {
+  const lit = new Set([...LIT, ...MIST]);
+  const far = new Set([SKY, CLOUD, HAZE, TOWER, WINDOW.slice(0, 1)].flat());
+  const fogColor = rgba('#383c56');
+  return PALETTE.map((color, slot) => {
+    if (slot === 0 || lit.has(slot)) return color;
+    return mix(color, fogColor, far.has(slot) ? 0.62 : 0.22);
+  });
+}
+
 export const ROOFTOP_ATMOSPHERES: readonly StageAtmosphere[] = [
   { atmosphere: { moment: 'midnight', weather: 'clear' }, palette: PALETTE },
   { atmosphere: { moment: 'midnight', weather: 'rain' }, palette: midnightRain() },

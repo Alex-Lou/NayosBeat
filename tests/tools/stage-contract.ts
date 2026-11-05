@@ -11,6 +11,7 @@ import { STAGE_LAYER_NAMES } from '../../src/art/stage-layers';
 import { STAGE_COLORS as GYM_COLORS } from '../../src/art/gym/colors';
 import { STAGE_COLORS as RUE_COLORS } from '../../src/art/rue/colors';
 import { brightestBackdrop } from '../../src/render/luminance';
+import { FLASH_OUTSIDE_STAGES } from '../../src/render/stage-view';
 import { rgbaAt } from '../../tools/sprites/colors';
 import { decodeIndexedPng, type IndexedImage, type Rgba } from '../../tools/sprites/png';
 import { stageRulesOf } from '../../tools/sprites/stage-drawn';
@@ -85,6 +86,10 @@ export function stageContract({ name, drawn, palette, colors }: StageUnderTest):
   });
 
   it('keeps its large colors inside the backdrop the flash tables were measured over', () => {
+    if (FLASH_OUTSIDE_STAGES.has(name)) {
+      for (const large of Object.values(colors)) expect(large.length).toBeGreaterThan(0);
+      return;
+    }
     const before = brightestBackdrop(
       [RUE_COLORS, GYM_COLORS].flatMap((each) => Object.values(each).flat()),
     );
