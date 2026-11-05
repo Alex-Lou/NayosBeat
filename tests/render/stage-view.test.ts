@@ -17,6 +17,7 @@ import {
   darkestOf,
   drawStage,
   FIGHT_STAGE_COLORS,
+  FLASH_OUTSIDE_STAGES,
   loadStage,
   RANDOM_STAGE,
   stageVariantFor,
@@ -257,10 +258,9 @@ describe('the stage view', () => {
   });
 
   it("gives the flashes the night stages' large colors in every atmosphere, each once: else the grey box's", () => {
-    // Sakura, Dancing Forest, Jungle, Chinatown and Sunset Beam are the day stages: their bright
-    // colors are outside the flash envelope (stage-view.ts FIGHT_STAGE_COLORS, hand-drawn docs).
-    const day = new Set(['sakura', 'foret', 'jungle', 'chinatown', 'sunset']);
-    const variants = STAGE_MAPS.filter(({ name }) => !day.has(name)).flatMap(
+    // The full-contrast stages (Sakura, the hand-drawn ones, Dock, Rooftop, Temple) live outside
+    // the midnight flash envelope (stage-view.ts FLASH_OUTSIDE_STAGES).
+    const variants = STAGE_MAPS.filter(({ name }) => !FLASH_OUTSIDE_STAGES.has(name)).flatMap(
       ({ variants }) => variants,
     );
     if (variants.length === 0) {

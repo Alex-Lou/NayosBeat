@@ -1,9 +1,9 @@
 /**
- * Rooftop Rain's palette (docs/art/decor-rooftop.md §3): its own. Néon Underground, 2090: a night of
- * deep blue over a megacity, its low clouds lit violet from below; the roof's slate membrane, its
- * concrete, its steel; the giant signs' light, seen from behind, violet and yellow, a few tubes of
- * acid green and orange. Slot 0 is transparent, every other color opaque. The fighters own cyan
- * and magenta; nothing vivid here comes near them (the city's cyan and magenta are theirs alone).
+ * Rooftop Rain's palette (docs/art/decor-rooftop.md §3): high-contrast cyberpunk pixel-art ramps.
+ * Néon Underground, 2090: a luminous indigo-violet sky over a megacity, clouds lit from below,
+ * multi-step skyscraper silhouettes and lit windows, crisp concrete pavers and slate membrane,
+ * metallic steel trusses, copper-green water tank, and blazing violet, golden, acid-green and
+ * orange neon signs. Slot 0 is transparent, every other color opaque.
  */
 
 import { MIST_HEXES } from '../kit/fog.ts';
@@ -22,163 +22,146 @@ function ramp(...hexes: string[]): readonly number[] {
   });
 }
 
-/** The night over the megacity: deep blue overhead, violet down to the towers' glow. */
+/** The night over the megacity: deep indigo overhead grading into a glowing violet-rose horizon. */
 export const SKY = ramp(
-  '#1b1b2f',
-  '#1c1d34',
-  '#1e2039',
-  '#21223d',
-  '#262441',
-  '#2c2745',
-  '#332a49',
-  '#3b2d4b',
-  '#44304c',
+  '#1b1d36',
+  '#222344',
+  '#2c2952',
+  '#383160',
+  '#46396e',
+  '#58437a',
+  '#6c4f84',
+  '#825c8c',
+  '#9a6b92',
 );
 /** Low clouds, their bellies lit violet by the city. */
-export const CLOUD = ramp('#24233d', '#2c2744', '#362c4b', '#433251');
-/** The farthest towers, half gone in the haze, a step off the sky. */
-export const HAZE = ramp('#211f3a', '#24223e', '#282541', '#2d2945');
-/** The nearer towers: darker than their sky, edged by it. */
-export const TOWER = ramp('#1c1c31', '#1e1e35', '#22213a', '#27253f', '#2d2a45');
-/** Windows awake in the towers: mostly the dim step, a few lit runs. */
-export const WINDOW = ramp('#2f2c4a', '#463c5e', '#64546e', '#8a7676');
-/**
- * The giant signs' light, seen from behind: violet (ネオン) and yellow (大吉). The two darkest steps
- * of each are the glow spilling around the letters, wide: they stay inside the flashes' band and
- * under the flash measures' ceiling (kit/grade.ts BACKDROP_CEILING); the lighter ones are rims and
- * tubes, touches under 1 % of the screen each (docs/flashs.md §3).
- */
-export const NEON_VIOLET = ramp('#2e2448', '#4a3354', '#7c54b8', '#a47ce0', '#e0ccff');
-export const NEON_YELLOW = ramp('#33291f', '#56381f', '#c89430', '#f0c860', '#fff0b0');
-/** Small tubes: acid green on the hut, orange on the far towers and the flying cars' tails. */
-export const NEON_GREEN = ramp('#25331f', '#3e6a24', '#7ab838', '#c4f070');
-export const NEON_ORANGE = ramp('#40241a', '#8a4220', '#d86a2a', '#ffa860');
+export const CLOUD = ramp('#302c52', '#443a68', '#5e4c80', '#7e649a');
+/** The farthest towers in the atmospheric haze. */
+export const HAZE = ramp('#28264a', '#36325c', '#464070', '#585086');
+/** The nearer skyscrapers: crisp 3D contrast from deep shadow to neon-edged rims. */
+export const TOWER = ramp('#1c1e36', '#282b4a', '#363a60', '#484e78', '#606694');
+/** Windows awake in the towers: warm gold and violet-lit office bands. */
+export const WINDOW = ramp('#423c68', '#6e5e92', '#a88cb8', '#f0d6c8');
+/** The giant signs' light, seen from behind: electric violet (ネオン) and golden yellow (大吉). */
+export const NEON_VIOLET = ramp('#38285c', '#5e3e88', '#8c60c8', '#b88cf0', '#ead6ff');
+export const NEON_YELLOW = ramp('#423222', '#744c26', '#d49e34', '#f8d068', '#fff4b8');
+/** Small tubes: acid green on the hut, orange on the far towers and flying cars. */
+export const NEON_GREEN = ramp('#283e22', '#467c28', '#84c83e', '#d0f878');
+export const NEON_ORANGE = ramp('#4c2a1e', '#984c24', '#e4742e', '#ffb468');
 /** Aviation lights: their glow, the lamp. */
-export const AVIATION = ramp('#4a1c20', '#e04030');
+export const AVIATION = ramp('#5c2024', '#f04838');
 /** Headlights far off, and the blimp's searchlight lens. */
-export const PALE = ramp('#a8a4b4', '#e8e4f0');
+export const PALE = ramp('#b4b0c4', '#f2eef8');
 /** Steel: the signs' trusses and letter backs, the antennas, the rails. */
-export const STEEL = ramp('#1c1c28', '#20202d', '#262635', '#2e2e3e', '#3a3a4c', '#4e4c60');
-/** The hut, the parapets, the walkway's pavers: cool concrete. */
+export const STEEL = ramp('#1e2030', '#2e3146', '#424660', '#5a607c', '#78809c', '#9ea6c4');
+/** The hut, the parapets, the walkway's pavers: crisp cool concrete. */
 export const CONCRETE = ramp(
-  '#211f2b',
-  '#262431',
-  '#2d2a37',
-  '#35313f',
-  '#3e3948',
-  '#484252',
-  '#554d5e',
-  '#635a6a',
+  '#242232',
+  '#343144',
+  '#464258',
+  '#5a556e',
+  '#706a86',
+  '#88829e',
+  '#a49cb8',
+  '#c4bcd6',
 );
-/** The roof's membrane: dark slate sheets, their seams. */
-export const MEMBRANE = ramp('#1c1c27', '#20202c', '#252431', '#2b2937', '#322f3d', '#3a3644');
-export const RUST = ramp('#36221f', '#4c2e20', '#653c24', '#7e4e2c');
-/** The hut's lamp over its door: sodium, its glow (two steps), its lens, its core. */
-export const SODIUM = ramp('#42291f', '#6e4428', '#c47a3a', '#f0b064', '#ffe0a8');
-export const STEAM = ramp('#3c384a', '#4e485a', '#625a6a', '#78707c');
-/** The water tank's old paint, a dull blue-green gone grey (hue far from the fighters' cyan). */
-export const TANK = ramp('#1e2228', '#242a30', '#2c3238', '#363c40', '#424646');
+/** The roof's membrane: slate-blue sheets with distinct lap seams. */
+export const MEMBRANE = ramp('#1d1e2e', '#282a3e', '#363850', '#464864', '#585a7a', '#6e7092');
+export const RUST = ramp('#422622', '#643824', '#8a4e2a', '#b46834');
+/** The hut's lamp over its door: warm sodium glow. */
+export const SODIUM = ramp('#543424', '#8e5630', '#d4863e', '#f8ba6c', '#ffe8b0');
+export const STEAM = ramp('#4c465e', '#68607a', '#888098', '#aca4ba');
+/** The water tank's weathered patina green-slate paint. */
+export const TANK = ramp('#1e2830', '#2c3a44', '#3e505c', '#546876', '#6e8492');
 /** The blimp: its hull, darkest under, and its gondola's frame. */
-export const HULL = ramp('#1d1d2a', '#232331', '#2a2a39', '#333343', '#3e3d4f', '#4c4a5c');
-/**
- * The searchlight's beam, drawn sparse over what is behind it. BEAM_DROP is the rain caught in it:
- * BEAM's own tones but under the rain (atmospheres.ts), where it lights up.
- */
-export const BEAM = ramp('#363a5e', '#4c5078', '#6c709a');
-export const BEAM_DROP = ramp('#363a5e', '#4c5078', '#6c709a');
-export const PERSON = ramp('#1a1824', '#201d2b', '#272333', '#2f2a3c', '#3a3446');
-export const SKIN = ramp('#5e3e38', '#86584a', '#a87660');
-export const EMBER = ramp('#7a2a1c', '#e0603a');
+export const HULL = ramp('#1e2030', '#2a2c40', '#383a52', '#4a4c68', '#606280', '#7a7c9c');
+/** The searchlight's beam and rain caught in it. */
+export const BEAM = ramp('#444874', '#646898', '#8c92c0');
+export const BEAM_DROP = ramp('#444874', '#646898', '#8c92c0');
+export const PERSON = ramp('#1c1a28', '#282438', '#36304a', '#484060', '#5e5478');
+export const SKIN = ramp('#744c40', '#a46c58', '#d09276');
+export const EMBER = ramp('#8e3020', '#f4683e');
 /** The rim the hut's sodium draws on people. */
-export const RIM_WARM = ramp('#7a5246', '#a06a52', '#c48a62');
-/** An umbrella's dark canopy. */
-export const UMBRELLA = ramp('#1c2422', '#26322e', '#32403a');
-/** The laundry on its line and the crowd's clothes: colors gone dull in the night. */
+export const RIM_WARM = ramp('#8e6050', '#bc8062', '#e8a678');
+/** An umbrella's canopy. */
+export const UMBRELLA = ramp('#202e2c', '#304440', '#445e58');
+/** The laundry on its line and the crowd's clothes. */
 export const CLOTH = {
-  red: ramp('#3e2430', '#563040', '#6e3e50'),
-  blue: ramp('#252b42', '#323a56', '#424c6e'),
-  cream: ramp('#48423e', '#625a50', '#7c7264'),
-  olive: ramp('#262c22', '#363e2e', '#4a543e'),
-  leather: ramp('#1e1920', '#2b242c', '#3e3440'),
-  black: ramp('#181720', '#22202c', '#302d3c'),
-  mustard: ramp('#44341e', '#5e4828', '#7a5e34'),
+  red: ramp('#50262a', '#74383c', '#9c4e50'),
+  blue: ramp('#2a3452', '#3c4a72', '#546696'),
+  cream: ramp('#5a524c', '#7c7266', '#a29684'),
+  olive: ramp('#2e3828', '#44523a', '#5e7050'),
+  leather: ramp('#241e28', '#362e3c', '#504458'),
+  black: ramp('#1c1a26', '#2a2838', '#3e3a4e'),
+  mustard: ramp('#564224', '#7a5e32', '#a27e44'),
 } as const;
 export const HAIR = {
-  black: ramp('#15131c', '#201c28', '#2e2838'),
-  brown: ramp('#2a1e1e', '#3e2b26', '#543a30'),
+  black: ramp('#181622', '#262234', '#38324a'),
+  brown: ramp('#342424', '#4e3630', '#6c4c40'),
 } as const;
-/**
- * Colored light from the giant signs and the sodium lamp falling on the roof's membrane and
- * concrete (kit/light.ts `spill`), even on a dry night.
- */
+/** Colored light from the giant signs falling on the roof's membrane and concrete. */
 export const MEMBRANE_VIOLET = ramp(
-  '#201c2e',
-  '#262036',
-  '#2d253f',
-  '#352b48',
-  '#3e3252',
-  '#48395a',
+  '#241e38',
+  '#342a4e',
+  '#463866',
+  '#5c4a80',
+  '#745e9c',
+  '#9076b8',
 );
 export const MEMBRANE_YELLOW = ramp(
-  '#221e26',
-  '#29242a',
-  '#312a2e',
-  '#3a3132',
-  '#443936',
-  '#4e413a',
+  '#28222c',
+  '#383038',
+  '#4c4044',
+  '#645452',
+  '#7e6a62',
+  '#9c8474',
 );
 export const CONCRETE_VIOLET = ramp(
-  '#241f30',
-  '#2b2438',
-  '#332b42',
-  '#3c324b',
-  '#463a54',
-  '#50425d',
-  '#5c4c66',
-  '#68566e',
+  '#28223a',
+  '#38304e',
+  '#4c4064',
+  '#62527c',
+  '#7a6696',
+  '#947eb0',
+  '#b098ca',
+  '#ceb6e4',
 );
 export const TAG = {
   outline: ramp('#17141c')[0] ?? 0,
-  violet: ramp('#4e3a6e', '#664c8c'),
-  yellow: ramp('#7a6430', '#98803c'),
-  green: ramp('#3a5634', '#4e7040'),
-  cream: ramp('#8a8070', '#a89c86'),
+  violet: ramp('#604888', '#8262b0'),
+  yellow: ramp('#947a38', '#bc9c48'),
+  green: ramp('#446a3c', '#5e9050'),
+  cream: ramp('#a49884', '#c8ba9e'),
 } as const;
-/**
- * The puddles the rain leaves on the roof, drawn where the membrane or the pavers would be, tone for
- * tone: dry, they are the roof's own colors and nothing shows; under the rain (atmospheres.ts),
- * they turn to water. REFLECT_* are the long streaks the signs draw in them, the membrane's tones
- * too while it is dry.
- */
-export const WET = ramp('#1c1c27', '#20202c', '#252431', '#2b2937', '#322f3d', '#3a3644');
+/** The puddles the rain leaves on the roof (dry: equal to MEMBRANE and CONCRETE). */
+export const WET = ramp('#1d1e2e', '#282a3e', '#363850', '#464864', '#585a7a', '#6e7092');
 export const WET_PAVER = ramp(
-  '#211f2b',
-  '#262431',
-  '#2d2a37',
-  '#35313f',
-  '#3e3948',
-  '#484252',
-  '#554d5e',
-  '#635a6a',
+  '#242232',
+  '#343144',
+  '#464258',
+  '#5a556e',
+  '#706a86',
+  '#88829e',
+  '#a49cb8',
+  '#c4bcd6',
 );
 export const REFLECT_VIOLET = ramp(
-  '#1c1c27',
-  '#20202c',
-  '#252431',
-  '#2b2937',
-  '#322f3d',
-  '#3a3644',
+  '#1d1e2e',
+  '#282a3e',
+  '#363850',
+  '#464864',
+  '#585a7a',
+  '#6e7092',
 );
 export const REFLECT_YELLOW = ramp(
-  '#1c1c27',
-  '#20202c',
-  '#252431',
-  '#2b2937',
-  '#322f3d',
-  '#3a3644',
+  '#1d1e2e',
+  '#282a3e',
+  '#363850',
+  '#464864',
+  '#585a7a',
+  '#6e7092',
 );
 
-/** The roof's ramps for the shared drawing code (people.ts, signs.ts). */
 export const FIGURE_RAMPS: FigureRamps = { body: PERSON, skin: SKIN };
 export const SPRAY_RAMPS: SprayRamps = {
   outline: TAG.outline,
@@ -186,10 +169,8 @@ export const SPRAY_RAMPS: SprayRamps = {
   colors: [TAG.violet, TAG.yellow, TAG.green, TAG.cream],
 };
 
-/** The mist's wisps, drawn only in the fog (kit/fog.ts). */
 export const MIST = ramp(...MIST_HEXES);
 
-/** Every color, slot by slot (256 at most: one PNG palette). */
 export const PALETTE: readonly Rgba[] = colors;
 
 if (PALETTE.length > 256) throw new Error(`The rooftop has ${PALETTE.length} colors: 256 at most`);

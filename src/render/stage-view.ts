@@ -12,29 +12,33 @@ import { GREYBOX_COLORS } from './greybox-stage';
 import { relativeLuminance } from './luminance';
 import { StagePropsView } from './stage-props';
 
-/** The hand-drawn day stages: their bright colors are outside the flash envelope. */
-const DAY_STAGES: ReadonlySet<string> = new Set([
+/**
+ * Stages whose full-contrast palettes live outside the midnight flash envelope; the flash tables
+ * stay measured over the midnight reference stages (docs/art/decor-sakura.md §3).
+ */
+export const FLASH_OUTSIDE_STAGES: ReadonlySet<string> = new Set([
   'sakura',
   'foret',
   'jungle',
   'chinatown',
   'sunset',
+  'dock',
+  'rooftop',
+  'temple',
 ]);
 
 /**
  * The large colors of the night stages the fights may show, in every atmosphere they may take
  * (each once, the first stage's base first): the drawn ones', else the grey box's. The flash veils
  * are set on them, and the flash measures taken over the darkest (docs/flashs.md §3), whatever the
- * fight draws. Sakura, Dancing Forest, Jungle, Chinatown and Sunset Beam are the day stages: their
- * bright colors are outside the envelope, and the effects stay measured over the midnight stages
- * (docs/art/decor-sakura.md §3, docs/art/decor-forest-dance.md §3, docs/art/decor-jungle.md §3,
- * docs/art/decor-chinatown.md §5, docs/art/decor-sunset.md §5).
+ * fight draws. The stages listed in FLASH_OUTSIDE_STAGES are left out: the effects stay measured
+ * over the midnight stages.
  */
 export const FIGHT_STAGE_COLORS: readonly number[] =
   STAGE_MAPS.length > 0
     ? [
         ...new Set(
-          STAGE_MAPS.filter(({ name }) => !DAY_STAGES.has(name)).flatMap(({ variants }) =>
+          STAGE_MAPS.filter(({ name }) => !FLASH_OUTSIDE_STAGES.has(name)).flatMap(({ variants }) =>
             variants.flatMap(({ art }) => art.colors),
           ),
         ),
