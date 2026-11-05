@@ -19,6 +19,7 @@ import { PLAGE } from './plage/index.ts';
 import { ROOFTOP } from './rooftop/index.ts';
 import { RUE } from './rue/index.ts';
 import { SAKURA } from './sakura/index.ts';
+import { CHINATOWN } from './chinatown/index.ts';
 import { TEMPLE } from './temple/index.ts';
 
 export const CODE_MAPS: readonly CodeMap[] = [
@@ -38,4 +39,5 @@ export const CODE_MAPS: readonly CodeMap[] = [
   LUCIOLES,
   DOJO,
   SAKURA,
+  CHINATOWN,
 ];

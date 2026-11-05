@@ -136,10 +136,12 @@ export const FLAG_FINISHER = 128;
 export const FLAG_ARMOR_SPENT = 256;
 /** The move playing started while the fighter's tension was full: it plays charged (docs/watt-arsenal.md §3.2). */
 export const FLAG_CHARGED = 512;
+/** The victim was already reeled in by a `pull` move (Watt's Câble) during this combo: once a combo at most. */
+export const FLAG_PULLED = 1024;
 /** The attacker's spends, once each per sequence. */
 export const SEQUENCE_FLAGS = FLAG_SPENT_CANCEL | FLAG_SPENT_SUPER;
 /** The victim's marks. */
-export const VICTIM_FLAGS = FLAG_EXTENDED | FLAG_BOUNCE | FLAG_LIMIT | FLAG_DANGER;
+export const VICTIM_FLAGS = FLAG_EXTENDED | FLAG_BOUNCE | FLAG_LIMIT | FLAG_DANGER | FLAG_PULLED;
 
 export interface ProjectileState {
   readonly owner: 0 | 1;

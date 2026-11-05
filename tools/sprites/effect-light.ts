@@ -65,6 +65,8 @@ export function glowsOfEffect(effect: Effect): Glow[] {
         glow(effect.to, 18, 0.75, effect.tone),
       ];
     }
+    case 'plasma':
+      return [glow(effect.center, effect.radius * 2.4 + 10, 1.15, effect.tone)];
     case 'shield':
     case 'dust':
     case 'notes':

@@ -45,7 +45,7 @@ const LUNGE: Pose = {
   effects: [smear(2.5, [6, 47], [10, 50], [14, 52]), smear(2.5, [13, 47], [16, 50], [19, 51.5])],
 };
 
-// Frame 2 (3 ticks, active): full stretch, the clamps open at the shoulders.
+// Frame 2 (3 ticks, active): full stretch, the clamps open at the shoulders, magnetic arc between them.
 const REACH: Pose = {
   ...GUARD,
   hip: at(-0.5, 36),
@@ -59,10 +59,16 @@ const REACH: Pose = {
   nearHand: 'open',
   farHand: 'open',
   face: 'kiai',
-  effects: [smear(2, [14, 52], [20, 53.5], [26, 54]), smear(2, [19, 51.5], [26, 52.5], [31.5, 53])],
+  effects: [
+    smear(2, [14, 52], [20, 53.5], [26, 54]),
+    smear(2, [19, 51.5], [26, 52.5], [31.5, 53]),
+    { kind: 'arc', from: at(24, 54), to: at(34, 53), spread: 2.5 },
+    { kind: 'energy', center: at(30, 53.5), radius: 2.8 },
+  ],
+  glows: [{ center: at(29, 53.5), reach: 22, power: 0.9, tone: 'sound' }],
 };
 
-// Frame 3 (6 ticks): shut on air: the clamps close, the arms still out, dropping a little.
+// Frame 3 (5 ticks): shut on air: the clamps close, the arms still out, dropping a little.
 const SHUT: Pose = {
   ...REACH,
   nearFist: at(23, 52),
@@ -70,10 +76,23 @@ const SHUT: Pose = {
   nearHand: 'fist',
   farHand: 'fist',
   face: 'focus',
-  effects: [],
+  effects: [{ kind: 'energy', center: at(26, 51.5), radius: 2 }],
+  glows: [],
 };
 
-// Frame 4 (8 ticks): heavy recovery, the weight rocking back, the arms coming in.
+// Frame 4 (6 ticks): pulling the clamps back toward the chest.
+const PULL_IN: Pose = {
+  ...GUARD,
+  hip: at(-5, 36.2),
+  torso: 16,
+  shrug: 2.5,
+  nearFoot: onBall(-16, -20),
+  farFoot: planted(10.5, 0),
+  nearFist: at(13, 51),
+  farFist: at(18, 50.5),
+};
+
+// Frame 5 (6 ticks): heavy recovery, the weight rocking back, the arms coming in.
 const BACK: Pose = {
   ...GUARD,
   hip: at(-8, 36.5),
@@ -84,5 +103,5 @@ const BACK: Pose = {
   farFist: at(10, 50),
 };
 
-// Frame 5 (8 ticks): back into the guard.
-export const POSES: readonly Pose[] = [GATHER, LUNGE, REACH, SHUT, BACK, GUARD];
+// Frame 6 (5 ticks): back into the guard.
+export const POSES: readonly Pose[] = [GATHER, LUNGE, REACH, SHUT, PULL_IN, BACK, GUARD];

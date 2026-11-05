@@ -257,9 +257,9 @@ describe('the stage view', () => {
   });
 
   it("gives the flashes the night stages' large colors in every atmosphere, each once: else the grey box's", () => {
-    // Sakura, Dancing Forest and Jungle are the day stages: their bright colors are outside the
-    // flash envelope (stage-view.ts FIGHT_STAGE_COLORS, the hand-drawn stages' docs §3).
-    const day = new Set(['sakura', 'foret', 'jungle']);
+    // Sakura, Dancing Forest, Jungle and Chinatown are the day stages: their bright colors are
+    // outside the flash envelope (stage-view.ts FIGHT_STAGE_COLORS, the hand-drawn docs §3/§5).
+    const day = new Set(['sakura', 'foret', 'jungle', 'chinatown']);
     const variants = STAGE_MAPS.filter(({ name }) => !day.has(name)).flatMap(
       ({ variants }) => variants,
     );

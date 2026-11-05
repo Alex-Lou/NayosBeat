@@ -1,19 +1,19 @@
 {
   "frames": {
     "0": {
-      "frame": { "x": 0, "y": 1073, "w": 108, "h": 149 },
+      "frame": { "x": 0, "y": 1247, "w": 108, "h": 149 },
       "trimmed": true,
       "spriteSourceSize": { "x": 5, "y": 71, "w": 108, "h": 149 },
       "sourceSize": { "w": 129, "h": 220 }
     },
     "1": {
-      "frame": { "x": 0, "y": 914, "w": 121, "h": 159 },
+      "frame": { "x": 0, "y": 1088, "w": 121, "h": 159 },
       "trimmed": true,
       "spriteSourceSize": { "x": 1, "y": 61, "w": 121, "h": 159 },
       "sourceSize": { "w": 129, "h": 220 }
     },
     "2": {
-      "frame": { "x": 0, "y": 404, "w": 123, "h": 172 },
+      "frame": { "x": 0, "y": 578, "w": 123, "h": 172 },
       "trimmed": true,
       "spriteSourceSize": { "x": 5, "y": 48, "w": 123, "h": 172 },
       "sourceSize": { "w": 129, "h": 220 }
@@ -25,23 +25,29 @@
       "sourceSize": { "w": 129, "h": 220 }
     },
     "4": {
-      "frame": { "x": 0, "y": 220, "w": 115, "h": 184 },
+      "frame": { "x": 0, "y": 220, "w": 120, "h": 179 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 36, "w": 115, "h": 184 },
+      "spriteSourceSize": { "x": 1, "y": 38, "w": 120, "h": 179 },
       "sourceSize": { "w": 129, "h": 220 }
     },
     "5": {
-      "frame": { "x": 0, "y": 576, "w": 105, "h": 170 },
+      "frame": { "x": 0, "y": 399, "w": 109, "h": 179 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 41, "w": 109, "h": 179 },
+      "sourceSize": { "w": 129, "h": 220 }
+    },
+    "6": {
+      "frame": { "x": 0, "y": 750, "w": 105, "h": 170 },
       "trimmed": true,
       "spriteSourceSize": { "x": 0, "y": 50, "w": 105, "h": 170 },
       "sourceSize": { "w": 129, "h": 220 }
     },
-    "6": {
-      "frame": { "x": 0, "y": 746, "w": 102, "h": 168 },
+    "7": {
+      "frame": { "x": 0, "y": 920, "w": 102, "h": 168 },
       "trimmed": true,
       "spriteSourceSize": { "x": 0, "y": 52, "w": 102, "h": 168 },
       "sourceSize": { "w": 129, "h": 220 }
     }
   },
-  "meta": { "image": "chainLaunch.png", "size": { "w": 123, "h": 1222 } }
+  "meta": { "image": "chainLaunch.png", "size": { "w": 123, "h": 1396 } }
 }

@@ -1,0 +1,41 @@
+{
+  "frames": {
+    "0": {
+      "frame": { "x": 23, "y": 60, "w": 1, "h": 1 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 1, "h": 1 },
+      "sourceSize": { "w": 48, "h": 86 }
+    },
+    "1": {
+      "frame": { "x": 0, "y": 60, "w": 23, "h": 27 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 23, "h": 27 },
+      "sourceSize": { "w": 48, "h": 86 }
+    },
+    "2": {
+      "frame": { "x": 0, "y": 0, "w": 45, "h": 60 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 3, "y": 26, "w": 45, "h": 60 },
+      "sourceSize": { "w": 48, "h": 86 }
+    },
+    "3": {
+      "frame": { "x": 24, "y": 60, "w": 1, "h": 1 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 1, "h": 1 },
+      "sourceSize": { "w": 48, "h": 86 }
+    },
+    "4": {
+      "frame": { "x": 25, "y": 60, "w": 1, "h": 1 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 1, "h": 1 },
+      "sourceSize": { "w": 48, "h": 86 }
+    },
+    "5": {
+      "frame": { "x": 26, "y": 60, "w": 1, "h": 1 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 1, "h": 1 },
+      "sourceSize": { "w": 48, "h": 86 }
+    }
+  },
+  "meta": { "image": "jumpLight.png", "size": { "w": 45, "h": 87 } }
+}

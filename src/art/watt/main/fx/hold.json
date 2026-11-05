@@ -1,0 +1,17 @@
+{
+  "frames": {
+    "0": {
+      "frame": { "x": 0, "y": 0, "w": 26, "h": 24 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 2, "y": 0, "w": 26, "h": 24 },
+      "sourceSize": { "w": 28, "h": 24 }
+    },
+    "1": {
+      "frame": { "x": 0, "y": 24, "w": 24, "h": 18 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 6, "w": 24, "h": 18 },
+      "sourceSize": { "w": 28, "h": 24 }
+    }
+  },
+  "meta": { "image": "hold.png", "size": { "w": 26, "h": 42 } }
+}

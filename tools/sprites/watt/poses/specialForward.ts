@@ -60,11 +60,15 @@ const RUSH: Pose = {
   nearFist: at(13.5, 50),
   farFist: at(25, 49),
   bends: { ...GUARD.bends, nearElbow: 'back' },
-  effects: [smear(3, [-2, 60], [4, 61], [10, 60])],
+  effects: [
+    smear(3, [-2, 60], [4, 61], [10, 60]),
+    { kind: 'speed', center: at(6, 54), length: 24, spread: 8, direction: 0, tone: 'sound' },
+    { kind: 'arc', from: at(-6, 58), to: at(16, 54), spread: 3.5 },
+  ],
   glows: [{ center: at(10, 56), reach: 26, power: 1.0, tone: 'sound' }],
 };
 
-// Frame 4 (active): the impact, the shoulder plate into the opponent's chest.
+// Frame 4 (active): the impact, the shoulder plate into the opponent's chest with a plasma burst.
 const IMPACT: Pose = {
   ...RUSH,
   hip: at(0, 34),
@@ -75,20 +79,38 @@ const IMPACT: Pose = {
   face: 'kiai',
   effects: [
     smear(3, [0, 61], [7, 62], [14, 61]),
-    { kind: 'arc', from: at(-4, 62), to: at(24, 56), spread: 4 },
+    { kind: 'plasma', center: at(18, 58), radius: 6, tone: 'sound' },
+    { kind: 'arc', from: at(-4, 62), to: at(28, 56), spread: 4.5 },
+    { kind: 'arc', from: at(2, 48), to: at(32, 52), spread: 3.5 },
     { kind: 'flash', center: at(18, 58), radius: 4.5, tone: 'sound' },
-    { kind: 'energy', center: at(16, 58), radius: 3 },
+    { kind: 'ring', center: at(18, 58), radius: 12, progress: 0.25, tone: 'sound' },
   ],
-  glows: [{ center: at(16, 58), reach: 30, power: 1.2, tone: 'sound' }],
+  glows: [{ center: at(16, 58), reach: 32, power: 1.3, tone: 'sound' }],
 };
 
-// Frames 5-6: the follow-through, the weight still going.
+// Frames 5-7: the follow-through, the weight still going.
 const THROUGH: Pose = {
   ...IMPACT,
   hip: at(0.5, 34.5),
   torso: 34,
   face: 'effort',
-  effects: [],
+  effects: [
+    { kind: 'ring', center: at(20, 56), radius: 16, progress: 0.6, tone: 'sound' },
+    { kind: 'arc', from: at(6, 56), to: at(24, 52), spread: 3 },
+  ],
+  glows: [{ center: at(16, 56), reach: 22, power: 0.85, tone: 'sound' }],
+};
+
+const BRAKE: Pose = {
+  ...GUARD,
+  hip: at(-2, 35),
+  torso: 28,
+  shrug: 3.2,
+  nearFoot: onBall(-15.5, -26),
+  farFoot: planted(11, 0),
+  nearFist: at(10, 50),
+  farFist: at(20, 49.5),
+  effects: [{ kind: 'dust', x: 12, size: 1.1, progress: 0.4 }],
 };
 
 const SETTLE: Pose = {
@@ -102,7 +124,18 @@ const SETTLE: Pose = {
   farFist: at(15, 49.5),
 };
 
-// Frames 7-8: back up into the guard.
+// Frames 8-9: back up into the guard.
 const UP: Pose = { ...GUARD, hip: at(-8, 36.5), torso: 11 };
 
-export const POSES: readonly Pose[] = [LOAD, DIP, PUSH, RUSH, IMPACT, THROUGH, SETTLE, UP, GUARD];
+export const POSES: readonly Pose[] = [
+  LOAD,
+  DIP,
+  PUSH,
+  RUSH,
+  IMPACT,
+  THROUGH,
+  BRAKE,
+  SETTLE,
+  UP,
+  GUARD,
+];

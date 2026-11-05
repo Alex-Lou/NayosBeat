@@ -63,6 +63,7 @@ describe('the Boost platine', () => {
     { kind: 'speed', center: at(0, 50), length: 30, spread: 20, direction: 0, tone: 'platine' },
     { kind: 'column', base: at(0, 0), height: 80, width: 10, progress: 0.3, tone: 'platine' },
     { kind: 'shards', center: at(10, 40), radius: 20, progress: 0.4, tone: 'platine' },
+    { kind: 'plasma', center: at(20, 45), radius: 6, tone: 'platine' },
   ];
   const FIGHTERS: readonly Fighter[] = GENERATORS;
 

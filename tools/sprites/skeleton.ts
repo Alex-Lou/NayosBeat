@@ -155,6 +155,13 @@ export type Effect =
       readonly to: Point;
       readonly spread?: number;
       readonly tone?: Tone;
+    }
+  /** A magnetic / Tesla plasma sphere at `center` with orbiting field arcs and radial sparks. */
+  | {
+      readonly kind: 'plasma';
+      readonly center: Point;
+      readonly radius: number;
+      readonly tone?: Tone;
     };
 
 export interface Pose {
