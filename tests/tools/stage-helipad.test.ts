@@ -44,7 +44,7 @@ describe('the hand-drawn H-02 Helipad (docs/art/decor-helipad.md)', { timeout: 6
   });
 
   it('is what the game shows: the installed truecolor layers are the drawn ones', async () => {
-    for (const layer of ['far', 'floor'] as const) {
+    for (const layer of ['far', 'mid', 'floor'] as const) {
       const shown = await installed(layer);
       const source = await imageAt('art-src', layer);
       expect([shown.width, shown.height], layer).toEqual([source.width, source.height]);
@@ -52,7 +52,7 @@ describe('the hand-drawn H-02 Helipad (docs/art/decor-helipad.md)', { timeout: 6
     }
   });
 
-  it('keeps the layers contract: an opaque far and floor, no middle layer', async () => {
+  it('keeps the layers contract: an opaque far and floor, a cut-out tower in the mid', async () => {
     for (const layer of ['far', 'floor'] as const) {
       const image = await installed(layer);
       const { width, height } = stageRulesOf(layer);
@@ -62,9 +62,14 @@ describe('the hand-drawn H-02 Helipad (docs/art/decor-helipad.md)', { timeout: 6
         layer,
       ).toBe(true);
     }
-    await expect(
-      readTruecolor(new URL('../../src/art/helipad/mid.png', import.meta.url)),
-    ).rejects.toThrow();
+    const mid = await installed('mid');
+    expect([mid.width, mid.height]).toEqual([
+      stageRulesOf('mid').width,
+      stageRulesOf('mid').height,
+    ]);
+    const alpha = alphas(mid);
+    expect(alpha.some((value) => value === 0)).toBe(true);
+    expect(alpha.some((value) => value === 255)).toBe(true);
   });
 
   it('offers the place, in its moonlit midnight', () => {
@@ -75,10 +80,38 @@ describe('the hand-drawn H-02 Helipad (docs/art/decor-helipad.md)', { timeout: 6
     expect(map?.title).toBe('H-02 Helipad');
     expect(map?.description).toBe('Le toit de la tour H-02, sous la lune et les néons');
     expect(map?.variants[0]?.atmosphere).toEqual({ moment: 'midnight', weather: 'clear' });
-    expect(map?.variants[0]?.art.layers.map(({ name }) => name)).toEqual(['far', 'floor']);
+    expect(map?.variants[0]?.art.layers.map(({ name }) => name)).toEqual(['far', 'mid', 'floor']);
   });
 
-  it('has no code animation: the drawing already carries the helicopter and the smoke', () => {
-    expect(STAGE_PROPS).toEqual([]);
+  it('replays the GIF’s helicopter, smokes and beacons, cut to the changed pixels', async () => {
+    expect(STAGE_PROPS.map(({ name }) => name)).toEqual([
+      'helicopter',
+      'smoke-right',
+      'smoke-left',
+      'beacon-tower',
+      'beacon-right',
+    ]);
+    const sheet = await readTruecolor(new URL('../../src/art/helipad/props.png', import.meta.url));
+    expect([sheet.width, sheet.height]).toEqual([998, 704]);
+    for (const prop of STAGE_PROPS) {
+      expect(prop.frames[0], prop.name).toBeNull();
+      expect(
+        prop.timeline.reduce((sum, [, steps]) => sum + steps, 0),
+        prop.name,
+      ).toBe(192);
+      expect(
+        prop.frames.filter((frame) => frame !== null).length,
+        prop.name,
+      ).toBeGreaterThanOrEqual(14);
+      for (const frame of prop.frames) {
+        if (!frame) continue;
+        expect(frame.sheetX + frame.width, prop.name).toBeLessThanOrEqual(sheet.width);
+        expect(frame.sheetY + frame.height, prop.name).toBeLessThanOrEqual(sheet.height);
+      }
+    }
+    expect(STAGE_PROPS.filter(({ layer }) => layer === 'mid').map(({ name }) => name)).toEqual([
+      'smoke-left',
+      'beacon-tower',
+    ]);
   });
 });

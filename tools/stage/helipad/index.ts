@@ -1,16 +1,17 @@
 /**
  * H-02 Helipad (docs/art/decor-helipad.md): the developer's background (issue #155), the rooftop
- * helipad under the moon and the city's neon. All visible layers are truecolor PNGs drawn by hand,
- * in art-src/helipad/; `npm run stages` copies them as they are (`rgba`), so the illustration keeps
- * every colour. The code's layers are only a blank fallback: the stage has no code drawing and no
- * code animation of its own, since the helicopter, its beam, the smoke and the lights are already
- * in the drawing. No middle layer: the scene is a single illustration.
+ * helipad under the moon and the city's neon. The far layer is the city and the sky, the middle
+ * layer is the tower cut out for parallax, and the floor is the deck; all three are truecolor PNGs
+ * drawn by hand in art-src/helipad/, copied as they are by `npm run stages` (`rgba`). The code
+ * plays the GIF's animated regions over them: the helicopter and its beam, the two vent smokes and
+ * the two red beacons, cut to the pixels each frame changes.
  */
 
 import type { Rgba } from '../../sprites/png.ts';
 import { Canvas } from '../kit/canvas.ts';
 import type { CodeMap, CodeStage } from '../kit/stage.ts';
 import { imageOf, sizeOf } from '../kit/stage.ts';
+import { STAGE_ANIMATIONS } from './anim.ts';
 
 const BLANK: Rgba = { r: 0, g: 0, b: 0, a: 0 };
 
@@ -22,7 +23,7 @@ function blank(name: 'far' | 'mid' | 'floor') {
 
 let drawn: CodeStage | undefined;
 
-/** The stage's code layers: blank, since art-src/helipad/ draws them; no props. */
+/** The stage's code layers are blank: the truecolor art and the GIF's animations carry them. */
 export function drawHelipad(): CodeStage {
   drawn ??= {
     layers: { far: blank('far'), mid: blank('mid'), floor: blank('floor') },
@@ -40,5 +41,5 @@ export const HELIPAD: CodeMap = {
   draw: drawHelipad,
   atmospheres: [{ atmosphere: { moment: 'midnight', weather: 'clear' }, palette: [BLANK] }],
   rgba: true,
-  noMid: true,
+  animations: { sheet: 'animation.png', props: STAGE_ANIMATIONS },
 };
