@@ -38,8 +38,9 @@ const UP: Pose = {
   nearFoot: planted(GUARD.nearFoot.x),
   farFoot: planted(-12),
   nearFist: at(5, 41.5),
-  // A hint of bend left in the raised arm: it has the slack to pump.
   farFist: at(6.5, 80),
+  nearHand: 'open',
+  farHand: 'open',
   bends: { nearElbow: 'back', farElbow: 'front' },
   face: 'cool',
 };
@@ -78,9 +79,11 @@ const SKY: Pose = {
   nearFoot: planted(GUARD.nearFoot.x, -8),
   farFoot: planted(-12, -10),
   nearFist: at(4.5, 39),
-  // Not locked straight: a hint of bend even at full stretch.
   farFist: at(5.5, 84.5),
-  effects: [{ kind: 'flash', center: at(6.5, 88.5), radius: 5, tone: 'sound' }],
+  effects: [
+    { kind: 'flash', center: at(6.5, 88.5), radius: 5, tone: 'sound' },
+    { kind: 'shards', center: at(6.5, 88.5), radius: 10, progress: 0.25, tone: 'sound' },
+  ],
 };
 
 /**

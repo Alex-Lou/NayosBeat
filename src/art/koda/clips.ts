@@ -1,4 +1,3 @@
-import type { MoveId } from '../../core/move-data';
 import type { Clip, FighterClips } from '../types';
 import type { KodaSheet } from './sheets';
 
@@ -15,9 +14,11 @@ function play(sheet: KodaSheet, ticks: readonly number[], loopFrom?: number): Ko
   return loopFrom === undefined ? { sheet, frames, ticks } : { sheet, frames, ticks, loopFrom };
 }
 
-const DIAPASON = play('special', [3, 3, 3, 3, 8, 6, 5, 5, 5]); // the Diapason wave leaves on frame 4
-const FENTE_ACIER = play('specialForward', [3, 3, 3, 2, 4, 4, 5, 5, 4]); // active: frame 4
-const CYMBALE = play('specialAntiAir', [3, 3, 5, 4, 4, 4, 4, 4, 4, 4]); // active: frames 1-2
+// Koda's specials: the Diapason (silver-bracer clash & acoustic shockwave, active frame 3), the
+// Fente d'acier (grounded spear-palm lunge, active frame 4) and the Cymbale (active frames 1-2).
+const DIAPASON = play('special', [3, 3, 4, 4, 5, 5, 5, 5]); // 34 ticks (10/4/20), active: frame 3
+const FENTE_ACIER = play('specialForward', [3, 3, 3, 3, 4, 6, 6, 6]); // 34 ticks (12/4/18), active: frame 4
+const CYMBALE = play('specialAntiAir', [3, 3, 5, 4, 4, 4, 4, 4, 4, 4]); // 39 ticks (3/8/28), active: frames 1-2
 
 /**
  * How Koda's strips are played. Durations are in ticks (60 per second); for attacks they add up to
@@ -25,7 +26,7 @@ const CYMBALE = play('specialAntiAir', [3, 3, 5, 4, 4, 4, 4, 4, 4, 4]); // activ
  * can hit.
  */
 export const KODA_CLIPS: FighterClips<KodaClip> = {
-  idle: play('idle', [6, 6, 6, 6, 6, 6, 6, 6, 6, 6], 0),
+  idle: play('idle', [7, 6, 6, 7, 7, 6, 6, 7], 0),
   walkForward: play('walkForward', [2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1], 0),
   walkBack: play('walkBack', [2, 1, 2, 1, 2, 2, 2, 1, 2, 1, 2, 2], 0),
   crouch: play('crouch', [2, 2, 2, 8, 8, 8, 8], 3),
@@ -87,20 +88,11 @@ export const KODA_CLIPS: FighterClips<KodaClip> = {
   pummel: play('pummel', [3, 3, 1, 9]), // active: frame 2
   throwForward: play('throwForward', [3, 3, 4, 1, 6, 6, 6, 7]), // release: frame 3
   throwBack: play('throwBack', [3, 3, 4, 4, 1, 6, 7, 7, 7]), // release: frame 4
-  dashForward: play('dashForward', [1, 4, 4, 3, 3, 3]),
+  dashForward: play('dashForward', [1, 3, 4, 3, 3, 3]),
   dashBack: play('dashBack', [1, 4, 4, 4, 4, 5]),
-  boostCancel: { sheet: 'dashForward', frames: [0, 1, 2, 3, 5], ticks: [1, 3, 3, 3, 2] },
+  boostCancel: { sheet: 'dashForward', frames: [0, 1, 2, 3, 5], ticks: [1, 3, 2, 3, 2] },
 
   intro: play('intro', [10, 8, 8, 8, 10, 8, 8, 10, 10, 10]),
   victory: play('victory', [6, 6, 6, 6, 8, 8, 8, 8], 4),
   timeOver: play('timeOver', [10, 10, 10, 10], 0),
-};
-
-/**
- * The Diapason resonator disc in flight, looping on the match clock: a turn every 16 ticks; the
- * platine one, white with a double ring, twice as fast.
- */
-export const KODA_PROJECTILES: Readonly<Partial<Record<MoveId, KodaClip>>> = {
-  special: play('projectile', [2, 2, 2, 2, 2, 2, 2, 2], 0),
-  specialBoost: play('projectileBoost', [1, 1, 1, 1, 1, 1, 1, 1], 0),
 };

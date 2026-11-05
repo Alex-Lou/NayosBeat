@@ -2,7 +2,7 @@ import type { SheetSpec } from '../types';
 
 /** Strips drawn for Koda, with their number of frames. Read by the game and by tools/sprites. */
 export const KODA_SHEETS = {
-  idle: { frames: 10 },
+  idle: { frames: 8 },
   walkForward: { frames: 12 },
   walkBack: { frames: 12 },
   crouch: { frames: 7 },
@@ -19,15 +19,12 @@ export const KODA_SHEETS = {
   crouchHeavy: { frames: 9 },
   jumpLight: { frames: 5 },
   jumpHeavy: { frames: 6 },
-  special: { frames: 9 },
-  specialForward: { frames: 9 },
+  special: { frames: 8 },
+  specialForward: { frames: 8 },
   specialAntiAir: { frames: 10 },
   intro: { frames: 10 },
   victory: { frames: 8 },
   timeOver: { frames: 4 },
-  projectile: { frames: 8 },
-  // The Diapason platine in flight: white, a double resonator ring.
-  projectileBoost: { frames: 8 },
 
   // Combat v2 (docs/combat-v2.md §11.1, §11.2).
   dashForward: { frames: 6 },
@@ -57,8 +54,8 @@ export const KODA_SHEETS = {
   super: { frames: 10 },
 
   // The Remixes' own strips: their special's frames, in the Boost's light.
-  specialRemix: { frames: 9 },
-  specialForwardRemix: { frames: 9 },
+  specialRemix: { frames: 8 },
+  specialForwardRemix: { frames: 8 },
   specialAntiAirRemix: { frames: 10 },
   // Moves in their own strips: Double paume and Enclume.
   jabRepeat: { frames: 5 },

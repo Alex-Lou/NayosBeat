@@ -224,6 +224,7 @@ export const POSES: readonly Pose[] = [
   },
   {
     ...TOP_ARM,
+    nearHand: 'open',
     effects: [
       trail(TOP_ARM, 4.5, [11, 54], [14.5, 64], [15.5, 74], [14.5, 82]),
       {
@@ -241,6 +242,7 @@ export const POSES: readonly Pose[] = [
         tone: 'strike',
       },
     ],
+    glows: [{ center: CONTACT, reach: 26, power: 1.1, tone: 'sound' }],
   },
   {
     ...HOLD,

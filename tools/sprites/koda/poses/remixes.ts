@@ -1,42 +1,34 @@
 /**
- * Nayo's Remixes (docs/art/nayo-essence.md §5): the Vinyle, the Pied fendu and the Uppercut in the
- * Boost's light, each frame of its special in platine, with what the Remix adds: the gauge spent
- * shows as more charge before the blow, and a white flash where it lands.
+ * Koda's Remixes: the Diapason, the Fente d'acier and the Cymbale in the Boost's platine light,
+ * each frame of its special charged with white resonance energy and a white impact flash.
  */
 
 import { at, energy } from './common.ts';
 import { remixOf } from './remix.ts';
-import { POSES as VINYLE } from './special.ts';
-import { DIP_FIST, POSES as UPPERCUT } from './specialAntiAir.ts';
-import { CHAMBER_HEEL, POSES as PIED_FENDU } from './specialForward.ts';
-
-/** Where a pose's first effect of `kind` is, to charge it further. */
-function centerOf(frame: number, kind: 'disc'): { x: number; y: number } {
-  const effect = VINYLE[frame]?.effects?.find((each) => each.kind === kind);
-  if (effect?.kind !== kind) throw new Error(`Vinyle frame ${frame}: no ${kind}`);
-  return effect.center;
-}
-
-const RECORD = [1, 2, 3].map((frame) => centerOf(frame, 'disc'));
+import { BRACER_CLASH, POSES as DIAPASON } from './special.ts';
+import { DIP_FIST, POSES as CYMBALE } from './specialAntiAir.ts';
+import { CHAMBER_BRACER, POSES as FENTE_ACIER } from './specialForward.ts';
 
 export const REMIXES = {
-  // The record charged white from the moment it comes out, a white flash where it leaves the hand.
-  specialRemix: remixOf(VINYLE, {
-    1: { effects: [energy(RECORD[0]?.x ?? 0, RECORD[0]?.y ?? 0, 3.4)] },
-    2: { effects: [energy(RECORD[1]?.x ?? 0, RECORD[1]?.y ?? 0, 4.2)] },
-    3: { glows: [{ center: RECORD[2] ?? at(0, 0), reach: 34, power: 1.4, tone: 'platine' }] },
-    4: { effects: [{ kind: 'flash', center: at(22, 43), radius: 4.5, tone: 'platine' }] },
+  // Diapason platine: the silver bracers glow white from the coil, bursting on the clash.
+  specialRemix: remixOf(DIAPASON, {
+    1: { effects: [energy(10, 48, 3.4)] },
+    2: {
+      effects: [energy(BRACER_CLASH.x, BRACER_CLASH.y, 4.4)],
+      glows: [{ center: BRACER_CLASH, reach: 34, power: 1.4, tone: 'platine' }],
+    },
+    3: { effects: [{ kind: 'flash', center: at(40, 44.5), radius: 5.5, tone: 'platine' }] },
   }),
-  // The heel loaded white in the chamber, a ring of the Boost where it lands.
-  specialForwardRemix: remixOf(PIED_FENDU, {
-    2: { effects: [energy(CHAMBER_HEEL.x, CHAMBER_HEEL.y, 3.4)] },
-    3: { glows: [{ center: at(29, 42), reach: 24, power: 1.1, tone: 'platine' }] },
+  // Fente platine: the chambered silver bracer charged white, a Boost ring where the palm pierces.
+  specialForwardRemix: remixOf(FENTE_ACIER, {
+    1: { effects: [energy(CHAMBER_BRACER.x, CHAMBER_BRACER.y, 3.6)] },
+    3: { glows: [{ center: at(30, 42), reach: 26, power: 1.1, tone: 'platine' }] },
     4: {
-      effects: [{ kind: 'ring', center: at(42, 37), radius: 8, progress: 0.2, tone: 'platine' }],
+      effects: [{ kind: 'ring', center: at(41, 41.5), radius: 9, progress: 0.2, tone: 'platine' }],
     },
   }),
-  // The drop gathered white in the sunk fist, a second flash up the column.
-  specialAntiAirRemix: remixOf(UPPERCUT, {
+  // Cymbale platine: white resonance gathered in the crouched bracers, rising up the skyward slash.
+  specialAntiAirRemix: remixOf(CYMBALE, {
     0: { effects: [energy(DIP_FIST.x + 1, DIP_FIST.y - 1, 4)] },
     2: { glows: [{ center: at(18, 70), reach: 30, power: 1, tone: 'platine' }] },
   }),

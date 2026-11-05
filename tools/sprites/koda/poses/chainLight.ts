@@ -173,8 +173,9 @@ const STRIKE_ARM = cross(STRIKE_BODY, 24.7, 7);
 const KNUCKLES = rearGlove(STRIKE_ARM).knuckles;
 const STRIKE: Pose = {
   ...STRIKE_ARM,
+  nearHand: 'open',
+  farHand: 'open',
   effects: [
-    // Down the arm itself: the streaks show above and below the sleeve, a blur of speed.
     trail(STRIKE_ARM, 5, [25, 55.6], [31.5, 55.4]),
     { kind: 'flash', center: at(KNUCKLES.x + 2.6, KNUCKLES.y), radius: 4, tone: 'strike' },
   ],

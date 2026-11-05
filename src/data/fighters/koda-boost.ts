@@ -1,7 +1,5 @@
-import { px } from '../../core/constants';
 import {
   boostStep,
-  box,
   kd,
   remix,
   strike,
@@ -9,30 +7,38 @@ import {
   type BoostMoves,
   type PlainSpecials,
 } from './shared';
+import { box } from './shared';
 
 /**
  * Koda's Boost moves, written from his plain specials: the platine Remixes (white, one bar each),
- * the Tempo (his Rewind) and the Octave (his three-bar super).
+ * the Tempo (his 11-tick Rewind) and the Octave (his three-bar super).
+ * - Diapason platine buys super-armor on startup (f2-9) and a knockdown;
+ * - Fente platine buys mid-lunge invincibility (f3-12) and a high juggle launch;
+ * - Cymbale platine buys full wake-up reversal invincibility (f0-10 against all).
  */
 export function kodaBoost(plain: PlainSpecials): BoostMoves {
   return {
+    // BOOST: the silver-bracer clash absorbs one blow on f2-9 and sends the opponent flying.
     specialBoost: remix(plain.special, {
       name: 'Diapason platine',
-      damage: 80,
+      damage: 95,
       hitstun: 0,
       blockstun: 18,
-      hitstop: 10,
-      projectile: { speed: px(5), spawnX: px(24), hitbox: box(-10, 32, 20, 20) },
-      knockdown: kd(2.5, 3),
+      hitstop: 13,
+      armor: { from: 2, to: 10 },
+      knockdown: kd(3.5, 3.5),
     }),
+    // → + BOOST: the spear-palm lunge goes through projectiles on f3-12 and launches for a juggle.
     specialForwardBoost: remix(plain.specialForward, {
       name: 'Fente platine',
-      damage: 85,
+      damage: 90,
+      invincible: { from: 3, to: 13 },
       knockdown: kd(8, 0, { juggle: 2 }),
     }),
+    // ↓ + BOOST: his only meter-bought wake-up reversal outside the super, invincible on f0-10.
     specialAntiAirBoost: remix(plain.specialAntiAir, {
       name: 'Cymbale platine',
-      damage: 130,
+      damage: 125,
       invincible: { from: 0, to: 11 },
       knockdown: kd(3.5, 2),
     }),
@@ -69,7 +75,7 @@ export function kodaBoost(plain: PlainSpecials): BoostMoves {
     ),
     boostCancel: boostStep({
       name: 'Tempo',
-      duration: 12,
+      duration: 11,
       frames: 8,
       distancePx: 24,
       freeCancelFrom: 3,
