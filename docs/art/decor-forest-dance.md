@@ -1,58 +1,63 @@
 # Dancing Forest
 
-Le douzième lieu, un nouveau choix du développeur : « Forêt au matin, arbres dansants. Feuilles. » Il est dessiné selon les règles de propreté (`proprete.md`), et le système des lieux est décrit au §14 de `decor-rue.md`. Une PR par lieu.
+Le douzième lieu, un nouveau choix du développeur : « Forêt au matin, arbres dansants. Feuilles. » Le développeur a ensuite fourni **son fond** dans l'issue #155 : le sanctuaire dans la forêt, son pont rouge, sa cascade et la grande clairière de terre. Le lieu est adapté aux trois calques du jeu, **avec ses couleurs et sa lumière d'origine**.
 
-## 1. Les choix du développeur
+## 1. La provenance, et ce qu'on garde
 
-- **Le matin, et rien d'autre** : l'aube, la brume et une pluie fine. Pas de plein jour : les grandes couleurs restent dans la bande des flashs (`flashs.md` §3), comme l'aube du temple.
-- **Les feuilles** : c'est sa signature. Elles tombent sans cesse, et le **vent** est le moment fort : toutes les 40 s, une rafale balaie la clairière et les couronnes dansent plus fort.
-- **Les couleurs** : les verts restent sombres et ternes, loin du cyan des combattants ; le rose de l'aube reste éteint, loin du magenta.
+- **La source** : `art-src/foret/source/foret-bg.png` (1 677 × 938), l'image du commentaire du 5 novembre. C'est la référence, pas une version retouchée.
+- **Ce qui est gardé** : la composition et **toutes les couleurs** — les grands arbres, le temple et ses lanternes, les bannières rouges, le pont et la cascade, l'eau, les rochers, la terre de la clairière.
+- **Ce qui est adapté** : l'illustration est coupée dans les trois calques du jeu, aux tailles imposées. Les calques sont des **PNG en vraies couleurs** (`rgba`), copiés tels quels par `npm run stages`. **Aucune exposition, aucune désaturation, aucune quantification.**
+- **Le sol** : la bande de terre est posée à la ligne des pieds, **opaque dès sa première ligne** : les combattants touchent le sol.
 
 ## 2. La composition, de loin à près
 
-### 2.1 `far`, le fond de la forêt (25 %)
+### 2.1 `far`, le fond (25 %)
 
-- Le ciel de l'aube, du bleu-gris au-dessus jusqu'à une lueur chaude derrière les arbres. Son dégradé est la seule trame du lieu.
-- La lueur du soleil bas, à travers les troncs.
-- **Trois plans d'arbres** en silhouettes de plus en plus sombres, les plus lointains pâles et rapprochés de la brume.
+- L'illustration entière : le temple, la forêt, la cascade, le pont, l'eau et la clairière.
+- L'image est centrée à la hauteur du jeu, à l'échelle qui la fait tenir juste dans la vue ; les bords de la couche (vus seulement quand la caméra va au bout) **reprennent l'image en miroir**, pour que la forêt continue au lieu d'étirer une colonne.
+- Le calque est **opaque partout**.
 
-### 2.2 `mid`, la clairière (50 %)
+### 2.2 `mid`, transparent (50 %)
 
-- **À gauche et à droite**, deux grands arbres, leurs troncs et leurs racines, leurs couronnes qui dansent (`canopy0`, `canopy1`).
-- **Au centre**, la clairière reste ouverte : une souche, un oiseau qui sautille, des feuilles mortes.
-- Des feuilles qui tombent sans cesse (`leaves`), et la rafale qui les balaie (`gust`, le moment fort).
-- **Au sol du milieu**, la terre du sentier, l'ombre des couronnes.
+- **Le calque est entièrement transparent.** Il reste pour les feuilles, à sa parallaxe de 0,5. Aucune bande horizontale : pas de couture, pas de décor qui remonte au-dessus du sol.
+- Le fond porte toute l'illustration, d'un seul tenant.
 
-### 2.3 `floor`, le sentier (100 %)
+### 2.3 `floor`, la terre (100 %)
 
-- La terre tassée, ses repères tous les 64 unités du monde, ses cailloux et ses racines.
-- Les feuilles mortes, brunes et vertes, éparpillées.
-- Les flaques de lumière de l'aube entre les arbres.
+- La bande de terre de la clairière, étirée à 1 920 × 80.
+- **Opaque dès la première ligne**, sous les pieds.
+- C'est le sol sous les pieds ; la poussière des combats reste celle d'un sol dur.
 
-## 3. La palette
+## 3. La palette et les flashs
 
-`tools/stage/foret/palette.ts`, la sienne : le ciel de l'aube, la lueur, les silhouettes d'arbres, les écorces, les couronnes (vertes, sombres), les feuilles mortes, la terre, la mousse, la pierre, l'oiseau, la brume. Les verts restent loin du cyan et le rose de l'aube, éteint, loin du magenta (test).
+- **Les couleurs sont celles de l'illustration** : le vert profond de la forêt, le gris bleuté du temple, le rouge des bannières et du pont, l'or des lanternes, la terre chaude.
+- **Dancing Forest est un lieu de jour** : ses grandes couleurs sont **au-dessus de la bande des flashs**. Les effets de flashs restent mesurés sur les **lieux de nuit**, et `FIGHT_STAGE_COLORS` exclut Dancing Forest comme Sakura (`src/render/stage-view.ts`). Le lieu garde donc sa lumière, et les tables de flashs des autres lieux ne bougent pas.
 
 ## 4. Les ambiances
 
-- **Aube, ciel clair** : la base.
-- **Aube, brume** : la forêt se noie dans la brume du matin, deux bancs dérivent entre les troncs.
-- **Aube, pluie** : une pluie fine, la terre fonce, les feuilles luisent.
+- **Aube, ciel clair** : la seule pour l'instant, celle de l'illustration.
+- Les autres viendront si le développeur fournit d'autres lumières ; l'image n'est pas recolorée d'office.
 
 ## 5. Ce qui bouge
 
-| Animation | Ce qu'elle montre | Rythme |
-| --- | --- | --- |
-| `gust` | la rafale qui balaie les feuilles à travers la clairière : le moment fort | une fois par cycle, centrée au `GUST_AT` |
-| `canopy0`, `canopy1` | les couronnes qui dansent, plus fort pendant la rafale | 1,5 s |
-| `leaves` | des feuilles qui tombent en tournoyant | 160 pas par boucle |
-| `bird` | l'oiseau qui sautille sur la souche | 6 s |
-| `mist0`, `mist1` | la brume, par temps de brume seulement | 50 et 40 s |
+- **`leaves`** : une chute de **52 feuilles** traverse la clairière, sur le calque `mid` transparent. Elles tournoient, tombent et changent de teinte (jaune, vert, or, brun).
+- **Le cycle** : 90 pas d'entrée, 6 images de 20 pas (2 s de chute), 90 pas de sortie, soit 300 pas (5 s). La boîte glisse de −830 à +830 px sur 280 pas : les feuilles tombent en traversant le centre de l'écran.
+- **Rien d'autre ne bouge** pour l'instant : le temple, ses lanternes et l'eau sont déjà dans le dessin.
 
-**La rafale** est le moment fort : toutes les 40 s, à `GUST_AT`, une volée de feuilles traverse la clairière et les couronnes dansent plus fort. Rien ne clignote : chaque état tient au moins 20 pas (test).
+## 6. L'outil
 
-## 6. Les budgets
+- Le lieu est marqué **`rgba: true`** (`tools/stage/kit/stage.ts`) : ses trois calques sont des PNG en vraies couleurs sous `art-src/foret/`, et `npm run stages` les copie tels quels. C'est le même mécanisme que Sakura.
+- Les feuilles sont une **surimpression** (`overlay`) : leur première image est transparente, et elles se posent sur le calque transparent.
+- Les grandes couleurs sont mesurées sur une palette grossière de 64 couleurs par calque (pour la documentation et le test du lieu), mais le lieu est exclu de l'enveloppe des flashs.
 
-- **La planche** reste sous 9 Mo pour le lieu, aucune texture au-delà de 2 048 px.
-- **La propreté** : sous 4 % de bruit dans `far`, 5 % dans `mid`, 3 % dans `floor`.
-- **Les grandes couleurs** restent dans la bande des flashs, dans chaque ambiance (test de contrat).
+## 7. Les budgets
+
+- **Mémoire vidéo** : le fond (2,5 Mo), le milieu transparent (3,0 Mo), le sol (0,6 Mo) et la planche des feuilles (2,1 Mo) : 8,2 Mo, sous les 9 Mo d'un lieu.
+- **La planche des feuilles** : 808 × 683 px, sous les 2 048 px d'une texture.
+- **Le PNG d'origine** (2,6 Mo) reste dans `art-src/foret/source/`, hors des textures chargées par le jeu.
+
+## 8. La suite
+
+1. Nettoyer la découpe du sol si le développeur veut une texture de terre plus fine.
+2. Ajouter, si besoin, des lumières vivantes aux lanternes du temple (elles sont déjà allumées dans le dessin).
+3. Peindre d'autres ambiances seulement si le développeur les demande.
