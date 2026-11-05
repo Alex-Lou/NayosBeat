@@ -304,8 +304,10 @@ const WATT_PLANS: readonly Plan[] = [
   { after: 'standLight', when: HIT, steps: [L, H, S], weight: STRING },
   { after: 'standLight', when: HIT, steps: [L, H, F | S], weight: STRING },
   { after: 'standLight', when: HIT, steps: [L, F | H, S], weight: STRING },
-  // The Soulevé launches, then L, L, L on the body in the air, or the Coup de masse's Rebond
-  // to bounce it back up for another L, L, L: farther, it drops on some opponent.
+  { after: 'standLight', when: within(35), steps: [L, D | L, S], weight: MIX },
+  { after: 'backLight', when: within(35), steps: [L, H, S], weight: STRING },
+  // The Soulevé or Disjoncteur launches, then L, L, L on the body in the air, or the Coup de
+  // masse's Rebond to bounce it back up for another L, L, L: farther, it drops on some opponent.
   { after: 'standLight', when: within(40), steps: [L, B | H, L, L, L], weight: JUGGLE },
   {
     after: 'standLight',
@@ -313,6 +315,7 @@ const WATT_PLANS: readonly Plan[] = [
     steps: [L, B | H, L, L, F | H, L, L, L],
     weight: JUGGLE,
   },
+  { after: 'downForwardHeavy', when: within(28), steps: [L, L, L], weight: JUGGLE },
   { after: 'forwardLight', when: HIT, steps: [L, L], weight: EASY },
   { after: 'crouchLight', when: within(38), steps: [L, H, S], weight: STRING },
   {

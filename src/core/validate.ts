@@ -27,11 +27,15 @@ const MAX_HURTBOXES = 2;
  * super specials.
  */
 const OPTIONAL_KINDS: Readonly<Partial<Record<MoveId, readonly MoveKind[]>>> = {
+  backLight: ['normal'],
   forwardLight: ['normal'],
   forwardHeavy: ['normal'],
+  downForwardHeavy: ['normal'],
   backHeavy: ['normal'],
   chainLight: ['normal'],
+  chainLow: ['normal'],
   lightFinisher: ['normal'],
+  jumpDownHeavy: ['normal'],
   jabRepeat: ['normal'],
   chainHeavy: ['normal'],
   chainHigh: ['normal'],

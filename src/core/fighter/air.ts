@@ -9,7 +9,9 @@ import { chargeSpent, startAttack } from './move';
 
 /** Airborne and free: the buffered command may start an air attack, once per jump. */
 export function updateAir(fighter: FighterState, template: FighterTemplate): FighterState {
-  const move = fighter.bufferedCommand ? airMove(fighter.bufferedCommand, template.moves) : null;
+  const move = fighter.bufferedCommand
+    ? airMove(fighter.bufferedCommand, template.moves, fighter.bufferedInput)
+    : null;
   return move
     ? airborne(
         chargeSpent(startAttack(fighter, 'airAttack', move), fighter, template, move),

@@ -28,11 +28,15 @@ export const CORE_MOVE_IDS = [
  * direct.
  */
 export const OPTIONAL_MOVE_IDS = [
+  'backLight',
   'forwardLight',
   'forwardHeavy',
+  'downForwardHeavy',
   'backHeavy',
   'chainLight',
+  'chainLow',
   'lightFinisher',
+  'jumpDownHeavy',
   // The strings of combos v3 (docs/combos-v3.md §2.4, §4): reached only through a branch.
   'jabRepeat',
   'chainHeavy',
@@ -81,13 +85,22 @@ export const PHRASE_MOVE_IDS = [
   'chainHeavy',
   'chainHigh',
   'chainLaunch',
+  'backLight',
+  'downForwardHeavy',
+  'chainLow',
+  'jumpDownHeavy',
 ] as const satisfies readonly MoveId[];
 
 /** The beat, the two lights: a phrase may play each of them twice. */
 export const PHRASE_TWICE_IDS = ['standLight', 'crouchLight'] as const satisfies readonly MoveId[];
 
 /** Moves performed in the air (a projectile there would never be fired). */
-export const AIR_MOVE_IDS: readonly MoveId[] = ['jumpLight', 'jumpHeavy', 'jumpSpecial'];
+export const AIR_MOVE_IDS: readonly MoveId[] = [
+  'jumpLight',
+  'jumpHeavy',
+  'jumpDownHeavy',
+  'jumpSpecial',
+];
 
 /**
  * The plain specials (docs/watt-arsenal.md §3.2): S and its directions, S close up, back + S, S

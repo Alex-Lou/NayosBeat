@@ -1,0 +1,35 @@
+{
+  "frames": {
+    "0": {
+      "frame": { "x": 0, "y": 39, "w": 23, "h": 23 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 7, "w": 23, "h": 23 },
+      "sourceSize": { "w": 76, "h": 39 }
+    },
+    "1": {
+      "frame": { "x": 0, "y": 62, "w": 36, "h": 18 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 4, "y": 10, "w": 36, "h": 18 },
+      "sourceSize": { "w": 76, "h": 39 }
+    },
+    "2": {
+      "frame": { "x": 0, "y": 0, "w": 60, "h": 39 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 16, "y": 0, "w": 60, "h": 39 },
+      "sourceSize": { "w": 76, "h": 39 }
+    },
+    "3": {
+      "frame": { "x": 23, "y": 39, "w": 33, "h": 21 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 12, "y": 9, "w": 33, "h": 21 },
+      "sourceSize": { "w": 76, "h": 39 }
+    },
+    "4": {
+      "frame": { "x": 36, "y": 62, "w": 1, "h": 1 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 1, "h": 1 },
+      "sourceSize": { "w": 76, "h": 39 }
+    }
+  },
+  "meta": { "image": "backLight.png", "size": { "w": 60, "h": 80 } }
+}

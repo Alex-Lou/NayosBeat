@@ -25,7 +25,24 @@ export const POSES: readonly Pose[] = [
     face: 'effort',
     effects: [smear(3.5, [6, 88], [16, 84], [24, 72])],
   }),
-  // 4 (active): both fists down in front of him, the weight on the lead boot.
+  // 4 (active hit 1, f11-12): the rear clamp drives up and forward into the chest (first blow).
+  keyPose({
+    hip: [0.5, 35.5],
+    torso: 26,
+    reach: { near: 4, far: 4 },
+    farFoot: planted(14),
+    nearFoot: onBall(-14, -30),
+    near: [36, 52],
+    far: [38, 48],
+    face: 'kiai',
+    effects: [
+      smear(3.5, [20, 74], [30, 62], [38, 48]),
+      { kind: 'arc', from: at(16, 66), to: at(42, 48), spread: 3.5 },
+      { kind: 'flash', center: at(40, 50), radius: 4, tone: 'strike' },
+    ],
+    glows: [{ center: at(38, 50), reach: 26, power: 1.0, tone: 'strike' }],
+  }),
+  // 5 (active hit 2, f13-14): both fists smash down together, unleashing a double electric shockwave.
   keyPose({
     hip: [1, 35],
     torso: 30,
@@ -38,12 +55,13 @@ export const POSES: readonly Pose[] = [
     effects: [
       smear(4, [24, 72], [34, 60], [39, 46]),
       { kind: 'arc', from: at(18, 70), to: at(43, 45), spread: 4 },
+      { kind: 'arc', from: at(22, 58), to: at(42, 38), spread: 3.5 },
       { kind: 'flash', center: at(41, 46), radius: 4.5, tone: 'strike' },
       { kind: 'shards', center: at(41, 46), radius: 8, progress: 0.25, tone: 'strike' },
     ],
     glows: [{ center: at(39, 46), reach: 28, power: 1.1, tone: 'strike' }],
   }),
-  // 5-6: sunk low, then the heavy recovery.
+  // 6-7: sunk low, then the heavy recovery.
   keyPose({
     hip: [0.5, 34.5],
     torso: 31,
