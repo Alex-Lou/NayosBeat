@@ -66,6 +66,8 @@ export interface CodeMap {
    * colors are measured on a coarse palette (tools/sprites/stage-drawn.ts `writeRgbaStage`).
    */
   readonly rgba?: boolean;
+  /** No middle layer: the stage has only its far and floor, saving its texture. */
+  readonly noMid?: boolean;
 }
 
 /** A canvas as an image in `palette`. */

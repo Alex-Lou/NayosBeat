@@ -170,9 +170,14 @@ async function writeLayers(
   folder: URL,
   layers: Readonly<Record<StageLayer, IndexedImage>>,
   sheet: IndexedImage | undefined,
+  noMid = false,
 ): Promise<void> {
   await mkdir(folder, { recursive: true });
   for (const layer of STAGE_LAYER_NAMES) {
+    if (noMid && layer === 'mid') {
+      await rm(new URL('mid.png', folder), { recursive: true, force: true });
+      continue;
+    }
     await writeImage(new URL(`${layer}.png`, folder), layers[layer]);
   }
   const file = new URL('props.png', folder);
@@ -191,7 +196,7 @@ export async function writeStage(map: CodeMap, drawn: DrawnStage = {}): Promise<
   const code = map.draw();
   const layers = installedLayers(drawn, code.layers);
   const packed = packProps(code.props, layers);
-  await writeLayers(art, packed.layers, packed.sheet);
+  await writeLayers(art, packed.layers, packed.sheet, map.noMid === true);
   const module = new URL('props.ts', art);
   await writeFile(module, await propsModule(packed.props, module));
   // The base atmosphere, the first (midnight's for most): its images in the stage's folder.
@@ -209,7 +214,7 @@ export async function writeStage(map: CodeMap, drawn: DrawnStage = {}): Promise<
       floor: recolored(lifted.floor, palette),
     };
     const sheet = packed.sheet && recolored(packed.sheet, palette);
-    await writeLayers(new URL(`${name}/`, art), shown, sheet);
+    await writeLayers(new URL(`${name}/`, art), shown, sheet, map.noMid === true);
     large[name] = largeColorsOf(Object.values(shown));
   }
   const colors = new URL('colors.ts', art);
