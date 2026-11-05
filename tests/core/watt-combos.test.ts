@@ -200,6 +200,10 @@ describe('his own kit (docs/watt-arsenal.md §4)', () => {
     const stringPull = playCombo(facingOff(35, WATT_VS_NAYO), WATT_VS_NAYO, [L, L, H, B | S]);
     expect(stringPull.hits.map((hit) => hit.damage)).toEqual([30, 34, 68, 28]);
     expect(unbroken(stringPull)).toBe(true);
+    // Once per combo: a second Câble in the same combo floors instead of pulling again (no infinite).
+    const start = facingOff(80, WATT_VS_NAYO, [{ tension: 100 }, {}]);
+    const secondPull = playCombo(start, WATT_VS_NAYO, [B | S, L, L, H, B | S]);
+    expect(floored(secondPull)).toBe(true);
   });
 
   it('the Pas blindé cancels from frame 10 into a combo', () => {

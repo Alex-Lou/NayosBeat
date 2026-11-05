@@ -1,13 +1,12 @@
-import { smear, type Pose } from './common.ts';
+import { at, smear, type Pose } from './common.ts';
 import { keyPose } from './strike.ts';
 
 export const ANIMATED: boolean = true;
 
 /**
- * standLight (Paume, docs/watt.md §5.1): 5 frames, 1, 3, [2], 4, 5 ticks (15), active frame 2
+ * standLight (Paume, docs/watt.md §5.1): 6 frames, 1, 3, [2], 3, 3, 3 ticks (15), active frame 2
  * (ticks 4-5), hitbox x 8..32 / y 40..54. The lead clamp opens and shoves, palm flat, at belly
- * height: a short heavy push from the shoulder, the hips in behind it, the rear clamp kept up.
- * Fast for him (4 ticks): it opens L, L, L.
+ * height with a crackling electric arc.
  */
 
 export const POSES: readonly Pose[] = [
@@ -21,8 +20,9 @@ export const POSES: readonly Pose[] = [
     far: [19, 48.5],
     farHand: 'open',
     face: 'effort',
+    effects: [{ kind: 'energy', center: at(21, 48.5), radius: 2 }],
   }),
-  // 2 (active): the palm flat at the end of the shove.
+  // 2 (active): the palm flat at the end of the shove, electric arc off the open clamp.
   keyPose({
     hip: [-5, 36.8],
     torso: 17,
@@ -30,9 +30,22 @@ export const POSES: readonly Pose[] = [
     far: [28, 47.5],
     farHand: 'open',
     face: 'effort',
-    effects: [smear(2.5, [12, 49], [20, 48], [28, 47.5])],
+    effects: [
+      smear(2.5, [12, 49], [20, 48], [28, 47.5]),
+      { kind: 'arc', from: at(14, 49), to: at(31, 47.5), spread: 2.5 },
+      { kind: 'flash', center: at(30, 47.5), radius: 3.2, tone: 'sound' },
+    ],
+    glows: [{ center: at(28, 47.5), reach: 20, power: 0.85, tone: 'sound' }],
   }),
-  // 3-4: drawn back into the guard.
-  keyPose({ hip: [-6.5, 37], torso: 13, reach: { far: 1.5 }, far: [18, 49.5], farHand: 'open' }),
+  // 3-5: drawn back into the guard.
+  keyPose({
+    hip: [-6, 36.9],
+    torso: 14.5,
+    reach: { far: 2 },
+    far: [22, 48.5],
+    farHand: 'open',
+    effects: [{ kind: 'arc', from: at(12, 49), to: at(23, 48.5), spread: 1.8 }],
+  }),
+  keyPose({ hip: [-7.2, 37.2], torso: 11.5, reach: { far: 1 }, far: [14, 50.5], farHand: 'open' }),
   keyPose({ hip: [-8.3, 37.4], torso: 9.5, far: [9, 52] }),
 ];
