@@ -23,7 +23,7 @@ const SCALE = 2;
 const BAY = 64 * SCALE;
 const CORNER = 24 * SCALE;
 const ROWS = { lot: 62, curb: 64, sidewalk: 68 } as const;
-const BAY_TOP = 14;
+const BAY_TOP = 3;
 
 function hdTone(ramp: readonly number[], level: number, x: number, y: number): number {
   const top = ramp.length - 1;
@@ -47,14 +47,12 @@ function drawLot(canvas: Canvas, seed: number): void {
   const { width } = canvas;
   canvas.paint(0, 0, width, ROWS.lot, (x, y) => {
     const corner = cornerOf(width, x);
-    if (y < 6) {
-      const ramp = wetAt(seed, x, y) ? WET_ASPHALT : ASPHALT;
-      return hdTone(ramp, 1.2 + corner, x, y);
-    }
+    if (y === 0) return hdTone(CONCRETE, 4.2 + corner, x, y);
+    if (y === 1) return at(ASPHALT, 0);
     const oil =
-      y > 12 && noise(seed + 2, Math.floor(x / 12), Math.floor(y / 6), 8) > 0.75 ? -0.7 : 0;
+      y > 10 && noise(seed + 2, Math.floor(x / 12), Math.floor(y / 6), 8) > 0.75 ? -0.7 : 0;
     const grain = (noise(seed + 5, x >> 2, y >> 1, 10) - 0.5) * 0.45;
-    const level = 1.25 + grain + oil + corner - (y / ROWS.lot) * 0.3;
+    const level = 1.35 + grain + oil + corner - (y / ROWS.lot) * 0.3;
     const ramp = wetAt(seed, x, y) ? WET_ASPHALT : ASPHALT;
     return hdTone(ramp, level, x, y);
   });

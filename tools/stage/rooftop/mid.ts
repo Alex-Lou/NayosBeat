@@ -171,10 +171,17 @@ interface Reflected {
 
 function drawMembrane(canvas: Canvas, signs: readonly Reflected[]): void {
   canvas.paint(0, BASE, canvas.width, FLOOR_END - BASE, (x, y) => {
-    const fade = Math.max(0, 1 - (y - BASE) / 52);
-    const lit = lightAt(LIGHTS, x, y) * 0.85 * fade;
+    if (y >= 453) {
+      if (y === 453) return at(STEEL, 4);
+      if (y === 454 && x % 32 < 6) return at(NEON_ORANGE, 2);
+      if (y >= 458) return at(MEMBRANE, 0);
+      return at(STEEL, (y - 453) % 2 === 0 ? 2 : 1);
+    }
+    const fade = Math.max(0, 1 - (y - BASE) / 48);
+    const rib = (y - BASE) % 12 === 0 ? 0.5 : (y - BASE) % 12 === 1 ? -0.4 : 0;
+    const lit = lightAt(LIGHTS, x, y) * 0.95 * fade;
     const wear = (noise(37, x >> 2, y >> 1, 8) - 0.5) * 0.45 * fade;
-    const level = 2 + lit + wear;
+    const level = 2.4 + rib + lit + wear;
     const sign = signs.find(({ left, right }) => x >= left && x < right);
     const pooled = sign !== undefined && noise(45, Math.floor(x / 8), Math.floor(y / 4), 6) > 0.38;
     if (!wetAt(41, x, y) && !pooled) {
@@ -184,11 +191,13 @@ function drawMembrane(canvas: Canvas, signs: readonly Reflected[]): void {
       const ripple = Math.round(Math.sin(y * 1.5) * 2);
       const mirrored = Math.round(sign.bottom - (y - BASE) * sign.stretch);
       const reflected = [-2, 0, 2].some((d) => sign.letters.has(x + ripple, mirrored + d));
-      if (reflected) return hdTone(sign.ramp, level, x, y);
+      if (reflected) return hdTone(sign.ramp, level + 0.6, x, y);
     }
     return hdTone(WET, level, x, y);
   });
   canvas.fill(0, BASE, canvas.width, 3, at(MEMBRANE, 0));
+  canvas.hline(310, PARAPET, 410, at(NEON_VIOLET, 3));
+  canvas.hline(1080, PARAPET, 140, at(NEON_YELLOW, 3));
 }
 
 function drawRoofPuddle(
