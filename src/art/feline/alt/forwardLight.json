@@ -1,31 +1,31 @@
 {
   "frames": {
     "0": {
-      "frame": { "x": 88, "y": 0, "w": 99, "h": 161 },
+      "frame": { "x": 88, "y": 0, "w": 97, "h": 161 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 8, "y": 2, "w": 99, "h": 161 },
+      "spriteSourceSize": { "x": 8, "y": 2, "w": 97, "h": 161 },
       "sourceSize": { "w": 161, "h": 163 }
     },
     "1": {
-      "frame": { "x": 296, "y": 0, "w": 113, "h": 158 },
+      "frame": { "x": 294, "y": 0, "w": 113, "h": 158 },
       "trimmed": true,
       "spriteSourceSize": { "x": 0, "y": 5, "w": 113, "h": 158 },
       "sourceSize": { "w": 161, "h": 163 }
     },
     "2": {
-      "frame": { "x": 409, "y": 0, "w": 136, "h": 158 },
+      "frame": { "x": 407, "y": 0, "w": 136, "h": 158 },
       "trimmed": true,
       "spriteSourceSize": { "x": 8, "y": 4, "w": 136, "h": 158 },
       "sourceSize": { "w": 161, "h": 163 }
     },
     "3": {
-      "frame": { "x": 545, "y": 0, "w": 146, "h": 155 },
+      "frame": { "x": 543, "y": 0, "w": 146, "h": 155 },
       "trimmed": true,
       "spriteSourceSize": { "x": 15, "y": 8, "w": 146, "h": 155 },
       "sourceSize": { "w": 161, "h": 163 }
     },
     "4": {
-      "frame": { "x": 187, "y": 0, "w": 109, "h": 161 },
+      "frame": { "x": 185, "y": 0, "w": 109, "h": 161 },
       "trimmed": true,
       "spriteSourceSize": { "x": 14, "y": 2, "w": 109, "h": 161 },
       "sourceSize": { "w": 161, "h": 163 }
@@ -37,5 +37,5 @@
       "sourceSize": { "w": 161, "h": 163 }
     }
   },
-  "meta": { "image": "forwardLight.png", "size": { "w": 691, "h": 163 } }
+  "meta": { "image": "forwardLight.png", "size": { "w": 689, "h": 163 } }
 }
