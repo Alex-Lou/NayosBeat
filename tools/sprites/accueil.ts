@@ -57,6 +57,10 @@ const SLOTS = [
   ['jacketEdge', '#4a4a5e'],
   ['shirt', '#c8c8d8'],
   ['shirtShade', '#8a8a9e'],
+  ['hoodDeep', '#3a1f26'],
+  ['hood', '#52303a'],
+  ['hoodLight', '#6c414a'],
+  ['hoodEdge', '#8a5a64'],
   ['boltGlow', '#2f6cff44'],
   ['boltDeep', '#0b2a7a'],
   ['boltBlue', '#2f6cff'],
@@ -486,7 +490,7 @@ function djFrame(frame: number): Canvas {
       [141, 154],
       [79, 154],
     ],
-    slot('jacket'),
+    slot('hood'),
   );
   polygon(
     human,
@@ -496,7 +500,7 @@ function djFrame(frame: number): Canvas {
       [120, 132],
       [100, 132],
     ],
-    slot('shirt'),
+    slot('hood'),
   );
   polygon(
     human,
@@ -507,7 +511,7 @@ function djFrame(frame: number): Canvas {
       [79, 154],
       [70, 118],
     ],
-    slot('jacket'),
+    slot('hood'),
   );
   polygon(
     human,
@@ -518,7 +522,7 @@ function djFrame(frame: number): Canvas {
       [141, 154],
       [150, 118],
     ],
-    slot('jacket'),
+    slot('hood'),
   );
   polygon(
     human,
@@ -528,7 +532,7 @@ function djFrame(frame: number): Canvas {
       [78, 120],
       [70, 112],
     ],
-    slot('jacketLight'),
+    slot('hoodLight'),
   );
   polygon(
     human,
@@ -538,7 +542,7 @@ function djFrame(frame: number): Canvas {
       [138, 120],
       [150, 132],
     ],
-    slot('jacketEdge'),
+    slot('hoodEdge'),
   );
   polygon(
     human,
@@ -548,7 +552,7 @@ function djFrame(frame: number): Canvas {
       [94, 118],
       [84, 104],
     ],
-    slot('jacketEdge'),
+    slot('hoodEdge'),
   );
   polygon(
     human,
@@ -558,7 +562,7 @@ function djFrame(frame: number): Canvas {
       [126, 118],
       [136, 104],
     ],
-    slot('jacketEdge'),
+    slot('hoodEdge'),
   );
   polygon(
     human,
@@ -568,7 +572,7 @@ function djFrame(frame: number): Canvas {
       [97, 90],
       [84, 84],
     ],
-    slot('jacketEdge'),
+    slot('hoodEdge'),
   );
   polygon(
     human,
@@ -578,15 +582,61 @@ function djFrame(frame: number): Canvas {
       [123, 90],
       [136, 84],
     ],
-    slot('jacketEdge'),
+    slot('hoodEdge'),
   );
-  human.fill(109, 84, 2, 46, slot('jacketEdge'));
-  human.line(70, 100, 84, 106, slot('jacketLight'), 2);
-  human.line(150, 100, 136, 106, slot('jacketEdge'), 2);
+  polygon(
+    human,
+    [
+      [101, 84],
+      [110, 96],
+      [119, 84],
+      [115, 80],
+      [110, 89],
+      [105, 80],
+    ],
+    slot('cream'),
+  );
+  human.fill(109, 84, 2, 46, slot('hoodEdge'));
+  human.hline(92, 132, 36, slot('hoodEdge'));
+  human.line(92, 132, 84, 148, slot('hoodEdge'), 2);
+  human.line(128, 132, 136, 148, slot('hoodEdge'), 2);
+  human.line(70, 100, 84, 106, slot('hoodLight'), 2);
+  human.line(150, 100, 136, 106, slot('hoodEdge'), 2);
   human.line(94, 62, 104, 96, slot('cyanDeep'), 2);
   human.line(104, 96, 110, 124, slot('cyanDeep'), 2);
-  human.line(104, 86, 110, 101, slot('sodium'), 1);
-  human.line(110, 101, 116, 86, slot('sodium'), 1);
+  human.line(104, 84, 100, 116, slot('cream'), 2);
+  human.line(116, 84, 120, 116, slot('cream'), 2);
+  human.fill(98, 114, 4, 4, slot('cream'));
+  human.fill(118, 114, 4, 4, slot('cream'));
+  polygon(
+    human,
+    [
+      [86, 74],
+      [98, 64],
+      [122, 64],
+      [136, 76],
+      [132, 96],
+      [124, 82],
+      [110, 78],
+      [98, 82],
+      [90, 96],
+    ],
+    slot('hoodDeep'),
+  );
+  polygon(
+    human,
+    [
+      [93, 78],
+      [100, 70],
+      [120, 70],
+      [128, 80],
+      [124, 88],
+      [116, 80],
+      [104, 80],
+      [96, 88],
+    ],
+    slot('hood'),
+  );
   human.fill(102, 62, 16, 22, slot('skinDeep'));
   human.fill(104, 62, 12, 20, slot('skin'));
 
@@ -625,6 +675,35 @@ function djFrame(frame: number): Canvas {
     ],
     slot('hairLight'),
   );
+  polygon(
+    human,
+    [
+      [89, 34],
+      [92, 22],
+      [104, 17],
+      [120, 17],
+      [132, 22],
+      [137, 32],
+      [130, 34],
+      [123, 30],
+      [116, 33],
+      [108, 28],
+      [100, 34],
+      [94, 30],
+    ],
+    slot('hoodDeep'),
+  );
+  polygon(
+    human,
+    [
+      [120, 30],
+      [136, 33],
+      [143, 38],
+      [130, 35],
+    ],
+    slot('hoodEdge'),
+  );
+  human.fill(129, 26, 4, 3, slot('neonCyan'));
   human.fill(87, 42, 7, 13, slot('skinDeep'));
   human.fill(88, 43, 5, 10, slot('skinLight'));
   human.fill(88, 38, 4, 12, slot('hair'));
@@ -646,34 +725,34 @@ function djFrame(frame: number): Canvas {
       Math.round(45 + Math.sin(rad) * 25),
       3,
       3,
-      slot('jacketEdge'),
+      slot('hoodEdge'),
     );
   }
-  human.fill(81, 38, 14, 18, slot('jacket'));
-  human.fill(84, 41, 9, 13, slot('jacketEdge'));
+  human.fill(81, 38, 14, 18, slot('hood'));
+  human.fill(84, 41, 9, 13, slot('hoodEdge'));
   human.fill(86, 44, 4, 5, slot('neonCyan'));
-  human.fill(126, 38, 14, 18, slot('jacket'));
-  human.fill(128, 41, 8, 13, slot('jacketEdge'));
-  human.fill(130, 44, 4, 5, slot('neonCyan'));
-  human.line(94, 52, 108, 59, slot('jacketEdge'), 2);
+  human.fill(124, 30, 10, 4, slot('hoodEdge'));
+  human.fill(128, 58, 3, 3, slot('cream'));
+  human.line(94, 52, 108, 59, slot('hoodEdge'), 2);
   human.fill(106, 57, 4, 4, slot('neonCyan'));
 
   // Left arm, hand scratching the deck.
-  segment(human, 76, 92, 54, 124, 17, 13, slot('jacket'));
-  segment(human, 54, 124, 64, 156, 13, 9, slot('jacket'));
-  human.ellipse(52, 120, 13, 13, slot('jacketLight'));
-  human.fill(58, 152, 14, 5, slot('jacketEdge'));
+  segment(human, 76, 92, 54, 124, 17, 13, slot('hood'));
+  segment(human, 54, 124, 64, 156, 13, 9, slot('hood'));
+  human.ellipse(52, 120, 13, 13, slot('hoodLight'));
+  human.fill(58, 152, 14, 5, slot('hoodEdge'));
+  human.fill(56 + scratch, 152, 16, 4, slot('hoodEdge'));
   human.fill(58 + scratch, 156, 12, 12, slot('skin'));
   human.fill(58 + scratch, 156, 12, 3, slot('skinLight'));
   human.fill(60 + scratch, 159, 2, 6, slot('skinDeep'));
   human.fill(65 + scratch, 159, 2, 6, slot('skinDeep'));
 
   // Right arm: raised with a record, or down on the other deck.
-  segment(human, 144, 92, 168, 108, 17, 13, slot('jacket'));
-  human.ellipse(168, 106, 13, 13, slot('jacketLight'));
+  segment(human, 144, 92, 168, 108, 17, 13, slot('hood'));
+  human.ellipse(168, 106, 13, 13, slot('hoodLight'));
   if (raised) {
-    segment(human, 168, 108, 178, 44, 13, 9, slot('jacket'));
-    human.fill(172, 40, 12, 5, slot('jacketEdge'));
+    segment(human, 168, 108, 178, 44, 13, 9, slot('hood'));
+    human.fill(172, 40, 12, 5, slot('hoodEdge'));
     human.ellipse(180, 28, 36, 36, slot('ink'));
     ring(human, 180, 28, 17, 2, slot('sodium'));
     human.ellipse(171, 19, 18, 18, slot('violet'));
@@ -684,8 +763,8 @@ function djFrame(frame: number): Canvas {
     human.fill(176, 37, 2, 7, slot('skinDeep'));
     human.fill(181, 37, 2, 7, slot('skinDeep'));
   } else {
-    segment(human, 168, 108, 162, 156, 13, 9, slot('jacket'));
-    human.fill(154, 152, 14, 5, slot('jacketEdge'));
+    segment(human, 168, 108, 162, 156, 13, 9, slot('hood'));
+    human.fill(154, 152, 14, 5, slot('hoodEdge'));
     human.fill(156, 156, 12, 12, slot('skin'));
     human.fill(156, 156, 12, 3, slot('skinLight'));
     human.fill(158, 159, 2, 6, slot('skinDeep'));

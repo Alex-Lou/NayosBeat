@@ -12,7 +12,9 @@ export interface MenuItem {
   /** A rank or mark in the corner of a grid card (the difficulty's I, II, III). */
   readonly badge?: string;
   /** The card's accent, in the same tones as the key art. */
-  readonly tone?: 'cyan' | 'orange' | 'magenta';
+  readonly tone?: 'cyan' | 'orange' | 'red';
+  /** How many of the three difficulty bars are filled. */
+  readonly meter?: 1 | 2 | 3;
   readonly onSelect: () => void;
 }
 
@@ -47,6 +49,8 @@ export interface MenuOptions {
    * (the hint stays in the button, hidden from sight, for screen readers).
    */
   readonly description?: boolean;
+  /** Shows each item's hint inside its card instead of hiding it. */
+  readonly showHints?: boolean;
   /** The keys it names at the bottom; the default follows `row`, `columns` and `onBack`. */
   readonly help?: string;
   /** A small line under the help, e.g. the build's date (the options). */
@@ -127,6 +131,7 @@ export class Menu {
 
     const columns = options.columns ?? 0;
     const list = element('div', columns > 1 ? 'menu-items menu-grid' : 'menu-items');
+    if (options.showHints) list.classList.add('show-hints');
     if (columns > 1) {
       list.style.setProperty('--menu-columns', String(columns));
       // An empty cell is filled by a decorative stamp (styles.css), never by a dead choice.
@@ -142,6 +147,14 @@ export class Menu {
       button.type = 'button';
       button.tabIndex = -1;
       if (item.hint) button.appendChild(element('span', 'menu-hint', item.hint));
+      if (item.meter) {
+        const meter = element('span', 'menu-meter');
+        meter.setAttribute('aria-hidden', 'true');
+        for (let level = 0; level < 3; level++) {
+          meter.appendChild(element('i', level < item.meter ? 'on' : ''));
+        }
+        button.appendChild(meter);
+      }
       if (item.badge) {
         const badge = element('span', 'menu-badge', item.badge);
         badge.setAttribute('aria-hidden', 'true');
