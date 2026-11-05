@@ -1,9 +1,9 @@
 {
   "frames": {
     "0": {
-      "frame": { "x": 0, "y": 609, "w": 88, "h": 144 },
+      "frame": { "x": 0, "y": 609, "w": 88, "h": 143 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 14, "w": 88, "h": 144 },
+      "spriteSourceSize": { "x": 0, "y": 15, "w": 88, "h": 143 },
       "sourceSize": { "w": 88, "h": 158 }
     },
     "1": {
@@ -31,5 +31,5 @@
       "sourceSize": { "w": 88, "h": 158 }
     }
   },
-  "meta": { "image": "hitMid.png", "size": { "w": 88, "h": 753 } }
+  "meta": { "image": "hitMid.png", "size": { "w": 88, "h": 752 } }
 }

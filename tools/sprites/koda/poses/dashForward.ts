@@ -3,7 +3,6 @@ import type { Point } from '../../raster.ts';
 import { BODY, solve } from '../../skeleton.ts';
 import { at, GUARD, planted, type Effect, type Foot, type Pose } from './common.ts';
 import { POSES as IDLE } from './idle.ts';
-import { guarded } from './jump.ts';
 
 /**
  * dashForward (Pas chassé, docs/combat-v2.md §3.2, §11.2): 6 frames, 1, 4, 4, 3, 3, 3 ticks
@@ -88,10 +87,6 @@ export const dust = (x: number, size: number, progress: number): Effect => ({
 export const IDLE_HANG: Pose = IDLE[IDLE.length - 1] ?? GUARD;
 
 const GUARD_ARM = solve(GUARD).near;
-const FOREARM = Math.hypot(
-  GUARD_ARM.wrist.x - GUARD_ARM.elbow.x,
-  GUARD_ARM.wrist.y - GUARD_ARM.elbow.y,
-);
 
 /** One sprite pixel, in world pixels. */
 const PIXEL = 1 / ART_SCALE;
@@ -122,15 +117,15 @@ function onGrid(body: Body): Body {
  * the pixel grid, it rasterizes notched), as in the walks.
  */
 export function guard(body: Body, near: Point = at(0, 0), far: Point = at(0, 0)): Pose {
-  const pose = guarded(onGrid(body), near, far);
-  const { shoulder } = solve(pose).near;
-  const elbow = at(
-    shoulder.x + GUARD_ARM.elbow.x - GUARD_ARM.shoulder.x,
-    shoulder.y + GUARD_ARM.elbow.y - GUARD_ARM.shoulder.y,
-  );
-  const aim = at(pose.nearFist.x - elbow.x, pose.nearFist.y - elbow.y);
-  const k = FOREARM / (Math.hypot(aim.x, aim.y) || 1);
-  return { ...pose, nearFist: at(elbow.x + aim.x * k, elbow.y + aim.y * k) };
+  const g = onGrid(body);
+  return {
+    ...g,
+    nearFist: at(g.hip.x - 1.5 + near.x, g.hip.y + 4.5 + near.y),
+    farFist: at(g.hip.x + 17.0 + far.x, g.hip.y + 19.5 + far.y),
+    nearHand: 'open',
+    farHand: 'open',
+    bends: { nearElbow: 'back', farElbow: 'down' },
+  };
 }
 
 /** Cyan dash lines streaming back from behind him. */
