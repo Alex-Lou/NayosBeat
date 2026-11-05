@@ -71,15 +71,23 @@ export const WATT_TEXTS: FighterTexts = {
     },
     standLight: {
       input: 'L',
-      text: 'La pince avant pousse, paume à plat : son coup le plus rapide, de près. Si elle touche (ou si elle est parée) : L donne le Crochet court, arrière + L la Secousse, bas + L la Paume basse.',
+      text: 'La pince avant pousse, paume à plat : son coup le plus rapide, de près. Si elle touche (ou si elle est parée) : L donne le Crochet court, arrière + L la Secousse, bas + L la Paume basse, avant + H le Disjoncteur.',
+    },
+    backLight: {
+      input: 'Arrière + L',
+      text: 'Le revers électrifié de la pince avant : rapide (4 tics), avance de 6 px, +2 en garde, et ouvre toutes ses cordes et ses lanceurs.',
     },
     jabRepeat: {
       input: 'L, arrière + L',
-      text: "La pince avant repart aussitôt d'un coup sec électrifié : +2 en garde, et ouvre toutes ses cordes (L, H, avant + H, bas + H, arrière + H).",
+      text: "La pince avant repart aussitôt d'un coup sec électrifié : +2 en garde, et ouvre toutes ses cordes (L, bas + L, H, avant + H, bas + H, arrière + H).",
     },
     chainLight: {
       input: CHAIN,
-      text: 'Un crochet court, avec un petit pas. Puis la fin : L le Jeté, H le Marteau, avant + H le Coup de masse, bas + H le Ratissage, arrière + H le Soulevé.',
+      text: 'Un crochet court, avec un petit pas. Puis la fin : L le Jeté, bas + L la Prise de terre, H le Marteau, avant + H le Coup de masse, bas + H le Ratissage, arrière + H le Soulevé.',
+    },
+    chainLow: {
+      input: 'L, L, bas + L (ou H, bas + L)',
+      text: "Un coup de botte et de pince au ras du sol qui garde l'adversaire debout pour enchaîner sur n'importe quel spécial, Remix ou Plein feu.",
     },
     lightFinisher: {
       input: LIGHT_FINISHER,
@@ -87,27 +95,31 @@ export const WATT_TEXTS: FighterTexts = {
     },
     forwardLight: {
       input: FORWARD_LIGHT,
-      text: 'Un pas lourd, puis la Paume. Puis L : le Crochet court.',
+      text: 'Un pas rapide de 16 px (7 tics), puis la Paume. Enchaîne sur le Crochet court, le Marteau ou le Coup de masse.',
     },
     standHeavy: {
       input: 'H',
-      text: "Le poing tombe de haut, à hauteur de poitrine. En CONTRE, il plie l'adversaire sur place. H encore donne le Double marteau, arrière + H l'Arraché, ou enchaîne sur un spécial.",
+      text: "Le poing tombe de haut, à hauteur de poitrine. En CONTRE, il plie l'adversaire sur place. Bas + L donne la Prise de terre, H le Double marteau (2 coups), arrière + H l'Arraché.",
     },
     chainHeavy: {
       input: CHAIN_HEAVY,
-      text: "Les deux poings ensemble, un pas en avant : il laisse désormais l'adversaire debout pour enchaîner le Coup de jus, la Surcharge, le Câble ou Plein feu.",
+      text: "Double frappe de pistons en 2 coups (crochet montant puis impact à deux poings) : laisse l'adversaire debout pour enchaîner le Coup de jus, la Surcharge, le Câble ou Plein feu.",
     },
     chainHigh: {
       input: CHAIN_HIGH,
-      text: "Le poing passe par-dessus la garde. Un coup d'en haut dans l'enchaînement, à parer debout ; sur un adversaire en l'air, il le fait rebondir, une fois par combo.",
+      text: "Le poing passe par-dessus la garde (13 tics). Un coup d'en haut dans l'enchaînement, à parer debout ; sur un adversaire en l'air, il le fait rebondir, une fois par combo.",
     },
     forwardHeavy: {
       input: FORWARD_HEAVY,
-      text: "Le poing monte derrière l'ampoule, blindé en descendant, puis tombe tout droit. Un coup d'en haut à parer debout, qui s'annule désormais en spécial (Coup de jus, Câble ou Surcharge).",
+      text: "Le poing monte derrière l'ampoule (18 tics), blindé dès la 5e image, puis tombe tout droit. Un coup d'en haut à parer debout, qui s'annule en spécial.",
+    },
+    downForwardHeavy: {
+      input: 'Bas-avant + H (ou L, avant + H)',
+      text: 'Uppercut de piston au plexus en 9 tics : touche aussi un adversaire accroupi et le fait décoller (4 points de jongle, 5 en CONTRE).',
     },
     backHeavy: {
       input: BACK_HEAVY,
-      text: "Les deux bras arrachent vers le ciel, contre les sauts. Il fait décoller pour enchaîner L, L, L en l'air. Il passe au-dessus d'un adversaire accroupi.",
+      text: "Les deux bras arrachent vers le ciel, contre les sauts. Il fait décoller pour enchaîner L, L, L ou le Plafonnier saisi en l'air. Il passe au-dessus d'un adversaire accroupi.",
     },
     chainLaunch: {
       input: CHAIN_LAUNCH,
@@ -115,7 +127,7 @@ export const WATT_TEXTS: FighterTexts = {
     },
     crouchLight: {
       input: 'Bas + L',
-      text: 'La pince à plat, au ras du sol. Se pare accroupi, et enchaîne désormais sur L (Crochet court) ou bas + H (Ratissage).',
+      text: 'La pince à plat, au ras du sol. Se pare accroupi, et enchaîne sur L (Crochet court), avant + H (Disjoncteur) ou bas + H (Ratissage).',
     },
     crouchHeavy: {
       input: 'Bas + H',
@@ -128,6 +140,10 @@ export const WATT_TEXTS: FighterTexts = {
     jumpHeavy: {
       input: "En l'air, H",
       text: 'Tout le corps vers le bas, les bras ouverts. Se pare debout.',
+    },
+    jumpDownHeavy: {
+      input: "En l'air, bas + H",
+      text: 'Les deux pinces tirées droit sous ses bottes comme une enclume (6 tics) : touche bas et dans le dos en cross-up.',
     },
     grab: {
       input: GRAB,
@@ -167,7 +183,7 @@ export const WATT_TEXTS: FighterTexts = {
     },
     dashBack: {
       input: BACKDASH,
-      text: 'Un pas en arrière, court, et rien contre les prises : il sort mal.',
+      text: 'Un recul de 36 px en 20 tics, invincible aux prises au départ.',
     },
   },
   // docs/watt.md §6: his measured routes without gauge, easiest first, then the super and the

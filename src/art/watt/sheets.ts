@@ -30,17 +30,21 @@ export const WATT_SHEETS = {
   tech: { frames: 4 },
   // Normals.
   standLight: { frames: 5 },
+  backLight: { frames: 5 },
   jabRepeat: { frames: 5 },
   chainLight: { frames: 6 },
+  chainLow: { frames: 6 },
   lightFinisher: { frames: 7 },
   forwardLight: { frames: 6 },
   standHeavy: { frames: 7 },
   forwardHeavy: { frames: 8 },
+  downForwardHeavy: { frames: 7 },
   backHeavy: { frames: 7 },
   crouchLight: { frames: 5 },
   crouchHeavy: { frames: 8 },
   jumpLight: { frames: 5 },
   jumpHeavy: { frames: 6 },
+  jumpDownHeavy: { frames: 6 },
   // Specials.
   special: { frames: 8 },
   specialForward: { frames: 9 },
@@ -67,8 +71,8 @@ export const WATT_SHEETS = {
   intro: { frames: 10 },
   victory: { frames: 8 },
   timeOver: { frames: 4 },
-  // Combos v3: the Double marteau, the Soulevé, Plein feu.
-  chainHeavy: { frames: 7 },
+  // Combos v3: the Double marteau (8 frames, 2 hits), the Soulevé, Plein feu.
+  chainHeavy: { frames: 8 },
   chainLaunch: { frames: 7 },
   super: { frames: 9 },
 } as const satisfies Record<string, SheetSpec>;

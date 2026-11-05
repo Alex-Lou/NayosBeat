@@ -1,0 +1,41 @@
+{
+  "frames": {
+    "0": {
+      "frame": { "x": 35, "y": 77, "w": 1, "h": 1 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 1, "h": 1 },
+      "sourceSize": { "w": 61, "h": 105 }
+    },
+    "1": {
+      "frame": { "x": 0, "y": 77, "w": 35, "h": 35 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 35, "h": 35 },
+      "sourceSize": { "w": 61, "h": 105 }
+    },
+    "2": {
+      "frame": { "x": 0, "y": 0, "w": 54, "h": 77 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 7, "y": 28, "w": 54, "h": 77 },
+      "sourceSize": { "w": 61, "h": 105 }
+    },
+    "3": {
+      "frame": { "x": 36, "y": 77, "w": 1, "h": 1 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 1, "h": 1 },
+      "sourceSize": { "w": 61, "h": 105 }
+    },
+    "4": {
+      "frame": { "x": 37, "y": 77, "w": 1, "h": 1 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 1, "h": 1 },
+      "sourceSize": { "w": 61, "h": 105 }
+    },
+    "5": {
+      "frame": { "x": 38, "y": 77, "w": 1, "h": 1 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 1, "h": 1 },
+      "sourceSize": { "w": 61, "h": 105 }
+    }
+  },
+  "meta": { "image": "jumpDownHeavy.png", "size": { "w": 54, "h": 112 } }
+}

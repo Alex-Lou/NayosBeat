@@ -17,8 +17,8 @@ const SHEETS = Object.keys(WATT_SHEETS) as WattSheet[];
 
 /** docs/combat-v2.md §11.3: the 43 strips, and the 3 of combos v3, as Saphir has them. */
 describe('Watt strips: the set', () => {
-  it('has the 43 strips, the 3 of combos v3, his 3 Remixes and his 8 arsenal strips', () => {
-    expect(SHEETS).toHaveLength(57);
+  it('has the 43 strips, the 3 of combos v3, his 3 Remixes and his 12 arsenal strips', () => {
+    expect(SHEETS).toHaveLength(61);
   });
 
   it.each(SHEETS)('%s: poses and ticks for every frame', (sheet) => {
@@ -156,20 +156,24 @@ describe('Watt strips: reach', () => {
     'specialForward',
     'specialAntiAir',
     'standLight',
+    'backLight',
     'jabRepeat',
     'chainLight',
+    'chainLow',
     'lightFinisher',
     'forwardLight',
     'standHeavy',
     'chainHeavy',
     'chainHigh',
     'forwardHeavy',
+    'downForwardHeavy',
     'backHeavy',
     'chainLaunch',
     'crouchLight',
     'crouchHeavy',
     'jumpLight',
     'jumpHeavy',
+    'jumpDownHeavy',
     'jumpSpecial',
     'special',
     'specialClose',
@@ -197,16 +201,20 @@ describe('Watt strips: reach', () => {
     expect(STRIKES.map(({ id }) => id).sort()).toEqual(
       [
         'backHeavy',
+        'backLight',
         'chainHeavy',
         'chainHigh',
         'chainLaunch',
         'chainLight',
+        'chainLow',
         'crouchHeavy',
         'crouchLight',
+        'downForwardHeavy',
         'forwardHeavy',
         'forwardLight',
         'grab',
         'jabRepeat',
+        'jumpDownHeavy',
         'jumpHeavy',
         'jumpLight',
         'lightFinisher',
