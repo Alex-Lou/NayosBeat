@@ -1,6 +1,6 @@
 # Jungle
 
-Le dix-septième lieu, apporté par le développeur dans l'issue #155 : les ruines d'un temple au cœur de la jungle, derrière les cascades, la grande arche de lianes, la tête de pierre tiki, la passerelle de bois et la clairière de terre. Le lieu est adapté aux trois calques du jeu, **avec ses couleurs et sa lumière d'origine**.
+Un nouveau lieu, apporté par le développeur dans l'issue #155 : les ruines d'un temple au cœur de la jungle, derrière les cascades, la grande arche de lianes, la tête de pierre tiki, la passerelle de bois et la clairière de terre. Le lieu est adapté aux trois calques du jeu, **avec ses couleurs et sa lumière d'origine**.
 
 ## 1. La provenance, et ce qu'on garde
 

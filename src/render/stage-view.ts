@@ -13,16 +13,22 @@ import { relativeLuminance } from './luminance';
 import { StagePropsView } from './stage-props';
 
 /** The hand-drawn day stages: their bright colors are outside the flash envelope. */
-const DAY_STAGES: ReadonlySet<string> = new Set(['sakura', 'foret', 'jungle', 'chinatown']);
+const DAY_STAGES: ReadonlySet<string> = new Set([
+  'sakura',
+  'foret',
+  'jungle',
+  'chinatown',
+  'sunset',
+]);
 
 /**
  * The large colors of the night stages the fights may show, in every atmosphere they may take
  * (each once, the first stage's base first): the drawn ones', else the grey box's. The flash veils
  * are set on them, and the flash measures taken over the darkest (docs/flashs.md §3), whatever the
- * fight draws. Sakura, Dancing Forest, Jungle and Chinatown are the day stages: their bright
- * colors are outside the envelope, and the effects stay measured over the midnight stages
+ * fight draws. Sakura, Dancing Forest, Jungle, Chinatown and Sunset Beam are the day stages: their
+ * bright colors are outside the envelope, and the effects stay measured over the midnight stages
  * (docs/art/decor-sakura.md §3, docs/art/decor-forest-dance.md §3, docs/art/decor-jungle.md §3,
- * docs/art/decor-chinatown.md §5).
+ * docs/art/decor-chinatown.md §5, docs/art/decor-sunset.md §5).
  */
 export const FIGHT_STAGE_COLORS: readonly number[] =
   STAGE_MAPS.length > 0
