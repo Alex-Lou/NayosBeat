@@ -258,8 +258,8 @@ describe('the stage view', () => {
   });
 
   it("gives the flashes the night stages' large colors in every atmosphere, each once: else the grey box's", () => {
-    // Sakura is the day stage: its bright colors are outside the flash envelope (stage-view.ts
-    // FIGHT_STAGE_COLORS, docs/art/decor-sakura.md §3).
+    // The full-contrast stages (Sakura, the hand-drawn ones, Dock, Rooftop, Temple) live outside
+    // the midnight flash envelope (stage-view.ts FLASH_OUTSIDE_STAGES).
     const variants = STAGE_MAPS.filter(({ name }) => !FLASH_OUTSIDE_STAGES.has(name)).flatMap(
       ({ variants }) => variants,
     );

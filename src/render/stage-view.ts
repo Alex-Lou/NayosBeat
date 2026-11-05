@@ -13,13 +13,6 @@ import { relativeLuminance } from './luminance';
 import { StagePropsView } from './stage-props';
 
 /**
- * The large colors of the night stages the fights may show, in every atmosphere they may take
- * (each once, the first stage's base first): the drawn ones', else the grey box's. The flash veils
- * are set on them, and the flash measures taken over the darkest (docs/flashs.md §3), whatever the
- * fight draws. Sakura is the day stage: its bright colors are outside the envelope, and the
- * effects stay measured over the midnight stages (docs/art/decor-sakura.md §3).
- */
-/**
  * Stages whose full-contrast palettes live outside the midnight flash envelope; the flash tables
  * stay measured over the midnight reference stages (docs/art/decor-sakura.md §3, and each
  * hand-drawn stage's own doc).
@@ -27,6 +20,7 @@ import { StagePropsView } from './stage-props';
 export const FLASH_OUTSIDE_STAGES: ReadonlySet<string> = new Set([
   'sakura',
   'foret',
+  'jungle',
   'chinatown',
   'sunset',
   'dock',
@@ -35,6 +29,13 @@ export const FLASH_OUTSIDE_STAGES: ReadonlySet<string> = new Set([
   'carnival',
 ]);
 
+/**
+ * The large colors of the night stages the fights may show, in every atmosphere they may take
+ * (each once, the first stage's base first): the drawn ones', else the grey box's. The flash veils
+ * are set on them, and the flash measures taken over the darkest (docs/flashs.md §3), whatever the
+ * fight draws. The stages listed in FLASH_OUTSIDE_STAGES are left out: the effects stay measured
+ * over the midnight stages.
+ */
 export const FIGHT_STAGE_COLORS: readonly number[] =
   STAGE_MAPS.length > 0
     ? [
