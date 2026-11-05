@@ -21,7 +21,8 @@ import { StagePropsView } from './stage-props';
  */
 /**
  * Stages whose full-contrast palettes live outside the midnight flash envelope; the flash tables
- * stay measured over the midnight reference stages (docs/art/decor-sakura.md §3).
+ * stay measured over the midnight reference stages (docs/art/decor-sakura.md §3, and each
+ * hand-drawn stage's own doc).
  */
 export const FLASH_OUTSIDE_STAGES: ReadonlySet<string> = new Set([
   'sakura',
@@ -31,6 +32,7 @@ export const FLASH_OUTSIDE_STAGES: ReadonlySet<string> = new Set([
   'dock',
   'rooftop',
   'temple',
+  'carnival',
 ]);
 
 export const FIGHT_STAGE_COLORS: readonly number[] =

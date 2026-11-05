@@ -15,6 +15,7 @@ import { STAGE_VARIANTS as RUE } from './rue';
 import { STAGE_VARIANTS as SAKURA } from './sakura';
 import { STAGE_VARIANTS as CHINATOWN } from './chinatown';
 import { STAGE_VARIANTS as SUNSET } from './sunset';
+import { STAGE_VARIANTS as CARNIVAL } from './carnival';
 import { STAGE_VARIANTS as TEMPLE } from './temple';
 
 /** A floor: hard (asphalt, concrete, wood, stone) or sand (docs/art/decor-plage.md §6). */
@@ -179,6 +180,14 @@ export const STAGE_MAPS: readonly StageMap[] = (
       sheltered: false,
       ground: 'hard',
       variants: SUNSET,
+    },
+    {
+      name: 'carnival',
+      title: 'Rust Carnival',
+      description: "Le parc d'attractions abandonné, sous l'orage",
+      sheltered: false,
+      ground: 'hard',
+      variants: CARNIVAL,
     },
   ] satisfies StageMap[]
 ).filter(({ variants }) => variants.length > 0);
