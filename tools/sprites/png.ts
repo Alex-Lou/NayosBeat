@@ -9,6 +9,7 @@ export interface Rgba {
 
 const SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
 const COLOR_TYPE_INDEXED = 3;
+const COLOR_TYPE_RGB = 2;
 const COLOR_TYPE_RGBA = 6;
 
 const CRC_TABLE = Array.from({ length: 256 }, (_, n) => {
@@ -177,13 +178,14 @@ export interface TruecolorImage {
 }
 
 /**
- * Decodes an 8-bit RGBA truecolor PNG (color type 6, no interlace), the kind a stage drawn with
- * every color of its illustration is saved as. Rows are unfiltered with four bytes a pixel.
+ * Decodes an 8-bit truecolor PNG (RGB or RGBA, no interlace), the kind a stage drawn with every
+ * color of its illustration is saved as. Rows are unfiltered with their color's bytes a pixel.
  */
 export async function decodeTruecolorPng(png: Uint8Array): Promise<TruecolorImage> {
   const view = new DataView(png.buffer, png.byteOffset, png.byteLength);
   let width = 0;
   let height = 0;
+  let channels = 0;
   const data: Uint8Array[] = [];
   for (let offset = SIGNATURE.length; offset < png.length;) {
     const length = view.getUint32(offset);
@@ -192,9 +194,10 @@ export async function decodeTruecolorPng(png: Uint8Array): Promise<TruecolorImag
     if (type === 'IHDR') {
       width = view.getUint32(offset + 8);
       height = view.getUint32(offset + 12);
-      if (body[8] !== 8 || body[9] !== COLOR_TYPE_RGBA) {
-        throw new Error('Only 8-bit RGBA truecolor PNGs are supported');
+      if (body[8] !== 8 || (body[9] !== COLOR_TYPE_RGBA && body[9] !== COLOR_TYPE_RGB)) {
+        throw new Error('Only 8-bit RGB and RGBA truecolor PNGs are supported');
       }
+      channels = body[9] === COLOR_TYPE_RGBA ? 4 : 3;
       if (body[12] !== 0) throw new Error('Interlaced PNGs are not supported');
     } else if (type === 'IDAT') {
       data.push(body);
@@ -202,17 +205,25 @@ export async function decodeTruecolorPng(png: Uint8Array): Promise<TruecolorImag
     offset += 12 + length;
   }
   const raw = await inflate(concat(data));
-  const stride = width * 4;
-  const pixels = new Uint8Array(stride * height);
+  const sourceStride = width * channels;
+  const source = new Uint8Array(sourceStride * height);
   for (let y = 0; y < height; y++) {
-    const row = y * (stride + 1);
+    const row = y * (sourceStride + 1);
     unfilterLine(
       raw[row] ?? 0,
-      raw.subarray(row + 1, row + 1 + stride),
-      pixels.subarray(y * stride, (y + 1) * stride),
-      y > 0 ? pixels.subarray((y - 1) * stride, y * stride) : undefined,
-      4,
+      raw.subarray(row + 1, row + 1 + sourceStride),
+      source.subarray(y * sourceStride, (y + 1) * sourceStride),
+      y > 0 ? source.subarray((y - 1) * sourceStride, y * sourceStride) : undefined,
+      channels,
     );
+  }
+  if (channels === 4) return { width, height, data: new Uint8ClampedArray(source) };
+  const pixels = new Uint8Array(width * height * 4);
+  for (let at = 0, out = 0; at < source.length; at += 3, out += 4) {
+    pixels[out] = source[at] ?? 0;
+    pixels[out + 1] = source[at + 1] ?? 0;
+    pixels[out + 2] = source[at + 2] ?? 0;
+    pixels[out + 3] = 255;
   }
   return { width, height, data: new Uint8ClampedArray(pixels) };
 }
