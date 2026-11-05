@@ -53,27 +53,27 @@ export function drawFloor(width: number, height: number, seed: number): Canvas {
       const baseTone = (slabIndex + (second ? 1 : 0)) % 3 === 0 ? 3.5 : 4.2;
       const wear = (noise(seed + 2, x >> 2, y >> 1, 9) - 0.5) * 0.45;
       const ramp = snowAt(seed + 3, x, y) ? SNOW_STONE : STONE;
-      const level = Math.min(5, baseTone + lit + shade + wear + corner);
+      const level = baseTone + lit + shade + wear + corner;
       return hdTone(ramp, level, x, y);
     }
     if (y < ROWS.kerb) {
       if (y === ROWS.gravel) return at(STONE, 0);
       const groove = (y - ROWS.gravel) % 4;
-      const level = (groove === 0 ? 4.4 : groove === 2 ? 2.2 : 3.3) + corner;
-      return hdTone(STONE, Math.min(5, level), x, y);
+      const level = (groove === 0 ? 4.8 : groove === 2 ? 2.2 : 3.5) + corner;
+      return hdTone(STONE, level, x, y);
     }
     if (y < ROWS.moss) {
       if (y === ROWS.kerb) return at(STONE, 7);
       if (y === ROWS.kerb + 1) return at(STONE, 6);
       const along = x % SLAB;
       const joint = along < 2 ? -1.8 : along === 2 ? 0.9 : 0;
-      const level = Math.min(5, 4.4 + joint + corner - (y - ROWS.kerb) * 0.18);
+      const level = 4.8 + joint + corner - (y - ROWS.kerb) * 0.18;
       return hdTone(STONE, level, x, y);
     }
     if (y === ROWS.moss) return at(STONE, 0);
     const tuft = (noise(seed + 4, x >> 2, y >> 1, 6) - 0.5) * 1.3;
     const ramp = snowAt(seed + 5, x, y) ? SNOW_MOSS : MOSS;
-    return hdTone(ramp, Math.min(2.8, 1.8 + tuft + corner * 0.5), x, y);
+    return hdTone(ramp, 2 + tuft + corner * 0.5, x, y);
   });
 
   for (const rx of [420, 960, 1480]) {

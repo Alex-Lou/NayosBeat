@@ -91,8 +91,7 @@ function timelineOf(frameAt: (step: number) => number): [number, number][] {
 }
 
 function litStone(level: number, x: number, y: number): number {
-  const l = Math.min(5, level + lightAt(LIGHTS, x, y));
-  return hdTone(STONE, l, x, y);
+  return hdTone(STONE, level + lightAt(LIGHTS, x, y), x, y);
 }
 
 function drawWall(canvas: Canvas): void {
@@ -160,9 +159,9 @@ function drawGround(canvas: Canvas): void {
       return at(STONE, 0);
     }
     const fade = Math.max(0, 1 - (y - BASE) / 36);
-    const glow = lightAt(LIGHTS, x, y) * 0.95 * fade;
-    const wear = (noise(35, x >> 2, y >> 1, 10) - 0.5) * 0.4 * fade;
-    const level = Math.min(5, 3.2 + glow + wear);
+    const glow = lightAt(LIGHTS, x, y) * 1.15 * fade;
+    const wear = (noise(35, x >> 2, y >> 1, 10) - 0.5) * 0.45 * fade;
+    const level = 3.4 + glow + wear;
     const snow = noise(37, x, y, 90) > 0.12;
     return hdTone(snow ? SNOW_STONE : STONE, level, x, y);
   });
@@ -365,8 +364,7 @@ function drawHall(canvas: Canvas, swing: number, chime: number): void {
   for (let x = left + 16; x <= right - 32; x += 92) {
     canvas.paint(x, eave - 4, 16, base - eave + 4, (px, py) => {
       const u = (px - x) / 16;
-      if (u >= 0.12 && u < 0.26) return at(LACQUER, 4);
-      return hdTone(LACQUER, 3.2 - u * 1.8, px, py);
+      return hdTone(LACQUER, 4.4 - u * 2.5, px, py);
     });
     canvas.fill(x - 2, base - 7, 20, 7, at(BRONZE, 2));
     canvas.hline(x - 2, base - 7, 20, at(BRONZE, 3));
@@ -475,8 +473,7 @@ function drawGate(canvas: Canvas, flutter: number): void {
   for (const x of [left, right - pillar]) {
     canvas.paint(x, top + 10, pillar, foot - top - 10, (px, py) => {
       const u = (px - x) / pillar;
-      if (u >= 0.15 && u < 0.3) return at(LACQUER, 4);
-      return hdTone(LACQUER, 3.2 - u * 1.8, px, py);
+      return hdTone(LACQUER, 4.4 - u * 2.5, px, py);
     });
     canvas.fill(x - 2, top + 16, pillar + 4, 4, at(BRONZE, 3));
     canvas.fill(x - 3, foot - 24, pillar + 6, 20, at(WOOD, 0));
@@ -627,12 +624,12 @@ function drawTree(canvas: Canvas): void {
       const r2 = nx * nx + ny * ny;
       const scallop = Math.sin(px * 0.45) * 0.08 + Math.cos(py * 0.55) * 0.08;
       if (r2 + scallop > 1) return undefined;
-      if (topCluster && ny < -0.84) return at(SNOW_BLOSSOM, 4);
-      if (ny < -0.68) return at(BLOSSOM, 4);
-      if (ny < -0.46) return at(BLOSSOM, 3);
+      if (topCluster && ny < -0.8) return at(SNOW_BLOSSOM, 4);
+      if (ny < -0.52) return at(BLOSSOM, 4);
+      if (ny < -0.2) return at(BLOSSOM, 3);
       if (ny > 0.62) return at(BLOSSOM, 0);
-      const level = 1.65 - ny * 1.1 - nx * 0.3;
-      return hdTone(BLOSSOM, Math.min(2.7, Math.max(0.4, level)), px, py);
+      const level = 2.1 - ny * 1.4 - nx * 0.35;
+      return hdTone(BLOSSOM, Math.min(3.6, Math.max(0.5, level)), px, py);
     });
   }
 }
