@@ -256,8 +256,12 @@ describe('the stage view', () => {
     props.dispose();
   });
 
-  it("gives the flashes the stages' large colors in every atmosphere, each once: else the grey box's", () => {
-    const variants = STAGE_MAPS.flatMap(({ variants }) => variants);
+  it("gives the flashes the night stages' large colors in every atmosphere, each once: else the grey box's", () => {
+    // Sakura is the day stage: its bright colors are outside the flash envelope (stage-view.ts
+    // FIGHT_STAGE_COLORS, docs/art/decor-sakura.md §3).
+    const variants = STAGE_MAPS.filter(({ name }) => name !== 'sakura').flatMap(
+      ({ variants }) => variants,
+    );
     if (variants.length === 0) {
       expect(FIGHT_STAGE_COLORS).toEqual(GREYBOX_COLORS);
       return;
