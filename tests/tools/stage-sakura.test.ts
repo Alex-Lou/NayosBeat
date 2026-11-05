@@ -4,8 +4,7 @@ import { STAGE_MAPS } from '../../src/art/stages';
 import { STAGE_COLORS } from '../../src/art/sakura/colors';
 import { STAGE_PROPS } from '../../src/art/sakura/props';
 import { STAGE_LAYER_NAMES } from '../../src/art/stage-layers';
-import { luminanceDelta, relativeLuminance } from '../../src/render/luminance';
-import { VEIL_DELTA } from '../../src/render/veils';
+import { relativeLuminance } from '../../src/render/luminance';
 import { decodeIndexedPng } from '../../tools/sprites/png';
 import { stageRulesOf } from '../../tools/sprites/stage-drawn';
 import { readTruecolor } from '../../tools/sprites/truecolor';
@@ -41,7 +40,7 @@ describe('the hand-drawn Sakura Arena (docs/art/decor-sakura.md)', { timeout: 60
     }
   });
 
-  it('keeps the layers contract: their sizes, an opaque far, a clear mid, a faded floor top', async () => {
+  it('keeps the layers contract: their sizes, an opaque far, a clear mid, an opaque floor', async () => {
     for (const layer of STAGE_LAYER_NAMES) {
       const image = await installed(layer);
       const { width, height } = stageRulesOf(layer);
@@ -59,15 +58,11 @@ describe('the hand-drawn Sakura Arena (docs/art/decor-sakura.md)', { timeout: 60
           layer,
         ).toBe(true);
       } else {
-        // The floor's top fades into the far layer; below the feather it is opaque.
-        const { width, height } = image;
-        for (let x = 0; x < width; x++) {
-          expect(alpha[x], `${layer} top`).toBe(0);
-          expect(alpha[12 * width + x], `${layer} below feather`).toBe(255);
-          for (let y = 12; y < height; y++) {
-            expect(alpha[y * width + x], `${layer} ${y}`).toBe(255);
-          }
-        }
+        // The floor is the stone path under the fighters' feet: opaque from its top row.
+        expect(
+          alpha.every((value) => value === 255),
+          layer,
+        ).toBe(true);
       }
     }
   });
@@ -80,16 +75,13 @@ describe('the hand-drawn Sakura Arena (docs/art/decor-sakura.md)', { timeout: 60
     expect(map?.variants[0]?.atmosphere).toEqual({ moment: 'dusk', weather: 'clear' });
   });
 
-  it('keeps its large colors in the flash band the effects are tuned for', () => {
-    for (const [atmosphere, large] of Object.entries(STAGE_COLORS)) {
-      for (const color of large) {
-        expect(
-          luminanceDelta(0x000000, color, 1),
-          `${atmosphere} ${color.toString(16)}`,
-        ).toBeLessThanOrEqual(VEIL_DELTA);
-        expect(relativeLuminance(color)).toBeGreaterThanOrEqual(relativeLuminance(0x1b1b2f));
-      }
-    }
+  it('is the day stage: its bright colors live outside the midnight flash envelope', () => {
+    // The developer's image stays as it is: no exposure, no desaturation. The flash tables are
+    // measured over the midnight stages; Sakura is excluded from their envelope (stage-view.ts
+    // FIGHT_STAGE_COLORS), a documented decision of the developer (docs/art/decor-sakura.md §3).
+    const large = STAGE_COLORS['dusk-clear'] ?? [];
+    expect(large.length).toBeGreaterThan(0);
+    expect(Math.max(...large.map((color) => relativeLuminance(color)))).toBeGreaterThan(0.078);
   });
 
   it('animates the petals over the sanctuary', async () => {

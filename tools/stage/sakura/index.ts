@@ -34,8 +34,8 @@ const PETALS: readonly Rgba[] = [
 const PETAL_BOX = { x: 590, y: 60, width: 260, height: 330 } as const;
 const PETAL_FRAMES = 6;
 const PETAL_FALL = 20;
-const PETAL_ENTER = 120;
-const PETAL_TAIL = 120;
+const PETAL_ENTER = 90;
+const PETAL_TAIL = 90;
 /** Where the gust enters and leaves the middle layer (its width: 1 440 px). */
 const PETAL_DRIFT = 852;
 
@@ -53,7 +53,7 @@ function petalFrame(index: number) {
   const canvas = new Canvas(PETAL_BOX.width, PETAL_BOX.height);
   if (index > 0) {
     const t = (index - 1) / PETAL_FRAMES;
-    for (let petal = 0; petal < 40; petal++) {
+    for (let petal = 0; petal < 56; petal++) {
       const seed = petal * 11 + 1;
       const startX = hash(seed) * PETAL_BOX.width;
       const startY = hash(seed + 1) * PETAL_BOX.height;
