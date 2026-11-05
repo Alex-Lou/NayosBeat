@@ -11,6 +11,7 @@ import {
   type Foot,
   type Pose,
 } from './common.ts';
+import { hung } from './jump.ts';
 
 type Body = Omit<Pose, 'nearFist' | 'farFist'>;
 
@@ -52,6 +53,15 @@ function posed(body: Body, near: readonly [number, number], far: readonly [numbe
   };
 }
 
+function withDragonLeg(body: Body, foot: Point, ankle = 88): Body {
+  const withFoot: Body = {
+    ...body,
+    nearFoot: { x: foot.x, y: foot.y, angle: 0 },
+    bends: { ...body.bends, nearKnee: 'up' },
+  };
+  return { ...withFoot, nearFoot: hung(withFoot, 'near', ankle) };
+}
+
 const LEAD_TOE = solve(GUARD).near.toe.x;
 const REAR_TOE = solve(GUARD).far.toe.x;
 
@@ -70,174 +80,142 @@ const dust = (x: number, size: number, progress: number): Effect => ({
   progress,
 });
 
-/** Where the chambered silver bracer gathers jade energy before the spear-lunge. */
-export const CHAMBER_BRACER = at(2, 42);
+/** Where the chambered silver bracer gathers jade energy before the dragon lunge. */
+export const CHAMBER_BRACER = at(6, 42);
 
-// Frame 0 (3 ticks): Koda sinks into his stance and chambers his lead silver bracer back at his
-// hip while his rear open palm extends to sight the line of the lunge.
+// Frame 0 (3 ticks): Koda sinks into a low coil, crossing his silver gauntlets at his waist before
+// the gliding Dragon Kick lunge.
 const COIL_BODY: Body = {
   ...GUARD,
-  hip: at(-7.2, 33.0),
-  torso: 18,
+  hip: at(-6.5, 33.5),
+  torso: 16,
   head: -1,
   shrug: 1.8,
-  twist: -0.35,
-  nearHand: 'open',
-  farHand: 'open',
+  twist: 0.25,
   nearFoot: onToes(LEAD_TOE, -3),
-  farFoot: onToes(REAR_TOE, -26),
+  farFoot: onToes(REAR_TOE, -24),
 };
-const COIL: Pose = posed(COIL_BODY, [-18, 96], [56, 48]);
+const COIL: Pose = posed(COIL_BODY, [18, 96], [46, 84]);
 
-// Frame 1 (3 ticks): Push-off from the rear foot, the lead foot skimming low over the floor as the
-// silver bracer charges with jade light at his waist.
-const PUSH_BODY: Body = {
+// Frame 1 (3 ticks): Push-off from the rear foot as the lead knee chambers up and the silver
+// gauntlets glow with jade resonance.
+const PUSH_RAW: Body = {
   ...COIL_BODY,
-  hip: at(-5.5, 31.5),
-  torso: 22,
-  head: -4,
+  hip: at(-2.0, 35.5),
+  torso: 8,
+  head: 4,
   shrug: 2.2,
-  twist: -0.5,
-  nearFoot: lifted(onToes(LEAD_TOE + 3, 4), 1.2),
-  farFoot: onToes(REAR_TOE - 4, -34),
+  twist: 0.3,
+  nearFoot: at(10, 24),
+  farFoot: planted(-12.0, -14),
 };
 const PUSH: Pose = {
-  ...posed(PUSH_BODY, [-14, 102], [52, 56]),
-  effects: [dust(REAR_TOE - 4, 3.4, 0.2), energy(CHAMBER_BRACER.x, CHAMBER_BRACER.y, 2.6)],
+  ...posed(withDragonLeg(PUSH_RAW, at(10, 24), 95), [22, 98], [52, 88]),
+  effects: [dust(-12, 3.4, 0.2), energy(CHAMBER_BRACER.x, CHAMBER_BRACER.y, 2.8)],
   glows: [{ center: CHAMBER_BRACER, reach: 22, power: 0.9, tone: 'sound' }],
 };
 
-// Frame 2 (3 ticks): Gliding low across the ground (the rear foot stays near the floor so his body
-// never floats above his standing hurtbox), the rear arm sweeping back as the lead silver bracer
-// begins to uncoil forward.
-const GLIDE_BODY: Body = {
+// Frame 2 (3 ticks): Gliding across the floor on the rear foot (`farFoot` stays on the ground so
+// Koda never floats above his standing hurtbox), the lead knee driving high and forward.
+const GLIDE_RAW: Body = {
   ...GUARD,
-  hip: at(-3.0, 30.5),
-  torso: 25,
-  head: -6,
+  hip: at(2.0, 37.0),
+  torso: -2,
+  head: 8,
   shrug: 2.6,
-  reach: { near: 1.5, far: -1.5 },
-  twist: -0.25,
-  nearHand: 'open',
-  farHand: 'open',
-  nearFoot: lifted(onToes(LEAD_TOE + 5, 2), 0.8),
-  farFoot: onToes(REAR_TOE - 5, -38),
+  twist: -0.2,
+  nearFoot: at(22, 36),
+  farFoot: planted(-8.0, -16),
   face: 'effort',
 };
 const GLIDE: Pose = {
-  ...posed(GLIDE_BODY, [36, 74], [-22, 18]),
+  ...posed(withDragonLeg(GLIDE_RAW, at(22, 36), 90), [-12, 28], [62, 56]),
   effects: [
-    dust(REAR_TOE - 8, 3.6, 0.5),
-    smear(3.5, [2, 42], [12, 42.5], [22, 42]),
+    dust(-8, 3.6, 0.5),
+    smear(3.8, [10, 26], [16, 32], [23, 36]),
     { kind: 'speed', center: at(-12, 38), length: 12, spread: 5, direction: 0, tone: 'sound' },
   ],
 };
 
-// Frame 3 (3 ticks): The front foot stamps down into the deep martial lunge, the lead silver
-// vambrace and spear-palm three-quarters extended down the line.
-const DRIVE_BODY: Body = {
+// Frame 3 (3 ticks): The silver-greaved lead leg extends three-quarters out in a flying-style
+// Dragon Side Kick while the rear foot skims the floor.
+const DRIVE_RAW: Body = {
   ...GUARD,
-  hip: at(-1.0, 29.8),
-  torso: 27,
-  head: -8,
-  shrug: 3.0,
-  reach: { near: 2.8, far: -2.0 },
-  twist: -0.4,
-  nearHand: 'open',
-  farHand: 'open',
-  nearFoot: planted(11.5),
-  farFoot: onToes(REAR_TOE - 2, -42),
+  hip: at(5.5, 38.0),
+  torso: -6,
+  head: 10,
+  shrug: 2.8,
+  twist: -0.35,
+  nearFoot: at(31.0, 40.5),
+  farFoot: planted(-5.0, -14),
   face: 'effort',
 };
 const DRIVE: Pose = {
-  ...DRIVE_BODY,
-  nearFist: at(31.5, 42.0),
-  farFist: arm(DRIVE_BODY, 'far', -24, 16).fist,
-  bends: { nearElbow: 'down', farElbow: arm(DRIVE_BODY, 'far', -24, 16).bend },
+  ...posed(withDragonLeg(DRIVE_RAW, at(31.0, 40.5), 88), [-18, 24], [68, 42]),
   effects: [
-    dust(12, 3.2, 0.2),
-    smear(4, [14, 42], [23, 42], [33.5, 42]),
+    dust(-5, 3.2, 0.2),
+    smear(4.2, [18, 36], [26, 39], [34, 41]),
     { kind: 'speed', center: at(-14, 36), length: 16, spread: 6, direction: 0, tone: 'sound' },
   ],
 };
 
-// Frame 4 (4 ticks, active ticks 12-15): Full grounded Fente d'acier lunge! The lead silver
-// vambrace and open spear-palm reach x = 44 (hitbox 10..44, y 32..52), the rear arm swept back
-// along the coat tails as a counterweight, a jade speed cone and impact flash framing the palm.
-const PIERCE_BODY: Body = {
-  ...DRIVE_BODY,
-  hip: at(0.5, 29.2),
-  torso: 29,
-  head: -10,
-  shrug: 3.2,
-  reach: { near: 3.6, far: -2.2 },
+// Frame 4 (4 ticks, active ticks 12-15): Full Dragon Side-Kick & Twin-Blade Lunge! The silver
+// shin-greave and heel shoot out to x = 37, y = 41.5, with the jade dragon-spear trail, speed cone
+// and impact flash reaching x = 46..49 (hitbox 10..49, y 32..52).
+const PIERCE_RAW: Body = {
+  ...DRIVE_RAW,
+  hip: at(6.5, 38.5),
+  torso: -8,
+  head: 12,
+  shrug: 3.0,
   twist: -0.45,
-  nearFoot: planted(12.0),
-  farFoot: onToes(REAR_TOE, -44),
+  nearFoot: at(35.5, 41.5),
+  farFoot: planted(-4.0, -12),
   face: 'kiai',
 };
 const PIERCE: Pose = {
-  ...PIERCE_BODY,
-  nearFist: at(39.2, 41.5),
-  farFist: arm(PIERCE_BODY, 'far', -26, 14).fist,
-  bends: { nearElbow: 'down', farElbow: arm(PIERCE_BODY, 'far', -26, 14).bend },
+  ...posed(withDragonLeg(PIERCE_RAW, at(35.5, 41.5), 88), [-22, 22], [74, 32]),
   effects: [
-    smear(5, [16, 42], [27, 41.8], [41.5, 41.5]),
+    smear(5.2, [20, 38], [31, 40.5], [43.5, 41.5]),
     { kind: 'speed', center: at(-15, 35), length: 20, spread: 7, direction: 0, tone: 'sound' },
-    { kind: 'flash', center: at(42.5, 41.5), radius: 5.5, tone: 'strike' },
-    dust(13, 3.6, 0.5),
+    { kind: 'flash', center: at(46.5, 41.5), radius: 5.5, tone: 'strike' },
+    { kind: 'ring', center: at(42.0, 41.5), radius: 9, progress: 0.25, tone: 'sound', squash: 1.6 },
+    dust(-4, 3.6, 0.5),
   ],
-  glows: [{ center: at(41, 41.5), reach: 28, power: 1.3, tone: 'sound' }],
+  glows: [{ center: at(42, 41.5), reach: 28, power: 1.3, tone: 'sound' }],
 };
 
-// Frame 5 (6 ticks): A standing acoustic ring ripples where the spear-palm pierced the air as Koda
-// draws his lead arm and front foot back.
-const RECOIL_BODY: Body = {
+// Frame 5 (6 ticks): Re-chambering the Dragon Kick as the acoustic ring ripples in the air.
+const RECOIL_RAW: Body = {
   ...GUARD,
-  hip: at(-3.2, 32.5),
-  torso: 21,
-  head: -3,
-  shrug: 2.2,
-  reach: { near: 1.6, far: -1.0 },
-  twist: -0.25,
-  nearHand: 'open',
-  farHand: 'open',
-  nearFoot: planted(9.0),
-  farFoot: onToes(REAR_TOE, -28),
+  hip: at(1.5, 37.0),
+  torso: 2,
+  head: 4,
+  shrug: 2.0,
+  twist: -0.2,
+  nearFoot: at(20.0, 28.0),
+  farFoot: planted(-9.0, -12),
   face: 'effort',
 };
 const RECOIL: Pose = {
-  ...RECOIL_BODY,
-  nearFist: at(22.5, 45.5),
-  farFist: at(8.5, 53.0),
-  bends: { nearElbow: 'down', farElbow: 'down' },
+  ...posed(withDragonLeg(RECOIL_RAW, at(20.0, 28.0), 94), [14, 82], [48, 86]),
   effects: [
-    { kind: 'ring', center: at(41, 41.5), radius: 8, progress: 0.55, tone: 'sound', squash: 1.8 },
-    dust(13, 3.6, 0.85),
+    { kind: 'ring', center: at(44, 41.5), radius: 12, progress: 0.65, tone: 'sound', squash: 1.8 },
+    dust(-4, 3.6, 0.85),
   ],
 };
 
-// Frame 6 (6 ticks): Rising back into the open-palm stance.
-const RISE: Pose = {
+// Frame 6 (6 ticks): Setting the lead foot back down into the martial stance.
+const RISE_BODY: Body = {
   ...GUARD,
-  hip: at(-6.2, 36.0),
-  torso: 15,
+  hip: at(-4.8, 36.0),
+  torso: 13,
   head: 2,
-  shrug: 1.8,
-  nearFist: at(10.5, 50.8),
-  farFist: at(9.6, 60.5),
+  shrug: 1.6,
+  nearFoot: lifted(planted(8.0, 0), 0.8),
+  farFoot: onToes(REAR_TOE, -18),
 };
+const RISE: Pose = posed(RISE_BODY, [24, 88], [38, 92]);
 
-// Frame 7 (6 ticks): The idle's last frame.
-const IDLE_END: Pose = {
-  ...GUARD,
-  shrug: 1.68,
-  nearFist: at(8.7, 52.4),
-  farFist: at(9.9, 61.5),
-};
-
-/**
- * specialForward (Fente d'acier): a grounded martial-arts spear-palm lunge with the silver
- * vambrace, 8 frames, ticks 3, 3, 3, 3, [4], 6, 6, 6 (34 ticks: 12/4/18).
- */
-export const POSES: readonly Pose[] = [COIL, PUSH, GLIDE, DRIVE, PIERCE, RECOIL, RISE, IDLE_END];
+// Frame 7 (6 ticks): Back in GUARD.
+export const POSES: readonly Pose[] = [COIL, PUSH, GLIDE, DRIVE, PIERCE, RECOIL, RISE, GUARD];

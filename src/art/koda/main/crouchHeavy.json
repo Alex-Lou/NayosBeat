@@ -7,7 +7,7 @@
       "sourceSize": { "w": 184, "h": 128 }
     },
     "1": {
-      "frame": { "x": 301, "y": 0, "w": 140, "h": 108 },
+      "frame": { "x": 300, "y": 0, "w": 140, "h": 108 },
       "trimmed": true,
       "spriteSourceSize": { "x": 0, "y": 18, "w": 140, "h": 108 },
       "sourceSize": { "w": 184, "h": 128 }
@@ -31,7 +31,7 @@
       "sourceSize": { "w": 184, "h": 128 }
     },
     "5": {
-      "frame": { "x": 441, "y": 0, "w": 148, "h": 102 },
+      "frame": { "x": 440, "y": 0, "w": 148, "h": 102 },
       "trimmed": true,
       "spriteSourceSize": { "x": 3, "y": 22, "w": 148, "h": 102 },
       "sourceSize": { "w": 184, "h": 128 }
@@ -43,17 +43,17 @@
       "sourceSize": { "w": 184, "h": 128 }
     },
     "7": {
-      "frame": { "x": 233, "y": 0, "w": 68, "h": 114 },
+      "frame": { "x": 232, "y": 0, "w": 68, "h": 114 },
       "trimmed": true,
       "spriteSourceSize": { "x": 41, "y": 12, "w": 68, "h": 114 },
       "sourceSize": { "w": 184, "h": 128 }
     },
     "8": {
-      "frame": { "x": 165, "y": 0, "w": 68, "h": 116 },
+      "frame": { "x": 165, "y": 0, "w": 67, "h": 116 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 41, "y": 10, "w": 68, "h": 116 },
+      "spriteSourceSize": { "x": 42, "y": 10, "w": 67, "h": 116 },
       "sourceSize": { "w": 184, "h": 128 }
     }
   },
-  "meta": { "image": "crouchHeavy.png", "size": { "w": 589, "h": 223 } }
+  "meta": { "image": "crouchHeavy.png", "size": { "w": 588, "h": 223 } }
 }

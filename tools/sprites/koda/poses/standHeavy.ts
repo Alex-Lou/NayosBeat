@@ -1,285 +1,212 @@
 import type { Point } from '../../raster.ts';
-import { solve } from '../../skeleton.ts';
-import { at, GUARD, lifted, planted, smear, type Effect, type Foot, type Pose } from './common.ts';
+import { add, BODY, scale, solve, sub, type Bend } from '../../skeleton.ts';
+import { at, GUARD, lifted, planted, smear, type Foot, type Pose } from './common.ts';
+import { hung } from './jump.ts';
 
 /**
- * standHeavy (Crochet): a stepping lead hook out of the high guard. Ticks 3,3,2,[4],3,3,3,3,4
- * (active: frame 3).
- *
- * Everything goes the other way first: the weight sinks back onto the rear foot, the lead
- * shoulder dips and the chest opens toward us, the glove drawn back with it. Then the lead foot
- * steps in, the lead elbow lifting off the ribs, and the hips lead: they turn in, the shoulders
- * follow, the arm comes last, sweeping round in one arc, the elbow low and out, the forearm
- * rising into the jaw (a shovel hook: side on, the elbow folds the way an arm does). At impact
- * one long line from the raised rear heel through the hips to the fist, the arm opened out but
- * still bent, the chin buried behind the rolled lead shoulder, the rear glove up at the temple.
- * The arm carries through across, folding back, the weight comes back, the lead foot steps
- * home and the shoulder rolls up into the guard.
+ * standHeavy (Coup de talon / High Martial Side Kick): 9 frames, ticks 3,3,2,[4],3,3,3,3,4
+ * (active: frame 3, hitbox x 10..52 / y 44..62).
+ * Instead of a boxing hook, Koda pivots on his rear foot, chambers his lead knee high across his
+ * chest, and snaps a high martial-arts side-thrust kick with his silver shin-greave at chest/head
+ * height, counter-balancing with his open knife-hand and unleashing a crescent jade shockwave and
+ * diamond shards.
  */
-
-/** Where the toe tip of a foot touches the floor (a foot on the ball pivots around it). */
-function toeOf(foot: Foot): number {
-  const a = ((foot.angle ?? 0) * Math.PI) / 180;
-  return foot.x + 2.3 * Math.sin(a) + 7 * Math.cos(a);
-}
-
-/** A foot on the floor turned to `angle` around its toe tip at `toe`: the toe never slides. */
-function onToes(toe: number, angle: number): Foot {
-  const a = (angle * Math.PI) / 180;
-  return planted(toe - 2.3 * Math.sin(a) - 7 * Math.cos(a), angle);
-}
-
-const LEAD_TOE = toeOf(GUARD.nearFoot);
-const REAR_TOE = toeOf(GUARD.farFoot);
-/** Where the lead foot lands after the step in. */
-const STEP_X = 10.5;
 
 type Body = Omit<Pose, 'nearFist' | 'farFist'>;
-const sketch = (body: Body): Pose => ({
-  ...body,
-  nearFist: GUARD.nearFist,
-  farFist: GUARD.farFist,
-});
 
-/** The rear glove's place in the guard, from the head's centre: it rides the head. */
-const CHEEK = ((): Point => {
-  const { head } = solve(GUARD);
-  return at(GUARD.farFist.x - head.x, GUARD.farFist.y - head.y);
-})();
-
-/** The rear glove at the cheek (plus `dx`, `dy`), whatever the head does. */
-function atCheek(body: Body, dx = 0, dy = 0): Point {
-  const { head } = solve(sketch(body));
-  return at(head.x + CHEEK.x + dx, head.y + CHEEK.y + dy);
-}
-
-/** The lead wrist `length` px from the lead shoulder, `angle` degrees above horizontal. */
-function lead(body: Body, length: number, angle: number): Point {
-  const { shoulder } = solve(sketch(body)).near;
-  const a = (angle * Math.PI) / 180;
-  return at(shoulder.x + Math.cos(a) * length, shoulder.y + Math.sin(a) * length);
-}
-
-/** A body with its gloves: the lead one placed from the shoulder, the rear one at the cheek. */
-function arms(body: Body, length: number, angle: number, cheek: Point = at(0, 0)): Pose {
-  return { ...body, nearFist: lead(body, length, angle), farFist: atCheek(body, cheek.x, cheek.y) };
-}
-
-/**
- * The lead glove as drawn (solved): its middle and the front of its knuckles, along the
- * forearm past the wrist.
- */
-function glove(pose: Pose): { middle: Point; knuckles: Point } {
-  const { wrist, forearm } = solve(pose).near;
-  const along = (distance: number): Point =>
-    at(wrist.x + forearm.x * distance, wrist.y + forearm.y * distance);
-  return { middle: along(2.6), knuckles: along(5.4) };
-}
-
-/**
- * The hook's trail: the lower half of a flat ellipse (a horizontal swing seen from a little
- * above), from behind the lead shoulder, dipping under the arm where the glove swung out toward
- * us, and rising forward into the glove, as the forearm does; `width` px wide at the fist. It
- * ends in the middle of the glove, so its rounded end hides under it instead of bulging past it.
- */
-function hookArc(pose: Pose, radius: number, depth: number, width: number, from = -105): Effect {
-  const end = glove(pose).middle;
-  const points: [number, number][] = [];
-  for (let degrees = from; degrees <= -3; degrees += 12) {
+function arm(
+  body: Body,
+  which: 'near' | 'far',
+  shoulder: number,
+  elbow: number,
+): { fist: Point; bend: Bend } {
+  const s = solve({ ...body, nearFist: GUARD.nearFist, farFist: GUARD.farFist });
+  const root = s[which].shoulder;
+  const turn = (v: Point, degrees: number): Point => {
     const a = (degrees * Math.PI) / 180;
-    points.push([end.x - radius + Math.cos(a) * radius, end.y + Math.sin(a) * depth]);
-  }
-  points.push([end.x, end.y - 0.1]);
-  return smear(width, ...points);
+    return { x: v.x * Math.cos(a) - v.y * Math.sin(a), y: v.x * Math.sin(a) + v.y * Math.cos(a) };
+  };
+  const upper = turn({ x: -s.up.x, y: -s.up.y }, shoulder);
+  const joint = add(root, scale(upper, BODY.upperArm));
+  const fist = add(joint, scale(turn(upper, elbow), BODY.forearm));
+  const line = sub(fist, root);
+  const axis = scale(line, 1 / (Math.hypot(line.x, line.y) || 1));
+  const offset = sub(joint, root);
+  const along = offset.x * axis.x + offset.y * axis.y;
+  const mirror = add(root, sub(scale(axis, 2 * along), offset));
+  const dx = joint.x - mirror.x;
+  const dy = joint.y - mirror.y;
+  const bend: Bend =
+    Math.abs(dy) >= Math.abs(dx) ? (dy < 0 ? 'down' : 'up') : dx > 0 ? 'front' : 'back';
+  return { fist: at(fist.x, fist.y), bend };
 }
 
-/**
- * The hook's arm, seen side on: the elbow low and out, under the line from the shoulder to the
- * fist, the forearm rising into the target (a shovel hook), bent all through the swing (70 to
- * 75 degrees on the way in and out, 40 at impact). An elbow lifted over that line, the forearm
- * coming down into the jaw, folds the arm backward on the picture (tools/sprites/anatomy.ts,
- * elbowReversed): it reads as a broken arm.
- */
-const HOOK_ARM = { nearElbow: 'down', farElbow: 'down' } as const;
-/**
- * The rear glove rides up from the cheek to the temple while the hook goes, a high guard that
- * peeks over the lead arm, its elbow down and tucked behind the lead arm. The shoulders turn
- * with the hips, the rear one back (`reach.far` < 0), which tucks that elbow in further.
- */
-const TEMPLE = at(1.5, 3);
-/** Higher still while the lead upper arm sits lower (the swing, the follow-through). */
-const TEMPLE_HIGH = at(2.2, 4.5);
+function posed(body: Body, near: readonly [number, number], far: readonly [number, number]): Pose {
+  const lead = arm(body, 'near', near[0], near[1]);
+  const rear = arm(body, 'far', far[0], far[1]);
+  return {
+    ...body,
+    nearFist: lead.fist,
+    farFist: rear.fist,
+    bends: { ...body.bends, nearElbow: lead.bend, farElbow: rear.bend },
+  };
+}
 
-// Frame 0 (3 ticks): the load. The weight sinks back onto the rear foot (its heel coming
-// down), the lead heel unweights, the lead shoulder dips and the chest opens toward us; the
-// glove is drawn back a touch under the chin with it: the coil shows in the arm too.
-const LOAD_BODY: Body = {
-  ...GUARD,
-  hip: at(-7.8, 35.2),
-  torso: 10,
-  head: 7,
-  shrug: -0.6,
-  twist: 0.5,
-  nearFoot: onToes(LEAD_TOE, -7),
-  farFoot: onToes(REAR_TOE, -9),
-};
-const LOAD: Pose = {
-  ...LOAD_BODY,
-  nearFist: at(6, 56),
-  farFist: atCheek(LOAD_BODY, -0.4, 0.2),
-};
+function withKick(body: Body, foot: Point, ankle = 90): Body {
+  const withFoot: Body = {
+    ...body,
+    nearFoot: { x: foot.x, y: foot.y, angle: 0 },
+    bends: { ...body.bends, nearKnee: 'up' },
+  };
+  return { ...withFoot, nearFoot: hung(withFoot, 'near', ankle) };
+}
 
-// Frame 1 (3 ticks): the lead foot steps in low, the hips start forward, the shoulders still
-// coiled; the lead elbow lifts off the ribs, forward and up, the glove cocked at the jaw (the
-// face stays clear).
-const STEP_BODY: Body = {
+const REAR_TOE = solve(GUARD).far.toe.x;
+
+function onToes(toe: number, angle: number): Foot {
+  const a = (angle * Math.PI) / 180;
+  return planted(
+    toe - (BODY.ankle - BODY.footRadius) * Math.sin(a) - BODY.foot * Math.cos(a),
+    angle,
+  );
+}
+
+// Frame 0 (3 ticks): Weight shifts onto the rear leg, hands crossing in front of the torso to
+// gather momentum for the high kick.
+const COIL_BODY: Body = {
   ...GUARD,
-  hip: at(-4.4, 34.9),
-  torso: 19,
-  head: -1,
+  hip: at(-5.5, 35.8),
+  torso: 12,
+  head: 3,
   shrug: 1.4,
   twist: 0.25,
-  nearFoot: lifted(planted(8.8, 6), 1.8),
-  farFoot: onToes(REAR_TOE, -19),
+  nearFoot: planted(6.35, 2),
+  farFoot: onToes(REAR_TOE + 2, -16),
 };
-const STEP: Pose = {
-  ...STEP_BODY,
-  nearFist: at(16.5, 61),
-  farFist: atCheek(STEP_BODY),
-  bends: { nearElbow: 'front', farElbow: 'down' },
+const COIL: Pose = posed(COIL_BODY, [24, 92], [38, 88]);
+
+// Frame 1 (3 ticks): Pivoting on the planted rear foot, Koda chambers his lead knee high in front
+// of his chest while his torso leans back to counterbalance.
+const CHAMBER_RAW: Body = {
+  ...GUARD,
+  hip: at(-1.0, 37.5),
+  torso: 4,
+  head: 6,
+  shrug: 1.8,
+  twist: 0.35,
+  nearFoot: at(10, 28),
+  farFoot: planted(-10.0, -6),
+  face: 'focus',
+};
+const CHAMBER: Pose = posed(withKick(CHAMBER_RAW, at(10, 28), 95), [18, 96], [46, 92]);
+
+// Frame 2 (2 ticks): The hip snaps over and the silver-greaved leg whips outward toward chest
+// height, trailing a jade crescent arc.
+const WHIP_RAW: Body = {
+  ...GUARD,
+  hip: at(3.5, 38.5),
+  torso: -4,
+  head: 10,
+  shrug: 2.0,
+  twist: -0.25,
+  nearFoot: at(27, 45),
+  farFoot: planted(-5.5, -8),
+  face: 'effort',
+};
+const WHIP: Pose = {
+  ...posed(withKick(WHIP_RAW, at(27, 45), 90), [-12, 28], [48, 94]),
+  effects: [smear(4.0, [10, 32], [19, 40], [29, 46])],
 };
 
-// Frame 2 (2 ticks): the foot lands, the hips turn through, the arm whips round behind them,
-// bent, the elbow out and down, the forearm turning from upright toward the jaw.
-const SWING_BODY: Body = {
+// Frame 3 (4 ticks, active): Full high side-thrust kick! The lead leg is extended at y ~ 50,
+// torso counter-balanced back, lead arm swept down-back and rear palm guarding the temple; the
+// jade blade arc, impact flash and diamond shards reach x = 52 (hitbox 10..52, y 44..62).
+const IMPACT_RAW: Body = {
   ...GUARD,
-  hip: at(-1.8, 34.3),
-  torso: 29,
-  head: -10,
-  shrug: 3,
-  reach: { near: 2, far: -2.2 },
+  hip: at(7.5, 39.0),
+  torso: -8,
+  head: 12,
+  shrug: 2.2,
   twist: -0.4,
-  nearFoot: planted(STEP_X),
-  farFoot: onToes(REAR_TOE, -26),
-  bends: HOOK_ARM,
+  nearFoot: at(38.0, 49.5),
+  farFoot: planted(-4.0, -8),
+  face: 'kiai',
 };
-const SWING_ARM = arms(SWING_BODY, 20, 12, TEMPLE_HIGH);
-const SWING: Pose = { ...SWING_ARM, effects: [hookArc(SWING_ARM, 17, 7, 4.5)] };
-
-// Frame 3 (4 ticks, active, held through the hitstop): impact. The lead heel turned out (on
-// the ball), the rear leg long behind, the chin buried behind the lead shoulder, jaw set.
-const IMPACT_BODY: Body = {
-  ...GUARD,
-  hip: at(0.2, 34),
-  torso: 39,
-  head: -19,
-  shrug: 4,
-  reach: { near: 3.6, far: -1.8 },
-  twist: -0.8,
-  nearFoot: onToes(STEP_X + 7, -7),
-  farFoot: onToes(REAR_TOE, -31),
-  bends: HOOK_ARM,
-  face: 'effort',
-};
-// The arm opened out (40 degrees of bend), the elbow just under the line, the forearm rising
-// into the jaw, the wrist straight behind the knuckles; the rear glove up at the temple, its
-// elbow hidden behind the punching arm.
-const IMPACT_ARM = arms(IMPACT_BODY, 23.5, 5, TEMPLE);
-const IMPACT_KNUCKLES = glove(IMPACT_ARM).knuckles;
 const IMPACT: Pose = {
-  ...IMPACT_ARM,
-  nearHand: 'open',
+  ...posed(withKick(IMPACT_RAW, at(38.0, 49.5), 88), [-18, 24], [52, 96]),
   effects: [
-    hookArc(IMPACT_ARM, 25, 9, 6),
-    {
-      kind: 'flash',
-      center: at(IMPACT_KNUCKLES.x + 3.5, IMPACT_KNUCKLES.y),
-      radius: 5,
-      tone: 'strike',
-    },
-    {
-      kind: 'shards',
-      center: at(IMPACT_KNUCKLES.x + 2, IMPACT_KNUCKLES.y),
-      radius: 10,
-      progress: 0.3,
-      tone: 'sound',
-    },
+    smear(5.5, [16, 40], [28, 46], [42, 50]),
+    { kind: 'flash', center: at(46.5, 51), radius: 5.5, tone: 'strike' },
+    { kind: 'shards', center: at(43.5, 51), radius: 8.5, progress: 0.3, tone: 'sound' },
+    { kind: 'dust', x: -4, size: 2.8, progress: 0.25 },
   ],
-  glows: [
-    { center: at(IMPACT_KNUCKLES.x, IMPACT_KNUCKLES.y), reach: 22, power: 0.9, tone: 'sound' },
-  ],
+  glows: [{ center: at(42, 50), reach: 26, power: 1.1, tone: 'sound' }],
 };
 
-// Frame 4 (3 ticks): follow-through. The fist carries on across the body (it comes back toward
-// us in the picture, the arm folding again), the elbow still out and low, the chest turned away;
-// still set.
-const THROUGH_BODY: Body = {
-  ...GUARD,
-  hip: at(-0.9, 34.2),
-  torso: 33,
-  head: -14,
-  shrug: 3.6,
-  reach: { near: 2, far: -1.6 },
-  twist: -0.9,
-  nearFoot: onToes(STEP_X + 7, -5),
-  farFoot: onToes(REAR_TOE, -28),
-  bends: HOOK_ARM,
+// Frame 4 (3 ticks): Follow-through at the end of the kick as a standing jade ring ripples where
+// the silver shin-greave struck.
+const THROUGH_RAW: Body = {
+  ...IMPACT_RAW,
+  hip: at(5.5, 38.5),
+  torso: -5,
+  head: 9,
+  nearFoot: at(32.0, 46.0),
+  farFoot: planted(-6.0, -8),
   face: 'effort',
 };
-const THROUGH = arms(THROUGH_BODY, 20.5, 4, TEMPLE_HIGH);
-
-// Frame 5 (3 ticks): the weight comes back over the hips, the elbow drops, the glove heads home.
-const BACK_BODY: Body = {
-  ...GUARD,
-  hip: at(-2.8, 35.1),
-  torso: 24,
-  head: -5,
-  shrug: 2.6,
-  reach: { near: 0.8 },
-  twist: -0.5,
-  nearFoot: planted(STEP_X),
-  farFoot: onToes(REAR_TOE, -20),
-};
-const BACK = arms(BACK_BODY, 15, 4);
-
-// Frame 6 (3 ticks): the lead foot steps back home, the hips settle back.
-const STEP_BACK_BODY: Body = {
-  ...GUARD,
-  hip: at(-5.4, 36),
-  torso: 18,
-  head: 0,
-  shrug: 2,
-  twist: -0.2,
-  nearFoot: lifted(planted(8, 4), 1.4),
-  farFoot: onToes(REAR_TOE, -16),
-};
-const STEP_BACK: Pose = {
-  ...STEP_BACK_BODY,
-  nearFist: at(11.6, 54.2),
-  farFist: atCheek(STEP_BACK_BODY),
+const THROUGH: Pose = {
+  ...posed(withKick(THROUGH_RAW, at(32.0, 46.0), 90), [-12, 28], [48, 94]),
+  effects: [
+    { kind: 'ring', center: at(44, 51), radius: 9, progress: 0.5, tone: 'sound', squash: 1.6 },
+    { kind: 'dust', x: -4, size: 2.8, progress: 0.65 },
+  ],
 };
 
-// Frames 7-8 (3 + 4 ticks): a pixel past the guard (the hips sit back, the lead shoulder rolls
-// up as in the idle's breath), then the guard.
-const ROLL: Pose = {
+// Frame 5 (3 ticks): Re-chambering the kicking knee cleanly in front of the hip.
+const RECHAMBER_RAW: Body = {
   ...GUARD,
-  hip: at(-7.1, 36),
+  hip: at(0.5, 37.5),
+  torso: 4,
+  head: 4,
+  shrug: 1.8,
+  twist: -0.15,
+  nearFoot: at(15, 25),
+  farFoot: planted(-11.0, -10),
+};
+const RECHAMBER: Pose = posed(withKick(RECHAMBER_RAW, at(15, 25), 95), [16, 84], [42, 90]);
+
+// Frame 6 (3 ticks): Setting the lead foot back down toward its guard mark.
+const STEP_DOWN_BODY: Body = {
+  ...GUARD,
+  hip: at(-4.2, 36.4),
+  torso: 11,
+  head: 2,
+  shrug: 1.5,
+  nearFoot: lifted(planted(8.5, 2), 1.2),
+  farFoot: onToes(REAR_TOE, -18),
+};
+const STEP_DOWN: Pose = posed(STEP_DOWN_BODY, [22, 88], [38, 92]);
+
+// Frame 7 (3 ticks): Sinking into the martial stance as the foot plants.
+const SETTLE: Pose = {
+  ...GUARD,
+  hip: at(-6.8, 35.8),
   torso: 14.5,
-  head: 2.5,
-  shrug: 1.7,
-  nearFist: at(8.3, 55),
-  farFist: at(GUARD.farFist.x - 0.5, GUARD.farFist.y - 0.5),
+  head: 2,
+  shrug: 1.6,
+  nearFist: at(8.6, 47.0),
+  farFist: at(9.5, 61.8),
 };
-const SETTLE: Pose = GUARD;
 
+// Frame 8 (4 ticks): Back in GUARD.
 export const POSES: readonly Pose[] = [
-  LOAD,
-  STEP,
-  SWING,
+  COIL,
+  CHAMBER,
+  WHIP,
   IMPACT,
   THROUGH,
-  BACK,
-  STEP_BACK,
-  ROLL,
+  RECHAMBER,
+  STEP_DOWN,
   SETTLE,
+  GUARD,
 ];

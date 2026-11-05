@@ -1,219 +1,163 @@
-import { solve } from '../../skeleton.ts';
-import {
-  at,
-  ease,
-  GUARD,
-  lifted,
-  planted,
-  smear,
-  tween,
-  type Effect,
-  type Pose,
-} from './common.ts';
+import { at, energy, GUARD, lifted, planted, smear, type Effect, type Pose } from './common.ts';
 
 /**
- * intro: 10 frames, 10,8,8,8,10,8,8,10,10,10 ticks (90, the round announcement). He takes his
- * time: cracks his knuckles (the lead fist pressed into the rear palm, a squeeze, then the pop:
- * the shoulders hunch, the chin tucks, a small spark of sound at the knuckles), shakes both
- * hands out, sets the headphones around his neck (two flat pulses of sound at the cup on the
- * beat, the knees giving on it), then a composed stare at the opponent, no smile, and he sinks
- * into Tazz's high guard: the back foot slides back on its ball, the gloves come up. The last
- * frame is exactly GUARD: the fight starts on idle's frame 0 without a pop.
- *
- * Standing tall and loose between the beats, the weight on the back leg; the lead foot is
- * GUARD's from the start, so only the rear foot travels. The head stays under 20 degrees (drawn
- * upright, see head.ts): the attitude is in the chest, the shoulders and the hands.
- *
- * Seen side on, an elbow can only fold forward and down here (the solver cannot swing it out to
- * the side): the crack is sold by the shoulders and the chin, not by a flared elbow, and the
- * hand that holds the headphones' cup comes up the chest from an elbow kept low and in front,
- * the open fingers reaching back onto the cup, never an arm folded flat on itself. When the rear
- * arm has nothing to do, it hangs along the flank, hidden behind the body.
+ * intro: 10 frames, 10,8,8,8,10,8,8,10,10,10 ticks (90 ticks, the round announcement).
+ * BlazBlue / Guilty Gear style entrance: Koda stands tall with both silver gauntlets crossed in an
+ * X in front of his chest, surrounded by a humming jade acoustic barrier; he slashes both tuning
+ * blades wide open, shattering the barrier into diamond shards and speed lines, sweeps his lead
+ * knife-hand forward in a martial arc, and drops into his low open-palm guard.
  */
 
-/**
- * A ring of sound around the neck, flattened, born just behind the headphones' cup: it spreads
- * over the collar, never over the face, and stays small and behind the cup so the hand holding
- * the cup reads.
- */
-const pulse = (progress: number): Effect => ({
+const ring = (x: number, y: number, radius: number, progress: number, squash = 1.4): Effect => ({
   kind: 'ring',
-  center: at(-4, 64.5),
-  radius: 7,
+  center: at(x, y),
+  radius,
   progress,
   tone: 'sound',
-  squash: 0.4,
+  squash,
 });
 
-/**
- * The rear arm let go, hanging plumb from its shoulder along the flank, the elbow a little soft
- * (about 30 degrees, the forearm falling forward of it): wherever the body is, it stays hidden
- * behind the torso and the hips, never poking out of the back.
- */
-function hanging(pose: Pose): Pose {
-  const { shoulder } = solve(pose).far;
-  return {
-    ...pose,
-    farFist: at(shoulder.x + HANG.x, shoulder.y + HANG.y),
-    farHand: 'open',
-    bends: { ...pose.bends, farElbow: 'back' },
-  };
-}
-/** Where a hanging hand's wrist falls from its shoulder. */
-const HANG = at(1.5, -23.9);
-
-/** Standing tall and easy, the weight on the back leg: the base of the entrance. */
 const STAND: Pose = {
-  hip: at(-4.2, 40),
-  torso: 5,
-  head: 6,
-  shrug: 0.8,
-  nearFoot: GUARD.nearFoot,
-  farFoot: planted(-9.5),
-  nearFist: at(8, 46),
-  farFist: at(6, 46),
-  face: 'cool',
-};
-
-// 0 · The lead fist pressed into the rear palm at the chest, the shoulders loose.
-const PALM: Pose = {
-  ...STAND,
-  hip: at(-4.6, 39.8),
-  head: 12,
-  shrug: 1.2,
-  farHand: 'open',
-  nearFist: at(9, 50),
-  farFist: at(11.5, 51),
-};
-
-// 1 · The squeeze: hands pushed up and out, shoulders up, the chest lifting, up on the legs.
-const SQUEEZE: Pose = {
-  ...STAND,
-  hip: at(-4.2, 40.6),
+  hip: at(-4.0, 40.2),
   torso: 3,
-  head: 8,
-  shrug: 2.6,
-  twist: 0.3,
-  farHand: 'open',
-  nearFist: at(10.5, 54),
-  farFist: at(13, 54.5),
-};
-
-// 2 · The crack: the hands pulled in tight under the chin, the shoulders hunched up and rolled
-// in, the chest folding over them, the chin tucked, the knees giving a little; a small pop of
-// sound at the knuckles (his music, not a hit). Both elbows stay down, folded forward.
-const CRACK: Pose = {
-  ...STAND,
-  hip: at(-3.8, 39.3),
-  torso: 9,
-  head: 10,
-  shrug: 3,
-  twist: -0.3,
-  reach: { near: 1, far: 1 },
-  nearHand: 'open',
-  farHand: 'open',
-  nearFist: at(10.5, 56),
-  farFist: at(13, 55.5),
-  effects: [
-    { kind: 'flash', center: at(14.5, 56), radius: 3.0, tone: 'sound' },
-    { kind: 'ring', center: at(14.5, 56), radius: 8, progress: 0.25, tone: 'sound', squash: 1.4 },
-  ],
-};
-
-// 3 · Shaking them out: a loose flick of both wrists low in front of him, the hands open and
-// trailing the forearms, the shoulders let go, the hips settle back, the lead heel lifts. The
-// rear hand shows under the lead one, in front of the thigh.
-const SHAKE: Pose = {
-  ...STAND,
-  hip: at(-4, 40.8),
-  torso: 3,
-  head: 4,
-  shrug: 0.2,
-  nearFoot: planted(GUARD.nearFoot.x, -8),
-  nearFist: at(11, 44),
-  farFist: at(7, 40.5),
-  bends: { nearElbow: 'back', farElbow: 'down' },
-  nearHand: 'open',
-  farHand: 'open',
-  effects: [smear(3, [14, 49], [13, 46], [11, 44]), smear(2.5, [9.5, 45], [8.5, 42.5], [7, 40.5])],
-};
-
-// 4 · The lead hand up to the headphones' cup: the elbow low in front of the ribs, the forearm
-// up the chest on a diagonal, the open fingers reaching back over the cup's rim (the cup is
-// drawn over them); the rear arm let go. The first pulse.
-const CUP: Pose = hanging({
-  ...STAND,
-  hip: at(-4.2, 40.2),
-  head: 9,
-  shrug: 0.4,
-  nearHand: 'open',
-  nearFist: at(4.9, 64.2),
-  bends: { nearElbow: 'front' },
-  effects: [pulse(0.2)],
-});
-
-// 5 · Setting it on the beat: the fingers pinch the cup, the knees dip, a second pulse.
-const SET: Pose = hanging({
-  ...CUP,
-  hip: at(-4.4, 39.2),
-  torso: 6,
-  head: 12,
-  nearHand: 'fist',
-  nearFist: at(5.2, 62.6),
-  effects: [pulse(0.6), pulse(0.15)],
-});
-
-// 6 · The hand slides off down the jacket, he comes up tall, the second pulse spreads.
-const LET_GO: Pose = hanging({
-  ...CUP,
-  hip: at(-4.1, 40.4),
-  torso: 4,
   head: 5,
-  shrug: 1,
-  nearFist: at(8.5, 50),
-  bends: {},
-  effects: [pulse(0.55)],
-});
-
-// 7 · The stare: chin level, chest square on the opponent, the lead hand closing at his side.
-const STARE: Pose = hanging({
-  ...STAND,
-  hip: at(-4.6, 39.8),
-  torso: 8,
-  head: 7,
-  shrug: 1.8,
-  nearFist: at(4.5, 43),
-  effects: [pulse(0.9)],
-});
-
-// 8 · He drops into the guard: the back foot drag-steps back, skimming the floor on its ball
-// (the heel up, under the sinking knee) to land on the guard's mark, the body sinks a touch
-// past the stance (it settles back up into it), the gloves come up halfway, the lead shoulder
-// rolls in.
-const DROP = tween(STARE, GUARD, 0.7, ease.linear);
-const RISE = tween(STARE, GUARD, 0.55, ease.linear);
-const SINK: Pose = {
-  ...DROP,
-  hip: at(DROP.hip.x, GUARD.hip.y - 1),
-  farFoot: lifted(planted(-19.1, -24), 1.5),
-  nearFist: at(RISE.nearFist.x, RISE.nearFist.y - 1),
-  farFist: at(RISE.farFist.x, RISE.farFist.y - 1),
+  shrug: 1.0,
+  nearFoot: GUARD.nearFoot,
+  farFoot: planted(-10.0),
+  nearFist: at(7.5, 53.0),
+  farFist: at(9.5, 54.0),
   nearHand: 'open',
   farHand: 'open',
   bends: { nearElbow: 'down', farElbow: 'down' },
   face: 'cool',
 };
 
-// 9 · The guard, game face on.
+// 0 · Standing tall, silver gauntlets crossed in front of the chest, a jade aura gathering.
+const CROSSED: Pose = {
+  ...STAND,
+  effects: [energy(9.0, 53.5, 2.8)],
+  glows: [{ center: at(9, 53.5), reach: 22, power: 0.8, tone: 'sound' }],
+};
+
+// 1 · The crossed silver gauntlets tighten, a jade tuning ring forming around his torso.
+const CHARGE_1: Pose = {
+  ...STAND,
+  hip: at(-4.2, 39.6),
+  torso: 5,
+  shrug: 2.0,
+  nearFist: at(8.5, 54.5),
+  farFist: at(10.5, 55.0),
+  effects: [energy(9.5, 54.5, 3.6), ring(8, 52, 11, 0.25, 1.3)],
+  glows: [{ center: at(9.5, 54.5), reach: 26, power: 1.1, tone: 'sound' }],
+};
+
+// 2 · Peak resonance before the slash: the barrier hums bright jade.
+const CHARGE_2: Pose = {
+  ...CHARGE_1,
+  hip: at(-4.4, 39.0),
+  torso: 7,
+  shrug: 2.6,
+  face: 'effort',
+  effects: [energy(10.0, 55.0, 4.2), ring(8, 52, 14, 0.45, 1.3)],
+  glows: [{ center: at(10, 55), reach: 30, power: 1.3, tone: 'sound' }],
+};
+
+// 3 · The X-Slash! Koda flings both silver gauntlets wide apart (lead arm swept down-back, rear
+// arm raised high forward), shattering the jade barrier into diamond shards!
+const SHATTER: Pose = {
+  ...STAND,
+  hip: at(-3.5, 40.8),
+  torso: -2,
+  head: 6,
+  shrug: 2.2,
+  twist: 0.45,
+  nearFist: at(-7.5, 43.0),
+  farFist: at(14.5, 68.0),
+  bends: { nearElbow: 'back', farElbow: 'down' },
+  face: 'kiai',
+  effects: [
+    smear(3.5, [8.5, 54.5], [1, 48], [-7.5, 43]),
+    smear(3.5, [10.5, 55], [12.5, 62], [14.5, 68]),
+    { kind: 'flash', center: at(10, 55), radius: 5, tone: 'sound' },
+    { kind: 'shards', center: at(10, 55), radius: 16, progress: 0.25, tone: 'sound' },
+    ring(8, 2, 16, 0.25, 0.3),
+  ],
+  glows: [{ center: at(10, 55), reach: 32, power: 1.4, tone: 'sound' }],
+};
+
+// 4 · Coat billowing open in the wake of the shatter, shards drifting outward.
+const BILLOW: Pose = {
+  ...SHATTER,
+  hip: at(-3.8, 40.5),
+  torso: 0,
+  head: 5,
+  nearFist: at(-8.5, 42.0),
+  farFist: at(13.5, 70.0),
+  face: 'cool',
+  effects: [
+    { kind: 'shards', center: at(10, 56), radius: 20, progress: 0.65, tone: 'sound' },
+    ring(8, 2, 22, 0.65, 0.3),
+  ],
+  glows: [{ center: at(12, 64), reach: 24, power: 0.8, tone: 'sound' }],
+};
+
+// 5 · He sweeps his lead open knife-hand forward in a wide kung-fu salute while the rear hand
+// chambers near his temple.
+const SALUTE: Pose = {
+  ...STAND,
+  hip: at(-4.2, 39.8),
+  torso: 6,
+  head: 4,
+  shrug: 1.4,
+  twist: -0.25,
+  nearFist: at(14.5, 51.0),
+  farFist: at(4.5, 63.0),
+  effects: [smear(3, [-4, 43], [6, 47], [14.5, 51]), ring(14.5, 51, 7, 0.3, 1.5)],
+};
+
+// 6 · Holding the extended knife-hand salute for a beat as the tuning ring fades.
+const POISE: Pose = {
+  ...SALUTE,
+  hip: at(-4.5, 39.4),
+  torso: 8,
+  nearFist: at(13.5, 50.0),
+  farFist: at(5.0, 62.8),
+  effects: [ring(14.5, 51, 10, 0.75, 1.5)],
+};
+
+// 7 · The rear foot begins to slide back into the wide martial stance.
+const STEP_BACK: Pose = {
+  ...GUARD,
+  hip: at(-5.4, 38.0),
+  torso: 10,
+  head: 4,
+  farFoot: lifted(planted(-16.0, -10), 1.4),
+  nearFist: at(11.0, 48.5),
+  farFist: at(5.2, 62.6),
+  face: 'cool',
+};
+
+// 8 · Sinking a hair past the guard as the rear foot plants on its ball.
+const SINK: Pose = {
+  ...GUARD,
+  hip: at(-6.8, 35.8),
+  torso: 14,
+  head: 3,
+  nearFist: at(8.8, 45.8),
+  farFist: at(5.4, 62.8),
+  effects: [{ kind: 'dust', x: -20, size: 2.5, progress: 0.4 }],
+};
+
+// 9 · Exactly GUARD: flows seamlessly into idle frame 0.
 export const POSES: readonly Pose[] = [
-  PALM,
-  SQUEEZE,
-  CRACK,
-  SHAKE,
-  CUP,
-  SET,
-  LET_GO,
-  STARE,
+  CROSSED,
+  CHARGE_1,
+  CHARGE_2,
+  SHATTER,
+  BILLOW,
+  SALUTE,
+  POISE,
+  STEP_BACK,
   SINK,
   GUARD,
 ];

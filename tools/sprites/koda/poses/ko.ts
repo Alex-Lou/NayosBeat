@@ -20,7 +20,7 @@ import { onToes } from './hitHigh.ts';
 const OUT: Pose = {
   hip: at(-14, 6.9),
   torso: -84,
-  head: -40,
+  head: -32,
   shrug: 0,
   nearFoot: { x: 15, y: 5.6, angle: 66 },
   farFoot: { x: 19.5, y: 5, angle: 76 },

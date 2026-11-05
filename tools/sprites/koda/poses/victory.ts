@@ -1,125 +1,182 @@
-import { at, ease, GUARD, lifted, planted, tween, type Effect, type Pose } from './common.ts';
+import type { Point } from '../../raster.ts';
+import { add, BODY, scale, solve, sub, type Bend } from '../../skeleton.ts';
+import { at, energy, GUARD, lifted, planted, smear, type Effect, type Pose } from './common.ts';
+import { hung } from './jump.ts';
 
 /**
- * victory: 8 frames, 6,6,6,6 then 8x4 looping from frame 4. He comes out of the guard (the rear
- * foot steps in, the gloves come down), drops the rear fist low in front of his hip, the knees
- * loading, and drives it up to the sky on his toes, a flash of sound at the knuckles; then he
- * holds it up, standing tall and easy, the lead hand hooked at his pocket, and bounces on the
- * beat: a dip of the knees on each beat (frame 4) while the raised fist pumps up against it (a
- * counter-motion, the arm keeping a little slack) and a ring of sound is born around it,
- * spreading and fading over the bar. Composed, no grin: the stare stays on the loser.
- *
- * The rear (far) arm is the one raised: drawn behind the head, it never hides the face, and the
- * lead sleeve's emblem stays crisp at his side. In the loop the body is pixel-locked like idle:
- * it moves by whole sprite pixels (0.5 world px) and never turns, the lead arm moving with it as
- * one piece, so the jacket, the emblem and the headphone ring never boil; only the knees and the
- * raised forearm (no neon on it) move freely. Everything in front stays inside the pushbox (the
- * loser may stand at point blank): the fist goes up, not forward.
+ * victory: 8 frames, 6,6,6,6 then 8x4 looping from frame 4.
+ * Iconic martial-arts Crane / Master victory stance (nothing like Nayo's raised-fist pump):
+ * Koda steps onto his rear leg, clashes his two silver gauntlets in front of his sternum in a
+ * burst of diamond shards, and rises into a poised one-legged Crane Stance — lead knee raised high
+ * in front of his waist, lead hand held in a vertical kung-fu salute at his chest, rear knife-hand
+ * extended forward — while concentric jade acoustic rings pulse around him.
  */
 
-/**
- * A ring of sound around the raised fist, `progress` from 0 (born) to 1 (faded). Its center
- * stays put while the fist pumps, so each ring spreads as one shape.
- */
-const ring = (progress: number): Effect => ({
-  kind: 'ring',
-  center: at(7, 83),
-  radius: 10,
-  progress,
-  tone: 'sound',
-});
+type Body = Omit<Pose, 'nearFist' | 'farFist'>;
 
-/** Standing tall and easy, chest up, the rear fist up to the sky, the lead hand at his pocket. */
-const UP: Pose = {
-  hip: at(-2.5, 40.2),
-  torso: -2,
-  head: 5,
-  shrug: 0.5,
-  nearFoot: planted(GUARD.nearFoot.x),
-  farFoot: planted(-12),
-  nearFist: at(5, 41.5),
-  farFist: at(6.5, 80),
-  nearHand: 'open',
-  farHand: 'open',
-  bends: { nearElbow: 'back', farElbow: 'front' },
-  face: 'cool',
-};
+function arm(
+  body: Body,
+  which: 'near' | 'far',
+  shoulder: number,
+  elbow: number,
+): { fist: Point; bend: Bend } {
+  const s = solve({ ...body, nearFist: GUARD.nearFist, farFist: GUARD.farFist });
+  const root = s[which].shoulder;
+  const turn = (v: Point, degrees: number): Point => {
+    const a = (degrees * Math.PI) / 180;
+    return { x: v.x * Math.cos(a) - v.y * Math.sin(a), y: v.x * Math.sin(a) + v.y * Math.cos(a) };
+  };
+  const upper = turn({ x: -s.up.x, y: -s.up.y }, shoulder);
+  const joint = add(root, scale(upper, BODY.upperArm));
+  const fist = add(joint, scale(turn(upper, elbow), BODY.forearm));
+  const line = sub(fist, root);
+  const axis = scale(line, 1 / (Math.hypot(line.x, line.y) || 1));
+  const offset = sub(joint, root);
+  const along = offset.x * axis.x + offset.y * axis.y;
+  const mirror = add(root, sub(scale(axis, 2 * along), offset));
+  const dx = joint.x - mirror.x;
+  const dy = joint.y - mirror.y;
+  const bend: Bend =
+    Math.abs(dy) >= Math.abs(dx) ? (dy < 0 ? 'down' : 'up') : dx > 0 ? 'front' : 'back';
+  return { fist: at(fist.x, fist.y), bend };
+}
 
-// 0 · Out of the guard: the rear foot steps in off its ball, the body rises, the gloves drop.
-const STEP: Pose = {
-  ...tween(GUARD, UP, 0.45, ease.out),
-  farFoot: lifted(planted(-16.5, -12), 1.6),
-  nearFist: at(8, 47),
-  farFist: at(6.5, 54),
-  bends: { nearElbow: 'down', farElbow: 'down' },
-  face: 'cool',
-};
-
-// 1 · The rear foot lands; the coil: the far fist drops low in front of the lead hip, the arm
-// loose under the shoulder (the elbow hidden in the torso, never poking out of the back), the
-// knees load deep, the chest coils a touch forward over them; the lead fist stays up at the
-// belly, to pull down as the rear one drives up.
-const COCK: Pose = {
-  ...UP,
-  hip: at(-3.6, 37.6),
-  torso: 8,
-  head: 2,
-  shrug: 1,
-  nearFist: at(7.5, 49),
-  farFist: at(7, 39),
-  bends: { nearElbow: 'back', farElbow: 'down' },
-};
-
-// 2 · Punching the sky: up on the toes, the arm all the way up, a flash of sound at the fist.
-const SKY: Pose = {
-  ...UP,
-  hip: at(-2.8, 41),
-  torso: 0,
-  head: 2,
-  nearFoot: planted(GUARD.nearFoot.x, -8),
-  farFoot: planted(-12, -10),
-  nearFist: at(4.5, 39),
-  farFist: at(5.5, 84.5),
-  effects: [
-    { kind: 'flash', center: at(6.5, 88.5), radius: 5, tone: 'sound' },
-    { kind: 'shards', center: at(6.5, 88.5), radius: 10, progress: 0.25, tone: 'sound' },
-  ],
-};
-
-/**
- * The bounce, frame by frame from the beat: how far the body sinks (world px, whole sprite
- * pixels), how high the raised fist pumps over its rest (in the world: it rises as the knees
- * dip, the counter-motion that sells the pump), and the ring's progress.
- */
-const BOUNCE = [
-  { dip: 1.5, pump: 1.5, ring: 0.3 },
-  { dip: 0.5, pump: 0.5, ring: 0.52 },
-  { dip: 0, pump: 0, ring: 0.74 },
-  { dip: 0.5, pump: -0.5, ring: 0.94 },
-] as const;
-
-function bounce(phase: 0 | 1 | 2 | 3): Pose {
-  const { dip, pump, ring: progress } = BOUNCE[phase];
-  const fist = at(UP.farFist.x, UP.farFist.y + pump);
+function posed(body: Body, near: readonly [number, number], far: readonly [number, number]): Pose {
+  const lead = arm(body, 'near', near[0], near[1]);
+  const rear = arm(body, 'far', far[0], far[1]);
   return {
-    ...UP,
-    hip: at(UP.hip.x, UP.hip.y - dip),
-    // The lead arm rides the body as one piece.
-    nearFist: at(UP.nearFist.x, UP.nearFist.y - dip),
-    farFist: fist,
-    effects: [ring(progress)],
+    ...body,
+    nearFist: lead.fist,
+    farFist: rear.fist,
+    bends: { ...body.bends, nearElbow: lead.bend, farElbow: rear.bend },
   };
 }
 
-// 3 · Settles out of the reach onto the first beat, the flash spreading into a ring; then the
-// loop (4-7): beat, up, top, down.
+function withCraneLeg(body: Body, foot: Point, ankle = 95): Body {
+  const withFoot: Body = {
+    ...body,
+    nearFoot: { x: foot.x, y: foot.y, angle: 0 },
+    bends: { ...body.bends, nearKnee: 'up' },
+  };
+  return { ...withFoot, nearFoot: hung(withFoot, 'near', ankle) };
+}
+
+const crestRing = (progress: number): Effect => ({
+  kind: 'ring',
+  center: at(8, 52),
+  radius: 15,
+  progress,
+  tone: 'sound',
+  squash: 1.3,
+});
+
+const floorRing = (progress: number): Effect => ({
+  kind: 'ring',
+  center: at(-3, 2),
+  radius: 20,
+  progress,
+  tone: 'sound',
+  squash: 0.3,
+});
+
+const CRANE_BASE: Body = {
+  hip: at(-2.0, 39.5),
+  torso: -3,
+  head: 5,
+  shrug: 1.4,
+  twist: 0.45,
+  nearFoot: at(6.0, 21.0),
+  farFoot: planted(-6.0),
+  nearHand: 'open',
+  farHand: 'open',
+  face: 'cool',
+};
+
+// 0 · Stepping the rear foot under the hips, drawing both silver gauntlets inward.
+const STEP: Pose = {
+  ...GUARD,
+  hip: at(-4.0, 38.0),
+  torso: 6,
+  head: 3,
+  farFoot: lifted(planted(-12.0, -8), 1.2),
+  nearFist: at(8.0, 50.0),
+  farFist: at(9.5, 54.0),
+  face: 'cool',
+};
+
+// 1 · Crossing both silver gauntlets in front of his sternum as the lead foot begins to lift.
+const CROSS_RAW: Body = {
+  ...CRANE_BASE,
+  hip: at(-2.8, 38.4),
+  torso: 4,
+  head: 2,
+  twist: 0.15,
+};
+const CROSS: Pose = {
+  ...posed(withCraneLeg(CROSS_RAW, at(5.5, 13.0), 95), [30, 100], [40, 94]),
+  effects: [energy(10.0, 53.0, 3.8)],
+  glows: [{ center: at(10, 53), reach: 26, power: 1.2, tone: 'sound' }],
+};
+
+// 2 · Snapping into the one-legged Crane Master posture! The lead knee rises high (`y = 22`), the
+// lead open palm forms a vertical salute at the chest (`[42, 108]`), and the rear silver gauntlet
+// extends forward in a horizontal knife-hand (`[76, 32]`) as diamond shards burst outward!
+const UNLEASH_RAW: Body = {
+  ...CRANE_BASE,
+  hip: at(-1.8, 40.0),
+  torso: -4,
+  head: 6,
+};
+const UNLEASH_ARMS = posed(withCraneLeg(UNLEASH_RAW, at(6.5, 22.5), 95), [42, 108], [76, 32]);
+const UNLEASH: Pose = {
+  ...UNLEASH_ARMS,
+  effects: [
+    smear(3.5, [10.5, 53.5], [16, 54], [UNLEASH_ARMS.farFist.x, UNLEASH_ARMS.farFist.y]),
+    { kind: 'flash', center: at(12, 54), radius: 5.5, tone: 'sound' },
+    { kind: 'shards', center: at(12, 54), radius: 16, progress: 0.25, tone: 'sound' },
+    floorRing(0.2),
+  ],
+  glows: [{ center: at(12, 54), reach: 32, power: 1.4, tone: 'sound' }],
+};
+
+const PULSE = [
+  { dip: 0.0, knee: 0.0, palm: 0, ring: 0.25, floor: 0.35 },
+  { dip: 0.5, knee: 0.8, palm: 3, ring: 0.48, floor: 0.58 },
+  { dip: 1.0, knee: 1.4, palm: 5, ring: 0.72, floor: 0.8 },
+  { dip: 0.5, knee: 0.6, palm: 2, ring: 0.92, floor: 0.95 },
+] as const;
+
+function loopFrame(phase: 0 | 1 | 2 | 3): Pose {
+  const { dip, knee, palm, ring, floor } = PULSE[phase];
+  const body = withCraneLeg(
+    {
+      ...CRANE_BASE,
+      hip: at(CRANE_BASE.hip.x, CRANE_BASE.hip.y - dip),
+    },
+    at(6.0, 21.0 + knee),
+    95,
+  );
+  const p = posed(body, [40 + palm, 108], [72 + palm, 34]);
+  return {
+    ...p,
+    effects: [crestRing(ring), floorRing(floor), energy(p.farFist.x, p.farFist.y, 2.2)],
+    glows: [{ center: p.farFist, reach: 22, power: 0.8, tone: 'sound' }],
+  };
+}
+
 export const POSES: readonly Pose[] = [
   STEP,
-  COCK,
-  SKY,
-  { ...bounce(3), effects: [ring(0.7)] },
-  bounce(0),
-  bounce(1),
-  bounce(2),
-  bounce(3),
+  CROSS,
+  UNLEASH,
+  {
+    ...loopFrame(0),
+    effects: [
+      { kind: 'shards', center: at(12, 54), radius: 20, progress: 0.65, tone: 'sound' },
+      floorRing(0.6),
+    ],
+  },
+  loopFrame(0),
+  loopFrame(1),
+  loopFrame(2),
+  loopFrame(3),
 ];

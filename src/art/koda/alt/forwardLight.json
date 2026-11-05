@@ -1,41 +1,41 @@
 {
   "frames": {
     "0": {
-      "frame": { "x": 197, "y": 0, "w": 97, "h": 158 },
+      "frame": { "x": 197, "y": 0, "w": 98, "h": 158 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 8, "y": 3, "w": 97, "h": 158 },
-      "sourceSize": { "w": 161, "h": 161 }
+      "spriteSourceSize": { "x": 8, "y": 4, "w": 98, "h": 158 },
+      "sourceSize": { "w": 161, "h": 162 }
     },
     "1": {
-      "frame": { "x": 294, "y": 0, "w": 113, "h": 155 },
+      "frame": { "x": 295, "y": 0, "w": 113, "h": 155 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 6, "w": 113, "h": 155 },
-      "sourceSize": { "w": 161, "h": 161 }
+      "spriteSourceSize": { "x": 0, "y": 7, "w": 113, "h": 155 },
+      "sourceSize": { "w": 161, "h": 162 }
     },
     "2": {
-      "frame": { "x": 407, "y": 0, "w": 136, "h": 155 },
+      "frame": { "x": 408, "y": 0, "w": 136, "h": 155 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 8, "y": 5, "w": 136, "h": 155 },
-      "sourceSize": { "w": 161, "h": 161 }
+      "spriteSourceSize": { "x": 8, "y": 6, "w": 136, "h": 155 },
+      "sourceSize": { "w": 161, "h": 162 }
     },
     "3": {
-      "frame": { "x": 543, "y": 0, "w": 146, "h": 152 },
+      "frame": { "x": 544, "y": 0, "w": 146, "h": 152 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 15, "y": 9, "w": 146, "h": 152 },
-      "sourceSize": { "w": 161, "h": 161 }
+      "spriteSourceSize": { "x": 15, "y": 10, "w": 146, "h": 152 },
+      "sourceSize": { "w": 161, "h": 162 }
     },
     "4": {
       "frame": { "x": 88, "y": 0, "w": 109, "h": 159 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 14, "y": 2, "w": 109, "h": 159 },
-      "sourceSize": { "w": 161, "h": 161 }
+      "spriteSourceSize": { "x": 14, "y": 3, "w": 109, "h": 159 },
+      "sourceSize": { "w": 161, "h": 162 }
     },
     "5": {
-      "frame": { "x": 0, "y": 0, "w": 88, "h": 161 },
+      "frame": { "x": 0, "y": 0, "w": 88, "h": 162 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 14, "y": 0, "w": 88, "h": 161 },
-      "sourceSize": { "w": 161, "h": 161 }
+      "spriteSourceSize": { "x": 14, "y": 0, "w": 88, "h": 162 },
+      "sourceSize": { "w": 161, "h": 162 }
     }
   },
-  "meta": { "image": "forwardLight.png", "size": { "w": 689, "h": 161 } }
+  "meta": { "image": "forwardLight.png", "size": { "w": 690, "h": 162 } }
 }
