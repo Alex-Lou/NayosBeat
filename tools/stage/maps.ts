@@ -21,6 +21,7 @@ import { RUE } from './rue/index.ts';
 import { SAKURA } from './sakura/index.ts';
 import { CHINATOWN } from './chinatown/index.ts';
 import { SUNSET } from './sunset/index.ts';
+import { CARNIVAL } from './carnival/index.ts';
 import { TEMPLE } from './temple/index.ts';
 
 export const CODE_MAPS: readonly CodeMap[] = [
@@ -42,4 +43,5 @@ export const CODE_MAPS: readonly CodeMap[] = [
   SAKURA,
   CHINATOWN,
   SUNSET,
+  CARNIVAL,
 ];
