@@ -121,6 +121,7 @@ export const GUARD: Pose = {
   farFoot: planted(7.5, 0),
   nearFist: at(-0.5, 53),
   farFist: at(7, 52.5),
+  farHand: 'open',
   bends: { nearElbow: 'down', farElbow: 'down', nearKnee: 'front' },
   twist: 0.35,
 };
@@ -160,15 +161,28 @@ export function rearAnkle(pose: Pose): number {
  * ball stays put: the foot never slides), until the ankle keeps MIN_ANKLE. A foot off the floor,
  * or one whose ankle already keeps that angle, is left as it is.
  */
+/** Clamps target fists and feet to their solved joint reaches so no target hangs past its limb. */
+export function inReach(pose: Pose): Pose {
+  const flat = solve({ ...pose, spin: 0, turned: false }, WATT_BODY);
+  return {
+    ...pose,
+    nearFist: flat.near.wrist,
+    farFist: flat.far.wrist,
+    nearFoot: { ...pose.nearFoot, x: flat.near.ankle.x, y: flat.near.ankle.y },
+    farFoot: { ...pose.farFoot, x: flat.far.ankle.x, y: flat.far.ankle.y },
+  };
+}
+
 export function springAnkle(pose: Pose): Pose {
-  const foot = pose.nearFoot;
+  const clamped = inReach(pose);
+  const foot = clamped.nearFoot;
   const angle = foot.angle ?? 0;
   const grounded = Math.abs(foot.y - planted(foot.x, angle).y) < 0.01;
-  if (!grounded || angle > 0 || rearAnkle(pose) >= MIN_ANKLE) return pose;
+  if (!grounded || angle > 0 || rearAnkle(clamped) >= MIN_ANKLE) return clamped;
   const toe = toeOf(foot);
-  let best = pose;
+  let best = clamped;
   for (let heel = Math.floor(angle) - 1; heel >= HIGHEST_HEEL; heel--) {
-    best = { ...pose, nearFoot: onBall(toe, heel) };
+    best = inReach({ ...clamped, nearFoot: onBall(toe, heel) });
     if (rearAnkle(best) >= MIN_ANKLE) break;
   }
   return best;

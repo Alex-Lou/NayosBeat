@@ -7,15 +7,15 @@
       "sourceSize": { "w": 143, "h": 155 }
     },
     "1": {
-      "frame": { "x": 0, "y": 427, "w": 109, "h": 130 },
+      "frame": { "x": 0, "y": 427, "w": 108, "h": 130 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 10, "y": 25, "w": 109, "h": 130 },
+      "spriteSourceSize": { "x": 10, "y": 25, "w": 108, "h": 130 },
       "sourceSize": { "w": 143, "h": 155 }
     },
     "2": {
-      "frame": { "x": 0, "y": 557, "w": 114, "h": 119 },
+      "frame": { "x": 0, "y": 557, "w": 115, "h": 119 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 20, "y": 36, "w": 114, "h": 119 },
+      "spriteSourceSize": { "x": 20, "y": 36, "w": 115, "h": 119 },
       "sourceSize": { "w": 143, "h": 155 }
     },
     "3": {

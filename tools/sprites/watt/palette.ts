@@ -59,7 +59,7 @@ const MATERIALS = {
    * bevel (metal shines where cloth does not).
    */
   metal: {
-    main: ['#0a0a12', '#181824', '#262634', '#343446', '#4a4a60', '#9aa0b6', RIM_ON_LIGHT],
+    main: ['#0c0e18', '#1e2234', '#343c52', '#525c78', '#7886a4', '#c8d6f0', RIM_ON_LIGHT],
   },
   /** The bulb's glass: smoked, dark where nothing lights it, its reflections cool. */
   glass: {

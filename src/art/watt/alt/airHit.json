@@ -13,17 +13,17 @@
       "sourceSize": { "w": 164, "h": 153 }
     },
     "2": {
-      "frame": { "x": 0, "y": 270, "w": 164, "h": 95 },
+      "frame": { "x": 0, "y": 270, "w": 164, "h": 96 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 37, "w": 164, "h": 95 },
+      "spriteSourceSize": { "x": 0, "y": 36, "w": 164, "h": 96 },
       "sourceSize": { "w": 164, "h": 153 }
     },
     "3": {
-      "frame": { "x": 0, "y": 365, "w": 164, "h": 91 },
+      "frame": { "x": 0, "y": 366, "w": 164, "h": 91 },
       "trimmed": true,
       "spriteSourceSize": { "x": 0, "y": 50, "w": 164, "h": 91 },
       "sourceSize": { "w": 164, "h": 153 }
     }
   },
-  "meta": { "image": "airHit.png", "size": { "w": 164, "h": 456 } }
+  "meta": { "image": "airHit.png", "size": { "w": 164, "h": 457 } }
 }

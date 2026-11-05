@@ -1,4 +1,4 @@
-import { at, GUARD, onBall, planted, smear, type Pose } from './common.ts';
+import { at, GUARD, inReach, onBall, planted, smear, type Pose } from './common.ts';
 
 export const ANIMATED: boolean = true;
 
@@ -52,12 +52,23 @@ const CATCH: Pose = {
   effects: [
     smear(2, [6, 68], [7.5, 73], [9, 77.5]),
     smear(2, [11, 69], [13, 75], [15.5, 80]),
-    { kind: 'energy', center: at(13, 80), radius: 3.2 },
+    { kind: 'plasma', center: at(13, 80), radius: 4.5, tone: 'sound' },
+    { kind: 'arc', from: at(7, 76), to: at(17, 81), spread: 3.0 },
+    { kind: 'ring', center: at(13, 80), radius: 10, progress: 0.25, tone: 'sound' },
   ],
-  glows: [{ center: at(13, 80), reach: 28, power: 1.1, tone: 'sound' }],
+  glows: [{ center: at(13, 80), reach: 28, power: 1.2, tone: 'sound' }],
 };
 
-const SHUT: Pose = { ...CATCH, nearHand: 'fist', farHand: 'fist', effects: [] };
+const SHUT: Pose = {
+  ...CATCH,
+  nearHand: 'fist',
+  farHand: 'fist',
+  effects: [
+    { kind: 'flash', center: at(13, 80), radius: 4.5, tone: 'sound' },
+    { kind: 'arc', from: at(8, 77), to: at(16, 80), spread: 2.5 },
+  ],
+  glows: [{ center: at(13, 80), reach: 24, power: 1.0, tone: 'sound' }],
+};
 
 // Frames 4-5: the slam, the arms coming down in front in one heavy arc.
 const SLAM: Pose = {
@@ -80,10 +91,15 @@ const DOWN: Pose = {
   farFoot: planted(11.5, 0),
   nearFist: at(14, 42),
   farFist: at(18.5, 41),
-  effects: [{ kind: 'dust', x: 16, size: 1.4, progress: 0.4 }],
+  effects: [
+    { kind: 'ring', center: at(16, 4), radius: 12, progress: 0.35, squash: 0.3, tone: 'sound' },
+    { kind: 'dust', x: 16, size: 1.4, progress: 0.4 },
+  ],
 };
 
 // Frames 6-7: back up into the guard.
 const UP: Pose = { ...GUARD, hip: at(-8, 35.5), torso: 11 };
 
-export const POSES: readonly Pose[] = [CROUCH, RISE, CATCH, SHUT, SLAM, DOWN, UP, GUARD];
+export const POSES: readonly Pose[] = [CROUCH, RISE, CATCH, SHUT, SLAM, DOWN, UP, GUARD].map(
+  inReach,
+);

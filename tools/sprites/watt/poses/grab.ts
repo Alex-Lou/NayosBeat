@@ -1,4 +1,4 @@
-import { at, GUARD, onBall, planted, smear, type Pose } from './common.ts';
+import { at, GUARD, inReach, onBall, planted, smear, type Pose } from './common.ts';
 
 export const ANIMATED: boolean = true;
 
@@ -64,6 +64,7 @@ const REACH: Pose = {
     smear(2, [19, 51.5], [26, 52.5], [31.5, 53]),
     { kind: 'arc', from: at(24, 54), to: at(34, 53), spread: 2.5 },
     { kind: 'energy', center: at(30, 53.5), radius: 2.8 },
+    { kind: 'ring', center: at(30, 53.5), radius: 8, progress: 0.3, squash: 1.5, tone: 'sound' },
   ],
   glows: [{ center: at(29, 53.5), reach: 22, power: 0.9, tone: 'sound' }],
 };
@@ -104,4 +105,6 @@ const BACK: Pose = {
 };
 
 // Frame 6 (5 ticks): back into the guard.
-export const POSES: readonly Pose[] = [GATHER, LUNGE, REACH, SHUT, PULL_IN, BACK, GUARD];
+export const POSES: readonly Pose[] = [GATHER, LUNGE, REACH, SHUT, PULL_IN, BACK, GUARD].map(
+  inReach,
+);
