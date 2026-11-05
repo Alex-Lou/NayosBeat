@@ -1,0 +1,29 @@
+{
+  "frames": {
+    "0": {
+      "frame": { "x": 108, "y": 0, "w": 98, "h": 140 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 65, "y": 99, "w": 98, "h": 140 },
+      "sourceSize": { "w": 234, "h": 239 }
+    },
+    "1": {
+      "frame": { "x": 0, "y": 277, "w": 172, "h": 109 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 32, "y": 82, "w": 172, "h": 109 },
+      "sourceSize": { "w": 234, "h": 239 }
+    },
+    "2": {
+      "frame": { "x": 0, "y": 0, "w": 108, "h": 152 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 108, "h": 152 },
+      "sourceSize": { "w": 234, "h": 239 }
+    },
+    "3": {
+      "frame": { "x": 0, "y": 152, "w": 160, "h": 125 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 74, "y": 92, "w": 160, "h": 125 },
+      "sourceSize": { "w": 234, "h": 239 }
+    }
+  },
+  "meta": { "image": "thrownBack.png", "size": { "w": 206, "h": 386 } }
+}

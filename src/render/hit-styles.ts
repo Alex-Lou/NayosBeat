@@ -55,6 +55,11 @@ const STYLES: Readonly<Record<FighterId, Readonly<Record<Colorway, HitStyle>>>> 
     main: { shape: 'slash', energy: 0x18d8a0, strike: 0xffa526, core: 0xf0fff8 },
     alt: { shape: 'slash', energy: 0xd858ff, strike: 0xffa526, core: 0xf8f0ff },
   },
+  // Feline: silver-white dimensional claw cuts and cyan-astral sparks; rose-astral on alt.
+  feline: {
+    main: { shape: 'claw', energy: 0x98b4e8, strike: 0x78d0ff, core: 0xffffff, hud: 0x28f0e8 },
+    alt: { shape: 'claw', energy: 0xc878ff, strike: 0xff78d0, core: 0xffffff },
+  },
 };
 
 export function hitStyleOf(fighter: FighterId, colorway: Colorway = 'main'): HitStyle {

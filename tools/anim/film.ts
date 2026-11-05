@@ -15,6 +15,9 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { cpuStep, createCpu, type CpuLevel } from '../../src/ai/cpu.ts';
 import type { Colorway } from '../../src/art/index.ts';
+import { FELINE_CELLS } from '../../src/art/feline/cells.ts';
+import { FELINE_CLIPS } from '../../src/art/feline/clips.ts';
+import { FELINE_SHEETS } from '../../src/art/feline/sheets.ts';
 import { KODA_CELLS } from '../../src/art/koda/cells.ts';
 import { KODA_CLIPS } from '../../src/art/koda/clips.ts';
 import { KODA_SHEETS } from '../../src/art/koda/sheets.ts';
@@ -153,6 +156,13 @@ const ARTS: Readonly<Partial<Record<FighterId, FighterArt>>> = {
     sheets: KODA_SHEETS,
     clips: KODA_CLIPS,
     cells: KODA_CELLS,
+    urls: {},
+  },
+  feline: {
+    key: 'feline',
+    sheets: FELINE_SHEETS,
+    clips: FELINE_CLIPS,
+    cells: FELINE_CELLS,
     urls: {},
   },
 };

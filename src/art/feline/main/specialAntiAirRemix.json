@@ -1,0 +1,65 @@
+{
+  "frames": {
+    "0": {
+      "frame": { "x": 265, "y": 373, "w": 99, "h": 142 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 13, "y": 62, "w": 99, "h": 142 },
+      "sourceSize": { "w": 125, "h": 204 }
+    },
+    "1": {
+      "frame": { "x": 0, "y": 0, "w": 119, "h": 200 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 3, "y": 3, "w": 119, "h": 200 },
+      "sourceSize": { "w": 125, "h": 204 }
+    },
+    "2": {
+      "frame": { "x": 119, "y": 0, "w": 118, "h": 192 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 118, "h": 192 },
+      "sourceSize": { "w": 125, "h": 204 }
+    },
+    "3": {
+      "frame": { "x": 0, "y": 200, "w": 115, "h": 173 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 10, "y": 19, "w": 115, "h": 173 },
+      "sourceSize": { "w": 125, "h": 204 }
+    },
+    "4": {
+      "frame": { "x": 237, "y": 0, "w": 91, "h": 174 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 23, "y": 24, "w": 91, "h": 174 },
+      "sourceSize": { "w": 125, "h": 204 }
+    },
+    "5": {
+      "frame": { "x": 115, "y": 200, "w": 105, "h": 169 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 13, "y": 35, "w": 105, "h": 169 },
+      "sourceSize": { "w": 125, "h": 204 }
+    },
+    "6": {
+      "frame": { "x": 176, "y": 373, "w": 89, "h": 146 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 14, "y": 58, "w": 89, "h": 146 },
+      "sourceSize": { "w": 125, "h": 204 }
+    },
+    "7": {
+      "frame": { "x": 88, "y": 373, "w": 88, "h": 151 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 14, "y": 53, "w": 88, "h": 151 },
+      "sourceSize": { "w": 125, "h": 204 }
+    },
+    "8": {
+      "frame": { "x": 0, "y": 373, "w": 88, "h": 159 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 11, "y": 45, "w": 88, "h": 159 },
+      "sourceSize": { "w": 125, "h": 204 }
+    },
+    "9": {
+      "frame": { "x": 220, "y": 200, "w": 88, "h": 163 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 11, "y": 41, "w": 88, "h": 163 },
+      "sourceSize": { "w": 125, "h": 204 }
+    }
+  },
+  "meta": { "image": "specialAntiAirRemix.png", "size": { "w": 364, "h": 532 } }
+}

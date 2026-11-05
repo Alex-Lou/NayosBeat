@@ -1,0 +1,65 @@
+{
+  "frames": {
+    "0": {
+      "frame": { "x": 157, "y": 0, "w": 72, "h": 171 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 16, "y": 1, "w": 72, "h": 171 },
+      "sourceSize": { "w": 97, "h": 172 }
+    },
+    "1": {
+      "frame": { "x": 229, "y": 0, "w": 73, "h": 170 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 15, "y": 2, "w": 73, "h": 170 },
+      "sourceSize": { "w": 97, "h": 172 }
+    },
+    "2": {
+      "frame": { "x": 461, "y": 0, "w": 73, "h": 168 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 15, "y": 4, "w": 73, "h": 168 },
+      "sourceSize": { "w": 97, "h": 172 }
+    },
+    "3": {
+      "frame": { "x": 0, "y": 0, "w": 79, "h": 172 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 17, "y": 0, "w": 79, "h": 172 },
+      "sourceSize": { "w": 97, "h": 172 }
+    },
+    "4": {
+      "frame": { "x": 79, "y": 0, "w": 78, "h": 172 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 16, "y": 0, "w": 78, "h": 172 },
+      "sourceSize": { "w": 97, "h": 172 }
+    },
+    "5": {
+      "frame": { "x": 302, "y": 0, "w": 82, "h": 170 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 15, "y": 2, "w": 82, "h": 170 },
+      "sourceSize": { "w": 97, "h": 172 }
+    },
+    "6": {
+      "frame": { "x": 384, "y": 0, "w": 77, "h": 169 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 15, "y": 3, "w": 77, "h": 169 },
+      "sourceSize": { "w": 97, "h": 172 }
+    },
+    "7": {
+      "frame": { "x": 534, "y": 0, "w": 76, "h": 166 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 12, "y": 6, "w": 76, "h": 166 },
+      "sourceSize": { "w": 97, "h": 172 }
+    },
+    "8": {
+      "frame": { "x": 698, "y": 0, "w": 88, "h": 160 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 12, "w": 88, "h": 160 },
+      "sourceSize": { "w": 97, "h": 172 }
+    },
+    "9": {
+      "frame": { "x": 610, "y": 0, "w": 88, "h": 162 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 10, "w": 88, "h": 162 },
+      "sourceSize": { "w": 97, "h": 172 }
+    }
+  },
+  "meta": { "image": "intro.png", "size": { "w": 786, "h": 172 } }
+}

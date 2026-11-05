@@ -8,6 +8,7 @@
 
 import type { MoveId } from '../core/move-data';
 import type { FighterId } from './roster';
+import { FELINE_TEXTS } from './texts/feline';
 import { KODA_TEXTS } from './texts/koda';
 import { NAYO_TEXTS } from './texts/nayo';
 import { RIFF_TEXTS } from './texts/riff';
@@ -70,6 +71,7 @@ export const MOVE_TEXTS: Readonly<Record<FighterId, FighterTexts>> = {
   saphir: SAPHIR_TEXTS,
   watt: WATT_TEXTS,
   koda: KODA_TEXTS,
+  feline: FELINE_TEXTS,
 };
 
 /** The « Les bases » page: what every fighter can do, whatever the device (§17.3). */
