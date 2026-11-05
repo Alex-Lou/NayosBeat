@@ -1,3 +1,4 @@
+import { FELINE as FELINE_ART } from '../../src/art/feline';
 import { KODA as KODA_ART } from '../../src/art/koda';
 import { NAYO as NAYO_ART } from '../../src/art/nayo';
 import { RIFF as RIFF_ART } from '../../src/art/riff';
@@ -6,12 +7,14 @@ import { WATT as WATT_ART } from '../../src/art/watt';
 import type { FighterArt } from '../../src/art/types';
 import type { FighterTemplate } from '../../src/core/config';
 import type { MoveId } from '../../src/core/move-data';
+import { FELINE as FELINE_TEMPLATE } from '../../src/data/fighters/feline';
 import { KODA as KODA_TEMPLATE } from '../../src/data/fighters/koda';
 import { NAYO as NAYO_TEMPLATE } from '../../src/data/fighters/nayo';
 import { RIFF as RIFF_TEMPLATE } from '../../src/data/fighters/riff';
 import { SAPHIR as SAPHIR_TEMPLATE } from '../../src/data/fighters/saphir';
 import { WATT as WATT_TEMPLATE } from '../../src/data/fighters/watt';
 import type { Fighter } from '../../tools/sprites/fighter';
+import { FELINE } from '../../tools/sprites/feline/index';
 import { KODA } from '../../tools/sprites/koda/index';
 import { NAYO } from '../../tools/sprites/nayo/index';
 import type { PixelCanvas } from '../../tools/sprites/raster';
@@ -56,11 +59,18 @@ export const DRAWN_KODA: DrawnFighter = {
   art: KODA_ART,
   generator: KODA,
 };
+export const DRAWN_FELINE: DrawnFighter = {
+  name: 'Feline',
+  template: FELINE_TEMPLATE,
+  art: FELINE_ART,
+  generator: FELINE,
+};
 export const DRAWN_FIGHTERS: readonly DrawnFighter[] = [
   DRAWN_NAYO,
   DRAWN_RIFF,
   DRAWN_SAPHIR,
   DRAWN_KODA,
+  DRAWN_FELINE,
 ];
 /**
  * Watt, drawn (porte 3) but not yet among DRAWN_FIGHTERS: his hurtboxes are still the mock-up's

@@ -1,4 +1,5 @@
 import type { FighterId } from '../data/roster';
+import { FELINE, FELINE_ALT } from './feline';
 import { KODA, KODA_ALT } from './koda';
 import { NAYO, NAYO_ALT } from './nayo';
 import { RIFF, RIFF_ALT } from './riff';
@@ -15,6 +16,7 @@ const ART_BY_FIGHTER: Partial<Record<FighterId, Readonly<Record<Colorway, Fighte
   saphir: { main: SAPHIR, alt: SAPHIR_ALT },
   watt: { main: WATT, alt: WATT_ALT },
   koda: { main: KODA, alt: KODA_ALT },
+  feline: { main: FELINE, alt: FELINE_ALT },
 };
 
 export function artOf(fighter: FighterId, colorway: Colorway = 'main'): FighterArt | undefined {

@@ -609,11 +609,17 @@ const KODA_SIGNATURE: Signature = {
   presence: { leds: { main: 0x5cd8b4, alt: 0xdc88f8 }, specks: 'diamond' },
 };
 
+const FELINE_SIGNATURE: Signature = {
+  ...KODA_SIGNATURE,
+  presence: { leds: { main: 0x88fff8, alt: 0xffb8e6 }, specks: 'diamond' },
+};
+
 const SIGNATURES: Partial<Readonly<Record<FighterId, Signature>>> = {
   nayo: NAYO_SIGNATURE,
   saphir: SAPHIR_SIGNATURE,
   watt: WATT_SIGNATURE,
   koda: KODA_SIGNATURE,
+  feline: FELINE_SIGNATURE,
 };
 
 /** A fighter's signature, null for one without. */

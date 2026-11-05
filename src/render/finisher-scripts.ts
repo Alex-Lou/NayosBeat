@@ -286,12 +286,40 @@ export const KODA_SCRIPT: FinisherScript = {
   ],
 };
 
+/** Feline's « Eclipse Astrale »: three dimensional rifts tear the arena and seal the fight. */
+export const FELINE_SCRIPT: FinisherScript = {
+  fighter: 'feline',
+  name: 'ECLIPSE ASTRALE',
+  count: ['UN', 'DEUX', 'TROIS'],
+  stretch: 14,
+  silence: 'flight',
+  zoomFrom: 'charge',
+  flats: { main: 0x101830, alt: 0x281038 },
+  flatLeaves: 'cardEnd',
+  card: { text: 'ECLIPSE ASTRALE.', rival: null, style: 'neon' },
+  shake: 'x',
+  cone: true,
+  crowd: false,
+  needle: false,
+  shards: false,
+  powerCut: false,
+  hush: { from: 9, fade: 6, muffled: true },
+  cues: [
+    { moment: 'ko', at: 0, sound: 'heavyHit' },
+    { moment: 'release', at: 0, sound: 'fall' },
+    { moment: 'release', at: 0, sound: 'round' },
+    { moment: 'release', at: 15, sound: 'round' },
+    { moment: 'release', at: 30, sound: 'round' },
+  ],
+};
+
 const SCRIPTS: Readonly<Record<FighterId, FinisherScript>> = {
   nayo: NAYO_SCRIPT,
   riff: RIFF_SCRIPT,
   saphir: SAPHIR_SCRIPT,
   watt: WATT_SCRIPT,
   koda: KODA_SCRIPT,
+  feline: FELINE_SCRIPT,
 };
 
 export function scriptOf(fighter: FighterId): FinisherScript {

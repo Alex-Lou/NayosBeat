@@ -1,0 +1,65 @@
+{
+  "frames": {
+    "0": {
+      "frame": { "x": 0, "y": 761, "w": 71, "h": 79 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 10, "y": 156, "w": 71, "h": 79 },
+      "sourceSize": { "w": 115, "h": 236 }
+    },
+    "1": {
+      "frame": { "x": 0, "y": 235, "w": 110, "h": 220 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 3, "y": 16, "w": 110, "h": 220 },
+      "sourceSize": { "w": 115, "h": 236 }
+    },
+    "2": {
+      "frame": { "x": 0, "y": 0, "w": 113, "h": 235 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 113, "h": 235 },
+      "sourceSize": { "w": 115, "h": 236 }
+    },
+    "3": {
+      "frame": { "x": 0, "y": 457, "w": 36, "h": 217 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 79, "y": 15, "w": 36, "h": 217 },
+      "sourceSize": { "w": 115, "h": 236 }
+    },
+    "4": {
+      "frame": { "x": 36, "y": 457, "w": 32, "h": 201 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 81, "y": 31, "w": 32, "h": 201 },
+      "sourceSize": { "w": 115, "h": 236 }
+    },
+    "5": {
+      "frame": { "x": 68, "y": 457, "w": 30, "h": 164 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 82, "y": 68, "w": 30, "h": 164 },
+      "sourceSize": { "w": 115, "h": 236 }
+    },
+    "6": {
+      "frame": { "x": 0, "y": 674, "w": 99, "h": 87 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 9, "y": 145, "w": 99, "h": 87 },
+      "sourceSize": { "w": 115, "h": 236 }
+    },
+    "7": {
+      "frame": { "x": 0, "y": 840, "w": 94, "h": 13 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 1, "y": 218, "w": 94, "h": 13 },
+      "sourceSize": { "w": 115, "h": 236 }
+    },
+    "8": {
+      "frame": { "x": 94, "y": 840, "w": 1, "h": 1 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 1, "h": 1 },
+      "sourceSize": { "w": 115, "h": 236 }
+    },
+    "9": {
+      "frame": { "x": 95, "y": 840, "w": 1, "h": 1 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 1, "h": 1 },
+      "sourceSize": { "w": 115, "h": 236 }
+    }
+  },
+  "meta": { "image": "specialAntiAir.png", "size": { "w": 113, "h": 853 } }
+}

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { px } from '../../src/core/constants';
 import { moveDuration } from '../../src/core/moves';
 import { validateTemplate } from '../../src/core/validate';
+import { FELINE } from '../../src/data/fighters/feline';
 import { KODA } from '../../src/data/fighters/koda';
 import { NAYO } from '../../src/data/fighters/nayo';
 import { RIFF } from '../../src/data/fighters/riff';
@@ -19,7 +20,7 @@ describe('fighter authoring helpers', () => {
   });
 
   it('gives every moving move one step per frame', () => {
-    for (const template of [NAYO, RIFF, SAPHIR, WATT, KODA]) {
+    for (const template of [NAYO, RIFF, SAPHIR, WATT, KODA, FELINE]) {
       for (const move of Object.values(template.moves)) {
         if (move.motion) expect(move.motion.dx).toHaveLength(moveDuration(move));
       }
