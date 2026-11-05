@@ -1,83 +1,90 @@
-import { BODY, solve } from '../../skeleton.ts';
-import { at, GUARD, planted, type Pose } from './common.ts';
+import type { Point } from '../../raster.ts';
+import { add, BODY, scale, solve, sub, type Bend } from '../../skeleton.ts';
+import { at, GUARD, planted, type Foot, type Pose } from './common.ts';
 
 /**
- * timeOver: 4 frames of 10 ticks, looping (one heavy breath, 0.67 s): lost on time, bent over
- * with his hands on his knees, catching his breath, the head up, still staring at the winner.
- * Out (frame 0) the back sags and the shoulders hang; in (frames 1-2) the whole back heaves up
- * on the arms, the lead shoulder lifting with the gasp, the arms straightening as they push on
- * the knee; then it sinks back down slower (frame 3).
- *
- * Pixel-locked like idle: the back never turns, the upper body moves by whole sprite pixels
- * (0.5 world px), and so does the shoulder heave (at this lean a shrug of 1.04 moves the lead
- * shoulder one sprite pixel up and two forward); the lead upper arm keeps its angle, riding the
- * shoulder, and only the forearm turns about the elbow to keep the palm on the knee. So the
- * jacket, the sleeve emblem and the headphone ring never boil; the legs flex under the heave.
- * Both palms press on the lead knee (the rear one beside the lead one, behind it, in reach).
- * The head stays under 20 degrees (drawn upright, see head.ts). The lead foot stays where GUARD
- * put it: out of the guard he sinks back onto his heels, the rear foot flat, drawn in under the
- * hips (the rear knee bent over a flat foot farther back would fold the ankle past its stop,
- * tools/sprites/anatomy.ts: resting, the shin stands over it). Bent over, the
- * head goes forward, so the whole pose sits back for nothing in front to pass the pushbox (the
- * winner may stand at point blank).
+ * timeOver: 4 frames of 10 ticks, looping (defeat on time).
+ * Completely distinct from Nayo's hands-on-knees panting pose: Koda drops to one knee in a
+ * solemn martial-arts kneeling meditation (`hip: at(-6.5, 22.5)`, rear knee near the floor, upright
+ * torso `torso: 10`, head bowed `head: 14`), his lead hand resting on his front knee and his rear
+ * arm folded across his chest as his shoulders rise and fall in a slow breath.
  */
 
-/** Bent over, the breath out: the reference the breath moves from. */
-const WINDED: Pose = {
-  hip: at(-13.5, 32),
-  torso: 40,
-  head: -22,
-  shrug: 0,
+type Body = Omit<Pose, 'nearFist' | 'farFist'>;
+
+function arm(
+  body: Body,
+  which: 'near' | 'far',
+  shoulder: number,
+  elbow: number,
+): { fist: Point; bend: Bend } {
+  const s = solve({ ...body, nearFist: GUARD.nearFist, farFist: GUARD.farFist });
+  const root = s[which].shoulder;
+  const turn = (v: Point, degrees: number): Point => {
+    const a = (degrees * Math.PI) / 180;
+    return { x: v.x * Math.cos(a) - v.y * Math.sin(a), y: v.x * Math.sin(a) + v.y * Math.cos(a) };
+  };
+  const upper = turn({ x: -s.up.x, y: -s.up.y }, shoulder);
+  const joint = add(root, scale(upper, BODY.upperArm));
+  const fist = add(joint, scale(turn(upper, elbow), BODY.forearm));
+  const line = sub(fist, root);
+  const axis = scale(line, 1 / (Math.hypot(line.x, line.y) || 1));
+  const offset = sub(joint, root);
+  const along = offset.x * axis.x + offset.y * axis.y;
+  const mirror = add(root, sub(scale(axis, 2 * along), offset));
+  const dx = joint.x - mirror.x;
+  const dy = joint.y - mirror.y;
+  const bend: Bend =
+    Math.abs(dy) >= Math.abs(dx) ? (dy < 0 ? 'down' : 'up') : dx > 0 ? 'front' : 'back';
+  return { fist: at(fist.x, fist.y), bend };
+}
+
+function posed(body: Body, near: readonly [number, number], far: readonly [number, number]): Pose {
+  const lead = arm(body, 'near', near[0], near[1]);
+  const rear = arm(body, 'far', far[0], far[1]);
+  return {
+    ...body,
+    nearFist: lead.fist,
+    farFist: rear.fist,
+    bends: { ...body.bends, nearElbow: lead.bend, farElbow: rear.bend },
+  };
+}
+
+const REAR_TOE = solve(GUARD).far.toe.x;
+
+function onToes(toe: number, angle: number): Foot {
+  const a = (angle * Math.PI) / 180;
+  return planted(
+    toe - (BODY.ankle - BODY.footRadius) * Math.sin(a) - BODY.foot * Math.cos(a),
+    angle,
+  );
+}
+
+const KNEEL_BASE: Body = {
+  hip: at(-6.5, 22.5),
+  torso: 10,
+  head: 14,
+  shrug: 0.4,
+  twist: 0.3,
   nearFoot: planted(GUARD.nearFoot.x),
-  farFoot: planted(-14),
-  // The hands go on the lead knee (breathing, below).
-  nearFist: at(0, 0),
-  farFist: at(0, 0),
+  farFoot: onToes(REAR_TOE, -68),
   nearHand: 'open',
   farHand: 'open',
   face: 'tired',
 };
 
-/**
- * How far the back has heaved up on each frame of the breath (world px, whole sprite pixels),
- * and the lead shoulder lifting with the gasp.
- */
-const HEAVE = [0, 1.5, 2, 1] as const;
-const SHRUG = [0, 1.04, 1.04, 0] as const;
+const HEAVE = [0, 1.0, 1.5, 0.5] as const;
+const SHRUG = [0.2, 1.0, 1.4, 0.6] as const;
 
-/** Where the palms press, from the lead knee wherever it is on the frame: just above the cap. */
-const NEAR_PALM = at(0.5, 4);
-const FAR_PALM = at(-1, 5);
-
-/** The body of a frame of the breath, the hands not placed yet. */
-function body(frame: 0 | 1 | 2 | 3): Pose {
-  return { ...WINDED, hip: at(WINDED.hip.x, WINDED.hip.y + HEAVE[frame]), shrug: SHRUG[frame] };
-}
-
-/** The lead upper arm (shoulder to elbow) in the breath-out pose, palm exactly on the knee. */
-const UPPER_ARM = (() => {
-  const { knee } = solve(body(0)).near;
-  const { shoulder, elbow } = solve({
-    ...body(0),
-    nearFist: at(knee.x + NEAR_PALM.x, knee.y + NEAR_PALM.y),
-  }).near;
-  return at(elbow.x - shoulder.x, elbow.y - shoulder.y);
-})();
-
-function breathing(frame: 0 | 1 | 2 | 3): Pose {
-  const pose = body(frame);
-  const { knee, shoulder } = solve(pose).near;
-  // The elbow rides the shoulder; the wrist goes as close to the knee as the forearm reaches
-  // from there (within a pixel at the top of the breath).
-  const elbow = at(shoulder.x + UPPER_ARM.x, shoulder.y + UPPER_ARM.y);
-  const palm = at(knee.x + NEAR_PALM.x, knee.y + NEAR_PALM.y);
-  const toPalm = Math.hypot(palm.x - elbow.x, palm.y - elbow.y);
-  const k = BODY.forearm / toPalm;
-  return {
-    ...pose,
-    nearFist: at(elbow.x + (palm.x - elbow.x) * k, elbow.y + (palm.y - elbow.y) * k),
-    farFist: at(knee.x + FAR_PALM.x, knee.y + FAR_PALM.y),
+function kneelFrame(frame: 0 | 1 | 2 | 3): Pose {
+  const lift = HEAVE[frame];
+  const body: Body = {
+    ...KNEEL_BASE,
+    hip: at(KNEEL_BASE.hip.x, KNEEL_BASE.hip.y + lift),
+    shrug: SHRUG[frame],
   };
+  // Lead hand resting on the front knee (`[28, 42]`), rear hand folded across the sternum (`[34, 98]`).
+  return posed(body, [28, 42], [34, 98]);
 }
 
-export const POSES: readonly Pose[] = [breathing(0), breathing(1), breathing(2), breathing(3)];
+export const POSES: readonly Pose[] = [kneelFrame(0), kneelFrame(1), kneelFrame(2), kneelFrame(3)];

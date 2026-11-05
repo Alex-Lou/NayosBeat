@@ -1,41 +1,41 @@
 {
   "frames": {
     "0": {
-      "frame": { "x": 179, "y": 0, "w": 91, "h": 157 },
+      "frame": { "x": 180, "y": 0, "w": 89, "h": 157 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 13, "y": 5, "w": 91, "h": 157 },
-      "sourceSize": { "w": 125, "h": 163 }
+      "spriteSourceSize": { "x": 13, "y": 6, "w": 89, "h": 157 },
+      "sourceSize": { "w": 120, "h": 164 }
     },
     "1": {
-      "frame": { "x": 454, "y": 0, "w": 125, "h": 145 },
+      "frame": { "x": 174, "y": 163, "w": 120, "h": 145 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 16, "w": 125, "h": 145 },
-      "sourceSize": { "w": 125, "h": 163 }
+      "spriteSourceSize": { "x": 0, "y": 17, "w": 120, "h": 145 },
+      "sourceSize": { "w": 120, "h": 164 }
     },
     "2": {
-      "frame": { "x": 270, "y": 0, "w": 92, "h": 146 },
+      "frame": { "x": 0, "y": 163, "w": 86, "h": 146 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 23, "y": 16, "w": 92, "h": 146 },
-      "sourceSize": { "w": 125, "h": 163 }
+      "spriteSourceSize": { "x": 23, "y": 17, "w": 86, "h": 146 },
+      "sourceSize": { "w": 120, "h": 164 }
     },
     "3": {
-      "frame": { "x": 362, "y": 0, "w": 92, "h": 146 },
+      "frame": { "x": 86, "y": 163, "w": 88, "h": 146 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 16, "y": 16, "w": 92, "h": 146 },
-      "sourceSize": { "w": 125, "h": 163 }
+      "spriteSourceSize": { "x": 16, "y": 17, "w": 88, "h": 146 },
+      "sourceSize": { "w": 120, "h": 164 }
     },
     "4": {
-      "frame": { "x": 88, "y": 0, "w": 91, "h": 158 },
+      "frame": { "x": 88, "y": 0, "w": 92, "h": 159 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 12, "y": 5, "w": 91, "h": 158 },
-      "sourceSize": { "w": 125, "h": 163 }
+      "spriteSourceSize": { "x": 12, "y": 5, "w": 92, "h": 159 },
+      "sourceSize": { "w": 120, "h": 164 }
     },
     "5": {
-      "frame": { "x": 0, "y": 0, "w": 88, "h": 162 },
+      "frame": { "x": 0, "y": 0, "w": 88, "h": 163 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 12, "y": 0, "w": 88, "h": 162 },
-      "sourceSize": { "w": 125, "h": 163 }
+      "spriteSourceSize": { "x": 12, "y": 0, "w": 88, "h": 163 },
+      "sourceSize": { "w": 120, "h": 164 }
     }
   },
-  "meta": { "image": "dashForward.png", "size": { "w": 579, "h": 162 } }
+  "meta": { "image": "dashForward.png", "size": { "w": 294, "h": 309 } }
 }

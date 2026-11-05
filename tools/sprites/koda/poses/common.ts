@@ -55,16 +55,17 @@ export function tween(
  */
 export const GUARD: Pose = {
   hip: at(-6.6, 36.5),
-  torso: 14,
-  head: 2,
-  shrug: 1.2,
+  torso: 12,
+  head: 3,
+  shrug: 1.0,
+  twist: 0.35,
   nearFoot: planted(6.35, -2),
   farFoot: planted(-22, -15),
-  nearFist: at(9.0, 48.0),
-  farFist: at(9.8, 61.5),
+  nearFist: at(-7.5, 40.0),
+  farFist: at(9.2, 56.0),
   nearHand: 'open',
   farHand: 'open',
-  bends: { nearElbow: 'down', farElbow: 'down' },
+  bends: { nearElbow: 'back', farElbow: 'down' },
 };
 
 /** Crouching guard: low martial stance, open knife-hands and silver gauntlets poised. */

@@ -101,6 +101,7 @@ const LOAD: Pose = gripping(
     reach: { near: 0, far: 0 },
     twist: 0.45,
     farFoot: onToes(REAR_TOE, -48),
+    bends: { nearElbow: 'down', farElbow: 'down' },
     effects: [smear(4, [22, 51], [17, 57.5], [11, 63.5])],
     face: 'effort',
   },

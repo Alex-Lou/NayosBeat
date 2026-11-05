@@ -1,7 +1,7 @@
 /**
- * Koda's expressions, as patches over his head (head.ts): only the brow, the eye and the mouth
- * change. Calm and focused in his guard (`focus`), tense on strikes (`effort`, `kiai`), eyes
- * shut when hurt or knocked out (`hurt`, `out`), heavy-lidded at time over (`tired`).
+ * Koda's expressions over his masked head (head.ts): his golden-amber eyes narrow or flare above
+ * his armored acoustic half-mask, and on heavy strikes (`effort`, `kiai`) the jade resonator vent
+ * on his mask flares bright (`J`/`C`).
  */
 
 import type { Face } from '../skeleton.ts';
@@ -12,8 +12,8 @@ function eye(rows: readonly [string, string, string, string, string]): Patch {
   return { x: 18, y: 17, rows };
 }
 
-/** The mouth: columns 19 to 23, rows 25 to 27 of the head. */
-function mouth(rows: readonly [string, string, string]): Patch {
+/** The acoustic mask vent: columns 19 to 23, rows 25 to 27 of the head. */
+function maskVent(rows: readonly [string, string, string]): Patch {
   return { x: 19, y: 25, rows };
 }
 
@@ -22,24 +22,24 @@ const EXPRESSIONS: Readonly<Record<Face, readonly Patch[]>> = {
   cool: [],
   smirk: [],
   effort: [
-    eye(['DkkkkS', 'BBSkkk', 'BkkkKS', 'BJCKBB', 'LBSSBB']),
-    mouth(['BBBBB', 'BDOOD', 'BBSS?']),
+    eye(['DkkkkS', 'BBSkkk', 'BkkkKS', 'BWCKBB', 'LBSSBB']),
+    maskVent(['RJJJR', 'RJJJR', 'RRRRR']),
   ],
   kiai: [
-    eye(['DkkkkS', 'BBSkkk', 'BkkkKS', 'WJCKBB', 'LWCSBB']),
-    mouth(['BDOOD', 'BOMMO', 'BDOO?']),
+    eye(['DkkkkS', 'BBSkkk', 'BkkkKS', 'WWCKBB', 'LWCSBB']),
+    maskVent(['JJJJJ', 'JCCCJ', 'RJJJR']),
   ],
   hurt: [
     eye(['DkkkSB', 'BBSDBB', 'BkkkkS', 'BBSkkB', 'LBBBBB']),
-    mouth(['BBBBB', 'BOTTO', 'BDOO?']),
+    maskVent(['RRRRR', 'RPPPR', 'RRRRR']),
   ],
   out: [
     eye(['DkkkSB', 'BBSBBB', 'BBSSSB', 'BkkkkB', 'LBBBBB']),
-    mouth(['BBBBB', 'BDOD?', 'BBOB?']),
+    maskVent(['PPPP?', 'PPPP?', 'PPPP?']),
   ],
   tired: [
     eye(['DkkkSB', 'BBSDBB', 'BSSSSB', 'BkkkKB', 'LBCSBB']),
-    mouth(['BBBBB', 'BDOD?', 'BBLL?']),
+    maskVent(['RRRRR', 'RJRJR', 'RRRRR']),
   ],
 };
 

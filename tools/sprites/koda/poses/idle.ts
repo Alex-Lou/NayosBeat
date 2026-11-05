@@ -1,36 +1,38 @@
 import { at, GUARD, type Pose } from './common.ts';
 
 /**
- * idle: 8 frames ([7, 6, 6, 7, 7, 6, 6, 7] = 52 ticks), looping. Koda's martial-arts open-hand
- * guard weaves in a visible circular tai-chi / tuning wave: his knees sink and rise while his low
- * lead knife-hand and high rear palm trace opposing arcs, his long split frock-coat tails and
- * headband ribbons swaying with the breath. Frame 0 is exactly GUARD.
+ * idle: 8 frames ([7, 6, 6, 7, 7, 6, 6, 7] = 52 ticks), looping.
+ * Open-chest Kung-Fu / Anime-Fighter stance (nothing like Nayo's two-gloves-at-the-chin boxing
+ * guard): Koda's lead arm (`nearFist`) is chambered low at his waist/hip (`x = -7.5, y = 40`),
+ * leaving his bare chest, sternum resonator core and open storm-teal frock coat completely
+ * uncovered, while his rear arm (`farFist`) extends forward in a beckoning open knife-hand
+ * (`x = 9.2, y = 56`) that traces a slow tai-chi figure-eight as his knees dip and rise.
  */
 export const POSES: readonly Pose[] = [
   GUARD,
-  // Sinking into the stance as the lead knife-hand sweeps down-in and the rear palm rises.
-  { ...GUARD, hip: at(-6.8, 35.8), torso: 14.5, nearFist: at(8.2, 46.5), farFist: at(9.4, 62.2) },
-  { ...GUARD, hip: at(-7.1, 35.2), torso: 15, nearFist: at(7.5, 45.4), farFist: at(9.0, 62.6) },
-  // Bottom of the breath: the palms poise at the ends of their arc.
-  { ...GUARD, hip: at(-7.0, 35.4), torso: 14.8, nearFist: at(7.8, 45.8), farFist: at(9.2, 62.2) },
-  // Rising out of the knees: the lead gauntlet glides up-out while the rear hand lowers.
-  { ...GUARD, hip: at(-6.6, 36.0), torso: 14, nearFist: at(8.6, 47.2), farFist: at(9.6, 61.4) },
-  { ...GUARD, hip: at(-6.5, 36.6), torso: 13.5, nearFist: at(9.2, 48.8), farFist: at(10.0, 60.8) },
-  // Crest of the breath: the lead silver pauldron rolls up, the tuning blade gleaming.
+  // Sinking into the stance as the extended rear knife-hand glides down-out and the hip hand coils.
+  { ...GUARD, hip: at(-6.8, 35.8), torso: 13, nearFist: at(-8.0, 39.4), farFist: at(9.5, 54.6) },
+  { ...GUARD, hip: at(-7.1, 35.0), torso: 14, nearFist: at(-8.4, 38.8), farFist: at(9.6, 53.5) },
+  // Bottom of the breath: the extended palm poises before rising back up.
+  { ...GUARD, hip: at(-7.0, 35.2), torso: 13.5, nearFist: at(-8.2, 39.0), farFist: at(9.4, 54.0) },
+  // Rising out of the knees: the beckoning rear palm lifts toward brow height.
+  { ...GUARD, hip: at(-6.6, 36.0), torso: 12.5, nearFist: at(-7.6, 39.8), farFist: at(9.1, 55.6) },
+  { ...GUARD, hip: at(-6.4, 36.8), torso: 11.5, nearFist: at(-7.0, 40.6), farFist: at(8.8, 57.2) },
+  // Crest of the breath: chest open, silver pauldron gleaming.
   {
     ...GUARD,
-    hip: at(-6.5, 36.6),
-    torso: 13.5,
-    shrug: 1.8,
-    nearFist: at(9.3, 49.2),
-    farFist: at(9.9, 61.2),
+    hip: at(-6.4, 36.8),
+    torso: 11.5,
+    shrug: 1.5,
+    nearFist: at(-6.8, 40.8),
+    farFist: at(9.0, 57.6),
   },
   {
     ...GUARD,
-    hip: at(-6.6, 36.5),
-    torso: 14,
-    shrug: 1.5,
-    nearFist: at(9.1, 48.5),
-    farFist: at(9.8, 61.5),
+    hip: at(-6.5, 36.6),
+    torso: 12,
+    shrug: 1.2,
+    nearFist: at(-7.2, 40.4),
+    farFist: at(9.1, 56.8),
   },
 ];
