@@ -14,6 +14,7 @@ import { STAGE_VARIANTS as ROOFTOP } from './rooftop';
 import { STAGE_VARIANTS as RUE } from './rue';
 import { STAGE_VARIANTS as SAKURA } from './sakura';
 import { STAGE_VARIANTS as CHINATOWN } from './chinatown';
+import { STAGE_VARIANTS as SUNSET } from './sunset';
 import { STAGE_VARIANTS as TEMPLE } from './temple';
 
 /** A floor: hard (asphalt, concrete, wood, stone) or sand (docs/art/decor-plage.md §6). */
@@ -170,6 +171,14 @@ export const STAGE_MAPS: readonly StageMap[] = (
       sheltered: false,
       ground: 'hard',
       variants: CHINATOWN,
+    },
+    {
+      name: 'sunset',
+      title: 'Sunset Beam',
+      description: 'Le bar de plage au coucher du soleil',
+      sheltered: false,
+      ground: 'hard',
+      variants: SUNSET,
     },
   ] satisfies StageMap[]
 ).filter(({ variants }) => variants.length > 0);
