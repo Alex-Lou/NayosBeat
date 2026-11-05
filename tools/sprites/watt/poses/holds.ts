@@ -99,13 +99,19 @@ const CLINCH = {
   bends: { ...GUARD.bends, nearElbow: 'down', farElbow: 'down' },
 } as const;
 
-/** hold: 2 frames of 6 ticks, looped: the grip, then a short heave on the collar. */
-export const HOLD: Pose = gripping(CLINCH, GRIP.near, GRIP.far);
-const HEAVE: Pose = gripping(
-  { ...CLINCH, hip: at(-6.6, 35), torso: 14, head: HEAD - 14, shrug: 3.8 },
-  at(GRIP.near.x - 0.6, GRIP.near.y),
-  at(GRIP.far.x - 0.6, GRIP.far.y),
-);
+/** hold: 2 frames of 6 ticks, looped: the grip, then a short heave on the collar with a live spark. */
+export const HOLD: Pose = {
+  ...gripping(CLINCH, GRIP.near, GRIP.far),
+  effects: [{ kind: 'energy', center: at(23, 53), radius: 2.2 }],
+};
+const HEAVE: Pose = {
+  ...gripping(
+    { ...CLINCH, hip: at(-6.6, 35), torso: 14, head: HEAD - 14, shrug: 3.8 },
+    at(GRIP.near.x - 0.6, GRIP.near.y),
+    at(GRIP.far.x - 0.6, GRIP.far.y),
+  ),
+  effects: [{ kind: 'arc', from: at(18, 54), to: at(25, 51), spread: 2 }],
+};
 export const HOLD_POSES: readonly Pose[] = [HOLD, HEAVE];
 
 /**
@@ -217,7 +223,7 @@ export const THROW_BACK_POSES: readonly Pose[] = [
     },
     ...around(ARC[3], 1.5, 0.5),
   ),
-  // 4: the release, the clamps opening behind him.
+  // 4: the release, the clamps opening behind him with an electric shockwave.
   springAnkle({
     ...gripping(
       {
@@ -231,13 +237,35 @@ export const THROW_BACK_POSES: readonly Pose[] = [
         bends: { ...CLINCH.bends, nearElbow: 'back', farElbow: 'back' },
         nearHand: 'open',
         farHand: 'open',
-        face: 'effort',
+        face: 'kiai',
+        effects: [
+          { kind: 'plasma', center: at(-25, 24), radius: 5, tone: 'sound' },
+          { kind: 'arc', from: at(-12, 42), to: at(-27, 22), spread: 4 },
+          {
+            kind: 'ring',
+            center: at(-25, 16),
+            radius: 12,
+            progress: 0.25,
+            squash: 0.35,
+            tone: 'sound',
+          },
+        ],
+        glows: [{ center: at(-24, 24), reach: 28, power: 1.1, tone: 'sound' }],
       },
       at(-24, 24),
       at(-27, 24),
     ),
   }),
-  // 5-7: coming back up and round into the guard.
+  // 5-8: coming back up and round into the guard.
+  springAnkle({
+    ...GUARD,
+    hip: at(-11, 33),
+    torso: -12,
+    head: HEAD + 8,
+    nearFist: at(-10, 38),
+    farFist: at(2, 40),
+    effects: [{ kind: 'arc', from: at(-18, 28), to: at(-8, 38), spread: 2.5 }],
+  }),
   springAnkle({
     ...GUARD,
     hip: at(-10, 34),
@@ -260,9 +288,7 @@ export const THROW_BACK_POSES: readonly Pose[] = [
 // --- throwForward (Déchargement) -----------------------------------------------------------------
 
 /**
- * throwForward (Déchargement): 7 frames, 4, 4, 4, [1], 7, 8, 9 ticks; the release on frame 3. He
- * lifts the body by the collar, carries it a step and sets it down farther, like a crate off a
- * truck: the heave up, the carry, the push out.
+ * throwForward (Déchargement): 8 frames, 4, 4, 4, [1], 6, 6, 6, 5 ticks; the release on frame 3.
  */
 export const THROW_FORWARD_POSES: readonly Pose[] = [
   gripping(
@@ -273,12 +299,21 @@ export const THROW_FORWARD_POSES: readonly Pose[] = [
       head: HEAD - 20,
       nearFoot: onBall(-20, -34),
       face: 'effort',
+      effects: [{ kind: 'energy', center: at(23, 53), radius: 2.5 }],
     },
     GRIP.near,
     GRIP.far,
   ),
   gripping(
-    { ...CLINCH, hip: at(-7.5, 38), torso: 4, head: HEAD - 4, shrug: 1.6, face: 'effort' },
+    {
+      ...CLINCH,
+      hip: at(-7.5, 38),
+      torso: 4,
+      head: HEAD - 4,
+      shrug: 1.6,
+      face: 'effort',
+      effects: [{ kind: 'arc', from: at(14, 58), to: at(22, 68), spread: 2.5 }],
+    },
     at(22, 68),
     at(21, 63),
   ),
@@ -291,6 +326,7 @@ export const THROW_FORWARD_POSES: readonly Pose[] = [
       shrug: 1.6,
       farFoot: planted(LEAD.x + 2),
       face: 'effort',
+      effects: [{ kind: 'arc', from: at(16, 60), to: at(25, 70), spread: 3 }],
     },
     at(25, 70),
     at(24, 65),
@@ -306,11 +342,27 @@ export const THROW_FORWARD_POSES: readonly Pose[] = [
       nearHand: 'open',
       farHand: 'open',
       face: 'kiai',
-      effects: [smear(4, [24, 68], [30, 62], [33, 54])],
+      effects: [
+        smear(4, [24, 68], [30, 62], [33, 54]),
+        { kind: 'plasma', center: at(34, 54), radius: 5.5, tone: 'sound' },
+        { kind: 'arc', from: at(20, 58), to: at(38, 52), spread: 4 },
+        { kind: 'ring', center: at(35, 54), radius: 11, progress: 0.25, tone: 'sound' },
+      ],
+      glows: [{ center: at(33, 54), reach: 28, power: 1.15, tone: 'sound' }],
     },
     at(33, 56),
     at(31, 52),
   ),
+  springAnkle({
+    ...GUARD,
+    hip: at(-3.5, 36),
+    torso: 17,
+    head: HEAD - 17,
+    farFoot: planted(LEAD.x + 1.5),
+    nearFist: at(25, 52),
+    farFist: at(28, 50),
+    effects: [{ kind: 'arc', from: at(18, 52), to: at(30, 50), spread: 2.5 }],
+  }),
   springAnkle({
     ...GUARD,
     hip: at(-4, 36),

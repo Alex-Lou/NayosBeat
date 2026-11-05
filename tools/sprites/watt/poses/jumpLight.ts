@@ -1,15 +1,11 @@
-import { smear, type Foot, type Pose } from './common.ts';
+import { at, smear, type Foot, type Pose } from './common.ts';
 import { keyPose } from './strike.ts';
 
 export const ANIMATED: boolean = true;
 
 /**
- * jumpLight (Coude plongeant, in the air L): 5 frames, 2, 3, [6], 4, 4 ticks (19), active frame
- * 2 (ticks 5-10), hitbox x 4..30 / y 6..24, an overhead. He drops on the opponent knee and elbow
- * together: the lead knee driven out in front, low, the torso tipped over it, the lead elbow
- * folded and driven down onto the knee. The game lifts him: the box is at the height of his
- * tucked boots in the cell, where the knee and the lead boot strike; the elbow comes down over
- * them.
+ * jumpLight (Coude plongeant, in the air L): 6 frames, 2, 3, [6], 3, 3, 2 ticks (19), active frame
+ * 2 (ticks 5-10), hitbox x 4..30 / y 6..24, an overhead.
  */
 
 /** A boot in the air, its ankle at (x, y), the toe `angle` degrees (down: negative). */
@@ -35,6 +31,7 @@ export const POSES: readonly Pose[] = [
     far: [15, 50],
     bends: BENDS,
     face: 'effort',
+    effects: [{ kind: 'energy', center: at(16, 44), radius: 2.2 }],
   }),
   // 2 (active): the knee and the boot out in front, low, the elbow down onto the knee.
   keyPose({
@@ -45,15 +42,28 @@ export const POSES: readonly Pose[] = [
     far: [18, 42],
     bends: BENDS,
     face: 'kiai',
-    effects: [smear(3, [14, 30], [20, 22], [26, 16])],
+    effects: [
+      smear(3, [14, 30], [20, 22], [26, 16]),
+      { kind: 'arc', from: at(14, 36), to: at(28, 14), spread: 3 },
+      { kind: 'flash', center: at(26, 16), radius: 3.5, tone: 'sound' },
+    ],
+    glows: [{ center: at(24, 18), reach: 22, power: 0.9, tone: 'sound' }],
   }),
-  // 3-4: righting himself for the landing.
+  // 3-5: righting himself for the landing.
   keyPose({
-    nearFoot: air(-15, 14, -32),
-    farFoot: air(10, 14, -16),
-    hip: [-6, 35],
-    torso: 20,
-    far: [11, 50],
+    nearFoot: air(-14, 15, -36),
+    farFoot: air(14, 13, -18),
+    hip: [-5, 34],
+    torso: 24,
+    far: [14, 46],
+    bends: BENDS,
+  }),
+  keyPose({
+    nearFoot: air(-16, 13, -30),
+    farFoot: air(8, 12, -14),
+    hip: [-7, 36],
+    torso: 16,
+    far: [10, 50],
     bends: BENDS,
   }),
   keyPose({

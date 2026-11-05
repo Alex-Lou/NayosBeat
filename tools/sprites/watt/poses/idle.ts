@@ -39,14 +39,25 @@ const BEATS: readonly Beat[] = [
   { hip: [0, -0.2], lean: 0.4, shrug: -0.1, fists: [0, -0.2] },
 ];
 
-function body(b: Beat): Pose {
+function body(b: Beat, index: number): Pose {
+  const near = at(GUARD.nearFist.x + b.fists[0], GUARD.nearFist.y + b.fists[1]);
+  const far = at(GUARD.farFist.x + b.fists[0], GUARD.farFist.y + b.fists[1]);
+  const spark =
+    index === 1
+      ? [{ kind: 'energy' as const, center: far, radius: 1.8 }]
+      : index === 2
+        ? [{ kind: 'arc' as const, from: near, to: far, spread: 1.8 }]
+        : index === 5
+          ? [{ kind: 'energy' as const, center: near, radius: 1.6 }]
+          : undefined;
   return {
     ...GUARD,
     hip: at(GUARD.hip.x + b.hip[0], GUARD.hip.y + b.hip[1]),
     torso: GUARD.torso + b.lean,
     shrug: (GUARD.shrug ?? 0) + b.shrug,
-    nearFist: at(GUARD.nearFist.x + b.fists[0], GUARD.nearFist.y + b.fists[1]),
-    farFist: at(GUARD.farFist.x + b.fists[0], GUARD.farFist.y + b.fists[1]),
+    nearFist: near,
+    farFist: far,
+    ...(spark ? { effects: spark } : {}),
   };
 }
 

@@ -213,6 +213,9 @@ export function drawEffect(ink: Ink, effect: Effect): void {
         tonesOf(ink.fx)[effect.tone ?? 'sound'],
       );
       return;
+    case 'plasma':
+      drawPlasmaSphere(ink, effect.center, effect.radius, tonesOf(ink.fx)[effect.tone ?? 'sound']);
+      return;
   }
 }
 
@@ -1717,5 +1720,46 @@ function drawLightningArc(ink: Ink, from: Point, to: Point, spread: number, tone
   }
   layer.halo();
   cross(layer, b.x, b.y, 1, LIGHT);
+  layer.draw();
+}
+
+/**
+ * Watt's magnetic / Tesla plasma sphere at `center` (world px): a white-hot core surrounded by a
+ * magnetic containment ring, three orbiting electric field arcs, and radiating sparks.
+ */
+function drawPlasmaSphere(ink: Ink, center: Point, radius: number, tones: Tones): void {
+  const layer = new Layer(ink, tones);
+  const c = ink.at(center);
+  const r = Math.max(4, radius * S);
+  const random = randomFrom(center.x, center.y, radius, 17);
+  // Outer magnetic containment ring and inner core.
+  for (let dy = -Math.ceil(r); dy <= Math.ceil(r); dy++) {
+    for (let dx = -Math.ceil(r); dx <= Math.ceil(r); dx++) {
+      const d = Math.hypot(dx, dy);
+      if (d <= r * 0.35) {
+        layer.plot(c.x + dx, c.y + dy, d <= r * 0.18 ? CORE : LIGHT);
+      } else if (Math.abs(d - r * 0.78) <= 0.85) {
+        layer.plot(c.x + dx, c.y + dy, (dx + dy) % 2 === 0 ? LIGHT : BASE);
+      } else if (Math.abs(d - r * 0.55) <= 0.65 && (dx * dy) % 2 === 0) {
+        layer.plot(c.x + dx, c.y + dy, DEEP);
+      }
+    }
+  }
+  // 4 radiating Tesla filaments from the core to the outer magnetic shell and beyond.
+  for (let k = 0; k < 4; k++) {
+    const baseAngle = (k * Math.PI) / 2 + (random() - 0.5) * 0.45;
+    const midAngle = baseAngle + (k % 2 === 0 ? 0.35 : -0.35);
+    const p1 = {
+      x: c.x + Math.cos(midAngle) * r * 0.55,
+      y: c.y + Math.sin(midAngle) * r * 0.55,
+    };
+    const p2 = {
+      x: c.x + Math.cos(baseAngle) * r * 1.15,
+      y: c.y + Math.sin(baseAngle) * r * 1.15,
+    };
+    trace(layer, [c, p1, p2], (t) => (t < 0.35 ? CORE : t < 0.75 ? LIGHT : BASE), true);
+  }
+  layer.halo();
+  cross(layer, c.x, c.y, 2, CORE);
   layer.draw();
 }

@@ -200,26 +200,65 @@ export const DOWN_FORWARD_HEAVY_POSES: readonly Pose[] = [
   GUARD,
 ];
 
-// --- jumpDownHeavy (Enclume, 6 frames: [3, 3, 7, 3, 3, 3], active frame 2) ----------------------
+// --- jumpDownHeavy (Enclume, 7 frames: [2, 2, 2, 7, 3, 3, 3], active frame 3) -------------------
+
+const ANVIL_BENDS = { farKnee: 'front' } as const;
+const ANVIL_TUCK = { nearFoot: air(-12, 12, -52), farFoot: air(6, 13, -14) } as const;
 
 export const JUMP_DOWN_HEAVY_POSES: readonly Pose[] = [
-  // 0-1: tucking the knees high in mid-air, raising both clamps to fire straight down.
-  PLAQUAGE[0] ?? GUARD,
-  withEffects(PLAQUAGE[1] ?? GUARD, [
-    { kind: 'energy', center: at(18, 44), radius: 3, tone: 'strike' },
-  ]),
-  // 2 (active): both clamps fired downward below the boots (hitbox -6..34 / -8..18).
-  {
-    ...(PLAQUAGE[2] ?? GUARD),
+  // 0-2: tucking the knees high in mid-air, raising both clamps overhead to fire straight down.
+  keyPose({
+    nearFoot: air(-16, 18, -36),
+    farFoot: air(2, 20, -14),
+    hip: [-8, 38],
+    torso: 8,
+    near: [2, 64],
+    far: [14, 66],
+    bends: ANVIL_BENDS,
+    face: 'effort',
+  }),
+  keyPose({
+    ...ANVIL_TUCK,
+    hip: [-6, 35],
+    torso: 20,
+    near: [8, 56],
+    far: [18, 56],
+    bends: ANVIL_BENDS,
+    face: 'effort',
+    effects: [{ kind: 'energy', center: at(18, 56), radius: 2.8, tone: 'strike' }],
+  }),
+  keyPose({
+    ...ANVIL_TUCK,
+    hip: [-4.5, 30],
+    torso: 36,
+    near: [14, 36],
+    far: [22, 34],
+    bends: ANVIL_BENDS,
+    face: 'effort',
+    effects: [{ kind: 'arc', from: at(10, 50), to: at(22, 34), spread: 3, tone: 'strike' }],
+  }),
+  // 3 (active): both clamps fired downward below the boots (hitbox -6..34 / -8..18).
+  keyPose({
+    ...ANVIL_TUCK,
+    hip: [-3, 26],
+    torso: 50,
+    reach: { near: 3, far: 3 },
+    near: [18, 18],
+    far: [26, 16],
+    nearHand: 'open',
+    farHand: 'open',
+    bends: ANVIL_BENDS,
+    face: 'kiai',
     effects: [
       smear(4, [22, 36], [26, 22], [28, 10]),
+      { kind: 'plasma', center: at(26, 12), radius: 5.5, tone: 'sound' },
       { kind: 'arc', from: at(14, 38), to: at(30, 8), spread: 4 },
       { kind: 'flash', center: at(28, 12), radius: 4.5, tone: 'sound' },
       { kind: 'shards', center: at(28, 12), radius: 8, progress: 0.25, tone: 'strike' },
     ],
-    glows: [{ center: at(26, 14), reach: 28, power: 1.1, tone: 'sound' }],
-  },
-  // 3-5: recovery in the air.
+    glows: [{ center: at(26, 14), reach: 28, power: 1.15, tone: 'sound' }],
+  }),
+  // 4-6: recovery in the air.
   PLAQUAGE[3] ?? GUARD,
   PLAQUAGE[4] ?? GUARD,
   PLAQUAGE[5] ?? GUARD,
@@ -259,13 +298,21 @@ export const JAB_REPEAT_POSES: readonly Pose[] = [
   GUARD,
 ];
 
-// --- chainHigh (Coup de masse, 6 frames: [7, 8, 3, 5, 5, 6], active frame 2) --------------------
+// --- chainHigh (Coup de masse, 7 frames: [4, 4, 5, 3, 5, 5, 6], active frame 3) ----------------
 
 const HIGH_LOAD = COUP_DE_PILON[2] ?? GUARD;
 const HIGH_TOP = COUP_DE_PILON[3] ?? GUARD;
 const HIGH_IMPACT = COUP_DE_PILON[4] ?? GUARD;
 
 export const CHAIN_HIGH_POSES: readonly Pose[] = [
+  keyPose({
+    hip: [-8, 37.5],
+    torso: 4,
+    near: [2, 66],
+    far: [12, 70],
+    face: 'effort',
+    effects: [{ kind: 'energy', center: at(12, 70), radius: 2.2, tone: 'strike' }],
+  }),
   {
     ...withEffects(
       HIGH_LOAD,
@@ -298,6 +345,7 @@ export const CHAIN_HIGH_POSES: readonly Pose[] = [
           radius: 3.2,
           tone: 'strike',
         },
+        { kind: 'arc', from: at(6, 78), to: at(22, 84), spread: 3, tone: 'strike' },
       ],
       strikeTone,
     ),
@@ -309,6 +357,7 @@ export const CHAIN_HIGH_POSES: readonly Pose[] = [
     ...withEffects(
       HIGH_IMPACT,
       [
+        { kind: 'plasma', center: at(36, 60), radius: 5.5, tone: 'strike' },
         { kind: 'flash', center: at(36, 60), radius: 4.5, tone: 'strike' },
         { kind: 'shards', center: at(36, 58), radius: 10, progress: 0.25, tone: 'strike' },
       ],
@@ -319,7 +368,7 @@ export const CHAIN_HIGH_POSES: readonly Pose[] = [
   ...COUP_DE_PILON.slice(5),
 ];
 
-// --- specialBack (Câble, 8 frames: [4, 4, 6, 6, 6, 6, 7, 7], active frames 3-4) -----------------
+// --- specialBack (Câble, 10 frames: [3, 3, 3, 3, 2, 2, 6, 6, 6, 6], active frames 4-5) ---------
 
 export const SPECIAL_BACK_POSES: readonly Pose[] = [
   // 0-1: bracing on the rear leg, aiming the lead gauntlet out at chest height.
@@ -343,7 +392,23 @@ export const SPECIAL_BACK_POSES: readonly Pose[] = [
     effects: [{ kind: 'energy', center: at(28, 38), radius: 3 }],
     glows: [{ center: at(28, 38), reach: 24, power: 0.9, tone: 'sound' }],
   }),
-  // 2: the gauntlet fires, the clamp opening as the cable shoots out.
+  // 2-3: the gauntlet fires, the clamp opening as the magnetic cable shoots out.
+  keyPose({
+    hip: [-6.5, 35.2],
+    torso: 15,
+    reach: { far: 2 },
+    farFoot: planted(12),
+    nearFoot: onBall(-17, -31),
+    near: [2, 47.5],
+    far: [30, 38],
+    farHand: 'open',
+    face: 'effort',
+    effects: [
+      smear(2.5, [20, 40], [28, 38], [38, 37]),
+      { kind: 'arc', from: at(24, 39), to: at(40, 37), spread: 2.5 },
+    ],
+    glows: [{ center: at(32, 38), reach: 26, power: 1.0, tone: 'sound' }],
+  }),
   keyPose({
     hip: [-5, 35],
     torso: 18,
@@ -357,10 +422,11 @@ export const SPECIAL_BACK_POSES: readonly Pose[] = [
     effects: [
       smear(2.5, [22, 39], [34, 37], [46, 36]),
       { kind: 'ring', center: at(36, 37), radius: 6, progress: 0.2, tone: 'sound' },
+      { kind: 'arc', from: at(26, 38), to: at(48, 36), spread: 3.5 },
     ],
     glows: [{ center: at(36, 37), reach: 28, power: 1.1, tone: 'sound' }],
   }),
-  // 3-4 (active): the cable taut across the cell at y = 36, electric arcs running along it.
+  // 4-5 (active): the cable taut across the cell at y = 36, magnetic Tesla sphere at the tip.
   keyPose({
     hip: [-2, 35],
     torso: 24,
@@ -373,12 +439,12 @@ export const SPECIAL_BACK_POSES: readonly Pose[] = [
     face: 'kiai',
     effects: [
       smear(3, [30, 36], [44, 36], [56, 36]),
+      { kind: 'plasma', center: at(53, 36), radius: 5, tone: 'sound' },
       { kind: 'speed', center: at(55, 36), length: 24, spread: 5, direction: 0, tone: 'sound' },
       { kind: 'arc', from: at(28, 37), to: at(58, 36), spread: 4.5 },
-      { kind: 'energy', center: at(54, 36), radius: 3.8 },
       { kind: 'flash', center: at(38, 36), radius: 4, tone: 'sound' },
     ],
-    glows: [{ center: at(38, 36), reach: 32, power: 1.2, tone: 'sound' }],
+    glows: [{ center: at(38, 36), reach: 32, power: 1.25, tone: 'sound' }],
   }),
   keyPose({
     hip: [-3, 35],
@@ -392,13 +458,13 @@ export const SPECIAL_BACK_POSES: readonly Pose[] = [
     face: 'kiai',
     effects: [
       smear(3, [56, 36], [42, 36], [30, 36]),
+      { kind: 'plasma', center: at(46, 36), radius: 4.5, tone: 'sound' },
       { kind: 'speed', center: at(34, 36), length: 22, spread: 5, direction: 180, tone: 'sound' },
       { kind: 'arc', from: at(57, 36), to: at(26, 37), spread: 4 },
-      { kind: 'energy', center: at(46, 36), radius: 3.2 },
     ],
-    glows: [{ center: at(34, 36), reach: 28, power: 1.0, tone: 'sound' }],
+    glows: [{ center: at(34, 36), reach: 28, power: 1.1, tone: 'sound' }],
   }),
-  // 5-6: the yank back, hauling the line in with both shoulders, dust under the braced boot.
+  // 6-8: the yank back, hauling the line in with both shoulders, dust under the braced boot.
   keyPose({
     hip: [-9, 34.5],
     torso: -4,
@@ -410,8 +476,17 @@ export const SPECIAL_BACK_POSES: readonly Pose[] = [
     face: 'effort',
     effects: [
       smear(3, [32, 37], [22, 40], [16, 42]),
+      { kind: 'arc', from: at(30, 37), to: at(16, 42), spread: 2.5 },
       { kind: 'dust', x: 14, size: 1.1, progress: 0.35 },
     ],
+  }),
+  keyPose({
+    hip: [-9.2, 35.2],
+    torso: 0,
+    shrug: 3.2,
+    farFoot: planted(11),
+    near: [2, 47.5],
+    far: [14, 45],
   }),
   keyPose({
     hip: [-9.5, 36],
@@ -420,7 +495,7 @@ export const SPECIAL_BACK_POSES: readonly Pose[] = [
     near: [2, 49],
     far: [12, 48],
   }),
-  // 7: back to the guard.
+  // 9: back to the guard.
   GUARD,
 ];
 
