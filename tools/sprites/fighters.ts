@@ -12,6 +12,7 @@ import { RIFF_CLIPS } from '../../src/art/riff/clips.ts';
 import { SAPHIR_CLIPS } from '../../src/art/saphir/clips.ts';
 import { WATT_CLIPS } from '../../src/art/watt/clips.ts';
 import { KODA_CLIPS } from '../../src/art/koda/clips.ts';
+import { FELINE_CLIPS } from '../../src/art/feline/clips.ts';
 import type { Cell } from '../../src/art/types.ts';
 import type { FighterTemplate } from '../../src/core/config.ts';
 import { NAYO as NAYO_TEMPLATE } from '../../src/data/fighters/nayo.ts';
@@ -19,6 +20,7 @@ import { RIFF as RIFF_TEMPLATE } from '../../src/data/fighters/riff.ts';
 import { SAPHIR as SAPHIR_TEMPLATE } from '../../src/data/fighters/saphir.ts';
 import { WATT as WATT_TEMPLATE } from '../../src/data/fighters/watt.ts';
 import { KODA as KODA_TEMPLATE } from '../../src/data/fighters/koda.ts';
+import { FELINE as FELINE_TEMPLATE } from '../../src/data/fighters/feline.ts';
 import type { Clips } from './clips.ts';
 import type { Fighter } from './fighter.ts';
 import { NAYO } from './nayo/index.ts';
@@ -26,6 +28,7 @@ import { RIFF } from './riff/index.ts';
 import { SAPHIR } from './saphir/index.ts';
 import { WATT } from './watt/index.ts';
 import { KODA } from './koda/index.ts';
+import { FELINE } from './feline/index.ts';
 
 export interface ToolFighter {
   /** Its generator: body, poses, palettes, strips (its `name` is its folder and its id). */
@@ -42,6 +45,7 @@ export const TOOL_FIGHTERS: readonly ToolFighter[] = [
   { fighter: SAPHIR, template: SAPHIR_TEMPLATE, clips: SAPHIR_CLIPS },
   { fighter: WATT, template: WATT_TEMPLATE, clips: WATT_CLIPS },
   { fighter: KODA, template: KODA_TEMPLATE, clips: KODA_CLIPS },
+  { fighter: FELINE, template: FELINE_TEMPLATE, clips: FELINE_CLIPS },
 ];
 
 /** Every fighter's generator, in the list's order. */

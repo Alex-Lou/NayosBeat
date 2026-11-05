@@ -11,6 +11,7 @@
  */
 
 import { readFile, writeFile } from 'node:fs/promises';
+import { FELINE_CELLS } from '../../src/art/feline/cells.ts';
 import { KODA_CELLS } from '../../src/art/koda/cells.ts';
 import { NAYO_CELLS } from '../../src/art/nayo/cells.ts';
 import { RIFF_CELLS } from '../../src/art/riff/cells.ts';
@@ -29,6 +30,7 @@ const CELLS: Readonly<Record<FighterId, Readonly<Record<string, Cell>>>> = {
   saphir: SAPHIR_CELLS,
   watt: WATT_CELLS,
   koda: KODA_CELLS,
+  feline: FELINE_CELLS,
 };
 
 /** Everything the page plays from. */
