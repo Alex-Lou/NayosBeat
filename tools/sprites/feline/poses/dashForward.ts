@@ -244,9 +244,13 @@ export const POSES: readonly Pose[] = [
   { ...APPEL, effects: [dust(REAR_TOE - 1, 3.5, 0.12)] },
   {
     ...GLIDE,
-    // The push-off puff, left on the stage under the rear toe; the dash lines stream right off
-    // his back (his own wake).
-    effects: [dust(stage(REAR_TOE - 1, 0, 1), 3.5, 0.5), wake(-8, 45, 31, 12)],
+    // Feline's portal dash (`03_Dash_Portail/03_traversee.png`): a vertical portal with horizontal
+    // speed-beams trailing behind her sprint!
+    effects: [
+      dust(stage(REAR_TOE - 1, 0, 1), 3.5, 0.5),
+      { kind: 'portal', center: at(-12, 38), rx: 5.5, ry: 18, beams: true, tone: 'sound' },
+      wake(-8, 45, 31, 12),
+    ],
   },
   // The wake drops to the rear boot as it whips in under him.
   { ...CHASE, effects: [wake(-17, 11, 20, 6)] },

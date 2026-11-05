@@ -128,7 +128,8 @@ const STRIKE: Pose = {
   ...STRIKE_ARM,
   effects: [
     smear(4.8, [22, 53], [32, 53], [43.5, 53.0]),
-    { kind: 'flash', center: at(45.0, 53.0), radius: 4.2, tone: 'strike' },
+    { kind: 'blade', center: at(32, 53), rx: 11, ry: 4.5, tilt: -10, tone: 'sound' },
+    { kind: 'star', center: at(44.2, 53.0), radius: 3.8, tone: 'strike' },
   ],
 };
 

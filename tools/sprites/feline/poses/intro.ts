@@ -4,24 +4,19 @@ import { at, energy, GUARD, lifted, planted, smear, type Effect, type Pose } fro
  * intro: 10 frames, 10,8,8,8,10,8,8,10,10,10 ticks (90 ticks).
  * Based on `Pack_Feline_Portails_Coups_Speciaux/01_Portail_Vertical_Creation_Entree` and
  * `Pack_Feline_Poses_Et_Degats/01_intro`:
- * Feline steps out of a tall vertical silver-white dimensional portal (`squash: 2.2`), crosses
- * her arms in a confident stance (`intro_04_bras_croises`), slashes the portal open in a burst of
- * 4-point star fragments, gives a feline claw salute (`intro_03_salue`), and sinks into her guard.
+ * Feline steps out of a tall vertical silver-white dimensional portal (`kind: 'portal'`), crosses
+ * her arms in a confident stance (`intro_04_bras_croises`), shatters the portal in an 8-point
+ * orbital star burst (`kind: 'star'`), gives a feline salute (`intro_03_salue`) with an orbital
+ * crescent blade (`kind: 'blade'`), and sinks into her boxer-kickboxer guard (`poing_01_garde`).
  */
 
-const portalRing = (
-  x: number,
-  y: number,
-  radius: number,
-  progress: number,
-  squash = 2.1,
-): Effect => ({
-  kind: 'ring',
-  center: at(x, y),
-  radius,
-  progress,
+const vPortal = (rx: number, ry: number, beams = false): Effect => ({
+  kind: 'portal',
+  center: at(-5, 44),
+  rx,
+  ry,
+  beams,
   tone: 'sound',
-  squash,
 });
 
 const STAND: Pose = {
@@ -33,8 +28,8 @@ const STAND: Pose = {
   farFoot: planted(-10.0),
   nearFist: at(7.5, 53.0),
   farFist: at(9.5, 54.0),
-  nearHand: 'open',
-  farHand: 'open',
+  nearHand: 'fist',
+  farHand: 'fist',
   bends: { nearElbow: 'down', farElbow: 'down' },
   face: 'cool',
 };
@@ -42,7 +37,7 @@ const STAND: Pose = {
 // 0-2: Emerging from the vertical silver-white dimensional portal, arms crossed (`intro_04_bras_croises`).
 const PORTAL_1: Pose = {
   ...STAND,
-  effects: [portalRing(-4, 44, 16, 0.2, 2.2), energy(9.0, 53.5, 2.8)],
+  effects: [vPortal(6, 20), energy(9.0, 53.5, 2.8)],
   glows: [{ center: at(-2, 46), reach: 28, power: 1.0, tone: 'sound' }],
 };
 
@@ -53,7 +48,7 @@ const PORTAL_2: Pose = {
   shrug: 1.8,
   nearFist: at(8.5, 54.5),
   farFist: at(10.5, 55.0),
-  effects: [portalRing(-4, 44, 18, 0.35, 2.2), energy(9.5, 54.5, 3.6)],
+  effects: [vPortal(7, 22, true), energy(9.5, 54.5, 3.6)],
   glows: [{ center: at(2, 50), reach: 30, power: 1.2, tone: 'sound' }],
 };
 
@@ -63,11 +58,11 @@ const PORTAL_3: Pose = {
   torso: 7,
   shrug: 2.4,
   face: 'smirk',
-  effects: [portalRing(-4, 44, 20, 0.5, 2.2), energy(10.0, 55.0, 4.2)],
+  effects: [vPortal(8, 23, true), { kind: 'star', center: at(10, 55), radius: 4.5, tone: 'sound' }],
   glows: [{ center: at(6, 52), reach: 32, power: 1.3, tone: 'sound' }],
 };
 
-// 3-4: Slashing the portal open in a burst of silver-white star fragments (`intro_01_pose_assuree`).
+// 3-4: Shattering the portal in an 8-point orbital star burst (`intro_01_pose_assuree`).
 const BURST: Pose = {
   ...STAND,
   hip: at(-3.5, 40.8),
@@ -82,9 +77,8 @@ const BURST: Pose = {
   effects: [
     smear(3.5, [8.5, 54.5], [1, 48], [-7.5, 43]),
     smear(3.5, [10.5, 55], [12.5, 62], [14.5, 68]),
-    { kind: 'flash', center: at(10, 55), radius: 5.5, tone: 'sound' },
+    { kind: 'star', center: at(10, 55), radius: 6.0, rings: true, tone: 'sound' },
     { kind: 'shards', center: at(10, 55), radius: 16, progress: 0.25, tone: 'sound' },
-    portalRing(0, 2, 18, 0.25, 0.3),
   ],
   glows: [{ center: at(10, 55), reach: 34, power: 1.4, tone: 'sound' }],
 };
@@ -98,13 +92,13 @@ const AFTERGLOW: Pose = {
   farFist: at(13.5, 70.0),
   face: 'smirk',
   effects: [
+    { kind: 'blade', center: at(6, 54), rx: 14, ry: 6, tilt: -22, twin: true, tone: 'sound' },
     { kind: 'shards', center: at(10, 56), radius: 20, progress: 0.65, tone: 'sound' },
-    portalRing(0, 2, 22, 0.65, 0.3),
   ],
   glows: [{ center: at(12, 64), reach: 24, power: 0.8, tone: 'sound' }],
 };
 
-// 5-6: Confident feline salute (`intro_03_salue`), orbital ring spinning around her hand.
+// 5-6: Confident feline salute (`intro_03_salue`), orbital blade spinning around her hand.
 const SALUTE: Pose = {
   ...STAND,
   hip: at(-4.2, 39.8),
@@ -114,7 +108,11 @@ const SALUTE: Pose = {
   twist: 0.25,
   nearFist: at(13.5, 55.0),
   farFist: at(5.5, 61.0),
-  effects: [smear(3, [-4, 43], [6, 49], [13.5, 55]), portalRing(13.5, 55, 8, 0.3, 0.45)],
+  nearHand: 'open',
+  effects: [
+    smear(3, [-4, 43], [6, 49], [13.5, 55]),
+    { kind: 'blade', center: at(12, 54), rx: 10, ry: 4.5, tilt: -18, tone: 'sound' },
+  ],
 };
 
 const POISE: Pose = {
@@ -123,10 +121,10 @@ const POISE: Pose = {
   torso: 8,
   nearFist: at(12.5, 54.0),
   farFist: at(6.0, 60.8),
-  effects: [portalRing(13.5, 55, 11, 0.75, 0.45)],
+  effects: [{ kind: 'star', center: at(13.5, 54.5), radius: 3.8, tone: 'sound' }],
 };
 
-// 7-9: Stepping back into her springy feline guard (`intro_06_garde_stable`).
+// 7-9: Stepping back into her springy feline boxer-kickboxer guard (`poing_01_garde.png`).
 const STEP_BACK: Pose = {
   ...GUARD,
   hip: at(-5.4, 38.0),
@@ -134,17 +132,17 @@ const STEP_BACK: Pose = {
   head: 4,
   farFoot: lifted(planted(-16.0, -10), 1.4),
   nearFist: at(10.5, 53.5),
-  farFist: at(8.5, 60.5),
+  farFist: at(11.5, 58.5),
   face: 'cool',
 };
 
 const SINK: Pose = {
   ...GUARD,
   hip: at(-6.8, 35.8),
-  torso: 15,
+  torso: 14,
   head: 2,
-  nearFist: at(8.6, 51.8),
-  farFist: at(9.4, 60.8),
+  nearFist: at(8.8, 51.8),
+  farFist: at(11.8, 58.0),
   effects: [{ kind: 'dust', x: -20, size: 2.5, progress: 0.4 }],
 };
 

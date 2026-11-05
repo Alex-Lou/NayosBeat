@@ -17,9 +17,9 @@ import { FELINE_STRINGS } from './feline-strings';
 const FELINE_PLAIN: FighterTemplate = {
   name: 'Feline',
   maxHealth: 950,
-  walkForwardSpeed: px(1.8),
-  walkBackSpeed: px(1.4),
-  jumpVelocity: px(10.5),
+  walkForwardSpeed: px(1.95),
+  walkBackSpeed: px(1.5),
+  jumpVelocity: px(10.8),
   gravity: px(0.65),
   jumpForwardSpeed: px(2.4),
   jumpBackSpeed: px(2.0),
@@ -30,7 +30,7 @@ const FELINE_PLAIN: FighterTemplate = {
   crouchingPushbox: { width: px(32), height: px(50) },
   airPushbox: { width: px(24), height: px(44), lift: px(30) },
   lyingPushbox: { width: px(28), height: px(20) },
-  standingHurtboxes: [box(-27, 0, 40.5, 78.5)],
+  standingHurtboxes: [box(-27, 0, 40.5, 80.5)],
   crouchingHurtboxes: [box(-18.5, 0, 32.5, 57)],
   airHurtboxes: [box(-22, 4, 43, 40), box(-11, 44, 29, 42.5)],
   moves: {
