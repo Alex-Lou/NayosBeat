@@ -6,15 +6,18 @@ import { kodaBoost } from './koda-boost';
 import { KODA_STRINGS } from './koda-strings';
 
 /**
- * Koda, « l'accordeur d'acier »: a martial artist in an open storm-teal frock coat and silver plate
- * pauldrons/vambraces (issue #174). He strikes with open palms and resonant steel bracers, sends
- * out the Diapason acoustic wave, lunges with the Fente d'acier, and rises with the Cymbale.
+ * Koda, « l'accordeur d'acier »: a martial-arts pressure and resonance fighter in an open
+ * storm-teal frock coat and silver plate pauldrons/vambraces (issue #174). Unlike Nayo (who zones
+ * with a projectile and a meterless DP reversal), Koda has no projectile and his plain Cymbale
+ * beats air attacks only; instead, he walks faster, cancels his forward Pas glissé dash from frame
+ * 10, clashes his silver bracers in the Diapason shockwave to keep the opponent standing in his
+ * pressure, and pierces mid-range with the grounded Fente d'acier lunge.
  */
 const KODA_PLAIN: FighterTemplate = {
   name: 'Koda',
   maxHealth: 1000,
-  walkForwardSpeed: px(1.5),
-  walkBackSpeed: px(1.2),
+  walkForwardSpeed: px(1.65),
+  walkBackSpeed: px(1.3),
   jumpVelocity: px(10.5),
   gravity: px(0.65),
   jumpForwardSpeed: px(2.2),
@@ -99,41 +102,47 @@ const KODA_PLAIN: FighterTemplate = {
       guard: 'overhead',
       hitbox: box(2, -4, 34, 22),
     }),
+    // S: Koda steps 26 px forward, clashes his two silver vambraces together, and releases a wide
+    // acoustic shockwave (hitbox 8..45) that leaves the opponent standing (+1 on hit, −9 on block).
     special: strike({
       name: 'Diapason',
       kind: 'special',
-      frames: [12, 1, 28],
-      damage: 60,
-      stun: [18, 14],
-      hitstop: 8,
+      frames: [10, 4, 20],
+      damage: 75,
+      stun: [24, 14],
+      hitstop: 12,
       pushbackPx: 3,
       guard: 'mid',
-      projectile: { speed: px(3.5), spawnX: px(24), hitbox: box(-10, 32, 20, 20) },
+      hitbox: box(8, 30, 37, 26),
+      motion: advance(34, { from: 2, to: 10, distancePx: 26 }),
     }),
+    // → + S: a grounded martial-arts spear-palm lunge over 42 px that floors the opponent.
     specialForward: strike({
       name: "Fente d'acier",
       kind: 'special',
-      frames: [11, 4, 18],
-      damage: 75,
+      frames: [12, 4, 18],
+      damage: 80,
       stun: [0, 12],
-      hitstop: 14,
+      hitstop: 13,
       pushbackPx: 3.5,
       guard: 'mid',
-      hitbox: box(8, 24, 36, 16),
-      motion: advance(33, { from: 3, to: 15, speed: 2.5 }),
+      hitbox: box(10, 32, 39, 20),
+      motion: advance(34, { from: 2, to: 14, distancePx: 42 }),
       knockdown: kd(3, 3.5),
     }),
+    // ↓ + S: rising silver-bracer sky slash, invincible to air attacks on f0-7 (his Remix buys full
+    // reversal invincibility).
     specialAntiAir: strike({
       name: 'Cymbale',
       kind: 'special',
       frames: [3, 8, 28],
-      damage: 110,
+      damage: 105,
       stun: [0, 12],
-      hitstop: 16,
+      hitstop: 15,
       pushbackPx: 3,
       guard: 'mid',
       hitbox: box(4, 30, 20, 70),
-      invincible: { from: 0, to: 7 },
+      invincible: { from: 0, to: 8, against: 'air' },
       knockdown: kd(3, 3),
     }),
     grab: {
@@ -168,7 +177,14 @@ const KODA_PLAIN: FighterTemplate = {
       knockdown: kd(3.5, 3),
       sideSwitchFrame: 6,
     }),
-    dashForward: dash({ name: 'Pas glissé', duration: 18, frames: 14, distancePx: 56 }),
+    // A 52 px martial-arts glide, cancellable from frame 10 into any normal or special.
+    dashForward: dash({
+      name: 'Pas glissé',
+      duration: 17,
+      frames: 13,
+      distancePx: 52,
+      freeCancelFrom: 10,
+    }),
     dashBack: dash({
       name: 'Retrait',
       duration: 22,

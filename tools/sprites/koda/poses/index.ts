@@ -56,13 +56,7 @@ import * as octave from './super.ts';
 import { REMIXES } from './remixes.ts';
 import { CHAIN_HIGH, JAB_REPEAT } from './variations.ts';
 
-export {
-  PROJECTILE as KODA_PROJECTILE,
-  PROJECTILE_BOOST as KODA_PROJECTILE_BOOST,
-} from './projectile.ts';
-
-/** Strips of Koda himself: all but the projectiles. */
-export type PosedSheet = Exclude<KodaSheet, 'projectile' | 'projectileBoost'>;
+export type PosedSheet = KodaSheet;
 
 export const V2_SHEETS = [
   'dashForward',

@@ -25,9 +25,9 @@
       "sourceSize": { "w": 120, "h": 124 }
     },
     "4": {
-      "frame": { "x": 431, "y": 0, "w": 70, "h": 114 },
+      "frame": { "x": 431, "y": 0, "w": 71, "h": 114 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 2, "y": 10, "w": 70, "h": 114 },
+      "spriteSourceSize": { "x": 2, "y": 10, "w": 71, "h": 114 },
       "sourceSize": { "w": 120, "h": 124 }
     },
     "5": {
@@ -37,5 +37,5 @@
       "sourceSize": { "w": 120, "h": 124 }
     }
   },
-  "meta": { "image": "crouchLight.png", "size": { "w": 501, "h": 123 } }
+  "meta": { "image": "crouchLight.png", "size": { "w": 502, "h": 123 } }
 }

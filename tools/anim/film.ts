@@ -16,7 +16,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { cpuStep, createCpu, type CpuLevel } from '../../src/ai/cpu.ts';
 import type { Colorway } from '../../src/art/index.ts';
 import { KODA_CELLS } from '../../src/art/koda/cells.ts';
-import { KODA_CLIPS, KODA_PROJECTILES } from '../../src/art/koda/clips.ts';
+import { KODA_CLIPS } from '../../src/art/koda/clips.ts';
 import { KODA_SHEETS } from '../../src/art/koda/sheets.ts';
 import { NAYO_CELLS } from '../../src/art/nayo/cells.ts';
 import { NAYO_CLIPS, NAYO_PROJECTILES } from '../../src/art/nayo/clips.ts';
@@ -152,7 +152,6 @@ const ARTS: Readonly<Partial<Record<FighterId, FighterArt>>> = {
     key: 'koda',
     sheets: KODA_SHEETS,
     clips: KODA_CLIPS,
-    projectiles: KODA_PROJECTILES,
     cells: KODA_CELLS,
     urls: {},
   },

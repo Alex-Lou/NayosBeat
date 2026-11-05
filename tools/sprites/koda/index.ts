@@ -10,7 +10,7 @@ import { BODY, type Pose } from '../skeleton.ts';
 import { FLOOR_OCCLUSION, STREET_SIGN } from '../street-light.ts';
 import { drawKoda } from './look.ts';
 import { DETAIL, EFFECT_TINTS, EFFECTS, MATERIAL, paletteOf } from './palette.ts';
-import { KODA_POSES, KODA_PROJECTILE, KODA_PROJECTILE_BOOST } from './poses/index.ts';
+import { KODA_POSES } from './poses/index.ts';
 
 const HAIR = MATERIAL.hair;
 /** The hair's tones in the head's stamp (head.ts): exact pixels, found by their slot. */
@@ -67,12 +67,6 @@ export const KODA: Fighter = {
   sheets: KODA_SHEETS,
   body: BODY,
   poses: (sheet) => (KODA_POSES as Readonly<Record<string, readonly Pose[]>>)[sheet],
-  effectsOnly: (sheet) =>
-    sheet === 'projectile'
-      ? KODA_PROJECTILE
-      : sheet === 'projectileBoost'
-        ? KODA_PROJECTILE_BOOST
-        : undefined,
   timing: (sheet) => timingOf(KODA_CLIPS, sheet, SHEETS[sheet]?.frames ?? 0),
   lighting: KODA_LIGHTING,
   draw: drawKoda,

@@ -110,10 +110,14 @@ const CRACK: Pose = {
   shrug: 3,
   twist: -0.3,
   reach: { near: 1, far: 1 },
+  nearHand: 'open',
   farHand: 'open',
   nearFist: at(10.5, 56),
   farFist: at(13, 55.5),
-  effects: [{ kind: 'flash', center: at(14.5, 56), radius: 2.5, tone: 'sound' }],
+  effects: [
+    { kind: 'flash', center: at(14.5, 56), radius: 3.0, tone: 'sound' },
+    { kind: 'ring', center: at(14.5, 56), radius: 8, progress: 0.25, tone: 'sound', squash: 1.4 },
+  ],
 };
 
 // 3 · Shaking them out: a loose flick of both wrists low in front of him, the hands open and
@@ -192,10 +196,10 @@ const SINK: Pose = {
   ...DROP,
   hip: at(DROP.hip.x, GUARD.hip.y - 1),
   farFoot: lifted(planted(-19.1, -24), 1.5),
-  // The gloves halfway up, riding the sink.
   nearFist: at(RISE.nearFist.x, RISE.nearFist.y - 1),
   farFist: at(RISE.farFist.x, RISE.farFist.y - 1),
-  farHand: 'fist',
+  nearHand: 'open',
+  farHand: 'open',
   bends: { nearElbow: 'down', farElbow: 'down' },
   face: 'cool',
 };
