@@ -1,11 +1,12 @@
 import type { FighterTemplate } from '../core/config';
+import { FELINE } from './fighters/feline';
 import { KODA } from './fighters/koda';
 import { NAYO } from './fighters/nayo';
 import { RIFF } from './fighters/riff';
 import { SAPHIR } from './fighters/saphir';
 import { WATT } from './fighters/watt';
 
-export type FighterId = 'nayo' | 'riff' | 'saphir' | 'watt' | 'koda';
+export type FighterId = 'nayo' | 'riff' | 'saphir' | 'watt' | 'koda' | 'feline';
 
 export interface RosterEntry {
   readonly id: FighterId;
@@ -52,6 +53,12 @@ export const ROSTER: readonly RosterEntry[] = [
     template: KODA,
     description: "Accordeur d'acier · Diapason · Fente d'acier · Cymbale · Octave",
     finisher: 'Accord Final',
+  },
+  {
+    id: 'feline',
+    template: FELINE,
+    description: 'Chasseresse des portails · Lame de portail · Rush dimensionnel · Déchirure',
+    finisher: 'Eclipse Astrale',
   },
 ];
 

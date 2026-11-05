@@ -11,7 +11,7 @@ describe('the CPU bench', () => {
   });
 
   it('plays every pair of the roster when no fighter is named', () => {
-    expect(pairsOf([])).toHaveLength(10);
+    expect(pairsOf([])).toHaveLength(15);
     expect(pairsOf(['saphir', 'riff', '--matches', '50'])).toEqual([['saphir', 'riff']]);
     expect(levelsOf(['--levels', 'easy,hard'])).toEqual(['easy', 'hard']);
     expect(levelsOf([])).toEqual(['hard']);

@@ -152,6 +152,7 @@ function strayTicks(fighter: DrawnFighter, id: MoveId): string[] {
 const DESCENDING: Readonly<Record<string, readonly MoveId[]>> = {
   Nayo: ['chainHeavy', 'super'],
   Koda: ['chainHeavy', 'super'],
+  Feline: ['chainHeavy', 'super'],
 };
 
 /** The ground ticks of `id` whose boxes' top is off the drawing's, with both heights. */

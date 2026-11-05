@@ -5,6 +5,7 @@ import { px } from '../../src/core/constants';
 import { assertValidMatch, validateStage, validateTemplate } from '../../src/core/validate';
 import { TRAINING_STAGE } from '../../src/data/stages';
 import { MATCH } from '../core/helpers';
+import { FELINE } from '../../src/data/fighters/feline';
 import { KODA } from '../../src/data/fighters/koda';
 import { NAYO } from '../../src/data/fighters/nayo';
 import { RIFF } from '../../src/data/fighters/riff';
@@ -52,6 +53,7 @@ describe('fighter templates', () => {
     expect(validateTemplate(SAPHIR)).toEqual([]);
     expect(validateTemplate(WATT)).toEqual([]);
     expect(validateTemplate(KODA)).toEqual([]);
+    expect(validateTemplate(FELINE)).toEqual([]);
   });
 
   // Koda, the acoustic martial-arts pressure fighter: faster walk than Nayo, a cancellable forward

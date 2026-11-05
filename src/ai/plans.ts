@@ -441,6 +441,7 @@ export const PLANS: Readonly<Record<string, readonly Plan[]>> = {
   Saphir: SAPHIR_PLANS,
   Watt: WATT_PLANS,
   Koda: KODA_PLANS,
+  Feline: KODA_PLANS,
 };
 
 /** What the CPU knows of its move, once it has connected and the game moves again. */
