@@ -1,7 +1,6 @@
 import type { Point } from '../../raster.ts';
 import { solve } from '../../skeleton.ts';
 import { at, GUARD, lifted, planted, smear, type Effect, type Foot, type Pose } from './common.ts';
-import { POSES as CROCHET } from './standHeavy.ts';
 
 /** Drawn: the tests (tests/tools/nayo-v2-sprites.test.ts) check it. */
 export const ANIMATED: boolean = true;
@@ -70,7 +69,7 @@ const REAR_TOE = toeOf(GUARD.farFoot);
 /** Where the lead foot lands at the end of the glide (the ankle), heel first, then flat. */
 const LANDING = 10.6;
 /** The Crochet's lead toe (standHeavy's impact, after its step): the weight comes down on it. */
-const LEAD_TOE = toeOf(CROCHET[3]?.nearFoot ?? GUARD.nearFoot);
+const LEAD_TOE = toeOf(planted(10.6, 0));
 
 type Body = Omit<Pose, 'nearFist' | 'farFist'>;
 const sketch = (body: Body): Pose => ({
@@ -216,6 +215,7 @@ const CONTACT = ((): Point => {
 })();
 const IMPACT: Pose = {
   ...IMPACT_ARM,
+  nearHand: 'open',
   effects: [
     lowArc(IMPACT_ARM, 25, 6, 6),
     { kind: 'flash', center: CONTACT, radius: 5, tone: 'strike' },

@@ -40,10 +40,9 @@ const REAR_X = -15;
 /** One sprite pixel, in world pixels: the step of every move of the loop. */
 const PIXEL = 0.5;
 
-/** The gloves around the head, as in GUARD: near glove under the chin, far glove by the cheek. */
-const GUARD_HEAD = solve(GUARD).head;
-const LEAD = at(GUARD.nearFist.x - GUARD_HEAD.x, GUARD.nearFist.y - GUARD_HEAD.y);
-const REAR = at(GUARD.farFist.x - GUARD_HEAD.x, GUARD.farFist.y - GUARD_HEAD.y);
+/** The compact guard offsets around the head for the crouch. */
+const LEAD = at(6.8, -12.3);
+const REAR = at(8.2, -3.8);
 
 /** Puts the gloves around the head of `pose` as in the guard, nudged by `lead` and `rear`. */
 function guarded(pose: Pose, lead = at(0, 0), rear = at(0, 0)): Pose {

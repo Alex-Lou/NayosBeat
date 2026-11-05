@@ -1,9 +1,7 @@
 /**
- * Koda's head: transformed from the LPC character (issue #174: `120 spiked__green_.png`,
- * `100 human_male__light_.png`, `101 neutral__light_.png`) into high-resolution volume-shaded
- * pixel art. Bold emerald-green spikes swept forward and up over the brow, three-quarter sculpted
- * face, bright cyan-blue eye. Expressions are patches over it (face.ts); the head turns with the
- * skeleton by RotSprite.
+ * Koda's head: anime-fighter / Guilty Gear / BlazBlue style high-resolution pixel art. Long,
+ * dramatic emerald-green spikes swept back and upward in layered locks, a dark martial headband
+ * across the brow with a glowing jade gem, sculpted three-quarter face, piercing cyan-ice eyes.
  */
 
 import type { PixelCanvas, Point } from '../raster.ts';
@@ -13,26 +11,27 @@ import { expressionOf } from './face.ts';
 import { DETAIL, MATERIAL } from './palette.ts';
 
 export const HEAD: readonly string[] = [
-  '.....kk......kddk....kk........',
-  '....kdbk...kdsllsdk.ksbk.......',
-  '....ksbllkdsblggllbsbllbk......',
-  '.....kdbllbbllgggllbbllbsk.....',
-  '..kk..ksbbbllggllgllbbllbsdk...',
-  '.kdbk..kdsbblllbllgllbbllbsdk..',
-  '..ksbllkdsbbbblllbllgllbbllbsdk',
-  '...kdblllbbllbbgllbblllbbllbsdk',
-  '....kdssbllbllbblllblllgbbbsk..',
-  '..kddssbbllblbbllbbllbllbbssdk.',
-  '.kdsbsssbbllbbllgllbbllbbssdd..',
-  '.kdssbssbbbllbbllbblllbbssddk..',
+  '..kk.....kddk.....kddk.........',
+  '..dbk...ksllsk...ksgglk........',
+  '..sblk.kdblglbk.ksbgglbk.......',
+  '..kdblbksblgglbksbbggllbk......',
+  '..ksbllbbllggllbbllgglbsk......',
+  '..kdsbllbbllggllbblllbbsdk.....',
+  '..kdsbblllbllgllbblllbbsdk.....',
+  '..kdsbbbblllbllgllbbllbbsdk....',
+  '..dbllllbbllbbgllbblllbblllbbsk',
+  '..kddssbllbllbblllblllgbbbssdk.',
+  '..dssbbllblbbllbbllbllbbssdk...',
+  '..sbsssbbllbbllgllbbllbbssdd...',
+  '..dssbssbbbllbbllbblllbbssddk..',
   '..kddssbbbbllbbllbbllbbbsddk...',
   '...kddssdbbbllbllbbllbbssdk....',
-  '..kddddsddbskbssbbllbDSSkssk...',
-  '.kddddsdddsddskssbllBBSkdsddk..',
-  '.dddddddddddkdkdsdkdSBBBBkdkk..',
+  '..kddddsddRRRRRRRRRRRRJJkssk...',
+  '..ddddsdddRRRRRRRRRRRRJJkdsddk.',
+  '..dddddddddkdkdsdkdSBBBBkdkk...',
   '..kdddddddkkkdddddDkkkSBBDdk...',
   '..kkddddddkBSkdkkdBBSDkkSDkk...',
-  '.kkkdddddkBDOSkkSBBkkkKSBDk....',
+  '..kkdddddkBDOSkkSBBkkkKSBDk....',
   '...kdddddkSDOBkkBBBJCKBBBBO....',
   '...dkddddkSDSBSkBLLBCSBBBBO....',
   '....kkdddkdSOBBLBBBBBBBBBSO....',
@@ -50,10 +49,11 @@ export const HEAD: readonly string[] = [
 export const HEAD_CENTER: Point = { x: 14, y: 20 };
 
 /** Rows of the stamp that are hair only, from the top: they trail behind fast moves. */
-const LOOSE_HAIR_ROWS = 10;
+const LOOSE_HAIR_ROWS = 12;
 
 const SKIN = MATERIAL.skin;
 const HAIR = MATERIAL.hair;
+const BAND = MATERIAL.leather;
 
 /** Palette slot of each stamp character; '.' (or any other) is empty. */
 const LEGEND: Legend = {
@@ -71,11 +71,13 @@ const LEGEND: Legend = {
   b: HAIR.base,
   l: HAIR.light,
   g: HAIR.gloss,
-  // Eye and mouth.
+  // Headband across the brow.
+  R: BAND.base,
+  // Eye, mouth and headband gem.
   K: DETAIL.ink,
   W: DETAIL.eyeWhite,
   C: DETAIL.iris,
-  J: DETAIL.irisLight,
+  J: DETAIL.neonLight,
   M: DETAIL.mouth,
   T: DETAIL.teeth,
 };
