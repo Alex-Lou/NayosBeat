@@ -28,6 +28,7 @@ export const FLASH_OUTSIDE_STAGES: ReadonlySet<string> = new Set([
   'temple',
   'carnival',
   'sahel',
+  'helipad',
 ]);
 
 /**

@@ -18,6 +18,7 @@ import { STAGE_VARIANTS as CHINATOWN } from './chinatown';
 import { STAGE_VARIANTS as SUNSET } from './sunset';
 import { STAGE_VARIANTS as CARNIVAL } from './carnival';
 import { STAGE_VARIANTS as SAHEL } from './sahel';
+import { STAGE_VARIANTS as HELIPAD } from './helipad';
 import { STAGE_VARIANTS as TEMPLE } from './temple';
 
 /** A floor: hard (asphalt, concrete, wood, stone) or sand (docs/art/decor-plage.md §6). */
@@ -206,6 +207,14 @@ export const STAGE_MAPS: readonly StageMap[] = (
       sheltered: false,
       ground: 'hard',
       variants: SAHEL,
+    },
+    {
+      name: 'helipad',
+      title: 'H-02 Helipad',
+      description: 'Le toit de la tour H-02, sous la lune et les néons',
+      sheltered: false,
+      ground: 'hard',
+      variants: HELIPAD,
     },
   ] satisfies StageMap[]
 ).filter(({ variants }) => variants.length > 0);
