@@ -192,8 +192,8 @@ export const STAGE_MAPS: readonly StageMap[] = (
     },
     {
       name: 'carnival',
-      title: 'Rust Carnival',
-      description: "Le parc d'attractions abandonné, sous l'orage",
+      title: 'Lomé Carnival',
+      description: "Le carnaval abandonné de Lomé, sous l'orage",
       sheltered: false,
       ground: 'hard',
       variants: CARNIVAL,

@@ -1,7 +1,9 @@
 /**
- * Rust Carnival (docs/art/decor-carnival.md): the abandoned fairground's illustration is
- * hand-drawn in art-src/carnival/ (far and floor); the code animates the Ferris wheel's lights,
- * the storm's blue flash, the carousel and the puddles.
+ * Lomé Carnival (docs/art/decor-carnival.md): the developer's background (issue #155), the
+ * abandoned fairground under the storm, drawn whole in art-src/carnival/ (far and floor, in
+ * truecolor); `npm run stages` copies it as it is, so the illustration keeps every colour. The
+ * code adds the Ferris wheel's lights, the storm's blue flash, the carousel and the puddles over
+ * the hand-drawn scene. No middle layer: the scene is a single illustration.
  */
 
 import type { Rgba } from '../../sprites/png.ts';
@@ -22,14 +24,6 @@ const WHEEL: readonly Rgba[] = [
   { r: 255, g: 176, b: 90, a: 230 },
   { r: 255, g: 80, b: 140, a: 230 },
   { r: 210, g: 90, b: 255, a: 220 },
-];
-
-const BOLT: readonly Rgba[] = [
-  { r: 0, g: 0, b: 0, a: 0 },
-  { r: 230, g: 246, b: 255, a: 200 },
-  { r: 110, g: 190, b: 255, a: 230 },
-  { r: 64, g: 110, b: 255, a: 220 },
-  { r: 150, g: 100, b: 255, a: 180 },
 ];
 
 const CAROUSEL: readonly Rgba[] = [
@@ -55,13 +49,13 @@ function hash(seed: number): number {
 }
 
 function wheelFrame(frame: number): ReturnType<typeof imageOf> {
-  const canvas = new Canvas(380, 330);
+  const canvas = new Canvas(320, 280);
   if (frame > 0) {
-    const cx = 190;
-    const cy = 165;
+    const cx = 160;
+    const cy = 132;
     for (let light = 0; light < 34; light++) {
       const angle = (light / 34) * Math.PI * 2;
-      const radius = 156;
+      const radius = 130;
       const x = cx + Math.round(Math.cos(angle) * radius);
       const y = cy + Math.round(Math.sin(angle) * radius);
       const color = (light + frame) % 5 === 0 ? 1 : (light + frame) % 3 === 0 ? 3 : 2;
@@ -70,7 +64,7 @@ function wheelFrame(frame: number): ReturnType<typeof imageOf> {
     for (let spoke = 0; spoke < 8; spoke++) {
       const angle = (spoke / 8) * Math.PI * 2;
       canvas.fill(
-        cx + Math.round(Math.cos(angle) * 74),
+        cx + Math.round(Math.cos(angle) * 60),
         cy + Math.round(Math.sin(angle) * 74),
         2,
         2,
@@ -79,25 +73,6 @@ function wheelFrame(frame: number): ReturnType<typeof imageOf> {
     }
   }
   return imageOf(canvas, WHEEL);
-}
-
-function boltFrame(frame: number): ReturnType<typeof imageOf> {
-  const canvas = new Canvas(220, 180);
-  if (frame > 0) {
-    const random = [0, 1, 2, 3][frame - 1] ?? 0;
-    let x = 90;
-    let y = 12;
-    canvas.fill(x, y, 3, 10, random > 0 ? 1 : 2);
-    for (let step = 0; step < 8; step++) {
-      x += Math.round(hash(step * 13 + random) * 28) - 14;
-      y += 18;
-      canvas.fill(x, y, random > 1 ? 4 : 2, 10, random > 1 ? 1 : 2);
-      if (step % 2 === 0) canvas.fill(x - 8, y + 4, 9, 2, 3);
-    }
-    canvas.fill(84, 150, 34, 2, 2);
-    if (random > 1) canvas.fill(120, 128, 24, 2, 4);
-  }
-  return imageOf(canvas, BOLT);
 }
 
 function carouselFrame(frame: number): ReturnType<typeof imageOf> {
@@ -129,7 +104,7 @@ function puddleFrame(frame: number): ReturnType<typeof imageOf> {
 const FERRIS: CodeProp = {
   name: 'ferris-lights',
   layer: 'far',
-  rect: { x: 150, y: 0, width: 380, height: 330 },
+  rect: { x: 250, y: 0, width: 320, height: 280 },
   timeline: [
     [1, 10],
     [2, 10],
@@ -142,25 +117,10 @@ const FERRIS: CodeProp = {
   overlay: true,
 };
 
-const STORM: CodeProp = {
-  name: 'storm',
-  layer: 'far',
-  rect: { x: 600, y: 0, width: 220, height: 180 },
-  timeline: [
-    [0, 480],
-    [1, 3],
-    [2, 3],
-    [3, 3],
-    [0, 120],
-  ],
-  frames: Array.from({ length: 4 }, (_, frame) => boltFrame(frame)),
-  overlay: true,
-};
-
 const CAROUSEL_LIGHTS: CodeProp = {
   name: 'carousel',
   layer: 'far',
-  rect: { x: 740, y: 180, width: 240, height: 190 },
+  rect: { x: 675, y: 170, width: 240, height: 190 },
   timeline: [
     [1, 30],
     [2, 30],
@@ -190,7 +150,7 @@ let drawn: CodeStage | undefined;
 export function drawCarnival(): CodeStage {
   drawn ??= {
     layers: { far: blank('far'), mid: blank('mid'), floor: blank('floor') },
-    props: [FERRIS, STORM, CAROUSEL_LIGHTS, PUDDLES],
+    props: [FERRIS, CAROUSEL_LIGHTS, PUDDLES],
   };
   return drawn;
 }
@@ -199,5 +159,6 @@ export const CARNIVAL: CodeMap = {
   name: 'carnival',
   draw: drawCarnival,
   atmospheres: [{ atmosphere: { moment: 'midnight', weather: 'clear' }, palette: [BLANK] }],
+  rgba: true,
   noMid: true,
 };
