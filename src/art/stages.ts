@@ -17,6 +17,7 @@ import { STAGE_VARIANTS as SAKURA } from './sakura';
 import { STAGE_VARIANTS as CHINATOWN } from './chinatown';
 import { STAGE_VARIANTS as SUNSET } from './sunset';
 import { STAGE_VARIANTS as CARNIVAL } from './carnival';
+import { STAGE_VARIANTS as SAHEL } from './sahel';
 import { STAGE_VARIANTS as TEMPLE } from './temple';
 
 /** A floor: hard (asphalt, concrete, wood, stone) or sand (docs/art/decor-plage.md §6). */
@@ -197,6 +198,14 @@ export const STAGE_MAPS: readonly StageMap[] = (
       sheltered: false,
       ground: 'hard',
       variants: CARNIVAL,
+    },
+    {
+      name: 'sahel',
+      title: 'Sahel Sunset',
+      description: 'La rue du marché, au coucher du soleil',
+      sheltered: false,
+      ground: 'hard',
+      variants: SAHEL,
     },
   ] satisfies StageMap[]
 ).filter(({ variants }) => variants.length > 0);
