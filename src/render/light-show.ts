@@ -19,6 +19,7 @@ import {
   type LightTier,
 } from './live-lights';
 import type { Light } from './move-lights';
+import { VIEW_SIZE } from './view';
 
 /**
  * The moves' live lights (docs/art/nayo-vivante.md §2), drawn: each source of light-rig.ts (a
@@ -47,6 +48,13 @@ export const LIVE_LIGHTS = 4;
 const GLOW_UNIT = 255;
 /** The stage's pixels that light themselves, and its props, over the glows. */
 const EMITTERS_DEPTH = DEPTH.pools + 0.002;
+/** Between two layers' emitters over the glows: their order kept, back to front. */
+const EMITTERS_STEP = 1e-5;
+/**
+ * How far past its rest the camera may go (a close-up, a shake), world px, when working out which
+ * pixels of a layer the layers in front may cover (`hideOccluded`).
+ */
+const CAMERA_MARGIN = 48;
 
 /** Something drawn that the lights may fall on. */
 export interface Litable {
@@ -77,6 +85,8 @@ interface StageImage {
   /** Its pixels that light themselves; null for a prop (raised whole). */
   readonly emitters: Phaser.GameObjects.Image | null;
   readonly depth: number;
+  /** Its depth over the glows (its layer's order kept); null: a prop a front layer may cover. */
+  readonly raised: number | null;
 }
 
 export class LightShow {
@@ -122,13 +132,34 @@ export class LightShow {
     props: readonly Phaser.GameObjects.Image[],
   ): void {
     const strongest = strongestGlows(this.look.colors, this.look.stage);
+    const ordered = [...layers].sort((a, b) => a.depth - b.depth);
+    const pixels = ordered.map((image) => layerPixelsOf(image));
+    const camera = cameraRange(ordered);
+    // A back layer's emitters shown over the glows would also show over the layers in front of
+    // it (a bright sky over the street): they keep only the pixels no layer in front may cover.
+    const emitters = ordered.map((image, index) =>
+      this.emittersOf(image, strongest, index, pixels.slice(index + 1), camera),
+    );
+    // A prop is raised over the glows only if no layer in front may cover it.
+    const layerOf = (prop: Phaser.GameObjects.Image) =>
+      ordered.reduce((found, layer, index) => (layer.depth <= prop.depth ? index : found), 0);
     this.stage = [
-      ...layers.map((image) => ({
+      ...ordered.map((image, index) => ({
         image,
-        emitters: this.emittersOf(image, strongest),
+        emitters: emitters[index] ?? null,
         depth: image.depth,
+        raised: EMITTERS_DEPTH + index * EMITTERS_STEP,
       })),
-      ...props.map((image) => ({ image, emitters: null, depth: image.depth })),
+      ...props.map((image) => {
+        const index = layerOf(image);
+        const covered = pixels.slice(index + 1).some((front) => coversRows(front, image));
+        return {
+          image,
+          emitters: null,
+          depth: image.depth,
+          raised: covered ? null : EMITTERS_DEPTH + (index + 0.5) * EMITTERS_STEP,
+        };
+      }),
     ];
   }
 
@@ -294,9 +325,9 @@ export class LightShow {
   private showEmitters(on: boolean): void {
     if (on === this.emittersShown) return;
     this.emittersShown = on;
-    for (const { image, emitters, depth } of this.stage) {
+    for (const { image, emitters, depth, raised } of this.stage) {
       if (emitters) emitters.setVisible(on && image.visible);
-      else image.setDepth(on ? EMITTERS_DEPTH : depth);
+      else if (raised !== null) image.setDepth(on ? raised : depth);
     }
   }
 
@@ -348,6 +379,9 @@ export class LightShow {
   private emittersOf(
     image: Phaser.GameObjects.Image,
     strongest: ReturnType<typeof strongestGlows>,
+    order: number,
+    fronts: readonly (LayerPixels | undefined)[],
+    camera: CameraRange,
   ): Phaser.GameObjects.Image | null {
     const source = image.texture.getSourceImage() as HTMLImageElement | HTMLCanvasElement;
     const key = `${image.texture.key}#emitters`;
@@ -359,6 +393,10 @@ export class LightShow {
     context.drawImage(source, 0, 0);
     const pixels = context.getImageData(0, 0, source.width, source.height);
     if (keepEmitters(pixels.data, strongest) === 0) return null;
+    const back = placedOf(image, pixels.data, source.width, source.height);
+    for (const front of fronts) {
+      if (front && hideOccluded(back, front, camera) === 0) return null;
+    }
     context.putImageData(pixels, 0, 0);
     canvas.refresh();
     return this.scene.add
@@ -366,9 +404,144 @@ export class LightShow {
       .setOrigin(image.originX, image.originY)
       .setScale(image.scaleX, image.scaleY)
       .setScrollFactor(image.scrollFactorX, image.scrollFactorY)
-      .setDepth(EMITTERS_DEPTH)
+      .setDepth(EMITTERS_DEPTH + order * EMITTERS_STEP)
       .setVisible(false);
   }
+}
+
+/** A layer's pixels where it lies in the world: RGBA, its top left, its scale, its parallax. */
+export interface LayerPixels {
+  readonly data: Uint8ClampedArray;
+  readonly width: number;
+  readonly height: number;
+  /** World px of its top left corner. */
+  readonly x: number;
+  readonly y: number;
+  /** World px per image px. */
+  readonly scaleX: number;
+  readonly scaleY: number;
+  /** Its share of the camera's horizontal moves. */
+  readonly scroll: number;
+}
+
+/** How far the camera's left edge may scroll, world px. */
+export interface CameraRange {
+  readonly from: number;
+  readonly to: number;
+}
+
+function placedOf(
+  image: Phaser.GameObjects.Image,
+  data: Uint8ClampedArray,
+  width: number,
+  height: number,
+): LayerPixels {
+  const scaleX = Number.isFinite(image.scaleX) ? image.scaleX : 1;
+  const scaleY = Number.isFinite(image.scaleY) ? image.scaleY : 1;
+  return {
+    data,
+    width,
+    height,
+    x: (image.x || 0) - width * scaleX * (image.originX || 0),
+    y: (image.y || 0) - height * scaleY * (image.originY || 0),
+    scaleX,
+    scaleY,
+    scroll: Number.isFinite(image.scrollFactorX) ? image.scrollFactorX : 1,
+  };
+}
+
+/** A layer's own pixels, read once (undefined where the platform cannot read them back). */
+function layerPixelsOf(image: Phaser.GameObjects.Image): LayerPixels | undefined {
+  const source = image.texture.getSourceImage() as
+    | (HTMLImageElement & { pixels?: Uint8ClampedArray })
+    | (HTMLCanvasElement & { pixels?: Uint8ClampedArray });
+  const { width, height } = source;
+  if (source.pixels) return placedOf(image, source.pixels, width, height);
+  if (typeof document === 'undefined') return undefined;
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext('2d');
+  if (!context) return undefined;
+  context.drawImage(source, 0, 0);
+  return placedOf(image, context.getImageData(0, 0, width, height).data, width, height);
+}
+
+/** The camera's reach, from the widest layer that follows it whole (the floor). */
+function cameraRange(layers: readonly Phaser.GameObjects.Image[]): CameraRange {
+  const widest = Math.max(
+    VIEW_SIZE.width,
+    ...layers
+      .filter((image) => image.scrollFactorX === 1)
+      .map((image) => (image.texture.getSourceImage() as { width: number }).width * image.scaleX)
+      .filter(Number.isFinite),
+  );
+  return { from: -CAMERA_MARGIN, to: widest - VIEW_SIZE.width + CAMERA_MARGIN };
+}
+
+/**
+ * Clears, in `back`, the opaque pixels a pixel of `front` may cover somewhere along the camera's
+ * reach (their parallax shifts one over the other: at camera scroll c, the front pixel at world x
+ * + c × (its scroll − the back's) lies over the back pixel at x). Returns how many are left.
+ */
+export function hideOccluded(back: LayerPixels, front: LayerPixels, camera: CameraRange): number {
+  const delta = front.scroll - back.scroll;
+  const shiftMin = Math.min(camera.from * delta, camera.to * delta);
+  const shiftMax = Math.max(camera.from * delta, camera.to * delta);
+  // Per front row, how many opaque pixels up to each column (prefix sums), made when needed.
+  const prefixes = new Map<number, Int32Array>();
+  const prefixOf = (row: number): Int32Array => {
+    let prefix = prefixes.get(row);
+    if (!prefix) {
+      prefix = new Int32Array(front.width + 1);
+      for (let x = 0; x < front.width; x++) {
+        const opaque = (front.data[(row * front.width + x) * 4 + 3] ?? 0) > 0 ? 1 : 0;
+        prefix[x + 1] = (prefix[x] ?? 0) + opaque;
+      }
+      prefixes.set(row, prefix);
+    }
+    return prefix;
+  };
+  let left = 0;
+  for (let y = 0; y < back.height; y++) {
+    const worldY = back.y + (y + 0.5) * back.scaleY;
+    const row = Math.floor((worldY - front.y) / front.scaleY);
+    const inFront = row >= 0 && row < front.height;
+    const prefix = inFront ? prefixOf(row) : undefined;
+    for (let x = 0; x < back.width; x++) {
+      const at = (y * back.width + x) * 4 + 3;
+      if ((back.data[at] ?? 0) === 0) continue;
+      if (prefix) {
+        const worldX = back.x + x * back.scaleX;
+        const from = Math.floor((worldX + shiftMin - front.x) / front.scaleX);
+        const to = Math.ceil((worldX + back.scaleX + shiftMax - front.x) / front.scaleX);
+        const a = Math.max(0, Math.min(front.width, from));
+        const b = Math.max(0, Math.min(front.width, to));
+        if (b > a && (prefix[b] ?? 0) - (prefix[a] ?? 0) > 0) {
+          back.data[at] = 0;
+          continue;
+        }
+      }
+      left++;
+    }
+  }
+  return left;
+}
+
+/** Whether `front` has an opaque pixel in the rows `image` spans: it may cover it. */
+function coversRows(front: LayerPixels | undefined, image: Phaser.GameObjects.Image): boolean {
+  if (!front) return false;
+  const height = image.displayHeight;
+  if (!Number.isFinite(height) || !Number.isFinite(image.y)) return false;
+  const top = image.y - height * (image.originY || 0);
+  const first = Math.max(0, Math.floor((top - front.y) / front.scaleY));
+  const last = Math.min(front.height - 1, Math.ceil((top + height - front.y) / front.scaleY));
+  for (let row = first; row <= last; row++) {
+    for (let x = 0; x < front.width; x++) {
+      if ((front.data[(row * front.width + x) * 4 + 3] ?? 0) > 0) return true;
+    }
+  }
+  return false;
 }
 
 /**
