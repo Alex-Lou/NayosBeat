@@ -22,20 +22,44 @@ describe('Sahel Sunset (docs/art/decor-sahel.md)', { timeout: 60_000 }, () => {
     expect(source.data[3]).toBe(255);
   });
 
-  it("keeps the layers contract: an opaque far and floor at the fighters' grain", async () => {
-    for (const layer of ['far', 'floor'] as const) {
+  it('keeps the layers contract: an opaque sky, a street cut out of it, an opaque road', async () => {
+    for (const layer of ['far', 'mid', 'floor'] as const) {
       const image = await installed(layer);
       const { width, height } = stageRulesOf(layer);
       expect([image.width, image.height], layer).toEqual([width, height]);
-      expect(
-        image.pixels.every((slot) => (image.alpha[slot] ?? 255) !== 0),
-        layer,
-      ).toBe(true);
-      // The pixel-art material: one image pixel, 32 colours at most, no 2 × 2 blocks.
-      expect(image.colors.length, layer).toBeLessThanOrEqual(32);
-      expect(image.colors.length, layer).toBeGreaterThan(24);
+      const clear = image.pixels.filter((slot) => (image.alpha[slot] ?? 255) === 0).length;
+      // The street shows the sky through its own: between a tenth and a third of it.
+      if (layer === 'mid') {
+        expect(clear / image.pixels.length).toBeGreaterThan(0.05);
+        expect(clear / image.pixels.length).toBeLessThan(0.35);
+      } else expect(clear, layer).toBe(0);
     }
-    await expect(installed('mid')).rejects.toThrow();
+  });
+
+  it("is pixel art at the fighters' grain: small palettes, no lone pixel", async () => {
+    for (const [layer, most] of [
+      ['far', 19],
+      ['mid', 49],
+      ['floor', 15],
+    ] as const) {
+      const image = await installed(layer);
+      expect(image.colors.length, layer).toBeLessThanOrEqual(most);
+      // Hardly any pixel without a side neighbour of its colour: clean clusters, no noise.
+      let lone = 0;
+      let opaque = 0;
+      const { width, height, pixels } = image;
+      for (let y = 1; y < height - 1; y++) {
+        for (let x = 1; x < width - 1; x++) {
+          const k = y * width + x;
+          const here = pixels[k] ?? 0;
+          if (here === 0) continue;
+          opaque++;
+          const sides = [pixels[k - 1], pixels[k + 1], pixels[k - width], pixels[k + width]];
+          if (!sides.includes(here)) lone++;
+        }
+      }
+      expect(lone / opaque, layer).toBeLessThan(0.08);
+    }
   });
 
   it('offers the place, in its clear dusk', () => {
@@ -47,7 +71,7 @@ describe('Sahel Sunset (docs/art/decor-sahel.md)', { timeout: 60_000 }, () => {
     expect(map?.description).toBe('La rue du marché, au coucher du soleil');
     expect(map?.ground).toBe('hard');
     expect(map?.variants[0]?.atmosphere).toEqual({ moment: 'dusk', weather: 'clear' });
-    expect(map?.variants[0]?.art.layers.map(({ name }) => name)).toEqual(['far', 'floor']);
+    expect(map?.variants[0]?.art.layers.map(({ name }) => name)).toEqual(['far', 'mid', 'floor']);
   });
 
   it('animates the sun, the laundry, the birds, the lamps and the dust', async () => {

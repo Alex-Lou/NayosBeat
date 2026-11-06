@@ -9,85 +9,100 @@ Sahara, et de la lumière du couchant qui baigne toute la scène.
 Une rue de marché africaine à l'heure dorée : les boutiques sous leur auvent de tôle, les habitants
 assis devant, les voitures fatiguées, la ligne électrique qui traverse le ciel, l'acacia au-dessus
 des toits et le soleil qui descend derrière la colline. Les combattants se battent sur la route de
-terre, devant la foule. Le lieu s'appelle **Sahel Sunset** dans le jeu.
+terre, devant la foule.
 
-## 2. L'adaptation
+## 2. La pixellisation
 
-La source est une image RGB de 1672 × 941 (`art-src/sahel/source/sahel.png`).
-`tools/stage/sahel/adapt.ts` la recadre au format 600 × 270 du monde et la garde **à la résolution
-des combattants** : un pixel d'image pour un pixel d'image, comme leurs sprites. C'est ce qui compte
-pour l'harmonie ; les blocs 2 × 2 de la version précédente faisaient un fond deux fois plus gros
-que les personnages.
+La source est une image RGB de 1672 × 941 (`art-src/sahel/source/sahel.png`). Elle n'est pas posée
+telle quelle derrière les combattants : `tools/stage/sahel/adapt.ts` la **convertit en pixel art**,
+au grain des personnages (un pixel d'image pour un pixel de leurs sprites), et la **sépare en trois
+plans** qui défilent chacun à leur vitesse.
 
-La matière est travaillée pour que l'illustration ne se lise pas comme un PNG :
+| Plan | Ce qu'il montre | Taille (pixels) | Défilement | Couleurs |
+|---|---|---|---|---|
+| `far` | le ciel et le soleil seuls | 1 200 × 540 | 25 % | 18 |
+| `mid` | la rue : maisons, foule, voitures, fils, acacia | 1 440 × 540 | 50 % | 48 |
+| `floor` | la route de terre sous les pieds | 1 920 × 80 | 100 % | 14 |
 
-- un **median 3 × 3** efface le grain photographique et aplati les textures ;
-- la palette est ramenée à **32 couleurs**, avec un léger tramage ordonné ;
-- le contraste et la saturation sont relevés pour répondre aux combattants ;
-- la route commence à la même lumière que le bas du `far`, puis s'assombrit et se réchauffe vers
-  les pieds ;
-- une brume très légère (5 %) recule les bâtiments lointains.
+Chaque plan passe par la même chaîne :
 
-- `far` : 600 × 270 du monde, 1 200 × 540 en pixels, opaque, défile à 25 %.
-- `floor` : 960 × 40 du monde, 1 920 × 80 en pixels, la route de terre, défile à 100 %.
-- Pas de `mid` : l'illustration est une scène unique, la couche serait vide.
+1. **Rééchantillonnage par aires**, en lumière linéaire : chaque pixel est la moyenne exacte de la
+   zone de l'illustration qu'il couvre. Pas d'échantillonnage au plus proche, donc pas de bruit
+   d'aliasing (c'était le défaut de « PNG » des versions précédentes).
+2. **Aplatissement de Kuwahara** : les dégradés peints deviennent des aplats, les contours restent.
+3. **Palette k-means en Lab**, petite et propre à chaque plan ; pas de tramage sur la rue et la
+   route, un tramage léger dans le ciel seulement, pour ses bandes.
+4. **Pixels orphelins supprimés** : un pixel seul de sa couleur prend celle de ses voisins. Les
+   amas sont nets, comme sur les sprites.
+5. **Contour** : un pixel sombre là où la rue rencontre le ciel, et sur le côté sombre des arêtes
+   fortes, comme le trait des personnages, en plus doux.
+
+### La découpe du ciel
+
+Le ciel est trouvé par remplissage depuis le bord haut, de proche en proche, sur des pas de couleur
+calmes, et seulement sur des couleurs de crépuscule (assez claires, assez saturées : le mur
+blanchi en haut à gauche n'est pas du ciel). Le remplissage saute les fils et les brindilles de
+moins de 5 pixels : ils restent dans la rue, le ciel derrière eux reste du ciel. Les îlots de rue
+de moins de 60 pixels perdus dans le ciel y retournent ; les poches de « ciel » de moins de 400
+pixels dans la rue redeviennent rue.
+
+Dans `far`, la rue est **effacée** derrière le ciel : chaque pixel caché prend la couleur médiane du
+ciel de sa rangée, mêlée à un remplissage pyramidal. La parallaxe ne découvre donc jamais un trou ni
+le fantôme d'un toit.
+
+### L'échelle
+
+`mid` est l'illustration à 1 440 pixels de large (×0,861) ; la rangée 600 de la source tombe sur la
+ligne du sol, à la rangée 460. `far` la prend à 1 200 pixels de large. `floor` est la terre du
+premier plan de l'illustration (rangées 770 à 863), à l'échelle de `mid`, sa fin fondue dans son
+début sur 140 pixels pour qu'elle se répète sans couture ni motif en miroir.
+
+### Le réglage
+
+Les plans sont un peu moins saturés et moins contrastés que les personnages, la route plus sombre
+encore (saturation 0,78, lumière ×0,74) : les combattants s'en détachent toujours.
 
 ## 3. Les animations
 
-Toutes sont des props `overlay`, dessinés au même grain que l'illustration, dans
-`tools/stage/sahel/index.ts`. Aucun objet nouveau n'est posé sur la scène : ce sont ses propres
-lumières, son linge, ses oiseaux et sa poussière qui bougent.
+Toutes sont des props `overlay`, dans `tools/stage/sahel/index.ts`, sur le plan de ce qu'elles
+animent.
 
-| Prop | Ce qu'il fait | Cycle |
-|---|---|---|
-| `sun-glow` | le soleil respire derrière la rue | 4 images, 240 pas |
-| `laundry` | un reflet chaud parcourt le linge étendu | 4 images, 96 pas |
-| `birds` | une nuée traverse le couchant, ailes hautes et basses | 2 images, 20 pas, traversée de 400 pas |
-| `lamp-awning` | l'ampoule sous l'auvent respire | 6 images, 270 pas |
-| `lamp-street` | le lampadaire du carrefour respire, à son propre rythme | 6 images, 270 pas |
-| `lamp-lane` | la petite lampe de la ruelle suit, plus discrète | 6 images, 270 pas |
-| `lamp-high` | le grand lampadaire de droite s'allume et s'apaise | 6 images, 270 pas |
-| `dust` | la poussière dorée dérive au ras de la route | 5 images, 200 pas |
+| Prop | Plan | Ce qu'il fait | Cycle |
+|---|---|---|---|
+| `sun-glow` | `far` | le soleil respire derrière la rue | 4 images, 240 pas |
+| `laundry` | `mid` | un reflet chaud parcourt le linge étendu | 4 images, 96 pas |
+| `birds` | `far` | une nuée traverse le couchant, ailes hautes et basses | 2 images, traversée de 400 pas |
+| `lamp-awning` | `mid` | l'ampoule sous l'auvent respire | 6 images, 270 pas |
+| `lamp-street` | `mid` | le lampadaire du carrefour respire, à son propre rythme | 6 images, 270 pas |
+| `lamp-lane` | `mid` | la lampe de la ruelle suit, plus discrète | 6 images, 270 pas |
+| `lamp-high` | `mid` | le grand lampadaire de droite s'allume et s'apaise | 6 images, 270 pas |
+| `dust` | `floor` | la poussière dorée dérive au ras de la route | 5 images, 200 pas |
 
 Les changements sont des images entières, sans interpolation (D23). Les lampes ont chacune leur
-phase : elles ne clignotent pas ensemble, et aucune ne produit d'éclair plein écran. La nuée
-d'oiseaux entre et sort par les bords, hors du cadre, pour ne jamais apparaître d'un coup.
+phase et aucune ne produit d'éclair plein écran.
 
 ## 4. Le branchement
 
-- `tools/stage/maps.ts` ajoute `SAHEL` aux cartes du code.
-- `src/art/sahel/index.ts` déclare `STAGE_VARIANTS` depuis les images installées.
-- `src/art/stages.ts` ajoute la map à `STAGE_MAPS` : « Lieu », entraînement et tests de budget.
-- `src/render/stage-view.ts` ajoute `sahel` à `FLASH_OUTSIDE_STAGES`.
-- `tests/tools/stage-sahel.test.ts` vérifie les calques, la palette de 32 couleurs, l'atmosphère,
-  la map et les huit props.
+- `tools/stage/maps.ts` : `SAHEL`, avec ses trois plans.
+- `src/art/sahel/index.ts` : `STAGE_VARIANTS` depuis les images installées.
+- `src/art/stages.ts` : la map dans `STAGE_MAPS` (« Lieu », entraînement, budgets).
+- `src/render/stage-view.ts` : `sahel` dans `FLASH_OUTSIDE_STAGES`.
+- `tests/tools/stage-sahel.test.ts` : les trois plans, la découpe, les palettes, les pixels
+  orphelins (moins de 8 %), la map et les huit props.
 
 ## 5. La clarté et les flashs
 
-Sahel Sunset est un décor de **crépuscule** très lumineux : le soleil, le ciel orangé et les
-ampoules dépassent l'enveloppe des décors de minuit. Comme Sakura, Dancing Forest, Jungle,
-Chinatown, Sunset Beam et Rust Carnival, il est donc exclu de `FIGHT_STAGE_COLORS` ; les mesures de
-flashs restent prises sur les décors de référence (`docs/flashs.md` §3). La route, elle, est assez
-sombre et peu saturée pour que les personnages, leurs coups et leurs effets restent lisibles.
+Sahel Sunset est un décor de **crépuscule** très lumineux : comme Sakura, Dancing Forest, Jungle,
+Chinatown, Sunset Beam et Lomé Carnival, il est exclu de `FIGHT_STAGE_COLORS` ; les mesures de
+flashs restent prises sur les décors de référence (`docs/flashs.md` §3).
 
-## 6. L'historique des versions
+## 6. L'historique
 
-1. **La première version** gardait le grain fin de l'illustration en 64 couleurs. La résolution
-   était bonne, mais la matière restait celle d'une image : à côté des combattants, elle se lisait
-   comme un PNG posé derrière eux.
-2. **La deuxième version** est passée en blocs 2 × 2. Elle a cassé l'effet PNG, mais elle a créé un
-   défaut plus grave : un fond deux fois plus gros que les personnages. C'est cette version qui a
-   été rejetée.
-3. **Cette version-ci** revient à la résolution des combattants et travaille la matière : médian,
-   32 couleurs, contraste, tramage. Les animations restent celles de la scène elle-même.
+1. Grain fin, 64 couleurs, échantillonné au plus proche : fidèle, mais bruité ; un « PNG » derrière
+   les combattants.
+2. Blocs 2 × 2 : un fond deux fois plus grossier que les personnages. Rejeté.
+3. Grain 1 ×, médian et 32 couleurs : mieux, mais toujours une seule image plate.
+4. **Cette version** : une vraie conversion en pixel art, au grain des personnages, en trois plans.
 
-## 7. Choix écartés
-
-- Les blocs 2 × 2 : la différence de résolution avec les personnages était visible, et elle
-  primait sur l'effet pixel art.
-- Le truecolor : trop fin et trop lumineux à côté des combattants.
-- Ajouter de la fumée, une foule d'avant-plan ou une guirlande : ces objets se lisaient comme des
-  éléments posés sur l'image et cassaient son harmonie. La vie vient des lumières, du linge, des
-  oiseaux et de la poussière déjà présents.
-- Découper un second plan : la source est une illustration unique, sans calques ; un faux découpage
-  aurait créé des raccords.
+Un décor entièrement redessiné en code a aussi été essayé : plus cohérent en théorie, mais plat et
+pauvre à côté de l'illustration ; écarté.
