@@ -1,41 +1,41 @@
 {
   "frames": {
     "0": {
-      "frame": { "x": 0, "y": 261, "w": 125, "h": 104 },
+      "frame": { "x": 0, "y": 259, "w": 125, "h": 103 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 15, "y": 35, "w": 125, "h": 104 },
-      "sourceSize": { "w": 152, "h": 139 }
+      "spriteSourceSize": { "x": 15, "y": 35, "w": 125, "h": 103 },
+      "sourceSize": { "w": 152, "h": 138 }
     },
     "1": {
-      "frame": { "x": 0, "y": 0, "w": 135, "h": 139 },
+      "frame": { "x": 0, "y": 0, "w": 135, "h": 138 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 13, "y": 0, "w": 135, "h": 139 },
-      "sourceSize": { "w": 152, "h": 139 }
+      "spriteSourceSize": { "x": 13, "y": 0, "w": 135, "h": 138 },
+      "sourceSize": { "w": 152, "h": 138 }
     },
     "2": {
-      "frame": { "x": 0, "y": 139, "w": 138, "h": 122 },
+      "frame": { "x": 0, "y": 138, "w": 138, "h": 121 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 14, "y": 17, "w": 138, "h": 122 },
-      "sourceSize": { "w": 152, "h": 139 }
+      "spriteSourceSize": { "x": 14, "y": 17, "w": 138, "h": 121 },
+      "sourceSize": { "w": 152, "h": 138 }
     },
     "3": {
-      "frame": { "x": 138, "y": 139, "w": 138, "h": 122 },
+      "frame": { "x": 138, "y": 138, "w": 138, "h": 121 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 17, "w": 138, "h": 122 },
-      "sourceSize": { "w": 152, "h": 139 }
+      "spriteSourceSize": { "x": 0, "y": 17, "w": 138, "h": 121 },
+      "sourceSize": { "w": 152, "h": 138 }
     },
     "4": {
-      "frame": { "x": 135, "y": 0, "w": 135, "h": 139 },
+      "frame": { "x": 135, "y": 0, "w": 135, "h": 138 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 6, "y": 0, "w": 135, "h": 139 },
-      "sourceSize": { "w": 152, "h": 139 }
+      "spriteSourceSize": { "x": 6, "y": 0, "w": 135, "h": 138 },
+      "sourceSize": { "w": 152, "h": 138 }
     },
     "5": {
-      "frame": { "x": 125, "y": 261, "w": 125, "h": 104 },
+      "frame": { "x": 125, "y": 259, "w": 125, "h": 103 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 15, "y": 35, "w": 125, "h": 104 },
-      "sourceSize": { "w": 152, "h": 139 }
+      "spriteSourceSize": { "x": 15, "y": 35, "w": 125, "h": 103 },
+      "sourceSize": { "w": 152, "h": 138 }
     }
   },
-  "meta": { "image": "crouchLight.png", "size": { "w": 276, "h": 365 } }
+  "meta": { "image": "crouchLight.png", "size": { "w": 276, "h": 362 } }
 }

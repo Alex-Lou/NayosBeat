@@ -3,27 +3,27 @@
     "0": {
       "frame": { "x": 0, "y": 0, "w": 135, "h": 146 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 75, "y": 0, "w": 135, "h": 146 },
-      "sourceSize": { "w": 213, "h": 146 }
+      "spriteSourceSize": { "x": 74, "y": 0, "w": 135, "h": 146 },
+      "sourceSize": { "w": 212, "h": 146 }
     },
     "1": {
-      "frame": { "x": 0, "y": 146, "w": 167, "h": 111 },
+      "frame": { "x": 0, "y": 146, "w": 166, "h": 111 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 23, "y": 35, "w": 167, "h": 111 },
-      "sourceSize": { "w": 213, "h": 146 }
+      "spriteSourceSize": { "x": 23, "y": 35, "w": 166, "h": 111 },
+      "sourceSize": { "w": 212, "h": 146 }
     },
     "2": {
       "frame": { "x": 0, "y": 257, "w": 174, "h": 102 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 19, "y": 44, "w": 174, "h": 102 },
-      "sourceSize": { "w": 213, "h": 146 }
+      "spriteSourceSize": { "x": 18, "y": 44, "w": 174, "h": 102 },
+      "sourceSize": { "w": 212, "h": 146 }
     },
     "3": {
-      "frame": { "x": 0, "y": 359, "w": 213, "h": 69 },
+      "frame": { "x": 0, "y": 359, "w": 212, "h": 69 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 77, "w": 213, "h": 69 },
-      "sourceSize": { "w": 213, "h": 146 }
+      "spriteSourceSize": { "x": 0, "y": 77, "w": 212, "h": 69 },
+      "sourceSize": { "w": 212, "h": 146 }
     }
   },
-  "meta": { "image": "trip.png", "size": { "w": 213, "h": 428 } }
+  "meta": { "image": "trip.png", "size": { "w": 212, "h": 428 } }
 }

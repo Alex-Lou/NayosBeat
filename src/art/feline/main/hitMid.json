@@ -1,35 +1,35 @@
 {
   "frames": {
     "0": {
-      "frame": { "x": 0, "y": 451, "w": 152, "h": 136 },
+      "frame": { "x": 0, "y": 449, "w": 152, "h": 135 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 23, "w": 152, "h": 136 },
-      "sourceSize": { "w": 152, "h": 159 }
+      "spriteSourceSize": { "x": 0, "y": 23, "w": 152, "h": 135 },
+      "sourceSize": { "w": 152, "h": 158 }
     },
     "1": {
-      "frame": { "x": 0, "y": 587, "w": 134, "h": 132 },
+      "frame": { "x": 0, "y": 584, "w": 134, "h": 131 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 10, "y": 27, "w": 134, "h": 132 },
-      "sourceSize": { "w": 152, "h": 159 }
+      "spriteSourceSize": { "x": 10, "y": 27, "w": 134, "h": 131 },
+      "sourceSize": { "w": 152, "h": 158 }
     },
     "2": {
-      "frame": { "x": 0, "y": 312, "w": 135, "h": 139 },
+      "frame": { "x": 0, "y": 311, "w": 134, "h": 138 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 12, "y": 20, "w": 135, "h": 139 },
-      "sourceSize": { "w": 152, "h": 159 }
+      "spriteSourceSize": { "x": 13, "y": 20, "w": 134, "h": 138 },
+      "sourceSize": { "w": 152, "h": 158 }
     },
     "3": {
-      "frame": { "x": 0, "y": 159, "w": 138, "h": 153 },
+      "frame": { "x": 0, "y": 158, "w": 137, "h": 153 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 2, "y": 6, "w": 138, "h": 153 },
-      "sourceSize": { "w": 152, "h": 159 }
+      "spriteSourceSize": { "x": 3, "y": 5, "w": 137, "h": 153 },
+      "sourceSize": { "w": 152, "h": 158 }
     },
     "4": {
-      "frame": { "x": 0, "y": 0, "w": 143, "h": 159 },
+      "frame": { "x": 0, "y": 0, "w": 143, "h": 158 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 5, "y": 0, "w": 143, "h": 159 },
-      "sourceSize": { "w": 152, "h": 159 }
+      "spriteSourceSize": { "x": 5, "y": 0, "w": 143, "h": 158 },
+      "sourceSize": { "w": 152, "h": 158 }
     }
   },
-  "meta": { "image": "hitMid.png", "size": { "w": 152, "h": 719 } }
+  "meta": { "image": "hitMid.png", "size": { "w": 152, "h": 715 } }
 }
