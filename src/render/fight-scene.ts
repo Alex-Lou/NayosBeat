@@ -3,6 +3,7 @@ import { cpuStep, createCpu, type CpuBehavior, type CpuState } from '../ai/cpu';
 import { artOf } from '../art';
 import type { FighterArt } from '../art/types';
 import type { StageVariant } from '../art/stage-layers';
+import { ambientOf } from '../art/stages';
 import { assertValidArt } from '../art/validate';
 import type { Sfx } from '../audio/sfx';
 import { hudComfortOf, isCalm, type Comfort } from '../app/comfort';
@@ -641,6 +642,7 @@ export class FightScene extends Phaser.Scene {
           signature: this.signatures[player],
           lit: this.signatures.some((signature) => signature !== null),
           colorway: this.colorwayOf(player),
+          ambient: ambientOf(this.sceneData.stage?.stage),
         })
       : new FighterView(
           this,

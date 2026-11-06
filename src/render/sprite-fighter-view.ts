@@ -90,6 +90,8 @@ export interface SpriteFighterLook {
    * no presence.
    */
   readonly colorway?: 'main' | 'alt';
+  /** The light of the place on its body (StageMap.ambient). None: its own colors. */
+  readonly ambient?: number;
 }
 
 /**
@@ -161,6 +163,7 @@ export class SpriteFighterView {
     this.trail = new DashTrail(scene, art, trailColor, look.stage, mode);
     this.echo = new BoostEcho(scene, art, mode);
     this.body = new AnchoredSprite(scene, art, 'body', mode).setDepth(DEPTH.fighterBack);
+    if (look.ambient !== undefined && mode !== 'simple') this.body.ambient(look.ambient);
     this.outline = OUTLINE.map(() => {
       const sprite = new AnchoredSprite(scene, art, 'body', mode).setDepth(
         DEPTH.fighterBack - OUTLINE_DEPTH,

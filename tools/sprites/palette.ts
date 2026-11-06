@@ -79,6 +79,8 @@ export const INK = '#0a0710';
 export function definePalette<M extends string, D extends string>(
   materials: Readonly<Record<M, MaterialTones>>,
   details: Readonly<Record<D, DetailColor>>,
+  /** The outline's ink: every fighter's INK, or its own (Feline's night navy). */
+  ink: string = INK,
 ): Palette<M, D> {
   const materialNames = Object.keys(materials) as M[];
   const detailNames = Object.keys(details) as D[];
@@ -97,7 +99,7 @@ export function definePalette<M extends string, D extends string>(
     for (const name of materialNames) {
       const tones = materials[name];
       const [, ...ramp] = colorway === 'alt' && tones.alt ? tones.alt : tones.main;
-      colors.push(INK, ...ramp);
+      colors.push(ink, ...ramp);
     }
     for (const name of detailNames) {
       const color = details[name];

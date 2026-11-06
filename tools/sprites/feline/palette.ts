@@ -28,10 +28,11 @@ function lit(ramp: Ramp, rim: string = RIM): MaterialTones {
 
 const MATERIALS = {
   /** Pale, luminous porcelain skin with soft peach-rose shading (face, bare midriff, shoulders, forearms). */
-  skin: lit(['#222026', '#736d7e', '#c4aeb4', '#f2dcdc', '#f7eaee', '#fff8f8'], '#f3e8ef'),
+  // Its two lightest tones calmed and cooled: the whites no brighter than the moonlit scenes'.
+  skin: lit(['#222026', '#736d7e', '#c4aeb4', '#f2dcdc', '#efe4ea', '#f4eef2'], '#f3e8ef'),
   /** Pure snow-white feline mane, ears & tail with soft cool-silver shading; shadow-panther on alt. */
   hair: {
-    main: ['#1a181d', '#5a5462', '#908696', '#c9bdca', '#e7dce5', '#f7eef3', RIM_ON_LIGHT],
+    main: ['#1a181d', '#5a5462', '#908696', '#c9bdca', '#ddd6e2', '#ebe6f0', RIM_ON_LIGHT],
     alt: ['#080610', '#1c1430', '#382a58', '#644e94', '#9880cc', '#d4c4f8', RIM],
   },
   /** Techwear crop-top and shoulder pad: matte carbon-black; pearl-ivory on alt. */
@@ -186,7 +187,13 @@ const TINTS = Object.fromEntries(
   ),
 ) as Record<TintName, DetailColor>;
 
-const PALETTE = definePalette(MATERIALS, { ...DETAILS, ...TINTS });
+/**
+ * Her outline's ink: a night navy rather than the other fighters' near black, the darkest of the
+ * moonlit scenes she fights in (the Cyber Arena's shadows are #0f101e).
+ */
+const FELINE_INK = '#0d0c1c';
+
+const PALETTE = definePalette(MATERIALS, { ...DETAILS, ...TINTS }, FELINE_INK);
 
 export const EFFECT_TINTS: Readonly<Record<Tone, Readonly<Record<number, Tint>>>> =
   Object.fromEntries(

@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { describe, expect, it } from 'vitest';
 import { STAGE_COLORS } from '../../src/art/cyberarena/colors';
 import { STAGE_PROPS } from '../../src/art/cyberarena/props';
-import { OFFERED_STAGES, STAGE_MAPS } from '../../src/art/stages';
+import { ambientOf, OFFERED_STAGES, STAGE_MAPS } from '../../src/art/stages';
 import { FLASH_OUTSIDE_STAGES } from '../../src/render/stage-view';
 import { stageRulesOf } from '../../tools/sprites/stage-drawn';
 import { readTruecolor } from '../../tools/sprites/truecolor';
@@ -75,5 +75,11 @@ describe('the hand-drawn Cyber Arena (docs/art/decor-cyberarena.md)', { timeout:
   it('is the only place the game offers, the others kept and measured', () => {
     expect(OFFERED_STAGES.map(({ name }) => name)).toEqual(['cyberarena']);
     expect(STAGE_MAPS.length).toBeGreaterThan(1);
+  });
+
+  it('bathes the fighters in its moonlight; a place without one leaves them in their colors', () => {
+    expect(ambientOf('cyberarena')).toBe(0xd4daff);
+    expect(ambientOf('rue')).toBe(0xffffff);
+    expect(ambientOf(undefined)).toBe(0xffffff);
   });
 });

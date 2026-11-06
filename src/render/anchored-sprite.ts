@@ -24,6 +24,9 @@ export class AnchoredSprite {
   /** The strips shown from their HD image, at 1 / HD_SCALE the scale. */
   private readonly hd: ReadonlySet<string>;
   private shownScale = 1 / ART_SCALE;
+  /** The place's light on it, and its shade (1: its colors, 0: black): see `ambient`, `shade`. */
+  private light = 0xffffff;
+  private level = 1;
 
   constructor(
     scene: Phaser.Scene,
@@ -100,9 +103,26 @@ export class AnchoredSprite {
    * never lighter.
    */
   shade(dark: number): this {
-    const level = Math.round(255 * (1 - Math.min(1, Math.max(0, dark))));
-    if (level === 255) this.sprite.clearTint();
-    else this.sprite.setTint(level * 0x010101).setTintMode(Phaser.TintModes.MULTIPLY);
+    this.level = 1 - Math.min(1, Math.max(0, dark));
+    return this.tinted();
+  }
+
+  /**
+   * The light of the place multiplied over it (StageMap.ambient: white, none), under its shade.
+   * Without tints, it keeps its own colors.
+   */
+  ambient(color: number): this {
+    this.light = color;
+    return this.tinted();
+  }
+
+  /** Its ambient light, darkened by its shade, multiplied over its colors. */
+  private tinted(): this {
+    const channel = (shift: number) =>
+      Math.round(((this.light >> shift) & 0xff) * this.level) << shift;
+    const tint = channel(16) | channel(8) | channel(0);
+    if (tint === 0xffffff) this.sprite.clearTint();
+    else this.sprite.setTint(tint).setTintMode(Phaser.TintModes.MULTIPLY);
     return this;
   }
 
