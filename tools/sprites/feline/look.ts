@@ -78,6 +78,10 @@ interface Ctx extends Ink {
   readonly torso: (distance: number, across: number) => Point;
   readonly maneSwing: Point;
   readonly tailSwing: Point;
+  /** Where the frame falls in its strip (Motion.phase): drives the tail's and the mane's waves. */
+  readonly phase: number;
+  /** How fast her upper body moves, world px per tick. */
+  readonly speed: number;
 }
 
 /** Draws Feline in the cell whose left edge is `cellX`. */
@@ -105,6 +109,8 @@ export function drawFeline(
       x: clamp(hang1.x * 1.6 - motion.vx * 0.9, -3.6, 3.6),
       y: clamp(hang1.y * 1.4 - motion.vy * 0.6, -2.8, 2.8),
     },
+    phase: motion.phase ?? 0,
+    speed: Math.hypot(motion.vx, motion.vy),
   };
 
   for (const effect of skeleton.effects) {
@@ -192,31 +198,30 @@ interface Lock {
 }
 
 /**
- * The wild mane (Pack_01 `01_garde.png`, Pack_02 `intro_01_pose_assuree.png`): a big mass of
- * pointed silver-white locks bursting back from under the headband, as wide as her shoulders and
- * falling to the middle of her back. Three layers (shade, mid, snow) so it reads as volume, not a
- * flat cut-out; every tip lags with spring 0 (`maneSwing`), more the longer the lock.
+ * The high ponytail (the developer's guard sheet): a crest rising over the black scrunchie at the
+ * back of her crown, then long wavy silver-white locks cascading back and down to her waist, ~24
+ * px behind her head. Three layers (shade, mid, snow) around a soft volume so it reads as hair,
+ * not a cut-out; every lock ripples over the strip and lags on spring 0 (`maneSwing`).
  */
 const MANE_SHADE: readonly Lock[] = [
-  { base: [0, 3], tip: [10, 4], width: 6.5, bend: 1.0 },
-  { base: [1, 1.5], tip: [15.5, 1.5], width: 9, bend: 2.2 },
-  { base: [1, -1.5], tip: [16, -8], width: 9, bend: 2.0 },
-  { base: [0.5, -4], tip: [13, -15.5], width: 9, bend: 1.6 },
-  { base: [-0.5, -5.5], tip: [7.5, -20.5], width: 8, bend: 1.0 },
-  { base: [-1, -6.5], tip: [2.5, -21.5], width: 5, bend: 0.4 },
+  { base: [0, 0.5], tip: [8, 1.5], width: 4.5, bend: 1.2 },
+  { base: [0.5, 1], tip: [13, -9], width: 7, bend: 3.5 },
+  { base: [0.5, 0], tip: [16, -16], width: 7, bend: 3.5 },
+  { base: [0, -1], tip: [13, -23], width: 6.5, bend: 3 },
+  { base: [-0.5, -1.5], tip: [7, -26], width: 5.5, bend: 2 },
 ];
 const MANE_MID: readonly Lock[] = [
-  { base: [-0.5, 3], tip: [8, 4], width: 5, bend: 0.8 },
-  { base: [0, 2], tip: [12.5, 2.5], width: 7, bend: 1.8 },
-  { base: [0, -1], tip: [13, -6], width: 7, bend: 1.6 },
-  { base: [0, -3.5], tip: [10, -12.5], width: 7, bend: 1.2 },
-  { base: [-1, -5], tip: [4.5, -17], width: 5.5, bend: 0.6 },
+  { base: [0, 1], tip: [6.5, 1.8], width: 4, bend: 1 },
+  { base: [0, 1], tip: [11, -7], width: 5.5, bend: 3 },
+  { base: [0, 0], tip: [13.5, -14], width: 5.5, bend: 3 },
+  { base: [-0.5, -1], tip: [10.5, -20], width: 5, bend: 2.5 },
+  { base: [-0.5, -1.5], tip: [5, -23], width: 4, bend: 1.5 },
 ];
 const MANE_SNOW: readonly Lock[] = [
-  { base: [-0.5, 3], tip: [6, 3.8], width: 2, bend: 0.6 },
-  { base: [0, 2.2], tip: [10, 2.8], width: 2.6, bend: 1.4 },
-  { base: [0, -0.8], tip: [10, -4.6], width: 2.4, bend: 1.2 },
-  { base: [-0.5, -3.4], tip: [7, -9.5], width: 2.2, bend: 0.8 },
+  { base: [0, 0.9], tip: [5, 1.4], width: 1.4, bend: 0.8 },
+  { base: [0, 1], tip: [8.5, -5], width: 1.8, bend: 2.5 },
+  { base: [0, 0], tip: [10.5, -11], width: 1.8, bend: 2.5 },
+  { base: [-0.5, -1], tip: [8, -16], width: 1.6, bend: 2 },
 ];
 
 /**
@@ -228,6 +233,8 @@ const MANE_BACK = { stand: -25.0, crouch: -16.0 } as const;
 const TAIL_BACK = { stand: -24.8, crouch: -16.2 } as const;
 /** The lowest a lock or the tail is drawn (world px): never under the floor (ko, knockdown). */
 const GROUND = 0.5;
+/** How far a mane lock's tip ripples to either side over a strip (world px). */
+const MANE_RIPPLE = 1.3;
 
 /**
  * The scale that keeps a shape reaching `reach` behind `root` (world px) within `bound`; when the
@@ -240,9 +247,11 @@ function fitBehind(root: number, reach: number, bound: number): number {
 }
 
 function drawMane(ctx: Ctx): void {
-  const { canvas, at, s, maneSwing } = ctx;
+  const { canvas, at, s, maneSwing, phase } = ctx;
   if (s.head.y < 16) return;
-  const root = add(s.head, add(scale(s.front, -1.6), scale(s.up, 0.6)));
+  const cycle = 2 * Math.PI * phase;
+  // Out of the scrunchie at the back of her crown (head.ts, rows 6..11).
+  const root = add(s.head, add(scale(s.front, -4.5), scale(s.up, 4.0)));
   // The locks hang in a frame tipped most of the way back to upright: leaning in, the mane falls
   // behind her instead of standing up over her head.
   const up = unit(add(scale(s.up, 0.35), { x: 0, y: 0.65 }));
@@ -256,34 +265,52 @@ function drawMane(ctx: Ctx): void {
   // The mane stays within her hurtbox's back edge (`MANE_BACK`): past it, the whole mane is
   // scaled down around its root (it keeps its shape) instead of being cut flat.
   const reach = Math.min(
-    ...[...MANE_SHADE.map((l) => offset(l.tip[0], l.tip[1], 1.3).x), offset(13, -4.5, 0.4).x],
+    ...[...MANE_SHADE.map((l) => offset(l.tip[0], l.tip[1], 1.3).x), offset(13, -11, 0.5).x],
   );
   const bound = s.hip.y < 26 ? MANE_BACK.crouch : MANE_BACK.stand;
   const k = fitBehind(root.x, reach, bound);
-  const point = (b: number, u: number, lag: number): Point => {
+  const point = (b: number, u: number, lag: number, above = 0): Point => {
     const o = offset(b, u, lag);
-    return at({ x: root.x + o.x * k, y: Math.max(GROUND, root.y + o.y * k) });
+    return at({ x: root.x + o.x * k, y: Math.max(GROUND + above, root.y + o.y * k) });
   };
-  const lock = (l: Lock, material: Material, decal: boolean): void => {
+  const lock = (l: Lock, material: Material, decal: boolean, index: number): void => {
     const [bb, bu] = l.base;
     const [tb, tu] = l.tip;
     const along = unit({ x: tb - bb, y: tu - bu });
     const across = { x: -along.y, y: along.x };
     const length = Math.hypot(tb - bb, tu - bu);
     const lag = (t: number): number => clamp((length * t) / 12, 0, 1.3);
+    // Each lock ripples, a beat behind the one above it, more toward its tip.
+    const ripple = (t: number): number =>
+      MANE_RIPPLE * t ** 1.5 * Math.sin(cycle - t * 1.2 + index * 0.9);
     const side = (t: number, w: number): Point => {
-      const b = bb + (tb - bb) * t + across.x * (w + l.bend * Math.sin(Math.PI * t));
-      const u = bu + (tu - bu) * t + across.y * (w + l.bend * Math.sin(Math.PI * t));
-      return point(b, u, lag(t));
+      const bow = w + l.bend * Math.sin(Math.PI * t) + ripple(t);
+      return point(
+        bb + (tb - bb) * t + across.x * bow,
+        bu + (tu - bu) * t + across.y * bow,
+        lag(t),
+      );
     };
     const half = l.width / 2;
+    // A rounded, curling lobe at the end (Pack poses: a cloud of soft curls, not spikes).
+    const end = 0.84;
+    const lobe = half * 0.62;
+    const bow = l.bend * Math.sin(Math.PI * end) + ripple(end);
+    const cb = bb + (tb - bb) * end + across.x * bow;
+    const cu = bu + (tu - bu) * end + across.y * bow;
+    const arc = [70, 25, -20, -65, -100].map((a) => {
+      const r = (a * Math.PI) / 180;
+      const d = Math.sin(r) * lobe;
+      const f = Math.cos(r) * lobe * 1.1;
+      return point(cb + across.x * d + along.x * f, cu + across.y * d + along.y * f, lag(1));
+    });
     const shape = [
       side(0, half),
-      side(0.45, half * 0.9),
-      side(0.8, half * 0.45),
-      point(tb, tu, lag(1)),
-      side(0.8, -half * 0.35),
-      side(0.45, -half * 0.8),
+      side(0.4, half * 0.95),
+      side(0.68, half * 0.82),
+      ...arc,
+      side(0.66, -half * 0.55),
+      side(0.4, -half * 0.85),
       side(0, -half),
     ];
     if (decal) canvas.decal(shape, material, 'mane', { flat: true });
@@ -291,17 +318,23 @@ function drawMane(ctx: Ctx): void {
   };
   // A soft volume behind the locks, so the mane reads as one fluffy mass and only its fringe is
   // pointed.
-  canvas.ellipse(point(5.5, -4.5, 0.4), 7.5 * S * k, 9 * S * k, s.headAngle, HAIR_SHADE, {
+  canvas.ellipse(point(8, -11, 0.5, 9 * k), 5 * S * k, 9 * S * k, 0, HAIR_SHADE, {
     group: 'mane',
     flat: true,
   });
-  for (const l of MANE_SHADE) lock(l, HAIR_SHADE, false);
-  canvas.ellipse(point(4.5, -2.5, 0.3), 5.5 * S * k, 7.5 * S * k, s.headAngle, HAIR_MID, {
+  MANE_SHADE.forEach((l, i) => {
+    lock(l, HAIR_SHADE, false, i);
+  });
+  canvas.ellipse(point(7, -9, 0.45, 7 * k), 3.8 * S * k, 7 * S * k, 0, HAIR_MID, {
     group: 'mane',
     flat: true,
   });
-  for (const l of MANE_MID) lock(l, HAIR_MID, false);
-  for (const l of MANE_SNOW) lock(l, HAIR_SNOW, true);
+  MANE_MID.forEach((l, i) => {
+    lock(l, HAIR_MID, false, i);
+  });
+  MANE_SNOW.forEach((l, i) => {
+    lock(l, HAIR_SNOW, true, i);
+  });
 }
 
 /** The tail's shape turned 75 degrees up around its root (clockwise, y up): raised along the back. */
@@ -311,43 +344,68 @@ function raise(p: { x: number; y: number; r: number }): { x: number; y: number; 
   return { x: p.x * c - p.y * n, y: p.x * n + p.y * c, r: p.r };
 }
 
+/** The tail: segments from root to tip, each `TAIL_STEP` world px long (14 of them: 34 px). */
+const TAIL_SEGMENTS = 14;
+const TAIL_STEP = 2.45;
+/** Direction it leaves her seat (degrees, counterclockwise from her front): back, a bit down. */
+const TAIL_START = 202;
+/** How much it turns over its length (degrees, clockwise): up behind her and over, an open C. */
+const TAIL_TURN = 245;
+/** The wave that runs down it, root to tip: its swing (degrees) and its lag per segment. */
+const TAIL_WAVE = { swing: 13, lag: 0.6 } as const;
+
 /**
- * The plush C tail (`01_garde.png`), one continuous ribbon (no seams between segments) with a
- * lilac shade inside the curl, snow-white fur outside and a fluffy tip, swaying with `tailSwing`.
+ * Where along the tail it bends (0 root, 1 tip), the developer's guard sheet: a low round turn
+ * behind her seat, a nearly straight rise ~12 px behind it, a curl over at chest height (21 px up).
+ */
+function tailBend(t: number): number {
+  if (t < 0.3) return 0.85;
+  if (t < 0.66) return 0.1;
+  return 1.2;
+}
+
+/**
+ * The tail (the developer's guard sheet): out of her seat it turns up sharply, rises behind her
+ * and curls over at chest height, an open C, never a closed ring. A wave runs
+ * from root to tip over the strip (`phase`) and the curl breathes; speed draws it out straight,
+ * spring 1 (`tailSwing`) makes it trail. One continuous ribbon, tufts of fur along its outside,
+ * a lilac shade along its inside and a snow-white tip.
  */
 function drawTail(ctx: Ctx): void {
-  const { canvas, at, torso, s, tailSwing } = ctx;
+  const { canvas, at, torso, s, tailSwing, phase, speed } = ctx;
   if (s.hip.y < 12) return;
-  // Crouched, the C tucks in (smaller) instead of being squashed against a bound.
+  // Crouched, the tail is shorter rather than squashed against a bound.
   const reach = clamp((s.hip.y - 14) / 20, 0.62, 1.0);
   const floor = GROUND + 2;
+  const root = torso(-0.4, -3.6);
+  const cycle = 2 * Math.PI * phase;
 
-  const root = torso(1.6, -3.8);
-  const sx = tailSwing.x * 0.6;
-  const sy = tailSwing.y * 0.5;
-
-  // Spine of the plush C (Pack_01 `01_garde.png`): out of her lower back, arching up and out
-  // behind her, round and down, its fluffy tip curling back in at thigh height. Radii swell from
-  // the root to the tip, like a cat's.
-  const spineRaw: readonly (readonly [number, number, number])[] = [
-    [0.0, 0.0, 1.7],
-    [-3.2, 1.8, 2.1],
-    [-7.2, 2.4, 2.5],
-    [-11.0, 0.8, 2.8],
-    [-13.4, -2.8, 3.0],
-    [-13.6, -7.2, 3.1],
-    [-11.6, -11.0, 3.2],
-    [-8.0, -12.8, 3.2],
-    [-4.6, -12.2, 3.0],
-    [-2.8, -10.2, 2.7],
-  ];
-  const raw = spineRaw.map(([dx, dy, r], idx) => {
-    const w = idx / (spineRaw.length - 1);
-    return { x: dx * reach + sx * w, y: dy * reach + sy * w, r: r * (0.8 + 0.2 * reach) };
+  // Turning clockwise (y up) from back-down to up to forward, the turn gathered toward the tip.
+  const straighten = 1 - clamp(speed * 0.12, 0, 0.45);
+  const turn = TAIL_TURN * straighten * (1 + 0.1 * Math.sin(cycle + 1.2));
+  const weights = Array.from({ length: TAIL_SEGMENTS }, (_, i) =>
+    tailBend((i + 0.5) / TAIL_SEGMENTS),
+  );
+  const total = weights.reduce((sum, w) => sum + w, 0);
+  let angle = TAIL_START - tailSwing.x * 3;
+  let x = 0;
+  let y = 0;
+  const raw = [{ x, y, r: 1.5 * (0.8 + 0.2 * reach) }];
+  weights.forEach((w, i) => {
+    const along = (i + 1) / TAIL_SEGMENTS;
+    angle -= (turn * w) / total;
+    angle += TAIL_WAVE.swing * along * Math.sin(cycle - i * TAIL_WAVE.lag) * 0.35;
+    const radians = (angle * Math.PI) / 180;
+    x += Math.cos(radians) * TAIL_STEP * reach + tailSwing.x * 0.06 * along;
+    y += Math.sin(radians) * TAIL_STEP * reach + tailSwing.y * 0.05 * along;
+    // Slender, a little fuller toward the fluffy tip: 1.5 at the root, 2.1 at the fluff, 1.8 at the end.
+    const r = along < 0.8 ? 1.5 + 0.6 * (along / 0.8) : 2.1 - 1.5 * (along - 0.8);
+    raw.push({ x, y, r: r * (0.8 + 0.2 * reach) });
   });
-  // Past her hurtbox's back edge (`TAIL_BACK`), the whole C is scaled down around its root: it
-  // stays round instead of being flattened against the bound. With no room left behind her (her
-  // hips thrown back), she raises it along her back first, as a cat does.
+
+  // Past her hurtbox's back edge (`TAIL_BACK`), the whole tail is scaled down around its root: it
+  // keeps its shape instead of being flattened against the bound. With no room left behind her
+  // (her hips thrown back), she raises it along her back first, as a cat does.
   const bound = s.hip.y < 26 ? TAIL_BACK.crouch : TAIL_BACK.stand;
   const farthestOf = (shape: readonly { x: number; r: number }[]): number =>
     Math.min(...shape.map((p) => p.x - p.r));
@@ -358,29 +416,38 @@ function drawTail(ctx: Ctx): void {
     y: Math.max(floor + p.r * k, root.y + p.y * k),
     r: p.r * k,
   }));
-  // The spine turns counterclockwise (y up), so the left normal points inside the C.
+
+  // The spine turns clockwise, so the right normal points inside the hook.
   const inner: Point[] = [];
   const outer: Point[] = [];
   const innerShade: Point[] = [];
   const outerLight: Point[] = [];
-  for (let i = 0; i < spine.length; i++) {
-    const cur = spine[i];
-    const prev = spine[Math.max(0, i - 1)];
-    const next = spine[Math.min(spine.length - 1, i + 1)];
-    if (!cur || !prev || !next) continue;
+  const tufts: Point[][] = [];
+  spine.forEach((cur, i) => {
+    const prev = spine[Math.max(0, i - 1)] ?? cur;
+    const next = spine[Math.min(spine.length - 1, i + 1)] ?? cur;
     const t = unit({ x: next.x - prev.x, y: next.y - prev.y });
-    const n = { x: -t.y, y: t.x };
-    inner.push(at(add(cur, scale(n, cur.r))));
-    outer.push(at(add(cur, scale(n, -cur.r))));
-    innerShade.push(at(add(cur, scale(n, cur.r * 0.35))));
-    outerLight.push(at(add(cur, scale(n, -cur.r * 0.2))));
-  }
+    const out = { x: -t.y, y: t.x };
+    inner.push(at(add(cur, scale(out, -cur.r))));
+    outer.push(at(add(cur, scale(out, cur.r))));
+    innerShade.push(at(add(cur, scale(out, -cur.r * 0.35))));
+    outerLight.push(at(add(cur, scale(out, cur.r * 0.25))));
+    // A tuft of fur on every other segment of the outside, flicking toward the tip.
+    if (i >= 2 && i % 2 === 0 && i < spine.length - 1) {
+      const base = add(cur, scale(out, cur.r * 0.7));
+      tufts.push([
+        at(sub(base, scale(t, cur.r * 0.6))),
+        at(add(add(cur, scale(out, cur.r + 0.45)), scale(t, cur.r * 0.5))),
+        at(add(base, scale(t, cur.r * 0.7))),
+      ]);
+    }
+  });
 
   canvas.polygon([...inner, ...[...outer].reverse()], HAIR_MID, { group: 'tail', flat: true });
-  // Plush rounded tip in the same group (one outline).
+  for (const tuft of tufts) canvas.polygon(tuft, HAIR_MID, { group: 'tail', flat: true });
   const tip = spine[spine.length - 1];
   if (tip) canvas.circle(at(tip), tip.r * S, HAIR_MID, { group: 'tail', flat: true });
-  // Soft lilac shade inside the curl, snow-white fur along the outside and on the tip.
+  // Soft lilac shade along the inside, snow-white fur along the outside and on the tip.
   canvas.decal([...inner.slice(1), ...[...innerShade.slice(1)].reverse()], HAIR_SHADE, 'tail', {
     flat: true,
   });
@@ -388,7 +455,7 @@ function drawTail(ctx: Ctx): void {
     flat: true,
   });
   if (tip) {
-    const lit = add(tip, { x: -tip.r * 0.25, y: tip.r * 0.25 });
+    const lit = add(tip, { x: -tip.r * 0.2, y: tip.r * 0.3 });
     canvas.circle(at(lit), tip.r * S * 0.55, HAIR_SNOW, { group: 'tail', flat: true });
   }
 }
@@ -396,14 +463,14 @@ function drawTail(ctx: Ctx): void {
 // ---------------------------------------------------------------------------------------------
 // Slender feminine arms, hand-drawn `▼` cyan shoulder triangle stamp, fingerless combat gloves
 
-/** Hand-drawn glowing cyan downward triangle (`▼`) on Feline's bare deltoid (`poing_01_garde.png`). */
+/** The hollow glowing cyan downward triangle (`▽`) on Feline's bare shoulder (the guard sheet). */
 const SHOULDER_TRI: readonly string[] = [
-  'ddddddd',
-  'dcccccd',
-  '.dclcd.',
-  '.dclcd.',
-  '..dcd..',
-  '...d...',
+  'lcccccl',
+  'c.....c',
+  '.c...c.',
+  '.c...c.',
+  '..c.c..',
+  '...l...',
 ];
 
 function drawArm(ctx: Ctx, side: Side, which: 'near' | 'far'): void {
@@ -430,18 +497,9 @@ function drawArm(ctx: Ctx, side: Side, which: 'near' | 'far'): void {
     });
   }
 
-  // Black shoulder band carrying the cyan triangle emblem (Pack_01 `01_garde.png`), then a leather
-  // bicep strap with a 2x2 silver buckle.
+  // The hollow cyan triangle emblem right on her bare shoulder (the developer's guard sheet), then
+  // a black bicep strap with a 2x2 silver buckle.
   const arm = sub(side.elbow, side.shoulder);
-  slab(
-    ctx,
-    add(side.shoulder, scale(arm, 0.08)),
-    add(side.shoulder, scale(arm, 0.42)),
-    2.3,
-    2.1,
-    top,
-    `${group}Band`,
-  );
   const strapA = add(side.shoulder, scale(arm, 0.54));
   const strapB = add(side.shoulder, scale(arm, 0.66));
   slab(ctx, strapA, strapB, 2.1, 2.0, leather, `${group}Strap`);
@@ -532,7 +590,7 @@ function drawLeg(ctx: Ctx, side: Side, which: 'near' | 'far'): void {
   const shin = sub(side.ankle, side.knee);
   const top = add(side.knee, scale(shin, 0.58));
 
-  // Tapered at the hip (`3.8 * S`), flaring wide and baggy at the knee (`4.3 * S`) and calf (`4.1 * S`)
+  // Tapered at the hip (`3.8 * S`), flaring wide and baggy at the knee (`4.0 * S`) and calf (`3.9 * S`)
   // before cinching into the combat boot (`poing_01_garde.png`).
   canvas.capsule(at(side.hip), at(side.knee), 3.8 * S, 4.0 * S, pants, { group });
   canvas.capsule(at(side.knee), at(top), 3.9 * S, 3.5 * S, pants, { group });

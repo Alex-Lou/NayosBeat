@@ -1,35 +1,35 @@
 {
   "frames": {
     "0": {
-      "frame": { "x": 409, "y": 0, "w": 94, "h": 137 },
+      "frame": { "x": 414, "y": 0, "w": 83, "h": 137 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 5, "y": 0, "w": 94, "h": 137 },
+      "spriteSourceSize": { "x": 16, "y": 0, "w": 83, "h": 137 },
       "sourceSize": { "w": 121, "h": 160 }
     },
     "1": {
-      "frame": { "x": 301, "y": 0, "w": 108, "h": 138 },
+      "frame": { "x": 306, "y": 0, "w": 108, "h": 138 },
       "trimmed": true,
       "spriteSourceSize": { "x": 5, "y": 9, "w": 108, "h": 138 },
       "sourceSize": { "w": 121, "h": 160 }
     },
     "2": {
-      "frame": { "x": 180, "y": 0, "w": 121, "h": 142 },
+      "frame": { "x": 185, "y": 0, "w": 121, "h": 142 },
       "trimmed": true,
       "spriteSourceSize": { "x": 0, "y": 14, "w": 121, "h": 142 },
       "sourceSize": { "w": 121, "h": 160 }
     },
     "3": {
-      "frame": { "x": 0, "y": 0, "w": 92, "h": 156 },
+      "frame": { "x": 0, "y": 0, "w": 96, "h": 156 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 10, "y": 4, "w": 92, "h": 156 },
+      "spriteSourceSize": { "x": 6, "y": 4, "w": 96, "h": 156 },
       "sourceSize": { "w": 121, "h": 160 }
     },
     "4": {
-      "frame": { "x": 92, "y": 0, "w": 88, "h": 156 },
+      "frame": { "x": 96, "y": 0, "w": 89, "h": 155 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 4, "y": 1, "w": 88, "h": 156 },
+      "spriteSourceSize": { "x": 3, "y": 2, "w": 89, "h": 155 },
       "sourceSize": { "w": 121, "h": 160 }
     }
   },
-  "meta": { "image": "jumpLight.png", "size": { "w": 503, "h": 156 } }
+  "meta": { "image": "jumpLight.png", "size": { "w": 497, "h": 156 } }
 }

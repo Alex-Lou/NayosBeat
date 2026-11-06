@@ -13,9 +13,9 @@
       "sourceSize": { "w": 88, "h": 164 }
     },
     "2": {
-      "frame": { "x": 0, "y": 641, "w": 88, "h": 155 },
+      "frame": { "x": 0, "y": 641, "w": 88, "h": 157 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 8, "w": 88, "h": 155 },
+      "spriteSourceSize": { "x": 0, "y": 6, "w": 88, "h": 157 },
       "sourceSize": { "w": 88, "h": 164 }
     },
     "3": {
@@ -31,5 +31,5 @@
       "sourceSize": { "w": 88, "h": 164 }
     }
   },
-  "meta": { "image": "hitHigh.png", "size": { "w": 88, "h": 796 } }
+  "meta": { "image": "hitHigh.png", "size": { "w": 88, "h": 798 } }
 }

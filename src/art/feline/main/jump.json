@@ -1,41 +1,41 @@
 {
   "frames": {
     "0": {
-      "frame": { "x": 0, "y": 330, "w": 88, "h": 148 },
+      "frame": { "x": 0, "y": 332, "w": 88, "h": 148 },
       "trimmed": true,
       "spriteSourceSize": { "x": 1, "y": 29, "w": 88, "h": 148 },
       "sourceSize": { "w": 102, "h": 178 }
     },
     "1": {
-      "frame": { "x": 0, "y": 0, "w": 87, "h": 178 },
+      "frame": { "x": 0, "y": 0, "w": 90, "h": 178 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 5, "y": 0, "w": 87, "h": 178 },
+      "spriteSourceSize": { "x": 2, "y": 0, "w": 90, "h": 178 },
       "sourceSize": { "w": 102, "h": 178 }
     },
     "2": {
-      "frame": { "x": 0, "y": 178, "w": 95, "h": 152 },
+      "frame": { "x": 0, "y": 178, "w": 97, "h": 154 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 4, "y": 6, "w": 95, "h": 152 },
+      "spriteSourceSize": { "x": 2, "y": 4, "w": 97, "h": 154 },
       "sourceSize": { "w": 102, "h": 178 }
     },
     "3": {
-      "frame": { "x": 88, "y": 330, "w": 96, "h": 136 },
+      "frame": { "x": 88, "y": 332, "w": 100, "h": 137 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 6, "y": 12, "w": 96, "h": 136 },
+      "spriteSourceSize": { "x": 2, "y": 11, "w": 100, "h": 137 },
       "sourceSize": { "w": 102, "h": 178 }
     },
     "4": {
-      "frame": { "x": 87, "y": 0, "w": 88, "h": 156 },
+      "frame": { "x": 90, "y": 0, "w": 88, "h": 155 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 3, "y": 14, "w": 88, "h": 156 },
+      "spriteSourceSize": { "x": 3, "y": 15, "w": 88, "h": 155 },
       "sourceSize": { "w": 102, "h": 178 }
     },
     "5": {
-      "frame": { "x": 95, "y": 178, "w": 88, "h": 152 },
+      "frame": { "x": 97, "y": 178, "w": 88, "h": 151 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 25, "w": 88, "h": 152 },
+      "spriteSourceSize": { "x": 0, "y": 26, "w": 88, "h": 151 },
       "sourceSize": { "w": 102, "h": 178 }
     }
   },
-  "meta": { "image": "jump.png", "size": { "w": 184, "h": 478 } }
+  "meta": { "image": "jump.png", "size": { "w": 188, "h": 480 } }
 }

@@ -1,35 +1,35 @@
 {
   "frames": {
     "0": {
-      "frame": { "x": 0, "y": 612, "w": 88, "h": 143 },
+      "frame": { "x": 0, "y": 615, "w": 88, "h": 143 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 15, "w": 88, "h": 143 },
-      "sourceSize": { "w": 88, "h": 158 }
+      "spriteSourceSize": { "x": 0, "y": 14, "w": 88, "h": 143 },
+      "sourceSize": { "w": 88, "h": 157 }
     },
     "1": {
-      "frame": { "x": 0, "y": 463, "w": 88, "h": 149 },
+      "frame": { "x": 0, "y": 465, "w": 88, "h": 150 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 9, "w": 88, "h": 149 },
-      "sourceSize": { "w": 88, "h": 158 }
+      "spriteSourceSize": { "x": 0, "y": 7, "w": 88, "h": 150 },
+      "sourceSize": { "w": 88, "h": 157 }
     },
     "2": {
-      "frame": { "x": 0, "y": 312, "w": 88, "h": 151 },
+      "frame": { "x": 0, "y": 312, "w": 88, "h": 153 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 7, "w": 88, "h": 151 },
-      "sourceSize": { "w": 88, "h": 158 }
+      "spriteSourceSize": { "x": 0, "y": 4, "w": 88, "h": 153 },
+      "sourceSize": { "w": 88, "h": 157 }
     },
     "3": {
-      "frame": { "x": 0, "y": 158, "w": 88, "h": 154 },
+      "frame": { "x": 0, "y": 157, "w": 88, "h": 155 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 4, "w": 88, "h": 154 },
-      "sourceSize": { "w": 88, "h": 158 }
+      "spriteSourceSize": { "x": 0, "y": 2, "w": 88, "h": 155 },
+      "sourceSize": { "w": 88, "h": 157 }
     },
     "4": {
-      "frame": { "x": 0, "y": 0, "w": 88, "h": 158 },
+      "frame": { "x": 0, "y": 0, "w": 88, "h": 157 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 0, "w": 88, "h": 158 },
-      "sourceSize": { "w": 88, "h": 158 }
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 88, "h": 157 },
+      "sourceSize": { "w": 88, "h": 157 }
     }
   },
-  "meta": { "image": "hitMid.png", "size": { "w": 88, "h": 755 } }
+  "meta": { "image": "hitMid.png", "size": { "w": 88, "h": 758 } }
 }

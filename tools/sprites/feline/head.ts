@@ -3,10 +3,10 @@
  * - Two tall, pointed white cat ears on the crown (rows 0..10), the near one showing its large
  *   coral-pink inner triangle (`E`, `e`), the far one peeking out on the right with its own pink
  *   inside;
- * - A black headband (`R`, rows 9..10) across the crown at the foot of the ears, the mane
- *   (look.ts `drawMane`) bursting back from under it;
+ * - The thick black scrunchie (`K`, `R`) at the back of the crown, behind the near ear (rows
+ *   6..11), her high ponytail (look.ts `drawMane`) bursting from it;
  * - Voluminous snow-white anime hair (`g`, `l`, `b`): two feathered side-locks flaring out to the
- *   left below the headband, a long pointed white cheek-lock (cols 13..18, rows 18..30) hanging
+ *   left below the scrunchie, a long pointed white cheek-lock (cols 13..18, rows 18..30) hanging
  *   down past her jaw in front of the neck, and long curved white bangs sweeping over her forehead
  *   and framing the right side of her face;
  * - A petite, delicate feminine anime face (rows 18..28) in pale porcelain skin (`H`, `L`, `B`),
@@ -27,29 +27,29 @@ export const HEAD: readonly string[] = [
   '..............KgglEEeK..KglEeK....',
   '.............KgglEEEeeKKglEEeK....',
   '............KbglEEEEeeeKlEEEeK....',
-  '.......kkkk.kbglEEEEeeeKlEEEeK....',
-  '.....kkblbbkkbglEEEeeeeKllEEbK....',
-  '....kbblbblbbKblEEeeeKKbgglllbK...',
-  '....kRRRRRRRRRRRRRRRRRRRRRRRRRRK..',
-  '....kRRRRRRRRRRRRRRRRRRRRRRRRRRRK.',
-  '.....kkkkkkssbbllgggggggggggglllbK',
-  '......ksbbbllbbllgggggggggggggllbK',
-  '....ksbllgggggllggggggggggggggllbK',
-  '...kbbllgggggglgggggsLggggggggllbK',
-  '..ksbllbbblllggggggslLlbggggggllbK',
-  '...kkkkssbbllgggggsLLllgggggggllK.',
-  '.....ksblllggggggslLLlgggggggglbK.',
-  '....ksbllgggggglbKKKKKLLgggggllbK.',
-  '.....kkkssbbllglbKWWCCKLgggglllbK.',
-  '........kssbllglbKWCCCKLLLggllbk..',
-  '.........ksbllglbsKKLLKLLLLgllk...',
-  '.........ksbllgllBKKLLLLLLLLbk....',
-  '..........ksbllglBLLLLLLLLLBk.....',
-  '..........ksbllglBKKLLLLtauBk.....',
-  '...........ksblglBSLLLLLLLBDO.....',
-  '...........kssbllkOSBBLLBBDO......',
-  '............kssblk.OODBBBDO.......',
-  '.............ksblk...OODDO........',
+  '.......KKKK.KbglEEEEeeeKlEEEeK....',
+  '.....KKRRRRKKbglEEEeeeeKllEEbK....',
+  '....KRRRRRRRRKblEEeeeKKbgglllbK...',
+  '....KRRRRRRRRKbllgggllggggglllbK..',
+  '....KKRRRRRKKbbllggggggggggglllbK.',
+  '.....KKKKKKssbbllgggllggllggglllbK',
+  '......ksbbbllbbllggsllgglsgglsllbK',
+  '....ksbllgggggllggsbllgslbgslbllbK',
+  '...kbbllgggggglggsbllggsbllgsbglbK',
+  '..ksbllbbblllggglsbllgsbllgsbgllbK',
+  '...kkkkssbbllgggsbllgsbbllgsbglbK.',
+  '.....ksblllggggsbllkKKKKKKKsbBLOk.',
+  '....ksbllgggglbsbbkKKKKKKKKBLLLOk.',
+  '.....kkkssbbllglbskBKWCCCKLLLLLO..',
+  '........kssbllglbskBKWcCCKLLLLLLO.',
+  '.........ksbllglbskBBKccKBLLLLLLO.',
+  '.........ksbllgllskBBSKKSBuLLLLLO.',
+  '..........ksbllglsBBKLKLLLLLLLLDO.',
+  '..........ksbllglsBBSKLKLLLLLMDO..',
+  '...........ksblglsBSBLLLLLLLLDO...',
+  '...........kssbllkOSBBLLLLLLDO....',
+  '............kssblk.OODBBBBDDO.....',
+  '.............ksblk...OODDDO.......',
   '..............ksk.................',
 ];
 
@@ -82,12 +82,13 @@ const LEGEND: Legend = {
   // Coral-pink inner cat ear triangles.
   e: EAR.base,
   E: EAR.light,
-  // Black headband across the crown.
+  // Black ponytail scrunchie behind the ears.
   R: BAND.deep,
   // Crisp dark outline, feline eye, whisker markings, lips and fang.
   K: DETAIL.ink,
   W: DETAIL.eyeWhite,
   C: DETAIL.irisLight,
+  c: DETAIL.iris,
   J: DETAIL.neonLight,
   a: DETAIL.lip,
   u: DETAIL.lipLight,

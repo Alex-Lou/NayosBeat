@@ -7,9 +7,9 @@
       "sourceSize": { "w": 99, "h": 161 }
     },
     "1": {
-      "frame": { "x": 0, "y": 161, "w": 99, "h": 152 },
+      "frame": { "x": 0, "y": 161, "w": 99, "h": 153 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 9, "w": 99, "h": 152 },
+      "spriteSourceSize": { "x": 0, "y": 8, "w": 99, "h": 153 },
       "sourceSize": { "w": 99, "h": 161 }
     },
     "2": {
@@ -25,5 +25,5 @@
       "sourceSize": { "w": 99, "h": 161 }
     }
   },
-  "meta": { "image": "tech.png", "size": { "w": 188, "h": 313 } }
+  "meta": { "image": "tech.png", "size": { "w": 188, "h": 314 } }
 }

@@ -154,7 +154,7 @@ export const FELINE_STRINGS: Pick<
     motion: advance(28, { from: 3, to: 8, distancePx: 22 }),
     hurtboxes: [
       { frames: { from: 0, to: 3 }, boxes: [box(-27, 0, 40.5, 71)] },
-      { frames: { from: 3, to: 6 }, boxes: [box(-30.5, 0, 44, 66.5)] },
+      { frames: { from: 3, to: 6 }, boxes: [box(-30.5, 0, 44, 69)] },
       { frames: { from: 6, to: 8 }, boxes: [box(-31, 0, 44.5, 65)] },
       { frames: { from: 8, to: 17 }, boxes: [box(-31, 0, 44.5, 63.5)] },
       { frames: { from: 17, to: 23 }, boxes: [box(-28.5, 0, 42, 74)] },

@@ -20,6 +20,11 @@ export interface Motion {
    * where it hangs at rest, in world pixels: a braid's tip lagging behind the body.
    */
   readonly hang?: readonly Point[];
+  /**
+   * Where the frame falls in its strip, 0 (first frame) up to 1 (exclusive): a looping strip's
+   * last frame flows back into its first, so a wave driven by it (a tail, a mane) never jumps.
+   */
+  readonly phase?: number;
 }
 
 export const STILL: Motion = { vx: 0, vy: 0 };

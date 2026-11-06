@@ -13,15 +13,15 @@
       "sourceSize": { "w": 161, "h": 161 }
     },
     "2": {
-      "frame": { "x": 406, "y": 0, "w": 136, "h": 155 },
+      "frame": { "x": 406, "y": 0, "w": 136, "h": 157 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 8, "y": 5, "w": 136, "h": 155 },
+      "spriteSourceSize": { "x": 8, "y": 3, "w": 136, "h": 157 },
       "sourceSize": { "w": 161, "h": 161 }
     },
     "3": {
-      "frame": { "x": 542, "y": 0, "w": 146, "h": 154 },
+      "frame": { "x": 542, "y": 0, "w": 146, "h": 155 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 15, "y": 7, "w": 146, "h": 154 },
+      "spriteSourceSize": { "x": 15, "y": 6, "w": 146, "h": 155 },
       "sourceSize": { "w": 161, "h": 161 }
     },
     "4": {

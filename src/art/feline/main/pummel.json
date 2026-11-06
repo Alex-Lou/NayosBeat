@@ -1,13 +1,13 @@
 {
   "frames": {
     "0": {
-      "frame": { "x": 113, "y": 165, "w": 113, "h": 158 },
+      "frame": { "x": 0, "y": 488, "w": 113, "h": 158 },
       "trimmed": true,
       "spriteSourceSize": { "x": 0, "y": 7, "w": 113, "h": 158 },
       "sourceSize": { "w": 116, "h": 166 }
     },
     "1": {
-      "frame": { "x": 0, "y": 165, "w": 113, "h": 161 },
+      "frame": { "x": 0, "y": 327, "w": 113, "h": 161 },
       "trimmed": true,
       "spriteSourceSize": { "x": 0, "y": 4, "w": 113, "h": 161 },
       "sourceSize": { "w": 116, "h": 166 }
@@ -19,11 +19,11 @@
       "sourceSize": { "w": 116, "h": 166 }
     },
     "3": {
-      "frame": { "x": 113, "y": 0, "w": 115, "h": 163 },
+      "frame": { "x": 0, "y": 165, "w": 115, "h": 162 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 3, "w": 115, "h": 163 },
+      "spriteSourceSize": { "x": 0, "y": 4, "w": 115, "h": 162 },
       "sourceSize": { "w": 116, "h": 166 }
     }
   },
-  "meta": { "image": "pummel.png", "size": { "w": 228, "h": 326 } }
+  "meta": { "image": "pummel.png", "size": { "w": 115, "h": 646 } }
 }

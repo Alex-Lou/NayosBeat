@@ -40,7 +40,7 @@ const ALT_ATLASES = import.meta.glob<string>('./alt/**/*.json', {
 const IDLE_ATLASES = import.meta.glob<Atlas>('./*/idle.json', { eager: true, import: 'default' });
 
 const SHARED = {
-  portrait: { x: 26, y: 0, size: 58 },
+  portrait: { x: 24, y: 0, size: 58 },
   sheets: FELINE_SHEETS,
   clips: FELINE_CLIPS,
   cells: FELINE_CELLS,
