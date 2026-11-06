@@ -1,0 +1,65 @@
+{
+  "frames": {
+    "0": {
+      "frame": { "x": 441, "y": 0, "w": 9, "h": 50 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 28, "y": 59, "w": 9, "h": 50 },
+      "sourceSize": { "w": 64, "h": 169 }
+    },
+    "1": {
+      "frame": { "x": 417, "y": 0, "w": 24, "h": 110 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 22, "y": 30, "w": 24, "h": 110 },
+      "sourceSize": { "w": 64, "h": 169 }
+    },
+    "2": {
+      "frame": { "x": 338, "y": 0, "w": 44, "h": 154 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 11, "y": 8, "w": 44, "h": 154 },
+      "sourceSize": { "w": 64, "h": 169 }
+    },
+    "3": {
+      "frame": { "x": 0, "y": 0, "w": 61, "h": 169 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 3, "y": 0, "w": 61, "h": 169 },
+      "sourceSize": { "w": 64, "h": 169 }
+    },
+    "4": {
+      "frame": { "x": 61, "y": 0, "w": 61, "h": 169 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 2, "y": 0, "w": 61, "h": 169 },
+      "sourceSize": { "w": 64, "h": 169 }
+    },
+    "5": {
+      "frame": { "x": 122, "y": 0, "w": 61, "h": 169 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 2, "y": 0, "w": 61, "h": 169 },
+      "sourceSize": { "w": 64, "h": 169 }
+    },
+    "6": {
+      "frame": { "x": 183, "y": 0, "w": 61, "h": 169 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 3, "y": 0, "w": 61, "h": 169 },
+      "sourceSize": { "w": 64, "h": 169 }
+    },
+    "7": {
+      "frame": { "x": 244, "y": 0, "w": 30, "h": 167 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 18, "y": 1, "w": 30, "h": 167 },
+      "sourceSize": { "w": 64, "h": 169 }
+    },
+    "8": {
+      "frame": { "x": 274, "y": 0, "w": 64, "h": 165 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 0, "y": 4, "w": 64, "h": 165 },
+      "sourceSize": { "w": 64, "h": 169 }
+    },
+    "9": {
+      "frame": { "x": 382, "y": 0, "w": 35, "h": 114 },
+      "trimmed": true,
+      "spriteSourceSize": { "x": 15, "y": 29, "w": 35, "h": 114 },
+      "sourceSize": { "w": 64, "h": 169 }
+    }
+  },
+  "meta": { "image": "portal.png", "size": { "w": 450, "h": 169 } }
+}

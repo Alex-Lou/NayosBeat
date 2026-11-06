@@ -1,4 +1,4 @@
-import type { Clip, FighterClips } from '../types';
+import type { Clip, FighterArt, FighterClips, WorldEffect } from '../types';
 import type { FelineSheet } from './sheets';
 
 interface FelineClip extends Clip {
@@ -96,4 +96,34 @@ export const FELINE_CLIPS: FighterClips<FelineClip> = {
   intro: play('intro', [10, 8, 8, 8, 10, 8, 8, 10, 10, 10]),
   victory: play('victory', [6, 6, 6, 6, 8, 8, 8, 8], 4),
   timeOver: play('timeOver', [10, 10, 10, 10], 0),
+};
+
+/**
+ * The Rush's portals, fixed in the world (art-src/feline/portal.png: opening 0-2, swirl 3-6,
+ * closing 7-9). The entry opens at her hands as the move starts and closes once she is in (she is
+ * unseen from tick 9, jumping); the exit opens 50 px ahead, where she lands 42 px on (its centre
+ * at her chest), as she bursts out on tick 12, and swirls through her blow.
+ */
+const ENTRY: WorldEffect = {
+  frame: 0,
+  reach: 21,
+  clip: {
+    sheet: 'portal',
+    frames: [0, 1, 2, 3, 4, 5, 7, 8, 9],
+    ticks: [1, 1, 1, 2, 2, 2, 2, 2, 2],
+  },
+};
+const EXIT: WorldEffect = {
+  frame: 8,
+  reach: 50,
+  clip: {
+    sheet: 'portal',
+    frames: [0, 1, 2, 3, 4, 5, 6, 3, 4, 5, 6, 7, 8, 9],
+    ticks: [1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
+  },
+};
+
+export const FELINE_WORLD_FX: NonNullable<FighterArt['worldFx']> = {
+  specialForward: [ENTRY, EXIT],
+  specialForwardBoost: [ENTRY, EXIT],
 };

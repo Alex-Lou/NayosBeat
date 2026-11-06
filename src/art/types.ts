@@ -163,6 +163,17 @@ export type ClipId = StateClipId | MoveId | OptionalPoseId;
 export type FighterClips<C extends Clip = Clip> = Readonly<Record<StateClipId | CoreMoveId, C>> &
   Readonly<Partial<Record<OptionalMoveId | OptionalPoseId, C>>>;
 
+/**
+ * An effect a move leaves in the world: its clip, played once from the move's action frame
+ * `frame`, `reach` world px ahead of the fighter's feet as they are then. It stays where it
+ * opened whatever the fighter does next.
+ */
+export interface WorldEffect {
+  readonly frame: number;
+  readonly reach: number;
+  readonly clip: Clip;
+}
+
 export interface FighterArt {
   /** Prefix of the texture keys, unique per fighter. */
   readonly key: string;
@@ -175,6 +186,11 @@ export interface FighterArt {
    * its platine Remix), played on the match clock.
    */
   readonly projectiles?: Readonly<Partial<Record<MoveId, Clip>>>;
+  /**
+   * Effects some moves leave fixed in the world (Feline's portals), by move: each played once,
+   * on the match clock, from its action frame where the fighter stands then.
+   */
+  readonly worldFx?: Readonly<Partial<Record<MoveId, readonly WorldEffect[]>>>;
   /**
    * Front effects of some strips (energy, flashes, speed lines), drawn over both fighters:
    * image URL by strip name, frame i going with frame i of that strip; or by the name a clip
@@ -244,6 +260,9 @@ export function playedSheets(art: FighterArt): ReadonlySet<string> {
   const sheets = new Set(Object.values<Clip>(art.clips).map((clip) => clip.sheet));
   for (const clip of Object.values<Clip | undefined>(art.projectiles ?? {})) {
     if (clip) sheets.add(clip.sheet);
+  }
+  for (const effects of Object.values<readonly WorldEffect[] | undefined>(art.worldFx ?? {})) {
+    for (const effect of effects ?? []) sheets.add(effect.clip.sheet);
   }
   return sheets;
 }
