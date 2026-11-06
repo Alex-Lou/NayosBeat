@@ -1,35 +1,35 @@
 {
   "frames": {
     "0": {
-      "frame": { "x": 285, "y": 0, "w": 130, "h": 142 },
+      "frame": { "x": 0, "y": 274, "w": 105, "h": 115 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 51, "y": 16, "w": 130, "h": 142 },
-      "sourceSize": { "w": 184, "h": 158 }
+      "spriteSourceSize": { "x": 44, "y": 22, "w": 105, "h": 115 },
+      "sourceSize": { "w": 156, "h": 137 }
     },
     "1": {
-      "frame": { "x": 415, "y": 0, "w": 134, "h": 138 },
+      "frame": { "x": 0, "y": 389, "w": 108, "h": 112 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 13, "y": 20, "w": 134, "h": 138 },
-      "sourceSize": { "w": 184, "h": 158 }
+      "spriteSourceSize": { "x": 14, "y": 25, "w": 108, "h": 112 },
+      "sourceSize": { "w": 156, "h": 137 }
     },
     "2": {
-      "frame": { "x": 549, "y": 0, "w": 152, "h": 135 },
+      "frame": { "x": 0, "y": 501, "w": 123, "h": 110 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 23, "w": 152, "h": 135 },
-      "sourceSize": { "w": 184, "h": 158 }
+      "spriteSourceSize": { "x": 4, "y": 27, "w": 123, "h": 110 },
+      "sourceSize": { "w": 156, "h": 137 }
     },
     "3": {
-      "frame": { "x": 143, "y": 0, "w": 142, "h": 157 },
+      "frame": { "x": 0, "y": 0, "w": 124, "h": 137 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 42, "y": 1, "w": 142, "h": 157 },
-      "sourceSize": { "w": 184, "h": 158 }
+      "spriteSourceSize": { "x": 32, "y": 0, "w": 124, "h": 137 },
+      "sourceSize": { "w": 156, "h": 137 }
     },
     "4": {
-      "frame": { "x": 0, "y": 0, "w": 143, "h": 158 },
+      "frame": { "x": 0, "y": 137, "w": 124, "h": 137 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 5, "y": 0, "w": 143, "h": 158 },
-      "sourceSize": { "w": 184, "h": 158 }
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 124, "h": 137 },
+      "sourceSize": { "w": 156, "h": 137 }
     }
   },
-  "meta": { "image": "hitLow.png", "size": { "w": 701, "h": 158 } }
+  "meta": { "image": "hitLow.png", "size": { "w": 124, "h": 611 } }
 }

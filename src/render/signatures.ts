@@ -710,7 +710,7 @@ const FELINE_SIGNATURE: Signature = {
   discs: {},
   heavySwing: true,
   flares: true,
-  presence: { leds: { main: 0x88fff8, alt: 0xffb8e6 }, specks: 'diamond' },
+  // No presence: its aura, a grey veil round her silver-white mane, blurred her outline.
 };
 
 const SIGNATURES: Partial<Readonly<Record<FighterId, Signature>>> = {
