@@ -127,9 +127,10 @@ Tant qu'elles ne sont pas dessinées, le code dessine l'icône (la tête de Nayo
 Le buste d'un combattant sur l'écran de sélection : `art-src/<perso>/portrait.png`, gabarit `art-src/gabarits/<perso>/portrait.json`.
 
 - **96 × 96 px, une image**, dans la **palette du personnage**, avec ses numéros, comme les planches : l'écran de sélection montre aussi la tenue alt en match miroir, et **Tenue main / alt** fonctionne.
-- Le gabarit part d'un carré de 48 px autour de la tête de sa garde (la 1re image de `idle`), agrandi ×2 : le cadrage des vignettes actuelles (des carrés de 56 et 58 px), avec deux fois plus de pixels pour affiner. Chaque pixel de départ y est donc un bloc de 2 × 2.
+- Le gabarit part du buste dessiné par le code quand le personnage en a un (`Fighter.portrait`, `tools/sprites/portrait.ts` : Saphir), sinon d'un carré de 48 px autour de la tête de sa garde (la 1re image de `idle`), agrandi ×2 : le cadrage des vignettes actuelles (des carrés de 56 et 58 px), avec deux fois plus de pixels pour affiner. Chaque pixel de départ y est donc un bloc de 2 × 2.
 - `npm run sprites` l'installe dans les deux tenues : `src/art/<perso>/main/portrait.png` et `alt/portrait.png`. La vignette l'affiche en entier, agrandi.
-- Sans portrait dessiné, l'écran garde le carré découpé dans la garde, comme avant.
+- Watt a le premier portrait dessiné du dépôt (`art-src/watt/portrait.png`, `docs/watt.md` §16) : son ampoule Edison allumée, au pixel près, à pleine résolution.
+- Sans portrait dessiné, `npm run sprites` installe celui du code s'il y en a un, cadré de la même façon ; sinon, l'écran garde le carré découpé dans la garde, comme avant.
 
 ## Le stage (la rue devant L'Entrepôt)
 
