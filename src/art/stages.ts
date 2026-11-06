@@ -41,6 +41,12 @@ export interface StageMap {
   readonly ground: Ground;
   /** In each atmosphere it offers, the base one first. */
   readonly variants: readonly StageVariant[];
+  /**
+   * The light the place casts on the fighters, multiplied over their bodies (render only): a
+   * moonlit night bathes them in its blue, so they sit in the scene instead of over it. None:
+   * white, the fighters in their own colors.
+   */
+  readonly ambient?: number;
 }
 
 /**
@@ -224,6 +230,8 @@ export const STAGE_MAPS: readonly StageMap[] = (
       sheltered: false,
       ground: 'hard',
       variants: CYBER_ARENA,
+      // The moonlight's blue (its fighting area is b* −20 in CIELAB): the whites calm to L* ~83.
+      ambient: 0xd4daff,
     },
   ] satisfies StageMap[]
 ).filter(({ variants }) => variants.length > 0);
@@ -238,3 +246,8 @@ const OFFERED = new Set(['cyberarena']);
 export const OFFERED_STAGES: readonly StageMap[] = STAGE_MAPS.filter(({ name }) =>
   OFFERED.has(name),
 );
+
+/** The light the place `name` casts on the fighters (`StageMap.ambient`): white without one. */
+export function ambientOf(name: string | undefined): number {
+  return STAGE_MAPS.find((map) => map.name === name)?.ambient ?? 0xffffff;
+}
