@@ -75,18 +75,36 @@ describe('Sahel Sunset (docs/art/decor-sahel.md)', { timeout: 60_000 }, () => {
     expect(map?.variants[0]?.art.layers.map(({ name }) => name)).toEqual(['far', 'mid', 'floor']);
   });
 
-  it('animates the sun, the laundry, the birds, the lamps and the dust', async () => {
+  it('lives: the sun, the birds, the crowd, the laundry, the lamps, the fire, the smoke, the radio', async () => {
     const names = STAGE_PROPS.map(({ name }) => name);
     expect(names).toEqual([
       'sun-glow',
-      'laundry',
       'birds',
+      'crowd-left',
+      'crowd-centre',
+      'crowd-right',
+      'laundry',
       'lamp-awning',
       'lamp-street',
       'lamp-lane',
       'lamp-high',
-      'dust',
+      'brazier-glow',
+      'brazier-fire',
+      'brazier-smoke',
+      'grill-smoke',
+      'cone-street',
+      'cone-lane',
+      'moths',
+      'radio',
     ]);
+    // The crowd and the radio keep one beat: 30 steps, over the same 40 s loop.
+    for (const name of ['crowd-left', 'crowd-centre', 'crowd-right', 'radio']) {
+      const prop = STAGE_PROPS.find((candidate) => candidate.name === name);
+      expect(
+        prop?.timeline.reduce((sum, [, steps]) => sum + steps, 0),
+        name,
+      ).toBe(2400);
+    }
     const sheet = await decodeIndexedPng(
       await readFile(new URL('../../src/art/sahel/props.png', import.meta.url)),
     );

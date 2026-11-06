@@ -1,7 +1,7 @@
 # Le décor : Sahel Sunset, la rue du marché au coucher du soleil
 
 Statut : map jouable, adaptée de l'illustration fournie par le propriétaire (issue #155,
-commentaire `6660254649`). Le nom **Sahel Sunset** vient du Sahel, la bande de savane au sud du
+commentaire `6660254649`). La méthode générale est dans `docs/art/manifeste-pixel-art.md`. Le nom **Sahel Sunset** vient du Sahel, la bande de savane au sud du
 Sahara, et de la lumière du couchant qui baigne toute la scène.
 
 ## 1. L'intention
@@ -29,14 +29,16 @@ Chaque plan passe par la même chaîne :
 1. **Rééchantillonnage par aires**, en lumière linéaire : chaque pixel est la moyenne exacte de la
    zone de l'illustration qu'il couvre. Pas d'échantillonnage au plus proche, donc pas de bruit
    d'aliasing (c'était le défaut de « PNG » des versions précédentes).
-2. **Aplatissement de Kuwahara** : les dégradés peints deviennent des aplats, les contours restent ;
-   puis un **masque de netteté** (×1,5) redonne aux arêtes la dureté de celles des personnages.
+2. **Aplatissement de Kuwahara** (rayon 2) : les dégradés peints deviennent des aplats, les
+   contours restent ; puis un **masque de netteté** (×1,6) redonne aux arêtes la dureté de celles
+   des personnages.
 3. **Palette k-means en Lab**, petite et propre à chaque plan ; pas de tramage sur la rue et la
    route, un tramage léger dans le ciel seulement, pour ses bandes.
 4. **Pixels orphelins supprimés** : un pixel seul de sa couleur prend celle de ses voisins. Les
    amas sont nets, comme sur les sprites.
-5. **Contour** : un pixel sombre là où la rue rencontre le ciel, et sur le côté sombre des arêtes
-   (écart de clarté de 16 en Lab), comme le trait des personnages, en plus doux.
+5. **Contour** : un pixel sombre (60 % de la clarté) là où la rue rencontre le ciel, et sur le côté
+   sombre des arêtes (écart de clarté de 13 en Lab), comme le trait des personnages, en plus doux ;
+   une dernière passe ôte les miettes de contour.
 
 ### La découpe du ciel
 
@@ -58,7 +60,8 @@ ligne du sol, à la rangée 460. `far` la prend à 1 200 pixels de large.
 
 ### Le réglage
 
-Les plans peints sont un peu moins saturés que les personnages : les combattants s'en détachent.
+La rue garde sa saturation (×1) avec un contraste relevé (×1,06) : nette, mais sous les
+personnages, qui gardent leur trait plus sombre.
 
 ## 3. Le sol, dessiné
 
@@ -71,7 +74,7 @@ de l'écran :
 - dans `mid`, à partir de la rangée 404, chaque pixel de terre nue de la peinture (sa terre cuite,
   ou le gris de sa poussière) est remplacé par la même terre dessinée ; les pneus, les fûts, les
   caisses, les pieds et l'herbe restent ceux de la peinture, et les miettes de peinture de moins de
-  48 pixels perdues dans la terre disparaissent.
+  120 pixels perdues dans la terre disparaissent.
 
 Ce qui fait le dessin :
 
@@ -83,28 +86,50 @@ Ce qui fait le dessin :
   les ornières ont leur lèvre éclairée et leur fond dans l'ombre ;
 - **la matière** : une terre cuite en 10 tons (celle de la rue peinte), des mottes sombres à sommet
   clair et des plaques tassées, des cailloux en amas là où la terre est meuble, des fissures, deux
-  flaques qui gardent le violet et l'or du ciel, quelques touffes sèches.
+  flaques qui gardent le violet et l'or du ciel, quelques touffes sèches ;
+- **les bords, à la Guilty Gear / BlazBlue** : chaque caillou a trois valeurs plates, un contour
+  sombre, un liseré de soleil sur le dessus et une ombre portée à bord dur ; les mottes une arête
+  claire en haut et une ligne sombre en bas ; les fissures un trait du ton le plus sombre.
 
 Le tramage ordonné n'intervient qu'au milieu de chaque marche de ton : le reste est en aplats.
 
-## 4. Les animations
+## 4. La vie
 
-Toutes sont des props `overlay`, dans `tools/stage/sahel/index.ts`, sur le plan de ce qu'elles
-animent.
+Toutes les animations sont des props `overlay`, sur le plan de ce qu'elles animent, dans une
+**palette commune** (`tools/stage/sahel/shared.ts`) : les couleurs de `mid` d'abord, puis celles
+de chaque effet.
+
+### La foule (`crowd.ts`)
+
+Trois zones de foule — sous l'auvent à gauche, au fond de la rue, devant l'étal à droite — et
+33 personnes relevées à la main (milieu et haut de la tête). Leurs propres pixels sombres (tête et
+épaules) sont repris dans `mid.png` et déplacés par pixels entiers, sur le rythme du Loading Dock :
+
+- un **beat** de 30 pas (120 par minute) sur une boucle de 2 400 pas (40 s) : une personne sur deux
+  hoche la tête d'un pixel, l'autre au temps suivant ;
+- le **drop**, 8 temps au milieu de la boucle : tout le monde monte de 2 px, deux personnes sur
+  trois lèvent les bras (les deux, ou un qui salue), dans le ton le plus sombre de leur torse, le
+  poing liseré de soleil.
+
+### Les effets (`vfx.ts`, `index.ts`)
 
 | Prop | Plan | Ce qu'il fait | Cycle |
 |---|---|---|---|
 | `sun-glow` | `far` | le soleil respire derrière la rue | 4 images, 240 pas |
+| `birds` | `far` | une nuée traverse le couchant, ailes hautes et basses | traversée de 400 pas |
+| `crowd-left`, `crowd-centre`, `crowd-right` | `mid` | la foule vit sur le beat, lève les bras au drop | 2 400 pas |
 | `laundry` | `mid` | un reflet chaud parcourt le linge étendu | 4 images, 96 pas |
-| `birds` | `far` | une nuée traverse le couchant, ailes hautes et basses | 2 images, traversée de 400 pas |
-| `lamp-awning` | `mid` | l'ampoule sous l'auvent respire | 6 images, 270 pas |
-| `lamp-street` | `mid` | le lampadaire du carrefour respire, à son propre rythme | 6 images, 270 pas |
-| `lamp-lane` | `mid` | la lampe de la ruelle suit, plus discrète | 6 images, 270 pas |
-| `lamp-high` | `mid` | le grand lampadaire de droite s'allume et s'apaise | 6 images, 270 pas |
-| `dust` | `floor` | la poussière dorée dérive au ras de la route | 5 images, 200 pas |
+| `lamp-awning`, `lamp-street`, `lamp-lane`, `lamp-high` | `mid` | les ampoules respirent, chacune à sa phase | 6 images, 270 pas |
+| `brazier-glow` | `mid` | la lueur du fût qui brûle, sur le fût, la Jeep et la terre | 3 images, irrégulier |
+| `brazier-fire` | `mid` | les flammes (4 tons francs) et leurs étincelles | 6 images, 30 pas |
+| `brazier-smoke`, `grill-smoke` | `mid` | la fumée du fût et du grill de l'étal : bouffées à bord dur, face éclairée, contour | 8 images, 72 et 80 pas |
+| `cone-street`, `cone-lane` | `mid` | les cônes de lumière des lampadaires, qui vacillent parfois | 2 images, irrégulier |
+| `moths` | `mid` | des papillons de nuit tournent autour du grand lampadaire | 8 images, 32 pas |
+| `radio` | `mid` | la radio sur la caisse, ses haut-parleurs battent le beat | 2 400 pas |
 
-Les changements sont des images entières, sans interpolation (D23). Les lampes ont chacune leur
-phase et aucune ne produit d'éclair plein écran.
+Les changements sont des images entières (D23) ; seules les lumières sont translucides, en anneaux
+à bord net. La poussière pleine largeur de la version précédente est retirée : 1,4 Mo de mémoire
+vidéo pour presque rien à l'écran.
 
 ## 5. Le branchement
 
@@ -113,7 +138,10 @@ phase et aucune ne produit d'éclair plein écran.
 - `src/art/stages.ts` : la map dans `STAGE_MAPS` (« Lieu », entraînement, budgets).
 - `src/render/stage-view.ts` : `sahel` dans `FLASH_OUTSIDE_STAGES`.
 - `tests/tools/stage-sahel.test.ts` : les trois plans, la découpe, les palettes, les pixels
-  orphelins (moins de 8 % sur les plans peints, 12 % sur le sol tramé), la map et les huit props.
+  orphelins (moins de 8 % sur les plans peints, 12 % sur le sol tramé), la map, les 18 props et le
+  beat commun.
+- `tests/tools/stage-drawn.test.ts` : Sahel, hors de l'enveloppe des flashs, est exempté de la
+  bande de clarté des décors de minuit, comme Dock, Rooftop et Temple.
 
 ## 6. La clarté et les flashs
 
@@ -129,7 +157,9 @@ flashs restent prises sur les décors de référence (`docs/flashs.md` §3).
 3. Grain 1 ×, médian et 32 couleurs : mieux, mais toujours une seule image plate.
 4. Une vraie conversion en pixel art, au grain des personnages, en trois plans ; mais le sol restait
    la peinture, flou sous les pieds.
-5. **Cette version** : le sol est dessiné en perspective, la rue est plus nette.
+5. Le sol dessiné en perspective, la rue plus nette.
+6. **Cette version** : la rue au grain des personnages (Kuwahara 2, contours), la terre accentuée à
+   la Guilty Gear / BlazBlue, la foule vivante, le feu, la fumée, les lumières et la radio.
 
 Un décor entièrement redessiné en code a aussi été essayé : plus cohérent en théorie, mais plat et
 pauvre à côté de l'illustration ; écarté.
