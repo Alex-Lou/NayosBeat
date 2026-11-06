@@ -1,35 +1,35 @@
 {
   "frames": {
     "0": {
-      "frame": { "x": 0, "y": 0, "w": 91, "h": 167 },
+      "frame": { "x": 0, "y": 0, "w": 88, "h": 164 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 0, "w": 91, "h": 167 },
-      "sourceSize": { "w": 91, "h": 167 }
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 88, "h": 164 },
+      "sourceSize": { "w": 88, "h": 164 }
     },
     "1": {
-      "frame": { "x": 0, "y": 167, "w": 88, "h": 163 },
+      "frame": { "x": 0, "y": 164, "w": 88, "h": 161 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 3, "y": 4, "w": 88, "h": 163 },
-      "sourceSize": { "w": 91, "h": 167 }
+      "spriteSourceSize": { "x": 0, "y": 3, "w": 88, "h": 161 },
+      "sourceSize": { "w": 88, "h": 164 }
     },
     "2": {
-      "frame": { "x": 0, "y": 652, "w": 88, "h": 157 },
+      "frame": { "x": 0, "y": 643, "w": 88, "h": 157 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 3, "y": 9, "w": 88, "h": 157 },
-      "sourceSize": { "w": 91, "h": 167 }
+      "spriteSourceSize": { "x": 0, "y": 6, "w": 88, "h": 157 },
+      "sourceSize": { "w": 88, "h": 164 }
     },
     "3": {
-      "frame": { "x": 0, "y": 330, "w": 88, "h": 161 },
+      "frame": { "x": 0, "y": 485, "w": 88, "h": 158 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 3, "y": 6, "w": 88, "h": 161 },
-      "sourceSize": { "w": 91, "h": 167 }
+      "spriteSourceSize": { "x": 0, "y": 6, "w": 88, "h": 158 },
+      "sourceSize": { "w": 88, "h": 164 }
     },
     "4": {
-      "frame": { "x": 0, "y": 491, "w": 88, "h": 161 },
+      "frame": { "x": 0, "y": 325, "w": 88, "h": 160 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 3, "y": 5, "w": 88, "h": 161 },
-      "sourceSize": { "w": 91, "h": 167 }
+      "spriteSourceSize": { "x": 0, "y": 3, "w": 88, "h": 160 },
+      "sourceSize": { "w": 88, "h": 164 }
     }
   },
-  "meta": { "image": "hitHigh.png", "size": { "w": 91, "h": 809 } }
+  "meta": { "image": "hitHigh.png", "size": { "w": 88, "h": 800 } }
 }

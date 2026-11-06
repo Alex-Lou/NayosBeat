@@ -61,6 +61,10 @@ export const FELINE: Fighter = {
   body: BODY,
   poses: (sheet) => (FELINE_POSES as Readonly<Record<string, readonly Pose[]>>)[sheet],
   timing: (sheet) => timingOf(FELINE_CLIPS, sheet, SHEETS[sheet]?.frames ?? 0),
+  springs: [
+    { stiffness: 0.24, damping: 0.32 },
+    { stiffness: 0.16, damping: 0.28 },
+  ],
   lighting: FELINE_LIGHTING,
   draw: drawFeline,
   fx: EFFECTS,

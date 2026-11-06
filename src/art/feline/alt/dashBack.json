@@ -1,41 +1,41 @@
 {
   "frames": {
     "0": {
-      "frame": { "x": 88, "y": 170, "w": 88, "h": 161 },
+      "frame": { "x": 0, "y": 171, "w": 88, "h": 160 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 7, "y": 11, "w": 88, "h": 161 },
+      "spriteSourceSize": { "x": 7, "y": 12, "w": 88, "h": 160 },
       "sourceSize": { "w": 98, "h": 172 }
     },
     "1": {
-      "frame": { "x": 93, "y": 0, "w": 90, "h": 167 },
+      "frame": { "x": 93, "y": 0, "w": 87, "h": 165 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 7, "y": 0, "w": 90, "h": 167 },
+      "spriteSourceSize": { "x": 10, "y": 2, "w": 87, "h": 165 },
       "sourceSize": { "w": 98, "h": 172 }
     },
     "2": {
-      "frame": { "x": 0, "y": 0, "w": 93, "h": 170 },
+      "frame": { "x": 0, "y": 0, "w": 93, "h": 171 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 1, "w": 93, "h": 170 },
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 93, "h": 171 },
       "sourceSize": { "w": 98, "h": 172 }
     },
     "3": {
-      "frame": { "x": 176, "y": 170, "w": 93, "h": 158 },
+      "frame": { "x": 88, "y": 171, "w": 93, "h": 159 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 5, "y": 14, "w": 93, "h": 158 },
+      "spriteSourceSize": { "x": 5, "y": 13, "w": 93, "h": 159 },
       "sourceSize": { "w": 98, "h": 172 }
     },
     "4": {
-      "frame": { "x": 0, "y": 170, "w": 88, "h": 162 },
+      "frame": { "x": 181, "y": 171, "w": 88, "h": 159 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 7, "y": 10, "w": 88, "h": 162 },
+      "spriteSourceSize": { "x": 7, "y": 13, "w": 88, "h": 159 },
       "sourceSize": { "w": 98, "h": 172 }
     },
     "5": {
-      "frame": { "x": 183, "y": 0, "w": 88, "h": 164 },
+      "frame": { "x": 180, "y": 0, "w": 88, "h": 163 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 7, "y": 8, "w": 88, "h": 164 },
+      "spriteSourceSize": { "x": 7, "y": 9, "w": 88, "h": 163 },
       "sourceSize": { "w": 98, "h": 172 }
     }
   },
-  "meta": { "image": "dashBack.png", "size": { "w": 271, "h": 332 } }
+  "meta": { "image": "dashBack.png", "size": { "w": 269, "h": 331 } }
 }

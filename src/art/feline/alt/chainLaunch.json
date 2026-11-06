@@ -1,47 +1,47 @@
 {
   "frames": {
     "0": {
-      "frame": { "x": 0, "y": 879, "w": 109, "h": 156 },
+      "frame": { "x": 189, "y": 194, "w": 108, "h": 155 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 1, "y": 39, "w": 109, "h": 156 },
-      "sourceSize": { "w": 130, "h": 196 }
+      "spriteSourceSize": { "x": 1, "y": 39, "w": 108, "h": 155 },
+      "sourceSize": { "w": 130, "h": 195 }
     },
     "1": {
-      "frame": { "x": 0, "y": 1035, "w": 104, "h": 155 },
+      "frame": { "x": 297, "y": 194, "w": 103, "h": 154 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 40, "w": 104, "h": 155 },
-      "sourceSize": { "w": 130, "h": 196 }
+      "spriteSourceSize": { "x": 0, "y": 40, "w": 103, "h": 154 },
+      "sourceSize": { "w": 130, "h": 195 }
     },
     "2": {
-      "frame": { "x": 0, "y": 195, "w": 112, "h": 182 },
+      "frame": { "x": 121, "y": 0, "w": 116, "h": 181 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 16, "y": 13, "w": 112, "h": 182 },
-      "sourceSize": { "w": 130, "h": 196 }
+      "spriteSourceSize": { "x": 12, "y": 13, "w": 116, "h": 181 },
+      "sourceSize": { "w": 130, "h": 195 }
     },
     "3": {
-      "frame": { "x": 0, "y": 0, "w": 117, "h": 195 },
+      "frame": { "x": 0, "y": 0, "w": 121, "h": 194 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 13, "y": 0, "w": 117, "h": 195 },
-      "sourceSize": { "w": 130, "h": 196 }
+      "spriteSourceSize": { "x": 9, "y": 0, "w": 121, "h": 194 },
+      "sourceSize": { "w": 130, "h": 195 }
     },
     "4": {
-      "frame": { "x": 0, "y": 377, "w": 95, "h": 174 },
+      "frame": { "x": 237, "y": 0, "w": 101, "h": 173 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 16, "y": 21, "w": 95, "h": 174 },
-      "sourceSize": { "w": 130, "h": 196 }
+      "spriteSourceSize": { "x": 10, "y": 21, "w": 101, "h": 173 },
+      "sourceSize": { "w": 130, "h": 195 }
     },
     "5": {
-      "frame": { "x": 0, "y": 551, "w": 102, "h": 164 },
+      "frame": { "x": 0, "y": 194, "w": 101, "h": 163 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 6, "y": 32, "w": 102, "h": 164 },
-      "sourceSize": { "w": 130, "h": 196 }
+      "spriteSourceSize": { "x": 6, "y": 32, "w": 101, "h": 163 },
+      "sourceSize": { "w": 130, "h": 195 }
     },
     "6": {
-      "frame": { "x": 0, "y": 715, "w": 88, "h": 164 },
+      "frame": { "x": 101, "y": 194, "w": 88, "h": 163 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 6, "y": 31, "w": 88, "h": 164 },
-      "sourceSize": { "w": 130, "h": 196 }
+      "spriteSourceSize": { "x": 6, "y": 31, "w": 88, "h": 163 },
+      "sourceSize": { "w": 130, "h": 195 }
     }
   },
-  "meta": { "image": "chainLaunch.png", "size": { "w": 117, "h": 1190 } }
+  "meta": { "image": "chainLaunch.png", "size": { "w": 400, "h": 357 } }
 }

@@ -1,35 +1,35 @@
 {
   "frames": {
     "0": {
-      "frame": { "x": 0, "y": 0, "w": 129, "h": 163 },
+      "frame": { "x": 0, "y": 0, "w": 129, "h": 162 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 1, "w": 129, "h": 163 },
-      "sourceSize": { "w": 143, "h": 164 }
+      "spriteSourceSize": { "x": 0, "y": 1, "w": 129, "h": 162 },
+      "sourceSize": { "w": 143, "h": 163 }
     },
     "1": {
-      "frame": { "x": 418, "y": 0, "w": 143, "h": 161 },
+      "frame": { "x": 418, "y": 0, "w": 143, "h": 160 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 2, "w": 143, "h": 161 },
-      "sourceSize": { "w": 143, "h": 164 }
+      "spriteSourceSize": { "x": 0, "y": 2, "w": 143, "h": 160 },
+      "sourceSize": { "w": 143, "h": 163 }
     },
     "2": {
-      "frame": { "x": 129, "y": 0, "w": 113, "h": 163 },
+      "frame": { "x": 217, "y": 0, "w": 113, "h": 161 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 1, "w": 113, "h": 163 },
-      "sourceSize": { "w": 143, "h": 164 }
+      "spriteSourceSize": { "x": 0, "y": 2, "w": 113, "h": 161 },
+      "sourceSize": { "w": 143, "h": 163 }
     },
     "3": {
-      "frame": { "x": 330, "y": 0, "w": 88, "h": 162 },
+      "frame": { "x": 330, "y": 0, "w": 88, "h": 161 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 1, "w": 88, "h": 162 },
-      "sourceSize": { "w": 143, "h": 164 }
+      "spriteSourceSize": { "x": 0, "y": 1, "w": 88, "h": 161 },
+      "sourceSize": { "w": 143, "h": 163 }
     },
     "4": {
-      "frame": { "x": 242, "y": 0, "w": 88, "h": 163 },
+      "frame": { "x": 129, "y": 0, "w": 88, "h": 162 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 0, "w": 88, "h": 163 },
-      "sourceSize": { "w": 143, "h": 164 }
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 88, "h": 162 },
+      "sourceSize": { "w": 143, "h": 163 }
     }
   },
-  "meta": { "image": "jabRepeat.png", "size": { "w": 561, "h": 163 } }
+  "meta": { "image": "jabRepeat.png", "size": { "w": 561, "h": 162 } }
 }

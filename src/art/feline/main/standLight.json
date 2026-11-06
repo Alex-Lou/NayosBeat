@@ -1,41 +1,41 @@
 {
   "frames": {
     "0": {
-      "frame": { "x": 0, "y": 0, "w": 103, "h": 164 },
+      "frame": { "x": 0, "y": 0, "w": 102, "h": 163 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 0, "w": 103, "h": 164 },
-      "sourceSize": { "w": 143, "h": 164 }
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 102, "h": 163 },
+      "sourceSize": { "w": 143, "h": 163 }
     },
     "1": {
-      "frame": { "x": 103, "y": 0, "w": 129, "h": 163 },
+      "frame": { "x": 102, "y": 0, "w": 129, "h": 162 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 1, "w": 129, "h": 163 },
-      "sourceSize": { "w": 143, "h": 164 }
+      "spriteSourceSize": { "x": 0, "y": 1, "w": 129, "h": 162 },
+      "sourceSize": { "w": 143, "h": 163 }
     },
     "2": {
-      "frame": { "x": 521, "y": 0, "w": 143, "h": 161 },
+      "frame": { "x": 319, "y": 0, "w": 143, "h": 161 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 2, "w": 143, "h": 161 },
-      "sourceSize": { "w": 143, "h": 164 }
+      "spriteSourceSize": { "x": 0, "y": 1, "w": 143, "h": 161 },
+      "sourceSize": { "w": 143, "h": 163 }
     },
     "3": {
-      "frame": { "x": 232, "y": 0, "w": 113, "h": 163 },
+      "frame": { "x": 462, "y": 0, "w": 113, "h": 161 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 1, "w": 113, "h": 163 },
-      "sourceSize": { "w": 143, "h": 164 }
+      "spriteSourceSize": { "x": 0, "y": 2, "w": 113, "h": 161 },
+      "sourceSize": { "w": 143, "h": 163 }
     },
     "4": {
-      "frame": { "x": 433, "y": 0, "w": 88, "h": 162 },
+      "frame": { "x": 575, "y": 0, "w": 88, "h": 161 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 1, "w": 88, "h": 162 },
-      "sourceSize": { "w": 143, "h": 164 }
+      "spriteSourceSize": { "x": 0, "y": 1, "w": 88, "h": 161 },
+      "sourceSize": { "w": 143, "h": 163 }
     },
     "5": {
-      "frame": { "x": 345, "y": 0, "w": 88, "h": 163 },
+      "frame": { "x": 231, "y": 0, "w": 88, "h": 162 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 0, "w": 88, "h": 163 },
-      "sourceSize": { "w": 143, "h": 164 }
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 88, "h": 162 },
+      "sourceSize": { "w": 143, "h": 163 }
     }
   },
-  "meta": { "image": "standLight.png", "size": { "w": 664, "h": 164 } }
+  "meta": { "image": "standLight.png", "size": { "w": 663, "h": 163 } }
 }
