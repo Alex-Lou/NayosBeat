@@ -8,7 +8,10 @@ import type { Rgba } from '../../sprites/png.ts';
 import { Canvas } from '../kit/canvas.ts';
 import type { CodeMap, CodeProp, CodeStage } from '../kit/stage.ts';
 import { imageOf, sizeOf } from '../kit/stage.ts';
+import { crowdProps } from './crowd.ts';
 import { drawSahelFloor, FLOOR_PALETTE } from './floor.ts';
+import { enlist, imageIn } from './shared.ts';
+import { vfxProps } from './vfx.ts';
 
 const BLANK: Rgba = { r: 0, g: 0, b: 0, a: 0 };
 
@@ -23,6 +26,7 @@ const LAMP: readonly Rgba[] = [
   { r: 255, g: 220, b: 140, a: 75 },
   { r: 255, g: 178, b: 86, a: 110 },
 ];
+const LAMP_AT = enlist(LAMP);
 
 const CLOTH: readonly Rgba[] = [
   { r: 0, g: 0, b: 0, a: 0 },
@@ -30,6 +34,7 @@ const CLOTH: readonly Rgba[] = [
   { r: 255, g: 214, b: 142, a: 105 },
   { r: 255, g: 190, b: 112, a: 145 },
 ];
+const CLOTH_AT = enlist(CLOTH);
 
 const BIRD: readonly Rgba[] = [
   { r: 0, g: 0, b: 0, a: 0 },
@@ -37,14 +42,7 @@ const BIRD: readonly Rgba[] = [
   { r: 84, g: 44, b: 34, a: 190 },
   { r: 124, g: 66, b: 46, a: 150 },
 ];
-
-const DUST: readonly Rgba[] = [
-  { r: 0, g: 0, b: 0, a: 0 },
-  { r: 255, g: 240, b: 196, a: 55 },
-  { r: 255, g: 218, b: 148, a: 80 },
-  { r: 255, g: 194, b: 112, a: 110 },
-  { r: 255, g: 248, b: 218, a: 140 },
-];
+const BIRD_AT = enlist(BIRD);
 
 const SUN: readonly Rgba[] = [
   { r: 0, g: 0, b: 0, a: 0 },
@@ -52,6 +50,7 @@ const SUN: readonly Rgba[] = [
   { r: 255, g: 202, b: 118, a: 32 },
   { r: 255, g: 172, b: 86, a: 48 },
 ];
+const SUN_AT = enlist(SUN);
 
 /**
  * Where a point of the illustration lands in the middle layer, from where it was in the far one
@@ -134,7 +133,7 @@ function lampFrame(
       3,
     );
   }
-  return imageOf(canvas, LAMP);
+  return imageIn(canvas, LAMP_AT);
 }
 
 function lampProp(spec: LampSpec): CodeProp {
@@ -171,16 +170,16 @@ function laundryFrame(frame: number): ReturnType<typeof imageOf> {
       canvas.fill(left + 1, top + 1, Math.max(1, width - 6), 1, 3);
     }
   }
-  return imageOf(canvas, CLOTH);
+  return imageIn(canvas, CLOTH_AT);
 }
 
 /** A small flock crosses the sunset, wings up, wings down. */
 function birdFrame(frame: number): ReturnType<typeof imageOf> {
-  const canvas = new Canvas(600, 120);
+  const canvas = new Canvas(220, 60);
   if (frame > 0) {
     for (let bird = 0; bird < 8; bird++) {
-      const x = 18 + Math.floor(hash(bird * 19) * 560);
-      const y = 12 + Math.floor(hash(bird * 23) * 92);
+      const x = 10 + Math.floor(hash(bird * 19) * 196);
+      const y = 8 + Math.floor(hash(bird * 23) * 44);
       const size = 3 + Math.floor(hash(bird * 29) * 3);
       const lift = frame === 1 ? -size : size;
       const color = 1 + Math.floor(hash(bird * 31) * 3);
@@ -189,23 +188,7 @@ function birdFrame(frame: number): ReturnType<typeof imageOf> {
       canvas.set(x, y - 1, color);
     }
   }
-  return imageOf(canvas, BIRD);
-}
-
-/** Golden dust drifts over the road, low and slow. */
-function dustFrame(frame: number): ReturnType<typeof imageOf> {
-  const canvas = new Canvas(960, 72);
-  if (frame > 0) {
-    for (let mote = 0; mote < 48; mote++) {
-      const drift = Math.round(hash(mote * 41 + frame) * 3) - 1;
-      const x = Math.floor(hash(mote * 37) * 950) + drift + frame;
-      const y = Math.floor(hash(mote * 43) * 68) + (frame % 3) - 1;
-      const color = 1 + Math.floor(hash(mote * 47 + frame) * 4);
-      canvas.set(x % 960, Math.max(0, Math.min(71, y)), color);
-      if (hash(mote * 53 + frame) > 0.72) canvas.set((x + 1) % 960, y, color);
-    }
-  }
-  return imageOf(canvas, DUST);
+  return imageIn(canvas, BIRD_AT);
 }
 
 /** The sun's breath, behind the street. */
@@ -217,7 +200,7 @@ function sunFrame(frame: number): ReturnType<typeof imageOf> {
     canvas.ellipse(40, 38, 40, 24, 2);
     canvas.ellipse(50, 44, 20, 12, 3);
   }
-  return imageOf(canvas, SUN);
+  return imageIn(canvas, SUN_AT);
 }
 
 const SUN_GLOW: CodeProp = {
@@ -251,25 +234,10 @@ const LAUNDRY: CodeProp = {
 const BIRDS: CodeProp = {
   name: 'birds',
   layer: 'far',
-  rect: { x: 300, y: 30, width: 600, height: 120 },
+  rect: { x: 500, y: 40, width: 220, height: 60 },
   timeline: Array.from({ length: 40 }, (_, flap): [number, number] => [1 + (flap % 2), 10]),
   frames: Array.from({ length: 3 }, (_, frame) => birdFrame(frame)),
   drift: { from: -900, to: 900, start: 0, steps: 400 },
-  overlay: true,
-};
-
-const ROAD_DUST: CodeProp = {
-  name: 'dust',
-  layer: 'floor',
-  rect: { x: 480, y: 4, width: 960, height: 72 },
-  timeline: [
-    [1, 40],
-    [2, 40],
-    [3, 40],
-    [4, 40],
-    [5, 40],
-  ],
-  frames: Array.from({ length: 6 }, (_, frame) => dustFrame(frame)),
   overlay: true,
 };
 
@@ -283,7 +251,7 @@ export function drawSahel(): CodeStage {
       mid: blank('mid'),
       floor: imageOf(drawSahelFloor(floor.width, floor.height), FLOOR_PALETTE),
     },
-    props: [SUN_GLOW, LAUNDRY, BIRDS, ...LAMPS.map(lampProp), ROAD_DUST],
+    props: [SUN_GLOW, BIRDS, ...crowdProps(), LAUNDRY, ...LAMPS.map(lampProp), ...vfxProps()],
   };
   return drawn;
 }

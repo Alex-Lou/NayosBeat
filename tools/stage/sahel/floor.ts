@@ -99,18 +99,28 @@ function rut(canvas: Canvas, top0: number, centre: number, seed: number): void {
 function stone(canvas: Canvas, x: number, y: number, size: number, seed: number): void {
   const w = size;
   const h = Math.max(2, Math.round(size * 0.55));
-  // Its shadow, toward the viewer.
-  canvas.ellipse(x - 1, y + Math.ceil(h / 2), w + 2, Math.max(2, h - 1), at(EARTH, 1));
-  canvas.paint(x, y, w, h, (px, py) => {
+  const inside = (px: number, py: number): boolean => {
     const nx = (px + 0.5 - (x + w / 2)) / (w / 2);
     const ny = (py + 0.5 - (y + h / 2)) / (h / 2);
-    const d = nx * nx + ny * ny;
-    if (d > 1) return undefined;
-    // Lit on top, dark below; a rim of light on its far edge.
-    let level = 2.6 - ny * 1.6 + (hash(seed, px, py) - 0.5) * 0.6;
-    if (ny < -0.55) level += 1.4;
-    if (d > 0.7 && ny > 0.2) level -= 1;
-    return tone(STONE, level, px, py);
+    return nx * nx + ny * ny <= 1;
+  };
+  // Its shadow, toward the viewer, hard-edged.
+  canvas.ellipse(x, y + Math.ceil(h / 2), w + 2, Math.max(2, h), at(EARTH, 0));
+  canvas.paint(x, y, w, h, (px, py) => {
+    if (!inside(px, py)) return undefined;
+    const ny = (py + 0.5 - (y + h / 2)) / (h / 2);
+    // Three flat values, lit on top, dark below, as the fighters are shaded.
+    const level = ny < -0.35 ? 3.3 : ny < 0.35 ? 2.1 : 1.2;
+    return tone(STONE, level + (hash(seed, px, py) - 0.5) * 0.3, px, py);
+  });
+  // The contour, as the fighters have theirs: dark below and on the sides, a rim of sun on top.
+  if (size < 4) return;
+  canvas.paint(x - 1, y - 1, w + 2, h + 2, (px, py) => {
+    if (inside(px, py)) return undefined;
+    const touches =
+      inside(px - 1, py) || inside(px + 1, py) || inside(px, py - 1) || inside(px, py + 1);
+    if (!touches) return undefined;
+    return inside(px, py + 1) ? at(STONE, 4) : at(EARTH, 0);
   });
 }
 
@@ -122,7 +132,7 @@ function crack(canvas: Canvas, top0: number, x: number, y: number, length: numbe
     const turn = hash(seed, step) < 0.3 ? (hash(seed, step, 1) < 0.5 ? -1 : 1) : 0;
     cx += 1;
     cy = Math.max(top0 + 2, Math.min(top0 + canvas.height - 2, cy + turn));
-    canvas.set(cx, cy - top0, at(EARTH, 1));
+    canvas.set(cx, cy - top0, at(EARTH, 0));
     canvas.set(cx, cy - 1 - top0, tone(EARTH, earthLevel(cx, cy - 1, seed) + 1, cx, cy));
     if (hash(seed, step, 2) < 0.12) {
       // A branch.
@@ -207,21 +217,28 @@ export function paintEarth(canvas: Canvas, top0: number, from: number, seed = 31
     const h = Math.max(1, Math.round(w * 0.28));
     const dark = hash(seed + 63, i) < 0.6;
     const level = lightAt(y) + (dark ? -1.6 : 1.1);
-    canvas.paint(x, y - top0, w, h, (px, py) => {
+    const inClod = (px: number, sy: number): boolean => {
       const nx = (px + 0.5 - (x + w / 2)) / (w / 2);
-      const ny = (py + top0 + 0.5 - (y + h / 2)) / (h / 2);
-      if (nx * nx + ny * ny > 1) return undefined;
-      return tone(EARTH, level + (dark && ny < -0.3 ? 1.6 : 0), px, py + top0);
+      const ny = (sy + 0.5 - (y + h / 2)) / (h / 2);
+      return nx * nx + ny * ny <= 1;
+    };
+    canvas.paint(x, y - top0, w, h, (px, py) => {
+      const sy = py + top0;
+      if (!inClod(px, sy)) return undefined;
+      // A dark clod: its lit top edge, its dark underside; a packed patch: flat and pale.
+      if (dark && !inClod(px, sy - 1)) return tone(EARTH, level + 2.6, px, sy);
+      if (dark && !inClod(px, sy + 1)) return at(EARTH, 0);
+      return tone(EARTH, level, px, sy);
     });
   }
   // Stones: in patches, where the earth is loose; tiny far away, larger near.
-  for (let i = 0; i < 2600; i++) {
+  for (let i = 0; i < 800; i++) {
     const y = y0 + 2 + Math.floor(hash(seed + 30, i) * (bottom - y0 - 4));
     const x = Math.floor(hash(seed + 31, i) * width);
     const s = scaleAt(y);
     const loose = noise(seed + 34, x / s, y / s, 70);
     if (loose < 0.52 || hash(seed + 35, i) > (loose - 0.52) * 3.2) continue;
-    const size = Math.round((0.8 + hash(seed + 32, i) * 2.6) * s);
+    const size = Math.round((0.8 + hash(seed + 32, i) * 2.2) * s);
     if (size <= 1) {
       canvas.set(x, y - top0, at(STONE, 3));
     } else if (size === 2) {
