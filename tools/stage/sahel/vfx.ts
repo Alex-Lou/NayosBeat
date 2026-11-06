@@ -9,6 +9,7 @@
 import type { Rgba } from '../../sprites/png.ts';
 import { Canvas } from '../kit/canvas.ts';
 import type { CodeProp, Rect } from '../kit/stage.ts';
+import { unifyPalette } from '../kit/unify.ts';
 import { enlist, imageIn } from './shared.ts';
 import { BEAT, timelineOf } from './crowd.ts';
 
@@ -136,7 +137,7 @@ const SMOKE: readonly Rgba[] = [
   { r: 146, g: 108, b: 106, a: 195 },
   { r: 214, g: 152, b: 112, a: 185 },
 ];
-const SMOKE_AT = enlist(SMOKE);
+const SMOKE_AT = enlist(unifyPalette(SMOKE));
 
 /**
  * A plume: puffs rising and swelling, drifting with the wind, each a hard-edged disc with a

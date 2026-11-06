@@ -9,6 +9,7 @@
 import type { Rgba } from '../../sprites/png.ts';
 import { Canvas, at, tone } from '../kit/canvas.ts';
 import { noise } from '../kit/random.ts';
+import { unifyPalette } from '../kit/unify.ts';
 
 const colors: Rgba[] = [{ r: 0, g: 0, b: 0, a: 0 }];
 
@@ -40,7 +41,8 @@ const PUDDLE = ramp('#3a2436', '#5c3a52', '#8a5a6e', '#c08280', '#eab08a');
 /** Dry grass. */
 const GRASS = ramp('#3a3418', '#57502a', '#7c7036', '#a89648');
 
-export const FLOOR_PALETTE: readonly Rgba[] = colors;
+/** The road's palette, graded toward the fighters' light (kit/unify.ts). */
+export const FLOOR_PALETTE: readonly Rgba[] = unifyPalette(colors);
 
 function hash(seed: number, a: number, b = 0): number {
   let value = Math.imul(seed ^ 0x9e3779b9, 0x85ebca6b) ^ Math.imul(a + 0x632be5ab, 0xc2b2ae35);

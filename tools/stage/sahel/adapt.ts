@@ -19,6 +19,7 @@ import { writeFile } from 'node:fs/promises';
 import { readTruecolor } from '../../sprites/truecolor.ts';
 import { encodeIndexedPng, type Rgba } from '../../sprites/png.ts';
 import { Canvas } from '../kit/canvas.ts';
+import { unifyPalette } from '../kit/unify.ts';
 import { FLOOR_PALETTE, paintEarth } from './floor.ts';
 
 const SOURCE = new URL('../../../art-src/sahel/source/sahel.png', import.meta.url);
@@ -660,14 +661,15 @@ function earthLike(image: Image, k: number): boolean {
   return (L >= 26 && L <= 66 && chroma >= 16 && hue >= 22 && hue <= 62) || (L >= 31 && chroma < 18);
 }
 
+/** A plane's palette, graded toward the fighters' light (kit/unify.ts): one shadow for all. */
 function rgbaOf(colors: Lab[]): Rgba[] {
-  return [
+  return unifyPalette([
     { r: 0, g: 0, b: 0, a: 0 },
     ...colors.map((lab) => {
       const [r, g, b] = fromLab(lab);
       return { r, g, b, a: 255 };
     }),
-  ];
+  ]);
 }
 
 async function write(
