@@ -29,7 +29,7 @@ function readMid(): Layer {
   const data: Uint8Array[] = [];
   for (let offset = 8; offset < png.length;) {
     const length = view.getUint32(offset);
-    const type = png.subarray(offset + 4, offset + 8).toString();
+    const type = new TextDecoder().decode(png.subarray(offset + 4, offset + 8));
     const body = png.subarray(offset + 8, offset + 8 + length);
     if (type === 'IHDR') {
       width = view.getUint32(offset + 8);
@@ -39,7 +39,13 @@ function readMid(): Layer {
     else if (type === 'IDAT') data.push(body);
     offset += 12 + length;
   }
-  const raw = inflateSync(Buffer.concat(data));
+  const deflated = new Uint8Array(data.reduce((sum, part) => sum + part.length, 0));
+  let at = 0;
+  for (const part of data) {
+    deflated.set(part, at);
+    at += part.length;
+  }
+  const raw = new Uint8Array(inflateSync(deflated));
   const pixels = new Uint8Array(width * height);
   for (let y = 0; y < height; y++) {
     const row = y * (width + 1);
