@@ -5,6 +5,8 @@
  * Side by side, the two read as two images. This grade pulls the stage's shadows toward the
  * fighters' (hue shifting, as pixel artists do), calms its midtones a little, and leaves its
  * lights (the sunset, the lamps) as they are: one light, one shadow colour, for the whole screen.
+ * Its darkest band is lifted: the near-black belongs to the fighters alone, so that they read first
+ * (docs/art/recherche-equilibre-visuel.md).
  */
 
 import type { Rgba } from '../../sprites/png.ts';
@@ -18,6 +20,9 @@ const DEEP = 14;
 /** The midtones' chroma, and how much of their yellow they lose, at their middle. */
 const MID_CHROMA = 0.86;
 const MID_COOL = 5;
+/** The stage's darkest lightness (Lab L), and the lightness under which the darks are lifted. */
+export const DARK_FLOOR = 12;
+const DARK_KNEE = 24;
 
 function linear(c: number): number {
   const v = c / 255;
@@ -57,7 +62,10 @@ export function fromLab(L: number, A: number, B: number): [number, number, numbe
 
 /** One colour, graded toward the fighters' light. */
 export function unifyColor(r: number, g: number, b: number): [number, number, number] {
-  const [L, A, B] = toLab(r, g, b);
+  const [lab, A, B] = toLab(r, g, b);
+  // The darks squeezed from 0..DARK_KNEE into DARK_FLOOR..DARK_KNEE, their order kept.
+  const L =
+    lab >= DARK_KNEE ? lab : DARK_FLOOR + (Math.max(0, lab) * (DARK_KNEE - DARK_FLOOR)) / DARK_KNEE;
   // The shadows: their hue toward the fighters' violet-navy, the deeper the more.
   const shadow = Math.min(1, Math.max(0, (SHADOW_FROM - L) / (SHADOW_FROM - DEEP))) * SHADOW_PULL;
   let a = A + (SHADOW.a - A) * shadow;

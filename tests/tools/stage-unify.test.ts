@@ -1,13 +1,20 @@
 import { describe, expect, it } from 'vitest';
-import { toLab, unifyColor, unifyPalette } from '../../tools/stage/kit/unify';
+import { DARK_FLOOR, toLab, unifyColor, unifyPalette } from '../../tools/stage/kit/unify';
 
 describe('the common grade (docs/art/manifeste-pixel-art.md §2)', () => {
   it("pulls a warm shadow toward the fighters' violet-navy, its lightness kept", () => {
-    const before = toLab(0x3a, 0x22, 0x18);
-    const after = toLab(...unifyColor(0x3a, 0x22, 0x18));
+    const before = toLab(0x5a, 0x3a, 0x2a);
+    const after = toLab(...unifyColor(0x5a, 0x3a, 0x2a));
     expect(Math.abs(after[0] - before[0])).toBeLessThan(1.5);
     // Its blue-yellow axis goes from warm (b > 0) toward the fighters' (b < 0).
     expect(after[2]).toBeLessThan(before[2] - 8);
+  });
+
+  it("lifts the darks over DARK_FLOOR, their order kept: the near-black is the fighters'", () => {
+    const lightness = (v: number) => toLab(...unifyColor(v, v, v))[0];
+    expect(lightness(0)).toBeGreaterThanOrEqual(DARK_FLOOR - 0.5);
+    expect(lightness(0x10)).toBeGreaterThan(lightness(0));
+    expect(lightness(0x28)).toBeGreaterThan(lightness(0x10));
   });
 
   it('leaves the lights as they are: the sunset, the lamps', () => {

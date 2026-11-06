@@ -29,16 +29,18 @@ Chaque plan passe par la même chaîne :
 1. **Rééchantillonnage par aires**, en lumière linéaire : chaque pixel est la moyenne exacte de la
    zone de l'illustration qu'il couvre. Pas d'échantillonnage au plus proche, donc pas de bruit
    d'aliasing (c'était le défaut de « PNG » des versions précédentes).
-2. **Aplatissement de Kuwahara** (rayon 2) : les dégradés peints deviennent des aplats, les
-   contours restent ; puis un **masque de netteté** (×1,6) redonne aux arêtes la dureté de celles
-   des personnages.
+2. **Aplatissement de Kuwahara** (rayon 3) : les dégradés et les coups de pinceau deviennent des
+   aplats, les contours restent ; puis un **masque de netteté** doux (×0,7) redonne aux arêtes
+   leur dureté. Le plan du milieu garde ainsi un tiers du détail des personnages
+   (`docs/art/recherche-equilibre-visuel.md`).
 3. **Palette k-means en Lab**, petite et propre à chaque plan ; pas de tramage sur la rue et la
    route, un tramage léger dans le ciel seulement, pour ses bandes.
 4. **Pixels orphelins supprimés** : un pixel seul de sa couleur prend celle de ses voisins. Les
    amas sont nets, comme sur les sprites.
-5. **Contour** : un pixel sombre (60 % de la clarté) là où la rue rencontre le ciel, et sur le côté
-   sombre des arêtes (écart de clarté de 13 en Lab), comme le trait des personnages, en plus doux ;
-   une dernière passe ôte les miettes de contour.
+5. **Contour** : un pixel sombre (65 % de la clarté) là où la rue rencontre le ciel, et sur le côté
+   sombre des vraies arêtes (75 %, écart de clarté de 22 en Lab), comme le trait des personnages,
+   en plus doux ; une dernière passe ôte les miettes de contour. L'étalonnage commun garde ensuite
+   tout le décor au-dessus de L 12.
 
 ### La découpe du ciel
 
@@ -167,7 +169,9 @@ flashs restent prises sur les décors de référence (`docs/flashs.md` §3).
 5. Le sol dessiné en perspective, la rue plus nette.
 6. La rue au grain des personnages (Kuwahara 2, contours), la terre accentuée à la Guilty Gear /
    BlazBlue, la foule vivante, le feu, la fumée, les lumières et la radio.
-7. **Cette version** : l'étalonnage commun, qui donne au décor les ombres des personnages.
+7. L'étalonnage commun, qui donne au décor les ombres des personnages.
+8. **Cette version** : l'équilibre mesuré sur Street Fighter III et King of Fighters XIII ; la rue
+   à un tiers du détail des personnages, le quasi-noir réservé aux personnages.
 
 Un décor entièrement redessiné en code a aussi été essayé : plus cohérent en théorie, mais plat et
 pauvre à côté de l'illustration ; écarté.

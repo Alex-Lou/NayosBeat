@@ -5,7 +5,7 @@ n'importe quel lieu : une illustration (ou un décor codé) qui partage l'écran
 sans jamais avoir l'air d'une image posée derrière eux. Il vaut pour tout agent et tout artiste.
 Les chiffres sont ceux qui marchent sur Sahel ; ils se règlent, la méthode ne change pas.
 
-## 1. Les six lois
+## 1. Les sept lois
 
 1. **Le même grain que les personnages, partout.** Un pixel d'image du décor vaut un pixel de leurs
    sprites, sur tous les plans : ciel, rue, sol. Jamais de blocs 2 × 2 (le fond devient deux fois
@@ -23,6 +23,9 @@ Les chiffres sont ceux qui marchent sur Sahel ; ils se règlent, la méthode ne 
    personnages (§2, l'étalonnage commun) : c'est le filtre qui fait qu'ils habitent le même monde.
 6. **La vie vient de la scène elle-même.** On anime les gens, les lumières, la fumée et les objets
    qui y sont, au même grain, par pixels entiers (D23). Rien n'est collé dans un autre style.
+7. **Le décor en second rôle.** Même grain ne veut pas dire même densité : le décor porte environ
+   un tiers du détail des personnages, et jamais leur quasi-noir (L < 12). Mesures et sources :
+   `docs/art/recherche-equilibre-visuel.md`.
 
 ## 2. La chaîne de conversion d'une illustration
 
@@ -33,13 +36,13 @@ Fichier de référence : `tools/stage/sahel/adapt.ts`. Elle part de l'illustrati
 |---|---|---|---|
 | Échelle | chaque plan à sa taille (`far` 1 200, `mid` 1 440, `floor` 1 920 px de large) | `mid` ×0,861, la rangée 600 de la source sur la ligne du sol (460) | le plan du milieu couvre tout son défilement sans étirement |
 | Rééchantillonnage par aires | chaque pixel = moyenne exacte, en lumière linéaire, de la zone source qu'il couvre | — | pas d'aliasing : c'était le « PNG dégueulasse » |
-| Kuwahara | chaque pixel prend la moyenne de son quadrant le plus calme | rayon **2** | des amas propres ; au rayon 1, les contours deviennent des miettes |
-| Netteté | chaque pixel s'éloigne de la moyenne 3 × 3 de ses voisins | ×**1,6** | rend aux arêtes la dureté des sprites |
+| Kuwahara | chaque pixel prend la moyenne de son quadrant le plus calme | rayon **3** | des masses franches : le détail tombe à un tiers de celui des sprites ; au rayon 1, les contours deviennent des miettes |
+| Netteté | chaque pixel s'éloigne de la moyenne 3 × 3 de ses voisins | ×**0,7** | rend aux arêtes leur dureté, sans rallumer le grain des coups de pinceau |
 | Étalonnage | contraste et saturation autour du milieu, en Lab | `mid` : saturation 1, contraste 1,06 | le décor reste sous les personnages sans s'éteindre |
 | Palette | k-means en Lab, propre à chaque plan | `far` 18, `mid` 32 couleurs | les personnages en ont ~70 : le décor plus sobre |
 | Tramage | ordonné (Bayer 4 × 4), seulement où il y a un dégradé | ciel seulement | ailleurs, le tramage est du bruit qui scintille |
 | Orphelins | un pixel seul de sa couleur prend celle de ses voisins | 2 passes, puis 1 après le contour | amas nets, comme les sprites |
-| Contour | 1 px sombre (60 % de la clarté, même teinte) sur la lisière du ciel et le côté sombre des arêtes | écart de clarté ≥ **13** (Lab) | le trait Guilty Gear / BlazBlue, en plus doux que celui des personnages |
+| Contour | 1 px sombre, même teinte (65 % de la clarté sur la lisière du ciel, 75 % sur le côté sombre des arêtes) | écart de clarté ≥ **22** (Lab) | le trait Guilty Gear / BlazBlue, sur les vraies arêtes seulement, plus doux que celui des personnages |
 
 ### L'étalonnage commun (`tools/stage/kit/unify.ts`)
 
@@ -52,7 +55,9 @@ les palettes du lieu** (chaque plan, le sol dessiné, la fumée, les oiseaux) :
 - les **ombres** (L < 40, entièrement sous 14) tirent leur teinte vers celle des personnages, à
   72 % ;
 - les **tons moyens** perdent 14 % de chroma et un peu de jaune, au plus fort à L 50 ;
-- les **lumières** (le couchant, les lampes, le feu) ne bougent pas.
+- les **lumières** (le couchant, les lampes, le feu) ne bougent pas ;
+- les **noirs** (L < 24) sont resserrés entre 12 et 24, dans l'ordre : le quasi-noir reste aux
+  personnages (`DARK_FLOOR`).
 
 C'est un réglage par palette, pas un filtre au rendu : les personnages, leurs effets et les mesures
 de flash restent exactement ce qu'ils sont.
@@ -152,7 +157,8 @@ oiseaux disparaissent).
 3. **L'avant / après** au même cadrage.
 4. **Un instant calme et un instant du drop** : la foule vit, les bras sont attachés aux corps.
 5. **Les tests** : taille et opacité des plans, palettes, moins de 8 % de pixels orphelins sur les
-   plans peints (12 % sur le sol tramé), budget vidéo, beat de 2 400 pas.
+   plans peints (12 % sur le sol tramé), détail sous 40 % du détail moyen des sprites, rien sous L 12,
+   budget vidéo, beat de 2 400 pas.
 
 ## 7. Les pièges déjà rencontrés
 
@@ -170,6 +176,9 @@ oiseaux disparaissent).
 | Têtes détectées automatiquement | bras flottant au-dessus des têtes | têtes relevées à la main |
 | Ombres chaudes de la peinture | personnages et décor « dans deux mondes » | étalonnage commun des palettes |
 | Fumée en disques réguliers | « colonne de boules » | tailles, balancements et dérive propres à chaque bouffée |
+| Décor aussi détaillé que les personnages | ils ne ressortent plus, même au même grain | un tiers de leur détail, mesuré ; Kuwahara plus large, netteté douce |
+| Noirs du décor | les traits des personnages s'y perdent | `DARK_FLOOR` dans l'étalonnage commun |
+| Ciel entièrement « lumineux » | à chaque coup, le ciel passe devant la rue (flash) | `LightShow` ne relève que les pixels qu'aucun plan de devant ne couvre (#215) |
 
 ## 8. La recette pour un nouveau lieu
 

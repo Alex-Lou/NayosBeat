@@ -39,10 +39,17 @@ const FAR_SCALE = FAR.width / 1672;
 
 /** Colours per plane: the fighters use about 70, the stage stays below and calmer. */
 const COLORS = { far: 18, mid: 32 } as const;
-/** How hard the painting's softened edges are pushed back (`sharpen`). */
-const SHARP = 1.6;
-/** The lightness step (Lab L) over which the darker side of an edge gets its contour. */
-const EDGE = 13;
+/**
+ * The street's micro-detail, kept to about a third of the fighters' (docs/art/recherche-equilibre-
+ * visuel.md): the painting's strokes merged into flat areas over this radius (`kuwahara`)...
+ */
+const FLATTEN = 3;
+/** ...its softened edges pushed back this hard (`sharpen`)... */
+const SHARP = 0.7;
+/** ...and a contour only on the darker side of a lightness step (Lab L) over this one. */
+const EDGE = 22;
+/** How dark a contour is, against its colour: the sky's edge, the inner edges. */
+const CONTOUR = { sky: 0.65, inner: 0.75 } as const;
 /** The street's earth is drawn, not painted, from this row down (behind the fighters' feet). */
 const EARTH_FROM = 404;
 /** The largest crumb of painting left inside the drawn earth that the earth swallows. */
@@ -635,14 +642,14 @@ function contour(slots: Uint8Array, width: number, height: number, colors: Lab[]
         (x < width - 1 && copy[k + 1] === 0) ||
         (y > 0 && copy[k - width] === 0);
       if (open) {
-        slots[k] = darkerOf(colors, here, 0.55);
+        slots[k] = darkerOf(colors, here, CONTOUR.sky);
         continue;
       }
       const L = colors[here - 1]?.[0] ?? 0;
       const right = colors[(copy[k + 1] ?? 0) - 1]?.[0] ?? L;
       const down = colors[(copy[k + width] ?? 0) - 1]?.[0] ?? L;
       if ((x < width - 1 && right - L > EDGE) || (y < height - 1 && down - L > EDGE)) {
-        slots[k] = darkerOf(colors, here, 0.6);
+        slots[k] = darkerOf(colors, here, CONTOUR.inner);
       }
     }
   }
@@ -697,7 +704,7 @@ const midSource = resample(
   MID.height,
 );
 const midSky = skyMask(midSource);
-const mid = sharpen(kuwahara(midSource, 2), SHARP);
+const mid = sharpen(kuwahara(midSource, FLATTEN), SHARP);
 grade(mid, 1, 1.06, 0.94);
 const midMask = midSky.map((s) => (s ? 0 : 1));
 const midColors = palette(mid, midMask, COLORS.mid);

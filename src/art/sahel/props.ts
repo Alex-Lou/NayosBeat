@@ -81,8 +81,8 @@ export const STAGE_PROPS: readonly StageProp[] = [
     frames: [
       null,
       null,
-      { x: 2, y: 289, width: 391, height: 46, sheetX: 340, sheetY: 396 },
-      { x: 53, y: 288, width: 262, height: 54, sheetX: 337, sheetY: 340 },
+      { x: 2, y: 290, width: 391, height: 45, sheetX: 340, sheetY: 396 },
+      { x: 53, y: 289, width: 262, height: 53, sheetX: 337, sheetY: 340 },
       { x: 2, y: 277, width: 395, height: 64, sheetX: 593, sheetY: 199 },
     ],
     timeline: [
@@ -426,7 +426,7 @@ export const STAGE_PROPS: readonly StageProp[] = [
     frames: [
       null,
       null,
-      { x: 1163, y: 284, width: 217, height: 59, sheetX: 594, sheetY: 275 },
+      { x: 1163, y: 286, width: 217, height: 57, sheetX: 594, sheetY: 275 },
       { x: 1182, y: 279, width: 236, height: 64, sheetX: 0, sheetY: 275 },
       { x: 1163, y: 267, width: 259, height: 75, sheetX: 0, sheetY: 199 },
     ],
