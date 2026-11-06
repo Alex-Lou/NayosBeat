@@ -9,7 +9,7 @@ const atlasOf = async (path: string): Promise<Atlas> =>
   JSON.parse(new TextDecoder().decode(await readFile(art(path)))) as Atlas;
 
 describe('Feline in HD (tools/sprites/generate.ts keepHd)', () => {
-  it('shows her guard, walks, crouch and jumps from their HD images, in both colorways', () => {
+  it('shows her guard, walks, crouch, jumps and dash from their HD images, in both colorways', () => {
     expect(Object.keys(FELINE.hd ?? {})).toEqual([
       'idle',
       'walkForward',
@@ -17,6 +17,7 @@ describe('Feline in HD (tools/sprites/generate.ts keepHd)', () => {
       'crouch',
       'jump',
       'jumpForward',
+      'dashForward',
     ]);
     expect(Object.keys(FELINE_ALT.hd ?? {})).toEqual([
       'idle',
@@ -25,6 +26,7 @@ describe('Feline in HD (tools/sprites/generate.ts keepHd)', () => {
       'crouch',
       'jump',
       'jumpForward',
+      'dashForward',
     ]);
   });
 
