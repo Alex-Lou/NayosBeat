@@ -9,9 +9,23 @@ const atlasOf = async (path: string): Promise<Atlas> =>
   JSON.parse(new TextDecoder().decode(await readFile(art(path)))) as Atlas;
 
 describe('Feline in HD (tools/sprites/generate.ts keepHd)', () => {
-  it('shows her guard, walks and crouch from their HD images, in both colorways', () => {
-    expect(Object.keys(FELINE.hd ?? {})).toEqual(['idle', 'walkForward', 'walkBack', 'crouch']);
-    expect(Object.keys(FELINE_ALT.hd ?? {})).toEqual(['idle', 'walkForward', 'walkBack', 'crouch']);
+  it('shows her guard, walks, crouch and jumps from their HD images, in both colorways', () => {
+    expect(Object.keys(FELINE.hd ?? {})).toEqual([
+      'idle',
+      'walkForward',
+      'walkBack',
+      'crouch',
+      'jump',
+      'jumpForward',
+    ]);
+    expect(Object.keys(FELINE_ALT.hd ?? {})).toEqual([
+      'idle',
+      'walkForward',
+      'walkBack',
+      'crouch',
+      'jump',
+      'jumpForward',
+    ]);
   });
 
   for (const colorway of ['main', 'alt'] as const) {
