@@ -226,14 +226,14 @@ export const FELINE_CELLS: Readonly<Record<string, Cell>> = {
   standLight: {
     width: 164,
     height: 158,
-    anchor: { x: 59, y: 155 },
+    anchor: { x: 80, y: 155 },
     frames: [
-      { x: 8, y: 2, width: 116, height: 154 },
-      { x: 2, y: 7, width: 127, height: 149 },
+      { x: 22, y: 2, width: 116, height: 154 },
+      { x: 9, y: 7, width: 127, height: 149 },
       { x: 2, y: 6, width: 160, height: 150 },
       { x: 3, y: 6, width: 153, height: 150 },
-      { x: 9, y: 5, width: 120, height: 151 },
-      { x: 9, y: 2, width: 104, height: 154 },
+      { x: 16, y: 5, width: 120, height: 151 },
+      { x: 23, y: 2, width: 104, height: 154 },
     ],
   },
   standHeavy: {
