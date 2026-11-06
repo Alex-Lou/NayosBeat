@@ -1,41 +1,41 @@
 {
   "frames": {
     "0": {
-      "frame": { "x": 88, "y": 0, "w": 106, "h": 160 },
+      "frame": { "x": 88, "y": 0, "w": 106, "h": 159 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 2, "y": 3, "w": 106, "h": 160 },
-      "sourceSize": { "w": 161, "h": 164 }
+      "spriteSourceSize": { "x": 2, "y": 3, "w": 106, "h": 159 },
+      "sourceSize": { "w": 161, "h": 163 }
     },
     "1": {
-      "frame": { "x": 194, "y": 0, "w": 122, "h": 159 },
+      "frame": { "x": 194, "y": 0, "w": 122, "h": 158 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 4, "w": 122, "h": 159 },
-      "sourceSize": { "w": 161, "h": 164 }
+      "spriteSourceSize": { "x": 0, "y": 4, "w": 122, "h": 158 },
+      "sourceSize": { "w": 161, "h": 163 }
     },
     "2": {
-      "frame": { "x": 316, "y": 0, "w": 135, "h": 158 },
+      "frame": { "x": 431, "y": 0, "w": 135, "h": 157 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 3, "y": 6, "w": 135, "h": 158 },
-      "sourceSize": { "w": 161, "h": 164 }
+      "spriteSourceSize": { "x": 3, "y": 6, "w": 135, "h": 157 },
+      "sourceSize": { "w": 161, "h": 163 }
     },
     "3": {
-      "frame": { "x": 566, "y": 0, "w": 153, "h": 155 },
+      "frame": { "x": 566, "y": 0, "w": 153, "h": 154 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 8, "y": 8, "w": 153, "h": 155 },
-      "sourceSize": { "w": 161, "h": 164 }
+      "spriteSourceSize": { "x": 8, "y": 8, "w": 153, "h": 154 },
+      "sourceSize": { "w": 161, "h": 163 }
     },
     "4": {
-      "frame": { "x": 451, "y": 0, "w": 115, "h": 158 },
+      "frame": { "x": 316, "y": 0, "w": 115, "h": 158 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 6, "y": 5, "w": 115, "h": 158 },
-      "sourceSize": { "w": 161, "h": 164 }
+      "spriteSourceSize": { "x": 6, "y": 4, "w": 115, "h": 158 },
+      "sourceSize": { "w": 161, "h": 163 }
     },
     "5": {
-      "frame": { "x": 0, "y": 0, "w": 88, "h": 163 },
+      "frame": { "x": 0, "y": 0, "w": 88, "h": 162 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 6, "y": 0, "w": 88, "h": 163 },
-      "sourceSize": { "w": 161, "h": 164 }
+      "spriteSourceSize": { "x": 6, "y": 0, "w": 88, "h": 162 },
+      "sourceSize": { "w": 161, "h": 163 }
     }
   },
-  "meta": { "image": "chainLight.png", "size": { "w": 719, "h": 163 } }
+  "meta": { "image": "chainLight.png", "size": { "w": 719, "h": 162 } }
 }

@@ -25,9 +25,9 @@
       "sourceSize": { "w": 171, "h": 158 }
     },
     "4": {
-      "frame": { "x": 0, "y": 357, "w": 152, "h": 69 },
+      "frame": { "x": 0, "y": 357, "w": 153, "h": 69 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 4, "y": 78, "w": 152, "h": 69 },
+      "spriteSourceSize": { "x": 3, "y": 78, "w": 153, "h": 69 },
       "sourceSize": { "w": 171, "h": 158 }
     },
     "5": {

@@ -13,9 +13,9 @@
       "sourceSize": { "w": 142, "h": 163 }
     },
     "2": {
-      "frame": { "x": 0, "y": 388, "w": 139, "h": 87 },
+      "frame": { "x": 0, "y": 388, "w": 139, "h": 88 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 1, "y": 62, "w": 139, "h": 87 },
+      "spriteSourceSize": { "x": 1, "y": 62, "w": 139, "h": 88 },
       "sourceSize": { "w": 142, "h": 163 }
     },
     "3": {
@@ -25,5 +25,5 @@
       "sourceSize": { "w": 142, "h": 163 }
     }
   },
-  "meta": { "image": "airHit.png", "size": { "w": 139, "h": 475 } }
+  "meta": { "image": "airHit.png", "size": { "w": 139, "h": 476 } }
 }

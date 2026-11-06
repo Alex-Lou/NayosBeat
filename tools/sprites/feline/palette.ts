@@ -28,10 +28,10 @@ function lit(ramp: Ramp, rim: string = RIM): MaterialTones {
 
 const MATERIALS = {
   /** Pale, luminous porcelain skin with soft peach-rose shading (face, bare midriff, shoulders, forearms). */
-  skin: lit(['#24141c', '#5c3846', '#a47482', '#eabec4', '#f8dce0', '#fff4f6'], '#f0c4d2'),
+  skin: lit(['#221824', '#564454', '#9c8696', '#e6d6de', '#f6ecf0', '#fffafb'], '#f0dce6'),
   /** Pure snow-white feline mane, ears & tail with soft cool-silver shading; shadow-panther on alt. */
   hair: {
-    main: ['#141828', '#343c58', '#687498', '#aebad8', '#e4ecfc', '#ffffff', RIM_ON_LIGHT],
+    main: ['#16141f', '#3a3650', '#6e6a8e', '#b2aecc', '#e6e4f4', '#ffffff', RIM_ON_LIGHT],
     alt: ['#080610', '#1c1430', '#382a58', '#644e94', '#9880cc', '#d4c4f8', RIM],
   },
   /** Techwear crop-top and shoulder pad: matte carbon-black; pearl-ivory on alt. */

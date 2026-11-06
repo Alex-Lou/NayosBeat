@@ -7,17 +7,17 @@
       "sourceSize": { "w": 108, "h": 118 }
     },
     "1": {
-      "frame": { "x": 108, "y": 0, "w": 70, "h": 116 },
+      "frame": { "x": 108, "y": 0, "w": 71, "h": 116 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 38, "y": 2, "w": 70, "h": 116 },
+      "spriteSourceSize": { "x": 37, "y": 2, "w": 71, "h": 116 },
       "sourceSize": { "w": 108, "h": 118 }
     },
     "2": {
-      "frame": { "x": 178, "y": 0, "w": 70, "h": 113 },
+      "frame": { "x": 179, "y": 0, "w": 68, "h": 113 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 38, "y": 5, "w": 70, "h": 113 },
+      "spriteSourceSize": { "x": 40, "y": 5, "w": 68, "h": 113 },
       "sourceSize": { "w": 108, "h": 118 }
     }
   },
-  "meta": { "image": "hitCrouch.png", "size": { "w": 248, "h": 118 } }
+  "meta": { "image": "hitCrouch.png", "size": { "w": 247, "h": 118 } }
 }

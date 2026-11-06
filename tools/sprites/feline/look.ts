@@ -1,21 +1,18 @@
 /**
- * Feline (issue #155 comments 6660565057 & 6673436650: `poing_01_garde.png` & Pack_01..Pack_05):
- * Slender, curvy anime cat-fighter rendered at ART_SCALE = 2 with:
- * - Voluminous snow-white high ponytail (`drawMane`) sculpted in 3 feathery, pointed locks rising
- *   above the black scrunchie (driven by spring 0 for fluid overlapping secondary motion), leaving
- *   her two coral-pink cat ears (`head.ts`) completely clear;
- * - Long, seamless, smooth C-hook white feline tail (`drawTail`) drawn as a continuous shaded
- *   ribbon (no capsule seam rings!) driven by spring 1;
- * - Pinched hourglass bare midriff (`5.4 px` at the waist, S-curved lower back, navel and soft
- *   abdominal shading) under a sculpted sleeveless black techwear crop-top with a rounded feminine
- *   bust, under-bust shadow/strap, and a high collar with a cyan LED dash;
- * - Slender porcelain arms (`2.1 * S` upper arm, `1.75 * S` forearm) with a hand-drawn cyan `▼`
- *   triangle stamp (`SHOULDER_TRI`) on the bare deltoid, a buckled black bicep strap, a wrist
- *   bracer with a diagonal cyan LED, and compact fingerless combat gloves;
- * - Baggy streetwear cargo trousers (tapered at the waist, wide at the knee/calf) with a hand-drawn
- *   silver belt buckle (`BUCKLE`), a 3D hip pouch with a vertical cyan LED, a hanging silver chain
- *   looping to a thigh buckle, two diagonal cyan thigh dashes (`//`), and buckled combat boots with
- *   a cyan ankle LED and a crisp silver-white lugged sole.
+ * Feline (issue #155, Pack_01 `01_garde.png`, Pack_02 and the poses pack), at ART_SCALE = 2:
+ * - A wild silver-white mane (`drawMane`): a soft volume and pointed locks in three layers,
+ *   bursting back from under her black headband (`head.ts`) to the middle of her back, hanging
+ *   mostly upright when she leans and lagging on spring 0;
+ * - A thick, plush C tail (`drawTail`) out of her lower back, swelling to a fluffy tip at thigh
+ *   height, lagging on spring 1; raised along her back when there is no room behind her;
+ * - Both stay within her hurtboxes' back edge (`MANE_BACK`, `TAIL_BACK`), scaled down whole
+ *   rather than cut;
+ * - Pale porcelain skin; a sleeveless black techwear crop-top with a high collar (cyan LED) and
+ *   a rounded bust, over a short band of bare, pinched midriff; high-waisted baggy black cargo
+ *   trousers over round hips (belt, silver buckle, hip pouch with a cyan LED, hanging chain,
+ *   `//` thigh dashes) and buckled combat boots;
+ * - Slender arms with a black shoulder band carrying the cyan `▼` emblem, a buckled bicep strap,
+ *   a wrist bracer with a diagonal LED and fingerless gloves.
  */
 
 import { ANCHOR, ART_SCALE } from '../../../src/art/types.ts';
@@ -181,130 +178,191 @@ function slab(
 }
 
 // ---------------------------------------------------------------------------------------------
-// Sculpted feathery high ponytail (`drawMane`) & seamless C-hook feline tail (`drawTail`)
+// Wild mane (`drawMane`) & plush C tail (`drawTail`)
 
 /**
- * Voluminous snow-white high ponytail (`poing_01_garde.png`), sculpted as three layered, pointed
- * feathery plumes (polygons with strand shading, never round capsule balls!) that burst up-back
- * from the black scrunchie behind her cat ears and sway with `maneSwing`.
+ * A lock of the mane in the head's frame: `b` toward her back, `u` along her spine, from a base on
+ * the skull to a pointed tip; `width` across the base, `bend` bows its middle (+ toward `u`).
  */
-function drawMane(ctx: Ctx): void {
-  const { canvas, at, s, maneSwing } = ctx;
-  if (s.head.y < 16) return;
-  const standing = clamp((s.hip.y - 18) / 14, 0.38, 1);
-  const crouch = s.hip.y < 26;
-  const minX = crouch ? -16.0 : -25.0;
-  const root = add(s.head, add(scale(s.front, -5.2), scale(s.up, 2.2)));
-  const sx = maneSwing.x * standing;
-  const sy = maneSwing.y * standing;
-  const p = (dx: number, dy: number, lag = 1): Point =>
-    at({
-      x: Math.max(minX, root.x + (dx + sx * lag) * standing),
-      y: Math.max(18, root.y + dy * standing + sy * lag),
-    });
-
-  // Lower/far plume cascading down behind the shoulder.
-  canvas.polygon(
-    [
-      p(0.0, -1.5, 0.1),
-      p(-4.5, -2.5, 0.4),
-      p(-9.5, -5.5, 0.7),
-      p(-13.8, -10.5, 1.0),
-      p(-9.0, -10.8, 0.8),
-      p(-4.2, -7.8, 0.5),
-      p(0.5, -4.5, 0.2),
-    ],
-    HAIR_SHADE,
-    { group: 'mane', flat: true },
-  );
-
-  // Middle feathery plume sweeping out and down-left with a pointed tip.
-  const midPoly = [
-    p(0.5, 1.0, 0.1),
-    p(-4.2, 2.2, 0.3),
-    p(-9.8, 0.5, 0.6),
-    p(-15.2, -3.2, 0.95),
-    p(-11.0, -5.2, 0.75),
-    p(-6.2, -4.5, 0.45),
-    p(-0.5, -2.5, 0.15),
-  ];
-  canvas.polygon(midPoly, HAIR_MID, { group: 'mane', flat: true });
-  canvas.decal(
-    [p(-0.5, 0.8, 0.1), p(-5.0, 1.6, 0.35), p(-12.5, -1.8, 0.8), p(-8.5, -2.4, 0.55)],
-    HAIR_SNOW,
-    'mane',
-    { flat: true },
-  );
-
-  // Upper crown plume arching high above the scrunchie (`y = 74..76` in `poing_01_garde.png`) and
-  // tapering to a sharp windswept tip.
-  const topPoly = [
-    p(1.0, 1.5, 0.05),
-    p(-2.2, 5.8, 0.25),
-    p(-7.2, 6.4, 0.5),
-    p(-13.4, 3.8, 0.85),
-    p(-9.2, 1.4, 0.6),
-    p(-3.8, 0.8, 0.3),
-    p(0.5, -0.2, 0.1),
-  ];
-  canvas.polygon(topPoly, HAIR_MID, { group: 'mane', flat: true });
-  canvas.decal(
-    [
-      p(0.5, 2.0, 0.1),
-      p(-2.5, 5.4, 0.25),
-      p(-7.0, 5.8, 0.5),
-      p(-11.5, 3.8, 0.75),
-      p(-6.0, 2.6, 0.4),
-    ],
-    HAIR_SNOW,
-    'mane',
-    { flat: true },
-  );
+interface Lock {
+  readonly base: readonly [number, number];
+  readonly tip: readonly [number, number];
+  readonly width: number;
+  readonly bend: number;
 }
 
 /**
- * Long, seamless, smooth C-hook white feline tail (`poing_01_garde.png`), drawn as a continuous
- * polygon ribbon with snow-white top highlight and soft silver underside shadow (zero internal
- * capsule rings!), swaying fluidly with `tailSwing`.
+ * The wild mane (Pack_01 `01_garde.png`, Pack_02 `intro_01_pose_assuree.png`): a big mass of
+ * pointed silver-white locks bursting back from under the headband, as wide as her shoulders and
+ * falling to the middle of her back. Three layers (shade, mid, snow) so it reads as volume, not a
+ * flat cut-out; every tip lags with spring 0 (`maneSwing`), more the longer the lock.
+ */
+const MANE_SHADE: readonly Lock[] = [
+  { base: [0, 3], tip: [10, 4], width: 6.5, bend: 1.0 },
+  { base: [1, 1.5], tip: [15.5, 1.5], width: 9, bend: 2.2 },
+  { base: [1, -1.5], tip: [16, -8], width: 9, bend: 2.0 },
+  { base: [0.5, -4], tip: [13, -15.5], width: 9, bend: 1.6 },
+  { base: [-0.5, -5.5], tip: [7.5, -20.5], width: 8, bend: 1.0 },
+  { base: [-1, -6.5], tip: [2.5, -21.5], width: 5, bend: 0.4 },
+];
+const MANE_MID: readonly Lock[] = [
+  { base: [-0.5, 3], tip: [8, 4], width: 5, bend: 0.8 },
+  { base: [0, 2], tip: [12.5, 2.5], width: 7, bend: 1.8 },
+  { base: [0, -1], tip: [13, -6], width: 7, bend: 1.6 },
+  { base: [0, -3.5], tip: [10, -12.5], width: 7, bend: 1.2 },
+  { base: [-1, -5], tip: [4.5, -17], width: 5.5, bend: 0.6 },
+];
+const MANE_SNOW: readonly Lock[] = [
+  { base: [-0.5, 3], tip: [6, 3.8], width: 2, bend: 0.6 },
+  { base: [0, 2.2], tip: [10, 2.8], width: 2.6, bend: 1.4 },
+  { base: [0, -0.8], tip: [10, -4.6], width: 2.4, bend: 1.2 },
+  { base: [-0.5, -3.4], tip: [7, -9.5], width: 2.2, bend: 0.8 },
+];
+
+/**
+ * How far back the mane and the tail may reach (world px), standing and crouched: the back edge
+ * of her hurtboxes (src/data/fighters/feline.ts), which follow the drawing (tests/tools/
+ * hurtboxes.test.ts). Bounds of the first design, kept.
+ */
+const MANE_BACK = { stand: -25.0, crouch: -16.0 } as const;
+const TAIL_BACK = { stand: -24.8, crouch: -16.2 } as const;
+/** The lowest a lock or the tail is drawn (world px): never under the floor (ko, knockdown). */
+const GROUND = 0.5;
+
+/**
+ * The scale that keeps a shape reaching `reach` behind `root` (world px) within `bound`; when the
+ * root itself is past the bound (lying, tumbling), a fixed half size instead of a flip.
+ */
+function fitBehind(root: number, reach: number, bound: number): number {
+  if (root + reach >= bound) return 1;
+  if (root <= bound) return 0.5;
+  return Math.max(0.25, (root - bound) / -reach);
+}
+
+function drawMane(ctx: Ctx): void {
+  const { canvas, at, s, maneSwing } = ctx;
+  if (s.head.y < 16) return;
+  const root = add(s.head, add(scale(s.front, -1.6), scale(s.up, 0.6)));
+  // The locks hang in a frame tipped most of the way back to upright: leaning in, the mane falls
+  // behind her instead of standing up over her head.
+  const up = unit(add(scale(s.up, 0.35), { x: 0, y: 0.65 }));
+  const back = { x: -up.y, y: up.x };
+  // Lying low (crouch, sweep) the mane keeps its shape but drops its longest locks a little.
+  const fall = clamp((s.head.y - 30) / 30, 0.7, 1);
+  const offset = (b: number, u: number, lag: number): Point => ({
+    x: back.x * b + up.x * u * fall + maneSwing.x * lag,
+    y: back.y * b + up.y * u * fall + maneSwing.y * lag,
+  });
+  // The mane stays within her hurtbox's back edge (`MANE_BACK`): past it, the whole mane is
+  // scaled down around its root (it keeps its shape) instead of being cut flat.
+  const reach = Math.min(
+    ...[...MANE_SHADE.map((l) => offset(l.tip[0], l.tip[1], 1.3).x), offset(13, -4.5, 0.4).x],
+  );
+  const bound = s.hip.y < 26 ? MANE_BACK.crouch : MANE_BACK.stand;
+  const k = fitBehind(root.x, reach, bound);
+  const point = (b: number, u: number, lag: number): Point => {
+    const o = offset(b, u, lag);
+    return at({ x: root.x + o.x * k, y: Math.max(GROUND, root.y + o.y * k) });
+  };
+  const lock = (l: Lock, material: Material, decal: boolean): void => {
+    const [bb, bu] = l.base;
+    const [tb, tu] = l.tip;
+    const along = unit({ x: tb - bb, y: tu - bu });
+    const across = { x: -along.y, y: along.x };
+    const length = Math.hypot(tb - bb, tu - bu);
+    const lag = (t: number): number => clamp((length * t) / 12, 0, 1.3);
+    const side = (t: number, w: number): Point => {
+      const b = bb + (tb - bb) * t + across.x * (w + l.bend * Math.sin(Math.PI * t));
+      const u = bu + (tu - bu) * t + across.y * (w + l.bend * Math.sin(Math.PI * t));
+      return point(b, u, lag(t));
+    };
+    const half = l.width / 2;
+    const shape = [
+      side(0, half),
+      side(0.45, half * 0.9),
+      side(0.8, half * 0.45),
+      point(tb, tu, lag(1)),
+      side(0.8, -half * 0.35),
+      side(0.45, -half * 0.8),
+      side(0, -half),
+    ];
+    if (decal) canvas.decal(shape, material, 'mane', { flat: true });
+    else canvas.polygon(shape, material, { group: 'mane', flat: true });
+  };
+  // A soft volume behind the locks, so the mane reads as one fluffy mass and only its fringe is
+  // pointed.
+  canvas.ellipse(point(5.5, -4.5, 0.4), 7.5 * S * k, 9 * S * k, s.headAngle, HAIR_SHADE, {
+    group: 'mane',
+    flat: true,
+  });
+  for (const l of MANE_SHADE) lock(l, HAIR_SHADE, false);
+  canvas.ellipse(point(4.5, -2.5, 0.3), 5.5 * S * k, 7.5 * S * k, s.headAngle, HAIR_MID, {
+    group: 'mane',
+    flat: true,
+  });
+  for (const l of MANE_MID) lock(l, HAIR_MID, false);
+  for (const l of MANE_SNOW) lock(l, HAIR_SNOW, true);
+}
+
+/** The tail's shape turned 75 degrees up around its root (clockwise, y up): raised along the back. */
+function raise(p: { x: number; y: number; r: number }): { x: number; y: number; r: number } {
+  const c = Math.cos((-75 * Math.PI) / 180);
+  const n = Math.sin((-75 * Math.PI) / 180);
+  return { x: p.x * c - p.y * n, y: p.x * n + p.y * c, r: p.r };
+}
+
+/**
+ * The plush C tail (`01_garde.png`), one continuous ribbon (no seams between segments) with a
+ * lilac shade inside the curl, snow-white fur outside and a fluffy tip, swaying with `tailSwing`.
  */
 function drawTail(ctx: Ctx): void {
   const { canvas, at, torso, s, tailSwing } = ctx;
   if (s.hip.y < 12) return;
-  const crouch = s.hip.y < 26;
-  const reach = crouch ? 0.52 : clamp((s.hip.y - 20) / 14, 0.82, 1.0);
-  const minX = crouch ? -16.2 : -24.8;
-  const minY = 14.0;
-  const clampT = (p: Point): Point => ({ x: Math.max(minX, p.x), y: Math.max(minY, p.y) });
+  // Crouched, the C tucks in (smaller) instead of being squashed against a bound.
+  const reach = clamp((s.hip.y - 14) / 20, 0.62, 1.0);
+  const floor = GROUND + 2;
 
-  const root = torso(0.4, -3.6);
-  const sx = tailSwing.x * 0.45 * reach;
-  const sy = tailSwing.y * 0.4 * reach;
+  const root = torso(1.6, -3.8);
+  const sx = tailSwing.x * 0.6;
+  const sy = tailSwing.y * 0.5;
 
-  // Spine of the long C-hook cat tail, from behind her hip pouch out to -14.4 px and up +11.6 px.
+  // Spine of the plush C (Pack_01 `01_garde.png`): out of her lower back, arching up and out
+  // behind her, round and down, its fluffy tip curling back in at thigh height. Radii swell from
+  // the root to the tip, like a cat's.
   const spineRaw: readonly (readonly [number, number, number])[] = [
-    [0.0, 0.0, 1.6],
-    [-3.6, -2.0, 1.8],
-    [-7.8, -2.5, 2.0],
-    [-11.8, -0.8, 2.1],
-    [-14.2, 2.6, 2.2],
-    [-14.4, 6.8, 2.2],
-    [-12.2, 10.4, 2.2],
-    [-8.6, 11.6, 2.1],
-    [-5.4, 10.2, 2.0],
-    [-4.4, 8.0, 1.8],
+    [0.0, 0.0, 1.7],
+    [-3.2, 1.8, 2.1],
+    [-7.2, 2.4, 2.5],
+    [-11.0, 0.8, 2.8],
+    [-13.4, -2.8, 3.0],
+    [-13.6, -7.2, 3.1],
+    [-11.6, -11.0, 3.2],
+    [-8.0, -12.8, 3.2],
+    [-4.6, -12.2, 3.0],
+    [-2.8, -10.2, 2.7],
   ];
-  const spine = spineRaw.map(([dx, dy, r], idx) => {
+  const raw = spineRaw.map(([dx, dy, r], idx) => {
     const w = idx / (spineRaw.length - 1);
-    const pt = clampT({
-      x: root.x + (dx + sx * w) * reach,
-      y: root.y + (dy + sy * w) * reach,
-    });
-    return { ...pt, r: r * (crouch ? 0.85 : 1.0) };
+    return { x: dx * reach + sx * w, y: dy * reach + sy * w, r: r * (0.8 + 0.2 * reach) };
   });
-
-  const leftEdge: Point[] = [];
-  const rightEdge: Point[] = [];
-  const innerLight: Point[] = [];
+  // Past her hurtbox's back edge (`TAIL_BACK`), the whole C is scaled down around its root: it
+  // stays round instead of being flattened against the bound. With no room left behind her (her
+  // hips thrown back), she raises it along her back first, as a cat does.
+  const bound = s.hip.y < 26 ? TAIL_BACK.crouch : TAIL_BACK.stand;
+  const farthestOf = (shape: readonly { x: number; r: number }[]): number =>
+    Math.min(...shape.map((p) => p.x - p.r));
+  const raised = root.x + farthestOf(raw) * 0.6 < bound ? raw.map(raise) : raw;
+  const k = fitBehind(root.x, farthestOf(raised), bound);
+  const spine = raised.map((p) => ({
+    x: root.x + p.x * k,
+    y: Math.max(floor + p.r * k, root.y + p.y * k),
+    r: p.r * k,
+  }));
+  // The spine turns counterclockwise (y up), so the left normal points inside the C.
+  const inner: Point[] = [];
+  const outer: Point[] = [];
+  const innerShade: Point[] = [];
+  const outerLight: Point[] = [];
   for (let i = 0; i < spine.length; i++) {
     const cur = spine[i];
     const prev = spine[Math.max(0, i - 1)];
@@ -312,21 +370,27 @@ function drawTail(ctx: Ctx): void {
     if (!cur || !prev || !next) continue;
     const t = unit({ x: next.x - prev.x, y: next.y - prev.y });
     const n = { x: -t.y, y: t.x };
-    leftEdge.push(at(clampT(add(cur, scale(n, cur.r)))));
-    rightEdge.push(at(clampT(add(cur, scale(n, -cur.r)))));
-    innerLight.push(at(clampT(add(cur, scale(n, -cur.r * 0.15)))));
+    inner.push(at(add(cur, scale(n, cur.r))));
+    outer.push(at(add(cur, scale(n, -cur.r))));
+    innerShade.push(at(add(cur, scale(n, cur.r * 0.35))));
+    outerLight.push(at(add(cur, scale(n, -cur.r * 0.2))));
   }
 
-  const ribbon = [...leftEdge, ...[...rightEdge].reverse()];
-  canvas.polygon(ribbon, HAIR_MID, { group: 'tail', flat: true });
-
-  // Plush rounded tip cap + base cap in the same 'tail' group (one unified outline!).
+  canvas.polygon([...inner, ...[...outer].reverse()], HAIR_MID, { group: 'tail', flat: true });
+  // Plush rounded tip in the same group (one outline).
   const tip = spine[spine.length - 1];
-  if (tip) canvas.circle(at(tip), tip.r * S, HAIR_SNOW, { group: 'tail', flat: true });
-
-  // Snow-white highlight along the upper/inner half of the C-loop (`poing_01_garde.png`).
-  const litRibbon = [...rightEdge.slice(2), ...[...innerLight.slice(2)].reverse()];
-  canvas.decal(litRibbon, HAIR_SNOW, 'tail', { flat: true });
+  if (tip) canvas.circle(at(tip), tip.r * S, HAIR_MID, { group: 'tail', flat: true });
+  // Soft lilac shade inside the curl, snow-white fur along the outside and on the tip.
+  canvas.decal([...inner.slice(1), ...[...innerShade.slice(1)].reverse()], HAIR_SHADE, 'tail', {
+    flat: true,
+  });
+  canvas.decal([...outer.slice(2), ...[...outerLight.slice(2)].reverse()], HAIR_SNOW, 'tail', {
+    flat: true,
+  });
+  if (tip) {
+    const lit = add(tip, { x: -tip.r * 0.25, y: tip.r * 0.25 });
+    canvas.circle(at(lit), tip.r * S * 0.55, HAIR_SNOW, { group: 'tail', flat: true });
+  }
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -366,12 +430,23 @@ function drawArm(ctx: Ctx, side: Side, which: 'near' | 'far'): void {
     });
   }
 
-  // Black leather bicep strap with a 2x2 silver buckle just below the deltoid (`poing_01_garde.png`).
-  const strapA = add(side.shoulder, scale(sub(side.elbow, side.shoulder), 0.52));
-  const strapB = add(side.shoulder, scale(sub(side.elbow, side.shoulder), 0.66));
+  // Black shoulder band carrying the cyan triangle emblem (Pack_01 `01_garde.png`), then a leather
+  // bicep strap with a 2x2 silver buckle.
+  const arm = sub(side.elbow, side.shoulder);
+  slab(
+    ctx,
+    add(side.shoulder, scale(arm, 0.08)),
+    add(side.shoulder, scale(arm, 0.42)),
+    2.3,
+    2.1,
+    top,
+    `${group}Band`,
+  );
+  const strapA = add(side.shoulder, scale(arm, 0.54));
+  const strapB = add(side.shoulder, scale(arm, 0.66));
   slab(ctx, strapA, strapB, 2.1, 2.0, leather, `${group}Strap`);
   if (near) {
-    const triPos = at(add(side.shoulder, scale(sub(side.elbow, side.shoulder), 0.24)));
+    const triPos = at(add(side.shoulder, scale(arm, 0.25)));
     pixels(ctx, SHOULDER_TRI, triPos.x - 3, triPos.y - 3, {
       d: DETAIL.neonDeep,
       c: DETAIL.neonLight,
@@ -610,43 +685,59 @@ function drawTorso(ctx: Ctx): void {
 
   // Slender, pinched feminine hourglass midriff (`poing_01_garde.png` & Riff's `drawTorso`):
   // Arched lower back (`-2.0` at the waist) and flat toned belly (`+3.4`), flaring into the hips.
+  // High-waisted cargo (Pack_01 `01_garde.png`): the trousers rise to the navel over round hips,
+  // fuller at the back (`-5.6`) than the narrow waist above them.
+  canvas.polygon(
+    [
+      t(-1.5, -5.0 + back),
+      t(1.5, -5.6 + back),
+      t(4.6, -4.6 + back),
+      t(6.2, -3.9 + back),
+      t(6.2, 4.4 + open),
+      t(4.6, 4.8 + open),
+      t(1.5, 5.0 + open),
+      t(-1.5, 4.6 + open),
+    ],
+    PANTS,
+    { group: 'hips', axis, tilt: { x: 0.18, y: 0 } },
+  );
+
+  // A short band of bare midriff between the high waist and the crop-top, pinched at the waist.
   const midriff = [
-    t(2.2, -4.2 + back),
-    t(5.2, -2.6 + back),
-    t(8.2, -2.0 + back),
-    t(11.0, -2.6 + back),
-    t(13.2, -3.5 + back),
+    t(5.6, -3.7 + back),
+    t(8.4, -3.0 + back),
+    t(11.0, -3.1 + back),
+    t(13.2, -3.6 + back),
     t(13.2, 4.0 + open),
     t(11.0, 3.6 + open),
-    t(8.2, 3.4 + open),
-    t(5.2, 3.8 + open),
-    t(2.2, 4.4 + open),
+    t(8.4, 3.5 + open),
+    t(5.6, 4.1 + open),
   ];
   canvas.polygon(midriff, SKIN, { group: 'midriff', axis, tilt: { x: 0.22, y: 0.06 } });
-  // Oblique shadow along the arched lower back, soft abdominal line, and navel.
+  // Shadow along the arched lower back, soft light down the belly, and the navel.
   canvas.decal(
-    [t(2.6, -4.1 + back), t(13.0, -3.4 + back), t(13.0, -2.3 + back), t(2.6, -3.0 + back)],
+    [t(5.8, -3.6 + back), t(13.0, -3.5 + back), t(13.0, -2.5 + back), t(5.8, -2.7 + back)],
     { ...SKIN, base: SKIN.shadow, light: SKIN.shadow },
     'midriff',
     { flat: true },
   );
   canvas.decal(
-    [t(3.6, 4.1 + open), t(12.2, 3.6 + open), t(12.2, 3.0 + open), t(3.6, 3.5 + open)],
+    [t(6.4, 3.8 + open), t(12.2, 3.6 + open), t(12.2, 3.0 + open), t(6.4, 3.2 + open)],
     { ...SKIN, base: SKIN.light, light: SKIN.light },
     'midriff',
     { flat: true },
   );
-  const navel = t(6.8, 1.4 + open);
-  canvas.dot(navel.x, navel.y, M.skin.deep);
+  const navel = t(8.2, 1.6 + open);
+  canvas.dot(navel.x, navel.y, M.skin.shadow);
   canvas.dot(navel.x, navel.y + 1, M.skin.light);
 
-  // Tactical belt riding on the low waist with hand-drawn silver rectangular buckle.
+  // Tactical belt on the high waist with a hand-drawn silver rectangular buckle.
   canvas.polygon(
-    [t(0.0, -4.6 + back), t(0.0, 4.8 + open), t(2.8, 4.9 + open), t(2.8, -4.6 + back)],
+    [t(4.0, -4.7 + back), t(4.0, 4.7 + open), t(6.4, 4.4 + open), t(6.4, -4.0 + back)],
     LEATHER,
     { group: 'belt', axis },
   );
-  const buckle = t(1.8, 2.2 + open);
+  const buckle = t(5.8, 2.2 + open);
   pixels(ctx, BUCKLE, buckle.x - 1, buckle.y - 1, {
     l: M.metal.light,
     s: M.metal.base,
@@ -663,11 +754,13 @@ function drawTorso(ctx: Ctx): void {
       t(16.5, -4.2 + back),
       t(21.0 + lift, -3.8 + back),
       t(23.5 + lift, -2.4),
-      t(23.6, 2.0 + open),
-      t(21.2, 5.2 + open),
-      t(18.8, 6.5 + open),
-      t(16.6, 6.3 + open),
-      t(14.8, 5.0 + open),
+      t(25.2, 3.4 + open),
+      t(24.8, 6.2 + open),
+      t(23.0, 7.0 + open),
+      t(20.6, 7.3 + open),
+      t(19.0, 7.0 + open),
+      t(16.6, 6.8 + open),
+      t(14.6, 5.2 + open),
       t(12.2, 4.0 + open),
     ],
     TOP,
@@ -701,7 +794,7 @@ function drawTorso(ctx: Ctx): void {
   );
 
   // High techwear collar with glowing cyan LED dash (`poing_01_garde.png`).
-  canvas.polygon([t(22.4, -3.4), t(26.8, -2.6), t(27.2, 2.0), t(22.8, 2.8)], TOP, {
+  canvas.polygon([t(22.4, -3.4), t(26.8, -2.6), t(27.4, 3.8), t(23.0, 5.2)], TOP, {
     group: 'collar',
     axis,
     bevel: 0.9 * S,
@@ -715,7 +808,7 @@ function drawTorso(ctx: Ctx): void {
 function drawNeck(ctx: Ctx): void {
   const { canvas, at, s, torso } = ctx;
   const local = headLocal(s);
-  canvas.capsule(at(torso(22.0, 0.4)), at(local(0.0, -3.2)), 1.6 * S, 1.45 * S, SKIN, {
+  canvas.capsule(at(torso(22.0, 0.4)), at(local(0.0, -3.2)), 1.8 * S, 1.6 * S, SKIN, {
     group: 'neck',
   });
 }

@@ -1,35 +1,35 @@
 {
   "frames": {
     "0": {
-      "frame": { "x": 0, "y": 616, "w": 88, "h": 145 },
+      "frame": { "x": 0, "y": 612, "w": 88, "h": 143 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 14, "w": 88, "h": 145 },
-      "sourceSize": { "w": 88, "h": 159 }
+      "spriteSourceSize": { "x": 0, "y": 15, "w": 88, "h": 143 },
+      "sourceSize": { "w": 88, "h": 158 }
     },
     "1": {
-      "frame": { "x": 0, "y": 466, "w": 88, "h": 150 },
+      "frame": { "x": 0, "y": 463, "w": 88, "h": 149 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 9, "w": 88, "h": 150 },
-      "sourceSize": { "w": 88, "h": 159 }
+      "spriteSourceSize": { "x": 0, "y": 9, "w": 88, "h": 149 },
+      "sourceSize": { "w": 88, "h": 158 }
     },
     "2": {
-      "frame": { "x": 0, "y": 314, "w": 88, "h": 152 },
+      "frame": { "x": 0, "y": 312, "w": 88, "h": 151 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 7, "w": 88, "h": 152 },
-      "sourceSize": { "w": 88, "h": 159 }
+      "spriteSourceSize": { "x": 0, "y": 7, "w": 88, "h": 151 },
+      "sourceSize": { "w": 88, "h": 158 }
     },
     "3": {
-      "frame": { "x": 0, "y": 159, "w": 88, "h": 155 },
+      "frame": { "x": 0, "y": 158, "w": 88, "h": 154 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 4, "w": 88, "h": 155 },
-      "sourceSize": { "w": 88, "h": 159 }
+      "spriteSourceSize": { "x": 0, "y": 4, "w": 88, "h": 154 },
+      "sourceSize": { "w": 88, "h": 158 }
     },
     "4": {
-      "frame": { "x": 0, "y": 0, "w": 88, "h": 159 },
+      "frame": { "x": 0, "y": 0, "w": 88, "h": 158 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 0, "w": 88, "h": 159 },
-      "sourceSize": { "w": 88, "h": 159 }
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 88, "h": 158 },
+      "sourceSize": { "w": 88, "h": 158 }
     }
   },
-  "meta": { "image": "hitMid.png", "size": { "w": 88, "h": 761 } }
+  "meta": { "image": "hitMid.png", "size": { "w": 88, "h": 755 } }
 }
