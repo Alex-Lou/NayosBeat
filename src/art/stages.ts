@@ -20,6 +20,7 @@ import { STAGE_VARIANTS as CARNIVAL } from './carnival';
 import { STAGE_VARIANTS as SAHEL } from './sahel';
 import { STAGE_VARIANTS as HELIPAD } from './helipad';
 import { STAGE_VARIANTS as TEMPLE } from './temple';
+import { STAGE_VARIANTS as CYBER_ARENA } from './cyberarena';
 
 /** A floor: hard (asphalt, concrete, wood, stone) or sand (docs/art/decor-plage.md §6). */
 export type Ground = 'hard' | 'sand';
@@ -216,5 +217,24 @@ export const STAGE_MAPS: readonly StageMap[] = (
       ground: 'hard',
       variants: HELIPAD,
     },
+    {
+      name: 'cyberarena',
+      title: 'Cyber Arène',
+      description: "Le toit de l'arène féline, sous la lune et les néons cyan",
+      sheltered: false,
+      ground: 'hard',
+      variants: CYBER_ARENA,
+    },
   ] satisfies StageMap[]
 ).filter(({ variants }) => variants.length > 0);
+
+/**
+ * The places the game offers (the « Lieu » screen, the random draw, the online salon): the Cyber
+ * Arena alone, the developer's reference for the look of every place to come. The others stay in
+ * STAGE_MAPS, drawn and measured (the flash veils, the dust, the rain), ready to be offered again.
+ */
+const OFFERED = new Set(['cyberarena']);
+
+export const OFFERED_STAGES: readonly StageMap[] = STAGE_MAPS.filter(({ name }) =>
+  OFFERED.has(name),
+);

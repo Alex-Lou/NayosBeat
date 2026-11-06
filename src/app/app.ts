@@ -11,7 +11,7 @@ import {
   type StageVariant,
   type Weather,
 } from '../art/stage-layers';
-import { STAGE_MAPS } from '../art/stages';
+import { OFFERED_STAGES } from '../art/stages';
 import type { FightScene, FightSceneData } from '../render/fight-scene';
 import { requestLandscapeFullscreen } from '../render/fullscreen';
 import type { RenderMode } from '../render/render-mode';
@@ -154,11 +154,11 @@ const WEATHER_LABELS: Readonly<Record<Weather, string>> = {
 };
 
 /** Training's « Lieu » choices, in the order the option cycles: at random, then each place. */
-const PLACE_CHOICES: readonly string[] = ['random', ...STAGE_MAPS.map(({ name }) => name)];
+const PLACE_CHOICES: readonly string[] = ['random', ...OFFERED_STAGES.map(({ name }) => name)];
 
 function placeLabel(map: string): string {
   if (map === 'random') return 'aléatoire';
-  return STAGE_MAPS.find(({ name }) => name === map)?.title ?? map;
+  return OFFERED_STAGES.find(({ name }) => name === map)?.title ?? map;
 }
 
 /**
@@ -167,7 +167,7 @@ function placeLabel(map: string): string {
  */
 function atmosphereChoices(map: string): (Atmosphere | 'random')[] {
   const offered = new Map<string, Atmosphere>();
-  for (const { name, variants } of STAGE_MAPS) {
+  for (const { name, variants } of OFFERED_STAGES) {
     if (map !== 'random' && name !== map) continue;
     for (const { atmosphere } of variants) offered.set(atmosphereName(atmosphere), atmosphere);
   }
@@ -251,7 +251,7 @@ export class App {
   private online: OnlineMatch | undefined;
   private onlineBadge: HTMLElement | undefined;
   /** What the online salon offers and checks (multi-catalog.ts). */
-  private readonly catalog = multiCatalog();
+  private readonly catalog = multiCatalog(OFFERED_STAGES);
 
   constructor(
     private readonly root: HTMLElement,
@@ -859,13 +859,13 @@ export class App {
    * have one place or none. `back`: the screen before it.
    */
   private chooseStage(back: () => void): void {
-    if (STAGE_MAPS.length < 2) {
+    if (OFFERED_STAGES.length < 2) {
       this.startFight();
       return;
     }
     this.show(
       new StageSelect(this.root, {
-        places: selectStages(),
+        places: selectStages(OFFERED_STAGES),
         columns: STAGE_COLUMNS,
         initial: this.stageChoice.map,
         onPick: (map) => {
@@ -1094,7 +1094,7 @@ export class App {
         mode === 'training'
           ? this.stageChoice
           : { map: this.stageChoice.map, atmosphere: 'random' };
-      this.stage = stageVariantFor(chosen);
+      this.stage = stageVariantFor(chosen, OFFERED_STAGES);
       this.startedChoice = this.stageChoice;
     }
     this.screen?.dispose();
