@@ -1,35 +1,35 @@
 {
   "frames": {
     "0": {
-      "frame": { "x": 0, "y": 312, "w": 146, "h": 142 },
+      "frame": { "x": 0, "y": 311, "w": 143, "h": 141 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 70, "y": 17, "w": 146, "h": 142 },
-      "sourceSize": { "w": 219, "h": 159 }
+      "spriteSourceSize": { "x": 72, "y": 17, "w": 143, "h": 141 },
+      "sourceSize": { "w": 218, "h": 158 }
     },
     "1": {
-      "frame": { "x": 0, "y": 454, "w": 154, "h": 141 },
+      "frame": { "x": 0, "y": 452, "w": 154, "h": 140 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 65, "y": 18, "w": 154, "h": 141 },
-      "sourceSize": { "w": 219, "h": 159 }
+      "spriteSourceSize": { "x": 64, "y": 18, "w": 154, "h": 140 },
+      "sourceSize": { "w": 218, "h": 158 }
     },
     "2": {
-      "frame": { "x": 0, "y": 595, "w": 135, "h": 138 },
+      "frame": { "x": 0, "y": 592, "w": 135, "h": 138 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 66, "y": 21, "w": 135, "h": 138 },
-      "sourceSize": { "w": 219, "h": 159 }
+      "spriteSourceSize": { "x": 65, "y": 20, "w": 135, "h": 138 },
+      "sourceSize": { "w": 218, "h": 158 }
     },
     "3": {
-      "frame": { "x": 0, "y": 159, "w": 138, "h": 153 },
+      "frame": { "x": 0, "y": 158, "w": 137, "h": 153 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 6, "w": 138, "h": 153 },
-      "sourceSize": { "w": 219, "h": 159 }
+      "spriteSourceSize": { "x": 0, "y": 5, "w": 137, "h": 153 },
+      "sourceSize": { "w": 218, "h": 158 }
     },
     "4": {
-      "frame": { "x": 0, "y": 0, "w": 143, "h": 159 },
+      "frame": { "x": 0, "y": 0, "w": 143, "h": 158 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 3, "y": 0, "w": 143, "h": 159 },
-      "sourceSize": { "w": 219, "h": 159 }
+      "spriteSourceSize": { "x": 2, "y": 0, "w": 143, "h": 158 },
+      "sourceSize": { "w": 218, "h": 158 }
     }
   },
-  "meta": { "image": "hitHigh.png", "size": { "w": 154, "h": 733 } }
+  "meta": { "image": "hitHigh.png", "size": { "w": 154, "h": 730 } }
 }

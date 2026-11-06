@@ -1,35 +1,35 @@
 {
   "frames": {
     "0": {
-      "frame": { "x": 0, "y": 249, "w": 160, "h": 66 },
+      "frame": { "x": 0, "y": 247, "w": 160, "h": 65 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 12, "y": 73, "w": 160, "h": 66 },
-      "sourceSize": { "w": 172, "h": 139 }
+      "spriteSourceSize": { "x": 12, "y": 73, "w": 160, "h": 65 },
+      "sourceSize": { "w": 172, "h": 138 }
     },
     "1": {
-      "frame": { "x": 127, "y": 139, "w": 145, "h": 102 },
+      "frame": { "x": 127, "y": 138, "w": 145, "h": 99 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 20, "y": 37, "w": 145, "h": 102 },
-      "sourceSize": { "w": 172, "h": 139 }
+      "spriteSourceSize": { "x": 20, "y": 39, "w": 145, "h": 99 },
+      "sourceSize": { "w": 172, "h": 138 }
     },
     "2": {
-      "frame": { "x": 0, "y": 139, "w": 127, "h": 110 },
+      "frame": { "x": 0, "y": 138, "w": 127, "h": 109 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 29, "w": 127, "h": 110 },
-      "sourceSize": { "w": 172, "h": 139 }
+      "spriteSourceSize": { "x": 0, "y": 29, "w": 127, "h": 109 },
+      "sourceSize": { "w": 172, "h": 138 }
     },
     "3": {
-      "frame": { "x": 116, "y": 0, "w": 126, "h": 126 },
+      "frame": { "x": 116, "y": 0, "w": 126, "h": 125 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 7, "y": 13, "w": 126, "h": 126 },
-      "sourceSize": { "w": 172, "h": 139 }
+      "spriteSourceSize": { "x": 7, "y": 13, "w": 126, "h": 125 },
+      "sourceSize": { "w": 172, "h": 138 }
     },
     "4": {
-      "frame": { "x": 0, "y": 0, "w": 116, "h": 139 },
+      "frame": { "x": 0, "y": 0, "w": 116, "h": 138 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 15, "y": 0, "w": 116, "h": 139 },
-      "sourceSize": { "w": 172, "h": 139 }
+      "spriteSourceSize": { "x": 15, "y": 0, "w": 116, "h": 138 },
+      "sourceSize": { "w": 172, "h": 138 }
     }
   },
-  "meta": { "image": "getup.png", "size": { "w": 272, "h": 315 } }
+  "meta": { "image": "getup.png", "size": { "w": 272, "h": 312 } }
 }
