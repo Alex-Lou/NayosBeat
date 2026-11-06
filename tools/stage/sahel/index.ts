@@ -8,6 +8,7 @@ import type { Rgba } from '../../sprites/png.ts';
 import { Canvas } from '../kit/canvas.ts';
 import type { CodeMap, CodeProp, CodeStage } from '../kit/stage.ts';
 import { imageOf, sizeOf } from '../kit/stage.ts';
+import { drawSahelFloor, FLOOR_PALETTE } from './floor.ts';
 
 const BLANK: Rgba = { r: 0, g: 0, b: 0, a: 0 };
 
@@ -275,8 +276,13 @@ const ROAD_DUST: CodeProp = {
 let drawn: CodeStage | undefined;
 
 export function drawSahel(): CodeStage {
+  const floor = sizeOf('floor');
   drawn ??= {
-    layers: { far: blank('far'), mid: blank('mid'), floor: blank('floor') },
+    layers: {
+      far: blank('far'),
+      mid: blank('mid'),
+      floor: imageOf(drawSahelFloor(floor.width, floor.height), FLOOR_PALETTE),
+    },
     props: [SUN_GLOW, LAUNDRY, BIRDS, ...LAMPS.map(lampProp), ROAD_DUST],
   };
   return drawn;
@@ -285,5 +291,5 @@ export function drawSahel(): CodeStage {
 export const SAHEL: CodeMap = {
   name: 'sahel',
   draw: drawSahel,
-  atmospheres: [{ atmosphere: { moment: 'dusk', weather: 'clear' }, palette: [BLANK] }],
+  atmospheres: [{ atmosphere: { moment: 'dusk', weather: 'clear' }, palette: FLOOR_PALETTE }],
 };
