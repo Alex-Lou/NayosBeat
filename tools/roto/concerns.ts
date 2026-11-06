@@ -11,7 +11,7 @@
  * They are data, not sentences — the page turns them into French, the tests read the names.
  */
 
-import type { Overflow } from './place.ts';
+import type { Frame, Overflow } from './place.ts';
 import type { Edges, Mask, Sole } from './silhouette.ts';
 import { edgesOf } from './silhouette.ts';
 
@@ -42,26 +42,46 @@ const EVERYTHING_KEPT = 0.95;
 /** Up to this many islands dropped is ordinary; past it the key is picking up the background. */
 const SPECKS = 3;
 
-export function concernsOf(mask: Mask, sole: Sole, overflow: Overflow): Concern[] {
+/**
+ * What the frame is for decides which judgements mean anything. A bust has no feet and is **meant**
+ * to be cut at the bottom, so the two that guard the anchor are not raised for one — raising them
+ * there would teach the eye to ignore the warnings, which costs more than silence.
+ *
+ * Nothing warns that a whole standing figure was handed to the portrait frame. Measured, a fighter
+ * in its guard is 1.4 times taller than wide and a bust about the same, so the shape tells them
+ * apart no better than a coin; and unlike a wrong anchor, a tiny body in the square is the first
+ * thing the preview shows. A warning that fires on a coin toss, about something plain to see, only
+ * teaches the eye to skip the warnings that matter.
+ */
+export function concernsOf(
+  mask: Mask,
+  sole: Sole,
+  overflow: Overflow,
+  frame: Frame = 'fighter',
+): Concern[] {
   const concerns: Concern[] = [];
-  const frame = mask.width * mask.height;
-  const share = frame === 0 ? 0 : mask.pixels / frame;
+  const area = mask.width * mask.height;
+  const share = area === 0 ? 0 : mask.pixels / area;
   if (share < NOTHING_KEPT) concerns.push({ kind: 'nothing-kept', share });
   else if (share > EVERYTHING_KEPT) concerns.push({ kind: 'everything-kept', share });
   const width = mask.box.right - mask.box.left + 1;
   const base = width === 0 ? 0 : sole.width / width;
-  if (mask.pixels > 0 && base < NARROW_BASE) {
+  if (frame === 'fighter' && mask.pixels > 0 && base < NARROW_BASE) {
     concerns.push({ kind: 'narrow-base', width: sole.width, share: base });
   }
   const edges = edgesOf(mask);
-  if (mask.pixels > 0 && (edges.left || edges.top || edges.right || edges.bottom)) {
-    concerns.push({ kind: 'cut-off', edges });
+  const cut = frame === 'portrait' ? { ...edges, bottom: false } : edges;
+  if (mask.pixels > 0 && (cut.left || cut.top || cut.right || cut.bottom)) {
+    concerns.push({ kind: 'cut-off', edges: cut });
   }
   if (mask.specks > SPECKS) concerns.push({ kind: 'specks', specks: mask.specks });
   if (mask.dropped > 0) concerns.push({ kind: 'corner-dropped', dropped: mask.dropped });
-  if (overflow.left + overflow.top + overflow.right + overflow.bottom > 0) {
-    concerns.push({ kind: 'overflow', overflow });
-  }
+  // A bust running off the bottom of its square is the point of a bust, not a problem.
+  const spill =
+    frame === 'portrait'
+      ? overflow.left + overflow.top + overflow.right
+      : overflow.left + overflow.top + overflow.right + overflow.bottom;
+  if (spill > 0) concerns.push({ kind: 'overflow', overflow });
   return concerns;
 }
 

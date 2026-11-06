@@ -21,18 +21,41 @@ import { ANCHOR, CELL_SIZE } from '../../src/art/types.ts';
 import type { Bitmap, Box } from './pixels.ts';
 import { bitmap, byteOf, heightOf, linearOf } from './pixels.ts';
 import type { Mask } from './silhouette.ts';
-import { soleOf } from './silhouette.ts';
+import { crownOf, soleOf } from './silhouette.ts';
+
+/**
+ * What the square is for. A fighter's cell stands the subject on the game's anchor; a portrait
+ * frames its head and lets the shoulders run off the bottom, which is what a bust is.
+ */
+export type Frame = 'fighter' | 'portrait';
 
 export interface Placement {
-  /** The cell's side in art pixels: `CELL_SIZE` for a game strip, twice it for an HD one. */
+  readonly frame: Frame;
+  /** The square's side in art pixels: `CELL_SIZE`, twice it for HD, or `PORTRAIT_SIZE`. */
   readonly cell: number;
-  /** The subject's height on the cell, soles to the top of the head, in the cell's pixels. */
+  /** The subject's height on the square, in its pixels. */
   readonly height: number;
   /** The game's strips face right; a subject facing left is turned over. */
   readonly flip: boolean;
   readonly nudgeX: number;
   readonly nudgeY: number;
 }
+
+/**
+ * The bust of the select screen (docs/art/aseprite.md): a square of 96 px, one frame, in the
+ * fighter's palette slots, nothing owed to the anchor. `PORTRAIT_SIZE` in tools/sprites/drawn.ts
+ * is where this number belongs, but that module reads the disk and cannot be loaded in a page;
+ * a test holds the two together (tests/tools/roto.test.ts).
+ */
+export const PORTRAIT_SIZE = 96;
+
+/**
+ * Air left over the hair, as a share of the square. The game's own framing puts the head's middle
+ * at 45 % of the square with the head filling about 58 % of it (tools/sprites/aseprite-template.ts
+ * `portraitStart`), which leaves the crown near a sixth of the way down; a photographed head keeps
+ * more hair than a drawn one, so a little less.
+ */
+const PORTRAIT_AIR = 0.06;
 
 /**
  * The standing height of a fighter, measured on the one strip drawn by hand today
@@ -42,8 +65,19 @@ export interface Placement {
 export const STANDING_HEIGHT = 157;
 
 export const PLACEMENT_DEFAULTS: Placement = {
+  frame: 'fighter',
   cell: CELL_SIZE * 2,
   height: STANDING_HEIGHT * 2,
+  flip: false,
+  nudgeX: 0,
+  nudgeY: 0,
+};
+
+/** A bust fills its square and lets the shoulders go: the head is what the tile shows. */
+export const PORTRAIT_DEFAULTS: Placement = {
+  frame: 'portrait',
+  cell: PORTRAIT_SIZE,
+  height: PORTRAIT_SIZE,
   flip: false,
   nudgeX: 0,
   nudgeY: 0,
@@ -71,16 +105,17 @@ export function placeOnCell(image: Bitmap, mask: Mask, placement: Placement): Pl
   const [source, silhouette] = placement.flip ? turnedOver(image, mask) : [image, mask];
   const side = placement.cell;
   const scale = placement.height / heightOf(silhouette.box);
-  const sole = soleOf(silhouette);
-  // The cell's anchor, at the scale of this cell, on the edges the two rules speak of: the centre
-  // of the anchor column, and the row just under the anchor row.
   const unit = side / CELL_SIZE;
-  const anchorX = (ANCHOR.x + 0.5) * unit;
-  const anchorY = (ANCHOR.y + 1) * unit;
-  const soleX = sole.x + 0.5;
-  const soleY = silhouette.box.bottom + 1;
-  const sourceX = (cellEdge: number) => (cellEdge - anchorX - placement.nudgeX) / scale + soleX;
-  const sourceY = (cellEdge: number) => (cellEdge - anchorY - placement.nudgeY) / scale + soleY;
+  // Where the subject is pinned, and onto what. A fighter stands the last row of its feet on the
+  // row just under the anchor row, its feet centred on the anchor column; a bust hangs the top of
+  // its head under the air, centred on the square.
+  const held = placement.frame === 'fighter' ? soleOf(silhouette) : crownOf(silhouette);
+  const heldX = held.x + 0.5;
+  const heldY = placement.frame === 'fighter' ? silhouette.box.bottom + 1 : silhouette.box.top;
+  const pinX = placement.frame === 'fighter' ? (ANCHOR.x + 0.5) * unit : side / 2;
+  const pinY = placement.frame === 'fighter' ? (ANCHOR.y + 1) * unit : side * PORTRAIT_AIR;
+  const sourceX = (cellEdge: number) => (cellEdge - pinX - placement.nudgeX) / scale + heldX;
+  const sourceY = (cellEdge: number) => (cellEdge - pinY - placement.nudgeY) / scale + heldY;
 
   const cell = bitmap(side, side);
   const on = new Uint8Array(side * side);

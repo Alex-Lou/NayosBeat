@@ -304,6 +304,31 @@ export function soleOf(mask: Mask, band = 0.05): Sole {
   return { x, y: mask.box.bottom, width: right < left ? 0 : right - left + 1 };
 }
 
+/**
+ * The top of the head, in the image: the middle of the subject's highest band, mirroring `soleOf`.
+ * A portrait is framed on the head, and on a profile the skull's middle is not the middle of the
+ * whole subject — the shoulders are wider and sit to one side.
+ */
+export function crownOf(mask: Mask, band = 0.15): Sole {
+  const height = mask.box.bottom - mask.box.top + 1;
+  const rows = Math.max(1, Math.round(height * band));
+  let sum = 0;
+  let found = 0;
+  let left = mask.width;
+  let right = -1;
+  for (let y = mask.box.top; y < mask.box.top + rows && y < mask.height; y++) {
+    for (let x = mask.box.left; x <= mask.box.right; x++) {
+      if ((mask.on[y * mask.width + x] ?? 0) === 0) continue;
+      sum += x;
+      found++;
+      if (x < left) left = x;
+      if (x > right) right = x;
+    }
+  }
+  const x = found === 0 ? (mask.box.left + mask.box.right) / 2 : sum / found;
+  return { x, y: mask.box.top, width: right < left ? 0 : right - left + 1 };
+}
+
 /** The image edges the subject runs into: what the frame cut off, not what the subject is. */
 export interface Edges {
   readonly left: boolean;

@@ -4,8 +4,10 @@ import { toLab } from '../../tools/stage/kit/unify';
 import type { Bitmap } from '../../tools/roto/pixels';
 import { bitmap } from '../../tools/roto/pixels';
 import { PIXELIZE_DEFAULTS, pixelize } from '../../tools/roto/pixelize';
-import { placeOnCell } from '../../tools/roto/place';
+import { placeOnCell, PORTRAIT_SIZE, PORTRAIT_DEFAULTS } from '../../tools/roto/place';
+import { PORTRAIT_SIZE as PIPELINE_PORTRAIT_SIZE } from '../../tools/sprites/drawn';
 import {
+  crownOf,
   edgesOf,
   SILHOUETTE_DEFAULTS,
   silhouetteOf,
@@ -212,6 +214,7 @@ describe('placement', () => {
   const place = (height: number, over: Partial<Parameters<typeof placeOnCell>[2]> = {}) => {
     const image = standing();
     return placeOnCell(image, found(image), {
+      frame: 'fighter',
       cell: CELL_SIZE,
       height,
       flip: false,
@@ -259,6 +262,7 @@ describe('pixelize', () => {
   const made = (over: Partial<typeof PIXELIZE_DEFAULTS> = {}) => {
     const image = standing();
     const placed = placeOnCell(image, found(image), {
+      frame: 'fighter',
       cell: CELL_SIZE,
       height: 157,
       flip: false,
@@ -299,5 +303,74 @@ describe('pixelize', () => {
     const middleY = Math.round((box.top + box.bottom) / 2);
     const at = (x: number) => (middleY * out.cell.width + x) * 4;
     expect(out.cell.data[at(box.left)]).toBe(out.cell.data[at(box.left + 3)]);
+  });
+});
+
+describe('portrait', () => {
+  /** A head of 40 x 36 over a narrow neck running down to the bottom: a bust, as a photo gives one. */
+  function bust(): Bitmap {
+    return scene(100, 80, WALL, (set) => {
+      for (let y = 8; y <= 43; y++) for (let x = 30; x <= 69; x++) set(x, y, SUBJECT);
+      for (let y = 44; y <= 79; y++) for (let x = 44; x <= 55; x++) set(x, y, SUBJECT);
+    });
+  }
+
+  const place = (image: Bitmap, over: Partial<Parameters<typeof placeOnCell>[2]> = {}) =>
+    placeOnCell(image, found(image), { ...PORTRAIT_DEFAULTS, ...over });
+
+  it('keeps the size the pipeline asks a portrait for', () => {
+    expect(PORTRAIT_SIZE).toBe(PIPELINE_PORTRAIT_SIZE);
+    expect(PORTRAIT_DEFAULTS.cell).toBe(PORTRAIT_SIZE);
+  });
+
+  it('measures the crown as soleOf measures the feet', () => {
+    const crown = crownOf(found(bust()));
+    expect(crown.y).toBe(8);
+    expect(crown.x).toBeCloseTo(49.5, 0);
+  });
+
+  it('centres the head on the square and hangs it under the air', () => {
+    const box = drawnBox(place(bust(), { height: 72 }).cell);
+    expect((box.left + box.right + 1) / 2).toBeCloseTo(PORTRAIT_SIZE / 2, 0);
+    // About 6 % of the square left over the hair.
+    expect(box.top).toBeGreaterThanOrEqual(4);
+    expect(box.top).toBeLessThanOrEqual(7);
+  });
+
+  it('lets the shoulders run off the bottom without calling it a problem', () => {
+    const image = bust();
+    const mask = found(image);
+    const placed = place(image);
+    const kinds = concernsOf(mask, soleOf(mask), placed.overflow, 'portrait').map((c) => c.kind);
+    expect(kinds).not.toContain('narrow-base');
+    expect(kinds).not.toContain('cut-off');
+    expect(kinds).not.toContain('overflow');
+  });
+
+  it('still says when a side or the top is cut', () => {
+    const image = scene(100, 80, WALL, (set) => {
+      for (let y = 0; y <= 43; y++) for (let x = 30; x <= 69; x++) set(x, y, SUBJECT);
+      for (let y = 44; y <= 79; y++) for (let x = 44; x <= 55; x++) set(x, y, SUBJECT);
+    });
+    const mask = found(image);
+    const kinds = concernsOf(mask, soleOf(mask), place(image).overflow, 'portrait').map(
+      (c) => c.kind,
+    );
+    expect(kinds).toContain('cut-off');
+  });
+
+  it('does not underline the square its own border crops', () => {
+    const image = bust();
+    const placed = place(image);
+    const out = pixelize(placed.cell, placed.on, { ...PIXELIZE_DEFAULTS, colors: 0 });
+    const row = (y: number, x: number) => {
+      const at = (y * out.cell.width + x) * 4;
+      return (out.cell.data[at] ?? 0) + (out.cell.data[at + 1] ?? 0) + (out.cell.data[at + 2] ?? 0);
+    };
+    const box = drawnBox(out.cell);
+    const middle = Math.round((box.left + box.right) / 2);
+    expect(box.bottom).toBe(PORTRAIT_SIZE - 1);
+    // The last row is a crop, not a silhouette: as light as the neck above it.
+    expect(row(PORTRAIT_SIZE - 1, middle)).toBe(row(PORTRAIT_SIZE - 4, middle));
   });
 });

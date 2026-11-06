@@ -201,15 +201,13 @@ function edgesOf(cell: Bitmap, on: Uint8Array): Uint8Array {
     for (let x = 0; x < width; x++) {
       const pixel = y * width + x;
       if ((on[pixel] ?? 0) === 0) continue;
+      // Only where the subject meets the empty cell. The square's own border is a crop, not a
+      // silhouette: a bust that runs off the bottom must bleed off it, not be underlined.
       const open =
-        x === 0 ||
-        x === width - 1 ||
-        y === 0 ||
-        y === height - 1 ||
-        (on[pixel - 1] ?? 0) === 0 ||
-        (on[pixel + 1] ?? 0) === 0 ||
-        (on[pixel - width] ?? 0) === 0 ||
-        (on[pixel + width] ?? 0) === 0;
+        (x > 0 && (on[pixel - 1] ?? 0) === 0) ||
+        (x < width - 1 && (on[pixel + 1] ?? 0) === 0) ||
+        (y > 0 && (on[pixel - width] ?? 0) === 0) ||
+        (y < height - 1 && (on[pixel + width] ?? 0) === 0);
       if (open) edge[pixel] = 1;
     }
   }

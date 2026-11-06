@@ -11,7 +11,13 @@ import { toLab } from '../stage/kit/unify.ts';
 import type { Bitmap } from './pixels.ts';
 import { labBufferOf } from './pixels.ts';
 import type { Placed } from './place.ts';
-import { PLACEMENT_DEFAULTS, placeOnCell, STANDING_HEIGHT } from './place.ts';
+import {
+  PLACEMENT_DEFAULTS,
+  placeOnCell,
+  PORTRAIT_DEFAULTS,
+  PORTRAIT_SIZE,
+  STANDING_HEIGHT,
+} from './place.ts';
 import type { Pixelized } from './pixelize.ts';
 import { PIXELIZE_DEFAULTS, pixelize } from './pixelize.ts';
 import type { Edges, Mask } from './silhouette.ts';
@@ -29,6 +35,7 @@ const state = {
   tolerance: SILHOUETTE_DEFAULTS.tolerance,
   minShare: SILHOUETTE_DEFAULTS.minShare,
   tidy: SILHOUETTE_DEFAULTS.tidy,
+  frame: PLACEMENT_DEFAULTS.frame,
   cell: PLACEMENT_DEFAULTS.cell,
   height: PLACEMENT_DEFAULTS.height,
   flip: PLACEMENT_DEFAULTS.flip,
@@ -75,6 +82,17 @@ function contextOf(canvas: HTMLCanvasElement): CanvasRenderingContext2D {
 
 // Controls ------------------------------------------------------------------------------------
 
+/**
+ * Every control knows how to read the state back. One control can change another's value — picking
+ * the portrait frame sets the height — and a control showing a number the tool is not using is a
+ * lie the eye believes. They are all refreshed after each pass.
+ */
+const refreshers: (() => void)[] = [];
+
+function refreshControls(): void {
+  for (const refresh of refreshers) refresh();
+}
+
 function group(title: string, children: readonly HTMLElement[]): HTMLElement {
   const set = document.createElement('fieldset');
   const legend = document.createElement('legend');
@@ -109,6 +127,11 @@ function range(
     value.textContent = show(get());
     schedule();
   });
+  refreshers.push(() => {
+    // Only when it differs: writing the same value back mid-drag can interrupt the drag.
+    if (input.value !== String(get())) input.value = String(get());
+    value.textContent = show(get());
+  });
   wrap.append(name, value, input);
   return wrap;
 }
@@ -123,6 +146,9 @@ function check(label: string, get: () => boolean, set: (value: boolean) => void)
   input.addEventListener('change', () => {
     set(input.checked);
     schedule();
+  });
+  refreshers.push(() => {
+    input.checked = get();
   });
   wrap.append(name, input);
   return wrap;
@@ -148,6 +174,9 @@ function choice(
   select.addEventListener('change', () => {
     set(Number(select.value));
     schedule();
+  });
+  refreshers.push(() => {
+    select.value = String(get());
   });
   wrap.append(name, select);
   return wrap;
@@ -191,23 +220,34 @@ controls.append(
   ]),
   group('Pose', [
     choice(
-      'Case',
+      'Cadre',
       () => state.cell,
       (value) => {
-        // The height follows the cell, so switching does not shrink the fighter by half.
-        state.height = Math.round((state.height * value) / state.cell);
+        if (value === PORTRAIT_SIZE) {
+          state.frame = 'portrait';
+          state.cell = PORTRAIT_SIZE;
+          state.height = PORTRAIT_DEFAULTS.height;
+          return;
+        }
+        // A fighter's height follows its square, so switching does not halve the fighter.
+        state.height =
+          state.frame === 'portrait'
+            ? Math.round((STANDING_HEIGHT * value) / CELL_SIZE)
+            : Math.round((state.height * value) / state.cell);
+        state.frame = 'fighter';
         state.cell = value;
       },
       [
-        { value: CELL_SIZE, label: `${CELL_SIZE} px (planche du jeu)` },
-        { value: CELL_SIZE * 2, label: `${CELL_SIZE * 2} px (HD)` },
+        { value: CELL_SIZE, label: `Planche, ${CELL_SIZE} px` },
+        { value: CELL_SIZE * 2, label: `Planche HD, ${CELL_SIZE * 2} px` },
+        { value: PORTRAIT_SIZE, label: `Portrait, ${PORTRAIT_SIZE} px` },
       ],
     ),
     range(
-      'Hauteur debout',
+      'Hauteur du sujet',
       () => state.height,
       (value) => (state.height = value),
-      40,
+      20,
       CELL_SIZE * 2,
       1,
       (value) => `${value} px`,
@@ -297,7 +337,7 @@ controls.append(
       (value) => `×${value}`,
     ),
     check(
-      'Croix de l’ancre',
+      'Repères',
       () => state.anchor,
       (value) => (state.anchor = value),
     ),
@@ -330,6 +370,7 @@ function run(): void {
     loaded.lab,
   );
   placed = placeOnCell(loaded.image, mask, {
+    frame: state.frame,
     cell: state.cell,
     height: state.height,
     flip: state.flip,
@@ -345,6 +386,7 @@ function run(): void {
     orphans: state.orphans,
   });
   save.disabled = false;
+  refreshControls();
   drawSource(loaded.image, mask);
   drawCell(pixels.cell);
   report(mask, placed, pixels);
@@ -414,6 +456,23 @@ function drawCell(cell: Bitmap): void {
   context.imageSmoothingEnabled = false;
   context.drawImage(sheet, 0, 0, cellCanvas.width, cellCanvas.height);
   if (!state.anchor) return;
+  if (state.frame === 'portrait') {
+    // The game's own framing: the head's middle at 45 % of the square, its crown near a sixth
+    // down (tools/sprites/aseprite-template.ts). Lines to aim at, nothing the tool enforces.
+    context.strokeStyle = 'rgba(255, 176, 32, 0.45)';
+    context.lineWidth = 1;
+    context.setLineDash([3, 5]);
+    context.beginPath();
+    context.moveTo((cell.width / 2) * zoom, 0);
+    context.lineTo((cell.width / 2) * zoom, cellCanvas.height);
+    for (const share of [0.06, 0.45]) {
+      context.moveTo(0, cell.height * share * zoom);
+      context.lineTo(cellCanvas.width, cell.height * share * zoom);
+    }
+    context.stroke();
+    context.setLineDash([]);
+    return;
+  }
   const unit = cell.width / CELL_SIZE;
   const x = (ANCHOR.x * unit + 0.5) * zoom;
   const y = (ANCHOR.y * unit + 0.5) * zoom;
@@ -488,16 +547,19 @@ function sentenceOf(concern: Concern): string {
 
 function report(found: Mask, set: Placed, made: Pixelized): void {
   const sole = soleOf(found);
-  const concerns = concernsOf(found, sole, set.overflow);
-  const guessed = anchorIsAGuess(concerns);
+  const concerns = concernsOf(found, sole, set.overflow, state.frame);
+  const guessed = state.frame === 'fighter' && anchorIsAGuess(concerns);
   const subjectHeight = found.box.bottom - found.box.top + 1;
+  const scaled = `${subjectHeight} px de source → ${state.height} px de carré (×${set.scale.toFixed(3)})`;
   const lines = [
     `Silhouette : ${found.from === 'alpha' ? 'canal alpha de l’image' : 'fond détouré depuis les quatre coins'} — ${found.pixels.toLocaleString('fr-FR')} px, boîte ${found.box.right - found.box.left + 1} × ${subjectHeight} px, ${found.islands} îlot(s) gardé(s)${found.specks > 0 ? `, ${found.specks} poussière(s) écartée(s)` : ''}${found.from === 'key' ? `, ${found.seeds} coin(s) de départ` : ''}.`,
-    `Pose : ${subjectHeight} px de source → ${state.height} px de case (×${set.scale.toFixed(3)}), ` +
-      (guessed
-        ? `base posée sur l’ancre ${ANCHOR.x}, ${ANCHOR.y} — mais voir ci-dessous, ce ne sont pas des pieds.`
-        : `pieds posés sur l’ancre ${ANCHOR.x}, ${ANCHOR.y} (case ${CELL_SIZE}), base large de ${sole.width} px.`),
-    `Pixels : ${made.colors} couleur(s) dans la case${state.colors > 0 ? ` (palette demandée : ${state.colors})` : ''}.`,
+    state.frame === 'portrait'
+      ? `Cadrage : ${scaled}, tête centrée sur le carré, couronne à 6 % du haut. Les épaules sortent par le bas, c’est voulu.`
+      : `Pose : ${scaled}, ` +
+        (guessed
+          ? `base posée sur l’ancre ${ANCHOR.x}, ${ANCHOR.y} — mais voir ci-dessous, ce ne sont pas des pieds.`
+          : `pieds posés sur l’ancre ${ANCHOR.x}, ${ANCHOR.y} (case ${CELL_SIZE}), base large de ${sole.width} px.`),
+    `Pixels : ${made.colors} couleur(s)${state.colors > 0 ? ` (palette demandée : ${state.colors})` : ''}.`,
   ];
   status.textContent = lines.join('\n');
   for (const concern of concerns) {
@@ -507,7 +569,8 @@ function report(found: Mask, set: Placed, made: Pixelized): void {
     status.append(warn);
   }
   cellInfo.textContent = `${set.cell.width} × ${set.cell.height} px`;
-  cellLabel.textContent = state.cell === CELL_SIZE ? 'Case du jeu' : 'Case HD';
+  cellLabel.textContent =
+    state.frame === 'portrait' ? 'Portrait' : state.cell === CELL_SIZE ? 'Case du jeu' : 'Case HD';
 }
 
 function exportCell(): void {
@@ -525,7 +588,7 @@ function exportCell(): void {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `roto-${made.cell.width}.png`;
+    link.download = `roto-${state.frame}-${made.cell.width}.png`;
     link.click();
     URL.revokeObjectURL(url);
   }, 'image/png');

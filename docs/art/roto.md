@@ -9,6 +9,13 @@ charger. La différence est expliquée au §1.
 npm run roto
 ```
 
+Deux cadres, au choix dans la page :
+
+| Cadre | Taille | Ce qu'il fait | Pour |
+|---|---|---|---|
+| **Planche** | 256 px, ou 512 en HD | pose les pieds sur l'ancre du jeu | une image de combattant en pied |
+| **Portrait** | **96 px** | centre la tête, laisse les épaules sortir | un buste pour l'écran de sélection |
+
 ## 0. Ce que la source doit avoir
 
 L'outil ne comprend rien, il mesure. Pour qu'il trouve l'ancre et l'échelle, l'image doit remplir
@@ -16,7 +23,7 @@ quatre conditions :
 
 | Condition | Pourquoi |
 |---|---|
-| Corps entier, **pieds visibles et posés** | La rangée la plus basse du sujet devient la ligne des semelles. Des pieds coupés, et l'ancre est fausse. |
+| Corps entier, **pieds visibles et posés** (cadre planche) | La rangée la plus basse du sujet devient la ligne des semelles. Des pieds coupés, et l'ancre est fausse. En cadre portrait, au contraire, il n'en faut pas : c'est la tête qui compte. |
 | **Un seul sujet** | Deux silhouettes, et la boîte englobante ne veut plus rien dire. |
 | **Fond uni, ou canal alpha** | Sans modèle de segmentation, un fond chargé ne se détoure pas (§2). |
 | **Tourné vers la droite** | Convention des planches ; le moteur retourne le sprite. La case **Retourner** est là pour les autres. |
@@ -37,9 +44,9 @@ ffmpeg -i mouvement.mp4 -vf fps=12 images/%03d.png
 palette, poser un contour. C'est-à-dire tout le travail d'alignement, qui est long à la main et que
 la machine fait exactement.
 
-**Il ne fait pas** : écrire une planche du jeu. Une planche est un PNG indexé **dont les pixels sont
-les numéros de slots** de la palette du combattant (`docs/art/aseprite.md`), parce que la tenue alt
-est la même image avec une autre palette. Pour y arriver automatiquement, il faudrait savoir que
+**Il ne fait pas** : écrire une planche ni un portrait que le jeu charge. Les deux sont des PNG
+indexés **dont les pixels sont les numéros de slots** de la palette du combattant
+(`docs/art/aseprite.md`), parce que la tenue alt est la même image avec une autre palette. Pour y arriver automatiquement, il faudrait savoir que
 *ce* gris sombre est le contour de la veste et *celui-là* le contour du pantalon : c'est un problème
 de segmentation que cet outil ne résout pas. La sortie est donc en vraies couleurs, et c'est au
 dessin de la ramener dans la palette.
@@ -105,7 +112,37 @@ Ce sont des **avertissements, pas des erreurs** : chacun a un cas où il est nor
 refusé. `anchorIsAGuess` regroupe ceux qui ruinent une planche, et la ligne « Pose » change alors de
 mot : « base posée sur l'ancre », pas « pieds ».
 
+**Le cadre décide de ce qui a un sens.** Un buste n'a pas de pieds et est *fait* pour être coupé en
+bas : en cadre portrait, `narrow-base`, `cut-off` par le bas et le débordement par le bas ne sont pas
+levés. Les lever là apprendrait à l'œil à ignorer les avertissements, ce qui coûte plus cher que le
+silence.
+
+Et rien n'avertit qu'on a donné une silhouette entière au cadre portrait. Mesuré : un combattant en
+garde est 1,4 fois plus haut que large, un buste à peu près autant — la forme ne les distingue pas
+mieux qu'une pièce de monnaie. Et contrairement à une ancre fausse, un bonhomme minuscule dans le
+carré est la première chose que l'aperçu montre. Un avertissement qui tombe à pile ou face, sur une
+chose qu'on voit, n'apprend qu'à sauter ceux qui comptent.
+
 ## 3. La pose (`tools/roto/place.ts`)
+
+Les deux cadres font la même chose — mettre le sujet à l'échelle et l'épingler — et ne diffèrent que
+par le point épinglé :
+
+| Cadre | Point du sujet | Point du carré |
+|---|---|---|
+| Planche | la rangée sous les semelles, au milieu des pieds (`soleOf`) | la rangée sous l'ancre, sur sa colonne |
+| Portrait | le sommet du crâne, au milieu de la bande haute (`crownOf`) | le milieu du carré, à **6 %** du haut |
+
+`crownOf` prend la bande haute plutôt que la boîte entière : de profil, le milieu du crâne n'est pas
+le milieu du sujet, les épaules sont plus larges et d'un seul côté.
+
+Les **96 px** du portrait sont le contrat du pipeline (`PORTRAIT_SIZE` dans
+`tools/sprites/drawn.ts`). Ce module lit le disque et ne peut pas être chargé dans une page, donc
+l'outil garde sa propre constante — et un test tient les deux ensemble.
+
+Les repères dessinés sur le carré en mode portrait sont le cadrage du jeu lui-même : le centre de la
+tête à **45 %** de la hauteur, la couronne vers le sixième. Ce sont des lignes à viser, l'outil
+n'impose rien.
 
 Deux règles viennent du pipeline et ne sont pas des réglages :
 
@@ -191,11 +228,6 @@ méthode naïve. Les paramètres du papier, pour le jour où :
   C'est exactement là que **notre silhouette se branche** — le sujet important, le reste non.
 
 **Les slots de palette**, si la segmentation par matériau devient faisable.
-
-**Un mode portrait.** Le pipeline a déjà un format de portrait (96 × 96, palette du personnage,
-`art-src/<perso>/portrait.png`, voir `docs/art/aseprite.md`). Une photo de tête n'a pas de pieds et
-n'a rien à faire sur une case de combat ; elle a tout à faire sur un portrait. C'est la suite la plus
-évidente, et la moins chère : la même chaîne, un autre cadre, sans ancre.
 
 **Désigner le fond au clic.** Quand les quatre coins sont sur le sujet, plus rien ne distingue le
 fond. Un clic sur la source pour ajouter un point de départ réglerait ces cas-là.
