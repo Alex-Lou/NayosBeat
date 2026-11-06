@@ -129,7 +129,8 @@ describe('The stage large colors', () => {
     // None so light that a black effect over it would change it by more than VEIL_DELTA, on any
     // stage, in any of its atmospheres (docs/art/decor-rue.md §13).
     for (const { name, draw, atmospheres } of CODE_MAPS) {
-      if (['dock', 'rooftop', 'temple'].includes(name)) continue;
+      // Outside the midnight flash envelope (stage-view.ts FLASH_OUTSIDE_STAGES): their own band.
+      if (['dock', 'rooftop', 'temple', 'sahel'].includes(name)) continue;
       const { layers } = draw();
       for (const { atmosphere, palette } of atmospheres) {
         const shown = Object.values(layers).map((layer) => recolored(layer, palette));
