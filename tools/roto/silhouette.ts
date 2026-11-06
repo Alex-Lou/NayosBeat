@@ -36,6 +36,9 @@ export interface Mask {
   /** Islands kept, and islands dropped as specks: the page warns when many were dropped. */
   readonly islands: number;
   readonly specks: number;
+  /** Corners that seeded the fill, and corners dropped for standing on the subject (`seedsOf`). */
+  readonly seeds: number;
+  readonly dropped: number;
 }
 
 export interface SilhouetteOptions {
@@ -45,12 +48,15 @@ export interface SilhouetteOptions {
   readonly alphaFloor: number;
   /** An island under this share of the largest one is a speck. */
   readonly minShare: number;
+  /** Passes that rub the single-pixel noise off the edge (`tidyEdges`); 0 leaves it raw. */
+  readonly tidy: number;
 }
 
 export const SILHOUETTE_DEFAULTS: SilhouetteOptions = {
   tolerance: 14,
   alphaFloor: 128,
   minShare: 0.02,
+  tidy: 1,
 };
 
 /** Under this share of transparent pixels, the image is treated as opaque and keyed instead. */
@@ -72,12 +78,39 @@ export function silhouetteOf(
   for (let pixel = 0; pixel < count; pixel++) {
     if ((image.data[pixel * 4 + 3] ?? 0) < options.alphaFloor) transparent++;
   }
-  const on =
+  const keyed =
     transparent >= count * ALPHA_SHARE
-      ? fromAlpha(image, options.alphaFloor)
+      ? { on: fromAlpha(image, options.alphaFloor), seeds: 0, dropped: 0 }
       : keyedOut(image, options.tolerance, lab ?? labBufferOf(image, toLab));
   const from = transparent >= count * ALPHA_SHARE ? 'alpha' : 'key';
-  return despeckle(image.width, image.height, on, options.minShare, from);
+  for (let pass = 0; pass < options.tidy; pass++) tidyEdges(image.width, image.height, keyed.on);
+  return despeckle(image.width, image.height, keyed.on, options.minShare, from, keyed);
+}
+
+/**
+ * One majority pass over the mask: a subject pixel with at most one subject neighbour goes (a
+ * single-pixel spur), and a background pixel with at least three goes in (a pinhole, a notch).
+ * Hair, fur and motion blur leave exactly that kind of fringe on a keyed photo, and it turns into
+ * a swarm of lone pixels once the image is reduced. It only rubs out what is one pixel wide: a
+ * hole of 2 px across, or any real shape, is left alone.
+ */
+export function tidyEdges(width: number, height: number, on: Uint8Array): void {
+  const before = new Uint8Array(on);
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const pixel = y * width + x;
+      let kin = 0;
+      if (x > 0 && (before[pixel - 1] ?? 0) === 1) kin++;
+      if (x < width - 1 && (before[pixel + 1] ?? 0) === 1) kin++;
+      if (y > 0 && (before[pixel - width] ?? 0) === 1) kin++;
+      if (y < height - 1 && (before[pixel + width] ?? 0) === 1) kin++;
+      if ((before[pixel] ?? 0) === 1) {
+        if (kin <= 1) on[pixel] = 0;
+      } else if (kin >= 3) {
+        on[pixel] = 1;
+      }
+    }
+  }
 }
 
 function fromAlpha(image: Bitmap, alphaFloor: number): Uint8Array {
@@ -89,13 +122,41 @@ function fromAlpha(image: Bitmap, alphaFloor: number): Uint8Array {
   return on;
 }
 
-/** A flood fill from each corner; what it never reaches is the subject. */
-function keyedOut(image: Bitmap, tolerance: number, lab: Float32Array): Uint8Array {
+/**
+ * The corners that may seed the fill: those whose colour at least one other corner agrees with.
+ *
+ * A corner standing alone is not the background — it is the subject, filling the frame and running
+ * into that corner. Seeding a fill there floods the subject itself and leaves an empty silhouette,
+ * which is the one way this method fails without saying anything. Agreement between corners costs
+ * three comparisons and catches it.
+ *
+ * When no two corners agree, nothing can be told from them, so all four stand and the concerns
+ * (concerns.ts) are left to report what comes out.
+ */
+export function seedsOf(
+  corners: readonly number[],
+  lab: Float32Array,
+  tolerance: number,
+): number[] {
+  const limit = tolerance * tolerance;
+  const agreed = corners.filter((corner) =>
+    corners.some((other) => other !== corner && labDistanceSquared(lab, corner, other) <= limit),
+  );
+  return agreed.length === 0 ? [...corners] : agreed;
+}
+
+/** A flood fill from each agreeing corner; what it never reaches is the subject. */
+function keyedOut(
+  image: Bitmap,
+  tolerance: number,
+  lab: Float32Array,
+): { on: Uint8Array; seeds: number; dropped: number } {
   const { width, height } = image;
   const count = width * height;
   const on = new Uint8Array(count).fill(1);
   const limit = tolerance * tolerance;
-  const corners = [0, width - 1, (height - 1) * width, height * width - 1];
+  const every = [0, width - 1, (height - 1) * width, height * width - 1];
+  const corners = seedsOf(every, lab, tolerance);
   // Which corner's fill reached a pixel, so each pixel is compared to that corner's colour alone.
   const seed = new Int32Array(count).fill(-1);
   const queue = new Int32Array(count);
@@ -125,7 +186,7 @@ function keyedOut(image: Bitmap, tolerance: number, lab: Float32Array): Uint8Arr
       queue[tail++] = next;
     }
   }
-  return on;
+  return { on, seeds: corners.length, dropped: every.length - corners.length };
 }
 
 /** Only the largest island and the islands worth keeping; the rest is noise. */
@@ -135,6 +196,7 @@ function despeckle(
   on: Uint8Array,
   minShare: number,
   from: 'alpha' | 'key',
+  keyed: { readonly seeds: number; readonly dropped: number },
 ): Mask {
   const count = width * height;
   const island = new Int32Array(count).fill(-1);
@@ -201,6 +263,8 @@ function despeckle(
     from,
     islands: kept.filter(Boolean).length,
     specks: kept.filter((keep) => !keep).length,
+    seeds: keyed.seeds,
+    dropped: keyed.dropped,
   };
 }
 
@@ -209,18 +273,50 @@ function despeckle(
  * alone would sit on whichever toe is lower; a band of the subject's height averages both feet,
  * which is what the game's anchor means (the centre of the feet, src/art/types.ts `ANCHOR`).
  */
-export function soleOf(mask: Mask, band = 0.05): { readonly x: number; readonly y: number } {
+export interface Sole {
+  readonly x: number;
+  readonly y: number;
+  /**
+   * How wide the band it took for feet is. A standing fighter plants them apart, so this is most
+   * of the subject's width; a thin base is a shadow, a tail or a collar, and the anchor is then a
+   * guess (concerns.ts).
+   */
+  readonly width: number;
+}
+
+export function soleOf(mask: Mask, band = 0.05): Sole {
   const height = mask.box.bottom - mask.box.top + 1;
   const rows = Math.max(1, Math.round(height * band));
   let sum = 0;
   let found = 0;
+  let left = mask.width;
+  let right = -1;
   for (let y = mask.box.bottom; y > mask.box.bottom - rows && y >= 0; y--) {
     for (let x = mask.box.left; x <= mask.box.right; x++) {
       if ((mask.on[y * mask.width + x] ?? 0) === 0) continue;
       sum += x;
       found++;
+      if (x < left) left = x;
+      if (x > right) right = x;
     }
   }
   const x = found === 0 ? (mask.box.left + mask.box.right) / 2 : sum / found;
-  return { x, y: mask.box.bottom };
+  return { x, y: mask.box.bottom, width: right < left ? 0 : right - left + 1 };
+}
+
+/** The image edges the subject runs into: what the frame cut off, not what the subject is. */
+export interface Edges {
+  readonly left: boolean;
+  readonly top: boolean;
+  readonly right: boolean;
+  readonly bottom: boolean;
+}
+
+export function edgesOf(mask: Mask): Edges {
+  return {
+    left: mask.box.left === 0,
+    top: mask.box.top === 0,
+    right: mask.box.right === mask.width - 1,
+    bottom: mask.box.bottom === mask.height - 1,
+  };
 }

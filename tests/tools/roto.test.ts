@@ -5,7 +5,14 @@ import type { Bitmap } from '../../tools/roto/pixels';
 import { bitmap } from '../../tools/roto/pixels';
 import { PIXELIZE_DEFAULTS, pixelize } from '../../tools/roto/pixelize';
 import { placeOnCell } from '../../tools/roto/place';
-import { SILHOUETTE_DEFAULTS, silhouetteOf, soleOf } from '../../tools/roto/silhouette';
+import {
+  edgesOf,
+  SILHOUETTE_DEFAULTS,
+  silhouetteOf,
+  soleOf,
+  tidyEdges,
+} from '../../tools/roto/silhouette';
+import { anchorIsAGuess, concernsOf } from '../../tools/roto/concerns';
 
 /** A flat background with shapes painted on it, the way a studio photo looks to the tool. */
 function scene(
@@ -77,12 +84,54 @@ describe('silhouette', () => {
   it('drops a speck far from the subject', () => {
     const image = scene(100, 80, WALL, (set) => {
       for (let y = 10; y <= 59; y++) for (let x = 20; x <= 39; x++) set(x, y, SUBJECT);
-      set(80, 70, SUBJECT);
+      // Three pixels across, so the tidy pass leaves it and despeckling is what drops it.
+      for (let y = 69; y <= 71; y++) for (let x = 79; x <= 81; x++) set(x, y, SUBJECT);
     });
     const mask = found(image);
     expect(mask.specks).toBe(1);
     expect(mask.islands).toBe(1);
     expect(mask.on[70 * 100 + 80]).toBe(0);
+  });
+
+  it('rubs a single-pixel fringe off the edge, and leaves real shapes', () => {
+    const on = new Uint8Array(9 * 9);
+    const at = (x: number, y: number) => y * 9 + x;
+    // A 5 x 5 block with one pixel sticking out and one pinhole bitten into it.
+    for (let y = 2; y <= 6; y++) for (let x = 2; x <= 6; x++) on[at(x, y)] = 1;
+    on[at(7, 4)] = 1;
+    on[at(4, 2)] = 0;
+    tidyEdges(9, 9, on);
+    expect(on[at(7, 4)]).toBe(0);
+    expect(on[at(4, 2)]).toBe(1);
+    expect(on[at(4, 4)]).toBe(1);
+  });
+
+  it('says which edges of the frame the subject runs into', () => {
+    expect(edgesOf(found(standing()))).toEqual({
+      left: false,
+      top: false,
+      right: false,
+      bottom: false,
+    });
+    // Against the left edge, with every corner still on the wall.
+    const leaning = scene(100, 80, WALL, (set) => {
+      for (let y = 10; y <= 59; y++) for (let x = 0; x <= 39; x++) set(x, y, SUBJECT);
+    });
+    expect(edgesOf(found(leaning))).toMatchObject({ left: true, right: false, bottom: false });
+  });
+
+  it('ignores a corner standing on the subject instead of flooding the subject', () => {
+    // The subject runs into the bottom left corner: seeding there would key the subject out.
+    const corner = scene(100, 60, WALL, (set) => {
+      for (let y = 10; y <= 59; y++) for (let x = 0; x <= 39; x++) set(x, y, SUBJECT);
+    });
+    const mask = found(corner);
+    expect(mask.dropped).toBe(1);
+    expect(mask.seeds).toBe(3);
+    expect(mask.pixels).toBe(40 * 50);
+    expect(
+      concernsOf(mask, soleOf(mask), { left: 0, top: 0, right: 0, bottom: 0 }).map((c) => c.kind),
+    ).toContain('corner-dropped');
   });
 
   it('does not leak into a subject that touches the bottom edge', () => {
@@ -94,10 +143,50 @@ describe('silhouette', () => {
     expect(mask.pixels).toBe(20 * 50);
   });
 
-  it('puts the sole at the middle of the lowest band', () => {
+  it('puts the sole at the middle of the lowest band, and says how wide it is', () => {
     const sole = soleOf(found(standing()));
     expect(sole.y).toBe(59);
     expect(sole.x).toBeCloseTo(29.5, 1);
+    expect(sole.width).toBe(20);
+  });
+});
+
+describe('concerns', () => {
+  const noOverflow = { left: 0, top: 0, right: 0, bottom: 0 };
+
+  it('raises nothing on a subject that stands clear in its frame', () => {
+    const mask = found(standing());
+    const concerns = concernsOf(mask, soleOf(mask), noOverflow);
+    expect(concerns).toEqual([]);
+    expect(anchorIsAGuess(concerns)).toBe(false);
+  });
+
+  /** A head and a thin neck running down: what a portrait with no feet looks like to the tool. */
+  it('says the anchor is a guess when the base is a sliver', () => {
+    const image = scene(100, 80, WALL, (set) => {
+      for (let y = 10; y <= 45; y++) for (let x = 20; x <= 59; x++) set(x, y, SUBJECT);
+      for (let y = 46; y <= 69; y++) for (let x = 38; x <= 41; x++) set(x, y, SUBJECT);
+    });
+    const mask = found(image);
+    const concerns = concernsOf(mask, soleOf(mask), noOverflow);
+    expect(concerns.map((concern) => concern.kind)).toContain('narrow-base');
+    expect(anchorIsAGuess(concerns)).toBe(true);
+  });
+
+  it('says the anchor is a guess when the subject runs off the bottom', () => {
+    const image = scene(100, 60, WALL, (set) => {
+      for (let y = 10; y <= 59; y++) for (let x = 20; x <= 39; x++) set(x, y, SUBJECT);
+    });
+    const mask = found(image);
+    const concerns = concernsOf(mask, soleOf(mask), noOverflow);
+    expect(concerns.map((concern) => concern.kind)).toContain('cut-off');
+    expect(anchorIsAGuess(concerns)).toBe(true);
+  });
+
+  it('reports a subject that does not fit the cell', () => {
+    const mask = found(standing());
+    const concerns = concernsOf(mask, soleOf(mask), { left: 0, top: 12, right: 0, bottom: 0 });
+    expect(concerns.map((concern) => concern.kind)).toContain('overflow');
   });
 });
 

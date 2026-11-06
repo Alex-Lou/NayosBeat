@@ -14,8 +14,10 @@ import type { Placed } from './place.ts';
 import { PLACEMENT_DEFAULTS, placeOnCell, STANDING_HEIGHT } from './place.ts';
 import type { Pixelized } from './pixelize.ts';
 import { PIXELIZE_DEFAULTS, pixelize } from './pixelize.ts';
-import type { Mask } from './silhouette.ts';
+import type { Edges, Mask } from './silhouette.ts';
 import { SILHOUETTE_DEFAULTS, silhouetteOf, soleOf } from './silhouette.ts';
+import type { Concern } from './concerns.ts';
+import { anchorIsAGuess, concernsOf } from './concerns.ts';
 
 /**
  * The longest side the page works at. A 4 000 px photo holds nothing a 512 px cell can show, and
@@ -26,6 +28,7 @@ const WORK_MAX = 1600;
 const state = {
   tolerance: SILHOUETTE_DEFAULTS.tolerance,
   minShare: SILHOUETTE_DEFAULTS.minShare,
+  tidy: SILHOUETTE_DEFAULTS.tidy,
   cell: PLACEMENT_DEFAULTS.cell,
   height: PLACEMENT_DEFAULTS.height,
   flip: PLACEMENT_DEFAULTS.flip,
@@ -176,6 +179,15 @@ controls.append(
       0.005,
       (value) => `${Math.round(value * 100)} %`,
     ),
+    range(
+      'Nettoyage du bord',
+      () => state.tidy,
+      (value) => (state.tidy = value),
+      0,
+      3,
+      1,
+      (value) => (value === 0 ? 'aucun' : `${value} passe(s)`),
+    ),
   ]),
   group('Pose', [
     choice(
@@ -312,6 +324,7 @@ function run(): void {
       tolerance: state.tolerance,
       alphaFloor: SILHOUETTE_DEFAULTS.alphaFloor,
       minShare: state.minShare,
+      tidy: state.tidy,
     },
     toLab,
     loaded.lab,
@@ -334,7 +347,7 @@ function run(): void {
   save.disabled = false;
   drawSource(loaded.image, mask);
   drawCell(pixels.cell);
-  report(loaded.image, mask, placed, pixels);
+  report(mask, placed, pixels);
 }
 
 // Drawing -------------------------------------------------------------------------------------
@@ -426,33 +439,71 @@ function drawCell(cell: Bitmap): void {
   context.stroke();
 }
 
-function report(image: Bitmap, found: Mask, set: Placed, made: Pixelized): void {
+/** A share as the page says it. */
+function percent(share: number): string {
+  return `${Math.round(share * 100)} %`;
+}
+
+function listOf(parts: readonly (string | false)[]): string {
+  const kept = parts.filter((part): part is string => part !== false);
+  const last = kept[kept.length - 1] ?? '';
+  return kept.length <= 1 ? last : `${kept.slice(0, -1).join(', ')} et ${last}`;
+}
+
+function sidesOf(edges: Edges): string {
+  return listOf([
+    edges.left && 'gauche',
+    edges.top && 'haut',
+    edges.right && 'droit',
+    edges.bottom && 'bas',
+  ]);
+}
+
+/** A concern (concerns.ts) in the words the page says it. */
+function sentenceOf(concern: Concern): string {
+  switch (concern.kind) {
+    case 'nothing-kept':
+      return `Presque rien n’a été gardé (${percent(concern.share)} de l’image) : la tolérance est trop haute, ou le sujet a la couleur de son fond.`;
+    case 'everything-kept':
+      return `Presque tout a été gardé (${percent(concern.share)}) : le fond n’a pas été reconnu. Baisse la tolérance.`;
+    case 'narrow-base':
+      return `Ce qui est pris pour les pieds ne fait que ${concern.width} px, soit ${percent(concern.share)} de la largeur du sujet : c’est une ombre, une queue ou un col, pas des semelles. L’ancre est une supposition.`;
+    case 'cut-off':
+      return `Le sujet touche le bord ${sidesOf(concern.edges)} de l’image : ce qui est hors cadre manque à toutes les mesures.`;
+    case 'corner-dropped':
+      return `${concern.dropped} coin(s) de l’image écarté(s) : ils tombent sur le sujet, pas sur le fond. Le détourage est parti des autres.`;
+    case 'specks':
+      return `${concern.specks} îlots écartés : le détourage accroche le fond, le bord de la silhouette n’est pas sûr.`;
+    case 'overflow': {
+      const over = concern.overflow;
+      return `Le sujet dépasse la case de ${listOf([
+        over.left > 0 && `${over.left} px à gauche`,
+        over.top > 0 && `${over.top} px en haut`,
+        over.right > 0 && `${over.right} px à droite`,
+        over.bottom > 0 && `${over.bottom} px en bas`,
+      ])} : baisse la hauteur.`;
+    }
+  }
+}
+
+function report(found: Mask, set: Placed, made: Pixelized): void {
+  const sole = soleOf(found);
+  const concerns = concernsOf(found, sole, set.overflow);
+  const guessed = anchorIsAGuess(concerns);
   const subjectHeight = found.box.bottom - found.box.top + 1;
   const lines = [
-    `Silhouette : ${found.from === 'alpha' ? 'canal alpha de l’image' : 'fond détouré depuis les quatre coins'} — ${found.pixels.toLocaleString('fr-FR')} px, boîte ${found.box.right - found.box.left + 1} × ${subjectHeight} px, ${found.islands} îlot(s) gardé(s)${found.specks > 0 ? `, ${found.specks} poussière(s) écartée(s)` : ''}.`,
-    `Pose : ${subjectHeight} px de source → ${state.height} px de case (×${set.scale.toFixed(3)}), pieds posés sur l’ancre ${ANCHOR.x}, ${ANCHOR.y} (case ${CELL_SIZE}).`,
+    `Silhouette : ${found.from === 'alpha' ? 'canal alpha de l’image' : 'fond détouré depuis les quatre coins'} — ${found.pixels.toLocaleString('fr-FR')} px, boîte ${found.box.right - found.box.left + 1} × ${subjectHeight} px, ${found.islands} îlot(s) gardé(s)${found.specks > 0 ? `, ${found.specks} poussière(s) écartée(s)` : ''}${found.from === 'key' ? `, ${found.seeds} coin(s) de départ` : ''}.`,
+    `Pose : ${subjectHeight} px de source → ${state.height} px de case (×${set.scale.toFixed(3)}), ` +
+      (guessed
+        ? `base posée sur l’ancre ${ANCHOR.x}, ${ANCHOR.y} — mais voir ci-dessous, ce ne sont pas des pieds.`
+        : `pieds posés sur l’ancre ${ANCHOR.x}, ${ANCHOR.y} (case ${CELL_SIZE}), base large de ${sole.width} px.`),
     `Pixels : ${made.colors} couleur(s) dans la case${state.colors > 0 ? ` (palette demandée : ${state.colors})` : ''}.`,
   ];
-  const warnings: string[] = [];
-  const over = set.overflow;
-  if (over.left + over.top + over.right + over.bottom > 0) {
-    warnings.push(
-      `Le sujet dépasse la case (${[over.left && `${over.left} à gauche`, over.top && `${over.top} en haut`, over.right && `${over.right} à droite`, over.bottom && `${over.bottom} en bas`].filter(Boolean).join(', ')}) : baisse la hauteur.`,
-    );
-  }
-  if (found.pixels < image.width * image.height * 0.01) {
-    warnings.push(
-      'Presque rien n’a été gardé : la tolérance est trop haute, ou le fond ressemble au sujet.',
-    );
-  }
-  if (found.pixels > image.width * image.height * 0.95) {
-    warnings.push('Presque tout a été gardé : le fond n’a pas été reconnu, baisse la tolérance.');
-  }
   status.textContent = lines.join('\n');
-  if (warnings.length > 0) {
+  for (const concern of concerns) {
     const warn = document.createElement('div');
     warn.className = 'warn';
-    warn.textContent = warnings.join('\n');
+    warn.textContent = `⚠ ${sentenceOf(concern)}`;
     status.append(warn);
   }
   cellInfo.textContent = `${set.cell.width} × ${set.cell.height} px`;

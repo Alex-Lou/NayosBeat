@@ -64,12 +64,46 @@ référence ne bouge jamais, donc un remplissage ne peut pas dériver le long d'
 dans le sujet. Et ce sont les coins, pas tout le bord, **parce que les pieds touchent souvent le bas
 du cadre** : un remplissage parti des pieds mangerait le personnage.
 
-Ensuite les poussières partent : le plus grand îlot est gardé, et tout îlot valant au moins
-`minShare` de lui (une main détachée, une arme). Un trou à l'intérieur du sujet est gardé par
-construction — le remplissage ne l'atteint jamais.
+**Un coin qui ne ressemble à aucun autre est écarté.** Un sujet qui remplit le cadre déborde dans un
+coin ; y amorcer un remplissage inonde le sujet et rend une silhouette vide, et c'était la seule
+façon dont cette méthode échouait sans rien dire. Un coin n'amorce donc un remplissage que si au
+moins un autre coin lui ressemble (même tolérance). Si aucun ne s'accorde, les quatre servent : il
+n'y a rien à en tirer, et les avertissements du §2.1 diront ce que cela a donné.
+
+Ensuite le bord est nettoyé (`tidy`, une passe par défaut) : un pixel de sujet qui n'a qu'un voisin
+de sujet s'en va, un pixel de fond qui en a trois rentre. Les cheveux, la fourrure et le flou de
+bougé laissent exactement cette frange d'un pixel sur une photo détourée, et elle se met à grouiller
+dès que l'image est réduite. Rien de plus large qu'un pixel n'est touché.
+
+Enfin les poussières partent : le plus grand îlot est gardé, et tout îlot valant au moins `minShare`
+de lui (une main détachée, une arme). Un trou à l'intérieur du sujet est gardé par construction — le
+remplissage ne l'atteint jamais.
 
 **La limite est celle de la méthode, pas un défaut** : fond uni, oui ; bibliothèque derrière le
 sujet, non.
+
+## 2.1 Ce que l'outil refuse de deviner
+
+`tools/roto/concerns.ts`. L'outil mesure, il ne comprend pas. Un portrait de studio sans pieds dans
+le cadre lui donne une silhouette parfaitement propre dont le pixel le plus bas est l'ombre d'un
+col — et il posera ce col sur l'ancre, mettra une tête à la hauteur d'un combattant entier, et
+annoncera « pieds posés sur l'ancre » sans ciller. **Une réponse fausse et confiante est pire que
+pas de réponse.** Chaque jugement qu'il ne peut pas porter est donc levé par son nom, avec le chiffre
+qui l'a levé.
+
+| Avertissement | Ce qu'il mesure | Ce qu'il veut dire |
+|---|---|---|
+| `narrow-base` | la base fait moins de **25 %** de la largeur du sujet | ce n'est pas des pieds : une ombre, une queue, un col. **L'ancre est une supposition.** |
+| `cut-off` | la boîte du sujet touche un bord de l'image | ce qui est hors cadre manque à toutes les mesures |
+| `nothing-kept` | moins d'1 % de l'image gardé | tolérance trop haute, ou le sujet a la couleur de son fond |
+| `everything-kept` | plus de 95 % gardé | le fond n'a pas été reconnu |
+| `corner-dropped` | un coin se tenait sur le sujet | le sujet remplit le cadre |
+| `specks` | plus de 3 îlots écartés | le détourage accroche le fond |
+| `overflow` | le sujet sort de la case | la hauteur demandée est trop grande |
+
+Ce sont des **avertissements, pas des erreurs** : chacun a un cas où il est normal, donc rien n'est
+refusé. `anchorIsAGuess` regroupe ceux qui ruinent une planche, et la ligne « Pose » change alors de
+mot : « base posée sur l'ancre », pas « pieds ».
 
 ## 3. La pose (`tools/roto/place.ts`)
 
@@ -131,6 +165,13 @@ calme, préfère la masse de cheveux unie. D'où les valeurs retenues :
 | Contour | 70 % de la clarté | La fourchette du manifeste (65 à 75 %). |
 | Couleurs | 32 | Assez pour une sous-couche fidèle ; un sprite fini en garde moins. |
 | Orphelins | 1 | À 2 passes, les reflets isolés commencent à partir. |
+| Nettoyage du bord | 1 passe | Enlève la frange d'un pixel des cheveux sans toucher aux vraies formes. |
+
+### Le seuil de `narrow-base`
+
+Mesuré sur les deux cas sous la main : la planche sur un mur plante ses pieds sur **94 %** de sa
+largeur, le portrait pose son col sur **5 %**. Un quart passe loin des deux, et du bon côté — celui
+qui laisse un combattant se tenir les pieds joints.
 
 ## 6. La suite, si cela vaut le coup
 
@@ -150,6 +191,14 @@ méthode naïve. Les paramètres du papier, pour le jour où :
   C'est exactement là que **notre silhouette se branche** — le sujet important, le reste non.
 
 **Les slots de palette**, si la segmentation par matériau devient faisable.
+
+**Un mode portrait.** Le pipeline a déjà un format de portrait (96 × 96, palette du personnage,
+`art-src/<perso>/portrait.png`, voir `docs/art/aseprite.md`). Une photo de tête n'a pas de pieds et
+n'a rien à faire sur une case de combat ; elle a tout à faire sur un portrait. C'est la suite la plus
+évidente, et la moins chère : la même chaîne, un autre cadre, sans ancre.
+
+**Désigner le fond au clic.** Quand les quatre coins sont sur le sujet, plus rien ne distingue le
+fond. Un clic sur la source pour ajouter un point de départ réglerait ces cas-là.
 
 **Les séquences.** Une planche entière, pas une image : le nombre d'images vient de
 `src/art/<perso>/sheets.ts`, et il faudra une palette figée pour toute la planche et un ancrage
