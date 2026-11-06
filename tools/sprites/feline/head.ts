@@ -1,13 +1,17 @@
 /**
- * Feline's head (matching `poing_01_garde.png` from Pack_01 & Pack_02):
- * - Two tall, sharp triangular white cat ears rising high above the skull (rows 0..10), separated
- *   by a clear V-gap of sky, each with a dark outline (`K`/`k`), snow-white fur rim (`g`/`l`), and
- *   a large, vivid coral-pink inner triangle (`e`, `E`);
- * - A thick black hair-tie scrunchie (`K`/`R`) at the back-top of the skull behind the near ear,
- *   from which her high ponytail (`drawMane`) bursts up and back;
- * - Long spiky silver-white bangs and cheek-locks framing a delicate feminine anime profile with a
- *   large golden-amber feline eye (`W`, `C`, `K`), two dark feline whisker markings across her
- *   cheek, and a petite nose and chin.
+ * Feline's head, downsampled and hand-cleaned directly from `poing_01_garde.png` (Pack_01 & Pack_02):
+ * - Two tall, pointed white cat ears on the crown (rows 0..10), the near one showing its large
+ *   coral-pink inner triangle (`E`, `e`), the far one peeking out on the right with its own pink
+ *   inside;
+ * - The thick black scrunchie (`K`, `R`) at the back of the crown, behind the near ear (rows
+ *   6..11), her high ponytail (look.ts `drawMane`) bursting from it;
+ * - Voluminous snow-white anime hair (`g`, `l`, `b`): two feathered side-locks flaring out to the
+ *   left below the scrunchie, a long pointed white cheek-lock (cols 13..18, rows 18..30) hanging
+ *   down past her jaw in front of the neck, and long curved white bangs sweeping over her forehead
+ *   and framing the right side of her face;
+ * - A petite, delicate feminine anime face (rows 18..28) in pale porcelain skin (`H`, `L`, `B`),
+ *   with a large golden-amber feline eye (`W`, `C`, `K`), two fine whisker marks on the cheek, and
+ *   a small pointed chin.
  */
 
 import type { PixelCanvas, Point } from '../raster.ts';
@@ -17,45 +21,42 @@ import { expressionOf } from './face.ts';
 import { DETAIL, MATERIAL } from './palette.ts';
 
 export const HEAD: readonly string[] = [
-  '................KK.......KK.......',
-  '...............KglK.....KlgK......',
-  '..............KglElK...KlEglK.....',
-  '.............KglEEelK.KleEEglK....',
-  '............KblEEEeelKleeEEEglK...',
-  '...........KblEEEEeeelKeeeEEglK...',
-  '......KKKK.KblEEEEeeeKleeeEEglK...',
-  '....KKRRRRKKblEEEeeeeKleeeEEglK...',
-  '...KRRRRRRRRKblEEeeeKKbllggllbk...',
-  '..KRRRRRRRRRKbllgggllblllgglllbk..',
-  '..KRRRRRRRRKbblllgggllbbllggllbk..',
-  '...KKRRRRRKsbbblllggllbblllggllk..',
-  '....KKKKKddsbbbbllggllbbbllggllk..',
-  '...kddddssbbbblllggllbbbllggllbk..',
-  '..kdddddssbbbbllggllbbbllgglllbk..',
-  '.kddddddssbbbllggllbbbllggllllbk..',
-  '..kddddddssbbllgllbbbllggllgglbk..',
-  '...kddddddssbllgllbSBBllggllgbk...',
-  '....kddddddsdbllglkSBBBllgglbk....',
-  '.....kdddddddbllglkSBBBBllgbk.....',
-  '......kddddddbllgkdkkSBBBDlgk.....',
-  '......kkdddddsblkSkkSBBkkkSbk.....',
-  '.......kdddddkblkBkkBBBWCKBBO.....',
-  '.......dkddddksbkSBSkBLLBCSBBO....',
-  '........kkddddkblkOBBLBBBBBBBO....',
-  '........skkddkkksbkOBBBBKKBBDO....',
-  '.........kkkkdkkkkskOSBBBBBBBO....',
-  '.......skkkkkkDDkkkkDBBBKKBBBO....',
-  '................DDDDDDBBBauBDO....',
-  '.................DODDDBBBLLDO.....',
-  '..................DODSSBBBDO......',
-  '....................OODBBDO.......',
-  '......................OODO........',
+  '.................KK...............',
+  '................KggK......KK......',
+  '...............KgglEK....KglK.....',
+  '..............KgglEEeK..KglEeK....',
+  '.............KgglEEEeeKKglEEeK....',
+  '............KbglEEEEeeeKlEEEeK....',
+  '.......KKKK.KbglEEEEeeeKlEEEeK....',
+  '.....KKRRRRKKbglEEEeeeeKllEEbK....',
+  '....KRRRRRRRRKblEEeeeKKbgglllbK...',
+  '....KRRRRRRRRKbllgggllggggglllbK..',
+  '....KKRRRRRKKbbllggggggggggglllbK.',
+  '.....KKKKKKssbbllgggllggllggglllbK',
+  '......ksbbbllbbllggsllgglsgglsllbK',
+  '....ksbllgggggllggsbllgslbgslbllbK',
+  '...kbbllgggggglggsbllggsbllgsbglbK',
+  '..ksbllbbblllggglsbllgsbllgsbgllbK',
+  '...kkkkssbbllgggsbllgsbbllgsbglbK.',
+  '.....ksblllggggsbllkKKKKKKKsbBLOk.',
+  '....ksbllgggglbsbbkKKKKKKKKBLLLOk.',
+  '.....kkkssbbllglbskBKWCCCKLLLLLO..',
+  '........kssbllglbskBKWcCCKLLLLLLO.',
+  '.........ksbllglbskBBKccKBLLLLLLO.',
+  '.........ksbllgllskBBSKKSBuLLLLLO.',
+  '..........ksbllglsBBKLKLLLLLLLLDO.',
+  '..........ksbllglsBBSKLKLLLLLMDO..',
+  '...........ksblglsBSBLLLLLLLLDO...',
+  '...........kssbllkOSBBLLLLLLDO....',
+  '............kssblk.OODBBBBDDO.....',
+  '.............ksblk...OODDDO.......',
+  '..............ksk.................',
 ];
 
 /** Pixel of the stamp on the skeleton's head point (the middle of the skull). */
-export const HEAD_CENTER: Point = { x: 16, y: 21 };
+export const HEAD_CENTER: Point = { x: 17, y: 19 };
 
-/** Rows of the stamp that are cat ears at the top: kept crisp (only 2px max trail). */
+/** Rows of the stamp that are cat ears at the top: kept crisp. */
 const LOOSE_HAIR_ROWS = 4;
 
 const SKIN = MATERIAL.skin;
@@ -71,7 +72,7 @@ const LEGEND: Legend = {
   B: SKIN.base,
   L: SKIN.light,
   H: SKIN.gloss,
-  // Silver-white feline hair & outer ears.
+  // Snow-white feline hair & outer ears.
   k: HAIR.outline,
   d: HAIR.deep,
   s: HAIR.shadow,
@@ -87,9 +88,11 @@ const LEGEND: Legend = {
   K: DETAIL.ink,
   W: DETAIL.eyeWhite,
   C: DETAIL.irisLight,
+  c: DETAIL.iris,
   J: DETAIL.neonLight,
   a: DETAIL.lip,
   u: DETAIL.lipLight,
+  t: SKIN.shadow,
   M: DETAIL.mouth,
   T: DETAIL.teeth,
 };
@@ -101,7 +104,7 @@ export function stampHead(
   angle: number,
   trail = 0,
 ): void {
-  const rows = trailRows(expressionOf(HEAD, face), Math.round(trail * 0.3), LOOSE_HAIR_ROWS);
+  const rows = trailRows(expressionOf(HEAD, face), Math.round(trail * 0.25), LOOSE_HAIR_ROWS);
   stamp(canvas, headSlots(rows), HEAD_CENTER, center, angle);
 }
 

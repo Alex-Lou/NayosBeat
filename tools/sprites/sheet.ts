@@ -119,8 +119,9 @@ function motionsOf(fighter: Fighter, sheet: string, poses: readonly Pose[]): Mot
       vx: motion.vx * 0.65 + before.vx * 0.35,
       vy: motion.vy * 0.65 + before.vy * 0.35,
     };
-    if (springs.length === 0) return smoothed;
-    return { ...smoothed, hang: hangs.map((hang) => hang[frame] ?? { x: 0, y: 0 }) };
+    const phase = frame / poses.length;
+    if (springs.length === 0) return { ...smoothed, phase };
+    return { ...smoothed, phase, hang: hangs.map((hang) => hang[frame] ?? { x: 0, y: 0 }) };
   });
 }
 

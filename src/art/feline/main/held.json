@@ -1,17 +1,17 @@
 {
   "frames": {
     "0": {
-      "frame": { "x": 0, "y": 0, "w": 105, "h": 159 },
+      "frame": { "x": 117, "y": 0, "w": 141, "h": 147 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 0, "w": 105, "h": 159 },
-      "sourceSize": { "w": 105, "h": 159 }
+      "spriteSourceSize": { "x": 10, "y": 1, "w": 141, "h": 147 },
+      "sourceSize": { "w": 151, "h": 148 }
     },
     "1": {
-      "frame": { "x": 105, "y": 0, "w": 98, "h": 157 },
+      "frame": { "x": 0, "y": 0, "w": 117, "h": 148 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 2, "w": 98, "h": 157 },
-      "sourceSize": { "w": 105, "h": 159 }
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 117, "h": 148 },
+      "sourceSize": { "w": 151, "h": 148 }
     }
   },
-  "meta": { "image": "held.png", "size": { "w": 203, "h": 159 } }
+  "meta": { "image": "held.png", "size": { "w": 258, "h": 148 } }
 }

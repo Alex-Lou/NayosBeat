@@ -53,7 +53,8 @@ import * as dechirure from './super.ts';
 import { REMIXES } from './remixes.ts';
 import { CHAIN_HIGH, JAB_REPEAT } from './variations.ts';
 
-export type PosedSheet = FelineSheet;
+// The Rush's portals are only ever drawn (art-src/feline/portal.png): no poses.
+export type PosedSheet = Exclude<FelineSheet, 'portal'>;
 
 export const V2_SHEETS = [
   'dashForward',

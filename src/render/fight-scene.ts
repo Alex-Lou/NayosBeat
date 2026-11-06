@@ -72,6 +72,7 @@ import { MoveCaption, UNDER_CAPTIONS } from './move-caption';
 import { HUD_BAND } from './onomatopoeia';
 import type { ShakeMode } from './shake';
 import { ProjectileView } from './projectile-view';
+import { WorldFx } from './world-fx';
 import { isContextLost, type RenderMode } from './render-mode';
 import { loadArt } from './art-textures';
 import { contourFor, type SilhouetteLook } from './silhouette';
@@ -177,6 +178,8 @@ interface Runtime {
   readonly pauseInput: PauseInput;
   readonly fighterViews: readonly [FighterDisplay, FighterDisplay];
   readonly projectileView: ProjectileView;
+  /** The effects moves leave fixed in the world (world-fx.ts: Feline's portals). */
+  readonly worldFx: WorldFx;
   /** How many flashes the fight may still show (docs/flashs.md §4): the effects ask it. */
   readonly budget: FlashBudget;
   /**
@@ -401,6 +404,7 @@ export class FightScene extends Phaser.Scene {
         this.fighterDisplay(1, COLORS.player2, budget),
       ],
       projectileView: new ProjectileView(this, this.config, GROUND_Y, this.arts, mode),
+      worldFx: new WorldFx(this, GROUND_Y, this.arts, mode),
       budget,
       // Both players hear the siren, each fighter's in its own key.
       finisher: new FinisherSignal(this.config, (player) => {
@@ -781,6 +785,7 @@ export class FightScene extends Phaser.Scene {
         runtime.lightShow.react(event);
       }
       runtime.signatureFx.tick(this.state);
+      runtime.worldFx.tick(this.state);
       runtime.boldFx.tick(this.state);
       // After the blows' own effects: they ask the flash budget first.
       for (const event of this.tickEvents) scene.react(event, this.state, viewLeft);

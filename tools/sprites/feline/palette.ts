@@ -27,28 +27,28 @@ function lit(ramp: Ramp, rim: string = RIM): MaterialTones {
 }
 
 const MATERIALS = {
-  /** Fair porcelain skin with warm rose-peach shading (face, bare midriff, shoulders, fingers). */
-  skin: lit(['#2c141c', '#683846', '#a86876', '#e2aca8', '#f8d2cc', '#fff2ee'], '#e8b4c4'),
-  /** Voluminous silver-white feline mane, ears & tail; shadow-panther violet-black on alt. */
+  /** Pale, luminous porcelain skin with soft peach-rose shading (face, bare midriff, shoulders, forearms). */
+  skin: lit(['#222026', '#736d7e', '#c4aeb4', '#f2dcdc', '#f7eaee', '#fff8f8'], '#f3e8ef'),
+  /** Pure snow-white feline mane, ears & tail with soft cool-silver shading; shadow-panther on alt. */
   hair: {
-    main: ['#141828', '#2e3650', '#586488', '#98a6c8', '#d6e0f4', '#ffffff', RIM_ON_LIGHT],
-    alt: ['#080610', '#181228', '#30244c', '#523e7c', '#8068b0', '#c0ace8', RIM],
+    main: ['#1a181d', '#5a5462', '#908696', '#c9bdca', '#e7dce5', '#f7eef3', RIM_ON_LIGHT],
+    alt: ['#080610', '#1c1430', '#382a58', '#644e94', '#9880cc', '#d4c4f8', RIM],
   },
   /** Techwear crop-top and shoulder pad: matte carbon-black; pearl-ivory on alt. */
   jacket: {
-    main: ['#06080e', '#101420', '#1c2232', '#2a3246', '#3e4860', '#647290', RIM],
+    main: ['#060608', '#0f0f14', '#1a1a21', '#26262f', '#363640', '#50505c', RIM],
     alt: ['#201a28', '#443852', '#78688a', '#b4a4c6', '#dcd0ea', '#faf4ff', RIM_ON_LIGHT],
   },
   /** Coral-pink inner cat ears and collar lining. */
   shirt: {
-    main: ['#381420', '#6e283c', '#a84860', '#dc728a', '#f4a2b6', '#ffd4e0', RIM_ON_LIGHT],
+    main: ['#381420', '#6e283c', '#a8566a', '#d88a8e', '#eaaaa7', '#f8d2d0', RIM_ON_LIGHT],
     alt: ['#2c1028', '#582050', '#8c3880', '#c05cb0', '#e68cd8', '#ffc4f4', RIM_ON_LIGHT],
   },
   /** Fingerless combat gauntlets, thigh straps and ear-base ribbon: dark tactical leather. */
   leather: lit(['#080810', '#141422', '#222236', '#32324c', '#484868', '#787898']),
   /** Baggy techwear cargo trousers: dark slate-black; deep plum-charcoal on alt. */
   pants: {
-    main: ['#06080e', '#0e121c', '#181e2c', '#242c3e', '#343e54', '#4c5874', RIM],
+    main: ['#0d0c0f', '#131215', '#222026', '#2f2c36', '#3e3a46', '#5a5462', RIM],
     alt: ['#14101c', '#261e34', '#3a2e4e', '#52426c', '#6c588c', '#8e78b0', RIM],
   },
   /** Cargo pocket flaps and strap seams. */
@@ -67,7 +67,7 @@ const MATERIALS = {
   },
   /** Silver hip chain, buckles and dimensional rings. */
   metal: {
-    main: ['#161824', '#303648', '#545e74', '#8894ac', '#ccd6e8', '#ffffff', RIM_ON_LIGHT],
+    main: ['#1a181d', '#423f4b', '#646171', '#9d92a3', '#d1c5d2', '#ffffff', RIM_ON_LIGHT],
     alt: ['#1c1624', '#3a3048', '#645478', '#9886ae', '#dcd0ec', '#ffffff', RIM_ON_LIGHT],
   },
   /** Dark housing of the cyan shoulder triangle emblem. */
@@ -88,7 +88,7 @@ const DETAILS = {
   /** Cyan neon triangle on her shoulder pad & boot/cargo LEDs; rose-magenta on alt. */
   neonDeep: { main: '#085868', alt: '#681448' },
   neon: { main: '#14b8d0', alt: '#cc2888' },
-  neonLight: { main: '#28f0e8', alt: '#ff68c4' },
+  neonLight: { main: '#2ce0e9', alt: '#ff68c4' },
   neonCore: { main: '#88fff8', alt: '#ffb8e6' },
   /** Silver-white astral portal & dimensional blade energy (Pack_05_VFX_Blanc_Argente_Fidele). */
   soundDeep: { main: '#384870', alt: '#582878' },
