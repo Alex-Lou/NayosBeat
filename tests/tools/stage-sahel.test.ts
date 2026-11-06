@@ -4,12 +4,33 @@ import { STAGE_MAPS } from '../../src/art/stages';
 import { STAGE_COLORS } from '../../src/art/sahel/colors';
 import { STAGE_PROPS } from '../../src/art/sahel/props';
 import { FLASH_OUTSIDE_STAGES } from '../../src/render/stage-view';
-import { decodeIndexedPng } from '../../tools/sprites/png';
+import { decodeIndexedPng, type IndexedImage } from '../../tools/sprites/png';
 import { readTruecolor } from '../../tools/sprites/truecolor';
 import { stageRulesOf } from '../../tools/sprites/stage-drawn';
+import { DARK_FLOOR, toLab } from '../../tools/stage/kit/unify';
 
 const installed = async (layer: string) =>
   decodeIndexedPng(await readFile(new URL(`../../src/art/sahel/${layer}.png`, import.meta.url)));
+
+const lightnessOf = (image: IndexedImage) =>
+  image.colors.map((c) => toLab((c >> 16) & 255, (c >> 8) & 255, c & 255)[0]);
+
+/** Micro-detail: the mean lightness step (Lab L) between two opaque side neighbours. */
+function detailOf(image: IndexedImage): number {
+  const L = lightnessOf(image);
+  let sum = 0;
+  let count = 0;
+  for (let y = 0; y < image.height; y++) {
+    for (let x = 0; x < image.width - 1; x++) {
+      const a = image.pixels[y * image.width + x] ?? 0;
+      const b = image.pixels[y * image.width + x + 1] ?? 0;
+      if (!(image.alpha[a] ?? 255) || !(image.alpha[b] ?? 255)) continue;
+      sum += Math.abs((L[a] ?? 0) - (L[b] ?? 0));
+      count++;
+    }
+  }
+  return sum / count;
+}
 
 describe('Sahel Sunset (docs/art/decor-sahel.md)', { timeout: 60_000 }, () => {
   it('reads the illustration as an RGB source', async () => {
@@ -60,6 +81,31 @@ describe('Sahel Sunset (docs/art/decor-sahel.md)', { timeout: 60_000 }, () => {
         }
       }
       expect(lone / opaque, layer).toBeLessThan(lonely);
+    }
+  });
+
+  it('stays behind the fighters: a third of their detail, none of their near-black', async () => {
+    // docs/art/recherche-equilibre-visuel.md: the fighters' detail (5.9 for Nayo, 9.1 for Riff),
+    // a third of it behind them, as on Street Fighter III and The King of Fighters XIII.
+    const sprites = await Promise.all(
+      ['nayo', 'riff'].map(async (fighter) =>
+        detailOf(
+          await decodeIndexedPng(
+            await readFile(new URL(`../../src/art/${fighter}/main/idle.png`, import.meta.url)),
+          ),
+        ),
+      ),
+    );
+    const fighters = sprites.reduce((sum, detail) => sum + detail, 0) / sprites.length;
+    for (const layer of ['far', 'mid', 'floor', 'props'] as const) {
+      const image = await installed(layer);
+      if (layer !== 'props') expect(detailOf(image), layer).toBeLessThan(fighters * 0.4);
+      const used = new Set(image.pixels);
+      const L = lightnessOf(image);
+      for (const slot of used) {
+        if (!(image.alpha[slot] ?? 255)) continue;
+        expect(L[slot] ?? 0, `${layer} slot ${slot}`).toBeGreaterThanOrEqual(DARK_FLOOR - 0.5);
+      }
     }
   });
 

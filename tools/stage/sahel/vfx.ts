@@ -234,7 +234,7 @@ const RADIO_COLORS: readonly Rgba[] = [
   { r: 236, g: 120, b: 52, a: 255 },
   { r: 255, g: 214, b: 120, a: 255 },
 ];
-const RADIO_COLORS_AT = enlist(RADIO_COLORS);
+const RADIO_COLORS_AT = enlist(unifyPalette(RADIO_COLORS));
 
 /** A boombox: its body and outline, two speakers that pump on the beat, an antenna, a light. */
 function radio(canvas: Canvas, frame: number): void {
