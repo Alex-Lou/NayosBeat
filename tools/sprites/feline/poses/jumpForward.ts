@@ -1,11 +1,12 @@
 import type { Point } from '../../raster.ts';
 import { solve } from '../../skeleton.ts';
 import { at, ease, smear, tween, type Effect, type Foot, type Pose } from './common.ts';
-import { FALL, guarded, hanging } from './jump.ts';
+import { LOAD, guarded, hanging } from './jump.ts';
 
 /**
- * jumpForward: a front flip. 8 frames of 3, 4, 4, 4, 4, 5, 4, 4 ticks (src/art/nayo/clips.ts),
- * the last held until landing (the jump's FALL pose, then the jump's landing frame).
+ * jumpForward: a front flip, the stand-in for the drawn strip (art-src/feline/jumpForward.png).
+ * 6 frames: the take-off crouch (the jump's load, preJumpForward), then 5 in the air of 6, 7, 7,
+ * 7 and 8 ticks (src/art/feline/clips.ts), the last held until landing, then the jump's landing.
  *
  * He springs up and forward off the preJump crouch (the jump's load, in the guard's wide
  * stance), balls up and turns over once, then opens out and reaches down for the floor, landing
@@ -155,8 +156,8 @@ const OPEN_BODY: Body = {
 const OPEN: Pose = guarded(OPEN_BODY);
 
 export const POSES: readonly Pose[] = [
-  // 0 · Takeoff (3 ticks), already tipping forward.
-  moved(guardedRolled(LAUNCH_BODY, 19, at(0.5, 0.5), at(0.3, 0.5)), -3, 42, 19),
+  // 0 · The take-off crouch (preJumpForward).
+  LOAD,
   // 1 · Balling up, the knees coming up in front of the chest, the lead glove closing over the
   // face.
   roll(covered(tween(LAUNCH, TUCK, 0.7, ease.out)), 38),
@@ -165,13 +166,6 @@ export const POSES: readonly Pose[] = [
   trailed(roll(TUCK, 182), swoosh(-197, -269)),
   // 4 · Coming round, the tuck starting to loosen.
   roll(covered(tween(TUCK, OPEN, 0.2)), 255),
-  // 5 · Opening: the head comes up, the guard comes off the face, a few pixels out in front of it
-  // (the spin counted from -360 so the head angle stays small: the face is drawn upright again,
-  // the gloves around it; the chest still leans back, so the gloves held right at the chin would
-  // fold the lead arm into the shoulder).
-  roll(guardedRolled(tween(TUCK, OPEN, 0.5), -38, at(3.5, 0.5), at(2, 0.5)), -38),
-  // 6 · Unfolded, the legs reaching for the floor.
+  // 5 · Unfolded, the legs reaching for the floor (held until landing).
   roll(guardedRolled(OPEN_BODY, -10), -10, at(0, 45)),
-  // 7 · Falling, ready to land (held).
-  FALL,
 ];
