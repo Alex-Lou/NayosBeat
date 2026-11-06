@@ -18,6 +18,8 @@
 import { writeFile } from 'node:fs/promises';
 import { readTruecolor } from '../../sprites/truecolor.ts';
 import { encodeIndexedPng, type Rgba } from '../../sprites/png.ts';
+import { Canvas } from '../kit/canvas.ts';
+import { FLOOR_PALETTE, paintEarth } from './floor.ts';
 
 const SOURCE = new URL('../../../art-src/sahel/source/sahel.png', import.meta.url);
 const OUT = (name: string) => new URL(`../../../art-src/sahel/${name}.png`, import.meta.url);
@@ -25,7 +27,6 @@ const OUT = (name: string) => new URL(`../../../art-src/sahel/${name}.png`, impo
 /** Image pixels of each layer (src/art/stage-layers.ts, × STAGE_SCALE). */
 const FAR = { width: 1200, height: 540 } as const;
 const MID = { width: 1440, height: 540 } as const;
-const FLOOR = { width: 1920, height: 80 } as const;
 
 /** The middle layer's scale, source pixels to image pixels: the illustration's width fills it. */
 const MID_SCALE = MID.width / 1672;
@@ -34,13 +35,17 @@ const GROUND_SOURCE = 600;
 const MID_TOP_SOURCE = GROUND_SOURCE - 460 / MID_SCALE;
 /** The far layer's scale: the whole illustration's width over it. */
 const FAR_SCALE = FAR.width / 1672;
-/** The foreground dirt the floor is taken from, in source pixels. */
-const ROAD = { x: 0, y: 770, width: 1350 } as const;
-/** The width over which the road strip's end fades into its start, so it repeats seamlessly. */
-const ROAD_FADE = 140;
 
 /** Colours per plane: the fighters use about 70, the stage stays below and calmer. */
-const COLORS = { far: 18, mid: 48, floor: 14 } as const;
+const COLORS = { far: 18, mid: 32 } as const;
+/** How hard the painting's softened edges are pushed back (`sharpen`). */
+const SHARP = 1.5;
+/** The lightness step (Lab L) over which the darker side of an edge gets its contour. */
+const EDGE = 16;
+/** The street's earth is drawn, not painted, from this row down (behind the fighters' feet). */
+const EARTH_FROM = 404;
+/** The largest crumb of painting left inside the drawn earth that the earth swallows. */
+const CRUMB = 48;
 
 interface Image {
   readonly width: number;
@@ -195,6 +200,34 @@ function kuwahara(image: Image, radius: number): Image {
       out.data[at] = mean[0];
       out.data[at + 1] = mean[1];
       out.data[at + 2] = mean[2];
+      out.data[at + 3] = data[at + 3] ?? 255;
+    }
+  }
+  return out;
+}
+
+/**
+ * An unsharp mask: each pixel pushed away from its 3 × 3 neighbourhood's mean by `amount`, so
+ * the edges the painting softened come back as hard as the fighters' own.
+ */
+function sharpen(image: Image, amount: number): Image {
+  const { width, height, data } = image;
+  const out = imageOf(width, height);
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const at = (y * width + x) * 4;
+      for (let c = 0; c < 3; c++) {
+        let sum = 0;
+        for (let dy = -1; dy <= 1; dy++) {
+          const py = Math.max(0, Math.min(height - 1, y + dy));
+          for (let dx = -1; dx <= 1; dx++) {
+            const px = Math.max(0, Math.min(width - 1, x + dx));
+            sum += data[(py * width + px) * 4 + c] ?? 0;
+          }
+        }
+        const here = data[at + c] ?? 0;
+        out.data[at + c] = Math.max(0, Math.min(255, here + (here - sum / 9) * amount));
+      }
       out.data[at + 3] = data[at + 3] ?? 255;
     }
   }
@@ -607,11 +640,24 @@ function contour(slots: Uint8Array, width: number, height: number, colors: Lab[]
       const L = colors[here - 1]?.[0] ?? 0;
       const right = colors[(copy[k + 1] ?? 0) - 1]?.[0] ?? L;
       const down = colors[(copy[k + width] ?? 0) - 1]?.[0] ?? L;
-      if ((x < width - 1 && right - L > 24) || (y < height - 1 && down - L > 24)) {
+      if ((x < width - 1 && right - L > EDGE) || (y < height - 1 && down - L > EDGE)) {
         slots[k] = darkerOf(colors, here, 0.75);
       }
     }
   }
+}
+
+/** Bare earth in the painting: the road's terracotta, neither the tyres' black nor the crates' wood. */
+function earthLike(image: Image, k: number): boolean {
+  const [L, A, B] = toLab(
+    image.data[k * 4] ?? 0,
+    image.data[k * 4 + 1] ?? 0,
+    image.data[k * 4 + 2] ?? 0,
+  );
+  const hue = (Math.atan2(B, A) * 180) / Math.PI;
+  const chroma = Math.hypot(A, B);
+  // The terracotta, or the grey of the dust and the puddles' dull patches (not the tyres' black).
+  return (L >= 26 && L <= 66 && chroma >= 16 && hue >= 22 && hue <= 62) || (L >= 31 && chroma < 18);
 }
 
 function rgbaOf(colors: Lab[]): Rgba[] {
@@ -649,14 +695,63 @@ const midSource = resample(
   MID.height,
 );
 const midSky = skyMask(midSource);
-const mid = kuwahara(midSource, 1);
+const mid = sharpen(kuwahara(midSource, 1), SHARP);
 grade(mid, 0.9, 0.96, 0.94);
 const midMask = midSky.map((s) => (s ? 0 : 1));
 const midColors = palette(mid, midMask, COLORS.mid);
 const midSlots = index(mid, midMask, midColors, 0);
 cleanOrphans(midSlots, MID.width, MID.height, 2);
 contour(midSlots, MID.width, MID.height, midColors);
-await write('mid', MID.width, MID.height, midSlots, midColors);
+// The far road: wherever the painting shows bare earth behind the fighters, the earth is drawn
+// instead, in the floor's own palette and perspective, so the ground is one surface from the
+// crowd's feet to the viewer. Tyres, barrels, crates, feet and grass stay the painting's.
+const earth = new Canvas(MID.width, MID.height);
+paintEarth(earth, 0, EARTH_FROM);
+for (let y = EARTH_FROM; y < MID.height; y++) {
+  for (let x = 0; x < MID.width; x++) {
+    const k = y * MID.width + x;
+    if (!midMask[k] || !earthLike(mid, k)) continue;
+    const slot = earth.get(x, y);
+    if (slot !== 0) midSlots[k] = midColors.length + slot;
+  }
+}
+// The painting's crumbs left in the drawn earth (a speck of dust, a pebble's halo) join it.
+{
+  const drawn = (k: number) => (midSlots[k] ?? 0) > midColors.length;
+  const seen = new Uint8Array(MID.width * MID.height);
+  for (let start = EARTH_FROM * MID.width; start < MID.width * MID.height; start++) {
+    if (seen[start] || drawn(start) || !midMask[start]) continue;
+    const crumb: number[] = [start];
+    seen[start] = 1;
+    for (let i = 0; i < crumb.length && crumb.length <= CRUMB; i++) {
+      const k = crumb[i] ?? 0;
+      const x = k % MID.width;
+      for (const n of [
+        x > 0 ? k - 1 : -1,
+        x < MID.width - 1 ? k + 1 : -1,
+        k - MID.width,
+        k + MID.width,
+      ]) {
+        if (n < EARTH_FROM * MID.width || n >= MID.width * MID.height || seen[n] || drawn(n))
+          continue;
+        seen[n] = 1;
+        crumb.push(n);
+      }
+    }
+    if (crumb.length > CRUMB) continue;
+    for (const k of crumb) {
+      const slot = earth.get(k % MID.width, Math.floor(k / MID.width));
+      if (slot !== 0) midSlots[k] = midColors.length + slot;
+    }
+  }
+}
+await writeFile(
+  OUT('mid'),
+  await encodeIndexedPng(MID.width, MID.height, midSlots, [
+    ...rgbaOf(midColors),
+    ...FLOOR_PALETTE.slice(1),
+  ]),
+);
 
 // The sky alone, the street painted out behind it.
 const farSource = resample(
@@ -676,36 +771,3 @@ const farColors = palette(far, undefined, COLORS.far);
 const farSlots = index(far, undefined, farColors, 5);
 cleanOrphans(farSlots, FAR.width, FAR.height, 1);
 await write('far', FAR.width, FAR.height, farSlots, farColors);
-
-// The road under the feet: the foreground dirt, its end faded into its start so it repeats
-// without a seam (a mirror would draw symmetric blots), darker.
-const strip = Math.round(ROAD.width * MID_SCALE);
-const roadSource = resample(
-  source,
-  ROAD.x,
-  ROAD.y,
-  ROAD.width,
-  FLOOR.height / MID_SCALE,
-  strip,
-  FLOOR.height,
-);
-const period = strip - ROAD_FADE;
-const road = imageOf(FLOOR.width, FLOOR.height);
-for (let y = 0; y < FLOOR.height; y++) {
-  for (let x = 0; x < FLOOR.width; x++) {
-    const p = x % period;
-    const to = (y * FLOOR.width + x) * 4;
-    const t = p < ROAD_FADE ? p / ROAD_FADE : 1;
-    for (let c = 0; c < 4; c++) {
-      const start = roadSource.data[(y * strip + p) * 4 + c] ?? 0;
-      const end = roadSource.data[(y * strip + Math.min(strip - 1, p + period)) * 4 + c] ?? 0;
-      road.data[to + c] = p < ROAD_FADE ? end * (1 - t) + start * t : start;
-    }
-  }
-}
-const floor = kuwahara(road, 1);
-grade(floor, 0.78, 0.86, 0.74);
-const floorColors = palette(floor, undefined, COLORS.floor);
-const floorSlots = index(floor, undefined, floorColors, 3);
-cleanOrphans(floorSlots, FLOOR.width, FLOOR.height, 2);
-await write('floor', FLOOR.width, FLOOR.height, floorSlots, floorColors);

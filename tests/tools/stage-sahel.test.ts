@@ -37,10 +37,11 @@ describe('Sahel Sunset (docs/art/decor-sahel.md)', { timeout: 60_000 }, () => {
   });
 
   it("is pixel art at the fighters' grain: small palettes, no lone pixel", async () => {
-    for (const [layer, most] of [
-      ['far', 19],
-      ['mid', 49],
-      ['floor', 15],
+    // The drawn earth dithers between its tones and scatters 1 px pebbles: it allows more.
+    for (const [layer, most, lonely] of [
+      ['far', 19, 0.08],
+      ['mid', 64, 0.08],
+      ['floor', 32, 0.12],
     ] as const) {
       const image = await installed(layer);
       expect(image.colors.length, layer).toBeLessThanOrEqual(most);
@@ -58,7 +59,7 @@ describe('Sahel Sunset (docs/art/decor-sahel.md)', { timeout: 60_000 }, () => {
           if (!sides.includes(here)) lone++;
         }
       }
-      expect(lone / opaque, layer).toBeLessThan(0.08);
+      expect(lone / opaque, layer).toBeLessThan(lonely);
     }
   });
 
