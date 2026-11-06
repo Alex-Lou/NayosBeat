@@ -28,9 +28,11 @@ export const FELINE_CLIPS: FighterClips<FelineClip> = {
   walkBack: play('walkBack', [2, 1, 2, 1, 2, 2, 2, 1, 2, 1, 2, 2], 0),
   crouch: play('crouch', [2, 2, 2, 8, 8, 8, 8], 3),
   preJump: { sheet: 'jump', frames: [0], ticks: [4] },
-  preJumpForward: { sheet: 'jump', frames: [0], ticks: [4] },
+  // The forward flip: its own take-off (frame 0), the turn in the air (1-4), the tuck held till
+  // the floor (5, about 34 ticks of flight).
+  preJumpForward: { sheet: 'jumpForward', frames: [0], ticks: [4] },
   jump: { sheet: 'jump', frames: [1, 2, 3, 4], ticks: [6, 8, 8, 10] },
-  jumpForward: play('jumpForward', [3, 4, 4, 4, 4, 5, 4, 4]),
+  jumpForward: { sheet: 'jumpForward', frames: [1, 2, 3, 4, 5], ticks: [6, 7, 7, 7, 8] },
   landing: { sheet: 'jump', frames: [5], ticks: [3] },
 
   blockStand: { sheet: 'block', frames: [0, 1, 2], ticks: [2, 3, 1], endFrames: 1 },

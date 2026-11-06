@@ -86,7 +86,7 @@ function rearHeel(angle: number): Foot {
 // folds over the lead knee, chin tucked behind the gloves; the rear heel comes up high as the
 // rear knee drops (the shin never folds down over the foot), the weight on the balls of the feet.
 // The feet do not move.
-const LOAD: Pose = guarded(
+export const LOAD: Pose = guarded(
   {
     hip: at(-7.6, 30.5),
     torso: 21,

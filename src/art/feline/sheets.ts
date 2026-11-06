@@ -7,7 +7,7 @@ export const FELINE_SHEETS = {
   walkBack: { frames: 12 },
   crouch: { frames: 7 },
   jump: { frames: 6 },
-  jumpForward: { frames: 8 },
+  jumpForward: { frames: 6 },
   block: { frames: 6 },
   hitCrouch: { frames: 3 },
   airHit: { frames: 4 },
