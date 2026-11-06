@@ -42,42 +42,46 @@ function play(ticks: readonly Tick[]): void {
   }
 }
 
-/** The Rush as the core plays it: still until tick 9, 14 px a tick to tick 11, then 42 px on. */
+/** The Rush as the core plays it: still until tick 8, 21 px a tick on 8 and 9, then 42 px on. */
 const rush = (from: number, facing: 1 | -1 = 1): Tick[] =>
   Array.from({ length: 34 }, (_, frame) => ({
     move: 'specialForward',
     actionFrame: frame,
-    x: from + facing * (frame < 9 ? 0 : Math.min(42, 14 * (frame - 8))),
+    x: from + facing * (frame < 8 ? 0 : Math.min(42, 21 * (frame - 7))),
     facing,
   }));
 
 describe('WorldFx (the Rush portals, fixed in the world)', () => {
-  it('opens the entry at her hands and the exit ahead, each staying where it opened', () => {
+  it('opens the entry at her hands and the floor exit where she lands, each staying put', () => {
     play(rush(100));
-    const [entry = [], exit = []] = shown;
-    const entryXs = new Set(entry.flatMap((s) => (s ? [s.x] : [])));
-    const exitXs = new Set(exit.flatMap((s) => (s ? [s.x] : [])));
-    expect([...entryXs]).toEqual([121]);
-    expect([...exitXs]).toEqual([150]);
-    // The entry opens on her first tick, the exit on tick 8, before she bursts out on 12.
+    const [entry = [], opening = [], exit = []] = shown;
+    const xsOf = (sprite: typeof entry) => [...new Set(sprite.flatMap((s) => (s ? [s.x] : [])))];
+    expect(xsOf(entry)).toEqual([108.5]);
+    expect(xsOf(opening)).toEqual([142]);
+    expect(xsOf(exit)).toEqual([142]);
+    // The entry opens on her first tick; the exit on tick 7, hidden while her own strip draws it
+    // (ticks 10 and 11), back under her blow from tick 12.
     expect(entry[0]?.cell).toBe(0);
-    expect(exit.findIndex((s) => s !== null)).toBe(8);
-    // Each closes on the portal's last cell, then is hidden.
+    expect(opening.findIndex((s) => s !== null)).toBe(7);
+    expect(opening.slice(10).every((s) => s === null)).toBe(true);
+    expect(exit.findIndex((s) => s !== null)).toBe(12);
+    // Each closes on its last cell, then is hidden.
     expect(entry.filter((s) => s !== null).at(-1)?.cell).toBe(9);
+    expect(exit.filter((s) => s !== null).at(-1)?.cell).toBe(15);
     expect(entry.at(-1)).toBeNull();
   });
 
   it('opens them on the side she faces', () => {
     play(rush(300, -1));
-    expect(shown[0]?.find((s) => s !== null)).toMatchObject({ x: 279, flip: true });
-    expect(shown[1]?.find((s) => s !== null)).toMatchObject({ x: 250, flip: true });
+    expect(shown[0]?.find((s) => s !== null)).toMatchObject({ x: 291.5, flip: true });
+    expect(shown[2]?.find((s) => s !== null)).toMatchObject({ x: 258, flip: true });
   });
 
   it('freezes with the hitstop, as the bodies do', () => {
     const ticks = rush(100).slice(0, 13);
     const frozen = { ...ticks[12], hitstop: 5 } as Tick;
     play([...ticks, frozen, frozen, frozen]);
-    const exit = shown[1] ?? [];
+    const exit = shown[2] ?? [];
     expect(new Set(exit.slice(-4).map((s) => s?.cell)).size).toBe(1);
   });
 

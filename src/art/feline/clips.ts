@@ -19,7 +19,7 @@ function play(sheet: FelineSheet, ticks: readonly number[], loopFrom?: number): 
 // - Rush dimensionnel (specialForward, active frame 4);
 // - Portail ascendant (specialAntiAir, active frames 1-2).
 const LAME_PORTAIL = play('special', [3, 3, 4, 4, 5, 5, 5, 5]); // 34 ticks (10/4/20), active: frame 3
-const RUSH_PORTAIL = play('specialForward', [3, 3, 3, 3, 4, 6, 6, 6]); // 34 ticks (12/4/18), active: frame 4
+const RUSH_PORTAIL = play('specialForward', [5, 3, 2, 2, 4, 7, 6, 5]); // 34 ticks (12/4/18), active: frame 4
 const PORTAIL_ASCENDANT = play('specialAntiAir', [3, 3, 5, 4, 4, 4, 4, 4, 4, 4]); // 39 ticks (3/8/28), active: frames 1-2
 
 export const FELINE_CLIPS: FighterClips<FelineClip> = {
@@ -99,31 +99,33 @@ export const FELINE_CLIPS: FighterClips<FelineClip> = {
 };
 
 /**
- * The Rush's portals, fixed in the world (art-src/feline/portal.png: opening 0-2, swirl 3-6,
- * closing 7-9). The entry opens at her hands as the move starts and closes once she is in (she is
- * unseen from tick 9, jumping); the exit opens 50 px ahead, where she lands 42 px on (its centre
- * at her chest), as she bursts out on tick 12, and swirls through her blow.
+ * The Rush's portals, fixed in the world (art-src/feline/portal.png). The upright entry (0-2
+ * opening, 3-6 swirl, 7-9 closing) opens at her hands as the move starts and closes once she is in
+ * (from tick 8 she jumps, unseen). The exit, flat on the floor (10-11 opening, 12-13 open, 14-15
+ * closing), opens 42 px on, where she lands; while she rises out of it (ticks 10 and 11) her own
+ * strip draws it, then it shimmers under her blow and closes.
  */
 const ENTRY: WorldEffect = {
   frame: 0,
-  reach: 21,
+  reach: 8.5,
   clip: {
     sheet: 'portal',
     frames: [0, 1, 2, 3, 4, 5, 7, 8, 9],
-    ticks: [1, 1, 1, 2, 2, 2, 2, 2, 2],
+    ticks: [1, 1, 1, 2, 2, 1, 2, 2, 2],
   },
 };
+const EXIT_OPENING: WorldEffect = {
+  frame: 7,
+  reach: 42,
+  clip: { sheet: 'portal', frames: [10, 11, 12], ticks: [1, 1, 1] },
+};
 const EXIT: WorldEffect = {
-  frame: 8,
-  reach: 50,
-  clip: {
-    sheet: 'portal',
-    frames: [0, 1, 2, 3, 4, 5, 6, 3, 4, 5, 6, 7, 8, 9],
-    ticks: [1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
-  },
+  frame: 12,
+  reach: 0,
+  clip: { sheet: 'portal', frames: [12, 13, 12, 13, 14, 15], ticks: [3, 3, 3, 3, 3, 3] },
 };
 
 export const FELINE_WORLD_FX: NonNullable<FighterArt['worldFx']> = {
-  specialForward: [ENTRY, EXIT],
-  specialForwardBoost: [ENTRY, EXIT],
+  specialForward: [ENTRY, EXIT_OPENING, EXIT],
+  specialForwardBoost: [ENTRY, EXIT_OPENING, EXIT],
 };

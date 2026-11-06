@@ -60,8 +60,9 @@ export const FELINE_SHEETS = {
   // Moves in their own strips: Double griffe and Enclume astrale.
   jabRepeat: { frames: 5 },
   chainHigh: { frames: 7 },
-  // The Rush's entry and exit portals, fixed in the world (FELINE_WORLD_FX): opening, swirl, closing.
-  portal: { frames: 10 },
+  // The Rush's portals, fixed in the world (FELINE_WORLD_FX): the upright entry (opening, swirl,
+  // closing: frames 0-9), then the exit flat on the floor (10-15).
+  portal: { frames: 16 },
 } as const satisfies Record<string, SheetSpec>;
 
 export type FelineSheet = keyof typeof FELINE_SHEETS;

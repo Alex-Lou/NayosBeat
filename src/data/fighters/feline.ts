@@ -117,8 +117,9 @@ const FELINE_PLAIN: FighterTemplate = {
       hitbox: box(8, 30, 37, 26),
       motion: advance(34, { from: 2, to: 10, distancePx: 26 }),
     }),
-    // → + S: Rush dimensionnel (04_Teleportation_Offensive_Rush) — dives into an entry portal,
-    // jumps 42 px unseen (ticks 9 to 11) and bursts out of the exit portal to floor the opponent.
+    // → + S: Rush dimensionnel (04_Teleportation_Offensive_Rush) — dives into an upright entry
+    // portal, jumps 42 px unseen (ticks 8 and 9) and rises out of a floor portal to floor the
+    // opponent.
     specialForward: strike({
       name: 'Rush dimensionnel',
       kind: 'special',
@@ -129,7 +130,7 @@ const FELINE_PLAIN: FighterTemplate = {
       pushbackPx: 3.5,
       guard: 'mid',
       hitbox: box(10, 32, 39, 20),
-      motion: advance(34, { from: 9, to: 12, distancePx: 42 }),
+      motion: advance(34, { from: 8, to: 10, distancePx: 42 }),
       knockdown: kd(3, 3.5),
     }),
     // ↓ + S: Portail ascendant (02_Portail_Horizontal_Sortie & 09_Coups_Speciaux_Annexes/01_uppercut_portail).
