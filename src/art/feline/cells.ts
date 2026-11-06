@@ -7,18 +7,18 @@ import type { Cell } from '../types';
  */
 export const FELINE_CELLS: Readonly<Record<string, Cell>> = {
   idle: {
-    width: 113,
+    width: 117,
     height: 162,
-    anchor: { x: 73, y: 159 },
+    anchor: { x: 74, y: 159 },
     frames: [
-      { x: 2, y: 4, width: 108, height: 156 },
-      { x: 2, y: 10, width: 109, height: 150 },
-      { x: 2, y: 5, width: 109, height: 155 },
-      { x: 2, y: 2, width: 109, height: 158 },
-      { x: 2, y: 3, width: 109, height: 157 },
-      { x: 2, y: 2, width: 109, height: 158 },
-      { x: 2, y: 5, width: 109, height: 155 },
-      { x: 2, y: 10, width: 109, height: 150 },
+      { x: 3, y: 3, width: 112, height: 157 },
+      { x: 3, y: 3, width: 112, height: 157 },
+      { x: 2, y: 2, width: 113, height: 158 },
+      { x: 3, y: 2, width: 112, height: 158 },
+      { x: 3, y: 5, width: 111, height: 155 },
+      { x: 3, y: 4, width: 112, height: 156 },
+      { x: 3, y: 2, width: 112, height: 158 },
+      { x: 3, y: 2, width: 112, height: 158 },
     ],
   },
   walkForward: {
