@@ -1,23 +1,23 @@
 {
   "frames": {
     "0": {
-      "frame": { "x": 0, "y": 127, "w": 135, "h": 118 },
+      "frame": { "x": 0, "y": 117, "w": 124, "h": 108 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 9, "w": 135, "h": 118 },
-      "sourceSize": { "w": 141, "h": 127 }
+      "spriteSourceSize": { "x": 0, "y": 9, "w": 124, "h": 108 },
+      "sourceSize": { "w": 130, "h": 117 }
     },
     "1": {
-      "frame": { "x": 0, "y": 245, "w": 136, "h": 112 },
+      "frame": { "x": 0, "y": 225, "w": 125, "h": 103 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 5, "y": 15, "w": 136, "h": 112 },
-      "sourceSize": { "w": 141, "h": 127 }
+      "spriteSourceSize": { "x": 5, "y": 14, "w": 125, "h": 103 },
+      "sourceSize": { "w": 130, "h": 117 }
     },
     "2": {
-      "frame": { "x": 0, "y": 0, "w": 138, "h": 127 },
+      "frame": { "x": 0, "y": 0, "w": 127, "h": 117 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 3, "y": 0, "w": 138, "h": 127 },
-      "sourceSize": { "w": 141, "h": 127 }
+      "spriteSourceSize": { "x": 3, "y": 0, "w": 127, "h": 117 },
+      "sourceSize": { "w": 130, "h": 117 }
     }
   },
-  "meta": { "image": "hitCrouch.png", "size": { "w": 138, "h": 357 } }
+  "meta": { "image": "hitCrouch.png", "size": { "w": 127, "h": 328 } }
 }
