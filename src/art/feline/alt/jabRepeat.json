@@ -1,35 +1,35 @@
 {
   "frames": {
     "0": {
-      "frame": { "x": 113, "y": 0, "w": 129, "h": 161 },
+      "frame": { "x": 208, "y": 0, "w": 115, "h": 156 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 1, "w": 129, "h": 161 },
-      "sourceSize": { "w": 143, "h": 162 }
+      "spriteSourceSize": { "x": 0, "y": 1, "w": 115, "h": 156 },
+      "sourceSize": { "w": 161, "h": 157 }
     },
     "1": {
-      "frame": { "x": 330, "y": 0, "w": 143, "h": 160 },
+      "frame": { "x": 447, "y": 0, "w": 147, "h": 151 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 1, "w": 143, "h": 160 },
-      "sourceSize": { "w": 143, "h": 162 }
+      "spriteSourceSize": { "x": 14, "y": 6, "w": 147, "h": 151 },
+      "sourceSize": { "w": 161, "h": 157 }
     },
     "2": {
-      "frame": { "x": 0, "y": 0, "w": 113, "h": 162 },
+      "frame": { "x": 323, "y": 0, "w": 124, "h": 155 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 0, "w": 113, "h": 162 },
-      "sourceSize": { "w": 143, "h": 162 }
+      "spriteSourceSize": { "x": 5, "y": 2, "w": 124, "h": 155 },
+      "sourceSize": { "w": 161, "h": 157 }
     },
     "3": {
-      "frame": { "x": 473, "y": 0, "w": 88, "h": 160 },
+      "frame": { "x": 0, "y": 0, "w": 104, "h": 157 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 1, "w": 88, "h": 160 },
-      "sourceSize": { "w": 143, "h": 162 }
+      "spriteSourceSize": { "x": 17, "y": 0, "w": 104, "h": 157 },
+      "sourceSize": { "w": 161, "h": 157 }
     },
     "4": {
-      "frame": { "x": 242, "y": 0, "w": 88, "h": 161 },
+      "frame": { "x": 104, "y": 0, "w": 104, "h": 157 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 0, "w": 88, "h": 161 },
-      "sourceSize": { "w": 143, "h": 162 }
+      "spriteSourceSize": { "x": 12, "y": 0, "w": 104, "h": 157 },
+      "sourceSize": { "w": 161, "h": 157 }
     }
   },
-  "meta": { "image": "jabRepeat.png", "size": { "w": 561, "h": 162 } }
+  "meta": { "image": "jabRepeat.png", "size": { "w": 594, "h": 157 } }
 }

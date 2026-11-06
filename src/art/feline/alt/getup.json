@@ -1,35 +1,35 @@
 {
   "frames": {
     "0": {
-      "frame": { "x": 144, "y": 165, "w": 158, "h": 121 },
+      "frame": { "x": 0, "y": 249, "w": 160, "h": 66 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 46, "w": 158, "h": 121 },
-      "sourceSize": { "w": 168, "h": 167 }
+      "spriteSourceSize": { "x": 12, "y": 73, "w": 160, "h": 66 },
+      "sourceSize": { "w": 172, "h": 139 }
     },
     "1": {
-      "frame": { "x": 0, "y": 165, "w": 144, "h": 124 },
+      "frame": { "x": 127, "y": 139, "w": 145, "h": 102 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 24, "y": 38, "w": 144, "h": 124 },
-      "sourceSize": { "w": 168, "h": 167 }
+      "spriteSourceSize": { "x": 20, "y": 37, "w": 145, "h": 102 },
+      "sourceSize": { "w": 172, "h": 139 }
     },
     "2": {
-      "frame": { "x": 176, "y": 0, "w": 87, "h": 135 },
+      "frame": { "x": 0, "y": 139, "w": 127, "h": 110 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 73, "y": 30, "w": 87, "h": 135 },
-      "sourceSize": { "w": 168, "h": 167 }
+      "spriteSourceSize": { "x": 0, "y": 29, "w": 127, "h": 110 },
+      "sourceSize": { "w": 172, "h": 139 }
     },
     "3": {
-      "frame": { "x": 0, "y": 0, "w": 88, "h": 165 },
+      "frame": { "x": 116, "y": 0, "w": 126, "h": 126 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 67, "y": 0, "w": 88, "h": 165 },
-      "sourceSize": { "w": 168, "h": 167 }
+      "spriteSourceSize": { "x": 7, "y": 13, "w": 126, "h": 126 },
+      "sourceSize": { "w": 172, "h": 139 }
     },
     "4": {
-      "frame": { "x": 88, "y": 0, "w": 88, "h": 163 },
+      "frame": { "x": 0, "y": 0, "w": 116, "h": 139 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 67, "y": 2, "w": 88, "h": 163 },
-      "sourceSize": { "w": 168, "h": 167 }
+      "spriteSourceSize": { "x": 15, "y": 0, "w": 116, "h": 139 },
+      "sourceSize": { "w": 172, "h": 139 }
     }
   },
-  "meta": { "image": "getup.png", "size": { "w": 302, "h": 289 } }
+  "meta": { "image": "getup.png", "size": { "w": 272, "h": 315 } }
 }

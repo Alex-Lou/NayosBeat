@@ -1,29 +1,29 @@
 {
   "frames": {
     "0": {
-      "frame": { "x": 0, "y": 0, "w": 141, "h": 83 },
+      "frame": { "x": 0, "y": 0, "w": 157, "h": 136 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 3, "y": 0, "w": 141, "h": 83 },
-      "sourceSize": { "w": 163, "h": 84 }
+      "spriteSourceSize": { "x": 66, "y": 0, "w": 157, "h": 136 },
+      "sourceSize": { "w": 223, "h": 136 }
     },
     "1": {
-      "frame": { "x": 0, "y": 83, "w": 155, "h": 75 },
+      "frame": { "x": 0, "y": 136, "w": 167, "h": 111 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 0, "y": 2, "w": 155, "h": 75 },
-      "sourceSize": { "w": 163, "h": 84 }
+      "spriteSourceSize": { "x": 23, "y": 25, "w": 167, "h": 111 },
+      "sourceSize": { "w": 223, "h": 136 }
     },
     "2": {
-      "frame": { "x": 0, "y": 158, "w": 155, "h": 62 },
+      "frame": { "x": 0, "y": 247, "w": 174, "h": 102 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 8, "y": 21, "w": 155, "h": 62 },
-      "sourceSize": { "w": 163, "h": 84 }
+      "spriteSourceSize": { "x": 19, "y": 34, "w": 174, "h": 102 },
+      "sourceSize": { "w": 223, "h": 136 }
     },
     "3": {
-      "frame": { "x": 0, "y": 220, "w": 147, "h": 58 },
+      "frame": { "x": 0, "y": 349, "w": 213, "h": 69 },
       "trimmed": true,
-      "spriteSourceSize": { "x": 8, "y": 26, "w": 147, "h": 58 },
-      "sourceSize": { "w": 163, "h": 84 }
+      "spriteSourceSize": { "x": 0, "y": 67, "w": 213, "h": 69 },
+      "sourceSize": { "w": 223, "h": 136 }
     }
   },
-  "meta": { "image": "knockdown.png", "size": { "w": 155, "h": 278 } }
+  "meta": { "image": "knockdown.png", "size": { "w": 213, "h": 418 } }
 }
