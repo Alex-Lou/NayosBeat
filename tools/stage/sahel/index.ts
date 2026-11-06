@@ -1,8 +1,7 @@
 /**
- * Sahel Sunset (docs/art/decor-sahel.md): the market street's illustration is hand-drawn in
- * art-src/sahel/ (far and floor); the code animates its lamps, the laundry on the line, the birds
- * crossing the sunset and the dust on the road. The stage is indexed at the fighters' grain,
- * without a middle layer.
+ * Sahel Sunset (docs/art/decor-sahel.md): the market street's illustration, turned into pixel art
+ * in three planes in art-src/sahel/ (far: the sky; mid: the street; floor: the road, by
+ * `adapt.ts`); the code animates the sun, the lamps, the laundry, the birds and the dust.
  */
 
 import type { Rgba } from '../../sprites/png.ts';
@@ -53,32 +52,46 @@ const SUN: readonly Rgba[] = [
   { r: 255, g: 172, b: 86, a: 48 },
 ];
 
-/** The laundry on the line, in far-image pixels: one shimmer per cloth. */
-const CLOTHES: readonly (readonly [x: number, y: number, width: number])[] = [
-  [282, 150, 10],
-  [302, 146, 11],
-  [318, 148, 9],
-  [334, 144, 18],
-  [362, 148, 15],
-  [384, 152, 10],
-];
+/**
+ * Where a point of the illustration lands in the middle layer, from where it was in the far one
+ * (tools/stage/sahel/adapt.ts: the far layer is the illustration at 1200 px wide, the middle one
+ * at 1440 px, its top at source row ≈ 66).
+ */
+function onMid(x: number, y: number): readonly [number, number] {
+  const scale = 1440 / 1672;
+  const source = 1672 / 1200;
+  return [Math.round(x * source * scale), Math.round((y * source - (600 - 460 / scale)) * scale)];
+}
+
+/** The laundry on the line, in middle-layer pixels: one shimmer per cloth. */
+const CLOTHES: readonly (readonly [x: number, y: number, width: number])[] = (
+  [
+    [282, 150, 10],
+    [302, 146, 11],
+    [318, 148, 9],
+    [334, 144, 18],
+    [362, 148, 15],
+    [384, 152, 10],
+  ] as const
+).map(([x, y, width]) => [...onMid(x, y), Math.round(width * 1.2)] as const);
+const LAUNDRY_RECT = { x: 320, y: 96, width: 180, height: 84 } as const;
 
 interface LampSpec {
   readonly name: string;
-  /** Its bulb, in far-image pixels. */
+  /** Its bulb, in middle-layer pixels. */
   readonly x: number;
   readonly y: number;
-  /** Its halo's base radius, in far-image pixels. */
+  /** Its halo's base radius, in middle-layer pixels. */
   readonly size: number;
   /** Its place in the slow breath, so the lamps do not pulse together. */
   readonly phase: number;
 }
 
 const LAMPS: readonly LampSpec[] = [
-  { name: 'lamp-awning', x: 124, y: 264, size: 9, phase: 0 },
-  { name: 'lamp-street', x: 595, y: 203, size: 12, phase: 2 },
-  { name: 'lamp-lane', x: 705, y: 262, size: 6, phase: 4 },
-  { name: 'lamp-high', x: 1062, y: 73, size: 13, phase: 3 },
+  { name: 'lamp-awning', x: 147, y: 259, size: 11, phase: 0 },
+  { name: 'lamp-street', x: 714, y: 186, size: 14, phase: 2 },
+  { name: 'lamp-lane', x: 846, y: 257, size: 7, phase: 4 },
+  { name: 'lamp-high', x: 1277, y: 25, size: 15, phase: 3 },
 ];
 
 function hash(seed: number): number {
@@ -129,7 +142,7 @@ function lampProp(spec: LampSpec): CodeProp {
   const height = reach * 2 + 1;
   return {
     name: spec.name,
-    layer: 'far',
+    layer: 'mid',
     rect: { x: spec.x - reach, y: spec.y - reach, width, height },
     timeline: [
       [1, 45],
@@ -146,13 +159,13 @@ function lampProp(spec: LampSpec): CodeProp {
 
 /** A warm rim travels along the hanging clothes, a breath of wind. */
 function laundryFrame(frame: number): ReturnType<typeof imageOf> {
-  const canvas = new Canvas(140, 75);
+  const canvas = new Canvas(LAUNDRY_RECT.width, LAUNDRY_RECT.height);
   if (frame > 0) {
     for (let cloth = 0; cloth < CLOTHES.length; cloth++) {
       const [x, y, width] = CLOTHES[cloth] ?? [0, 0, 0];
       const sway = (hash(cloth * 13 + frame) > 0.5 ? 1 : -1) * (1 + (frame % 2));
-      const left = x - 265 + sway;
-      const top = y - 120 + Math.round(hash(cloth * 17 + frame) * 3);
+      const left = x - LAUNDRY_RECT.x + sway;
+      const top = y - LAUNDRY_RECT.y + Math.round(hash(cloth * 17 + frame) * 3);
       canvas.fill(left, top, Math.max(2, width - 3), 1, 1 + (cloth % 2));
       canvas.fill(left + 1, top + 1, Math.max(1, width - 6), 1, 3);
     }
@@ -222,8 +235,8 @@ const SUN_GLOW: CodeProp = {
 
 const LAUNDRY: CodeProp = {
   name: 'laundry',
-  layer: 'far',
-  rect: { x: 265, y: 120, width: 140, height: 75 },
+  layer: 'mid',
+  rect: LAUNDRY_RECT,
   timeline: [
     [1, 24],
     [2, 24],
@@ -273,5 +286,4 @@ export const SAHEL: CodeMap = {
   name: 'sahel',
   draw: drawSahel,
   atmospheres: [{ atmosphere: { moment: 'dusk', weather: 'clear' }, palette: [BLANK] }],
-  noMid: true,
 };
