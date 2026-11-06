@@ -26,6 +26,13 @@ vi.mock('../../src/app/controls-content', async (importOriginal) => ({
   },
 }));
 
+// The « Lieu » screen as it is with several places offered (the game offers the Cyber Arena
+// alone for now, src/art/stages.ts OFFERED_STAGES): every place drawn is offered here.
+vi.mock('../../src/art/stages', async (importOriginal) => {
+  const stages = await importOriginal<typeof import('../../src/art/stages')>();
+  return { ...stages, OFFERED_STAGES: stages.STAGE_MAPS };
+});
+
 /** The elements under `node` that have the class `name`, in page order. */
 function byClass(node: FakeElement, name: string): FakeElement[] {
   const own = node.className.split(' ').includes(name) ? [node] : [];

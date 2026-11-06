@@ -24,6 +24,7 @@ import { SUNSET } from './sunset/index.ts';
 import { CARNIVAL } from './carnival/index.ts';
 import { SAHEL } from './sahel/index.ts';
 import { HELIPAD } from './helipad/index.ts';
+import { CYBER_ARENA } from './cyberarena/index.ts';
 import { TEMPLE } from './temple/index.ts';
 
 export const CODE_MAPS: readonly CodeMap[] = [
@@ -48,4 +49,5 @@ export const CODE_MAPS: readonly CodeMap[] = [
   CARNIVAL,
   SAHEL,
   HELIPAD,
+  CYBER_ARENA,
 ];
