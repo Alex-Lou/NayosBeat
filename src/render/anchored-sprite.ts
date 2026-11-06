@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
-import { ART_SCALE, cellOf, type FighterArt } from '../art/types';
+import { ART_SCALE, cellOf, HD_SCALE, type FighterArt } from '../art/types';
 import { anchorOrigin } from './anchor-origin';
-import { playedUrls, stripName, textureKey, type Layer } from './art-textures';
+import { hdTextureKey, playedUrls, stripName, textureKey, type Layer } from './art-textures';
 import type { RenderMode } from './render-mode';
 import { FX_DARK } from './veils';
 
@@ -19,8 +19,11 @@ export class AnchoredSprite {
   private darkened = false;
   /** Its look is a tint the renderer cannot draw: it stays hidden while it is. */
   private untinted = false;
-  /** Texture key of each strip, computed once. */
+  /** Texture key of each strip, computed once: its HD image's when it has one (`FighterArt.hd`). */
   private readonly keys: Readonly<Record<string, string>>;
+  /** The strips shown from their HD image, at 1 / HD_SCALE the scale. */
+  private readonly hd: ReadonlySet<string>;
+  private shownScale = 1 / ART_SCALE;
 
   constructor(
     scene: Phaser.Scene,
@@ -29,7 +32,14 @@ export class AnchoredSprite {
     private readonly mode: RenderMode,
   ) {
     const sheets = playedUrls(art, layer).map(([sheet]) => sheet);
-    this.keys = Object.fromEntries(sheets.map((sheet) => [sheet, textureKey(art, sheet, layer)]));
+    // Only the body has HD images; the front effects and the rest keep the strip's.
+    this.hd = new Set(layer === 'body' ? sheets.filter((sheet) => art.hd?.[sheet]) : []);
+    this.keys = Object.fromEntries(
+      sheets.map((sheet) => [
+        sheet,
+        this.hd.has(sheet) ? hdTextureKey(art, sheet) : textureKey(art, sheet, layer),
+      ]),
+    );
     const first = sheets[0] ?? art.clips.idle.sheet;
     this.sprite = scene.add
       .sprite(0, 0, textureKey(art, first, layer), 0)
@@ -41,6 +51,12 @@ export class AnchoredSprite {
   show(sheet: string, frame: number, x: number, y: number, flip: boolean): void {
     const key = this.keys[sheet] ?? textureKey(this.art, sheet, this.layer);
     if (key !== this.shownKey || frame !== this.shownFrame) this.sprite.setTexture(key, frame);
+    // An HD image is HD_SCALE times finer: shown at 1 / HD_SCALE the scale, the same size.
+    const scale = this.hd.has(sheet) ? 1 / (ART_SCALE * HD_SCALE) : 1 / ART_SCALE;
+    if (scale !== this.shownScale) {
+      this.sprite.setScale(scale);
+      this.shownScale = scale;
+    }
     if (key !== this.shownKey || flip !== this.shownFlip) this.anchorOn(sheet, flip);
     this.shownKey = key;
     this.shownFrame = frame;

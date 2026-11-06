@@ -7,6 +7,11 @@ import type { CoreMoveId, MoveId, OptionalMoveId } from '../core/move-data';
 
 /** Sprite pixels per world pixel: fighters are drawn twice as finely as the stage. */
 export const ART_SCALE = 2;
+/**
+ * How much finer an HD strip is drawn (art-src/<fighter>/hd/): the game shows it in its strip's
+ * place at 1 / HD_SCALE the scale, the strip kept for everything that measures it.
+ */
+export const HD_SCALE = 2;
 /** Every frame is a square cell (in sprite pixels); strips are drawn as one row of cells, facing right. */
 export const CELL_SIZE = 256;
 /** Pixel of the cell where the center of the feet stands, in every frame. */
@@ -186,6 +191,11 @@ export interface FighterArt {
    * its platine Remix), played on the match clock.
    */
   readonly projectiles?: Readonly<Partial<Record<MoveId, Clip>>>;
+  /**
+   * Finer images of some body strips, by strip: the URL of the image and of its atlas, HD_SCALE
+   * times the strip's own (same cuts, finer). Shown in the strip's place, the same size on screen.
+   */
+  readonly hd?: Readonly<Record<string, { readonly url: string; readonly atlas: string }>>;
   /**
    * Effects some moves leave fixed in the world (Feline's portals), by move: each played once,
    * on the match clock, from its action frame where the fighter stands then.

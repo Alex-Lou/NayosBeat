@@ -22,6 +22,25 @@ export function urlsOf(
 }
 
 /**
+ * The HD images of a colorway's strips (`folder`/hd/: tools/sprites/generate.ts keepHd), each with
+ * its atlas, as the art's `hd`; a strip without one is left out.
+ */
+export function hdOf(
+  files: Readonly<Record<string, string>>,
+  folder: string,
+  sheets: Readonly<Record<string, unknown>>,
+): Pick<FighterArt, 'hd'> {
+  const images = urlsOf(files, `${folder}/hd`, sheets);
+  const atlases = urlsOf(files, `${folder}/hd`, sheets, 'json');
+  const hd: Record<string, { url: string; atlas: string }> = {};
+  for (const [sheet, url] of Object.entries(images)) {
+    const atlas = atlases[sheet];
+    if (atlas !== undefined) hd[sheet] = { url, atlas };
+  }
+  return Object.keys(hd).length > 0 ? { hd } : {};
+}
+
+/**
  * The bust drawn for the select screen among the images of a colorway's folder (`portrait.png`,
  * drawn by hand: tools/sprites/drawn.ts), when it has one. One image shown whole: no atlas.
  */

@@ -13,6 +13,11 @@ export function textureKey(art: FighterArt, sheet: string, layer: Layer = 'body'
   return `${art.key}/${stripName(sheet, layer)}`;
 }
 
+/** Key of a strip's HD image (`FighterArt.hd`). */
+export function hdTextureKey(art: FighterArt, sheet: string): string {
+  return `${art.key}/hd/${sheet}`;
+}
+
 /**
  * Image URL of each strip of one layer that a clip plays, by sheet, or by the name a clip gives
  * its effects (the others never show).
@@ -30,6 +35,11 @@ export function playedUrls(art: FighterArt, layer: Layer): [sheet: string, url: 
  * anchors and flips work as with a row of equal cells, which an image without one is.
  */
 export function loadArt(scene: Phaser.Scene, art: FighterArt): void {
+  const played = playedSheets(art);
+  for (const [sheet, { url, atlas }] of Object.entries(art.hd ?? {})) {
+    const key = hdTextureKey(art, sheet);
+    if (played.has(sheet) && !scene.textures.exists(key)) scene.load.atlas(key, url, atlas);
+  }
   for (const layer of ['body', 'fx'] as const) {
     for (const [sheet, url] of playedUrls(art, layer)) {
       const key = textureKey(art, sheet, layer);
