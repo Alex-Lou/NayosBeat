@@ -249,7 +249,7 @@ export const FIGHTER_LIGHT_AREAS: Readonly<Record<string, number>> = {
   'koda/main': 990,
   'koda/alt': 760,
   'feline/main': 2300,
-  'feline/alt': 2500,
+  'feline/alt': 2200,
 };
 
 /** What a fighter of `name` in `colorway` lights at ΔL ≥ 0.1 under a live light, world px². */
