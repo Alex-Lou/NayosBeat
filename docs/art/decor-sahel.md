@@ -63,6 +63,13 @@ ligne du sol, à la rangée 460. `far` la prend à 1 200 pixels de large.
 La rue garde sa saturation (×1) avec un contraste relevé (×1,06) : nette, mais sous les
 personnages, qui gardent leur trait plus sombre.
 
+### L'étalonnage commun
+
+Toutes les palettes du lieu (`far`, `mid`, le sol dessiné, la fumée, les oiseaux) passent par
+`unifyPalette` (`tools/stage/kit/unify.ts`) : leurs ombres prennent la teinte violet-bleu nuit des
+personnages, leurs tons moyens se calment un peu, le couchant et les lampes restent tels quels.
+Voir `docs/art/manifeste-pixel-art.md` §2.
+
 ## 3. Le sol, dessiné
 
 La terre de l'illustration, même pixellisée, restait une peinture floue juste sous les pieds des
@@ -158,8 +165,9 @@ flashs restent prises sur les décors de référence (`docs/flashs.md` §3).
 4. Une vraie conversion en pixel art, au grain des personnages, en trois plans ; mais le sol restait
    la peinture, flou sous les pieds.
 5. Le sol dessiné en perspective, la rue plus nette.
-6. **Cette version** : la rue au grain des personnages (Kuwahara 2, contours), la terre accentuée à
-   la Guilty Gear / BlazBlue, la foule vivante, le feu, la fumée, les lumières et la radio.
+6. La rue au grain des personnages (Kuwahara 2, contours), la terre accentuée à la Guilty Gear /
+   BlazBlue, la foule vivante, le feu, la fumée, les lumières et la radio.
+7. **Cette version** : l'étalonnage commun, qui donne au décor les ombres des personnages.
 
 Un décor entièrement redessiné en code a aussi été essayé : plus cohérent en théorie, mais plat et
 pauvre à côté de l'illustration ; écarté.

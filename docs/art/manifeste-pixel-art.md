@@ -5,7 +5,7 @@ n'importe quel lieu : une illustration (ou un décor codé) qui partage l'écran
 sans jamais avoir l'air d'une image posée derrière eux. Il vaut pour tout agent et tout artiste.
 Les chiffres sont ceux qui marchent sur Sahel ; ils se règlent, la méthode ne change pas.
 
-## 1. Les cinq lois
+## 1. Les six lois
 
 1. **Le même grain que les personnages, partout.** Un pixel d'image du décor vaut un pixel de leurs
    sprites, sur tous les plans : ciel, rue, sol. Jamais de blocs 2 × 2 (le fond devient deux fois
@@ -19,7 +19,9 @@ Les chiffres sont ceux qui marchent sur Sahel ; ils se règlent, la méthode ne 
 4. **Le sol se dessine.** C'est là que l'œil compare le décor aux pieds des combattants : il est
    dessiné pixel par pixel, en perspective, avec sa lumière et ses ombres, des pieds de la foule au
    bord de l'écran.
-5. **La vie vient de la scène elle-même.** On anime les gens, les lumières, la fumée et les objets
+5. **Une seule lumière, une seule ombre.** Les ombres du décor prennent la teinte de celles des
+   personnages (§2, l'étalonnage commun) : c'est le filtre qui fait qu'ils habitent le même monde.
+6. **La vie vient de la scène elle-même.** On anime les gens, les lumières, la fumée et les objets
    qui y sont, au même grain, par pixels entiers (D23). Rien n'est collé dans un autre style.
 
 ## 2. La chaîne de conversion d'une illustration
@@ -38,6 +40,22 @@ Fichier de référence : `tools/stage/sahel/adapt.ts`. Elle part de l'illustrati
 | Tramage | ordonné (Bayer 4 × 4), seulement où il y a un dégradé | ciel seulement | ailleurs, le tramage est du bruit qui scintille |
 | Orphelins | un pixel seul de sa couleur prend celle de ses voisins | 2 passes, puis 1 après le contour | amas nets, comme les sprites |
 | Contour | 1 px sombre (60 % de la clarté, même teinte) sur la lisière du ciel et le côté sombre des arêtes | écart de clarté ≥ **13** (Lab) | le trait Guilty Gear / BlazBlue, en plus doux que celui des personnages |
+
+### L'étalonnage commun (`tools/stage/kit/unify.ts`)
+
+Même au même grain, un décor peint et des sprites ne partagent pas leurs ombres : celles des
+personnages sont d'un violet-bleu nuit (mesuré sur leurs sprites : Lab L ≈ 9, a ≈ +5, b ≈ −9 dans
+la bande la plus sombre ; a ≈ +10, b ≈ −12 dans la suivante), celles d'une peinture de coucher de
+soleil d'un brun chaud. Côte à côte, ce sont deux images. `unifyPalette` est appliquée à **toutes
+les palettes du lieu** (chaque plan, le sol dessiné, la fumée, les oiseaux) :
+
+- les **ombres** (L < 40, entièrement sous 14) tirent leur teinte vers celle des personnages, à
+  72 % ;
+- les **tons moyens** perdent 14 % de chroma et un peu de jaune, au plus fort à L 50 ;
+- les **lumières** (le couchant, les lampes, le feu) ne bougent pas.
+
+C'est un réglage par palette, pas un filtre au rendu : les personnages, leurs effets et les mesures
+de flash restent exactement ce qu'ils sont.
 
 ### La découpe du ciel
 
@@ -150,6 +168,7 @@ oiseaux disparaissent).
 | Fils qui coupent le ciel | bandes de ciel non découpées | sauts de 5 px |
 | Palettes d'animations différentes | silhouettes noires, effets invisibles | une palette commune |
 | Têtes détectées automatiquement | bras flottant au-dessus des têtes | têtes relevées à la main |
+| Ombres chaudes de la peinture | personnages et décor « dans deux mondes » | étalonnage commun des palettes |
 | Fumée en disques réguliers | « colonne de boules » | tailles, balancements et dérive propres à chaque bouffée |
 
 ## 8. La recette pour un nouveau lieu
@@ -157,7 +176,8 @@ oiseaux disparaissent).
 1. Mettre l'illustration dans `art-src/<lieu>/source/`.
 2. Copier `tools/stage/sahel/adapt.ts`, régler l'échelle (la rangée de la source qui tombe sur le
    sol), les seuils du ciel, les palettes.
-3. Lancer `adapt.ts`, puis `npm run stages`.
+3. Passer chaque palette par `unifyPalette` (kit/unify.ts), puis lancer `adapt.ts` et
+   `npm run stages`.
 4. Écrire le sol dans `floor.ts` : la terre, la pierre ou l'asphalte du lieu, sa lumière, sa
    perspective ; le brancher aussi dans `mid` sous la ligne de la foule.
 5. Relever les têtes de la foule sur une grille ×3, régler les seuils, brancher `crowd.ts`.

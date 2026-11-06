@@ -10,6 +10,7 @@ import type { CodeMap, CodeProp, CodeStage } from '../kit/stage.ts';
 import { imageOf, sizeOf } from '../kit/stage.ts';
 import { crowdProps } from './crowd.ts';
 import { drawSahelFloor, FLOOR_PALETTE } from './floor.ts';
+import { unifyPalette } from '../kit/unify.ts';
 import { enlist, imageIn } from './shared.ts';
 import { vfxProps } from './vfx.ts';
 
@@ -42,7 +43,7 @@ const BIRD: readonly Rgba[] = [
   { r: 84, g: 44, b: 34, a: 190 },
   { r: 124, g: 66, b: 46, a: 150 },
 ];
-const BIRD_AT = enlist(BIRD);
+const BIRD_AT = enlist(unifyPalette(BIRD));
 
 const SUN: readonly Rgba[] = [
   { r: 0, g: 0, b: 0, a: 0 },
