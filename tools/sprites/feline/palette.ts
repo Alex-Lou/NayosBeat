@@ -27,12 +27,12 @@ function lit(ramp: Ramp, rim: string = RIM): MaterialTones {
 }
 
 const MATERIALS = {
-  /** Fair porcelain skin with warm rose-peach shading (face, bare midriff, shoulders, fingers). */
-  skin: lit(['#2c141c', '#683846', '#a86876', '#e2aca8', '#f8d2cc', '#fff2ee'], '#e8b4c4'),
-  /** Voluminous silver-white feline mane, ears & tail; shadow-panther violet-black on alt. */
+  /** Pale, luminous porcelain skin with soft peach-rose shading (face, bare midriff, shoulders, forearms). */
+  skin: lit(['#24141c', '#5c3846', '#a47482', '#eabec4', '#f8dce0', '#fff4f6'], '#f0c4d2'),
+  /** Pure snow-white feline mane, ears & tail with soft cool-silver shading; shadow-panther on alt. */
   hair: {
-    main: ['#141828', '#2e3650', '#586488', '#98a6c8', '#d6e0f4', '#ffffff', RIM_ON_LIGHT],
-    alt: ['#080610', '#181228', '#30244c', '#523e7c', '#8068b0', '#c0ace8', RIM],
+    main: ['#141828', '#343c58', '#687498', '#aebad8', '#e4ecfc', '#ffffff', RIM_ON_LIGHT],
+    alt: ['#080610', '#1c1430', '#382a58', '#644e94', '#9880cc', '#d4c4f8', RIM],
   },
   /** Techwear crop-top and shoulder pad: matte carbon-black; pearl-ivory on alt. */
   jacket: {
