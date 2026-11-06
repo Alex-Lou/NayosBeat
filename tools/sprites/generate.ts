@@ -17,7 +17,7 @@
  * is written when one is wrong.
  */
 
-import { mkdir, rm, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { ANCHOR, CELL_SIZE, effectsOf, type Atlas, type Cell } from '../../src/art/types.ts';
 import { atlasJson, packStrip } from './atlas.ts';
 import { strikeOf } from './clips.ts';
@@ -37,13 +37,16 @@ import { frameDataOf } from './frame-data.ts';
 import { drawIcons } from './icons.ts';
 import { NAYO } from './nayo/index.ts';
 import type { Colorway } from './palette.ts';
-import { encodeIndexedPng } from './png.ts';
+import { decodeIndexedPng, encodeIndexedPng } from './png.ts';
 import { CODE_MAPS } from '../stage/maps.ts';
 import { loadStageDrawn, writeStages } from './stage-drawn.ts';
 import { loadUiDrawn } from './ui-drawn.ts';
 import { drawVinyl } from './vinyl.ts';
 
 const ART = new URL('../../src/art/', import.meta.url);
+const ART_SRC = new URL('../../art-src/', import.meta.url);
+/** How much finer an HD strip is drawn than its game strip (art-src/<fighter>/hd/). */
+const HD = 2;
 const PREVIEW = new URL('./preview/', import.meta.url);
 const PREVIEW_SCALE = 2;
 const COLORWAYS: readonly Colorway[] = ['main', 'alt'];
@@ -208,14 +211,78 @@ function cellLines(name: string, { width, height, anchor, frames = [] }: Cell): 
   ];
 }
 
+/**
+ * The HD image of a strip drawn finer by hand (art-src/<fighter>/hd/<sheet>.png: HD times the
+ * game's resolution, cells of HD * CELL_SIZE, the feet on HD * ANCHOR, the strip's own slots),
+ * written next to its game strip as `hd/<sheet>` with an atlas HD times its own: the same cuts,
+ * HD times finer, so the game shows it in its place at 1 / HD the scale (render/anchored-sprite).
+ * The game strip stays what the tools and tests measure. Returns whether it has one.
+ */
+async function keepHd(fighter: Fighter, sheet: string, body: Atlased): Promise<boolean> {
+  const file = new URL(`${fighter.name}/hd/${sheet}.png`, ART_SRC);
+  const png = await readFile(file).catch(() => undefined);
+  if (!png) return false;
+  const hd = await decodeIndexedPng(png);
+  const frames = fighter.sheets[sheet]?.frames ?? 0;
+  const cell = CELL_SIZE * HD;
+  if (hd.width !== frames * cell || hd.height !== cell) {
+    throw new Error(
+      `art-src/${fighter.name}/hd/${sheet}.png is ${hd.width}x${hd.height}: ${frames} cells of ${cell} px expected`,
+    );
+  }
+  const width = body.atlas.meta.size.w * HD;
+  const height = body.atlas.meta.size.h * HD;
+  const pixels = new Uint8Array(width * height);
+  const frameAtlas: Record<string, Atlas['frames'][string]> = {};
+  // The cuts are in the cropped cell: it sits this far into the full one.
+  const left = ANCHOR.x - body.cell.anchor.x;
+  const top = ANCHOR.y - body.cell.anchor.y;
+  for (const [name, at] of Object.entries(body.atlas.frames)) {
+    const index = Number(name);
+    const { frame, spriteSourceSize: cut } = at;
+    for (let y = 0; y < frame.h * HD; y++) {
+      const from = ((top + cut.y) * HD + y) * hd.width + index * cell + (left + cut.x) * HD;
+      pixels.set(
+        hd.pixels.subarray(from, from + frame.w * HD),
+        (frame.y * HD + y) * width + frame.x * HD,
+      );
+    }
+    const scaled = (r: { x: number; y: number; w: number; h: number }) => ({
+      x: r.x * HD,
+      y: r.y * HD,
+      w: r.w * HD,
+      h: r.h * HD,
+    });
+    frameAtlas[name] = {
+      ...at,
+      frame: scaled(frame),
+      spriteSourceSize: scaled(cut),
+      sourceSize: { w: at.sourceSize.w * HD, h: at.sourceSize.h * HD },
+    };
+  }
+  const page = { width, height, pixels };
+  await savePng(fighter, page, `hd/${sheet}`);
+  const atlas: Atlas = {
+    frames: frameAtlas,
+    meta: { ...body.atlas.meta, size: { w: width, h: height } },
+  };
+  const json = new TextEncoder().encode(atlasJson(atlas));
+  for (const colorway of COLORWAYS) {
+    await writeFile(new URL(`${fighter.name}/${colorway}/hd/${sheet}.json`, ART), json);
+  }
+  return true;
+}
+
 async function generate(fighter: Fighter, drawn: ReadonlyMap<string, Drawn>): Promise<void> {
   const assets = new URL(`${fighter.name}/`, ART);
   const { template, clips } = frameDataOf(fighter);
   for (const colorway of COLORWAYS) {
     // Effects are rewritten from scratch: a strip that lost its effects must not keep old ones.
     await rm(new URL(`${colorway}/fx/`, assets), { recursive: true, force: true });
+    await rm(new URL(`${colorway}/hd/`, assets), { recursive: true, force: true });
     for (const root of [assets, previewOf(fighter)]) {
       await mkdir(new URL(`${colorway}/fx/`, root), { recursive: true });
+      await mkdir(new URL(`${colorway}/hd/`, root), { recursive: true });
     }
   }
   const cells = new Map<string, Cell>();
@@ -232,11 +299,12 @@ async function generate(fighter: Fighter, drawn: ReadonlyMap<string, Drawn>): Pr
   for (const [sheet, { frames }] of Object.entries(fighter.sheets)) {
     const strip = stripPixels(fighter, sheet, drawn);
     const body = await keep(strip.body, sheet);
+    const hd = await keepHd(fighter, sheet, body);
     const shown = played.has(sheet) || !Object.values(clips).some((clip) => clip.sheet === sheet);
     if (strip.fx && shown) await keep(strip.fx, `fx/${sheet}`);
     const { width, height } = body.cell;
     const { w, h } = body.atlas.meta.size;
-    const notes = `${strip.fx ? ' + fx' : ''}${strip.drawn ? ' (drawn)' : ''}`;
+    const notes = `${strip.fx ? ' + fx' : ''}${strip.drawn ? ' (drawn)' : ''}${hd ? ' + hd' : ''}`;
     console.log(`${fighter.name} ${sheet}: ${frames} x ${width}x${height} in ${w}x${h}${notes}`);
     // The code's strips are measured by the tests; a drawing, here.
     const strike = strip.drawn ? strikeOf(clips, template, sheet) : undefined;

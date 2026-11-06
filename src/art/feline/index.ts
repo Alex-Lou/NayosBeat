@@ -1,4 +1,4 @@
-import { atlasesOf, effectNames, idleAtlasOf, portraitOf, urlsOf } from '../strip-urls';
+import { atlasesOf, effectNames, hdOf, idleAtlasOf, portraitOf, urlsOf } from '../strip-urls';
 import type { Atlas, FighterArt } from '../types';
 import { FELINE_CELLS } from './cells';
 import { FELINE_CLIPS, FELINE_WORLD_FX } from './clips';
@@ -22,6 +22,18 @@ const MAIN_FX = import.meta.glob<string>('./main/fx/*.png', {
   import: 'default',
 });
 const ALT_FX = import.meta.glob<string>('./alt/fx/*.png', {
+  eager: true,
+  query: '?url',
+  import: 'default',
+});
+
+/** Finer images of some strips (art-src/feline/hd/), shown in their place. */
+const MAIN_HD = import.meta.glob<string>('./main/hd/*.png', {
+  eager: true,
+  query: '?url',
+  import: 'default',
+});
+const ALT_HD = import.meta.glob<string>('./alt/hd/*.png', {
   eager: true,
   query: '?url',
   import: 'default',
@@ -55,6 +67,7 @@ export const FELINE: FighterArt = {
   fx: urlsOf(MAIN_FX, 'main/fx', effectNames(FELINE_SHEETS, FELINE_CLIPS)),
   atlases: atlasesOf(MAIN_ATLASES, 'main', FELINE_SHEETS, effectNames(FELINE_SHEETS, FELINE_CLIPS)),
   ...idleAtlasOf(IDLE_ATLASES, 'main', FELINE_CLIPS.idle.sheet),
+  ...hdOf({ ...MAIN_HD, ...MAIN_ATLASES }, 'main', FELINE_SHEETS),
   ...portraitOf(MAIN, 'main'),
   ...SHARED,
 };
@@ -65,6 +78,7 @@ export const FELINE_ALT: FighterArt = {
   fx: urlsOf(ALT_FX, 'alt/fx', effectNames(FELINE_SHEETS, FELINE_CLIPS)),
   atlases: atlasesOf(ALT_ATLASES, 'alt', FELINE_SHEETS, effectNames(FELINE_SHEETS, FELINE_CLIPS)),
   ...idleAtlasOf(IDLE_ATLASES, 'alt', FELINE_CLIPS.idle.sheet),
+  ...hdOf({ ...ALT_HD, ...ALT_ATLASES }, 'alt', FELINE_SHEETS),
   ...portraitOf(ALT, 'alt'),
   ...SHARED,
 };
