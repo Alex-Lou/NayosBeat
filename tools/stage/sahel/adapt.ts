@@ -39,13 +39,13 @@ const FAR_SCALE = FAR.width / 1672;
 /** Colours per plane: the fighters use about 70, the stage stays below and calmer. */
 const COLORS = { far: 18, mid: 32 } as const;
 /** How hard the painting's softened edges are pushed back (`sharpen`). */
-const SHARP = 1.5;
+const SHARP = 1.6;
 /** The lightness step (Lab L) over which the darker side of an edge gets its contour. */
-const EDGE = 16;
+const EDGE = 13;
 /** The street's earth is drawn, not painted, from this row down (behind the fighters' feet). */
 const EARTH_FROM = 404;
 /** The largest crumb of painting left inside the drawn earth that the earth swallows. */
-const CRUMB = 48;
+const CRUMB = 120;
 
 interface Image {
   readonly width: number;
@@ -641,7 +641,7 @@ function contour(slots: Uint8Array, width: number, height: number, colors: Lab[]
       const right = colors[(copy[k + 1] ?? 0) - 1]?.[0] ?? L;
       const down = colors[(copy[k + width] ?? 0) - 1]?.[0] ?? L;
       if ((x < width - 1 && right - L > EDGE) || (y < height - 1 && down - L > EDGE)) {
-        slots[k] = darkerOf(colors, here, 0.75);
+        slots[k] = darkerOf(colors, here, 0.6);
       }
     }
   }
@@ -695,13 +695,15 @@ const midSource = resample(
   MID.height,
 );
 const midSky = skyMask(midSource);
-const mid = sharpen(kuwahara(midSource, 1), SHARP);
-grade(mid, 0.9, 0.96, 0.94);
+const mid = sharpen(kuwahara(midSource, 2), SHARP);
+grade(mid, 1, 1.06, 0.94);
 const midMask = midSky.map((s) => (s ? 0 : 1));
 const midColors = palette(mid, midMask, COLORS.mid);
 const midSlots = index(mid, midMask, midColors, 0);
 cleanOrphans(midSlots, MID.width, MID.height, 2);
 contour(midSlots, MID.width, MID.height, midColors);
+// The contour's own crumbs go: only lines that hold read as a stroke.
+cleanOrphans(midSlots, MID.width, MID.height, 1);
 // The far road: wherever the painting shows bare earth behind the fighters, the earth is drawn
 // instead, in the floor's own palette and perspective, so the ground is one surface from the
 // crowd's feet to the viewer. Tyres, barrels, crates, feet and grass stay the painting's.
