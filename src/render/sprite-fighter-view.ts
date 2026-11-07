@@ -193,7 +193,7 @@ export class SpriteFighterView {
       : undefined;
     this.glow?.hide();
     this.dissolve = art.fx
-      ? new FxDissolve(scene, art, look.dissolve, trailColor, false, mode, this.pixels)
+      ? new FxDissolve(scene, art, look.dissolve, trailColor, false, this.pixels)
       : undefined;
     const presence = look.signature?.presence;
     this.presence =

@@ -13,8 +13,6 @@ import {
   type Ghost,
 } from './dissolve';
 import { FxPixels } from './fx-pixels';
-import type { RenderMode } from './render-mode';
-import { FX_DARK } from './veils';
 
 /** Ghosts going at once, per fighter: the oldest is reused. */
 const POOL = 4;
@@ -42,16 +40,14 @@ interface Slot {
   cell: Cell;
   age: number;
   painted: number;
-  /** In the effects' dark look (docs/flashs.md §4), as the frame it is the ghost of was. */
-  dark: boolean;
 }
 
 /**
  * The ghosts of a fighter's effects (docs/art/dissolution.md): when a frame of the effects of a
  * special, a Remix or a super gives way to one that no longer shows some of it (or to none, the
- * move over or cut short), what goes dissolves where it was (src/render/dissolve.ts), in the
- * look it had (lit, or dark). The pixels of each frame are read once from its strip (FxPixels).
- * Drawn without tints (`mode` simple), a dark ghost does not show: it would dissolve lit.
+ * move over or cut short), what goes dissolves where it was (src/render/dissolve.ts). The pixels
+ * of each frame are read once from its strip (FxPixels). Effects the flash budget refused were not
+ * drawn (docs/flashs.md §4): they leave no ghost.
  */
 export class FxDissolve {
   private readonly slots: Slot[];
@@ -70,7 +66,6 @@ export class FxDissolve {
      * drifting. Read at each repaint, so the pause's options apply at once.
      */
     public still: boolean,
-    private readonly mode: RenderMode,
     private readonly pixels: FxPixels = new FxPixels(scene, art),
   ) {
     const size = largestCell(art);
@@ -97,7 +92,6 @@ export class FxDissolve {
         cell: size,
         age: 0,
         painted: 0,
-        dark: false,
       };
     });
   }
@@ -141,7 +135,7 @@ export class FxDissolve {
   }
 
   private spawn(from: ShownFrame, to: ShownFrame | null, dark: boolean): void {
-    if (dark && this.mode === 'simple') return;
+    if (dark) return;
     const source = this.pixels.of(from.sheet, from.frame);
     if (!source) return;
     const cell = cellOf(this.art, stripName(from.sheet, 'fx'));
@@ -164,11 +158,6 @@ export class FxDissolve {
       from.flip,
     );
     slot.image.setOrigin(origin.x, origin.y).setPosition(from.x, from.y).setFlipX(from.flip);
-    if (dark !== slot.dark) {
-      if (dark) slot.image.setTint(FX_DARK);
-      else slot.image.clearTint();
-      slot.dark = dark;
-    }
     this.paint(slot);
   }
 

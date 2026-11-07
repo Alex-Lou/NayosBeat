@@ -3,12 +3,11 @@ import { ART_SCALE, cellOf, HD_SCALE, type FighterArt } from '../art/types';
 import { anchorOrigin } from './anchor-origin';
 import { hdTextureKey, playedUrls, stripName, textureKey, type Layer } from './art-textures';
 import type { RenderMode } from './render-mode';
-import { FX_DARK } from './veils';
 
 /**
  * A sprite placed by its feet anchor, which changes texture and frame only when needed. Drawn
- * without tints (`mode` simple: render-mode.ts), its dark look and its flat silhouette are not
- * drawn at all: they would show lit, in its own colors.
+ * without tints (`mode` simple: render-mode.ts), its flat silhouette is not drawn at all: it would
+ * show lit, in its own colors. Front effects the flash budget refused are never drawn (`dark`).
  */
 export class AnchoredSprite {
   private readonly sprite: Phaser.GameObjects.Sprite;
@@ -16,6 +15,7 @@ export class AnchoredSprite {
   private shownKey = '';
   private shownFrame = -1;
   private shownFlip = false;
+  /** Front effects the flash budget refused: hidden until lit again. */
   private darkened = false;
   /** Its look is a tint the renderer cannot draw: it stays hidden while it is. */
   private untinted = false;
@@ -64,7 +64,10 @@ export class AnchoredSprite {
     this.shownKey = key;
     this.shownFrame = frame;
     this.shownFlip = flip;
-    this.sprite.setPosition(x, y).setFlipX(flip).setVisible(!this.untinted);
+    this.sprite
+      .setPosition(x, y)
+      .setFlipX(flip)
+      .setVisible(!this.untinted && !this.darkened);
   }
 
   /** Each strip is cropped differently: its anchor, on the side faced, sets the origin. */
@@ -83,17 +86,13 @@ export class AnchoredSprite {
   }
 
   /**
-   * Draws front effects in their dark look (docs/flashs.md §4), or back in their colors. Without
-   * tints, dark, they are not drawn: lit, they would flash beyond the budget.
+   * Hides front effects the flash budget refused (docs/flashs.md §4), or shows them again once
+   * lit: lit, they would flash beyond the budget; darkened, their white read as grey dirt.
    */
   dark(dark: boolean): this {
     if (dark === this.darkened) return this;
     this.darkened = dark;
-    if (this.mode === 'simple') {
-      this.untinted = dark;
-      if (dark) this.sprite.setVisible(false);
-    } else if (dark) this.sprite.setTint(FX_DARK);
-    else this.sprite.clearTint();
+    if (dark) this.sprite.setVisible(false);
     return this;
   }
 
