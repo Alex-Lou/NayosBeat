@@ -18,7 +18,7 @@ import {
 } from '../../src/input/touch-layout';
 import { installFakePage, type FakeElement } from '../render/fake-dom';
 
-/** DASH moved above BOOST, at the top of an iPhone SE's button zone. */
+/** DASH moved above S, at the top of an iPhone SE's button zone. */
 const MOVED: TouchLayout = {
   ...DEFAULT_TOUCH_LAYOUT,
   buttons: { ...DEFAULT_TOUCH_LAYOUT.buttons, dash: { right: 177, bottom: 246, size: 100 } },
@@ -173,6 +173,33 @@ describe('parseTouchLayout (P24: parse, don’t validate)', () => {
     }
   });
 
+  it('moves the buttons left where the layout before the d-pad put them, not those moved', () => {
+    // A layout kept before the d-pad (D40): SAUT in the corner, PRISE and BOOST in their old
+    // places, PRISE made bigger, DASH moved by the player.
+    const before = {
+      size: 100,
+      opacity: 80,
+      buttons: {
+        ...DEFAULT_TOUCH_LAYOUT.buttons,
+        jump: { right: 52, bottom: 52, size: 100 },
+        grab: { right: 89, bottom: 126, size: 110 },
+        boost: { right: 126, bottom: 190, size: 100 },
+        dash: { right: 177, bottom: 246, size: 100 },
+      },
+    };
+    const layout = parseTouchLayout(JSON.parse(JSON.stringify(before)));
+    expect(layout.buttons).toEqual({
+      ...DEFAULT_TOUCH_LAYOUT.buttons,
+      grab: { ...DEFAULT_TOUCH_LAYOUT.buttons.grab, size: 110 },
+      dash: { right: 177, bottom: 246, size: 100 },
+    });
+    expect('jump' in layout.buttons).toBe(false);
+    expect(layout.opacity).toBe(80);
+    // Moved by the player, PRISE stays where they put it.
+    const moved = { ...before.buttons, grab: { right: 300, bottom: 52, size: 100 } };
+    expect(parseTouchLayout({ ...before, buttons: moved }).buttons.grab).toEqual(moved.grab);
+  });
+
   it('puts every button back when two overlap', () => {
     const onS = { ...MOVED.buttons, dash: { right: 170, bottom: 130, size: 100 } };
     const layout = parseTouchLayout({ ...MOVED, opacity: 60, buttons: onS });
@@ -194,7 +221,7 @@ describe('TouchControls with a layout (P24)', () => {
       undefined,
       controls,
     );
-    const zone = page.body.children[0]?.children[2] as FakeElement;
+    const zone = page.body.children[0]?.children[1] as FakeElement;
     zone.rect = { left: 333, top: 0, right: 667, bottom: 375 };
     const dash = zone.children[TOUCH_BUTTONS.findIndex(({ action }) => action === 'dash')];
     return { page, touch, zone, dash };

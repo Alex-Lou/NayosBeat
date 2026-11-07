@@ -1,10 +1,10 @@
-import type { PadAction } from '../input/bindings';
 import { controlsStore, type ControlsStore } from '../input/controls-store';
-import { placeButton } from '../input/touch-controls';
+import { createDpad, placeButton, placeDpad } from '../input/touch-controls';
 import {
   BUTTON_SIZES,
   CLUSTER_SIZES,
   DEFAULT_TOUCH_LAYOUT,
+  dpadOf,
   fitsZone,
   nearestButton,
   OPACITIES,
@@ -13,6 +13,7 @@ import {
   reachOf,
   TOP_CLEARANCE_PX,
   TOUCH_BUTTONS,
+  type TouchAction,
   type TouchLayout,
 } from '../input/touch-layout';
 import { movedText, TOUCH_TEXTS } from './bindings-text';
@@ -134,7 +135,7 @@ export class TouchLayoutEditor {
         again(which)();
       },
     };
-    const action: PadAction = spec.action;
+    const action: TouchAction = spec.action;
     const own = buttons[action];
     const single: MenuItem = {
       label: `Taille de ${spec.label} : ${own.size} %`,
@@ -272,7 +273,7 @@ export class TouchLayoutEditor {
 
 /**
  * The touch tab's picture of `layout`: a phone held sideways (667 × 375 CSS px, an iPhone SE),
- * shrunk, its stick's place and the buttons where the fight puts them, at their opacity.
+ * shrunk, its d-pad and its buttons where the fight puts them, at their opacity.
  */
 export function drawTouchPreview(layout: TouchLayout): HTMLElement {
   const frame = element('div', 'touch-mini');
@@ -285,7 +286,10 @@ export function drawTouchPreview(layout: TouchLayout): HTMLElement {
     placeButton(button, spec);
     zone.appendChild(button);
   });
-  screen.append(element('div', 'touch-mini-stick'), zone);
+  const dpad = createDpad();
+  placeDpad(dpad, dpadOf(layout));
+  dpad.style.opacity = String(layout.opacity / 100);
+  screen.append(dpad, zone);
   frame.appendChild(screen);
   return frame;
 }

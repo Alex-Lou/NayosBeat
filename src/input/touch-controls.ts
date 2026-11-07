@@ -3,18 +3,25 @@ import { has, Input, type InputBits } from '../core/input';
 import { BOOST_BAR, BOOST_MAX } from '../core/rules';
 import type { Facing, FighterAction } from '../core/state';
 import { controlsStore, type ControlsStore } from './controls-store';
+import { bitsFromDpad, finisherBack } from './touch-dpad';
 import {
   BOOST_RING_PX,
+  dpadOf,
+  DPAD_SLOP_PX,
   fittedButtons,
   nearestButton,
   TOUCH_BUTTONS,
   type TouchButton,
   type TouchLayout,
 } from './touch-layout';
-import { bitsFromStick, finisherBack, followFinger, type Point } from './touch-stick';
 
-/** How far the knob goes from the stick center; beyond it, the center follows the thumb. */
-const KNOB_TRAVEL_PX = 36;
+/** The d-pad's arrows, lit while held: their class and their direction. */
+const ARROWS = [
+  ['up', Input.Up],
+  ['down', Input.Down],
+  ['left', Input.Left],
+  ['right', Input.Right],
+] as const;
 /**
  * The stuns in which the guard reads the stick held, on every tick (core/combat.ts,
  * BLOCKING_ACTIONS), while a BOOST press is only buffered: there, the 35° read would take down
@@ -31,6 +38,13 @@ const RING_STEPS = 20;
  */
 export const COVER_HOLD_MS = 1000;
 
+/** A finger on the d-pad: where it is from the pad's center, and the directions it gives. */
+interface PadFinger {
+  dx: number;
+  dy: number;
+  bits: InputBits;
+}
+
 /** A round button on the page, in CSS pixels. */
 export interface ButtonCircle {
   readonly x: number;
@@ -43,19 +57,19 @@ export function isTouchDevice(): boolean {
 }
 
 /**
- * On-screen controls for player 1: a floating stick on the left half of the screen (it appears
- * under the thumb) and the buttons of `touch-layout.ts` on the right. Multi-touch capable.
+ * On-screen controls for player 1: a d-pad fixed at the bottom-left (`touch-dpad.ts`) and the
+ * buttons of `touch-layout.ts` on the right. Multi-touch capable: as on a gamepad's cross, two
+ * arrows held at once read together, under one thumb between them or under two fingers.
  *
- * Devices are read once per displayed frame: at 30 fps a thumb can leave the stick and come
+ * Devices are read once per displayed frame: at 30 fps a thumb can leave the pad and come
  * back between two reads. A press is kept until read (`tappedBits`), and so is a pass through
  * neutral (`passedNeutral`): a double tap is never lost.
  */
 export class TouchControls {
   private readonly root: HTMLDivElement;
-  private readonly stickBase: HTMLDivElement;
-  private readonly stickKnob: HTMLDivElement;
-  /** A faint ring where the left thumb goes, until it first touches the stick's half. */
-  private stickGhost: HTMLDivElement | undefined;
+  /** The left half: a touch near the pad lands on it (DPAD_SLOP_PX), the rest is ignored. */
+  private readonly dpadZone: HTMLDivElement;
+  private readonly dpad: HTMLDivElement;
   private readonly buttonZone: HTMLDivElement;
   private readonly buttons: readonly HTMLDivElement[];
   /**
@@ -69,12 +83,14 @@ export class TouchControls {
   private layoutCount = 0;
   private readonly unsubscribe: () => void;
 
-  private stickPointer: number | null = null;
-  /** The stick's center and the thumb on it, updated in place as the thumb moves. */
-  private readonly stickOrigin: Point = { x: 0, y: 0 };
-  private readonly finger: Point = { x: 0, y: 0 };
+  /** Each finger on the d-pad, by pointer; their directions read together (`padBits`). */
+  private readonly padFingers = new Map<number, PadFinger>();
+  /** The d-pad's center on the page and its radius, measured as a finger lands on it. */
+  private padX = 0;
+  private padY = 0;
+  private padRadius = 0;
   private stickBits: InputBits = 0;
-  /** The stick went back to neutral since the last read: the next read says so once. */
+  /** The pad went back to neutral since the last read: the next read says so once. */
   private passedNeutral = false;
   /** Index (in TOUCH_BUTTONS) of the button held by each active pointer. */
   private readonly buttonPointers = new Map<number, number>();
@@ -89,8 +105,11 @@ export class TouchControls {
   /** FINISH lit for player 1: the button wears it, and the fighter's back (Left or Right). */
   private finisher = false;
   private finisherBack: InputBits = 0;
-  /** Each button faded (`setCovered`), since when, and when a fighter was last under it. */
-  private readonly covers = TOUCH_BUTTONS.map(() => ({
+  /**
+   * Each button faded (`setCovered`), since when, and when a fighter was last under it; the d-pad
+   * last (`buttonCircles`).
+   */
+  private readonly covers = [...TOUCH_BUTTONS, undefined].map(() => ({
     faded: false,
     fadedSince: -Infinity,
     coveredAt: -Infinity,
@@ -108,13 +127,10 @@ export class TouchControls {
     store: ControlsStore = controlsStore,
   ) {
     this.root = createDiv('touch-controls');
-    const stickZone = createDiv('touch-stick-zone');
-    this.stickBase = createDiv('touch-stick-base');
-    this.stickKnob = createDiv('touch-stick-knob');
-    this.stickBase.appendChild(this.stickKnob);
-    // The stick floats under the thumb, invisible at rest: this ring says where it lives.
-    this.stickGhost = createDiv('touch-stick-ghost');
-    stickZone.appendChild(this.stickGhost);
+    const dpadZone = createDiv('touch-dpad-zone');
+    this.dpadZone = dpadZone;
+    this.dpad = createDpad();
+    dpadZone.appendChild(this.dpad);
     this.buttonZone = createDiv('touch-button-zone');
     this.placed = TOUCH_BUTTONS;
     this.buttons = TOUCH_BUTTONS.map((spec) => {
@@ -139,16 +155,16 @@ export class TouchControls {
       this.layout = touch;
       this.place();
     });
-    this.root.append(stickZone, this.stickBase, this.buttonZone);
+    this.root.append(dpadZone, this.buttonZone);
 
     this.root.addEventListener('contextmenu', preventDefault);
     this.root.addEventListener('pointerdown', this.notifyFirstTouch);
 
-    stickZone.addEventListener('pointerdown', this.onStickDown);
-    stickZone.addEventListener('pointermove', this.onStickMove);
-    stickZone.addEventListener('pointerup', this.onStickUp);
-    stickZone.addEventListener('pointercancel', this.onStickUp);
-    stickZone.addEventListener('lostpointercapture', this.onStickUp);
+    dpadZone.addEventListener('pointerdown', this.onPadDown);
+    dpadZone.addEventListener('pointermove', this.onPadMove);
+    dpadZone.addEventListener('pointerup', this.onPadUp);
+    dpadZone.addEventListener('pointercancel', this.onPadUp);
+    dpadZone.addEventListener('lostpointercapture', this.onPadUp);
 
     // One listener for every button: the nearest center wins where two touch zones overlap.
     this.buttonZone.addEventListener('pointerdown', this.onButtonDown);
@@ -173,8 +189,10 @@ export class TouchControls {
     // BOOST pressed with FINISH lit: a thumb a little low on the back side still reads back, on
     // the read of the press, whose directions the core keeps with the command.
     if (this.finisherBack !== 0 && has(this.tappedBits, Input.Boost)) {
-      const { finger, stickOrigin: origin } = this;
-      stick = finisherBack(stick, finger.x - origin.x, finger.y - origin.y, this.finisherBack);
+      stick = 0;
+      for (const { dx, dy, bits } of this.padFingers.values()) {
+        stick |= finisherBack(bits, dx, dy, this.finisherBack);
+      }
     }
     const bits = stick | this.tappedBits | this.buttonsHeld();
     this.passedNeutral = false;
@@ -183,7 +201,7 @@ export class TouchControls {
   }
 
   /**
-   * The stick and the buttons a finger holds right now, nothing reset: no tap, no pass through
+   * The pad and the buttons a finger holds right now, nothing reset: no tap, no pass through
    * neutral taken from the next read.
    */
   heldBits(): InputBits {
@@ -251,7 +269,10 @@ export class TouchControls {
       const button = this.buttons[index];
       if (button) placeButton(button, spec);
     });
-    this.buttonZone.style.opacity = layout.opacity === 100 ? '' : String(layout.opacity / 100);
+    placeDpad(this.dpad, dpadOf(layout));
+    const opacity = layout.opacity === 100 ? '' : String(layout.opacity / 100);
+    this.buttonZone.style.opacity = opacity;
+    this.dpadZone.style.opacity = opacity;
     this.layoutCount++;
   };
 
@@ -260,9 +281,12 @@ export class TouchControls {
     return this.layoutCount;
   }
 
-  /** Where each button is on the page (TOUCH_BUTTONS' order), round, BOOST with its ring. */
+  /**
+   * Where each button is on the page (TOUCH_BUTTONS' order), round, BOOST with its ring; the
+   * d-pad last.
+   */
   buttonCircles(): ButtonCircle[] {
-    return this.buttons.map((button, index) => {
+    return [...this.buttons, this.dpad].map((button, index) => {
       const rect = button.getBoundingClientRect();
       const ring = TOUCH_BUTTONS[index]?.flag === Input.Boost ? BOOST_RING_PX : 0;
       return {
@@ -274,16 +298,16 @@ export class TouchControls {
   }
 
   /**
-   * Which buttons a fighter is under (`src/render/touch-cover.ts`, TOUCH_BUTTONS' order), at `now`
-   * in milliseconds: each fades on its own (`.covered`, less when pressed), and comes back after
-   * COVER_HOLD_MS with nobody under it; never twice in COVER_HOLD_MS.
+   * Which buttons a fighter is under (`src/render/touch-cover.ts`, `buttonCircles`' order: the
+   * d-pad last), at `now` in milliseconds: each fades on its own (`.covered`, less when pressed),
+   * and comes back after COVER_HOLD_MS with nobody under it; never twice in COVER_HOLD_MS.
    */
   setCovered(covered: readonly boolean[], now: number): void {
     this.covers.forEach((cover, index) => {
       if (covered[index]) cover.coveredAt = now;
       const fade = now - cover.coveredAt < COVER_HOLD_MS;
-      const button = this.buttons[index];
-      if (!button || fade === cover.faded || now - cover.fadedSince < COVER_HOLD_MS) return;
+      const button = this.buttons[index] ?? this.dpad;
+      if (fade === cover.faded || now - cover.fadedSince < COVER_HOLD_MS) return;
       toggle(button, 'covered', fade);
       cover.faded = fade;
       cover.fadedSince = now;
@@ -296,6 +320,7 @@ export class TouchControls {
     window.removeEventListener('resize', this.place);
     this.root.remove();
     this.buttonPointers.clear();
+    this.padFingers.clear();
   }
 
   private readonly notifyFirstTouch = (): void => {
@@ -303,39 +328,48 @@ export class TouchControls {
     this.onFirstTouch = undefined;
   };
 
-  private readonly onStickDown = (event: PointerEvent): void => {
-    if (this.stickPointer !== null) return;
+  private readonly onPadDown = (event: PointerEvent): void => {
+    const rect = this.dpad.getBoundingClientRect();
+    this.padX = (rect.left + rect.right) / 2;
+    this.padY = (rect.top + rect.bottom) / 2;
+    this.padRadius = (rect.right - rect.left) / 2;
+    const dx = event.clientX - this.padX;
+    const dy = event.clientY - this.padY;
+    // Far from the pad, a touch is a thumb resting on the screen, not a direction.
+    if (Math.hypot(dx, dy) > this.padRadius + DPAD_SLOP_PX) return;
     (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
-    this.stickPointer = event.pointerId;
-    this.stickOrigin.x = event.clientX;
-    this.stickOrigin.y = event.clientY;
-    this.stickGhost?.remove();
-    this.stickGhost = undefined;
-    this.placeBase();
-    this.stickBase.classList.add('active');
-    this.moveKnob(0, 0);
+    this.padFingers.set(event.pointerId, { dx, dy, bits: bitsFromDpad(dx, dy, this.padRadius, 0) });
+    this.updatePad();
   };
 
-  private readonly onStickMove = (event: PointerEvent): void => {
-    if (event.pointerId !== this.stickPointer) return;
-    const { finger, stickOrigin: origin } = this;
-    finger.x = event.clientX;
-    finger.y = event.clientY;
-    const { x, y } = origin;
-    followFinger(origin, finger, KNOB_TRAVEL_PX);
-    if (origin.x !== x || origin.y !== y) this.placeBase();
-    const dx = finger.x - origin.x;
-    const dy = finger.y - origin.y;
-    this.setStick(bitsFromStick(dx, dy, this.stickBits));
-    this.moveKnob(dx, dy);
+  /** A finger held on the pad slides: it reads anew, past the pad's edge as well. */
+  private readonly onPadMove = (event: PointerEvent): void => {
+    const finger = this.padFingers.get(event.pointerId);
+    if (!finger) return;
+    finger.dx = event.clientX - this.padX;
+    finger.dy = event.clientY - this.padY;
+    finger.bits = bitsFromDpad(finger.dx, finger.dy, this.padRadius, finger.bits);
+    this.updatePad();
   };
 
-  private readonly onStickUp = (event: PointerEvent): void => {
-    if (event.pointerId !== this.stickPointer) return;
-    this.stickPointer = null;
-    this.setStick(0);
-    this.stickBase.classList.remove('active');
+  private readonly onPadUp = (event: PointerEvent): void => {
+    if (!this.padFingers.delete(event.pointerId)) return;
+    this.updatePad();
   };
+
+  /**
+   * Every finger's directions together, as a gamepad's cross held with two arrows (opposites are
+   * the core's to resolve, `cleanSocd`); the arrows lit, set on change only.
+   */
+  private updatePad(): void {
+    let bits = 0;
+    for (const finger of this.padFingers.values()) bits |= finger.bits;
+    if (bits === this.stickBits) return;
+    for (const [name, flag] of ARROWS) {
+      if (has(bits, flag) !== has(this.stickBits, flag)) toggle(this.dpad, name, has(bits, flag));
+    }
+    this.setStick(bits);
+  }
 
   private setStick(bits: InputBits): void {
     if (bits === 0 && this.stickBits !== 0) this.passedNeutral = true;
@@ -375,17 +409,6 @@ export class TouchControls {
     if (after > 0) classes.add('pressed');
     else classes.remove('pressed');
   }
-
-  private placeBase(): void {
-    const { x, y } = this.stickOrigin;
-    this.stickBase.style.transform = `translate(${x}px, ${y}px)`;
-  }
-
-  private moveKnob(dx: number, dy: number): void {
-    const length = Math.hypot(dx, dy);
-    const scale = length > KNOB_TRAVEL_PX ? KNOB_TRAVEL_PX / length : 1;
-    this.stickKnob.style.transform = `translate(${dx * scale}px, ${dy * scale}px)`;
-  }
 }
 
 /** A touch button's place and size on the page, from the corner of its zone. */
@@ -395,6 +418,24 @@ export function placeButton(button: HTMLElement, spec: TouchButton): void {
   button.style.width = `${spec.diameter}px`;
   button.style.height = `${spec.diameter}px`;
   button.style.fontSize = `${spec.fontSize}px`;
+}
+
+/** The d-pad's look: a round base and its four arrows (styles.css, `.touch-dpad`). */
+export function createDpad(): HTMLDivElement {
+  const dpad = createDiv('touch-dpad');
+  for (const [name] of ARROWS) dpad.appendChild(createDiv(`touch-dpad-arrow ${name}`));
+  return dpad;
+}
+
+/** The d-pad's place and size on the page, from the bottom-left corner of its zone. */
+export function placeDpad(
+  dpad: HTMLElement,
+  spec: { readonly left: number; readonly bottom: number; readonly diameter: number },
+): void {
+  dpad.style.left = `${spec.left - spec.diameter / 2}px`;
+  dpad.style.bottom = `${spec.bottom - spec.diameter / 2}px`;
+  dpad.style.width = `${spec.diameter}px`;
+  dpad.style.height = `${spec.diameter}px`;
 }
 
 function toggle(element: HTMLElement, className: string, on: boolean): void {

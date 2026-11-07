@@ -42,18 +42,15 @@ const TOUCH: HelpSection = {
   // The pixel font has no capital É: "Écran" would show as "écran".
   title: 'Tactile',
   rows: [
-    ['Joystick', "Moitié gauche : bouger, haut pour sauter, bas pour s'accroupir"],
+    ['Croix', "En bas à gauche : bouger, haut pour sauter, bas pour s'accroupir"],
+    ['Diagonales', 'Le pouce entre deux flèches, ou deux doigts : deux directions à la fois'],
     ['L', 'Coup léger : rapide'],
     ['H', 'Coup lourd : fort mais lent'],
     ['S', 'Coup spécial'],
-    ['SAUT', 'Sauter'],
-    ['DASH', "Bond vers l'adversaire ; joystick en arrière + DASH : bond en retrait"],
-    ['2 fois avant', 'Joystick, en repassant au centre : dash aussi (2 fois arrière : retrait)'],
+    ['DASH', "Bond vers l'adversaire ; croix en arrière + DASH : bond en retrait"],
+    ['2 fois avant', 'Croix, en relâchant entre les deux : dash aussi (2 fois arrière : retrait)'],
     ['PRISE', "Saisir l'adversaire de près, puis le frapper ou le lancer"],
-    [
-      'BOOST',
-      'Dépenser la jauge : un Remix de ton spécial, ou ta super avec le joystick en arrière',
-    ],
+    ['BOOST', 'Dépenser la jauge : un Remix de ton spécial, ou ta super avec la croix en arrière'],
     ['II', 'Pause'],
   ],
 };
