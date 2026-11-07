@@ -13,7 +13,6 @@ import {
   rendererTypeFromUrl,
   type RenderMode,
 } from '../../src/render/render-mode';
-import { FX_DARK } from '../../src/render/veils';
 import { fakeStage, type FakeObject } from './finisher-fakes';
 
 vi.mock('phaser', () => ({
@@ -118,22 +117,26 @@ const SHEET = NAYO.clips.idle.sheet;
 const CYAN = 0x30e8ff;
 
 describe('the sprites drawn without tints', () => {
-  it('shows front effects dark with WebGL, hides them while dark by Canvas', () => {
+  it('hides front effects the flash budget refused, with WebGL as by Canvas', () => {
     const shown = (mode: RenderMode, dark: boolean) => {
       const { scene, sprites } = spriteScene();
       const sprite = new AnchoredSprite(scene, NAYO, 'body', mode);
       sprite.dark(dark).show(SHEET, 0, 10, 20, false);
       return sprites[0];
     };
-    expect(shown('full', true)).toMatchObject({ visible: true, tint: FX_DARK });
+    // Never a darkened white: it read as grey dirt.
+    expect(shown('full', true)?.visible).toBe(false);
     expect(shown('simple', true)?.visible).toBe(false);
+    expect(shown('full', false)).toMatchObject({ visible: true, tint: 0xffffff });
     expect(shown('simple', false)).toMatchObject({ visible: true, tint: 0xffffff });
     // Lit again, they show again.
-    const { scene, sprites } = spriteScene();
-    const sprite = new AnchoredSprite(scene, NAYO, 'body', 'simple');
-    sprite.dark(true).show(SHEET, 0, 10, 20, false);
-    sprite.dark(false).show(SHEET, 1, 10, 20, false);
-    expect(sprites[0]?.visible).toBe(true);
+    for (const mode of ['full', 'simple'] as const) {
+      const { scene, sprites } = spriteScene();
+      const sprite = new AnchoredSprite(scene, NAYO, 'body', mode);
+      sprite.dark(true).show(SHEET, 0, 10, 20, false);
+      sprite.dark(false).show(SHEET, 1, 10, 20, false);
+      expect(sprites[0]?.visible).toBe(true);
+    }
   });
 
   it('never shows a flat silhouette by Canvas: it would be the fighter in its colors', () => {

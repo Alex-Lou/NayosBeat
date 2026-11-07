@@ -3,8 +3,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { FighterArt } from '../../src/art/types';
 import { DISSOLVE_FRAMES } from '../../src/render/dissolve';
 import { FxDissolve, type ShownFrame } from '../../src/render/fx-dissolve';
-import type { RenderMode } from '../../src/render/render-mode';
-import { FX_DARK } from '../../src/render/veils';
 
 const CELL = { width: 20, height: 20, anchor: { x: 10, y: 18 } };
 /**
@@ -57,7 +55,7 @@ class FakeImage {
   }
 }
 
-function setup(mode: RenderMode = 'full') {
+function setup() {
   const images: FakeImage[] = [];
   const uploads = vi.fn();
   const imageData = (width: number, height: number) => ({
@@ -116,7 +114,7 @@ function setup(mode: RenderMode = 'full') {
     fx: { big: 'big.png' },
     cells: { 'fx/big': CELL },
   } as unknown as FighterArt;
-  return { dissolve: new FxDissolve(scene, art, 'rise', 0x30e8ff, false, mode), images, uploads };
+  return { dissolve: new FxDissolve(scene, art, 'rise', 0x30e8ff, false), images, uploads };
 }
 
 const at = (frame: number): ShownFrame => ({ sheet: 'big', frame, x: 100, y: 200, flip: false });
@@ -177,27 +175,22 @@ describe('the ghosts of the effects (docs/art/dissolution.md)', () => {
   });
 });
 
-describe('the ghosts drawn without tints (render-mode.ts)', () => {
+describe('the ghosts of refused effects (docs/flashs.md §4)', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
   });
 
-  /** A special's effects fading out, drawn dark (the budget refused them) or lit. */
-  function fade(mode: RenderMode, dark: boolean): FakeImage[] {
-    const { dissolve, images } = setup(mode);
+  /** A special's effects fading out, refused by the flash budget (dark) or lit. */
+  function fade(dark: boolean): FakeImage[] {
+    const { dissolve, images } = setup();
     dissolve.follow(at(0), true, 1, dark);
     dissolve.follow(at(1), true, 1, dark);
     return images.filter((image) => image.visible);
   }
 
-  it('lets a dark ghost go unseen: it would dissolve lit', () => {
-    expect(fade('simple', true)).toEqual([]);
-    const [lit] = fade('simple', false);
+  it('leaves no ghost of effects the budget refused: they were not drawn', () => {
+    expect(fade(true)).toEqual([]);
+    const [lit] = fade(false);
     expect(lit?.tint).toBe(0xffffff);
-  });
-
-  it('dissolves it dark with WebGL', () => {
-    const [ghost] = fade('full', true);
-    expect(ghost?.tint).toBe(FX_DARK);
   });
 });
