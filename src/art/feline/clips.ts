@@ -64,7 +64,9 @@ export const FELINE_CLIPS: FighterClips<FelineClip> = {
   forwardLight: play('forwardLight', [2, 2, 3, 3, 4, 6]), // active: frame 3
   standHeavy: play('standHeavy', [3, 3, 2, 4, 3, 3, 3, 3, 4]), // active: frame 3
   chainHeavy: play('chainHeavy', [3, 3, 2, 3, 6, 6, 5]), // active: frame 3
-  forwardHeavy: play('forwardHeavy', [4, 4, 4, 4, 3, 3, 5, 5, 5]), // active: frame 5
+  // The heel drop: guard, a quick settle and step, the knee, the leg straight up (active: frame 5),
+  // the heel slammed down, the crouch, the guard.
+  forwardHeavy: play('forwardHeavy', [2, 3, 5, 5, 4, 3, 5, 5, 5]),
   chainHigh: play('chainHigh', [5, 5, 4, 3, 5, 5, 5]), // active: frame 3
   backHeavy: play('backHeavy', [2, 2, 3, 4, 5, 6, 6]), // active: frame 3
   chainLaunch: play('chainLaunch', [2, 3, 2, 4, 5, 6, 6]), // active: frame 3
