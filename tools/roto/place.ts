@@ -18,8 +18,9 @@
  */
 
 import { ANCHOR, CELL_SIZE } from '../../src/art/types.ts';
+import { toLab } from '../stage/kit/unify.ts';
 import type { Bitmap, Box } from './pixels.ts';
-import { bitmap, byteOf, heightOf, linearOf } from './pixels.ts';
+import { bitmap, byteOf, heightOf, labBufferOf, linearOf } from './pixels.ts';
 import type { Mask } from './silhouette.ts';
 import { crownOf, soleOf } from './silhouette.ts';
 
@@ -39,6 +40,16 @@ export interface Placement {
   readonly flip: boolean;
   readonly nudgeX: number;
   readonly nudgeY: number;
+  /**
+   * How far a source colour may stray from its output pixel's own before it stops counting
+   * (ΔE in Lab). 0 averages everything the pixel covers, which is a box filter and is as blurry
+   * as a correct reduction gets: an output pixel straddling an edge comes out the mix of both
+   * sides, a colour that is in neither. Above 0, the pixel finds the dominant colour of what it
+   * covers and takes that side — the idea behind content-adaptive downscaling (Kopf, Shamir &
+   * Peers, SIGGRAPH Asia 2013) without its EM machinery. Measured on a strip put back through the
+   * chain: ΔE 2.53 at 0, **0.20** at 8 (docs/art/roto.md §5.2).
+   */
+  readonly edge: number;
 }
 
 /**
@@ -71,6 +82,7 @@ export const PLACEMENT_DEFAULTS: Placement = {
   flip: false,
   nudgeX: 0,
   nudgeY: 0,
+  edge: 8,
 };
 
 /** A bust fills its square and lets the shoulders go: the head is what the tile shows. */
@@ -81,6 +93,7 @@ export const PORTRAIT_DEFAULTS: Placement = {
   flip: false,
   nudgeX: 0,
   nudgeY: 0,
+  edge: 8,
 };
 
 /** How far the subject went past each side of the cell, in cell pixels; 0 when it fits. */
@@ -101,8 +114,25 @@ export interface Placed {
   readonly overflow: Overflow;
 }
 
-export function placeOnCell(image: Bitmap, mask: Mask, placement: Placement): Placed {
+/**
+ * How many times the dominant colour is re-estimated from the weights it implies. One round
+ * already picks a side; the second settles it. More changed nothing worth the work.
+ */
+const EDGE_ROUNDS = 2;
+
+/**
+ * `lab` is the source's colours in Lab (pixels.ts `labBufferOf`), which the page already holds —
+ * handing it over saves recomputing it on every move of a slider.
+ */
+export function placeOnCell(
+  image: Bitmap,
+  mask: Mask,
+  placement: Placement,
+  lab?: Float32Array,
+): Placed {
   const [source, silhouette] = placement.flip ? turnedOver(image, mask) : [image, mask];
+  // A turned-over image is not the one the page measured, so its colours are measured again.
+  const colors = !lab || placement.flip ? labBufferOf(source, toLab) : lab;
   const side = placement.cell;
   const scale = placement.height / heightOf(silhouette.box);
   const unit = side / CELL_SIZE;
@@ -119,6 +149,22 @@ export function placeOnCell(image: Bitmap, mask: Mask, placement: Placement): Pl
 
   const cell = bitmap(side, side);
   const on = new Uint8Array(side * side);
+  // Room for every source pixel one output pixel can cover, reused from pixel to pixel: allocating
+  // per pixel would churn millions of small arrays.
+  const room = Math.max(
+    1,
+    (Math.ceil(Math.abs(sourceX(1) - sourceX(0))) + 2) *
+      (Math.ceil(Math.abs(sourceY(1) - sourceY(0))) + 2),
+  );
+  const weights = new Float64Array(room);
+  const pulled = new Float64Array(room);
+  const reds = new Float64Array(room);
+  const greens = new Float64Array(room);
+  const blues = new Float64Array(room);
+  const lights = new Float64Array(room);
+  const greenReds = new Float64Array(room);
+  const blueYellows = new Float64Array(room);
+
   for (let y = 0; y < side; y++) {
     const top = sourceY(y);
     const bottom = sourceY(y + 1);
@@ -127,9 +173,7 @@ export function placeOnCell(image: Bitmap, mask: Mask, placement: Placement): Pl
       const right = sourceX(x + 1);
       let cover = 0;
       let covered = 0;
-      let red = 0;
-      let green = 0;
-      let blue = 0;
+      let kept = 0;
       for (let sy = Math.floor(top); sy < Math.ceil(bottom); sy++) {
         const weightY = Math.min(sy + 1, bottom) - Math.max(sy, top);
         if (weightY <= 0 || sy < 0 || sy >= source.height) continue;
@@ -141,17 +185,37 @@ export function placeOnCell(image: Bitmap, mask: Mask, placement: Placement): Pl
           const pixel = sy * source.width + sx;
           if ((silhouette.on[pixel] ?? 0) === 0) continue;
           covered += weight;
-          red += linearOf(source.data[pixel * 4] ?? 0) * weight;
-          green += linearOf(source.data[pixel * 4 + 1] ?? 0) * weight;
-          blue += linearOf(source.data[pixel * 4 + 2] ?? 0) * weight;
+          if (kept >= room) continue;
+          weights[kept] = weight;
+          reds[kept] = linearOf(source.data[pixel * 4] ?? 0);
+          greens[kept] = linearOf(source.data[pixel * 4 + 1] ?? 0);
+          blues[kept] = linearOf(source.data[pixel * 4 + 2] ?? 0);
+          lights[kept] = colors[pixel * 3] ?? 0;
+          greenReds[kept] = colors[pixel * 3 + 1] ?? 0;
+          blueYellows[kept] = colors[pixel * 3 + 2] ?? 0;
+          kept++;
         }
       }
       // Half the pixel covered by the subject or more: it belongs to the sprite, fully opaque.
-      if (cover <= 0 || covered * 2 < cover) continue;
+      if (cover <= 0 || covered * 2 < cover || kept === 0) continue;
+      if (placement.edge > 0 && kept > 1)
+        sharpenWeights(placement.edge, kept, weights, pulled, lights, greenReds, blueYellows);
+      let red = 0;
+      let green = 0;
+      let blue = 0;
+      let total = 0;
+      for (let index = 0; index < kept; index++) {
+        const weight = weights[index] ?? 0;
+        red += (reds[index] ?? 0) * weight;
+        green += (greens[index] ?? 0) * weight;
+        blue += (blues[index] ?? 0) * weight;
+        total += weight;
+      }
+      if (total <= 0) continue;
       const at = (y * side + x) * 4;
-      cell.data[at] = byteOf(red / covered);
-      cell.data[at + 1] = byteOf(green / covered);
-      cell.data[at + 2] = byteOf(blue / covered);
+      cell.data[at] = byteOf(red / total);
+      cell.data[at + 1] = byteOf(green / total);
+      cell.data[at + 2] = byteOf(blue / total);
       cell.data[at + 3] = 255;
       on[y * side + x] = 1;
     }
@@ -163,6 +227,60 @@ export function placeOnCell(image: Bitmap, mask: Mask, placement: Placement): Pl
     anchor: { x: ANCHOR.x * unit, y: ANCHOR.y * unit },
     overflow: overflowOf(silhouette.box, { sourceX, sourceY, side }),
   };
+}
+
+/**
+ * The weights of one output pixel, pulled toward the dominant colour of what it covers: the mean
+ * is re-estimated from the weights it implies, so a pixel straddling an edge settles on the side
+ * it mostly covers instead of the mix of both. `weights` is rewritten in place.
+ */
+function sharpenWeights(
+  edge: number,
+  kept: number,
+  weights: Float64Array,
+  pulled: Float64Array,
+  lights: Float64Array,
+  greenReds: Float64Array,
+  blueYellows: Float64Array,
+): void {
+  let meanLight = 0;
+  let meanGreenRed = 0;
+  let meanBlueYellow = 0;
+  let mass = 0;
+  for (let index = 0; index < kept; index++) {
+    const weight = weights[index] ?? 0;
+    meanLight += (lights[index] ?? 0) * weight;
+    meanGreenRed += (greenReds[index] ?? 0) * weight;
+    meanBlueYellow += (blueYellows[index] ?? 0) * weight;
+    mass += weight;
+  }
+  if (mass <= 0) return;
+  meanLight /= mass;
+  meanGreenRed /= mass;
+  meanBlueYellow /= mass;
+  const spread = 2 * edge * edge;
+  for (let round = 0; round < EDGE_ROUNDS; round++) {
+    let nextLight = 0;
+    let nextGreenRed = 0;
+    let nextBlueYellow = 0;
+    let nextMass = 0;
+    for (let index = 0; index < kept; index++) {
+      const dl = (lights[index] ?? 0) - meanLight;
+      const da = (greenReds[index] ?? 0) - meanGreenRed;
+      const db = (blueYellows[index] ?? 0) - meanBlueYellow;
+      const weight = (weights[index] ?? 0) * Math.exp(-(dl * dl + da * da + db * db) / spread);
+      pulled[index] = weight;
+      nextLight += (lights[index] ?? 0) * weight;
+      nextGreenRed += (greenReds[index] ?? 0) * weight;
+      nextBlueYellow += (blueYellows[index] ?? 0) * weight;
+      nextMass += weight;
+    }
+    if (nextMass <= 0) return;
+    meanLight = nextLight / nextMass;
+    meanGreenRed = nextGreenRed / nextMass;
+    meanBlueYellow = nextBlueYellow / nextMass;
+  }
+  for (let index = 0; index < kept; index++) weights[index] = pulled[index] ?? 0;
 }
 
 function overflowOf(

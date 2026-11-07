@@ -30,6 +30,14 @@ import { fromLab, toLab } from '../stage/kit/unify.ts';
 import type { Bitmap } from './pixels.ts';
 import { byteOf, copyOf, linearOf } from './pixels.ts';
 
+/**
+ * How the palette is chosen. `median` is median cut over RGB (tools/sprites/quantize.ts), which
+ * the stages use and which is already tested; `kmeans` is k-means in Lab, where distance means
+ * what the eye means by it. Measured on a strip put back through the chain: ΔE 1.44 for median
+ * cut, **0.15** for k-means (docs/art/roto.md §5.2).
+ */
+export type PaletteMethod = 'median' | 'kmeans';
+
 export interface PixelizeOptions {
   /** Kuwahara's radius, in cell pixels; 0 leaves the brush strokes alone. */
   readonly kuwahara: number;
@@ -41,24 +49,33 @@ export interface PixelizeOptions {
   readonly outline: number;
   /** Colours in the palette, the transparent one apart; 0 keeps every colour. */
   readonly colors: number;
+  /** How those colours are chosen. */
+  readonly method: PaletteMethod;
   /** Passes that give a pixel alone of its colour the colour of its neighbours. */
   readonly orphans: number;
 }
 
 /**
- * Measured on a strip we already have, not guessed: art-src/feline/idle.png blown up on a wall and
- * put back through the chain, head to head with the drawing (docs/art/roto.md §5). Kuwahara is off
- * by default — on a stage it firms up brushwork, on a character at this size it swallows the eye
- * and the ear, which are two pixels each. It stays a slider, for a grainy photo, where it earns
- * its place. One pass of orphans is enough; two start eating lone highlights too.
+ * Measured, not guessed (docs/art/roto.md §5.2): a strip blown up on a wall, put back through the
+ * chain, and scored against the drawing it came from. Every step that costs more than it gives is
+ * off by default and stays on a slider.
+ *
+ * | réglage | ΔE | pourquoi ce défaut |
+ * |---|---|---|
+ * | Kuwahara 0 | — | sur un visage de 2 px il avale l'œil et l'oreille |
+ * | netteté 0 | 0,20 → 4,77 | le noyau à arêtes nettes fait déjà le travail ; en rajouter double la dose |
+ * | saturation 1 | 0,20 → 0,80 | 1,1 est l'habitude des pixel artists, pas de la fidélité |
+ * | contour 0,7 | 0,20 → 0,26 | presque gratuit, et c'est ce qui fait lire un sprite |
+ * | orphelins 0 | 0,26 → 3,62 | du nettoyage, pas de la fidélité : à monter sur une photo bruitée |
  */
 export const PIXELIZE_DEFAULTS: PixelizeOptions = {
   kuwahara: 0,
-  sharpen: 0.7,
-  saturation: 1.1,
+  sharpen: 0,
+  saturation: 1,
   outline: 0.7,
   colors: 32,
-  orphans: 1,
+  orphans: 0,
+  method: 'kmeans',
 };
 
 export interface Pixelized {
@@ -76,7 +93,10 @@ export function pixelize(placed: Bitmap, on: Uint8Array, options: PixelizeOption
   const edge = edgesOf(cell, on);
   if (options.outline < 1) outline(cell, edge, options.outline);
   if (options.colors <= 0) return { cell, palette: [], colors: countColors(cell, on) };
-  const { palette, slots } = quantizeRgba(cell.data, options.colors);
+  const { palette, slots } =
+    options.method === 'kmeans'
+      ? kmeansLab(cell, on, options.colors)
+      : quantizeRgba(cell.data, options.colors);
   for (let pass = 0; pass < options.orphans; pass++)
     dropOrphans(cell.width, cell.height, slots, on, edge);
   paint(cell, on, slots, palette);
@@ -282,6 +302,92 @@ function paint(cell: Bitmap, on: Uint8Array, slots: Uint8Array, palette: readonl
     cell.data[pixel * 4 + 1] = color.g;
     cell.data[pixel * 4 + 2] = color.b;
   }
+}
+
+/**
+ * k-means in Lab, seeded by k-means++ and run from a fixed seed so the same cell always gives the
+ * same palette. Median cut splits boxes in RGB, where equal distances do not look equal; k-means
+ * puts its colours where the eye counts them, which on a face is the difference between skin
+ * holding three tones and skin holding one.
+ */
+const KMEANS_ROUNDS = 12;
+
+function kmeansLab(
+  cell: Bitmap,
+  on: Uint8Array,
+  colors: number,
+): { palette: Rgba[]; slots: Uint8Array } {
+  const points: number[] = [];
+  for (let pixel = 0; pixel < on.length; pixel++) if ((on[pixel] ?? 0) === 1) points.push(pixel);
+  const palette: Rgba[] = [{ r: 0, g: 0, b: 0, a: 0 }];
+  const slots = new Uint8Array(on.length);
+  if (points.length === 0) return { palette, slots };
+  const wanted = Math.min(colors, points.length, 255);
+  const lab = points.map((pixel) =>
+    toLab(cell.data[pixel * 4] ?? 0, cell.data[pixel * 4 + 1] ?? 0, cell.data[pixel * 4 + 2] ?? 0),
+  );
+  // A fixed seed: the same cell gives the same palette, run after run and machine after machine.
+  let state = 0x9e3779b9;
+  const next = () => (state = (state * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
+  const centres: [number, number, number][] = [lab[Math.floor(next() * lab.length)] ?? [0, 0, 0]];
+  const nearest = new Float64Array(lab.length).fill(Infinity);
+  while (centres.length < wanted) {
+    const last = centres[centres.length - 1] ?? [0, 0, 0];
+    let total = 0;
+    for (const [index, point] of lab.entries()) {
+      const distance =
+        (point[0] - last[0]) ** 2 + (point[1] - last[1]) ** 2 + (point[2] - last[2]) ** 2;
+      if (distance < (nearest[index] ?? Infinity)) nearest[index] = distance;
+      total += nearest[index] ?? 0;
+    }
+    if (total <= 0) break;
+    // The next centre drawn in proportion to how far each colour is from the ones already held.
+    let pick = next() * total;
+    let chosen = 0;
+    for (let index = 0; index < lab.length; index++) {
+      pick -= nearest[index] ?? 0;
+      if (pick <= 0) {
+        chosen = index;
+        break;
+      }
+    }
+    centres.push(lab[chosen] ?? [0, 0, 0]);
+  }
+  const owner = new Int32Array(lab.length);
+  for (let round = 0; round < KMEANS_ROUNDS; round++) {
+    for (const [index, point] of lab.entries()) {
+      let bestDistance = Infinity;
+      let best = 0;
+      for (const [centre, value] of centres.entries()) {
+        const distance =
+          (point[0] - value[0]) ** 2 + (point[1] - value[1]) ** 2 + (point[2] - value[2]) ** 2;
+        if (distance >= bestDistance) continue;
+        bestDistance = distance;
+        best = centre;
+      }
+      owner[index] = best;
+    }
+    const sums = centres.map(() => [0, 0, 0, 0]);
+    for (const [index, point] of lab.entries()) {
+      const sum = sums[owner[index] ?? 0];
+      if (!sum) continue;
+      sum[0] = (sum[0] ?? 0) + point[0];
+      sum[1] = (sum[1] ?? 0) + point[1];
+      sum[2] = (sum[2] ?? 0) + point[2];
+      sum[3] = (sum[3] ?? 0) + 1;
+    }
+    for (const [centre, sum] of sums.entries()) {
+      const held = sum[3] ?? 0;
+      if (held === 0) continue;
+      centres[centre] = [(sum[0] ?? 0) / held, (sum[1] ?? 0) / held, (sum[2] ?? 0) / held];
+    }
+  }
+  for (const centre of centres) {
+    const [r, g, b] = fromLab(centre[0], centre[1], centre[2]);
+    palette.push({ r, g, b, a: 255 });
+  }
+  for (const [index, pixel] of points.entries()) slots[pixel] = (owner[index] ?? 0) + 1;
+  return { palette, slots };
 }
 
 function countColors(cell: Bitmap, on: Uint8Array): number {

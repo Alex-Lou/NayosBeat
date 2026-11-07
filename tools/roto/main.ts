@@ -38,8 +38,18 @@ const state = {
   tidy: SILHOUETTE_DEFAULTS.tidy,
   corners: { ...SILHOUETTE_DEFAULTS.corners },
   frame: PLACEMENT_DEFAULTS.frame,
+  /** The frame's own size, before `finesse`. */
   cell: PLACEMENT_DEFAULTS.cell,
+  /** The subject's height in the frame's own pixels, before `finesse`. */
   height: PLACEMENT_DEFAULTS.height,
+  /**
+   * How many pixels the square really holds, as a multiple of the frame's own size. The grain of
+   * the result is nothing but this: at ×4 the same framing is drawn four times as finely, at ×½
+   * twice as coarsely. Only ×1 is the size the game loads.
+   */
+  finesse: 1,
+  edge: PLACEMENT_DEFAULTS.edge,
+  method: PIXELIZE_DEFAULTS.method,
   flip: PLACEMENT_DEFAULTS.flip,
   nudgeX: PLACEMENT_DEFAULTS.nudgeX,
   nudgeY: PLACEMENT_DEFAULTS.nudgeY,
@@ -297,6 +307,17 @@ controls.append(
       () => state.flip,
       (value) => (state.flip = value),
     ),
+    choice(
+      'Finesse',
+      () => state.finesse * 100,
+      (value) => (state.finesse = value / 100),
+      [
+        { value: 50, label: '×½ (gros grain)' },
+        { value: 100, label: '×1 (taille du jeu)' },
+        { value: 200, label: '×2' },
+        { value: 400, label: '×4 (très fin)' },
+      ],
+    ),
     range(
       'Décalage ←→',
       () => state.nudgeX,
@@ -315,6 +336,24 @@ controls.append(
     ),
   ]),
   group('Pixels', [
+    range(
+      'Arêtes nettes',
+      () => state.edge,
+      (value) => (state.edge = value),
+      0,
+      40,
+      1,
+      (value) => (value === 0 ? 'moyenne' : String(value)),
+    ),
+    choice(
+      'Palette',
+      () => (state.method === 'kmeans' ? 1 : 0),
+      (value) => (state.method = value === 1 ? 'kmeans' : 'median'),
+      [
+        { value: 1, label: 'k-means Lab' },
+        { value: 0, label: 'médiane RVB' },
+      ],
+    ),
     range(
       'Kuwahara',
       () => state.kuwahara,
@@ -410,14 +449,20 @@ function run(): void {
     toLab,
     loaded.lab,
   );
-  placed = placeOnCell(loaded.image, mask, {
-    frame: state.frame,
-    cell: state.cell,
-    height: state.height,
-    flip: state.flip,
-    nudgeX: state.nudgeX,
-    nudgeY: state.nudgeY,
-  });
+  placed = placeOnCell(
+    loaded.image,
+    mask,
+    {
+      frame: state.frame,
+      cell: Math.round(state.cell * state.finesse),
+      height: Math.round(state.height * state.finesse),
+      flip: state.flip,
+      nudgeX: Math.round(state.nudgeX * state.finesse),
+      nudgeY: Math.round(state.nudgeY * state.finesse),
+      edge: state.edge,
+    },
+    loaded.lab,
+  );
   pixels = pixelize(placed.cell, placed.on, {
     kuwahara: state.kuwahara,
     sharpen: state.sharpen,
@@ -425,6 +470,7 @@ function run(): void {
     outline: state.outline,
     colors: state.colors,
     orphans: state.orphans,
+    method: state.method,
   });
   save.disabled = false;
   refreshControls();
@@ -600,7 +646,12 @@ function report(found: Mask, set: Placed, made: Pixelized): void {
         (guessed
           ? `base posée sur l’ancre ${ANCHOR.x}, ${ANCHOR.y} — mais voir ci-dessous, ce ne sont pas des pieds.`
           : `pieds posés sur l’ancre ${ANCHOR.x}, ${ANCHOR.y} (case ${CELL_SIZE}), base large de ${sole.width} px.`),
-    `Pixels : ${made.colors} couleur(s)${state.colors > 0 ? ` (palette demandée : ${state.colors})` : ''}.`,
+    `Pixels : ${made.colors} couleur(s)${state.colors > 0 ? ` (${state.method === 'kmeans' ? 'k-means Lab' : 'médiane RVB'}, ${state.colors} demandées)` : ''}, arêtes ${state.edge === 0 ? 'moyennées' : `à ${state.edge}`}.`,
+    ...(state.finesse === 1
+      ? []
+      : [
+          `Finesse ×${state.finesse} : le carré fait ${set.cell.width} px au lieu de ${state.cell}. À réduire d’autant avant de l’installer — le jeu ne lit que la taille du cadre.`,
+        ]),
   ];
   status.textContent = lines.join('\n');
   for (const concern of concerns) {

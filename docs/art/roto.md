@@ -16,6 +16,11 @@ Deux cadres, au choix dans la page :
 | **Planche** | 256 px, ou 512 en HD | pose les pieds sur l'ancre du jeu | une image de combattant en pied |
 | **Portrait** | **96 px** | centre la tête, laisse les épaules sortir | un buste pour l'écran de sélection |
 
+Et une **finesse** ×½ ×1 ×2 ×4 qui multiplie la taille réelle du carré sans rien changer au cadrage.
+Le grain d'un pixel art n'est rien d'autre que ça : à ×4 le même cadrage est dessiné quatre fois
+plus finement, à ×½ deux fois plus gros. Seul ×1 est la taille que le jeu lit ; au-delà, c'est une
+sous-couche à réduire d'autant.
+
 ## 0. Ce que la source doit avoir
 
 L'outil ne comprend rien, il mesure. Pour qu'il trouve l'ancre et l'échelle, l'image doit remplir
@@ -144,6 +149,13 @@ par le point épinglé :
 `crownOf` prend la bande haute plutôt que la boîte entière : de profil, le milieu du crâne n'est pas
 le milieu du sujet, les épaules sont plus larges et d'un seul côté.
 
+> **La colonne de l'ancre est un jugement, pas une mesure.** Sur `feline/idle`, l'ancre dessinée est
+> **9 px à droite** du centroïde des pieds — 8 % de la largeur du sprite. Aucun estimateur ne la
+> trouve : le centroïde de la bande basse fait −9, le milieu de son étendue −12, le centre de la
+> boîte −15, le centroïde de tout le sujet −18. L'artiste ancre sur l'équilibre du personnage, pas
+> sur la masse de ses pixels. Le centroïde reste le défaut parce qu'il est le moins mauvais, et le
+> **décalage ←→ est fait pour ça** : c'est le seul réglage qu'il faut presque toujours toucher.
+
 Les **96 px** du portrait sont le contrat du pipeline (`PORTRAIT_SIZE` dans
 `tools/sprites/drawn.ts`). Ce module lit le disque et ne peut pas être chargé dans une page, donc
 l'outil garde sa propre constante — et un test tient les deux ensemble.
@@ -171,12 +183,28 @@ la seule planche dessinée à la main aujourd'hui, `art-src/feline/idle.png`, im
 
 ## 4. La chaîne de pixels (`tools/roto/pixelize.ts`)
 
-C'est celle des décors (`docs/art/manifeste-pixel-art.md` §2, `tools/stage/sahel/adapt.ts`), dans le
-même ordre, ramenée à ce dont un personnage a besoin :
+Elle part de celle des décors (`docs/art/manifeste-pixel-art.md` §2, `tools/stage/sahel/adapt.ts`),
+mais la mesure du §5.2 en a changé deux pièces et débranché trois étapes :
 
 ```
-Kuwahara → netteté → saturation → contour → palette → orphelins
+réduction à arêtes nettes → [Kuwahara] → [netteté] → [saturation] → contour → palette k-means Lab → [orphelins]
 ```
+
+**La réduction à arêtes nettes** (`place.ts`, réglage `edge`). Une moyenne par aires est correcte et
+floue : un pixel de sortie à cheval sur une arête sort la moyenne des deux côtés, une couleur qui
+n'est ni l'une ni l'autre. Avec `edge > 0`, le pixel cherche d'abord la **couleur dominante** de ce
+qu'il couvre — la moyenne est réestimée deux fois à partir des poids qu'elle implique — puis prend
+ce côté-là. C'est l'idée du *content-adaptive downscaling* de Kopf, Shamir et Peers (SIGGRAPH Asia
+2013) sans sa machinerie EM. Mesuré : **ΔE 2,53 à 0, ΔE 0,20 à 8**.
+
+**La palette k-means en Lab** (`pixelize.ts`, réglage `method`). La médiane coupe des boîtes en RVB,
+où des distances égales ne se voient pas égales ; k-means pose ses couleurs là où l'œil les compte.
+Sur un visage, c'est la différence entre une peau qui garde trois tons et une peau qui n'en garde
+qu'un. Mesuré : **ΔE 1,44 pour la médiane, 0,15 pour k-means**. Graine fixe, donc même case, même
+palette.
+
+Les étapes entre crochets sont **éteintes par défaut** : la mesure dit qu'elles coûtent plus
+qu'elles ne rapportent sur une source photographique. Elles restent au curseur.
 
 Ce qu'un personnage a en plus : **le contour est dessiné sur le bord de la silhouette**, avant le
 choix de la palette, pour que la médiane lui dépense un slot au lieu de l'arrondir. Ce trait sombre
@@ -204,12 +232,14 @@ calme, préfère la masse de cheveux unie. D'où les valeurs retenues :
 
 | Réglage | Défaut | Pourquoi |
 |---|---|---|
-| Kuwahara | **0** | Utile sur une peinture, destructeur sur un visage de 2 px. Reste au curseur pour une photo granuleuse. |
-| Netteté | 0,7 | La valeur des décors. |
-| Saturation | 1,1 | Celle de Gerstner et al. §4.4, une habitude de pixel artist. |
-| Contour | 70 % de la clarté | La fourchette du manifeste (65 à 75 %). |
-| Couleurs | 32 | Assez pour une sous-couche fidèle ; un sprite fini en garde moins. |
-| Orphelins | 1 | À 2 passes, les reflets isolés commencent à partir. |
+| Arêtes nettes | **8** | ΔE 2,53 → 0,20. Le gain le plus net de toute la chaîne. |
+| Palette | **k-means Lab** | ΔE 1,44 → 0,15 contre la médiane RVB. |
+| Kuwahara | **0** | Utile sur une peinture, destructeur sur un visage de 2 px. |
+| Netteté | **0** | ΔE 0,20 → 4,77. Le noyau à arêtes nettes fait déjà le travail ; en rajouter double la dose. |
+| Saturation | **1** | 1,1 est l'habitude des pixel artists (Gerstner et al. §4.4), pas de la fidélité : ΔE 0,20 → 0,80. |
+| Contour | 70 % de la clarté | ΔE 0,20 → 0,26. Presque gratuit, et c'est ce qui fait lire un sprite. |
+| Couleurs | 32 | À 16, ΔE 0,78 ; à 64, 0,23 — rien à gagner au-delà. |
+| Orphelins | **0** | ΔE 0,26 → 3,62. Du nettoyage, pas de la fidélité : à monter sur une photo bruitée. |
 | Nettoyage du bord | 1 passe | Enlève la frange d'un pixel des cheveux sans toucher aux vraies formes. |
 
 ### Le seuil de `narrow-base`
@@ -217,6 +247,43 @@ calme, préfère la masse de cheveux unie. D'où les valeurs retenues :
 Mesuré sur les deux cas sous la main : la planche sur un mur plante ses pieds sur **94 %** de sa
 largeur, le portrait pose son col sur **5 %**. Un quart passe loin des deux, et du bon côté — celui
 qui laisse un combattant se tenir les pieds joints.
+
+## 5.2 Mesurer la fidélité, et ce que ça a corrigé
+
+Le même faux-photo, mais agrandi **au plus proche voisin** : chaque pixel du sprite devient un bloc
+net de 4 × 4, donc une chaîne qui ne perd rien doit rendre le dessin **exactement**. Le score est le
+ΔE moyen en Lab sur les pixels que les deux disent opaques. Sous 1, deux couleurs ne se distinguent
+qu'à l'œil exercé, côte à côte.
+
+Trois choses sont sorties de là, dans cet ordre :
+
+1. **La mesure elle-même était fausse d'abord.** Le premier faux-photo était agrandi en
+   *bilinéaire* : le détail fin du sprite y était déjà détruit avant d'entrer dans l'outil, et le
+   ΔE de 24 mesurait cette destruction, pas la chaîne. Un agrandissement au plus proche voisin a
+   rendu la mesure honnête.
+2. **Puis le décalage de l'ancre a tout masqué.** ΔE 25 encore, identique quel que soit le noyau ou
+   la palette — parce que le sprite sortait **9 px trop à droite** (§3). Un ΔE par pixel sur un
+   dessin détaillé ne mesure plus rien dès qu'il y a un décalage. Corrigé : ΔE 2,53.
+3. **Alors seulement les vraies différences sont apparues.**
+
+| Étape ajoutée | ΔE, noyau moyenne | ΔE, noyau arêtes nettes |
+|---|---|---|
+| réduction seule | 2,53 | **0,20** |
+| + netteté 0,7 | 4,41 | 4,77 |
+| + saturation 1,1 | 2,98 | 0,80 |
+| + contour 70 % | 2,59 | 0,26 |
+| + palette 32, médiane RVB | 4,05 | 1,44 |
+| + palette 32, k-means Lab | 2,82 | **0,15** |
+| + orphelins 1 | 6,83 | 3,62 |
+
+**Bilan : ΔE 7,89 avant, 0,16 après.** `tests/tools/roto.test.ts` refabrique ce faux-photo et
+refuse une chaîne qui repasse au-dessus de 1 — et un second test vérifie que les anciens réglages,
+eux, dépassent 5, pour que le test ne puisse pas passer par accident.
+
+**Ce que cette mesure ne dit pas.** C'est un meilleur cas synthétique : du pixel art agrandi
+proprement sur un mur uni. Sur une vraie photo il n'y a pas de « bonne réponse », et des étapes qui
+coûtent en fidélité (netteté, orphelins) peuvent aider à la **lisibilité**. La mesure sert à ne pas
+perdre ce qui est là ; elle ne dit pas ce qui est beau.
 
 ## 5.1 Un cas réel, de bout en bout
 
@@ -259,6 +326,25 @@ rien ne remplacera un clic sur la source pour ajouter ou retirer un point de dé
 `src/art/<perso>/sheets.ts`, et il faudra une palette figée pour toute la planche et un ancrage
 repris image par image, sinon le résultat grouille.
 
+## 7. Ce qui n'est pas la solution
+
+Il existe une famille célèbre d'algorithmes « pixel art » — EPX / Scale2x, HQ2x/3x/4x (Maxim
+Stepin, 2003), xBR et xBRZ (Hyllian, 2011) — et ils ne servent à rien ici. Ils **agrandissent** du
+pixel art existant en devinant des diagonales lisses là où il y avait des escaliers : c'est le
+problème inverse du nôtre, qui est de **réduire** une image riche en pixel art. Les appliquer
+reviendrait à lisser ce qu'on vient de fabriquer.
+
+Côté Apple, il n'y a pas de recette cachée. Ce qu'Apple fait et qui compte vraiment, le jeu le fait
+déjà : **mise à l'échelle par nombres entiers** (le @2x/@3x des écrans Retina) et **plus proche
+voisin** à l'affichage (`image-rendering: pixelated`, que WebKit respecte). Rien d'autre. Pixelmator,
+racheté par Apple, a bien un agrandisseur par apprentissage (*ML Super Resolution*) — mais sa propre
+documentation renvoie au plus proche voisin pour le pixel art : Super Resolution lisse précisément
+ce qu'on veut garder dur.
+
+La vraie littérature utile est celle de la **réduction** : Kopf, Shamir et Peers 2013 (reprise au
+§4), Öztireli et Gross 2015 (réduction optimisée sur une métrique perceptuelle, SSIM), et Gerstner
+et al. 2012 pour la palette (§6).
+
 ## Sources
 
 - Gerstner, DeCarlo, Alexa, Finkelstein, Gingold, Nealen, *Pixelated Image Abstraction*, NPAR 2012 —
@@ -267,3 +353,11 @@ repris image par image, sinon le résultat grouille.
   Graphics 37(5) — <http://www.nealen.net/papers/pixelated_image_abstraction-journal.pdf>
 - MakeItPixel, le détail d'un convertisseur libre (réduction, quantification, tramage) —
   <https://github.com/MiguelMJ/MakeItPixel/wiki/Process>
+- Kopf, Shamir, Peers, *Content-Adaptive Image Downscaling*, SIGGRAPH Asia 2013 —
+  <https://johanneskopf.de/publications/downscaling/>
+- Öztireli, Gross, *Perceptually Based Downscaling of Images*, SIGGRAPH 2015 —
+  <https://www.cl.cam.ac.uk/~aco41/Files/Sig15PerceptualDownscaling.pdf>
+- Les algorithmes d'agrandissement de pixel art (EPX, HQx, xBR), pour mémoire —
+  <https://en.wikipedia.org/wiki/Pixel-art_scaling_algorithms>
+- Pixelmator, *Super Resolution*, et son renvoi au plus proche voisin pour le pixel art —
+  <https://support.pixelmator.com/photomator-user-guide/ai-editing-tools/super-resolution>
