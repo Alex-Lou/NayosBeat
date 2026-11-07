@@ -21,8 +21,11 @@ import {
   soleOf,
   tidyEdges,
 } from '../../tools/roto/silhouette';
+import type { Concern } from '../../tools/roto/concerns';
 import { anchorIsAGuess, concernsOf } from '../../tools/roto/concerns';
 import { pipelineProblems } from '../../tools/roto/rules';
+import { stamp, stroke } from '../../tools/roto/brush';
+import { listOf, sentenceOf } from '../../tools/roto/words';
 
 /** A flat background with shapes painted on it, the way a studio photo looks to the tool. */
 function scene(
@@ -617,5 +620,71 @@ describe('règles du pipeline', () => {
     expect(pipelineProblems(tight.cell, tight.on, 'fighter', CELL_SIZE)).toHaveLength(1);
     const fine = square(CELL_SIZE * 2, { left: 10, top: 40, right: 400, bottom: 496 });
     expect(pipelineProblems(fine.cell, fine.on, 'fighter', CELL_SIZE)).toEqual([]);
+  });
+});
+
+describe('traits du pinceau', () => {
+  const sheetOf = (width: number, height: number) => ({
+    width,
+    height,
+    paint: new Int8Array(width * height),
+  });
+
+  it('pose un disque, pas un carré', () => {
+    const sheet = sheetOf(21, 21);
+    stamp(sheet, { x: 10, y: 10 }, 5, 1);
+    expect(sheet.paint[10 * 21 + 10]).toBe(1);
+    // Straight out from the middle is inside; the corner of the square around it is not.
+    expect(sheet.paint[10 * 21 + 14]).toBe(1);
+    expect(sheet.paint[6 * 21 + 6]).toBe(0);
+  });
+
+  it('ne déborde pas de la feuille', () => {
+    const sheet = sheetOf(10, 10);
+    stamp(sheet, { x: 0, y: 0 }, 6, -1);
+    expect(sheet.paint[0]).toBe(-1);
+    // Nothing wrapped around to the other end of the row.
+    expect(sheet.paint[9]).toBe(0);
+    expect(sheet.paint.length).toBe(100);
+  });
+
+  it('remplit un trait rapide au lieu de le pointiller', () => {
+    const sheet = sheetOf(120, 20);
+    // Far further than one stamp: what a quick drag reports between two events.
+    stroke(sheet, { x: 10, y: 10 }, { x: 110, y: 10 }, 4, 1);
+    for (let x = 10; x <= 110; x++) expect(sheet.paint[10 * 120 + x]).toBe(1);
+  });
+
+  it('laisse le reste de la feuille intact', () => {
+    const sheet = sheetOf(40, 40);
+    stroke(sheet, { x: 5, y: 5 }, { x: 10, y: 5 }, 3, 1);
+    expect(sheet.paint[35 * 40 + 35]).toBe(0);
+  });
+});
+
+describe('les mots', () => {
+  it('énumère comme une phrase', () => {
+    expect(listOf(['gauche'])).toBe('gauche');
+    expect(listOf(['gauche', 'droit'])).toBe('gauche et droit');
+    expect(listOf(['gauche', false, 'haut', 'bas'])).toBe('gauche, haut et bas');
+  });
+
+  it('dit chaque avertissement sans en oublier un', () => {
+    const every: Concern[] = [
+      { kind: 'nothing-kept', share: 0.004 },
+      { kind: 'everything-kept', share: 0.98 },
+      { kind: 'narrow-base', width: 23, share: 0.05 },
+      { kind: 'cut-off', edges: { left: true, top: false, right: true, bottom: false } },
+      { kind: 'corner-dropped', dropped: 1 },
+      { kind: 'specks', specks: 143 },
+      { kind: 'overflow', overflow: { left: 1, top: 0, right: 5, bottom: 6 } },
+    ];
+    for (const concern of every) {
+      const said = sentenceOf(concern);
+      expect(said.length).toBeGreaterThan(20);
+      expect(said).not.toContain('undefined');
+    }
+    expect(sentenceOf(every[3] as Concern)).toContain('gauche et droit');
+    expect(sentenceOf(every[6] as Concern)).toContain('5 px à droite');
   });
 });

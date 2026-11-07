@@ -343,9 +343,16 @@ export function soleOf(mask: Mask, band = 0.05): Sole {
  */
 export type Paint = Int8Array;
 
-/** `mask` with the hand's corrections laid over it, and its box and count measured again. */
-export function painted(mask: Mask, paint: Paint): Mask {
-  const on = new Uint8Array(mask.on);
+/**
+ * `mask` with the hand's corrections laid over it, and its box and count measured again.
+ *
+ * `into` is a buffer to write the pixels into, so a stroke does not allocate one per pointer move:
+ * on a 1600 px image that is 2.5 MB of garbage a move, and a drag reports dozens a second. The
+ * automatic mask it builds on is never touched, so passing the same buffer back each time is safe.
+ */
+export function painted(mask: Mask, paint: Paint, into?: Uint8Array): Mask {
+  const on = into?.length === mask.on.length ? into : new Uint8Array(mask.on.length);
+  on.set(mask.on);
   let pixels = 0;
   let left = mask.width;
   let top = mask.height;
