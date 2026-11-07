@@ -20,9 +20,9 @@ import {
 } from './place.ts';
 import type { Pixelized } from './pixelize.ts';
 import { PIXELIZE_DEFAULTS, pixelize } from './pixelize.ts';
-import type { Edges, Mask } from './silhouette.ts';
-import type { Corners } from './silhouette.ts';
-import { SILHOUETTE_DEFAULTS, silhouetteOf, soleOf } from './silhouette.ts';
+import { pipelineProblems } from './rules.ts';
+import type { Corners, Edges, Mask, Paint } from './silhouette.ts';
+import { painted, SILHOUETTE_DEFAULTS, silhouetteOf, soleOf } from './silhouette.ts';
 import type { Concern } from './concerns.ts';
 import { anchorIsAGuess, concernsOf } from './concerns.ts';
 
@@ -61,9 +61,22 @@ const state = {
   orphans: PIXELIZE_DEFAULTS.orphans,
   zoom: 1,
   anchor: true,
+  /** What the brush lays down: 1 paints subject, -1 paints background. */
+  brush: 1,
+  radius: 24,
 };
 
 let work: { readonly image: Bitmap; readonly lab: Float32Array } | undefined;
+/**
+ * The hand's word on each pixel of the work image, kept across every other change: the sliders
+ * redo the automatic mask, the strokes stay. Only loading another image clears it.
+ */
+let paint: Paint | undefined;
+/**
+ * The automatic mask, kept until a silhouette setting changes. A stroke only re-applies the
+ * override on top of it, so painting stays smooth instead of redoing a flood fill per move.
+ */
+let automatic: { readonly key: string; readonly mask: Mask } | undefined;
 let mask: Mask | undefined;
 let placed: Placed | undefined;
 let pixels: Pixelized | undefined;
@@ -231,6 +244,15 @@ function cornerGrid(): HTMLElement {
   return wrap;
 }
 
+const clear = document.createElement('button');
+clear.textContent = 'Effacer les retouches';
+clear.disabled = true;
+clear.addEventListener('click', () => {
+  paint?.fill(0);
+  clear.disabled = true;
+  schedule();
+});
+
 const save = document.createElement('button');
 save.textContent = 'Enregistrer la case (PNG)';
 save.disabled = true;
@@ -267,6 +289,27 @@ controls.append(
       (value) => (value === 0 ? 'aucun' : `${value} passe(s)`),
     ),
     cornerGrid(),
+  ]),
+  group('Pinceau', [
+    choice(
+      'Le trait pose',
+      () => state.brush,
+      (value) => (state.brush = value),
+      [
+        { value: 1, label: 'du sujet' },
+        { value: -1, label: 'du fond' },
+      ],
+    ),
+    range(
+      'Taille',
+      () => state.radius,
+      (value) => (state.radius = value),
+      4,
+      120,
+      2,
+      (value) => `${value * 2} px`,
+    ),
+    clear,
   ]),
   group('Pose', [
     choice(
@@ -437,18 +480,18 @@ function schedule(): void {
 function run(): void {
   const loaded = work;
   if (!loaded) return;
-  mask = silhouetteOf(
-    loaded.image,
-    {
-      tolerance: state.tolerance,
-      alphaFloor: SILHOUETTE_DEFAULTS.alphaFloor,
-      minShare: state.minShare,
-      tidy: state.tidy,
-      corners: state.corners,
-    },
-    toLab,
-    loaded.lab,
-  );
+  const options = {
+    tolerance: state.tolerance,
+    alphaFloor: SILHOUETTE_DEFAULTS.alphaFloor,
+    minShare: state.minShare,
+    tidy: state.tidy,
+    corners: state.corners,
+  };
+  const key = JSON.stringify(options);
+  if (automatic?.key !== key) {
+    automatic = { key, mask: silhouetteOf(loaded.image, options, toLab, loaded.lab) };
+  }
+  mask = paint ? painted(automatic.mask, paint) : automatic.mask;
   placed = placeOnCell(
     loaded.image,
     mask,
@@ -498,6 +541,14 @@ function drawSource(image: Bitmap, found: Mask): void {
     shown.data[at + 1] = subject ? green : Math.round(green * 0.25);
     shown.data[at + 2] = subject ? blue : Math.round(blue * 0.25 + 30);
     shown.data[at + 3] = 255;
+    // What the hand laid down, tinted so a stroke is visible over the picture it corrects.
+    const said = paint?.[pixel] ?? 0;
+    if (said > 0) {
+      shown.data[at + 1] = Math.min(255, (shown.data[at + 1] ?? 0) + 60);
+    } else if (said < 0) {
+      shown.data[at] = Math.min(255, (shown.data[at] ?? 0) + 70);
+      shown.data[at + 2] = Math.min(255, (shown.data[at + 2] ?? 0) + 40);
+    }
   }
   context.putImageData(shown, 0, 0);
   const sole = soleOf(found);
@@ -660,6 +711,21 @@ function report(found: Mask, set: Placed, made: Pixelized): void {
     warn.textContent = `⚠ ${sentenceOf(concern)}`;
     status.append(warn);
   }
+  // The pipeline's own verdict, from the pipeline's own engine (rules.ts).
+  const refused = pipelineProblems(made.cell, set.on, state.frame, state.cell);
+  for (const problem of refused) {
+    const warn = document.createElement('div');
+    warn.className = 'warn';
+    warn.textContent = `✖ ${problem}`;
+    status.append(warn);
+  }
+  if (refused.length === 0) {
+    const fine = document.createElement('div');
+    fine.className = 'fine';
+    fine.textContent =
+      '✔ La géométrie passe les règles de « npm run sprites » (taille, marges, rangée basse).';
+    status.append(fine);
+  }
   cellInfo.textContent = `${set.cell.width} × ${set.cell.height} px`;
   cellLabel.textContent =
     state.frame === 'portrait' ? 'Portrait' : state.cell === CELL_SIZE ? 'Case du jeu' : 'Case HD';
@@ -686,6 +752,69 @@ function exportCell(): void {
   }, 'image/png');
 }
 
+// The brush ------------------------------------------------------------------------------------
+
+/** Where a pointer landed, in the work image's pixels. */
+function pointOf(event: PointerEvent): { x: number; y: number } {
+  const rect = sourceCanvas.getBoundingClientRect();
+  return {
+    x: ((event.clientX - rect.left) / rect.width) * sourceCanvas.width,
+    y: ((event.clientY - rect.top) / rect.height) * sourceCanvas.height,
+  };
+}
+
+function stamp(x: number, y: number): void {
+  const sheet = paint;
+  const loaded = work;
+  if (!sheet || !loaded) return;
+  const { width, height } = loaded.image;
+  const radius = state.radius;
+  const from = Math.max(0, Math.floor(y - radius));
+  const to = Math.min(height - 1, Math.ceil(y + radius));
+  for (let py = from; py <= to; py++) {
+    const span = Math.sqrt(Math.max(0, radius * radius - (py - y) ** 2));
+    const left = Math.max(0, Math.floor(x - span));
+    const right = Math.min(width - 1, Math.ceil(x + span));
+    for (let px = left; px <= right; px++) sheet[py * width + px] = state.brush;
+  }
+}
+
+/** A stroke, stamped along the way: a quick drag would otherwise leave a dotted line. */
+function stroke(from: { x: number; y: number }, to: { x: number; y: number }): void {
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  const steps = Math.max(1, Math.ceil(Math.hypot(dx, dy) / Math.max(1, state.radius / 2)));
+  for (let step = 1; step <= steps; step++) {
+    stamp(from.x + (dx * step) / steps, from.y + (dy * step) / steps);
+  }
+}
+
+let drawing: { x: number; y: number } | undefined;
+
+sourceCanvas.addEventListener('pointerdown', (event) => {
+  if (!work) return;
+  event.preventDefault();
+  sourceCanvas.setPointerCapture(event.pointerId);
+  drawing = pointOf(event);
+  stamp(drawing.x, drawing.y);
+  clear.disabled = false;
+  schedule();
+});
+
+sourceCanvas.addEventListener('pointermove', (event) => {
+  if (!drawing) return;
+  const at = pointOf(event);
+  stroke(drawing, at);
+  drawing = at;
+  schedule();
+});
+
+for (const name of ['pointerup', 'pointercancel'] as const) {
+  sourceCanvas.addEventListener(name, () => {
+    drawing = undefined;
+  });
+}
+
 // Loading -------------------------------------------------------------------------------------
 
 async function load(blob: Blob): Promise<void> {
@@ -703,6 +832,9 @@ async function load(blob: Blob): Promise<void> {
   source.close();
   const image = context.getImageData(0, 0, width, height);
   work = { image, lab: labBufferOf(image, toLab) };
+  paint = new Int8Array(width * height);
+  automatic = undefined;
+  clear.disabled = true;
   // A subject that fills the frame is the common case: start at the measured standing height.
   state.height = Math.round((STANDING_HEIGHT * state.cell) / CELL_SIZE);
   drop.hidden = true;

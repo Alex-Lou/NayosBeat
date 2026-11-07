@@ -335,6 +335,42 @@ export function soleOf(mask: Mask, band = 0.05): Sole {
 }
 
 /**
+ * What the hand says about a pixel, over the whole image: 1 subject, -1 background, 0 no opinion.
+ * Colour cannot tell lit skin from a lit wall when the two touch and share a colour — there is no
+ * step to find, so no setting finds one. The hand is the answer, and it is the last word: the
+ * override is applied **after** tidying and despeckling, so a stroke is never nibbled or dropped
+ * as a speck.
+ */
+export type Paint = Int8Array;
+
+/** `mask` with the hand's corrections laid over it, and its box and count measured again. */
+export function painted(mask: Mask, paint: Paint): Mask {
+  const on = new Uint8Array(mask.on);
+  let pixels = 0;
+  let left = mask.width;
+  let top = mask.height;
+  let right = -1;
+  let bottom = -1;
+  for (let pixel = 0; pixel < on.length; pixel++) {
+    const said = paint[pixel] ?? 0;
+    if (said !== 0) on[pixel] = said > 0 ? 1 : 0;
+    if ((on[pixel] ?? 0) === 0) continue;
+    pixels++;
+    const x = pixel % mask.width;
+    const y = (pixel - x) / mask.width;
+    if (x < left) left = x;
+    if (x > right) right = x;
+    if (y < top) top = y;
+    if (y > bottom) bottom = y;
+  }
+  const box =
+    pixels === 0
+      ? { left: 0, top: 0, right: mask.width - 1, bottom: mask.height - 1 }
+      : { left, top, right, bottom };
+  return { ...mask, on, box, pixels };
+}
+
+/**
  * The top of the head, in the image: the middle of the subject's highest band, mirroring `soleOf`.
  * A portrait is framed on the head, and on a profile the skull's middle is not the middle of the
  * whole subject — the shoulders are wider and sit to one side.

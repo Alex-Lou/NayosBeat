@@ -101,6 +101,30 @@ remplissage ne l'atteint jamais.
 **La limite est celle de la méthode, pas un défaut** : fond uni, oui ; bibliothèque derrière le
 sujet, non.
 
+### Le pinceau, quand la couleur ne peut rien
+
+Sur un selfie devant un mur clair, le détourage perce des trous dans la peau éclairée. Trois pistes
+ont été essayées et **mesurées** avant d'en arriver au pinceau :
+
+| Piste | Résultat |
+|---|---|
+| boucher les trous fermés | **inutile** : il n'y en a aucun, le fond est une seule région reliée au bord |
+| barrage de contraste (le remplissage refuse de franchir une arête) | **53,0 % → 53,8 % gardé.** Rien : un remplissage n'a besoin que d'un pixel faible pour passer |
+| fermer les goulots (le fond atteignable par un couloir étroit n'est pas du fond) | **+0,9 %** même pour des couloirs de 48 px. Ça grignote, ça ne corrige pas |
+
+La raison est qu'il n'y a rien à détecter : la peau éclairée et le mur éclairé ont **la même
+couleur** et se touchent. Aucune méthode fondée sur la couleur ne les séparera, à aucun réglage.
+
+D'où le **pinceau** : on peint du sujet ou du fond par-dessus le détourage automatique. C'est le
+dernier mot — l'override est appliqué **après** le nettoyage du bord et les poussières, donc un
+trait n'est jamais grignoté ni écarté. Les traits survivent à tous les autres réglages ; seule une
+nouvelle image les efface, et le bouton les efface à la demande.
+
+C'est aussi ce que fait tout vrai outil, et ce n'est pas un aveu d'échec : l'automatique fait la
+masse du travail, la main corrige en trois traits. La seule alternative serait un modèle de
+segmentation (type U²-Net), c'est-à-dire plusieurs mégaoctets de poids dans un dépôt qui n'a aucune
+dépendance de ce genre.
+
 ## 2.1 Ce que l'outil refuse de deviner
 
 `tools/roto/concerns.ts`. L'outil mesure, il ne comprend pas. Un portrait de studio sans pieds dans
@@ -299,6 +323,24 @@ coins du bas, épaules coupées par le cadre. Ce que l'outil a fait, dans l'ordr
 Il reste un trou sous le menton : la peau éclairée du cou passe sous la tolérance et rejoint le
 mur. C'est la limite de la méthode (§2), pas un réglage à trouver.
 
+## 5.3 Le verdict du pipeline
+
+`tools/roto/rules.ts`. Le dépôt a déjà un moteur de règles — `checkDrawn`, celui que
+`npm run sprites` applique et que l'extension Aseprite reflète. Plutôt que d'en écrire un sosie, la
+page fait passer **sa propre sortie par ce moteur-là**. Ce que l'outil annonce est donc ce que le
+pipeline dira, maintenant et après que les règles auront changé : rien à tenir en phase à la main.
+
+Pour que ce soit possible, `checkDrawn` et `DrawnRules` ont été sortis de `drawn.ts` (qui lit le
+disque) dans `tools/sprites/drawn-rules.ts`, qui ne touche ni disque ni moteur. `drawn.ts` les
+réexporte : aucun appelant ne change.
+
+Seules les règles **géométriques** peuvent s'appliquer, la sortie étant en vraies couleurs (§1) :
+taille du carré, image non vide, **4 px de marge** sur les bords gauche, droit et haut, rien sous la
+rangée du sol. La marge est la plus utile : c'est une vraie règle, plus stricte que « le sujet
+tient-il dans la case », et celle qu'un sujet rotoscopé enfreint le plus souvent. Un carré dessiné
+plus fin (finesse ×2, ×4) est tenu aux mêmes règles à son échelle : 4 px de marge à ×1 font 8 px à
+×2, parce que ce sont les mêmes 2 pixels du monde.
+
 ## 6. La suite, si cela vaut le coup
 
 **La méthode par superpixels.** Gerstner, DeCarlo, Alexa, Finkelstein, Gingold et Nealen,
@@ -318,9 +360,9 @@ méthode naïve. Les paramètres du papier, pour le jour où :
 
 **Les slots de palette**, si la segmentation par matériau devient faisable.
 
-**Désigner le fond au clic.** Les coins se décochent déjà (§2), ce qui couvre le cas courant. Mais
-quand le fond ne touche aucun coin, ou qu'il faut rattraper un trou comme celui du cou ci-dessus,
-rien ne remplacera un clic sur la source pour ajouter ou retirer un point de départ.
+**Désigner le fond au clic.** Les coins se décochent déjà (§2) et le pinceau rattrape le reste. Un
+clic pour amorcer un remplissage à un endroit choisi reste le chaînon manquant quand le fond ne
+touche aucun coin.
 
 **Les séquences.** Une planche entière, pas une image : le nombre d'images vient de
 `src/art/<perso>/sheets.ts`, et il faudra une palette figée pour toute la planche et un ancrage

@@ -16,11 +16,13 @@ import {
   crownOf,
   edgesOf,
   SILHOUETTE_DEFAULTS,
+  painted,
   silhouetteOf,
   soleOf,
   tidyEdges,
 } from '../../tools/roto/silhouette';
 import { anchorIsAGuess, concernsOf } from '../../tools/roto/concerns';
+import { pipelineProblems } from '../../tools/roto/rules';
 
 /** A flat background with shapes painted on it, the way a studio photo looks to the tool. */
 function scene(
@@ -525,5 +527,95 @@ describe('fidélité', () => {
     });
     // Far past a just-noticeable difference: this is what the measurements bought.
     expect(deltaE(truth, made.cell).deltaE).toBeGreaterThan(5);
+  });
+});
+
+describe('pinceau', () => {
+  /** A sheet of paint over the work image: 1 subject, -1 background, 0 no opinion. */
+  function sheet(mask: ReturnType<typeof found>) {
+    return new Int8Array(mask.width * mask.height);
+  }
+
+  it('lets the hand add what the key threw away', () => {
+    const image = standing();
+    const mask = found(image);
+    const paint = sheet(mask);
+    // A square of wall, well clear of the subject, claimed as subject.
+    for (let y = 65; y <= 70; y++) for (let x = 70; x <= 75; x++) paint[y * mask.width + x] = 1;
+    const fixed = painted(mask, paint);
+    expect(fixed.pixels).toBe(mask.pixels + 36);
+    expect(fixed.on[67 * mask.width + 72]).toBe(1);
+    expect(fixed.box.right).toBe(75);
+    expect(fixed.box.bottom).toBe(70);
+  });
+
+  it('lets the hand take back what the key kept', () => {
+    const image = standing();
+    const mask = found(image);
+    const paint = sheet(mask);
+    for (let y = 20; y <= 29; y++) for (let x = 25; x <= 34; x++) paint[y * mask.width + x] = -1;
+    const fixed = painted(mask, paint);
+    expect(fixed.pixels).toBe(mask.pixels - 100);
+    expect(fixed.on[25 * mask.width + 30]).toBe(0);
+  });
+
+  it('leaves every pixel the hand said nothing about', () => {
+    const image = standing();
+    const mask = found(image);
+    const fixed = painted(mask, sheet(mask));
+    expect(fixed.on).toEqual(mask.on);
+    expect(fixed.box).toEqual(mask.box);
+    expect(fixed.pixels).toBe(mask.pixels);
+  });
+});
+
+describe('règles du pipeline', () => {
+  /** A square with a block drawn in it, as the tool's own output looks to the rules. */
+  function square(side: number, box: { left: number; top: number; right: number; bottom: number }) {
+    const cell = bitmap(side, side);
+    const on = new Uint8Array(side * side);
+    for (let y = box.top; y <= box.bottom; y++) {
+      for (let x = box.left; x <= box.right; x++) {
+        const at = (y * side + x) * 4;
+        cell.data[at] = 200;
+        cell.data[at + 1] = 180;
+        cell.data[at + 2] = 160;
+        cell.data[at + 3] = 255;
+        on[y * side + x] = 1;
+      }
+    }
+    return { cell, on };
+  }
+
+  it('takes a cell that keeps its margins', () => {
+    const { cell, on } = square(CELL_SIZE, { left: 40, top: 40, right: 200, bottom: 248 });
+    expect(pipelineProblems(cell, on, 'fighter', CELL_SIZE)).toEqual([]);
+  });
+
+  it('refuses a cell drawn to the edge, in the pipeline’s own words', () => {
+    const { cell, on } = square(CELL_SIZE, { left: 0, top: 40, right: 200, bottom: 248 });
+    const problems = pipelineProblems(cell, on, 'fighter', CELL_SIZE);
+    expect(problems).toHaveLength(1);
+    expect(problems[0]).toContain("cell's edge");
+  });
+
+  it('refuses a cell drawn under the ground', () => {
+    const { cell, on } = square(CELL_SIZE, { left: 40, top: 40, right: 200, bottom: 254 });
+    expect(pipelineProblems(cell, on, 'fighter', CELL_SIZE).join(' ')).toContain(
+      'under the ground',
+    );
+  });
+
+  it('lets a bust fill its square to the bottom, which a portrait may', () => {
+    const { cell, on } = square(PORTRAIT_SIZE, { left: 0, top: 0, right: 95, bottom: 95 });
+    expect(pipelineProblems(cell, on, 'portrait', PORTRAIT_SIZE)).toEqual([]);
+  });
+
+  it('holds a finer square to the same rules at its own scale', () => {
+    // 8 px of margin at finesse x2 is the same 2 world pixels as 4 px at x1.
+    const tight = square(CELL_SIZE * 2, { left: 6, top: 40, right: 400, bottom: 496 });
+    expect(pipelineProblems(tight.cell, tight.on, 'fighter', CELL_SIZE)).toHaveLength(1);
+    const fine = square(CELL_SIZE * 2, { left: 10, top: 40, right: 400, bottom: 496 });
+    expect(pipelineProblems(fine.cell, fine.on, 'fighter', CELL_SIZE)).toEqual([]);
   });
 });
