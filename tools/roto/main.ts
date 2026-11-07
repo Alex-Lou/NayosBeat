@@ -27,8 +27,9 @@ import {
 import type { Pixelized } from './pixelize.ts';
 import { PIXELIZE_DEFAULTS, pixelize } from './pixelize.ts';
 import { pipelineProblems } from './rules.ts';
+import { modelIsThere, segment } from './segment.ts';
 import type { Corners, Mask, Paint } from './silhouette.ts';
-import { painted, SILHOUETTE_DEFAULTS, silhouetteOf, soleOf } from './silhouette.ts';
+import { painted, refine, SILHOUETTE_DEFAULTS, silhouetteOf, soleOf } from './silhouette.ts';
 import { canvasOf, drawCell, drawSource } from './view.ts';
 import { sentenceOf } from './words.ts';
 
@@ -43,6 +44,10 @@ const state = {
   minShare: SILHOUETTE_DEFAULTS.minShare,
   tidy: SILHOUETTE_DEFAULTS.tidy,
   corners: { ...SILHOUETTE_DEFAULTS.corners },
+  /** Where the automatic mask comes from: the colour key, or the model (segment.ts). */
+  source: 'key' as 'key' | 'model',
+  /** How much of the model's confidence a pixel needs to count as subject. */
+  floor: 0.5,
   /** What the brush lays down: 1 paints subject, -1 paints background. */
   brush: 1 as 1 | -1,
   radius: 24,
@@ -80,6 +85,8 @@ interface Work {
   readonly paint: Paint;
   /** Room for the painted mask, so a stroke allocates nothing. */
   readonly canvas: Uint8Array;
+  /** Room for the model's mask, kept apart because `refine` writes over what it is given. */
+  readonly cleaned: Uint8Array;
 }
 
 let work: Work | undefined;
@@ -88,6 +95,10 @@ let work: Work | undefined;
  * over it, so painting stays smooth instead of redoing a flood fill per pointer move.
  */
 let automatic: { readonly key: string; readonly mask: Mask } | undefined;
+/** What the model saw, before any cleaning: computed once per image and threshold. */
+let seen: { readonly floor: number; readonly on: Uint8Array } | undefined;
+/** True while the model is thinking, so the page says so instead of looking stuck. */
+let thinking = false;
 let made: Pixelized | undefined;
 
 // The page -------------------------------------------------------------------------------------
@@ -139,6 +150,25 @@ clear.disabled = true;
 const save = ui.button('Enregistrer la case (PNG)', exportCell);
 save.disabled = true;
 
+/**
+ * The model is offered only once its weights are there: without them the page keeps the colour
+ * key and says what to run, rather than failing when the choice is made.
+ */
+let modelReady = false;
+void modelIsThere().then((there) => {
+  modelReady = there;
+  if (!there) note('warn', '⚠ Modèle absent : lance « npm run roto:model » pour l’activer.');
+});
+
+function chooseSource(value: number): void {
+  if (value === 1 && !modelReady) {
+    state.source = 'key';
+    note('warn', '⚠ Modèle absent : lance « npm run roto:model » pour l’activer.');
+    return;
+  }
+  state.source = value === 1 ? 'model' : 'key';
+}
+
 /** Picking a frame sets its size and keeps the subject's height to scale. */
 function chooseFrame(size: number): void {
   if (size === PORTRAIT_SIZE) {
@@ -180,6 +210,17 @@ must('controls').append(
       (v) => (state.tidy = v),
       { min: 0, max: 3, step: 1 },
       (value) => (value === 0 ? 'aucun' : `${value} passe(s)`),
+    ),
+    ui.choice('Détourage', () => (state.source === 'model' ? 1 : 0), chooseSource, [
+      { value: 0, label: 'par la couleur' },
+      { value: 1, label: 'par le modèle' },
+    ]),
+    ui.range(
+      'Seuil du modèle',
+      () => state.floor,
+      (v) => (state.floor = v),
+      { min: 0.05, max: 0.95, step: 0.05 },
+      (value) => `${Math.round(value * 100)} %`,
     ),
     ui.toggles(
       'Coins de départ',
@@ -358,9 +399,26 @@ function run(): void {
     tidy: state.tidy,
     corners: state.corners,
   };
-  const key = JSON.stringify(options);
+  const key = JSON.stringify({ ...options, source: state.source, floor: state.floor });
   if (automatic?.key !== key) {
-    automatic = { key, mask: silhouetteOf(loaded.image, options, toLab, loaded.lab) };
+    if (state.source === 'model') {
+      if (seen?.floor !== state.floor) {
+        think(loaded);
+        return;
+      }
+      // `refine` writes over what it is given, so the model's own answer is kept untouched.
+      loaded.cleaned.set(seen.on);
+      automatic = {
+        key,
+        mask: refine(loaded.image.width, loaded.image.height, loaded.cleaned, options, {
+          from: 'model',
+          seeds: 0,
+          dropped: 0,
+        }),
+      };
+    } else {
+      automatic = { key, mask: silhouetteOf(loaded.image, options, toLab, loaded.lab) };
+    }
   }
   const mask = painted(automatic.mask, loaded.paint, loaded.canvas);
   const placed = placeOnCell(
@@ -399,6 +457,27 @@ function run(): void {
   report(loaded.image, mask, placed, made);
 }
 
+/** Ask the model what it sees, then come back and finish the pass. */
+function think(loaded: Work): void {
+  if (thinking) return;
+  thinking = true;
+  status.textContent = 'Le modèle regarde l’image…';
+  segment(loaded.image, state.floor)
+    .then((on) => {
+      seen = { floor: state.floor, on };
+    })
+    .catch((error: unknown) => {
+      state.source = 'key';
+      seen = undefined;
+      status.textContent = `Le modèle n’a pas pu tourner : ${String(error)}`;
+    })
+    .finally(() => {
+      thinking = false;
+      ui.refresh();
+      if (state.source === 'model') run();
+    });
+}
+
 // What the page says -----------------------------------------------------------------------------
 
 function note(kind: string, text: string): void {
@@ -415,7 +494,7 @@ function report(image: Bitmap, mask: Mask, placed: Placed, pixels: Pixelized): v
   const height = mask.box.bottom - mask.box.top + 1;
   const scaled = `${height} px de source → ${state.height} px de carré (×${placed.scale.toFixed(3)})`;
   status.textContent = [
-    `Silhouette : ${mask.from === 'alpha' ? 'canal alpha de l’image' : `fond détouré depuis ${mask.seeds} coin(s)`} — ${mask.pixels.toLocaleString('fr-FR')} px, boîte ${mask.box.right - mask.box.left + 1} × ${height} px, ${mask.islands} îlot(s) gardé(s)${mask.specks > 0 ? `, ${mask.specks} poussière(s) écartée(s)` : ''}.`,
+    `Silhouette : ${mask.from === 'alpha' ? 'canal alpha de l’image' : mask.from === 'model' ? `vue par le modèle (seuil ${Math.round(state.floor * 100)} %)` : `fond détouré depuis ${mask.seeds} coin(s)`} — ${mask.pixels.toLocaleString('fr-FR')} px, boîte ${mask.box.right - mask.box.left + 1} × ${height} px, ${mask.islands} îlot(s) gardé(s)${mask.specks > 0 ? `, ${mask.specks} poussière(s) écartée(s)` : ''}.`,
     state.frame === 'portrait'
       ? `Cadrage : ${scaled}, tête centrée sur le carré, couronne à 6 % du haut. Les épaules sortent par le bas, c’est voulu.`
       : `Pose : ${scaled}, ` +
@@ -526,8 +605,10 @@ async function load(blob: Blob): Promise<void> {
     lab: labBufferOf(image, toLab),
     paint: new Int8Array(width * height),
     canvas: new Uint8Array(width * height),
+    cleaned: new Uint8Array(width * height),
   };
   automatic = undefined;
+  seen = undefined;
   clear.disabled = true;
   // A subject that fills the frame is the common case: start at the measured standing height.
   state.height = Math.round((STANDING_HEIGHT * state.cell) / CELL_SIZE);

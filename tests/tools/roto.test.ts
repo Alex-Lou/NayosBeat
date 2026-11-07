@@ -17,6 +17,7 @@ import {
   edgesOf,
   SILHOUETTE_DEFAULTS,
   painted,
+  refine,
   silhouetteOf,
   soleOf,
   tidyEdges,
@@ -26,6 +27,7 @@ import { anchorIsAGuess, concernsOf } from '../../tools/roto/concerns';
 import { pipelineProblems } from '../../tools/roto/rules';
 import { stamp, stroke } from '../../tools/roto/brush';
 import { listOf, sentenceOf } from '../../tools/roto/words';
+import { inputOf, maskOf } from '../../tools/roto/segment';
 
 /** A flat background with shapes painted on it, the way a studio photo looks to the tool. */
 function scene(
@@ -686,5 +688,85 @@ describe('les mots', () => {
     }
     expect(sentenceOf(every[3] as Concern)).toContain('gauche et droit');
     expect(sentenceOf(every[6] as Concern)).toContain('5 px à droite');
+  });
+});
+
+/**
+ * The model's own weights are not in the repository (`npm run roto:model` fetches them), so what
+ * is tested here is everything around the inference: the picture turned into what the model wants,
+ * and its answer turned back into a mask. Those are where a silent mistake would hide — a channel
+ * swapped, a threshold read upside down — and neither needs the runtime.
+ */
+describe('modèle', () => {
+  const SIDE = 320;
+
+  it('prépare l’image comme le modèle l’attend', () => {
+    const image = bitmap(2, 2);
+    // A single flat colour, so every sample is the same and the maths is checkable by hand.
+    for (let pixel = 0; pixel < 4; pixel++) {
+      image.data[pixel * 4] = 255;
+      image.data[pixel * 4 + 1] = 0;
+      image.data[pixel * 4 + 2] = 128;
+      image.data[pixel * 4 + 3] = 255;
+    }
+    const input = inputOf(image);
+    expect(input.length).toBe(3 * SIDE * SIDE);
+    // Three planes, not three values a pixel: red first, then green, then blue.
+    expect(input[0]).toBeCloseTo((1 - 0.485) / 0.229, 4);
+    expect(input[SIDE * SIDE]).toBeCloseTo((0 - 0.456) / 0.224, 4);
+    expect(input[2 * SIDE * SIDE]).toBeCloseTo((128 / 255 - 0.406) / 0.225, 4);
+  });
+
+  it('étire la confiance du modèle avant de trancher', () => {
+    const image = bitmap(SIDE, 1);
+    // A map whose values sit in a narrow band: a fixed threshold would keep all or nothing.
+    const map = new Float32Array(SIDE * SIDE);
+    // The whole map, not one row: the untouched rest would set the lowest value itself.
+    for (let y = 0; y < SIDE; y++) {
+      for (let x = 0; x < SIDE; x++) map[y * SIDE + x] = 0.8 + (0.04 * x) / SIDE;
+    }
+    const on = maskOf(map, image, 0.5);
+    expect(on[0]).toBe(0);
+    expect(on[SIDE - 1]).toBe(1);
+    // Half of a straight ramp, give or take a pixel.
+    const kept = on.reduce((total, value) => total + value, 0);
+    expect(kept).toBeGreaterThan(SIDE * 0.45);
+    expect(kept).toBeLessThan(SIDE * 0.55);
+  });
+
+  it('garde tout ou rien quand le modèle ne voit rien', () => {
+    const image = bitmap(8, 8);
+    const flat = new Float32Array(SIDE * SIDE).fill(0.3);
+    expect(maskOf(flat, image, 0.5).reduce((a, b) => a + b, 0)).toBe(0);
+  });
+
+  it('écrit dans le tampon qu’on lui donne, sans en allouer un autre', () => {
+    const image = bitmap(8, 8);
+    const into = new Uint8Array(64);
+    const map = new Float32Array(SIDE * SIDE).fill(1);
+    map[0] = 0;
+    expect(maskOf(map, image, 0.5, into)).toBe(into);
+  });
+
+  it('nettoie le masque du modèle comme celui de la couleur', () => {
+    // A block with a single-pixel spur and a speck, as any mask may have.
+    const on = new Uint8Array(40 * 40);
+    for (let y = 10; y <= 25; y++) for (let x = 10; x <= 25; x++) on[y * 40 + x] = 1;
+    on[18 * 40 + 26] = 1;
+    on[35 * 40 + 35] = 1;
+    const mask = refine(
+      40,
+      40,
+      on,
+      { tidy: 1, minShare: 0.02 },
+      {
+        from: 'model',
+        seeds: 0,
+        dropped: 0,
+      },
+    );
+    expect(mask.from).toBe('model');
+    expect(mask.pixels).toBe(16 * 16);
+    expect(mask.box).toEqual({ left: 10, top: 10, right: 25, bottom: 25 });
   });
 });

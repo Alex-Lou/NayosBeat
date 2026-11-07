@@ -23,6 +23,17 @@
 import type { Bitmap, Box, ToLab } from './pixels.ts';
 import { labBufferOf, labDistanceSquared } from './pixels.ts';
 
+/** Where a mask came from: the image's own alpha, the colour key, or the model (segment.ts). */
+export type Source = 'alpha' | 'key' | 'model';
+
+/** What a way of finding the subject reports about itself, beyond the pixels. */
+export interface Found {
+  readonly from: Source;
+  /** Corners that seeded a fill, and corners dropped: 0 for anything but the colour key. */
+  readonly seeds: number;
+  readonly dropped: number;
+}
+
 export interface Mask {
   readonly width: number;
   readonly height: number;
@@ -32,7 +43,7 @@ export interface Mask {
   readonly box: Box;
   readonly pixels: number;
   /** How the mask was found, for the page to say which. */
-  readonly from: 'alpha' | 'key';
+  readonly from: Source;
   /** Islands kept, and islands dropped as specks: the page warns when many were dropped. */
   readonly islands: number;
   readonly specks: number;
@@ -102,13 +113,31 @@ export function silhouetteOf(
   for (let pixel = 0; pixel < count; pixel++) {
     if ((image.data[pixel * 4 + 3] ?? 0) < options.alphaFloor) transparent++;
   }
-  const keyed =
-    transparent >= count * ALPHA_SHARE
-      ? { on: fromAlpha(image, options.alphaFloor), seeds: 0, dropped: 0 }
-      : keyedOut(image, options.tolerance, lab ?? labBufferOf(image, toLab), options.corners);
-  const from = transparent >= count * ALPHA_SHARE ? 'alpha' : 'key';
-  for (let pass = 0; pass < options.tidy; pass++) tidyEdges(image.width, image.height, keyed.on);
-  return despeckle(image.width, image.height, keyed.on, options.minShare, from, keyed);
+  const carries = transparent >= count * ALPHA_SHARE;
+  const keyed = carries
+    ? { on: fromAlpha(image, options.alphaFloor), seeds: 0, dropped: 0 }
+    : keyedOut(image, options.tolerance, lab ?? labBufferOf(image, toLab), options.corners);
+  return refine(image.width, image.height, keyed.on, options, {
+    from: carries ? 'alpha' : 'key',
+    seeds: keyed.seeds,
+    dropped: keyed.dropped,
+  });
+}
+
+/**
+ * The tail every way of finding a subject shares: the edge tidied, the specks dropped, the box
+ * and the count measured. The colour key goes through it, and so does the model (segment.ts) —
+ * a mask is a mask, whatever found it, and the cleaning has no business being written twice.
+ */
+export function refine(
+  width: number,
+  height: number,
+  on: Uint8Array,
+  options: Pick<SilhouetteOptions, 'tidy' | 'minShare'>,
+  found: Found,
+): Mask {
+  for (let pass = 0; pass < options.tidy; pass++) tidyEdges(width, height, on);
+  return despeckle(width, height, on, options.minShare, found);
 }
 
 /**
@@ -225,8 +254,7 @@ function despeckle(
   height: number,
   on: Uint8Array,
   minShare: number,
-  from: 'alpha' | 'key',
-  keyed: { readonly seeds: number; readonly dropped: number },
+  found: Found,
 ): Mask {
   const count = width * height;
   const island = new Int32Array(count).fill(-1);
@@ -290,11 +318,11 @@ function despeckle(
     on,
     box,
     pixels,
-    from,
+    from: found.from,
     islands: kept.filter(Boolean).length,
     specks: kept.filter((keep) => !keep).length,
-    seeds: keyed.seeds,
-    dropped: keyed.dropped,
+    seeds: found.seeds,
+    dropped: found.dropped,
   };
 }
 

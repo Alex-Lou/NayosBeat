@@ -101,10 +101,39 @@ remplissage ne l'atteint jamais.
 **La limite est celle de la méthode, pas un défaut** : fond uni, oui ; bibliothèque derrière le
 sujet, non.
 
-### Le pinceau, quand la couleur ne peut rien
+## 2.2 Le modèle, quand la couleur ne peut rien
 
-Sur un selfie devant un mur clair, le détourage perce des trous dans la peau éclairée. Trois pistes
-ont été essayées et **mesurées** avant d'en arriver au pinceau :
+`tools/roto/segment.ts`. Le détourage par couleur perce des trous dans la peau éclairée d'un selfie
+devant un mur clair, et **aucun réglage ne les referme** (§2.3). Un modèle de segmentation ne
+cherche pas une marche de couleur : il cherche à quoi ressemble une personne.
+
+**U²-Net small** (`u2netp`), 4,6 Mo, **Apache-2.0** — Qin et al., *U²-Net: Going Deeper with Nested
+U-Structure for Salient Object Detection*. Mesuré sur la photo qui mettait la couleur en échec : le
+trou de la poitrine se referme entièrement, les cheveux sont nets, et les 143 îlots de poussière
+disparaissent. Environ **1,5 s** dans la page, chargement du moteur compris, une fois par image.
+
+Ce n'est **pas** un remplacement : le modèle produit un masque, et la suite ne change pas d'un
+iota — même nettoyage du bord, mêmes poussières écartées (`refine`, partagé), même pinceau par
+dessus, même pose, même chaîne de pixels. C'est une source de plus, au curseur **Détourage**.
+
+### Ce que ça coûte, honnêtement
+
+| | |
+|---|---|
+| Les poids | 4,6 Mo, **non commités** : `npm run roto:model` les récupère, empreinte SHA-256 épinglée |
+| Le moteur `onnxruntime-web` | **145 Mo** dans `node_modules`, à chaque `npm ci`, CI comprise |
+| Ce que la page charge | ~15 Mo de WebAssembly, à la première utilisation du modèle seulement |
+
+Le moteur est chargé **par import dynamique** : une page qui détoure par la couleur ne paie rien.
+Le wasm et les poids vivent dans le même dossier ignoré par git, servi par Vite — pas de CDN, et ça
+marche hors ligne une fois récupéré. `npm run roto` lance la récupération avant d'ouvrir la page,
+donc il n'y a aucune étape à retenir ; sans les poids, la page garde la couleur et dit quoi lancer.
+
+### Le pinceau, quand le modèle n'y est pas non plus
+
+Sur un selfie devant un mur clair, le détourage par couleur perce des trous dans la peau éclairée.
+Trois pistes ont été essayées et **mesurées** avant d'en arriver au pinceau — et c'est leur échec
+qui a justifié le modèle du §2.2 :
 
 | Piste | Résultat |
 |---|---|
@@ -121,9 +150,8 @@ trait n'est jamais grignoté ni écarté. Les traits survivent à tous les autre
 nouvelle image les efface, et le bouton les efface à la demande.
 
 C'est aussi ce que fait tout vrai outil, et ce n'est pas un aveu d'échec : l'automatique fait la
-masse du travail, la main corrige en trois traits. La seule alternative serait un modèle de
-segmentation (type U²-Net), c'est-à-dire plusieurs mégaoctets de poids dans un dépôt qui n'a aucune
-dépendance de ce genre.
+masse du travail, la main corrige en trois traits. Le pinceau reste utile avec le modèle : il
+corrige ce qu'aucun détourage ne devine, comme garder un accessoire ou retirer une main de trop.
 
 ## 2.1 Ce que l'outil refuse de deviner
 
@@ -403,3 +431,5 @@ et al. 2012 pour la palette (§6).
   <https://en.wikipedia.org/wiki/Pixel-art_scaling_algorithms>
 - Pixelmator, *Super Resolution*, et son renvoi au plus proche voisin pour le pixel art —
   <https://support.pixelmator.com/photomator-user-guide/ai-editing-tools/super-resolution>
+- Qin, Zhang, Huang, Dehghan, Zaiane, Jagersand, *U²-Net*, Pattern Recognition 2020 —
+  <https://github.com/xuebinqin/U-2-Net> (Apache-2.0)

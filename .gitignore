@@ -13,3 +13,6 @@ tools/aseprite/dist/
 
 # Films and pages written by `npm run anim:film` and `npm run anim:compare`.
 tools/anim/out/
+
+# Model weights and the WebAssembly runtime, fetched by `npm run roto:model`.
+tools/roto/model/
