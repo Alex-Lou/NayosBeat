@@ -108,7 +108,7 @@ export const NOT_STANDARD_TEXT =
 /** The touch tab and « Disposition » (player 1's touch buttons). */
 export const TOUCH_TEXTS = {
   idle: 'Disposition : place les boutons au doigt, change leur taille et leur opacité',
-  fixed: 'Le joystick reste sous le pouce gauche, sur la moitié gauche',
+  fixed: 'La croix reste en bas à gauche, à la taille des boutons',
   reset: 'Boutons tactiles remis par défaut',
   layout: 'Disposition',
   title: 'Disposition',

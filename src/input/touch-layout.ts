@@ -1,16 +1,26 @@
 import { Input } from '../core/input';
-import { isRecord, PAD_ACTIONS, type PadAction } from './bindings';
+import { isRecord, type PadAction } from './bindings';
+
+/** The actions with a touch button: every pad action but jump, the d-pad's up. */
+export type TouchAction = Exclude<PadAction, 'jump'>;
+export const TOUCH_ACTIONS: readonly TouchAction[] = [
+  'light',
+  'heavy',
+  'special',
+  'grab',
+  'dash',
+  'boost',
+];
 
 /**
- * The right-hand cluster of the touch controls, as data: tested in pure geometry (no visible
- * overlap on the small phones), drawn from the same numbers. Two rows; the centers of L, H, SAUT
- * and S never move (muscle memory), PRISE takes the old throw button's place, DASH came with the
- * combat v2, BOOST with the combos v3 (docs/combos-v3.md §1.8.5), in the notch between S and
- * PRISE, never right over S:
+ * The touch controls as data: the right-hand cluster and the d-pad, tested in pure geometry (no
+ * visible overlap on the small phones), drawn from the same numbers. Two rows of three; the
+ * centers of L, H and S never move (muscle memory). Jumping is the d-pad's up since the d-pad
+ * came (docs/combat-v2.md §0.2, D40): PRISE took SAUT's place, BOOST (docs/combos-v3.md §1.8.5)
+ * came down beside S, where PRISE was:
  *
- *            (center 190 from the bottom)                     [BOOST]
- *            top row (center 126 from the bottom)    [DASH]   [ S ]   [PRISE]
- *            bottom row (center 52 from the bottom)    [ L ]   [ H ]   [SAUT]
+ *            top row (center 126 from the bottom)    [DASH]   [ S ]   [BOOST]
+ *            bottom row (center 52 from the bottom)    [ L ]   [ H ]   [PRISE]
  *
  * The farthest edge is 265 px from the right: within the thumb's reach on an iPhone SE in
  * landscape (right half: 333 px).
@@ -24,7 +34,7 @@ export interface TouchButton {
   /** Input flags held while the button is. */
   readonly flag: number;
   /** Its action, by which the player's layout places it (`TouchLayout`). */
-  readonly action: PadAction;
+  readonly action: TouchAction;
   /** Color and look (styles.css). */
   readonly className: string;
   /** Center, in CSS px from the right and from the bottom of the safe area. */
@@ -56,16 +66,6 @@ export const TOUCH_BUTTONS: readonly TouchButton[] = [
     diameter: 68,
   },
   {
-    label: 'SAUT',
-    action: 'jump',
-    fontSize: 9,
-    flag: Input.Jump,
-    className: 'touch-jump',
-    right: 52,
-    bottom: 52,
-    diameter: 60,
-  },
-  {
     label: 'S',
     action: 'special',
     fontSize: 12,
@@ -81,8 +81,8 @@ export const TOUCH_BUTTONS: readonly TouchButton[] = [
     fontSize: 8,
     flag: Input.Grab,
     className: 'touch-grab',
-    right: 89,
-    bottom: 126,
+    right: 52,
+    bottom: 52,
     diameter: 60,
   },
   {
@@ -101,8 +101,8 @@ export const TOUCH_BUTTONS: readonly TouchButton[] = [
     fontSize: 8,
     flag: Input.Boost,
     className: 'touch-boost',
-    right: 126,
-    bottom: 190,
+    right: 89,
+    bottom: 126,
     diameter: 56,
   },
 ];
@@ -151,7 +151,7 @@ export interface TouchLayout {
   readonly size: number;
   /** The cluster's opacity, in percent. */
   readonly opacity: number;
-  readonly buttons: Readonly<Record<PadAction, TouchPlacement>>;
+  readonly buttons: Readonly<Record<TouchAction, TouchPlacement>>;
 }
 
 /** A button's center at the cluster's 100 % (CSS px from the right and the bottom), its size. */
@@ -173,8 +173,28 @@ export const DEFAULT_TOUCH_LAYOUT: TouchLayout = {
   opacity: 100,
   buttons: Object.fromEntries(
     TOUCH_BUTTONS.map(({ action, right, bottom }) => [action, { right, bottom, size: 100 }]),
-  ) as Record<PadAction, TouchPlacement>,
+  ) as Record<TouchAction, TouchPlacement>,
 };
+
+/**
+ * The d-pad (docs/combat-v2.md §0.2, D40): fixed at the bottom-left corner of the safe area, its
+ * center and its size scaled with the cluster's « Taille », never moved by hand. In CSS px at the
+ * cluster's 100 %.
+ */
+export const DPAD = { left: 104, bottom: 104, diameter: 156 } as const;
+
+/** Where the d-pad is and how big, for `layout`: from the safe area's bottom-left corner. Pure. */
+export function dpadOf(layout: TouchLayout): { left: number; bottom: number; diameter: number } {
+  const cluster = layout.size / 100;
+  return {
+    left: DPAD.left * cluster,
+    bottom: DPAD.bottom * cluster,
+    diameter: DPAD.diameter * cluster,
+  };
+}
+
+/** A touch counts this far beyond the d-pad's edge: a thumb lands roughly. */
+export const DPAD_SLOP_PX = 24;
 
 /**
  * The buttons as `layout` places them, TOUCH_BUTTONS' order: centers scaled with the cluster
@@ -266,9 +286,28 @@ export function fittedButtons(
 }
 
 /**
+ * Where PRISE and BOOST stood by default before the d-pad (D40). A stored button still there was
+ * never moved by the player: it takes its new default place, its size kept. One the player moved
+ * stays where they put it.
+ */
+const PLACES_BEFORE_DPAD: Partial<Record<TouchAction, { right: number; bottom: number }>> = {
+  grab: { right: 89, bottom: 126 },
+  boost: { right: 126, bottom: 190 },
+};
+
+function sincePad(action: TouchAction, placement: TouchPlacement): TouchPlacement {
+  const before = PLACES_BEFORE_DPAD[action];
+  if (before?.right !== placement.right || before.bottom !== placement.bottom) return placement;
+  const { right, bottom } = DEFAULT_TOUCH_LAYOUT.buttons[action];
+  return { ...placement, right, bottom };
+}
+
+/**
  * A stored layout, checked once as it is read: the sizes and the opacity among those the screen
- * offers, each button's place finite and on a screen, its size offered; else its default. Buttons
- * that would overlap all go back to their places. Pure.
+ * offers, each button's place finite and on a screen, its size offered; else its default. A
+ * button left where the layout before the d-pad put it takes its new place (`sincePad`); a stored
+ * SAUT, gone with the d-pad, is dropped. Buttons that would overlap all go back to their places.
+ * Pure.
  */
 export function parseTouchLayout(value: unknown): TouchLayout {
   if (!isRecord(value)) return DEFAULT_TOUCH_LAYOUT;
@@ -276,11 +315,14 @@ export function parseTouchLayout(value: unknown): TouchLayout {
     typeof candidate === 'number' && offered.includes(candidate) ? candidate : fallback;
   const stored = isRecord(value['buttons']) ? value['buttons'] : {};
   const buttons = Object.fromEntries(
-    PAD_ACTIONS.map((action) => [
-      action,
-      parsePlacement(stored[action]) ?? DEFAULT_TOUCH_LAYOUT.buttons[action],
-    ]),
-  ) as Record<PadAction, TouchPlacement>;
+    TOUCH_ACTIONS.map((action) => {
+      const placement = parsePlacement(stored[action]);
+      return [
+        action,
+        placement ? sincePad(action, placement) : DEFAULT_TOUCH_LAYOUT.buttons[action],
+      ];
+    }),
+  ) as Record<TouchAction, TouchPlacement>;
   const layout: TouchLayout = {
     size: pick(value['size'], CLUSTER_SIZES, DEFAULT_TOUCH_LAYOUT.size),
     opacity: pick(value['opacity'], OPACITIES, DEFAULT_TOUCH_LAYOUT.opacity),

@@ -10,7 +10,7 @@ import {
   TOUCH_SLOP_PX,
   type TouchButton,
 } from '../../src/input/touch-layout';
-import { bitsFromStick, FINISHER_BACK_DEGREES, finisherBack } from '../../src/input/touch-stick';
+import { bitsFromDpad, FINISHER_BACK_DEGREES, finisherBack } from '../../src/input/touch-dpad';
 import { installFakePage, type FakeElement } from '../render/fake-dom';
 
 /** Landscape phones: an iPhone SE (no notch) and an iPhone 12 (notch and home bar). */
@@ -31,36 +31,29 @@ const gap = (a: TouchButton, b: TouchButton): number =>
   Math.hypot(a.right - b.right, a.bottom - b.bottom) - (a.diameter + b.diameter) / 2;
 
 describe('touch layout (§2.4)', () => {
-  it('has the seven buttons, L, H, SAUT and S where they always were', () => {
-    expect(TOUCH_BUTTONS.map((b) => b.label)).toEqual([
-      'L',
-      'H',
-      'SAUT',
-      'S',
-      'PRISE',
-      'DASH',
-      'BOOST',
-    ]);
+  it('has six buttons in two rows of three, L, H and S where they always were, no SAUT', () => {
+    expect(TOUCH_BUTTONS.map((b) => b.label)).toEqual(['L', 'H', 'S', 'PRISE', 'DASH', 'BOOST']);
+    // Jumping is the d-pad's up (docs/combat-v2.md §0.2, D40).
+    expect(TOUCH_BUTTONS.some((b) => b.flag === Input.Jump)).toBe(false);
+    // Bottom row: L, H, PRISE in SAUT's old place.
     expect(byLabel('L')).toMatchObject({ right: 200, bottom: 52, diameter: 68, flag: Input.Light });
     expect(byLabel('H')).toMatchObject({ right: 126, bottom: 52, diameter: 68, flag: Input.Heavy });
-    expect(byLabel('SAUT')).toMatchObject({
+    expect(byLabel('PRISE')).toMatchObject({
       right: 52,
       bottom: 52,
       diameter: 60,
-      flag: Input.Jump,
+      flag: Input.Grab,
     });
-    expect(byLabel('S')).toMatchObject({ right: 163, bottom: 126, diameter: 64 });
-    expect(byLabel('PRISE')).toMatchObject({ right: 89, bottom: 126, flag: Input.Grab });
+    // Top row: DASH, S, BOOST beside S (docs/combos-v3.md §1.8.5), where PRISE was.
     expect(byLabel('DASH')).toMatchObject({ right: 237, bottom: 126, flag: Input.Dash });
-    // In the notch between S and PRISE (docs/combos-v3.md §1.8.5): never right over S.
+    expect(byLabel('S')).toMatchObject({ right: 163, bottom: 126, diameter: 64 });
     expect(byLabel('BOOST')).toMatchObject({
-      right: 126,
-      bottom: 190,
+      right: 89,
+      bottom: 126,
       diameter: 56,
       flag: Input.Boost,
     });
-    expect(gap(byLabel('BOOST'), byLabel('S'))).toBeCloseTo(13.9, 1);
-    expect(gap(byLabel('BOOST'), byLabel('PRISE'))).toBeCloseTo(15.9, 1);
+    expect(gap(byLabel('BOOST'), byLabel('S'))).toBeCloseTo(14, 1);
   });
 
   it('leaves 6 to 16 px between each button and its nearest neighbor', () => {
@@ -121,9 +114,9 @@ describe('nearestButton', () => {
   });
 
   it('counts a touch a little outside the visible circle', () => {
-    const jump = byLabel('SAUT');
-    expect(nearestButton(jump.right - jump.diameter / 2 - TOUCH_SLOP_PX, jump.bottom)).toBe(
-      index('SAUT'),
+    const grab = byLabel('PRISE');
+    expect(nearestButton(grab.right - grab.diameter / 2 - TOUCH_SLOP_PX, grab.bottom)).toBe(
+      index('PRISE'),
     );
   });
 
@@ -144,6 +137,24 @@ function pointer(type: string, pointerId: number, clientX: number, clientY: numb
   return Object.assign(new Event(type), { pointerId, clientX, clientY });
 }
 
+/**
+ * The d-pad and button zones of touch controls on a 667×375 screen, measured: the d-pad at its
+ * default place, 104 px from the bottom-left corner, 156 px wide.
+ */
+function zonesOf(body: FakeElement): { pad: FakeElement; dpad: FakeElement; buttons: FakeElement } {
+  const [pad, buttons] = body.children[0]?.children ?? [];
+  const dpad = pad?.children[0];
+  if (!pad || !dpad || !buttons) throw new Error('Touch zones missing');
+  buttons.rect = { left: 333, top: 0, right: 667, bottom: 375 };
+  dpad.rect = { left: 26, top: 193, right: 182, bottom: 349 };
+  return { pad, dpad, buttons };
+}
+
+/** A finger on the d-pad zone, `dx`, `dy` CSS px from the pad's center (y pointing down). */
+function touchPad(pad: FakeElement, type: string, pointerId: number, dx: number, dy: number): void {
+  pad.dispatchEvent(pointer(type, pointerId, 104 + dx, 271 + dy));
+}
+
 /** A finger down on the button labelled `label` of a 667×375 screen, in screen coordinates. */
 function press(zone: FakeElement, label: string, pointerId: number): void {
   const button = byLabel(label);
@@ -155,21 +166,18 @@ describe('TouchControls', () => {
     vi.unstubAllGlobals();
   });
 
-  /** Touch controls on a 667×375 screen, with their stick and button zones. */
+  /** Touch controls on a 667×375 screen, with their d-pad and button zones. */
   function setup() {
     const page = installFakePage();
     const controls = new TouchControls(page.body as unknown as HTMLElement, undefined);
-    const [root] = page.body.children;
-    const [stick, , buttons] = root?.children ?? [];
-    if (!stick || !buttons) throw new Error('Touch zones missing');
-    buttons.rect = { left: 333, top: 0, right: 667, bottom: 375 };
-    return { controls, stick, buttons };
+    const { pad, dpad, buttons } = zonesOf(page.body);
+    return { controls, pad, dpad, buttons };
   }
 
   it("dresses the special button, ring and letter, in the fighter's energy color", () => {
     const page = installFakePage();
     new TouchControls(page.body as unknown as HTMLElement, undefined, 0xff3ca0);
-    const buttons = page.body.children[0]?.children[2];
+    const buttons = page.body.children[0]?.children[1];
     const special = buttons?.children[TOUCH_BUTTONS.findIndex((b) => b.flag === Input.Special)];
     expect(special?.style).toMatchObject({ borderColor: '#ff3ca0', color: '#ff3ca0' });
   });
@@ -238,49 +246,89 @@ describe('TouchControls', () => {
   });
 
   it('never loses a double tap between two reads: the pass through neutral reads once', () => {
-    const { controls, stick } = setup();
-    stick.dispatchEvent(pointer('pointerdown', 7, 100, 200));
-    stick.dispatchEvent(pointer('pointermove', 7, 130, 200));
+    const { controls, pad } = setup();
+    touchPad(pad, 'pointerdown', 7, 50, 0);
     expect(controls.read()).toBe(Input.Right);
     // Back to the center and out again, both between two reads (a 30 fps phone).
-    stick.dispatchEvent(pointer('pointermove', 7, 101, 200));
-    stick.dispatchEvent(pointer('pointermove', 7, 130, 200));
+    touchPad(pad, 'pointermove', 7, 2, 0);
+    touchPad(pad, 'pointermove', 7, 50, 0);
     expect(controls.read()).toBe(0);
     expect(controls.read()).toBe(Input.Right);
   });
 
   it('gives a button pressed in the same read the direction reached through neutral', () => {
-    const { controls, stick, buttons } = setup();
-    stick.dispatchEvent(pointer('pointerdown', 7, 100, 200));
-    stick.dispatchEvent(pointer('pointermove', 7, 130, 200));
+    const { controls, pad, buttons } = setup();
+    touchPad(pad, 'pointerdown', 7, 50, 0);
     expect(controls.read()).toBe(Input.Right);
     // A quick reversal through the center to back, and DASH, all between two reads: the dash
     // is read with back held, a backdash, not a dash into the attack.
-    stick.dispatchEvent(pointer('pointermove', 7, 101, 200));
-    stick.dispatchEvent(pointer('pointermove', 7, 70, 200));
+    touchPad(pad, 'pointermove', 7, 2, 0);
+    touchPad(pad, 'pointermove', 7, -50, 0);
     press(buttons, 'DASH', 1);
     expect(controls.read()).toBe(Input.Left | Input.Dash);
     expect(controls.read()).toBe(Input.Left | Input.Dash);
   });
 
-  it('shows where the stick lives until the left thumb first touches it', () => {
-    const { stick } = setup();
-    const ghosts = () => stick.children.filter((child) => child.className === 'touch-stick-ghost');
-    expect(ghosts()).toHaveLength(1);
-    stick.dispatchEvent(pointer('pointerdown', 7, 100, 200));
-    expect(ghosts()).toHaveLength(0);
-  });
-
   it('reads a lifted thumb as neutral, then the new touch', () => {
-    const { controls, stick } = setup();
-    stick.dispatchEvent(pointer('pointerdown', 7, 100, 200));
-    stick.dispatchEvent(pointer('pointermove', 7, 130, 200));
+    const { controls, pad } = setup();
+    touchPad(pad, 'pointerdown', 7, 50, 0);
     expect(controls.read()).toBe(Input.Right);
-    stick.dispatchEvent(pointer('pointerup', 7, 130, 200));
-    stick.dispatchEvent(pointer('pointerdown', 8, 100, 200));
-    stick.dispatchEvent(pointer('pointermove', 8, 130, 200));
+    touchPad(pad, 'pointerup', 7, 50, 0);
+    touchPad(pad, 'pointerdown', 8, 50, 0);
     expect(controls.read()).toBe(0);
     expect(controls.read()).toBe(Input.Right);
+  });
+
+  it('reads two arrows at once, under one thumb between them or under two fingers', () => {
+    const { controls, pad } = setup();
+    // One thumb between → and ↓: the diagonal.
+    touchPad(pad, 'pointerdown', 7, 40, 40);
+    expect(controls.read()).toBe(Input.Right | Input.Down);
+    touchPad(pad, 'pointerup', 7, 40, 40);
+    controls.read();
+    // Two fingers, one on ↓ and one on →: the same, as a gamepad's cross held with two arrows.
+    touchPad(pad, 'pointerdown', 7, 0, 50);
+    touchPad(pad, 'pointerdown', 8, 50, 0);
+    expect(controls.read()).toBe(Input.Down | Input.Right);
+    touchPad(pad, 'pointerup', 8, 50, 0);
+    expect(controls.read()).toBe(Input.Down);
+  });
+
+  it('keeps reading a thumb slid past the pad, and ignores a touch far from it', () => {
+    const { controls, pad } = setup();
+    touchPad(pad, 'pointerdown', 7, 50, 0);
+    touchPad(pad, 'pointermove', 7, 200, -10);
+    expect(controls.read()).toBe(Input.Right);
+    touchPad(pad, 'pointerup', 7, 200, -10);
+    controls.read();
+    // Far from the pad: a thumb resting on the screen, no direction.
+    touchPad(pad, 'pointerdown', 8, 200, -150);
+    expect(controls.read()).toBe(0);
+    touchPad(pad, 'pointermove', 8, 50, 0);
+    expect(controls.read()).toBe(0);
+  });
+
+  it('lights the arrows held, written only when they change', () => {
+    const { pad, dpad } = setup();
+    const add = vi.spyOn(dpad.classList, 'add');
+    touchPad(pad, 'pointerdown', 7, 40, 40);
+    touchPad(pad, 'pointermove', 7, 42, 41);
+    expect(['right', 'down', 'up', 'left'].map((name) => dpad.classList.contains(name))).toEqual([
+      true,
+      true,
+      false,
+      false,
+    ]);
+    expect(add).toHaveBeenCalledTimes(2);
+    touchPad(pad, 'pointermove', 7, 50, 0);
+    expect(dpad.classList.contains('down')).toBe(false);
+    touchPad(pad, 'pointerup', 7, 50, 0);
+    expect(dpad.classList.contains('right')).toBe(false);
+  });
+
+  it('places the d-pad at the bottom-left, with the cluster’s size', () => {
+    const { dpad } = setup();
+    expect(dpad.style).toMatchObject({ left: '26px', bottom: '26px', width: '156px' });
   });
 });
 
@@ -334,12 +382,10 @@ describe('the BOOST button with FINISH lit (docs/finisher.md §1.2, §1.3, §5.8
   function setup() {
     const page = installFakePage();
     const controls = new TouchControls(page.body as unknown as HTMLElement, undefined, 0xff3ca0);
-    const [root] = page.body.children;
-    const [stick, , buttons] = root?.children ?? [];
-    const boost = buttons?.children[TOUCH_BUTTONS.indexOf(byLabel('BOOST'))];
-    if (!stick || !buttons || !boost) throw new Error('Touch zones missing');
-    buttons.rect = { left: 333, top: 0, right: 667, bottom: 375 };
-    return { controls, stick, buttons, boost };
+    const { pad, buttons } = zonesOf(page.body);
+    const boost = buttons.children[TOUCH_BUTTONS.indexOf(byLabel('BOOST'))];
+    if (!boost) throw new Error('No BOOST element');
+    return { controls, pad, buttons, boost };
   }
 
   it('wears .finisher when ready only, written only when it changes, no button added', () => {
@@ -357,22 +403,19 @@ describe('the BOOST button with FINISH lit (docs/finisher.md §1.2, §1.3, §5.8
     controls.showFinisher('off', 1, 'idle');
     expect(boost.classList.contains('finisher')).toBe(false);
     expect(remove.mock.calls.filter(([name]) => name === 'finisher')).toHaveLength(1);
-    // Its label keeps its text, the cluster its seven buttons (touch layout, above).
+    // Its label keeps its text, the cluster its six buttons (touch layout, above).
     expect(boost.textContent).toBe('BOOST');
-    expect(buttons.children).toHaveLength(7);
-    expect(TOUCH_BUTTONS).toHaveLength(7);
+    expect(buttons.children).toHaveLength(6);
+    expect(TOUCH_BUTTONS).toHaveLength(6);
   });
 
-  /** The stick held `degrees` under the horizontal, 30 px out, toward `side` (-1: left). */
-  function hold(stick: FakeElement, degrees: number, side: -1 | 1): void {
+  /** The d-pad held `degrees` under the horizontal, 50 px out, toward `side` (-1: left). */
+  function hold(pad: FakeElement, degrees: number, side: -1 | 1): void {
     const angle = (degrees * Math.PI) / 180;
-    stick.dispatchEvent(pointer('pointerdown', 7, 100, 200));
-    stick.dispatchEvent(
-      pointer('pointermove', 7, 100 + side * 30 * Math.cos(angle), 200 + 30 * Math.sin(angle)),
-    );
+    touchPad(pad, 'pointerdown', 7, side * 50 * Math.cos(angle), 50 * Math.sin(angle));
   }
 
-  /** What the read of a BOOST press gives, the stick `degrees` down toward `side`. */
+  /** What the read of a BOOST press gives, the d-pad `degrees` down toward `side`. */
   function boostWith(
     signal: 'ready' | 'blocked' | 'off',
     facing: 1 | -1,
@@ -380,11 +423,11 @@ describe('the BOOST button with FINISH lit (docs/finisher.md §1.2, §1.3, §5.8
     side: -1 | 1,
     action: FighterAction = 'crouch',
   ) {
-    const { controls, stick, buttons } = setup();
+    const { controls, pad, buttons } = setup();
     controls.showFinisher(signal, facing, action);
-    hold(stick, degrees, side);
+    hold(pad, degrees, side);
     expect(controls.read()).toBe(
-      (side < 0 ? Input.Left : Input.Right) | (degrees > 22.5 ? Input.Down : 0),
+      (side < 0 ? Input.Left : Input.Right) | (degrees > 20 ? Input.Down : 0),
     );
     press(buttons, 'BOOST', 1);
     return { first: controls.read(), next: controls.read() };
@@ -408,7 +451,7 @@ describe('the BOOST button with FINISH lit (docs/finisher.md §1.2, §1.3, §5.8
     }
   });
 
-  it('reads the stick as ever otherwise: FINISH unlit, forward, or BOOST held on', () => {
+  it('reads the d-pad as ever otherwise: FINISH unlit, forward, or BOOST held on', () => {
     for (const signal of ['blocked', 'off'] as const) {
       expect(boostWith(signal, 1, 30, -1).first, signal).toBe(
         Input.Left | Input.Down | Input.Boost,
@@ -421,7 +464,7 @@ describe('the BOOST button with FINISH lit (docs/finisher.md §1.2, §1.3, §5.8
   });
 
   it('keeps the crouch guard in blockstun and a tech, where the press is only buffered', () => {
-    // There the guard reads the stick on the ticks of the press: down stays, a low blow is parried.
+    // There the guard reads the d-pad on the ticks of the press: down stays, a low blow is parried.
     for (const action of ['blockstun', 'tech'] as const) {
       expect(boostWith('ready', 1, 30, -1, action).first, action).toBe(
         Input.Left | Input.Down | Input.Boost,
@@ -432,11 +475,11 @@ describe('the BOOST button with FINISH lit (docs/finisher.md §1.2, §1.3, §5.8
       expect(boostWith('ready', 1, 30, -1, action).first, action).toBe(Input.Left | Input.Boost);
     }
     // The button still wears FINISH in blockstun, and the read comes back with the stun's end.
-    const { controls, stick, buttons, boost } = setup();
+    const { controls, pad, buttons, boost } = setup();
     controls.showBoost(3000);
     controls.showFinisher('ready', 1, 'blockstun');
     expect(boost.classList.contains('finisher')).toBe(true);
-    hold(stick, 30, -1);
+    hold(pad, 30, -1);
     press(buttons, 'BOOST', 1);
     expect(controls.read()).toBe(Input.Left | Input.Down | Input.Boost);
     controls.showFinisher('ready', 1, 'crouch');
@@ -465,14 +508,14 @@ describe('finisherBack (docs/finisher.md §1.3)', () => {
     expect(finisherBack(Input.Left | Input.Up, -25, -15, Input.Left)).toBe(Input.Left | Input.Up);
   });
 
-  it('agrees with the stick on what it reads down-back', () => {
+  it('agrees with the d-pad on what it reads down-back', () => {
     for (let degrees = 0; degrees <= 90; degrees += 0.5) {
       const [dx, dy] = at(degrees, -1);
-      const bits = bitsFromStick(dx, dy, 0);
+      const bits = bitsFromDpad(dx, dy, 78, 0);
       const read = finisherBack(bits, dx, dy, Input.Left);
       const back = degrees <= FINISHER_BACK_DEGREES;
       expect(has(read, Input.Down), `${degrees}°`).toBe(has(bits, Input.Down) && !back);
-      // Back stays back wherever the stick read it.
+      // Back stays back wherever the d-pad read it.
       expect(has(read, Input.Left)).toBe(has(bits, Input.Left));
     }
   });

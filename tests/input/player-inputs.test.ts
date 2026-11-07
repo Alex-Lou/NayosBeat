@@ -150,7 +150,7 @@ describe('what each player holds, on any frame (docs/finisher.md §1.14)', () =>
   it('leaves a tap on the touch controls to the next read', () => {
     const page = installFakePage();
     const touch = new TouchControls(page.body as unknown as HTMLElement, undefined);
-    const buttons = page.body.children[0]?.children[2];
+    const buttons = page.body.children[0]?.children[1];
     if (!buttons) throw new Error('No button zone');
     buttons.rect = { left: 333, top: 0, right: 667, bottom: 375 };
     const inputs = new PlayerInputs(new EventTarget() as unknown as Window, touch, []);

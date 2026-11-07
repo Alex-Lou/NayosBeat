@@ -44,50 +44,80 @@ body {
   z-index: 1;
   -webkit-touch-callout: none;
 }
-.touch-stick-zone {
-  position: absolute;
-  inset: 0 50% 0 0;
-}
-.touch-stick-base {
+.touch-dpad-zone {
+  /* Hugs the safe area's bottom-left corner: the d-pad is placed from it. */
   position: absolute;
   top: 0;
-  left: 0;
-  width: 96px;
-  height: 96px;
-  margin: -48px 0 0 -48px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.12);
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  box-sizing: border-box;
-  pointer-events: none;
-  visibility: hidden;
+  left: env(safe-area-inset-left, 0px);
+  right: 50%;
+  bottom: env(safe-area-inset-bottom, 0px);
 }
-.touch-stick-base.active {
-  visibility: visible;
-}
-/* Where the stick lives, until the left thumb first touches it (src/input/touch-controls.ts). */
-.touch-stick-ghost {
+/*
+ * The d-pad (src/input/touch-dpad.ts), placed and sized from src/input/touch-layout.ts: a faint
+ * round base and a cross of four arrows, each lit while held; two at once on a diagonal.
+ */
+.touch-dpad {
   position: absolute;
-  left: calc(110px + env(safe-area-inset-left, 0px));
-  bottom: calc(90px + env(safe-area-inset-bottom, 0px));
-  width: 96px;
-  height: 96px;
-  margin: 0 0 -48px -48px;
+  box-sizing: border-box;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.06);
   border: 2px solid rgba(255, 255, 255, 0.18);
-  box-sizing: border-box;
   pointer-events: none;
+  transition: opacity 200ms;
 }
-.touch-stick-knob {
+.touch-dpad.covered {
+  opacity: 0.35;
+}
+.touch-dpad-arrow {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 44px;
-  height: 44px;
-  margin: -22px 0 0 -22px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.45);
+  box-sizing: border-box;
+  width: 32%;
+  height: 32%;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.15);
+  border: 2px solid rgba(255, 255, 255, 0.35);
+}
+/* Each arrow's point, a triangle toward its direction. */
+.touch-dpad-arrow::after {
+  content: '';
+  position: absolute;
+  inset: 30%;
+  background: rgba(255, 255, 255, 0.7);
+}
+.touch-dpad-arrow.up {
+  left: 34%;
+  top: 6%;
+}
+.touch-dpad-arrow.up::after {
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+.touch-dpad-arrow.down {
+  left: 34%;
+  bottom: 6%;
+}
+.touch-dpad-arrow.down::after {
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+}
+.touch-dpad-arrow.left {
+  left: 6%;
+  top: 34%;
+}
+.touch-dpad-arrow.left::after {
+  clip-path: polygon(0 50%, 100% 0, 100% 100%);
+}
+.touch-dpad-arrow.right {
+  right: 6%;
+  top: 34%;
+}
+.touch-dpad-arrow.right::after {
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+}
+.touch-dpad.up .touch-dpad-arrow.up,
+.touch-dpad.down .touch-dpad-arrow.down,
+.touch-dpad.left .touch-dpad-arrow.left,
+.touch-dpad.right .touch-dpad-arrow.right {
+  background: rgba(255, 255, 255, 0.4);
+  box-shadow: 0 0 8px 1px rgba(255, 255, 255, 0.6);
 }
 .touch-button-zone {
   /* Hugs the safe area's bottom-right corner: the button layout is measured from it. */
@@ -134,10 +164,6 @@ body {
 .touch-heavy {
   color: #ffb347;
   border-color: rgba(255, 179, 71, 0.6);
-}
-.touch-jump {
-  color: #7bea8a;
-  border-color: rgba(123, 234, 138, 0.6);
 }
 .touch-special {
   color: #30e8ff;
@@ -1637,17 +1663,6 @@ body {
 .touch-mini-zone {
   position: absolute;
   inset: 0 0 0 50%;
-}
-.touch-mini-stick {
-  position: absolute;
-  left: 62px;
-  bottom: 42px;
-  width: 96px;
-  height: 96px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.06);
-  border: 2px solid rgba(255, 255, 255, 0.18);
-  box-sizing: border-box;
 }
 /* The character select screen (src/ui/fighter-select.ts): the fighter under the frame, in
    guard, beside the tiles. Sized from the screen's height, so it fits a phone held sideways. */

@@ -9,14 +9,7 @@ import {
   type GamepadSnapshot,
 } from '../../src/input/gamepad';
 import { bitsFromKeys, KeyboardInput, PLAYER1_KEYS, PLAYER2_KEYS } from '../../src/input/keyboard';
-import {
-  bitsFromStick,
-  followFinger,
-  STICK_PRESS_PX,
-  STICK_RELEASE_PX,
-  UP_PRESS_PX,
-  UP_RELEASE_PX,
-} from '../../src/input/touch-stick';
+import { bitsFromDpad, DPAD_PRESS, DPAD_RELEASE } from '../../src/input/touch-dpad';
 
 describe('bitsFromKeys', () => {
   it('maps held keys to input flags', () => {
@@ -159,93 +152,60 @@ describe('GamepadReader', () => {
   });
 });
 
-describe('bitsFromStick', () => {
-  // The stick was neutral on the last read (the third argument used to be the dead zone).
+describe('bitsFromDpad (the touch d-pad, docs/combat-v2.md §0.2, D40)', () => {
+  const RADIUS = 78;
   const NEUTRAL = 0;
+  /** A finger `degrees` around the center (0: right, 90: up), `distance` px out. */
+  const at = (degrees: number, distance = 50, previous = NEUTRAL) => {
+    const radians = (degrees * Math.PI) / 180;
+    return bitsFromDpad(
+      Math.cos(radians) * distance,
+      -Math.sin(radians) * distance,
+      RADIUS,
+      previous,
+    );
+  };
 
-  it('is neutral inside the deadzone', () => {
-    expect(bitsFromStick(5, -5, NEUTRAL)).toBe(0);
+  it('reads the four arrows (screen y points down)', () => {
+    expect(at(0)).toBe(Input.Right);
+    expect(at(90)).toBe(Input.Up);
+    expect(at(180)).toBe(Input.Left);
+    expect(at(270)).toBe(Input.Down);
   });
 
-  it('maps cardinal directions (screen y points down)', () => {
-    expect(bitsFromStick(40, 0, NEUTRAL)).toBe(Input.Right);
-    expect(bitsFromStick(0, -40, NEUTRAL)).toBe(Input.Up);
-    expect(bitsFromStick(0, 40, NEUTRAL)).toBe(Input.Down);
-  });
-
-  it('maps diagonals', () => {
-    expect(bitsFromStick(30, 30, NEUTRAL)).toBe(Input.Right | Input.Down);
-    expect(bitsFromStick(-30, -30, NEUTRAL)).toBe(Input.Left | Input.Up);
-  });
-
-  it('takes a direction at 12 px and lets it go under 8 px (hysteresis)', () => {
-    expect(bitsFromStick(STICK_PRESS_PX - 1, 0, NEUTRAL)).toBe(0);
-    expect(bitsFromStick(STICK_PRESS_PX, 0, NEUTRAL)).toBe(Input.Right);
-    expect(bitsFromStick(STICK_RELEASE_PX, 0, Input.Right)).toBe(Input.Right);
-    expect(bitsFromStick(STICK_RELEASE_PX - 1, 0, Input.Right)).toBe(0);
-  });
-
-  it('asks more for up: 30° above the horizontal and 18 px of travel, kept down to 14', () => {
-    expect(bitsFromStick(0, -(UP_PRESS_PX - 1), NEUTRAL)).toBe(0);
-    expect(bitsFromStick(0, -UP_PRESS_PX, NEUTRAL)).toBe(Input.Up);
-    expect(bitsFromStick(0, -UP_RELEASE_PX, Input.Up)).toBe(Input.Up);
-    expect(bitsFromStick(0, -(UP_RELEASE_PX - 1), Input.Up)).toBe(0);
-  });
-
-  it('walks, never jumps, with the thumb a little above the horizontal', () => {
-    const at = (degrees: number) => {
-      const radians = (degrees * Math.PI) / 180;
-      return bitsFromStick(Math.cos(radians) * 30, -Math.sin(radians) * 30, NEUTRAL);
-    };
-    expect(at(25)).toBe(Input.Right);
-    expect(at(29)).toBe(Input.Right);
-    expect(at(31)).toBe(Input.Right | Input.Up);
-    // The jump diagonals still jump.
+  it('reads two arrows at once between them: diagonals 50° wide, arrows 40°', () => {
+    expect(at(19)).toBe(Input.Right);
+    expect(at(21)).toBe(Input.Right | Input.Up);
     expect(at(45)).toBe(Input.Right | Input.Up);
+    expect(at(69)).toBe(Input.Right | Input.Up);
+    expect(at(71)).toBe(Input.Up);
+    expect(at(-45)).toBe(Input.Right | Input.Down);
+    expect(at(225)).toBe(Input.Left | Input.Down);
     expect(at(135)).toBe(Input.Left | Input.Up);
   });
 
-  it('keeps a generous low guard: 8 sectors of 45° below the horizontal', () => {
-    const radians = (25 * Math.PI) / 180;
-    expect(bitsFromStick(-Math.cos(radians) * 30, Math.sin(radians) * 30, NEUTRAL)).toBe(
-      Input.Left | Input.Down,
-    );
+  it('rolls a quarter circle through its diagonal, as on a gamepad cross', () => {
+    const rolled = [-90, -67, -45, -22, 0].map((degrees) => at(degrees));
+    expect(rolled).toEqual([
+      Input.Down,
+      Input.Down | Input.Right,
+      Input.Down | Input.Right,
+      Input.Down | Input.Right,
+      Input.Right,
+    ]);
   });
 
-  it('splits the circle into 8 equal sectors', () => {
-    const angle = (degrees: number) => [
-      Math.cos((degrees * Math.PI) / 180) * 40,
-      Math.sin((degrees * Math.PI) / 180) * 40,
-    ];
-    const [x20, y20] = angle(20);
-    const [x25, y25] = angle(25);
-    expect(bitsFromStick(x20 ?? 0, y20 ?? 0, NEUTRAL)).toBe(Input.Right);
-    expect(bitsFromStick(x25 ?? 0, y25 ?? 0, NEUTRAL)).toBe(Input.Right | Input.Down);
-  });
-});
-
-describe('followFinger', () => {
-  const RADIUS = 36;
-  const NEUTRAL = 0;
-
-  it('keeps the center while the finger stays within the radius', () => {
-    const origin = { x: 100, y: 100 };
-    expect(followFinger(origin, { x: 130, y: 110 }, RADIUS)).toBe(origin);
+  it('presses nothing at the center, with hysteresis so it never flickers', () => {
+    const press = RADIUS * DPAD_PRESS;
+    const release = RADIUS * DPAD_RELEASE;
+    expect(at(0, press - 1)).toBe(0);
+    expect(at(0, press)).toBe(Input.Right);
+    expect(at(0, release, Input.Right)).toBe(Input.Right);
+    expect(at(0, release - 1, Input.Right)).toBe(0);
   });
 
-  it('drags the center to stay exactly one radius behind the finger', () => {
-    expect(followFinger({ x: 100, y: 100 }, { x: 200, y: 100 }, RADIUS)).toEqual({
-      x: 164,
-      y: 100,
-    });
-  });
-
-  it('turns a long drift forward into a short move back', () => {
-    // Thumb lands at x=100, slides 100 px forward, then comes back 50 px.
-    let origin = { x: 100, y: 100 };
-    origin = followFinger(origin, { x: 200, y: 100 }, RADIUS);
-    const back = { x: 150, y: 100 };
-    origin = followFinger(origin, back, RADIUS);
-    expect(bitsFromStick(back.x - origin.x, back.y - origin.y, NEUTRAL)).toBe(Input.Left);
+  it('keeps reading a finger slid past the pad’s edge', () => {
+    expect(at(0, RADIUS * 3)).toBe(Input.Right);
+    expect(at(45, RADIUS * 3)).toBe(Input.Right | Input.Up);
   });
 });

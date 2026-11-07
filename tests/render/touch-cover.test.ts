@@ -70,7 +70,7 @@ describe('touch buttons over a fighter, each on its own (docs/polish/AUDIT-ET-PL
   function phone(width = 667, height = 375) {
     const page = installFakePage();
     const touch = new TouchControls(page.body as unknown as HTMLElement, undefined);
-    const zone = page.body.children[0]?.children[2];
+    const zone = page.body.children[0]?.children[1];
     if (!zone) throw new Error('Button zone missing');
     TOUCH_BUTTONS.forEach((spec, index) => {
       const button = zone.children[index];
@@ -98,15 +98,40 @@ describe('touch buttons over a fighter, each on its own (docs/polish/AUDIT-ET-PL
         now,
       );
     };
-    return { page, canvas, cover, show, faded, under };
+    return { page, touch, canvas, cover, show, faded, under };
   }
+
+  it('fade the d-pad too, the last of the circles, as a fighter goes under it', () => {
+    const { page, touch } = phone(667, 375);
+    const dpad = page.body.children[0]?.children[0]?.children[0];
+    if (!dpad) throw new Error('D-pad missing');
+    dpad.rect = { left: 26, top: 193, right: 182, bottom: 349 };
+    // The buttons' circles, then the d-pad's, where the page shows it.
+    const circles = touch.buttonCircles();
+    expect(circles).toHaveLength(TOUCH_BUTTONS.length + 1);
+    expect(circles.at(-1)).toEqual({ x: 104, y: 271, radius: 78 });
+    const pad = [...TOUCH_BUTTONS.map(() => false), true];
+    touch.setCovered(pad, 0);
+    expect(dpad.classList.contains('covered')).toBe(true);
+    // Back a second after nobody is under it, as the buttons.
+    touch.setCovered(
+      pad.map(() => false),
+      COVER_HOLD_MS - 1,
+    );
+    expect(dpad.classList.contains('covered')).toBe(true);
+    touch.setCovered(
+      pad.map(() => false),
+      2 * COVER_HOLD_MS,
+    );
+    expect(dpad.classList.contains('covered')).toBe(false);
+  });
 
   it('fade on a 16:9 phone over Riff at the start, the others staying as they are', () => {
     const { show, faded } = phone(667, 375);
     show('center', 0);
     expect(faded()).toEqual(expect.arrayContaining(['S', 'H']));
     // Over nobody: full.
-    expect(faded()).not.toContain('SAUT');
+    expect(faded()).not.toContain('PRISE');
     expect(faded()).not.toContain('DASH');
   });
 
@@ -165,13 +190,13 @@ describe('touch buttons moved by the player still fade over a fighter (P21 with 
     vi.unstubAllGlobals();
   });
 
-  /** H and SAUT swapped: SAUT where H was, over Riff at the start; H in SAUT's corner. */
+  /** H and PRISE swapped: PRISE where H was, over Riff at the start; H in PRISE's corner. */
   const SWAPPED: TouchLayout = {
     ...DEFAULT_TOUCH_LAYOUT,
     buttons: {
       ...DEFAULT_TOUCH_LAYOUT.buttons,
       heavy: { right: 52, bottom: 52, size: 100 },
-      jump: { right: 126, bottom: 52, size: 100 },
+      grab: { right: 126, bottom: 52, size: 100 },
     },
   };
 
@@ -191,7 +216,7 @@ describe('touch buttons moved by the player still fade over a fighter (P21 with 
       undefined,
       store,
     );
-    const zone = page.body.children[0]?.children[2];
+    const zone = page.body.children[0]?.children[1];
     if (!zone) throw new Error('Button zone missing');
     /** Where the page shows each button, as `TouchControls` placed it. */
     const lay = (shown: TouchLayout) => {
@@ -223,7 +248,7 @@ describe('touch buttons moved by the player still fade over a fighter (P21 with 
   it('fade where the player put them, not where they were', () => {
     const { show, faded } = phone(SWAPPED);
     show(0);
-    expect(faded()).toContain('SAUT');
+    expect(faded()).toContain('PRISE');
     expect(faded()).not.toContain('H');
   });
 
@@ -238,7 +263,7 @@ describe('touch buttons moved by the player still fade over a fighter (P21 with 
     lay(SWAPPED);
     show(2 * COVER_HOLD_MS);
     expect(measure).toHaveBeenCalledTimes(2);
-    expect(faded()).toContain('SAUT');
+    expect(faded()).toContain('PRISE');
     expect(faded()).not.toContain('H');
   });
 });

@@ -73,6 +73,7 @@
 | D37 | Le **4e combattant de Sound Clash est Watt**, un roadie colosse à **tête d'ampoule**, tiré du colosse de Zen-Tazzer : la prise la plus longue (53 px), le plus de vie (1 150) et les lancers les plus lourds du casting, un seul reversal (sa super, Plein feu). Son ampoule montre sa jauge sans jamais trahir un coup, et elle est vue de trois quarts, tournée vers l'adversaire comme les visages des autres. Branché au roster en boîte grise avant son art, puis dessiné par portes (`docs/watt.md`) | propriétaire (porte 0 de `docs/art/passation-personnages.md` : concept A ; « une tête d'ampoule », « branché en ligne quand même »), PR #106 et #112 | Contre lui, garder ne suffit plus : c'est la décision qui manquait au casting. Écartés : les concepts B (Grave, zoner au sol) et C (Fla, pression au mur), gardés pour plus tard ; attendre son art pour le brancher (choix du propriétaire de le jouer en ligne tout de suite) |
 | D38 | Le **Multi en ligne** se trouve par une **recherche automatique** sur le serveur public de PeerJS : des salles aux identifiants connus (`nayosbeat-<version>-lobby-<n>`), la première libre est réservée, une prise est rejointe, et les deux appareils quittent le serveur une fois liés. Le jeu passe ensuite en direct, en WebRTC, avec les relais TURN publics de PeerJS en dernier recours. Le réseau vit en bordure (`src/net`, interdit au cœur par le lint) et ne transporte que des entrées ; chaque message est versionné, borné et validé à la frontière. PeerJS n'est chargé qu'à la première recherche, et la CSP ne s'ouvre qu'à `wss://0.peerjs.com` (`docs/multijoueur.md`) | propriétaire (« Rechercher », service gratuit accepté, porte 0 validée le 2 novembre 2026) | Sans serveur à nous, le serveur public ne liste pas les pairs : des identifiants connus d'avance suffisent à se trouver. Écartés : un serveur à nous, un code à taper, faire passer le jeu par le serveur |
 | D39 | **Saphir joue sa mi-distance**, et deux retouches la servent sans changer son identité. Le CPU reçoit un **style par combattant** (`src/ai/styles.ts`, par nom comme les plans) : Saphir tient 64 à 100 px, y pique (Syncope, Chassé, Pas glissé, Fauche, Pointe) quand le coup porte (D33), attend sinon, et ressort du contact 3 fois sur 10, sauf dos au mur ; sans style, le plan commun reste, et Nayo, Riff et Watt jouent au tic près comme avant. Le **Chassé** porte à 64 px (58 avant), toujours en 10 tics et à −4, redessiné ; le **Contre-ut** simple traverse les attaques aériennes de f3 à f8, jamais celles du sol : toujours pas de reversal. Mesuré en difficile, 400 matchs par paire, graines 1000 et suivantes, côtés alternés (`npm run bench:cpu`) : Saphir contre Nayo 15,8 → 24,0 %, contre Riff 60,3 → 79,8 %, contre Watt 90,8 → 98,0 % ; Nayo contre Riff 91,0, Nayo contre Watt 98,0 et Riff contre Watt 61,0 % avant comme après. Le triangle visé (§6.3, 40 à 60 %) n'y est pas : entre CPU, Nayo bat tout le monde, et le levier suivant est l'IA de Riff et de Watt | propriétaire (« faut équilibrer Saphir », « chaque personnage doit avoir sa force et sa faiblesse » ; choix « IA par distance, puis chiffres », puis « Règles + Chassé + Contre-ut »), PR #132 | Le plan commun ne frappe jamais à mi-distance : c'est le jeu de Nayo, et les pokes de Saphir ne sortaient jamais. Écartés : plus de vie ou de dégâts (mesurés : ils creusent l'écart contre Riff plus qu'ils ne le ferment contre Nayo), un Chassé ou une Pointe plus rapides (peu d'effet), une Chandelle invincible (15,8 %, rien), un recul de 60 % au contact (sa Chandelle glissée ne sortait plus jamais) |
+| D40 | Au tactile, le **stick flottant devient une croix fixe** en bas à gauche, façon manette : 8 directions lues depuis son centre (flèches de 40°, diagonales de 50° entre deux flèches), **deux flèches à la fois** sous un pouce posé entre elles ou sous deux doigts, la diagonale d'un quart de cercle qui roule comme sur une croix ; elle suit la « Taille » et l'« Opacité » de la Disposition et s'estompe sous un combattant comme les boutons. Le bouton **SAUT disparaît** : sauter, c'est la flèche du haut. Les boutons passent en **2 rangées de 3** (DASH, S, BOOST en haut ; L, H, PRISE en bas) : L, H et S ne bougent pas, PRISE prend la place de SAUT, BOOST descend à côté de S. Une disposition enregistrée garde les boutons déplacés par le joueur ; ceux restés à leur ancienne place prennent la nouvelle. Le clavier et la manette ne changent pas | propriétaire (« remplacer le joystick par des flèches type manette de PS2 », « supprimer le bouton Saut », « plusieurs flèches à la fois (2) afin de pouvoir combotter » ; choix « fixe en bas à gauche », « 2 rangées de 3 ») | Une croix se trouve sans regarder et donne les quarts de cercle des combos. Écartés : garder le stick en option (deux codes à maintenir), une croix qu'on déplace à la main (YAGNI), tout le monde remis à la disposition par défaut (les réglages perdus) |
 
 ---
 
@@ -148,41 +149,40 @@ LT, Select, L3, R3 et le stick droit restent libres (remappage et provocation pl
 
 ### 2.4 Tactile (joueur 1)
 
-**Décision : un bouton DASH visible par défaut, et le double-tap du stick qui marche aussi.**
-- Un double-tap au stick flottant (zone morte 12 px, centre qui suit le doigt) demande de revenir dans la zone morte puis d'en ressortir en moins de 200 ms : faisable, mais aléatoire.
+**Décision : un bouton DASH visible par défaut, et le double-tap de la croix qui marche aussi.**
+- Un double-tap à la croix demande de revenir au centre puis d'en ressortir en moins de 200 ms : faisable, mais aléatoire (au stick flottant d'avant D40, plus encore).
 - Les appareils sont lus une fois par image affichée. À 30 i/s, un relâchement plus court qu'une image disparaît et le dash ne sort pas.
-- Un backdash sous pression doit sortir à 100 %. Avec le bouton, la direction vient du stick : arrière + DASH = backdash.
+- Un backdash sous pression doit sortir à 100 %. Avec le bouton, la direction vient de la croix : arrière + DASH = backdash.
 - Le « flick » façon Smash (dash si le stick part vite) est écarté : il déclenche des dashs en marchant.
 
-**Grappe de droite** (centres en px CSS depuis le coin bas-droit, `env(safe-area-inset-*)` ajouté partout). Les centres de L, H, SAUT et S ne bougent pas (mémoire musculaire), PRISE prend la place de CHOPE, DASH est le nouveau bouton de la v2. Combos v3 ajoute le 7e, BOOST, dans l'encoche entre S et PRISE (`docs/combos-v3.md` §1.8.5) : jamais juste au-dessus de S.
+**Grappe de droite** (centres en px CSS depuis le coin bas-droit, `env(safe-area-inset-*)` ajouté partout). Les centres de L, H et S ne bougent pas (mémoire musculaire). Depuis la croix (D40), il n'y a plus de bouton SAUT : PRISE prend sa place, et BOOST (`docs/combos-v3.md` §1.8.5) descend à côté de S, là où était PRISE.
 
 ```
-            BOOST (centre à 190 du bas)                    [BOOST]
-            rangée haute (centre à 126 du bas)   [DASH]   [ S ]   [PRISE]
-            rangée basse (centre à 52 du bas)  [ L ]   [ H ]   [SAUT]
+            rangée haute (centre à 126 du bas)   [DASH]   [ S ]   [BOOST]
+            rangée basse (centre à 52 du bas)  [ L ]   [ H ]   [PRISE]
 ```
 
 | Bouton | Centre (droite, bas) | Diamètre | Couleur et icône | Rôle |
 |---|---|---|---|---|
 | L | 200, 52 | 68 | blanc, « L » | coup léger |
 | H | 126, 52 | 68 | orange, « H » | coup lourd |
-| SAUT | 52, 52 | 60 | vert, flèche ↑ | saut |
 | S | 163, 126 | 64 | couleur d'énergie du perso (cyan Nayo, magenta Riff), « S » | spécial |
-| **PRISE** | 89, 126 | 60 | or, icône main | prise, lancer, dégagement |
-| **DASH** | 237, 126 | 56 | bleu, double chevron « » » | dash ; stick en arrière + DASH = backdash ; relâcher, puis taper DASH pendant un coup qui touche : le Rewind |
-| **BOOST** | 126, 190 | 56 | blanc platine, libellé de 8 px ; une **bague** de 3 arcs (`conic-gradient`) : la jauge sous le pouce, grisé sous 1 barre, brillant à 3 | le Remix, ou la super avec le stick en arrière (combos v3 §1.8.5) |
+| **PRISE** | 52, 52 | 60 | or, icône main | prise, lancer, dégagement |
+| **DASH** | 237, 126 | 56 | bleu, double chevron « » » | dash ; croix en arrière + DASH = backdash ; relâcher, puis taper DASH pendant un coup qui touche : le Rewind |
+| **BOOST** | 89, 126 | 56 | blanc platine, libellé de 8 px ; une **bague** de 3 arcs (`conic-gradient`) : la jauge sous le pouce, grisé sous 1 barre, brillant à 3 | le Remix, ou la super avec la croix en arrière (combos v3 §1.8.5) |
 
 - Écarts entre bords voisins de 6 à 16 px. Le bord le plus éloigné est à 265 px du bord droit : dans la zone du pouce, même sur un iPhone SE en paysage (moitié droite de 333 px).
 - **Zones de toucher** : rayon visible + 8 px (cible ≥ 48 dp). Là où deux zones se chevauchent, **le centre le plus proche gagne**. Un seul écouteur `pointerdown` sur la zone droite fait ce test, au lieu d'un écouteur par bouton (moins d'écouteurs, aucun conflit).
 - **Retour d'appui** : échelle 0,92 et bord éclairé, posés par `classList` **seulement quand l'état change**.
 - **Vibration** (Android, réglage « Vibrations », actif par défaut) : 30 ms quand on est saisi (le signal du dégagement arrive dans la main), 15 ms sur un coup lourd reçu, 180 ms pour les deux joueurs quand un KO fait éclater une jauge de Boost (combos-v3 §1.8.6), où les manettes vibrent aussi. Vibration à chaque appui : option, désactivée par défaut.
-- **Stick** :
-  - zone morte avec hystérésis : direction prise à 12 px, relâchée sous 8 px ;
-  - **haut** plus exigeant, pour supprimer les sauts involontaires en marchant ou en gardant : haut si `ny < −0,5` (plus de 30° au-dessus de l'horizontale) **et** course ≥ 18 px (relâché sous 14 px). Les diagonales de saut à 45° marchent toujours ;
-  - les autres directions gardent les 8 secteurs de 45° (`sin 22,5°`) : garde basse généreuse ;
-  - **verrou de neutre** : si le stick est passé par le neutre depuis la dernière lecture, `read()` rend une fois des directions à 0, puis l'état réel à la lecture suivante. Un double-tap n'est plus perdu sur un téléphone à 30 i/s ;
-  - `followFinger` réutilise un objet point au lieu d'en allouer un à chaque mouvement.
-- `bitsFromStick(dx, dy, state)` et `nearestButton(x, y, layout)` sont des fonctions pures, testées. La disposition est une donnée (`src/input/touch-layout.ts`) testée en géométrie pure : aucun chevauchement visible en 667×375 et en 844×390.
+- **Croix** (D40, `src/input/touch-dpad.ts`), fixe en bas à gauche : centre à 104 px du coin, 156 px de diamètre, à la « Taille » de la Disposition :
+  - lue depuis son centre : flèches de 40°, diagonales de 50° entre deux flèches (`sin 20°`), sans réglage à part pour le haut, puisque sauter, c'est la flèche du haut ;
+  - **deux flèches à la fois**, sous un pouce posé entre elles ou sous deux doigts : les directions de chaque doigt s'ajoutent, et le cœur résout les opposées (`cleanSocd`) ;
+  - zone morte au centre avec hystérésis : direction prise à 25 % du rayon, relâchée sous 18 % ;
+  - un doigt qui glisse au-delà de la croix continue d'être lu ; un appui loin d'elle (plus de 24 px de son bord) est ignoré ;
+  - **verrou de neutre** : si la croix est passée par le neutre depuis la dernière lecture, `read()` rend une fois des directions à 0, puis l'état réel à la lecture suivante. Un double-tap n'est plus perdu sur un téléphone à 30 i/s ;
+  - les flèches tenues s'allument, posées par `classList` seulement quand elles changent.
+- `bitsFromDpad(dx, dy, rayon, état)` et `nearestButton(x, y, layout)` sont des fonctions pures, testées. La disposition est une donnée (`src/input/touch-layout.ts`) testée en géométrie pure : aucun chevauchement visible en 667×375 et en 844×390.
 
 ### 2.5 Lecture des commandes (`src/core/commands.ts`, extrait de `fighter.ts`)
 
