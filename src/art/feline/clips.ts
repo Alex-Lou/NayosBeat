@@ -91,7 +91,8 @@ export const FELINE_CLIPS: FighterClips<FelineClip> = {
   pummel: play('pummel', [3, 3, 1, 9]), // active: frame 2
   throwForward: play('throwForward', [3, 3, 4, 1, 6, 6, 6, 7]), // release: frame 3
   throwBack: play('throwBack', [3, 3, 4, 4, 1, 6, 7, 7, 7]), // release: frame 4
-  dashForward: play('dashForward', [1, 3, 3, 3, 3, 3]),
+  // Guard, take-off, leap, air dash, landing, guard: the air dash shown while it moves fastest.
+  dashForward: play('dashForward', [1, 2, 3, 4, 3, 3]),
   dashBack: play('dashBack', [1, 4, 4, 4, 4, 5]),
   boostCancel: { sheet: 'dashForward', frames: [0, 1, 2, 3, 5], ticks: [1, 3, 2, 3, 2] },
 
