@@ -21,6 +21,7 @@ import {
 import type { Pixelized } from './pixelize.ts';
 import { PIXELIZE_DEFAULTS, pixelize } from './pixelize.ts';
 import type { Edges, Mask } from './silhouette.ts';
+import type { Corners } from './silhouette.ts';
 import { SILHOUETTE_DEFAULTS, silhouetteOf, soleOf } from './silhouette.ts';
 import type { Concern } from './concerns.ts';
 import { anchorIsAGuess, concernsOf } from './concerns.ts';
@@ -35,6 +36,7 @@ const state = {
   tolerance: SILHOUETTE_DEFAULTS.tolerance,
   minShare: SILHOUETTE_DEFAULTS.minShare,
   tidy: SILHOUETTE_DEFAULTS.tidy,
+  corners: { ...SILHOUETTE_DEFAULTS.corners },
   frame: PLACEMENT_DEFAULTS.frame,
   cell: PLACEMENT_DEFAULTS.cell,
   height: PLACEMENT_DEFAULTS.height,
@@ -182,6 +184,43 @@ function choice(
   return wrap;
 }
 
+/** The four corners, drawn where they sit on the image, so the choice reads at a glance. */
+function cornerGrid(): HTMLElement {
+  const wrap = document.createElement('div');
+  wrap.className = 'corners';
+  const name = document.createElement('span');
+  name.textContent = 'Coins de départ';
+  const grid = document.createElement('div');
+  grid.className = 'corner-grid';
+  const sides: readonly (readonly [keyof Corners, string])[] = [
+    ['topLeft', '↖'],
+    ['topRight', '↗'],
+    ['bottomLeft', '↙'],
+    ['bottomRight', '↘'],
+  ];
+  for (const [side, arrow] of sides) {
+    const label = document.createElement('label');
+    label.className = 'corner';
+    label.title = `Partir du coin ${arrow}`;
+    const input = document.createElement('input');
+    input.type = 'checkbox';
+    input.checked = state.corners[side];
+    input.addEventListener('change', () => {
+      state.corners = { ...state.corners, [side]: input.checked };
+      schedule();
+    });
+    refreshers.push(() => {
+      input.checked = state.corners[side];
+    });
+    const mark = document.createElement('span');
+    mark.textContent = arrow;
+    label.append(input, mark);
+    grid.append(label);
+  }
+  wrap.append(name, grid);
+  return wrap;
+}
+
 const save = document.createElement('button');
 save.textContent = 'Enregistrer la case (PNG)';
 save.disabled = true;
@@ -217,6 +256,7 @@ controls.append(
       1,
       (value) => (value === 0 ? 'aucun' : `${value} passe(s)`),
     ),
+    cornerGrid(),
   ]),
   group('Pose', [
     choice(
@@ -365,6 +405,7 @@ function run(): void {
       alphaFloor: SILHOUETTE_DEFAULTS.alphaFloor,
       minShare: state.minShare,
       tidy: state.tidy,
+      corners: state.corners,
     },
     toLab,
     loaded.lab,
@@ -552,7 +593,7 @@ function report(found: Mask, set: Placed, made: Pixelized): void {
   const subjectHeight = found.box.bottom - found.box.top + 1;
   const scaled = `${subjectHeight} px de source → ${state.height} px de carré (×${set.scale.toFixed(3)})`;
   const lines = [
-    `Silhouette : ${found.from === 'alpha' ? 'canal alpha de l’image' : 'fond détouré depuis les quatre coins'} — ${found.pixels.toLocaleString('fr-FR')} px, boîte ${found.box.right - found.box.left + 1} × ${subjectHeight} px, ${found.islands} îlot(s) gardé(s)${found.specks > 0 ? `, ${found.specks} poussière(s) écartée(s)` : ''}${found.from === 'key' ? `, ${found.seeds} coin(s) de départ` : ''}.`,
+    `Silhouette : ${found.from === 'alpha' ? 'canal alpha de l’image' : `fond détouré depuis ${found.seeds} coin(s)`} — ${found.pixels.toLocaleString('fr-FR')} px, boîte ${found.box.right - found.box.left + 1} × ${subjectHeight} px, ${found.islands} îlot(s) gardé(s)${found.specks > 0 ? `, ${found.specks} poussière(s) écartée(s)` : ''}.`,
     state.frame === 'portrait'
       ? `Cadrage : ${scaled}, tête centrée sur le carré, couronne à 6 % du haut. Les épaules sortent par le bas, c’est voulu.`
       : `Pose : ${scaled}, ` +

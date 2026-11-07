@@ -41,6 +41,27 @@ export interface Mask {
   readonly dropped: number;
 }
 
+/**
+ * The corners a fill may start from. All four by default; the page lets them be unticked one by
+ * one, because no rule can always tell a background corner from a subject one. A subject wearing
+ * dark clothes against a light wall puts two corners on the wall and two on the shirt — each pair
+ * agrees with itself, `seedsOf` sees nothing odd, and the fill that starts in the shirt eats the
+ * hair and the beard with it. Untick the two that sit on the subject and it is over.
+ */
+export interface Corners {
+  readonly topLeft: boolean;
+  readonly topRight: boolean;
+  readonly bottomLeft: boolean;
+  readonly bottomRight: boolean;
+}
+
+export const EVERY_CORNER: Corners = {
+  topLeft: true,
+  topRight: true,
+  bottomLeft: true,
+  bottomRight: true,
+};
+
 export interface SilhouetteOptions {
   /** ΔE in Lab at or under which a pixel joins the background it spread from. */
   readonly tolerance: number;
@@ -50,6 +71,8 @@ export interface SilhouetteOptions {
   readonly minShare: number;
   /** Passes that rub the single-pixel noise off the edge (`tidyEdges`); 0 leaves it raw. */
   readonly tidy: number;
+  /** Which corners a fill may start from. */
+  readonly corners: Corners;
 }
 
 export const SILHOUETTE_DEFAULTS: SilhouetteOptions = {
@@ -57,6 +80,7 @@ export const SILHOUETTE_DEFAULTS: SilhouetteOptions = {
   alphaFloor: 128,
   minShare: 0.02,
   tidy: 1,
+  corners: EVERY_CORNER,
 };
 
 /** Under this share of transparent pixels, the image is treated as opaque and keyed instead. */
@@ -81,7 +105,7 @@ export function silhouetteOf(
   const keyed =
     transparent >= count * ALPHA_SHARE
       ? { on: fromAlpha(image, options.alphaFloor), seeds: 0, dropped: 0 }
-      : keyedOut(image, options.tolerance, lab ?? labBufferOf(image, toLab));
+      : keyedOut(image, options.tolerance, lab ?? labBufferOf(image, toLab), options.corners);
   const from = transparent >= count * ALPHA_SHARE ? 'alpha' : 'key';
   for (let pass = 0; pass < options.tidy; pass++) tidyEdges(image.width, image.height, keyed.on);
   return despeckle(image.width, image.height, keyed.on, options.minShare, from, keyed);
@@ -150,12 +174,18 @@ function keyedOut(
   image: Bitmap,
   tolerance: number,
   lab: Float32Array,
+  allowed: Corners,
 ): { on: Uint8Array; seeds: number; dropped: number } {
   const { width, height } = image;
   const count = width * height;
   const on = new Uint8Array(count).fill(1);
   const limit = tolerance * tolerance;
-  const every = [0, width - 1, (height - 1) * width, height * width - 1];
+  const every = [
+    allowed.topLeft && 0,
+    allowed.topRight && width - 1,
+    allowed.bottomLeft && (height - 1) * width,
+    allowed.bottomRight && height * width - 1,
+  ].filter((corner): corner is number => corner !== false);
   const corners = seedsOf(every, lab, tolerance);
   // Which corner's fill reached a pixel, so each pixel is compared to that corner's colour alone.
   const seed = new Int32Array(count).fill(-1);

@@ -6,6 +6,7 @@ import { bitmap } from '../../tools/roto/pixels';
 import { PIXELIZE_DEFAULTS, pixelize } from '../../tools/roto/pixelize';
 import { placeOnCell, PORTRAIT_SIZE, PORTRAIT_DEFAULTS } from '../../tools/roto/place';
 import { PORTRAIT_SIZE as PIPELINE_PORTRAIT_SIZE } from '../../tools/sprites/drawn';
+import type { Corners } from '../../tools/roto/silhouette';
 import {
   crownOf,
   edgesOf,
@@ -120,6 +121,26 @@ describe('silhouette', () => {
       for (let y = 10; y <= 59; y++) for (let x = 0; x <= 39; x++) set(x, y, SUBJECT);
     });
     expect(edgesOf(found(leaning))).toMatchObject({ left: true, right: false, bottom: false });
+  });
+
+  it('starts only from the corners it is given', () => {
+    // A dark subject wearing a dark band across the bottom: both bottom corners sit on it, agree
+    // with each other, and seeding there floods the whole subject. Untick them and it is kept.
+    const dressed = scene(100, 80, WALL, (set) => {
+      for (let y = 20; y <= 55; y++) for (let x = 30; x <= 69; x++) set(x, y, SUBJECT);
+      for (let y = 56; y <= 79; y++) for (let x = 0; x <= 99; x++) set(x, y, SUBJECT);
+    });
+    const withEvery = silhouetteOf(dressed, SILHOUETTE_DEFAULTS, toLab);
+    expect(withEvery.pixels).toBeLessThan(1000);
+    const topOnly: Corners = {
+      topLeft: true,
+      topRight: true,
+      bottomLeft: false,
+      bottomRight: false,
+    };
+    const kept = silhouetteOf(dressed, { ...SILHOUETTE_DEFAULTS, corners: topOnly }, toLab);
+    expect(kept.seeds).toBe(2);
+    expect(kept.pixels).toBe(40 * 36 + 100 * 24);
   });
 
   it('ignores a corner standing on the subject instead of flooding the subject', () => {

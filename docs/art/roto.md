@@ -77,6 +77,13 @@ façon dont cette méthode échouait sans rien dire. Un coin n'amorce donc un re
 moins un autre coin lui ressemble (même tolérance). Si aucun ne s'accorde, les quatre servent : il
 n'y a rien à en tirer, et les avertissements du §2.1 diront ce que cela a donné.
 
+**Et les quatre coins se décochent à la main**, parce que cette règle a sa limite, et qu'un selfie
+l'a montrée tout de suite : quelqu'un en chemise sombre devant un mur clair met deux coins sur le
+mur et deux sur la chemise. Chaque paire s'accorde avec elle-même, la règle ne voit rien d'anormal,
+et le remplissage parti de la chemise emporte les cheveux et la barbe avec elle. Aucune règle ne
+peut trancher ce cas : deux coins clairs, deux coins sombres, rien ne dit lesquels sont le fond.
+L'outil montre donc le choix (↖ ↗ ↙ ↘) au lieu de le deviner. Décocher les deux du bas suffit.
+
 Ensuite le bord est nettoyé (`tidy`, une passe par défaut) : un pixel de sujet qui n'a qu'un voisin
 de sujet s'en va, un pixel de fond qui en a trois rentre. Les cheveux, la fourrure et le flou de
 bougé laissent exactement cette frange d'un pixel sur une photo détourée, et elle se met à grouiller
@@ -105,6 +112,7 @@ qui l'a levé.
 | `nothing-kept` | moins d'1 % de l'image gardé | tolérance trop haute, ou le sujet a la couleur de son fond |
 | `everything-kept` | plus de 95 % gardé | le fond n'a pas été reconnu |
 | `corner-dropped` | un coin se tenait sur le sujet | le sujet remplit le cadre |
+| `specks` au-dessus de quelques centaines | le fond est texturé ou dégradé | monter la tolérance, ou décocher des coins |
 | `specks` | plus de 3 îlots écartés | le détourage accroche le fond |
 | `overflow` | le sujet sort de la case | la hauteur demandée est trop grande |
 
@@ -210,6 +218,20 @@ Mesuré sur les deux cas sous la main : la planche sur un mur plante ses pieds s
 largeur, le portrait pose son col sur **5 %**. Un quart passe loin des deux, et du bon côté — celui
 qui laisse un combattant se tenir les pieds joints.
 
+## 5.1 Un cas réel, de bout en bout
+
+Un selfie : mur blanc crépi, **grosse ombre portée** à droite, chemise noire qui touche les deux
+coins du bas, épaules coupées par le cadre. Ce que l'outil a fait, dans l'ordre :
+
+| Réglage | Ce qui s'est passé |
+|---|---|
+| tolérance 14, quatre coins | L'ombre du mur est **gardée comme sujet** : trop loin du blanc pour que le remplissage la traverse. 818 îlots écartés, l'outil le dit. |
+| tolérance 32, quatre coins | L'ombre part, **mais la barbe, les cheveux et la chemise aussi** : les coins du bas sont sur la chemise noire et leur remplissage dévore toutes les zones sombres. |
+| tolérance 30, coins du haut seulement | Le mur **et** son ombre partent, le sujet reste entier. |
+
+Il reste un trou sous le menton : la peau éclairée du cou passe sous la tolérance et rejoint le
+mur. C'est la limite de la méthode (§2), pas un réglage à trouver.
+
 ## 6. La suite, si cela vaut le coup
 
 **La méthode par superpixels.** Gerstner, DeCarlo, Alexa, Finkelstein, Gingold et Nealen,
@@ -229,8 +251,9 @@ méthode naïve. Les paramètres du papier, pour le jour où :
 
 **Les slots de palette**, si la segmentation par matériau devient faisable.
 
-**Désigner le fond au clic.** Quand les quatre coins sont sur le sujet, plus rien ne distingue le
-fond. Un clic sur la source pour ajouter un point de départ réglerait ces cas-là.
+**Désigner le fond au clic.** Les coins se décochent déjà (§2), ce qui couvre le cas courant. Mais
+quand le fond ne touche aucun coin, ou qu'il faut rattraper un trou comme celui du cou ci-dessus,
+rien ne remplacera un clic sur la source pour ajouter ou retirer un point de départ.
 
 **Les séquences.** Une planche entière, pas une image : le nombre d'images vient de
 `src/art/<perso>/sheets.ts`, et il faudra une palette figée pour toute la planche et un ancrage
